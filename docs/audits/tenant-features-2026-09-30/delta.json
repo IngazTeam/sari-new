@@ -1,0 +1,1632 @@
+{
+  "baseline": "docs/audits/tenant-features-2026-09-28",
+  "generatedAt": "2026-09-29T23:58:42.038Z",
+  "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
+  "counts": {
+    "before": {
+      "routes": 126,
+      "files": 180,
+      "controls": 1590
+    },
+    "after": {
+      "routes": 126,
+      "files": 259,
+      "controls": 1876
+    }
+  },
+  "addedFiles": [
+    "client/src/lib/merchant-viewport.ts",
+    "client/src/lib/utils.ts",
+    "client/src/lib/i18n.ts",
+    "client/src/lib/test-sari-session.ts",
+    "client/src/lib/merchant-setup-navigation.ts",
+    "client/src/lib/learning-policy-review-version.ts",
+    "client/src/lib/learning-policy-evaluation-state.ts",
+    "client/src/lib/sales-experiment-form.ts",
+    "client/src/lib/sales-experiment-launch.ts",
+    "client/src/lib/sales-experiment-review.ts",
+    "client/src/lib/sales-cohort-form.ts",
+    "client/src/lib/sales-cohort-inspection.ts",
+    "client/src/components/merchant/CampaignPerformance.tsx",
+    "client/src/lib/merchant-date.ts",
+    "client/src/lib/staff-voice-attempt.ts",
+    "client/src/lib/staff-dashboard-attempt.ts",
+    "client/src/lib/meta-embedded-signup.ts",
+    "client/src/hooks/use-toast.ts",
+    "client/src/components/ByaanSalesReview.tsx",
+    "client/src/components/merchant/WorkspaceState.tsx",
+    "client/src/_core/hooks/useAuth.ts",
+    "client/src/lib/knowledge-workspace-cache.ts",
+    "client/src/lib/assistant-draft-cache.ts",
+    "client/src/components/KnowledgeWorkspaceScope.tsx",
+    "client/src/components/merchant/MessageWorkspace.tsx",
+    "client/src/lib/message-labels.ts",
+    "client/src/lib/message-export.ts",
+    "client/src/components/merchant/OverviewWorkspace.tsx",
+    "client/src/lib/overview-labels.ts",
+    "client/src/lib/overview-export.ts",
+    "client/src/components/merchant/OverviewReport.tsx",
+    "client/src/components/SallaCartRecovery.tsx",
+    "client/src/lib/salla-checkout-review.ts",
+    "client/src/components/TestSessionHistory.tsx",
+    "client/src/lib/test-session-reference.ts",
+    "client/src/components/merchant/TestMetricsWorkspace.tsx",
+    "client/src/lib/test-metrics-labels.ts",
+    "client/src/lib/test-metrics-report.ts",
+    "client/src/components/merchant/TestMetricsReport.tsx",
+    "client/src/components/merchant/AssistantDraftReview.tsx",
+    "client/src/components/merchant/AssistantPersonalityFields.tsx",
+    "client/src/components/merchant/AssistantReplyPreview.tsx",
+    "client/src/constants/botTemplates.ts",
+    "client/src/components/merchant/AssistantOptionReview.tsx",
+    "client/src/hooks/useReviewedAssistantOption.ts",
+    "client/src/components/merchant/VirtualAgentReview.tsx",
+    "client/src/components/KnowledgeWebsiteIntake.tsx",
+    "client/src/hooks/useKnowledgePageIntakeCopy.ts",
+    "client/src/components/KnowledgeWebsiteWorkspace.tsx",
+    "client/src/hooks/useKnowledgePageCopy.ts",
+    "client/src/components/KnowledgeSourceInventory.tsx",
+    "client/src/components/KnowledgeSectionWorkspace.tsx",
+    "client/src/lib/knowledge-section-draft.ts",
+    "client/src/hooks/useKnowledgeSectionCopy.ts",
+    "client/src/components/KnowledgeConflictWorkspace.tsx",
+    "client/src/components/KnowledgeFaqWorkspace.tsx",
+    "client/src/components/KnowledgeIntake.tsx",
+    "client/src/components/KnowledgeAnalysisReport.tsx",
+    "client/src/components/KnowledgePlanView.tsx",
+    "client/src/components/KnowledgeReceiptView.tsx",
+    "client/src/components/KnowledgeLibrary.tsx",
+    "client/src/components/KnowledgeDocumentSections.tsx",
+    "client/src/components/KnowledgeDocumentReview.tsx",
+    "client/src/components/KnowledgeDocumentUpload.tsx",
+    "client/src/lib/merchant-selection.ts",
+    "client/src/components/KnowledgeDocumentCopies.tsx",
+    "client/src/lib/sales-reply-send-state.ts",
+    "client/src/lib/sales-reply-review-state.ts",
+    "client/src/components/merchant/QuickResponseWorkspace.tsx",
+    "client/src/components/merchant/InsightsWorkspace.tsx",
+    "client/src/components/merchant/KeywordReviewDialog.tsx",
+    "client/src/components/merchant/InsightReportDetails.tsx",
+    "client/src/lib/report-export.ts",
+    "client/src/components/merchant/navigation.ts",
+    "client/src/components/merchant/tools.ts",
+    "client/src/components/WebsiteImportWorkspace.tsx",
+    "client/src/hooks/useWebsiteImportCopy.ts",
+    "client/src/components/WebsiteReportsWorkspace.tsx",
+    "client/src/hooks/useWebsiteReportsCopy.ts"
+  ],
+  "changedFiles": [
+    "client/src/components/PreviewChat.tsx",
+    "client/src/pages/merchant/Campaigns.tsx",
+    "client/src/pages/merchant/WhatsAppInstancesPage.tsx",
+    "client/src/pages/ByaanDashboard.tsx",
+    "client/src/pages/merchant/Analytics.tsx",
+    "client/src/pages/merchant/OverviewAnalytics.tsx",
+    "client/src/components/SallaCheckoutReview.tsx",
+    "client/src/pages/merchant/TestSari.tsx",
+    "client/src/pages/merchant/MetricsDashboard.tsx",
+    "client/src/pages/merchant/BotSettings.tsx",
+    "client/src/pages/merchant/HumanTakeoverSettings.tsx",
+    "client/src/pages/merchant/VirtualTeamPage.tsx",
+    "client/src/pages/merchant/SariBrain.tsx",
+    "client/src/pages/SariPlayground.tsx",
+    "client/src/pages/merchant/SalesPipeline.tsx",
+    "client/src/pages/merchant/QuickResponses.tsx",
+    "client/src/pages/merchant/InsightsDashboard.tsx",
+    "client/src/pages/merchant/Settings.tsx",
+    "client/src/pages/merchant/LanguageSettings.tsx",
+    "client/src/pages/merchant/MySubscription.tsx",
+    "client/src/pages/merchant/SubscriptionPlans.tsx",
+    "client/src/pages/SmartAnalysis.tsx",
+    "client/src/components/merchant/MerchantShell.tsx",
+    "client/src/components/MerchantSelector.tsx"
+  ],
+  "noLongerReachable": [],
+  "priorOrphans": [
+    {
+      "file": "client/src/pages/merchant/AdvancedAnalytics.tsx",
+      "exists": false,
+      "nowReachable": false
+    },
+    {
+      "file": "client/src/pages/merchant/AdvancedAnalyticsDashboard.tsx",
+      "exists": false,
+      "nowReachable": false
+    },
+    {
+      "file": "client/src/pages/merchant/Reports.tsx",
+      "exists": false,
+      "nowReachable": false
+    },
+    {
+      "file": "client/src/pages/merchant/SariPersonality.tsx",
+      "exists": false,
+      "nowReachable": false
+    },
+    {
+      "file": "client/src/pages/merchant/Subscriptions.tsx",
+      "exists": false,
+      "nowReachable": false
+    },
+    {
+      "file": "client/src/pages/merchant/WhatsApp.tsx",
+      "exists": false,
+      "nowReachable": false
+    },
+    {
+      "file": "client/src/pages/merchant/WhatsAppSetupWizard.tsx",
+      "exists": false,
+      "nowReachable": false
+    }
+  ],
+  "routes": [
+    {
+      "route": "/merchant/setup-wizard",
+      "controlsBefore": 59,
+      "controlsNow": 61,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": [
+        "testSari.createConversation",
+        "testSari.saveMessage",
+        "testSari.markAsDeal"
+      ]
+    },
+    {
+      "route": "/merchant",
+      "controlsBefore": 0,
+      "controlsNow": 0,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/",
+      "controlsBefore": 0,
+      "controlsNow": 0,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/dashboard",
+      "controlsBefore": 174,
+      "controlsNow": 174,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/ai-hub",
+      "controlsBefore": 1,
+      "controlsNow": 1,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/analytics-hub",
+      "controlsBefore": 1,
+      "controlsNow": 1,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/campaigns",
+      "controlsBefore": 11,
+      "controlsNow": 16,
+      "removedQueries": [],
+      "addedQueries": [
+        "campaigns.getStats",
+        "campaigns.getTimelineData"
+      ],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/campaigns/new",
+      "controlsBefore": 13,
+      "controlsNow": 13,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/campaigns/:id/edit",
+      "controlsBefore": 13,
+      "controlsNow": 13,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/campaigns/:id",
+      "controlsBefore": 4,
+      "controlsNow": 4,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/campaigns/:id/report",
+      "controlsBefore": 3,
+      "controlsNow": 3,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/products",
+      "controlsBefore": 57,
+      "controlsNow": 57,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/products/upload",
+      "controlsBefore": 17,
+      "controlsNow": 17,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/conversations",
+      "controlsBefore": 85,
+      "controlsNow": 87,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/whatsapp",
+      "controlsBefore": 24,
+      "controlsNow": 23,
+      "removedQueries": [
+        "whatsappRequests.listMine",
+        "whatsappRequests.getQRCode",
+        "whatsappRequests.checkConnection"
+      ],
+      "addedQueries": [
+        "whatsappWorkspace.qr",
+        "whatsappWorkspace.confirm",
+        "whatsappWorkspace.requests"
+      ],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/salla",
+      "controlsBefore": 22,
+      "controlsNow": 22,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/integrations/byaan",
+      "controlsBefore": 9,
+      "controlsNow": 9,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/byaan-dashboard",
+      "controlsBefore": 13,
+      "controlsNow": 18,
+      "removedQueries": [],
+      "addedQueries": [
+        "byaan.listSalesOperations",
+        "byaan.salesReviewAccess"
+      ],
+      "removedMutations": [],
+      "addedMutations": [
+        "byaan.recoverEnrollmentProjection"
+      ]
+    },
+    {
+      "route": "/merchant/integrations/zid",
+      "controlsBefore": 25,
+      "controlsNow": 25,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/zid/settings",
+      "controlsBefore": 25,
+      "controlsNow": 25,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/zid/callback",
+      "controlsBefore": 1,
+      "controlsNow": 11,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/zid/products",
+      "controlsBefore": 2,
+      "controlsNow": 2,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/zid/sync-logs",
+      "controlsBefore": 0,
+      "controlsNow": 0,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/woocommerce/settings",
+      "controlsBefore": 10,
+      "controlsNow": 10,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/woocommerce/products",
+      "controlsBefore": 4,
+      "controlsNow": 4,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/woocommerce/orders",
+      "controlsBefore": 14,
+      "controlsNow": 14,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/woocommerce/analytics",
+      "controlsBefore": 9,
+      "controlsNow": 9,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/integrations/calendly",
+      "controlsBefore": 21,
+      "controlsNow": 21,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/chat-orders",
+      "controlsBefore": 0,
+      "controlsNow": 0,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/discounts",
+      "controlsBefore": 16,
+      "controlsNow": 16,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/referrals",
+      "controlsBefore": 2,
+      "controlsNow": 2,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/abandoned-carts",
+      "controlsBefore": 2,
+      "controlsNow": 2,
+      "removedQueries": [],
+      "addedQueries": [
+        "auth.me"
+      ],
+      "removedMutations": [],
+      "addedMutations": [
+        "auth.logout"
+      ]
+    },
+    {
+      "route": "/merchant/occasion-campaigns",
+      "controlsBefore": 4,
+      "controlsNow": 4,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/promotions",
+      "controlsBefore": 23,
+      "controlsNow": 23,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/analytics",
+      "controlsBefore": 7,
+      "controlsNow": 7,
+      "removedQueries": [],
+      "addedQueries": [
+        "auth.me"
+      ],
+      "removedMutations": [],
+      "addedMutations": [
+        "auth.logout"
+      ]
+    },
+    {
+      "route": "/merchant/message-analytics",
+      "controlsBefore": 5,
+      "controlsNow": 10,
+      "removedQueries": [
+        "messageAnalytics.getMessageStats",
+        "messageAnalytics.getPeakHours",
+        "messageAnalytics.getTopProducts",
+        "messageAnalytics.getConversionRate",
+        "messageAnalytics.getDailyMessageCount",
+        "sentiment.getStats",
+        "sentiment.getDistribution"
+      ],
+      "addedQueries": [
+        "auth.me",
+        "merchants.getCurrent",
+        "messageWorkspace.read"
+      ],
+      "removedMutations": [
+        "messageAnalytics.exportPDF",
+        "messageAnalytics.exportExcel"
+      ],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/overview-analytics",
+      "controlsBefore": 0,
+      "controlsNow": 7,
+      "removedQueries": [
+        "abandonedCarts.getStats",
+        "messageAnalytics.getConversionRate",
+        "referrals.getStats",
+        "orders.getStats"
+      ],
+      "addedQueries": [
+        "auth.me",
+        "overviewWorkspace.read"
+      ],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/orders",
+      "controlsBefore": 53,
+      "controlsNow": 58,
+      "removedQueries": [],
+      "addedQueries": [
+        "orders.listSallaCartProblems",
+        "auth.me"
+      ],
+      "removedMutations": [],
+      "addedMutations": [
+        "auth.logout"
+      ]
+    },
+    {
+      "route": "/merchant/whatsapp-instances",
+      "controlsBefore": 24,
+      "controlsNow": 23,
+      "removedQueries": [
+        "whatsappRequests.listMine",
+        "whatsappRequests.getQRCode",
+        "whatsappRequests.checkConnection"
+      ],
+      "addedQueries": [
+        "whatsappWorkspace.qr",
+        "whatsappWorkspace.confirm",
+        "whatsappWorkspace.requests"
+      ],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/whatsapp-setup",
+      "controlsBefore": 0,
+      "controlsNow": 0,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/whatsapp-test",
+      "controlsBefore": 15,
+      "controlsNow": 15,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/greenapi-setup",
+      "controlsBefore": 8,
+      "controlsNow": 8,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/test-sari",
+      "controlsBefore": 11,
+      "controlsNow": 30,
+      "removedQueries": [],
+      "addedQueries": [
+        "testSari.feedback",
+        "testSari.transcript",
+        "testSari.listSessions",
+        "auth.me",
+        "merchants.getCurrent"
+      ],
+      "removedMutations": [
+        "testSari.resetConversation"
+      ],
+      "addedMutations": [
+        "testSari.rateReply"
+      ]
+    },
+    {
+      "route": "/merchant/metrics-dashboard",
+      "controlsBefore": 1,
+      "controlsNow": 7,
+      "removedQueries": [
+        "testSari.getMetrics"
+      ],
+      "addedQueries": [
+        "auth.me",
+        "merchants.getCurrent",
+        "testMetricsWorkspace.read"
+      ],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/whatsapp-webhook-setup",
+      "controlsBefore": 6,
+      "controlsNow": 6,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/bot-settings",
+      "controlsBefore": 37,
+      "controlsNow": 53,
+      "removedQueries": [],
+      "addedQueries": [
+        "auth.me"
+      ],
+      "removedMutations": [],
+      "addedMutations": [
+        "ai.chat",
+        "virtualAgents.preview"
+      ]
+    },
+    {
+      "route": "/merchant/human-takeover",
+      "controlsBefore": 4,
+      "controlsNow": 13,
+      "removedQueries": [
+        "botSettings.getTakeoverConversations"
+      ],
+      "addedQueries": [
+        "botSettings.takeoverWorkspace",
+        "auth.me",
+        "merchants.getCurrent"
+      ],
+      "removedMutations": [
+        "botSettings.update"
+      ],
+      "addedMutations": [
+        "botSettings.updateOption"
+      ]
+    },
+    {
+      "route": "/merchant/virtual-team",
+      "controlsBefore": 31,
+      "controlsNow": 47,
+      "removedQueries": [
+        "virtualAgents.list"
+      ],
+      "addedQueries": [
+        "virtualAgents.listReview",
+        "auth.me",
+        "merchants.getCurrent"
+      ],
+      "removedMutations": [],
+      "addedMutations": [
+        "ai.chat",
+        "virtualAgents.preview"
+      ]
+    },
+    {
+      "route": "/merchant/sari-brain",
+      "controlsBefore": 275,
+      "controlsNow": 382,
+      "removedQueries": [
+        "sariBrain.getFaqs",
+        "sariBrain.getPendingReviews",
+        "sariBrain.getPageContent"
+      ],
+      "addedQueries": [
+        "sariBrain.pageWorkspace",
+        "sariBrain.pageIntakeReceipt",
+        "auth.me",
+        "merchants.getCurrent",
+        "sariBrain.pageReview",
+        "sariBrain.getSourceInventory",
+        "sariBrain.sectionWorkspace",
+        "sariBrain.sectionReview",
+        "sariBrain.sectionCreationReceipt",
+        "sariBrain.conflictWorkspace",
+        "sariBrain.conflictReview",
+        "sariBrain.faqWorkspace",
+        "sariBrain.getIntakeReceipt",
+        "knowledgeDocs.readText",
+        "knowledgeDocs.list",
+        "knowledgeDocs.sections",
+        "knowledgeDocs.reviewSource",
+        "knowledgeDocs.copies"
+      ],
+      "removedMutations": [
+        "sariBrain.createSection",
+        "sariBrain.deleteSection",
+        "sariBrain.addCustomUrl",
+        "sariBrain.togglePageInBot",
+        "sariBrain.deleteDiscoveredPage"
+      ],
+      "addedMutations": [
+        "sariBrain.savePreviewedPage",
+        "sariBrain.changeWorkspacePage",
+        "sariBrain.createWorkspaceSection",
+        "sariBrain.updateWorkspaceSection",
+        "sariBrain.deleteWorkspaceSection",
+        "sariBrain.analyzeTeachingPolicy",
+        "sariBrain.updateFaq",
+        "sariBrain.recoverIntakeReceipt",
+        "knowledgeDocs.reprocess"
+      ]
+    },
+    {
+      "route": "/merchant/sari-playground",
+      "controlsBefore": 4,
+      "controlsNow": 10,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/sari-analytics",
+      "controlsBefore": 5,
+      "controlsNow": 10,
+      "removedQueries": [
+        "messageAnalytics.getMessageStats",
+        "messageAnalytics.getPeakHours",
+        "messageAnalytics.getTopProducts",
+        "messageAnalytics.getConversionRate",
+        "messageAnalytics.getDailyMessageCount",
+        "sentiment.getStats",
+        "sentiment.getDistribution"
+      ],
+      "addedQueries": [
+        "auth.me",
+        "merchants.getCurrent",
+        "messageWorkspace.read"
+      ],
+      "removedMutations": [
+        "messageAnalytics.exportPDF",
+        "messageAnalytics.exportExcel"
+      ],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/sales-hub",
+      "controlsBefore": 24,
+      "controlsNow": 24,
+      "removedQueries": [],
+      "addedQueries": [
+        "sariBrain.formatQuotationForWhatsApp"
+      ],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/sales-pipeline",
+      "controlsBefore": 3,
+      "controlsNow": 12,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/acquisition-report",
+      "controlsBefore": 0,
+      "controlsNow": 0,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/quotation-templates",
+      "controlsBefore": 15,
+      "controlsNow": 15,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/media-library",
+      "controlsBefore": 23,
+      "controlsNow": 23,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/scheduled-messages",
+      "controlsBefore": 13,
+      "controlsNow": 13,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/sari-personality",
+      "controlsBefore": 0,
+      "controlsNow": 0,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/quick-responses",
+      "controlsBefore": 18,
+      "controlsNow": 31,
+      "removedQueries": [
+        "quickResponses.list",
+        "quickResponses.getStats"
+      ],
+      "addedQueries": [
+        "auth.me",
+        "merchants.getCurrent",
+        "quickResponses.workspace"
+      ],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/insights",
+      "controlsBefore": 6,
+      "controlsNow": 31,
+      "removedQueries": [
+        "insights.getKeywordStats",
+        "insights.getWeeklyReports",
+        "insights.getActiveABTests"
+      ],
+      "addedQueries": [
+        "auth.me",
+        "insights.workspace",
+        "keywords.getById",
+        "insights.report"
+      ],
+      "removedMutations": [],
+      "addedMutations": [
+        "keywords.updateStatus",
+        "keywords.delete"
+      ]
+    },
+    {
+      "route": "/merchant/advanced-analytics",
+      "controlsBefore": 5,
+      "controlsNow": 10,
+      "removedQueries": [
+        "messageAnalytics.getMessageStats",
+        "messageAnalytics.getPeakHours",
+        "messageAnalytics.getTopProducts",
+        "messageAnalytics.getConversionRate",
+        "messageAnalytics.getDailyMessageCount",
+        "sentiment.getStats",
+        "sentiment.getDistribution"
+      ],
+      "addedQueries": [
+        "auth.me",
+        "merchants.getCurrent",
+        "messageWorkspace.read"
+      ],
+      "removedMutations": [
+        "messageAnalytics.exportPDF",
+        "messageAnalytics.exportExcel"
+      ],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/analytics-dashboard",
+      "controlsBefore": 5,
+      "controlsNow": 10,
+      "removedQueries": [
+        "messageAnalytics.getMessageStats",
+        "messageAnalytics.getPeakHours",
+        "messageAnalytics.getTopProducts",
+        "messageAnalytics.getConversionRate",
+        "messageAnalytics.getDailyMessageCount",
+        "sentiment.getStats",
+        "sentiment.getDistribution"
+      ],
+      "addedQueries": [
+        "auth.me",
+        "merchants.getCurrent",
+        "messageWorkspace.read"
+      ],
+      "removedMutations": [
+        "messageAnalytics.exportPDF",
+        "messageAnalytics.exportExcel"
+      ],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/performance-metrics",
+      "controlsBefore": 2,
+      "controlsNow": 2,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/data-sync",
+      "controlsBefore": 3,
+      "controlsNow": 3,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/reviews",
+      "controlsBefore": 7,
+      "controlsNow": 7,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/booking-reviews",
+      "controlsBefore": 9,
+      "controlsNow": 9,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/order-notifications",
+      "controlsBefore": 9,
+      "controlsNow": 9,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/settings",
+      "controlsBefore": 23,
+      "controlsNow": 48,
+      "removedQueries": [
+        "knowledgeDocs.getCurrent"
+      ],
+      "addedQueries": [
+        "sariBrain.getIntakeReceipt",
+        "knowledgeDocs.reviewSource"
+      ],
+      "removedMutations": [
+        "knowledgeDocs.delete"
+      ],
+      "addedMutations": [
+        "sariBrain.recoverIntakeReceipt",
+        "sariBrain.analyzeContent",
+        "sariBrain.ingestAnalyzedContent"
+      ]
+    },
+    {
+      "route": "/merchant/privacy-center",
+      "controlsBefore": 12,
+      "controlsNow": 12,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/notifications",
+      "controlsBefore": 4,
+      "controlsNow": 4,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/language-settings",
+      "controlsBefore": 3,
+      "controlsNow": 6,
+      "removedQueries": [],
+      "addedQueries": [
+        "auth.me",
+        "merchants.getCurrent"
+      ],
+      "removedMutations": [
+        "botSettings.update"
+      ],
+      "addedMutations": [
+        "botSettings.updateOption"
+      ]
+    },
+    {
+      "route": "/merchant/calendar/settings",
+      "controlsBefore": 3,
+      "controlsNow": 3,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/calendar",
+      "controlsBefore": 16,
+      "controlsNow": 16,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/staff",
+      "controlsBefore": 11,
+      "controlsNow": 11,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/team",
+      "controlsBefore": 8,
+      "controlsNow": 8,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/services",
+      "controlsBefore": 10,
+      "controlsNow": 10,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/services/new",
+      "controlsBefore": 17,
+      "controlsNow": 17,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/services/:id/edit",
+      "controlsBefore": 17,
+      "controlsNow": 17,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/services/:id",
+      "controlsBefore": 5,
+      "controlsNow": 5,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/bookings",
+      "controlsBefore": 65,
+      "controlsNow": 65,
+      "removedQueries": [],
+      "addedQueries": [
+        "bookings.getById"
+      ],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/service-categories",
+      "controlsBefore": 16,
+      "controlsNow": 16,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/service-packages",
+      "controlsBefore": 16,
+      "controlsNow": 16,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/sheets/settings",
+      "controlsBefore": 8,
+      "controlsNow": 8,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/sheets/export",
+      "controlsBefore": 3,
+      "controlsNow": 3,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/sheets/reports",
+      "controlsBefore": 2,
+      "controlsNow": 2,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/sheets/inventory",
+      "controlsBefore": 2,
+      "controlsNow": 2,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/payments",
+      "controlsBefore": 7,
+      "controlsNow": 7,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/payments/:id",
+      "controlsBefore": 10,
+      "controlsNow": 10,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/payment-links",
+      "controlsBefore": 12,
+      "controlsNow": 12,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/payment-settings",
+      "controlsBefore": 10,
+      "controlsNow": 10,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/loyalty/settings",
+      "controlsBefore": 11,
+      "controlsNow": 11,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/loyalty/tiers",
+      "controlsBefore": 8,
+      "controlsNow": 8,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/loyalty/rewards",
+      "controlsBefore": 19,
+      "controlsNow": 19,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/loyalty/customers",
+      "controlsBefore": 14,
+      "controlsNow": 14,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/integrations-dashboard",
+      "controlsBefore": 8,
+      "controlsNow": 8,
+      "removedQueries": [],
+      "addedQueries": [
+        "auth.me"
+      ],
+      "removedMutations": [],
+      "addedMutations": [
+        "auth.logout"
+      ]
+    },
+    {
+      "route": "/merchant/platform-integrations",
+      "controlsBefore": 10,
+      "controlsNow": 10,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/notification-settings",
+      "controlsBefore": 17,
+      "controlsNow": 17,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/currency-settings",
+      "controlsBefore": 2,
+      "controlsNow": 2,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/push-notifications",
+      "controlsBefore": 3,
+      "controlsNow": 3,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/scheduled-reports",
+      "controlsBefore": 24,
+      "controlsNow": 24,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/whatsapp-auto-notifications",
+      "controlsBefore": 20,
+      "controlsNow": 20,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/reports",
+      "controlsBefore": 5,
+      "controlsNow": 5,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/subscriptions",
+      "controlsBefore": 7,
+      "controlsNow": 10,
+      "removedQueries": [
+        "merchantSubscription.getDaysRemaining"
+      ],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/usage",
+      "controlsBefore": 2,
+      "controlsNow": 2,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/usage-dashboard",
+      "controlsBefore": 5,
+      "controlsNow": 5,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/subscription/plans",
+      "controlsBefore": 3,
+      "controlsNow": 4,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/subscription/compare",
+      "controlsBefore": 3,
+      "controlsNow": 3,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/subscription",
+      "controlsBefore": 7,
+      "controlsNow": 10,
+      "removedQueries": [
+        "merchantSubscription.getDaysRemaining"
+      ],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/checkout",
+      "controlsBefore": 5,
+      "controlsNow": 5,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/payment/success",
+      "controlsBefore": 3,
+      "controlsNow": 13,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/payment/cancel",
+      "controlsBefore": 2,
+      "controlsNow": 12,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/tools",
+      "controlsBefore": 3,
+      "controlsNow": 3,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/customers",
+      "controlsBefore": 13,
+      "controlsNow": 13,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/website-analysis",
+      "controlsBefore": 0,
+      "controlsNow": 0,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/smart-analysis",
+      "controlsBefore": 16,
+      "controlsNow": 87,
+      "removedQueries": [
+        "analysis.getStatus",
+        "analysis.getExistingData",
+        "analysis.getDiscoveredPages",
+        "analysis.getExtractedFaqs",
+        "analysis.getStats",
+        "websiteAnalysis.listAnalyses",
+        "websiteAnalysis.getAnalysis",
+        "websiteAnalysis.getInsights"
+      ],
+      "addedQueries": [
+        "analysis.importAccess",
+        "analysis.importReview",
+        "auth.me",
+        "merchants.getCurrent",
+        "websiteAnalysis.reports",
+        "websiteAnalysis.report",
+        "sariBrain.pageWorkspace",
+        "sariBrain.pageReview",
+        "sariBrain.faqWorkspace"
+      ],
+      "removedMutations": [
+        "websiteAnalysis.deleteAnalysis",
+        "analysis.previewAnalysis",
+        "analysis.applyAnalysis",
+        "analysis.deletePage",
+        "analysis.deleteFaq"
+      ],
+      "addedMutations": [
+        "analysis.previewImport",
+        "analysis.applyImport",
+        "analysis.refreshImport",
+        "websiteAnalysis.deleteReviewedReport",
+        "sariBrain.changeWorkspacePage",
+        "sariBrain.createFaq",
+        "sariBrain.updateFaq",
+        "sariBrain.deleteFaq"
+      ]
+    },
+    {
+      "route": "/merchant/competitor-analysis",
+      "controlsBefore": 8,
+      "controlsNow": 8,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/customers/:phone",
+      "controlsBefore": 11,
+      "controlsNow": 11,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/ai-suggestions",
+      "controlsBefore": 6,
+      "controlsNow": 31,
+      "removedQueries": [
+        "insights.getKeywordStats",
+        "insights.getWeeklyReports",
+        "insights.getActiveABTests"
+      ],
+      "addedQueries": [
+        "auth.me",
+        "insights.workspace",
+        "keywords.getById",
+        "insights.report"
+      ],
+      "removedMutations": [],
+      "addedMutations": [
+        "keywords.updateStatus",
+        "keywords.delete"
+      ]
+    },
+    {
+      "route": "/merchant/keywords",
+      "controlsBefore": 0,
+      "controlsNow": 0,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/voice-messages",
+      "controlsBefore": 5,
+      "controlsNow": 10,
+      "removedQueries": [
+        "messageAnalytics.getMessageStats",
+        "messageAnalytics.getPeakHours",
+        "messageAnalytics.getTopProducts",
+        "messageAnalytics.getConversionRate",
+        "messageAnalytics.getDailyMessageCount",
+        "sentiment.getStats",
+        "sentiment.getDistribution"
+      ],
+      "addedQueries": [
+        "auth.me",
+        "merchants.getCurrent",
+        "messageWorkspace.read"
+      ],
+      "removedMutations": [
+        "messageAnalytics.exportPDF",
+        "messageAnalytics.exportExcel"
+      ],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/analysis",
+      "controlsBefore": 5,
+      "controlsNow": 10,
+      "removedQueries": [
+        "messageAnalytics.getMessageStats",
+        "messageAnalytics.getPeakHours",
+        "messageAnalytics.getTopProducts",
+        "messageAnalytics.getConversionRate",
+        "messageAnalytics.getDailyMessageCount",
+        "sentiment.getStats",
+        "sentiment.getDistribution"
+      ],
+      "addedQueries": [
+        "auth.me",
+        "merchants.getCurrent",
+        "messageWorkspace.read"
+      ],
+      "removedMutations": [
+        "messageAnalytics.exportPDF",
+        "messageAnalytics.exportExcel"
+      ],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/weekly-reports",
+      "controlsBefore": 0,
+      "controlsNow": 0,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/ab-tests",
+      "controlsBefore": 6,
+      "controlsNow": 31,
+      "removedQueries": [
+        "insights.getKeywordStats",
+        "insights.getWeeklyReports",
+        "insights.getActiveABTests"
+      ],
+      "addedQueries": [
+        "auth.me",
+        "insights.workspace",
+        "keywords.getById",
+        "insights.report"
+      ],
+      "removedMutations": [],
+      "addedMutations": [
+        "keywords.updateStatus",
+        "keywords.delete"
+      ]
+    },
+    {
+      "route": "/merchant/try-sari-analytics",
+      "controlsBefore": 1,
+      "controlsNow": 7,
+      "removedQueries": [
+        "testSari.getMetrics"
+      ],
+      "addedQueries": [
+        "auth.me",
+        "merchants.getCurrent",
+        "testMetricsWorkspace.read"
+      ],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/merchant-payments",
+      "controlsBefore": 7,
+      "controlsNow": 7,
+      "removedQueries": [],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    },
+    {
+      "route": "/merchant/my-subscription",
+      "controlsBefore": 7,
+      "controlsNow": 10,
+      "removedQueries": [
+        "merchantSubscription.getDaysRemaining"
+      ],
+      "addedQueries": [],
+      "removedMutations": [],
+      "addedMutations": []
+    }
+  ],
+  "removedRoutes": []
+}

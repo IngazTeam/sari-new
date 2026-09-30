@@ -1,0 +1,350 @@
+{
+  "baseline": "docs/audits/tenant-features-2026-09-28/feature-baseline.json",
+  "scope": "Reviewed API substitutions and moved controls. Evidence of intentional implementation changes, not a claim that every workflow passed runtime testing.",
+  "transitions": [
+    {
+      "routes": [
+        "/merchant/whatsapp",
+        "/merchant/whatsapp-instances"
+      ],
+      "removed": [
+        "whatsappRequests.listMine",
+        "whatsappRequests.getQRCode",
+        "whatsappRequests.checkConnection"
+      ],
+      "required": [
+        "whatsappWorkspace.requests",
+        "whatsappWorkspace.qr",
+        "whatsappWorkspace.confirm"
+      ],
+      "note": "Combined legacy/current requests; reviewed connection confirmation.",
+      "evidence": [
+        "docs/audits/tenant-whatsapp-workspace-2026-09-28/REPORT.md"
+      ],
+      "checks": []
+    },
+    {
+      "routes": [
+        "/merchant/message-analytics",
+        "/merchant/sari-analytics",
+        "/merchant/advanced-analytics",
+        "/merchant/analytics-dashboard",
+        "/merchant/voice-messages",
+        "/merchant/analysis"
+      ],
+      "removed": [
+        "messageAnalytics.getMessageStats",
+        "messageAnalytics.getPeakHours",
+        "messageAnalytics.getTopProducts",
+        "messageAnalytics.getConversionRate",
+        "messageAnalytics.getDailyMessageCount",
+        "sentiment.getStats",
+        "sentiment.getDistribution",
+        "messageAnalytics.exportPDF",
+        "messageAnalytics.exportExcel"
+      ],
+      "required": [
+        "messageWorkspace.read"
+      ],
+      "note": "One bounded snapshot and complete client CSV/Excel/PDF; association is not causal conversion.",
+      "evidence": [
+        "docs/audits/tenant-message-workspace-2026-09-30/REPORT.md",
+        "docs/audits/tenant-message-compatibility-2026-09-30/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "client/src/lib/message-export.ts",
+          "contains": "export"
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/overview-analytics"
+      ],
+      "removed": [
+        "abandonedCarts.getStats",
+        "messageAnalytics.getConversionRate",
+        "referrals.getStats",
+        "orders.getStats"
+      ],
+      "required": [
+        "overviewWorkspace.read"
+      ],
+      "note": "One scoped snapshot with currency/cohort evidence.",
+      "evidence": [
+        "docs/audits/tenant-overview-workspace-2026-09-30/REPORT.md"
+      ],
+      "checks": []
+    },
+    {
+      "routes": [
+        "/merchant/test-sari"
+      ],
+      "removed": [
+        "testSari.resetConversation"
+      ],
+      "required": [
+        "testSari.createConversation",
+        "testSari.listSessions",
+        "testSari.transcript"
+      ],
+      "note": "New session replaces visible context after confirmation; previous saved sessions remain recoverable, no destructive reset.",
+      "evidence": [
+        "docs/audits/tenant-test-session-recovery-2026-09-30/REPORT.md"
+      ],
+      "checks": []
+    },
+    {
+      "routes": [
+        "/merchant/metrics-dashboard",
+        "/merchant/try-sari-analytics"
+      ],
+      "removed": [
+        "testSari.getMetrics"
+      ],
+      "required": [
+        "testMetricsWorkspace.read"
+      ],
+      "note": "Observed trial metrics only, unknown customer metrics remain unmeasured.",
+      "evidence": [
+        "docs/audits/tenant-test-metrics-workspace-2026-09-30/REPORT.md",
+        "docs/audits/tenant-test-feedback-eligibility-2026-09-30/REPORT.md"
+      ],
+      "checks": []
+    },
+    {
+      "routes": [
+        "/merchant/human-takeover"
+      ],
+      "removed": [
+        "botSettings.getTakeoverConversations",
+        "botSettings.update"
+      ],
+      "required": [
+        "botSettings.takeoverWorkspace",
+        "botSettings.updateOption"
+      ],
+      "note": "Bounded paged takeover reads and independently reviewed option update.",
+      "evidence": [
+        "docs/audits/tenant-assistant-options-2026-09-29/REPORT.md"
+      ],
+      "checks": []
+    },
+    {
+      "routes": [
+        "/merchant/language-settings"
+      ],
+      "removed": [
+        "botSettings.update"
+      ],
+      "required": [
+        "botSettings.updateOption"
+      ],
+      "note": "Reviewed option update independent from unrelated settings.",
+      "evidence": [
+        "docs/audits/tenant-assistant-options-2026-09-29/REPORT.md"
+      ],
+      "checks": []
+    },
+    {
+      "routes": [
+        "/merchant/virtual-team"
+      ],
+      "removed": [
+        "virtualAgents.list"
+      ],
+      "required": [
+        "virtualAgents.listReview"
+      ],
+      "note": "List includes revision for reviewed writes.",
+      "evidence": [
+        "docs/audits/tenant-virtual-team-review-2026-09-29/REPORT.md"
+      ],
+      "checks": []
+    },
+    {
+      "routes": [
+        "/merchant/sari-brain"
+      ],
+      "removed": [
+        "sariBrain.getFaqs",
+        "sariBrain.getPendingReviews",
+        "sariBrain.getPageContent",
+        "sariBrain.createSection",
+        "sariBrain.deleteSection",
+        "sariBrain.addCustomUrl",
+        "sariBrain.togglePageInBot",
+        "sariBrain.deleteDiscoveredPage"
+      ],
+      "required": [
+        "sariBrain.faqWorkspace",
+        "sariBrain.sectionWorkspace",
+        "sariBrain.pageReview",
+        "sariBrain.createWorkspaceSection",
+        "sariBrain.deleteWorkspaceSection",
+        "sariBrain.previewUrl",
+        "sariBrain.savePreviewedPage",
+        "sariBrain.changeWorkspacePage"
+      ],
+      "note": "Scoped reviewed sections/pages/FAQ, explicit preview before URL import.",
+      "evidence": [
+        "docs/audits/tenant-website-pages-2026-09-29/REPORT.md",
+        "docs/audits/tenant-knowledge-section-links-2026-09-29/REPORT.md"
+      ],
+      "checks": []
+    },
+    {
+      "routes": [
+        "/merchant/quick-responses"
+      ],
+      "removed": [
+        "quickResponses.list",
+        "quickResponses.getStats"
+      ],
+      "required": [
+        "quickResponses.workspace"
+      ],
+      "note": "Scoped paged list with coherent totals and reviewed mutations.",
+      "evidence": [
+        "docs/audits/tenant-quick-response-workspace-2026-09-29/REPORT.md"
+      ],
+      "checks": []
+    },
+    {
+      "routes": [
+        "/merchant/insights",
+        "/merchant/ai-suggestions",
+        "/merchant/ab-tests"
+      ],
+      "removed": [
+        "insights.getKeywordStats",
+        "insights.getWeeklyReports",
+        "insights.getActiveABTests"
+      ],
+      "required": [
+        "insights.workspace",
+        "insights.report"
+      ],
+      "note": "Bounded snapshot and full saved report details.",
+      "evidence": [
+        "docs/audits/tenant-insights-workspace-2026-09-29/REPORT.md",
+        "docs/audits/tenant-insight-report-details-2026-09-29/REPORT.md"
+      ],
+      "checks": []
+    },
+    {
+      "routes": [
+        "/merchant/settings"
+      ],
+      "removed": [
+        "knowledgeDocs.getCurrent",
+        "knowledgeDocs.delete"
+      ],
+      "required": [
+        "knowledgeDocs.reviewSource",
+        "sariBrain.getIntakeReceipt"
+      ],
+      "note": "Upload with receipt, move complete file library and group deletion to linked knowledge sources; avoid ambiguous delete-all button on settings.",
+      "evidence": [
+        "docs/audits/tenant-knowledge-library-2026-09-29/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "client/src/components/KnowledgeDocumentUpload.tsx",
+          "contains": "/merchant/sari-brain?view=sources"
+        },
+        {
+          "route": "/merchant/sari-brain",
+          "api": "sariBrain.deleteSource"
+        },
+        {
+          "route": "/merchant/sari-brain",
+          "api": "knowledgeDocs.list"
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/reports"
+      ],
+      "removed": [
+        "messageAnalytics.exportPDF",
+        "messageAnalytics.exportExcel"
+      ],
+      "required": [],
+      "note": "Export currently selected ReportDocument on client instead of unrelated message report.",
+      "evidence": [
+        "docs/audits/tenant-features-2026-09-28/feature-baseline.json"
+      ],
+      "checks": [
+        {
+          "file": "client/src/pages/Reports.tsx",
+          "contains": "report-export"
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/subscriptions",
+        "/merchant/subscription",
+        "/merchant/my-subscription"
+      ],
+      "removed": [
+        "merchantSubscription.getDaysRemaining"
+      ],
+      "required": [
+        "merchantSubscription.getCurrentSubscription"
+      ],
+      "note": "Remaining days come from current subscription snapshot.",
+      "evidence": [
+        "docs/audits/tenant-subscription-workspace-2026-09-28/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "client/src/pages/merchant/MySubscription.tsx",
+          "contains": "subscription.daysRemaining"
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/smart-analysis"
+      ],
+      "removed": [
+        "analysis.getStatus",
+        "analysis.getExistingData",
+        "analysis.getDiscoveredPages",
+        "analysis.getExtractedFaqs",
+        "analysis.getStats",
+        "websiteAnalysis.listAnalyses",
+        "websiteAnalysis.getAnalysis",
+        "websiteAnalysis.getInsights",
+        "websiteAnalysis.deleteAnalysis",
+        "analysis.previewAnalysis",
+        "analysis.applyAnalysis",
+        "analysis.deletePage",
+        "analysis.deleteFaq"
+      ],
+      "required": [
+        "analysis.importAccess",
+        "analysis.importReview",
+        "analysis.previewImport",
+        "analysis.applyImport",
+        "websiteAnalysis.reports",
+        "websiteAnalysis.report",
+        "websiteAnalysis.deleteReviewedReport",
+        "sariBrain.pageWorkspace",
+        "sariBrain.faqWorkspace",
+        "sariBrain.changeWorkspacePage",
+        "sariBrain.deleteFaq"
+      ],
+      "note": "Reviewed import receipt and paged saved reports; pages/FAQ use canonical workspaces.",
+      "evidence": [
+        "docs/audits/tenant-website-import-2026-09-29/REPORT.md",
+        "docs/audits/tenant-website-reports-2026-09-29/REPORT.md"
+      ],
+      "checks": []
+    }
+  ]
+}
