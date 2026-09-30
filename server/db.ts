@@ -1,4 +1,3 @@
-import { orderValuesByCurrency } from "../shared/order-value-summary";
 import { normalizeProductMoneyWrite } from '../shared/product-money';
 import {
   eq, ne, and, or, desc, gte, lte, lt, gt, sql, like, isNull, inArray, notInArray, type InferSelectModel, type InferInsertModel
@@ -3606,49 +3605,6 @@ export async function deleteNotificationTemplate(id: number) {
  * Returns count of messages by type (text, voice, image)
  */
 export { getMessageStats, getPeakHours, getTopProducts, getConversionRate, getDailyMessageCount } from './message-analytics-legacy';
-
-/**
- * Get order statistics for merchant
- */
-export async function getOrderStats(merchantId: number): Promise<{
-  total: number;
-  pending: number;
-  processing: number;
-  completed: number;
-  cancelled: number;
-  totalRevenue: number;
-  valuesByCurrency: {currency:"SAR"|"USD";totalMinor:number}[];
-}> {
-  const db = await getDb();
-  if (!db) return {
-    total: 0,
-    pending: 0,
-    processing: 0,
-    completed: 0,
-    cancelled: 0,
-    valuesByCurrency: [],
-    totalRevenue: 0
-  };
-
-  const allOrders = await db
-    .select()
-    .from(orders)
-    .where(eq(orders.merchantId, merchantId));
-
-  const stats = {
-    valuesByCurrency: orderValuesByCurrency(allOrders),
-    total: allOrders.length,
-    pending: allOrders.filter(o => o.status === 'pending').length,
-    processing: allOrders.filter(o => o.status === 'processing' || o.status === 'shipped').length,
-    completed: allOrders.filter(o => o.status === 'delivered').length,
-    cancelled: allOrders.filter(o => o.status === 'cancelled').length,
-    totalRevenue: allOrders
-      .filter(o => o.status !== 'cancelled')
-      .reduce((sum, o) => sum + o.totalAmount, 0)
-  };
-
-  return stats;
-}
 
 // ============================================
 // Test Conversations & Metrics

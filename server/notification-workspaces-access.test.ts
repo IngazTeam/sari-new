@@ -22,6 +22,12 @@ beforeEach(() => {
 });
 
 describe('notification workspace boundaries', () => {
+  it('surfaces scheduled-report storage failure without a successful empty response', async () => {
+    mocks.functions.getScheduledReports.mockRejectedValue(new Error('Report storage unavailable'));
+    await expect(caller().getScheduledReports()).rejects.toThrow('Report storage unavailable');
+    await expect(caller().updateScheduledReport({id:1,isActive:false})).rejects.toThrow('Report storage unavailable');
+    expect(mocks.functions.updateScheduledReport).not.toHaveBeenCalled();
+  });
   it('uses the selected merchant for reads and never caller-supplied context ids', async () => {
     await caller().getScheduledReports();
     expect(mocks.access).toHaveBeenCalledWith(7, 20);

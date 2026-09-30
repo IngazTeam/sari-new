@@ -95,18 +95,21 @@ export async function getPushNotificationLogs(merchantId: number, limit = 50) {
 }
 
 // Scheduled Reports
-export async function getScheduledReports(merchantId: number) {
-  const db = await getDb();
-  if (!db) return [];
-  const result = await db.execute(sql`SELECT * FROM scheduled_reports WHERE merchant_id = ${merchantId} ORDER BY created_at DESC`);
-  return (result as any)[0] || [];
+function requireReportIdentity(value: number) {
+  if (!Number.isSafeInteger(value) || value <= 0) throw new Error('Invalid report identity');
 }
-
-export async function getScheduledReportById(id: number) {
+async function reportDatabase(merchantId: number) {
+  requireReportIdentity(merchantId);
   const db = await getDb();
-  if (!db) return null;
-  const result = await db.execute(sql`SELECT * FROM scheduled_reports WHERE id = ${id}`);
-  return (result as any)[0]?.[0] || null;
+  if (!db) throw new Error('Report storage unavailable');
+  return db;
+}
+export async function getScheduledReports(merchantId: number) {
+  const db = await reportDatabase(merchantId);
+  const result = await db.execute(sql`SELECT * FROM scheduled_reports WHERE merchant_id = ${merchantId} ORDER BY created_at DESC`);
+  const rows = (result as any)[0];
+  if (!Array.isArray(rows)) throw new Error('Report records unavailable');
+  return rows;
 }
 
 export async function createScheduledReport(data: {
@@ -125,8 +128,7 @@ export async function createScheduledReport(data: {
   includeCustomers?: boolean;
   includeAppointments?: boolean;
 }) {
-  const db = await getDb();
-  if (!db) return 0;
+  const db = await reportDatabase(data.merchantId);
   const result = await db.execute(sql`INSERT INTO scheduled_reports 
     (merchant_id, name, report_type, schedule_day, schedule_time, delivery_method,
      recipient_email, recipient_phone, include_conversations, include_orders,
@@ -136,7 +138,9 @@ export async function createScheduledReport(data: {
       ${data.recipientPhone ?? null}, ${data.includeConversations ?? true}, ${data.includeOrders ?? true},
       ${data.includeRevenue ?? true}, ${data.includeProducts ?? true}, ${data.includeCustomers ?? true},
       ${data.includeAppointments ?? true})`);
-  return (result as any)[0]?.insertId || 0;
+  const id = (result as any)[0]?.insertId;
+  requireReportIdentity(id);
+  return id as number;
 }
 
 export async function updateScheduledReport(id: number, data: Partial<{
@@ -156,9 +160,9 @@ export async function updateScheduledReport(id: number, data: Partial<{
   isActive: boolean;
   lastSentAt: Date;
   nextSendAt: Date;
-}>, merchantId?: number) {
-  const db = await getDb();
-  if (!db) return;
+}>, merchantId: number) {
+  requireReportIdentity(id);
+  const db = await reportDatabase(merchantId);
   // Explicit nulls mean "leave unchanged"; false, zero and empty strings remain values.
   await db.execute(sql`UPDATE scheduled_reports SET
     name = COALESCE(${data.name ?? null}, name),
@@ -177,20 +181,13 @@ export async function updateScheduledReport(id: number, data: Partial<{
     is_active = COALESCE(${data.isActive ?? null}, is_active),
     last_sent_at = COALESCE(${data.lastSentAt ?? null}, last_sent_at),
     next_send_at = COALESCE(${data.nextSendAt ?? null}, next_send_at)
-  WHERE id = ${id} ${merchantId === undefined ? sql`` : sql`AND merchant_id = ${merchantId}`}`);
+  WHERE id = ${id} AND merchant_id = ${merchantId}`);
 }
 
 export async function deleteScheduledReport(id: number, merchantId: number) {
-  const db = await getDb();
-  if (!db) return;
+  requireReportIdentity(id);
+  const db = await reportDatabase(merchantId);
   await db.execute(sql`DELETE FROM scheduled_reports WHERE id = ${id} AND merchant_id = ${merchantId}`);
-}
-
-export async function getDueScheduledReports() {
-  const db = await getDb();
-  if (!db) return [];
-  const result = await db.execute(sql`SELECT * FROM scheduled_reports WHERE is_active = TRUE AND (next_send_at IS NULL OR next_send_at <= NOW())`);
-  return (result as any)[0] || [];
 }
 
 // WhatsApp Auto Notifications

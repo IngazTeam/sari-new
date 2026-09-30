@@ -1,5 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { runInContext } from 'node:vm';
+import { TextEncoder, TextDecoder } from 'node:util';
+import { MessageChannel } from 'node:worker_threads';
 import { JSDOM, VirtualConsole } from 'jsdom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -11,6 +13,8 @@ function boot(stored?: string) {
   const console = new VirtualConsole(); console.on('jsdomError', e => errors.push(e));
   dom = new JSDOM(readFileSync(base+'index.html','utf8'), {url:'http://127.0.0.1:4329/', runScripts:'outside-only', pretendToBeVisual:true, virtualConsole:console});
   w = dom.window; w.structuredClone = structuredClone; w.scrollTo = () => {};
+  w.TextEncoder = TextEncoder; w.TextDecoder = TextDecoder;
+  w.MessageChannel = class extends MessageChannel { constructor() { super(); this.port1.unref(); this.port2.unref(); } };
   w.fetch = vi.fn(() => { throw Error('A local prototype must not call a provider'); });
   w.HTMLDialogElement.prototype.showModal = function () { this.setAttribute('open',''); };
   w.HTMLDialogElement.prototype.close = function () { this.removeAttribute('open'); };

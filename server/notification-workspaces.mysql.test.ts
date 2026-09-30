@@ -12,13 +12,13 @@ describe.skipIf(!process.env.DATABASE_URL)('notification workspace MySQL contrac
     const id = await db.createScheduledReport({merchantId: first.merchantId, name: 'Synthetic', reportType: 'weekly', scheduleDay: 3, scheduleTime: '14:45', recipientEmail: 'synthetic@example.test'});
     await db.updateScheduledReport(id, {includeConversations: false, includeOrders: false, includeRevenue: false, includeProducts: false, includeCustomers: false, includeAppointments: false}, first.merchantId);
     await db.updateScheduledReport(id, {isActive: false}, first.merchantId);
-    const saved = await db.getScheduledReportById(id);
+    const saved = (await db.getScheduledReports(first.merchantId)).find(row => row.id === id);
     expect(saved).toMatchObject({schedule_day: 3, schedule_time: '14:45', is_active: 0, include_conversations: 0, include_orders: 0, include_revenue: 0, include_products: 0, include_customers: 0, include_appointments: 0});
     await db.updateScheduledReport(id, {name: 'Foreign'}, second.merchantId);
     await db.deleteScheduledReport(id, second.merchantId);
     expect((await db.getScheduledReports(first.merchantId))[0].name).toBe('Synthetic');
     expect(await db.getScheduledReports(second.merchantId)).toEqual([]);
-    await db.deleteScheduledReport(id, first.merchantId); expect(await db.getScheduledReportById(id)).toBeNull();
+    await db.deleteScheduledReport(id, first.merchantId); expect((await db.getScheduledReports(first.merchantId)).some(row => row.id === id)).toBe(false);
   });
   it('edits notification templates and false/zero values without crossing tenants', async () => {
     const id = await db.createWhatsappAutoNotification({merchantId: first.merchantId, triggerType: 'order_created', messageTemplate: 'Initial', isActive: true, delayMinutes: 5});
