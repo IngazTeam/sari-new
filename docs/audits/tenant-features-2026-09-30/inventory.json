@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-30T22:25:44.253Z",
+  "generatedAt": "2026-09-30T22:45:24.060Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -8981,14 +8981,13 @@
     },
     {
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "hash": "3a162fcd2100",
+      "hash": "94e9da2c3963",
       "queries": [
         "sariBrain.getSources",
         "sariBrain.getActivityLog",
         "sariBrain.getKnowledgeSections",
         "sariBrain.getAnalysisStatus",
-        "sariBrain.getWebsiteKnowledge",
-        "sariBrain.getQualityDashboard"
+        "sariBrain.getWebsiteKnowledge"
       ],
       "mutations": [
         "sariBrain.deleteSource",
@@ -9001,84 +9000,79 @@
       "sections": [
         {
           "label": "عقل ساري",
-          "line": 211,
+          "line": 212,
           "tag": "h1"
         },
         {
           "label": "⚠️ إعادة ضبط عقل ساري بالكامل",
-          "line": 233,
+          "line": 234,
           "tag": "AlertDialogTitle"
         },
         {
           "label": "مؤشر احتراف المبيعات",
-          "line": 271,
+          "line": 272,
           "tag": "h2"
         },
         {
           "label": "تجارب البيع وتقييم النتائج",
-          "line": 277,
-          "tag": "summary"
-        },
-        {
-          "label": "مراجعة الرد واعتماد إرساله",
           "line": 278,
           "tag": "summary"
         },
         {
-          "label": "سياسة المتابعة",
+          "label": "مراجعة الرد واعتماد إرساله",
           "line": 279,
           "tag": "summary"
         },
         {
-          "label": "صلاحيات الخصم وهامش الربح",
+          "label": "سياسة المتابعة",
           "line": 280,
           "tag": "summary"
         },
         {
+          "label": "صلاحيات الخصم وهامش الربح",
+          "line": 281,
+          "tag": "summary"
+        },
+        {
           "label": "تحليل الموقع",
-          "line": 305,
+          "line": 306,
           "tag": "AlertDialogTitle"
         },
         {
           "label": "💎 ذكاء المبيعات",
-          "line": 378,
+          "line": 379,
           "tag": "CardTitle"
         },
         {
           "label": "🎯 فرص التطوير",
-          "line": 427,
+          "line": 428,
           "tag": "CardTitle"
         },
         {
           "label": "🧪 اختبر ساري",
-          "line": 460,
+          "line": 461,
           "tag": "CardTitle"
         },
         {
           "label": "📦 مصادر المعرفة",
-          "line": 517,
+          "line": 518,
           "tag": "CardTitle"
         },
         {
           "label": "document",
-          "line": 560,
+          "line": 561,
           "tag": "AlertDialogTitle"
         },
         {
-          "label": "📊 مقاييس الجودة",
-          "line": 626,
-          "tag": "CardTitle"
-        },
-        {
           "label": "📋 مسار ساري",
-          "line": 724,
+          "line": 640,
           "tag": "CardTitle"
         }
       ],
       "choices": [
         {
           "name": "brainViews",
-          "line": 64,
+          "line": 65,
           "values": [
             {
               "id": "overview",
@@ -9114,7 +9108,7 @@
         },
         {
           "name": "FILTER_OPTIONS",
-          "line": 710,
+          "line": 626,
           "values": [
             {
               "value": "all",
@@ -9152,7 +9146,7 @@
       "handlers": [
         {
           "name": "handleTest",
-          "line": 187,
+          "line": 188,
           "calls": [
             "testSariMutation"
           ]
@@ -9162,7 +9156,7 @@
         {
           "query": "sariBrain.getSources",
           "binding": "sourcesQuery",
-          "line": 83,
+          "line": 84,
           "errorSignal": true,
           "loadingSignal": false,
           "enabled": null
@@ -9170,7 +9164,7 @@
         {
           "query": "sariBrain.getActivityLog",
           "binding": "activityQuery",
-          "line": 87,
+          "line": 88,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
@@ -9178,7 +9172,7 @@
         {
           "query": "sariBrain.getKnowledgeSections",
           "binding": "{ data: knowledgeSections }",
-          "line": 92,
+          "line": 93,
           "errorSignal": false,
           "loadingSignal": false,
           "enabled": null
@@ -9186,7 +9180,7 @@
         {
           "query": "sariBrain.getAnalysisStatus",
           "binding": "statusQuery",
-          "line": 136,
+          "line": 137,
           "errorSignal": true,
           "loadingSignal": false,
           "enabled": "polling"
@@ -9194,22 +9188,15 @@
         {
           "query": "sariBrain.getWebsiteKnowledge",
           "binding": "websiteKnowledgeQuery",
-          "line": 201,
+          "line": 202,
           "errorSignal": true,
           "loadingSignal": true,
-          "enabled": null
-        },
-        {
-          "query": "sariBrain.getQualityDashboard",
-          "binding": "{ data: qualityData }",
-          "line": 615,
-          "errorSignal": false,
-          "loadingSignal": false,
           "enabled": null
         }
       ],
       "conditions": [],
       "imports": [
+        "client/src/components/ReplyQualityReadout.tsx",
         "client/src/components/WebsiteAnalysisDialog.tsx",
         "client/src/components/KnowledgeWebsiteIntake.tsx",
         "client/src/components/KnowledgeWebsiteWorkspace.tsx",
@@ -9232,6 +9219,68 @@
         "client/src/hooks/useIntegration.tsx"
       ],
       "controlCount": 35
+    },
+    {
+      "file": "client/src/components/ReplyQualityReadout.tsx",
+      "hash": "7bd360b56e97",
+      "queries": [
+        "sariBrain.getQualityDashboard"
+      ],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [
+        {
+          "label": "سجل توليد الردود",
+          "line": 89,
+          "tag": "CardTitle"
+        },
+        {
+          "label": "سجل توليد الردود",
+          "line": 90,
+          "tag": "h2"
+        },
+        {
+          "label": "تغير نسبة الردود القصيرة",
+          "line": 184,
+          "tag": "h3"
+        },
+        {
+          "label": "تصنيف الانطباع المسجل",
+          "line": 203,
+          "tag": "h3"
+        },
+        {
+          "label": "أكثر الأسئلة المسجلة تكرارًا",
+          "line": 231,
+          "tag": "h3"
+        },
+        {
+          "label": "… {{count}} مرة",
+          "line": 244,
+          "tag": "summary"
+        },
+        {
+          "label": "آخر 10 سجلات في الفترة",
+          "line": 272,
+          "tag": "summary"
+        }
+      ],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [
+        {
+          "query": "sariBrain.getQualityDashboard",
+          "binding": "query",
+          "line": 19,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        }
+      ],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 4
     },
     {
       "file": "client/src/components/WebsiteAnalysisDialog.tsx",
@@ -19927,6 +19976,7 @@
       ],
       "files": [
         "client/src/pages/merchant/SariBrain.tsx",
+        "client/src/components/ReplyQualityReadout.tsx",
         "client/src/components/WebsiteAnalysisDialog.tsx",
         "client/src/components/KnowledgeWebsiteIntake.tsx",
         "client/src/hooks/useKnowledgePageIntakeCopy.ts",
@@ -19982,41 +20032,45 @@
         "client/src/hooks/useIntegration.tsx"
       ],
       "controls": [
-        "d40e05ca5795",
-        "8b3b1412a9a6",
-        "e82aa5cc5ca9",
-        "134d922aa34d",
-        "b494aee065ed",
-        "a2dcc47e8602",
-        "6e54f8eb3992",
-        "a60480b8e4fd",
-        "db9dad98a680",
-        "cb67423dd09d",
-        "69be4f1ad6b7",
+        "7f65a69953e2",
+        "bbca5f813b34",
+        "51cc02cce0ca",
+        "9bc262e6c344",
+        "e5c0506219a8",
+        "0e8b93993c42",
+        "6ddcdbc631fb",
+        "da2fdf9fd742",
+        "04a88d1c5b83",
+        "e6667e7acbea",
         "80a177349172",
         "ff1c46883677",
         "3f79c2d3a51a",
-        "4f604e8acd4b",
-        "d9cb14e8ef6d",
-        "4546d9d0d1e5",
-        "7b5a395ef0c4",
-        "b73394acdc7f",
-        "6f052a601c84",
-        "148cf1723dc1",
-        "854c208d2870",
-        "1f62639ed46e",
-        "91f0771b7384",
-        "65394110f0eb",
-        "8c0fc3bfd398",
-        "37d47a798ded",
-        "c23b25610f1d",
-        "ba231f0b44a8",
-        "0dc97b4d2281",
-        "e1fa5d72f58b",
-        "05e6c87a39ea",
-        "01a8cbff3e11",
-        "028565304cf5",
-        "9e3df82c348f",
+        "3f292889332c",
+        "e4c54cbeb5a8",
+        "7c544bf9b86e",
+        "7a258499bd83",
+        "e787dcbaec26",
+        "02c4c1f3a9c1",
+        "fb0ff50a93dd",
+        "e9d54b1e3da1",
+        "a75e17682efb",
+        "f781087f0224",
+        "f2bbf1da6c9b",
+        "4587017defc2",
+        "7b82a84ac058",
+        "1e9eb618f515",
+        "01f46937877b",
+        "6f92f0f6fda5",
+        "3a52a7c61bdc",
+        "fd0994f47747",
+        "8c75436830c9",
+        "5d1f146056da",
+        "203ef9d17010",
+        "70bf6526bf2d",
+        "b003072f31b6",
+        "1e76f8e6e637",
+        "2cbfa6b876e5",
+        "a1ffa1da07ac",
         "4f0aa165d8f3",
         "a997c08d173c",
         "63125caa0547",
@@ -48669,9 +48723,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "d40e05ca5795",
+      "id": "7f65a69953e2",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 220,
+      "line": 221,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -48690,9 +48744,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "8b3b1412a9a6",
+      "id": "bbca5f813b34",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 226,
+      "line": 227,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -48711,9 +48765,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "e82aa5cc5ca9",
+      "id": "51cc02cce0ca",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 231,
+      "line": 232,
       "tag": "AlertDialogContent",
       "role": "",
       "kind": "dialog",
@@ -48732,9 +48786,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "134d922aa34d",
+      "id": "9bc262e6c344",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 241,
+      "line": 242,
       "tag": "AlertDialogCancel",
       "role": "",
       "kind": "action",
@@ -48753,9 +48807,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "b494aee065ed",
+      "id": "e5c0506219a8",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 242,
+      "line": 243,
       "tag": "AlertDialogAction",
       "role": "",
       "kind": "action",
@@ -48774,9 +48828,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "a2dcc47e8602",
+      "id": "0e8b93993c42",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 252,
+      "line": 253,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -48797,9 +48851,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "6e54f8eb3992",
+      "id": "6ddcdbc631fb",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 254,
+      "line": 255,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -48818,9 +48872,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "a60480b8e4fd",
+      "id": "da2fdf9fd742",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 263,
+      "line": 264,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -48841,9 +48895,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "db9dad98a680",
+      "id": "04a88d1c5b83",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 274,
+      "line": 275,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -48862,9 +48916,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "cb67423dd09d",
+      "id": "e6667e7acbea",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 274,
+      "line": 275,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -48883,35 +48937,14 @@
       "review": "source-inventoried"
     },
     {
-      "id": "69be4f1ad6b7",
-      "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 277,
-      "tag": "summary",
-      "role": "",
-      "kind": "action",
-      "label": "تجارب البيع وتقييم النتائج",
-      "section": "تجارب البيع وتقييم النتائج",
-      "binding": "",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
       "id": "80a177349172",
       "file": "client/src/pages/merchant/SariBrain.tsx",
       "line": 278,
       "tag": "summary",
       "role": "",
       "kind": "action",
-      "label": "مراجعة الرد واعتماد إرساله",
-      "section": "مراجعة الرد واعتماد إرساله",
+      "label": "تجارب البيع وتقييم النتائج",
+      "section": "تجارب البيع وتقييم النتائج",
       "binding": "",
       "type": "text",
       "options": [],
@@ -48931,8 +48964,8 @@
       "tag": "summary",
       "role": "",
       "kind": "action",
-      "label": "سياسة المتابعة",
-      "section": "سياسة المتابعة",
+      "label": "مراجعة الرد واعتماد إرساله",
+      "section": "مراجعة الرد واعتماد إرساله",
       "binding": "",
       "type": "text",
       "options": [],
@@ -48952,6 +48985,27 @@
       "tag": "summary",
       "role": "",
       "kind": "action",
+      "label": "سياسة المتابعة",
+      "section": "سياسة المتابعة",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "3f292889332c",
+      "file": "client/src/pages/merchant/SariBrain.tsx",
+      "line": 281,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
       "label": "صلاحيات الخصم وهامش الربح",
       "section": "صلاحيات الخصم وهامش الربح",
       "binding": "",
@@ -48967,9 +49021,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "4f604e8acd4b",
+      "id": "e4c54cbeb5a8",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 294,
+      "line": 295,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -48991,9 +49045,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "d9cb14e8ef6d",
+      "id": "7c544bf9b86e",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 298,
+      "line": 299,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -49016,9 +49070,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "4546d9d0d1e5",
+      "id": "7a258499bd83",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 303,
+      "line": 304,
       "tag": "AlertDialogContent",
       "role": "",
       "kind": "dialog",
@@ -49041,9 +49095,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "7b5a395ef0c4",
+      "id": "e787dcbaec26",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 314,
+      "line": 315,
       "tag": "AlertDialogCancel",
       "role": "",
       "kind": "action",
@@ -49066,9 +49120,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "b73394acdc7f",
+      "id": "02c4c1f3a9c1",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 315,
+      "line": 316,
       "tag": "AlertDialogAction",
       "role": "",
       "kind": "action",
@@ -49091,9 +49145,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "6f052a601c84",
+      "id": "fb0ff50a93dd",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 323,
+      "line": 324,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -49116,9 +49170,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "148cf1723dc1",
+      "id": "e9d54b1e3da1",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 328,
+      "line": 329,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -49137,9 +49191,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "854c208d2870",
+      "id": "a75e17682efb",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 332,
+      "line": 333,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -49158,9 +49212,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "1f62639ed46e",
+      "id": "f781087f0224",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 470,
+      "line": 471,
       "tag": "Textarea",
       "role": "",
       "kind": "field",
@@ -49179,9 +49233,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "91f0771b7384",
+      "id": "f2bbf1da6c9b",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 478,
+      "line": 479,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -49200,9 +49254,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "65394110f0eb",
+      "id": "4587017defc2",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 503,
+      "line": 504,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -49221,9 +49275,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "8c0fc3bfd398",
+      "id": "7b82a84ac058",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 547,
+      "line": 548,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -49244,9 +49298,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "37d47a798ded",
+      "id": "1e9eb618f515",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 558,
+      "line": 559,
       "tag": "AlertDialogContent",
       "role": "",
       "kind": "dialog",
@@ -49267,9 +49321,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "c23b25610f1d",
+      "id": "01f46937877b",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 566,
+      "line": 567,
       "tag": "AlertDialogCancel",
       "role": "",
       "kind": "action",
@@ -49290,9 +49344,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ba231f0b44a8",
+      "id": "6f92f0f6fda5",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 567,
+      "line": 568,
       "tag": "AlertDialogAction",
       "role": "",
       "kind": "action",
@@ -49313,9 +49367,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "0dc97b4d2281",
+      "id": "3a52a7c61bdc",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 584,
+      "line": 585,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -49338,9 +49392,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "e1fa5d72f58b",
+      "id": "fd0994f47747",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 742,
+      "line": 658,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -49361,9 +49415,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "05e6c87a39ea",
+      "id": "8c75436830c9",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 805,
+      "line": 721,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -49385,9 +49439,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "01a8cbff3e11",
+      "id": "5d1f146056da",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 824,
+      "line": 740,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -49408,9 +49462,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "028565304cf5",
+      "id": "203ef9d17010",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 837,
+      "line": 753,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -49432,9 +49486,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "9e3df82c348f",
+      "id": "70bf6526bf2d",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 853,
+      "line": 769,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -49451,6 +49505,101 @@
       "conditions": [
         "logFilter !== 'all'",
         "logItems.length > 0"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "b003072f31b6",
+      "file": "client/src/components/ReplyQualityReadout.tsx",
+      "line": 96,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "الفترة آخر 7 أيام آخر 30 يومًا آخر 90 يومًا",
+      "section": "سجل توليد الردود",
+      "binding": "days",
+      "type": "text",
+      "options": [
+        {
+          "value": "value",
+          "label": ""
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "1e76f8e6e637",
+      "file": "client/src/components/ReplyQualityReadout.tsx",
+      "line": 112,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "الفترة آخر 7 أيام آخر 30 يومًا آخر 90 يومًا",
+      "section": "سجل توليد الردود",
+      "binding": "onRefresh",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "loading",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "2cbfa6b876e5",
+      "file": "client/src/components/ReplyQualityReadout.tsx",
+      "line": 244,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "… {{count}} مرة",
+      "section": "… {{count}} مرة",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!data.questions.length"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "a1ffa1da07ac",
+      "file": "client/src/components/ReplyQualityReadout.tsx",
+      "line": 272,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "آخر 10 سجلات في الفترة",
+      "section": "آخر 10 سجلات في الفترة",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "data.totalResponses === 0",
+        "error || !data",
+        "loading"
       ],
       "disabled": "",
       "review": "source-inventoried"

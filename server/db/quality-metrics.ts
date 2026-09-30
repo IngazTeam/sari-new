@@ -46,17 +46,7 @@ export interface WeeklyReport {
   createdAt: Date;
 }
 
-export interface QualityDashboard {
-  totalResponses: number;
-  avgResponseTimeMs: number;
-  cacheHitRate: number;
-  emptyResponseRate: number;
-  escalationRate: number;
-  sentimentBreakdown: { positive: number; neutral: number; negative: number };
-  topQuestions: string[];
-  recentMetrics: QualityMetric[];
-  trend: 'improving' | 'stable' | 'declining';
-}
+export type { QualityReadout as QualityDashboard } from '../../shared/quality-readout';
 
 // ═══════════════════════════════════════════════════════════════
 // Lazy Table Creation
@@ -148,105 +138,7 @@ export async function recordFeedback(
 // Dashboard Queries
 // ═══════════════════════════════════════════════════════════════
 
-/** Get quality dashboard data for a merchant */
-export async function getQualityDashboard(
-  merchantId: number,
-  days: number = 30
-): Promise<QualityDashboard> {
-  await ensureQualityTables();
-  const pool = await getPool();
-  if (!pool) {
-    return {
-      totalResponses: 0, avgResponseTimeMs: 0, cacheHitRate: 0,
-      emptyResponseRate: 0, escalationRate: 0,
-      sentimentBreakdown: { positive: 0, neutral: 0, negative: 0 },
-      topQuestions: [], recentMetrics: [], trend: 'stable',
-    };
-  }
-
-  const safeDays = Math.min(Math.max(days, 1), 90);
-
-  // Aggregate stats
-  const [statsRows] = await pool.execute(
-    `SELECT 
-       COUNT(*) as total,
-       AVG(response_time_ms) as avg_time,
-       SUM(was_cache_hit) as cache_hits,
-       SUM(was_empty) as empty_count,
-       SUM(was_escalated) as escalated_count,
-       SUM(CASE WHEN customer_sentiment IN ('positive','happy') THEN 1 ELSE 0 END) as positive,
-       SUM(CASE WHEN customer_sentiment IN ('neutral') THEN 1 ELSE 0 END) as neutral_count,
-       SUM(CASE WHEN customer_sentiment IN ('negative','angry','frustrated','sad') THEN 1 ELSE 0 END) as negative
-     FROM sari_quality_metrics 
-     WHERE merchant_id = ? AND created_at > DATE_SUB(NOW(), INTERVAL ? DAY)`,
-    [merchantId, safeDays]
-  );
-
-  const stats = (statsRows as any[])[0] || {};
-  const total = Number(stats.total) || 0;
-
-  // Top questions (most repeated)
-  const [topRows] = await pool.execute(
-    `SELECT question_text, COUNT(*) as cnt 
-     FROM sari_quality_metrics 
-     WHERE merchant_id = ? AND created_at > DATE_SUB(NOW(), INTERVAL ? DAY)
-     GROUP BY question_text ORDER BY cnt DESC LIMIT 5`,
-    [merchantId, safeDays]
-  );
-  const topQuestions = (topRows as any[]).map((r: any) => r.question_text);
-
-  // SEC-V4-06 FIX: Truncate sensitive text — don't expose full conversations to dashboard
-  const [recentRows] = await pool.execute(
-    `SELECT id, merchant_id, conversation_id,
-       LEFT(question_text, 80) as question_text,
-       LEFT(response_text, 80) as response_text,
-       response_time_ms, was_cache_hit, rag_sections_used,
-       customer_sentiment, feedback_rating, was_empty, was_escalated, created_at
-     FROM sari_quality_metrics 
-     WHERE merchant_id = ? ORDER BY created_at DESC LIMIT 10`,
-    [merchantId]
-  );
-
-  // Trend: compare last 7 days vs previous 7 days
-  const [trendRows] = await pool.execute(
-    `SELECT 
-       SUM(CASE WHEN created_at > DATE_SUB(NOW(), INTERVAL 7 DAY) THEN was_empty ELSE 0 END) as recent_empty,
-       SUM(CASE WHEN created_at > DATE_SUB(NOW(), INTERVAL 7 DAY) THEN 1 ELSE 0 END) as recent_total,
-       SUM(CASE WHEN created_at BETWEEN DATE_SUB(NOW(), INTERVAL 14 DAY) AND DATE_SUB(NOW(), INTERVAL 7 DAY) THEN was_empty ELSE 0 END) as prev_empty,
-       SUM(CASE WHEN created_at BETWEEN DATE_SUB(NOW(), INTERVAL 14 DAY) AND DATE_SUB(NOW(), INTERVAL 7 DAY) THEN 1 ELSE 0 END) as prev_total
-     FROM sari_quality_metrics WHERE merchant_id = ?`,
-    [merchantId]
-  );
-
-  const trend = (() => {
-    const t = (trendRows as any[])[0] || {};
-    const recentTotal = Number(t.recent_total) || 0;
-    const prevTotal = Number(t.prev_total) || 0;
-    // Not enough data to compare — treat as stable
-    if (recentTotal < 5 || prevTotal < 5) return 'stable' as const;
-    const recentRate = Number(t.recent_empty) / recentTotal;
-    const prevRate = Number(t.prev_empty) / prevTotal;
-    if (recentRate < prevRate - 0.05) return 'improving' as const;
-    if (recentRate > prevRate + 0.05) return 'declining' as const;
-    return 'stable' as const;
-  })();
-
-  return {
-    totalResponses: total,
-    avgResponseTimeMs: Math.round(Number(stats.avg_time) || 0),
-    cacheHitRate: total > 0 ? Math.round((Number(stats.cache_hits) / total) * 100) : 0,
-    emptyResponseRate: total > 0 ? Math.round((Number(stats.empty_count) / total) * 100) : 0,
-    escalationRate: total > 0 ? Math.round((Number(stats.escalated_count) / total) * 100) : 0,
-    sentimentBreakdown: {
-      positive: Number(stats.positive) || 0,
-      neutral: Number(stats.neutral_count) || 0,
-      negative: Number(stats.negative) || 0,
-    },
-    topQuestions,
-    recentMetrics: recentRows as QualityMetric[],
-    trend,
-  };
-}
+export { readQualityReadout as getQualityDashboard } from '../quality-readout';
 
 // ═══════════════════════════════════════════════════════════════
 // Weekly Report Generation

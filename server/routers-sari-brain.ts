@@ -1,3 +1,4 @@
+import { qualityReadoutInput } from '../shared/quality-readout';
 import { pageUrlInput, pagePreviewReadInput, pagePreviewSaveInput } from '../shared/knowledge-page-intake';
 import { quotationWorkspaceRouter, quotationGuard } from './routers-quotations';
 import { quotationTemplatesRouter } from './routers-quotation-templates';
@@ -1462,13 +1463,13 @@ ${sanitizedContent}`
 
   /** Get quality dashboard */
   getQualityDashboard: merchantProcedure
-    .input(z.object({ days: z.number().min(1).max(90).optional() }))
+    .input(qualityReadoutInput)
     .query(async ({ ctx, input }) => {
       const merchant = await getMerchantById(ctx.merchantId);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
       const qualityDb = await import('./db/quality-metrics');
-      return sanitizeForTRPC(await qualityDb.getQualityDashboard(merchant.id, input.days || 30));
+      try { return await qualityDb.getQualityDashboard(merchant.id, input.days); } catch { throw new TRPCError({code:'INTERNAL_SERVER_ERROR',message:'Reply metrics are temporarily unavailable'}); }
     }),
 
   /** Get weekly reports history */

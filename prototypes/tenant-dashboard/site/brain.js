@@ -71,6 +71,7 @@ window.SaryBrainPreview = (() => {
     return `<section class="brain-workspace" data-brain-workspace>
       <nav class="brain-nav" aria-label="أقسام عقل ساري">${tabs.map(([id, title]) => `<button id="brain-nav-${id}" data-brain-action="navigate" data-id="${id}" aria-pressed="${section === id}">${title}${id === 'gaps' ? `<span>${remaining().length}</span>` : ''}</button>`).join('')}</nav>
       <a class="button" href="./website-analysis.html">معاينة شاشة نتائج تحليل الموقع · 11 حالة</a>
+      <a class="button" href="./reply-quality.html">معاينة سجل توليد الردود · 6 حالات</a>
       <div class="brain-metrics">${metric(`${score()}<small>%</small>`, 'احتراف المبيعات', 'آخر تقييم توضيحي · 40 محادثة', 'sales')}${metric(data.files.length, 'ملفات المعرفة', `${active} معتمدة ومفعّلة في المعاينة`, 'files')}${metric(remaining().length, 'فجوات تحتاج متابعة', 'تعارض أو معلومة ناقصة أو غير واضحة', 'gaps')}</div>
       <div id="brain-section">${['knowledge','operations','history'].includes(section)?window.SaryBrainWorkbench.render(section):({ results, files, gaps, sales, learning })[section]()}</div>
       <p class="brain-footnote">معاينة تصميم · كل المصادر والإجابات والدرجات المعروضة توضيحية. لم يُحلَّل تيننتك أو أي ملف حقيقي.</p>
