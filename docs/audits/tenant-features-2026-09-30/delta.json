@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-09-30T21:05:28.938Z",
+  "generatedAt": "2026-09-30T21:18:29.282Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,18 +10,19 @@
     },
     "after": {
       "routes": 126,
-      "files": 316,
-      "controls": 2127
+      "files": 317,
+      "controls": 2136
     }
   },
   "addedFiles": [
     "client/src/lib/merchant-viewport.ts",
     "client/src/lib/utils.ts",
     "client/src/lib/i18n.ts",
+    "client/src/lib/knowledge-workspace-cache.ts",
+    "client/src/lib/setup-website-draft.ts",
     "client/src/lib/setup-website-product.ts",
     "client/src/lib/test-sari-session.ts",
     "client/src/lib/setup-completion-workspace.ts",
-    "client/src/lib/knowledge-workspace-cache.ts",
     "client/src/lib/setup-draft-cache.ts",
     "client/src/pages/setup-wizard/SetupDraftRecovery.tsx",
     "client/src/lib/merchant-setup-navigation.ts",
@@ -248,7 +249,7 @@
     {
       "route": "/merchant/setup-wizard",
       "controlsBefore": 59,
-      "controlsNow": 83,
+      "controlsNow": 92,
       "removedQueries": [],
       "addedQueries": [
         "setupWizard.completionReceipt",

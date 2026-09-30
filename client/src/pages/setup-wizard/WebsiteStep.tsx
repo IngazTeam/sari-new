@@ -1,512 +1,533 @@
-import { useState } from 'react';
-import { trpc } from '@/lib/trpc';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card } from '@/components/ui/card';
+import { useEffect, useRef, useState } from "react";
+import { trpc } from "@/lib/trpc";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Loader2, Search } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { setupCatalogDraft } from "@shared/setup-catalog";
+import { knowledgeCacheEpoch } from "@/lib/knowledge-workspace-cache";
 import {
-    Globe,
-    Loader2,
-    ArrowRight,
-    SkipForward,
-    Package,
-    CheckCircle2,
-    AlertCircle,
-    ExternalLink,
-    Search,
-    Building2,
-    Phone,
-    MessageCircle,
-    Mail,
-    HelpCircle,
-    MapPin,
-    ShoppingBag,
-    Briefcase,
-    GraduationCap,
-    LayoutGrid,
-} from 'lucide-react';
-import { useTranslation } from 'react-i18next';
-import { setupWebsiteProduct } from '@/lib/setup-website-product';
-import { setupCatalogDraft, setupWebUrl } from '@shared/setup-catalog';
+  buildSetupWebsitePreview,
+  setupWebsitePreview,
+  setupWebsiteUrl,
+  setupWebsitePatch,
+  validSetupWebsiteProfile,
+  readSetupWebsiteChoices,
+  type SetupWebsitePreview,
+  type SetupWebsiteChoices,
+  type SetupWebsiteProfileKey,
+} from "@/lib/setup-website-draft";
 
 interface WebsiteStepProps {
-    wizardData: Record<string, any>;
-    updateWizardData: (data: Record<string, any>) => void;
-    goToNextStep: () => void;
-    skipStep: () => void;
+  wizardData: Record<string, any>;
+  updateWizardData: (data: Record<string, any>) => void;
+  goToNextStep: () => void;
+  skipStep: () => void;
 }
+const text = (value: unknown) => (typeof value === "string" ? value : "");
+const pageSize = 20;
 
-type WebsitePlatform = 'salla' | 'zid' | 'shopify' | 'woocommerce' | 'custom' | 'unknown';
-
-function safeText(value: unknown, maxLength: number): string {
-    return typeof value === 'string' ? value.trim().slice(0, maxLength) : '';
-}
-
-function safeWebUrl(value: unknown): string {
-    const parsed = setupWebUrl.safeParse(value);
-    return parsed.success ? parsed.data : '';
-}
-
-function normalizePlatform(value: unknown): WebsitePlatform {
-    return ['salla', 'zid', 'shopify', 'woocommerce', 'custom'].includes(String(value))
-        ? value as WebsitePlatform
-        : 'unknown';
-}
-
-function toWizardProduct(product: any) {
-    return setupWebsiteProduct(product, crypto.randomUUID());
-}
-
-function buildProfileSuggestion(result: any, sourceUrl: string) {
-    const values: Record<string, string> = {};
-    const businessName = safeText(result?.companyInfo?.name, 255);
-    const description = safeText(result?.companyInfo?.description, 10_000);
-    const address = safeText(result?.contactInfo?.address, 500);
-    const phone = safeText(result?.contactInfo?.phones?.[0], 20);
-
-    if (businessName.length >= 2) values.businessName = businessName;
-    if (description) values.description = description;
-    if (address) values.address = address;
-    if (/^[+0-9][0-9\s()\-]{6,19}$/.test(phone)) values.phone = phone;
-    if (result?.siteType === 'services') values.businessType = 'services';
-    if (result?.siteType === 'ecommerce') values.businessType = 'store';
-
-    return {
-        sourceUrl,
-        applied: false,
-        fields: Object.keys(values),
-        values,
-    };
-}
-
-function buildAnalysisSummary(result: any, websiteUrl: string, productCount: number) {
-    return {
-        success: true,
-        source: 'website',
-        status: 'previewed',
-        confirmed: false,
-        websiteUrl,
-        platform: normalizePlatform(result?.platform),
-        siteType: safeText(result?.siteType, 30),
-        companyInfo: {
-            name: safeText(result?.companyInfo?.name, 255),
-            description: safeText(result?.companyInfo?.description, 2000),
-            industry: safeText(result?.companyInfo?.industry, 100),
-        },
-        contactInfo: {
-            phones: Array.isArray(result?.contactInfo?.phones)
-                ? result.contactInfo.phones.slice(0, 3).map((value: unknown) => safeText(value, 20)).filter(Boolean)
-                : [],
-            emails: Array.isArray(result?.contactInfo?.emails)
-                ? result.contactInfo.emails.slice(0, 3).map((value: unknown) => safeText(value, 320)).filter(Boolean)
-                : [],
-            whatsappNumber: safeText(result?.contactInfo?.whatsappNumber, 20) || null,
-            address: safeText(result?.contactInfo?.address, 500) || null,
-        },
-        crawlStats: {
-            totalPages: Math.max(0, Math.min(30, Number(result?.crawlStats?.totalPages || 0))),
-        },
-        productCount,
-        faqCount: Math.max(0, Math.min(100, Number(result?.faqs?.length || 0))),
-        pageCount: Math.max(0, Math.min(30, Number(result?.pages?.length || 0))),
-    };
-}
-
-export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep, skipStep }: WebsiteStepProps) {
-    const { t } = useTranslation();
-    const [url, setUrl] = useState(wizardData.websiteUrl || '');
-    const [analysisResult, setAnalysisResult] = useState<any>(wizardData.websiteAnalysis || null);
-    const [extractedProducts, setExtractedProducts] = useState<any[]>(
-        wizardData.websiteAnalysis?.source === 'website' && Array.isArray(wizardData.products) ? wizardData.products : []
-    );
-    const [profileSuggestion, setProfileSuggestion] = useState<any>(wizardData.websiteProfileSuggestion || null);
-    const [error, setError] = useState('');
-
-    const previewMutation = trpc.analysis.previewAnalysis.useMutation();
-
-    const handleAnalyze = async () => {
-        if (!url.trim()) {
-            setError('الرجاء إدخال رابط الموقع');
-            return;
-        }
-
-        let finalUrl = url.trim();
-        if (!finalUrl.startsWith('http://') && !finalUrl.startsWith('https://')) {
-            finalUrl = 'https://' + finalUrl;
-        }
-
-        setError('');
-        setExtractedProducts([]);
-        setAnalysisResult(null);
-
-        try {
-            const result = await previewMutation.mutateAsync({ websiteUrl: finalUrl });
-            const products = Array.isArray(result.products)
-                ? result.products.slice(0, 100).map(toWizardProduct)
-                : [];
-            const suggestion = buildProfileSuggestion(result, finalUrl);
-            const summary = buildAnalysisSummary(result, finalUrl, products.length);
-
-            setUrl(finalUrl);
-            setAnalysisResult(summary);
-            setExtractedProducts(products);
-            setProfileSuggestion(suggestion);
-
-            const wizardUpdate: Record<string, any> = {
-                websiteUrl: finalUrl,
-                websiteAnalysis: summary,
-                websiteProfileSuggestion: suggestion,
-            };
-
-            // Website extraction is a proposal. It may seed the draft catalog,
-            // but it never overwrites the merchant's canonical profile silently.
-            if (products.length > 0 || wizardData.websiteAnalysis?.source === 'website') {
-                wizardUpdate.products = products;
-            }
-
-            updateWizardData(wizardUpdate);
-        } catch (err: any) {
-            setError(err.message || 'فشل تحليل الموقع');
-        }
-    };
-
-    const handleApplyProfileSuggestion = () => {
-        if (!profileSuggestion?.fields?.length) return;
-        const appliedSuggestion = { ...profileSuggestion, applied: true };
-        setProfileSuggestion(appliedSuggestion);
-        updateWizardData({
-            ...profileSuggestion.values,
-            websiteProfileSuggestion: appliedSuggestion,
-        });
-    };
-
-    const handleContinue = () => {
-        const wizardUpdate: Record<string, any> = {
-            websiteUrl: url,
-            websiteAnalysis: {
-                ...analysisResult,
-                status: 'confirmed',
-                confirmed: true,
-                profileSuggestionApplied: Boolean(profileSuggestion?.applied),
-            },
-            websiteProfileSuggestion: profileSuggestion,
-        };
-
-        if (extractedProducts.length > 0) {
-            wizardUpdate.products = extractedProducts;
-        }
-
-        updateWizardData(wizardUpdate);
-        goToNextStep();
-    };
-
-    const isAnalyzing = previewMutation.isPending;
-    const showResults = !isAnalyzing && analysisResult?.success;
-
-    // Site type badge
-    const getSiteTypeBadge = (siteType: string) => {
-        const config: Record<string, { icon: any; label: string; color: string }> = {
-            ecommerce: { icon: ShoppingBag, label: 'متجر إلكتروني', color: 'bg-purple-100 text-purple-700' },
-            services: { icon: Briefcase, label: 'خدمات', color: 'bg-accent text-primary' },
-            courses: { icon: GraduationCap, label: 'تدريب وتعليم', color: 'bg-accent text-primary' },
-            general: { icon: LayoutGrid, label: 'موقع عام', color: 'bg-gray-100 text-foreground' },
-        };
-        const c = config[siteType] || config.general;
-        const Icon = c.icon;
-        return (
-            <span className={`inline-flex items-center gap-1 text-xs rounded-full px-3 py-1 font-medium ${c.color}`}>
-                <Icon className="w-3 h-3" />
-                {c.label}
-            </span>
+export default function WebsiteStep({
+  wizardData,
+  updateWizardData,
+  goToNextStep,
+  skipStep,
+}: WebsiteStepProps) {
+  const { t } = useTranslation();
+  const restored = setupWebsitePreview.safeParse(wizardData.websitePreview);
+  const [preview, setPreview] = useState<SetupWebsitePreview | null>(
+    restored.success ? restored.data : null
+  );
+  const [url, setUrl] = useState(
+    text(wizardData.websiteInputUrl ?? wizardData.websiteUrl)
+  );
+  const [choices, setChoiceState] = useState<SetupWebsiteChoices>(() =>
+    readSetupWebsiteChoices(
+      wizardData.websitePreviewChoices,
+      restored.success ? restored.data : null
+    )
+  );
+  const setChoices = (
+    change: (old: SetupWebsiteChoices) => SetupWebsiteChoices
+  ) => {
+    const next = change(choices);
+    setChoiceState(next);
+    if (preview)
+      updateWizardData({
+        websitePreviewChoices: { ...next, previewId: preview.id },
+      });
+  };
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [page, setPage] = useState(0);
+  const requestRef = useRef(0),
+    busyRef = useRef(false),
+    epoch = useRef(knowledgeCacheEpoch());
+  const mutation = trpc.analysis.previewAnalysis.useMutation();
+  useEffect(
+    () => () => {
+      requestRef.current++;
+    },
+    []
+  );
+  const applied = preview?.id === wizardData.websitePreviewAppliedId;
+  let sourceMatches = false;
+  try {
+    sourceMatches = preview?.sourceUrl === setupWebsiteUrl(url);
+  } catch {}
+  let patch: Record<string, unknown> | null = null,
+    choiceError = "";
+  if (preview)
+    try {
+      patch = setupWebsitePatch(wizardData, preview, choices);
+    } catch (cause) {
+      choiceError = t(
+        cause instanceof Error && cause.message === "SETUP_WEBSITE_LIMIT"
+          ? "setupWebsiteUx.limit"
+          : cause instanceof Error &&
+              cause.message === "SETUP_WEBSITE_DRAFT_INVALID"
+            ? "setupWebsiteUx.invalidDraft"
+            : cause instanceof Error &&
+                cause.message === "SETUP_WEBSITE_DRAFT_TOO_LARGE"
+              ? "setupWebsiteUx.tooLarge"
+              : "setupWebsiteUx.invalidChoice"
+      );
+    }
+  const labels: Record<SetupWebsiteProfileKey, string> = {
+    businessName: t("setupWorkspace.nameLabel"),
+    phone: t("setupWorkspace.phoneLabel"),
+    address: t("setupApprovalUx.address"),
+    description: t("setupApprovalUx.description"),
+    businessType: t("setupWorkspace.businessType"),
+  };
+  const profileValue = (key: SetupWebsiteProfileKey, raw: unknown) =>
+    key === "businessType" && ["store", "services", "both"].includes(text(raw))
+      ? t(
+          raw === "store"
+            ? "setupWorkspace.storeTitle"
+            : raw === "services"
+              ? "setupWorkspace.servicesTitle"
+              : "setupWorkspace.bothTitle"
+        )
+      : text(raw) || t("setupWorkspace.notProvided");
+  const analyze = async () => {
+    if (busyRef.current) return;
+    let sourceUrl: string;
+    try {
+      sourceUrl = setupWebsiteUrl(url);
+    } catch {
+      setError(t("setupWebsiteUx.urlInvalid"));
+      return;
+    }
+    const request = ++requestRef.current;
+    busyRef.current = true;
+    setBusy(true);
+    setError("");
+    try {
+      const result = await mutation.mutateAsync({ websiteUrl: sourceUrl });
+      if (
+        request !== requestRef.current ||
+        epoch.current !== knowledgeCacheEpoch()
+      )
+        return;
+      let proposal: SetupWebsitePreview;
+      try {
+        proposal = buildSetupWebsitePreview(
+          result,
+          sourceUrl,
+          crypto.randomUUID()
         );
-    };
-
-    return (
-        <div className="space-y-6 max-w-2xl mx-auto">
-            {/* Header */}
-            <div className="text-center space-y-2">
-                <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
-                    <Globe className="w-8 h-8 text-primary" />
-                </div>
-                <h2 className="text-2xl font-bold">{t('wizardWebsiteStepPage.text0')}</h2>
-                <p className="text-muted-foreground">{t('websiteStep.auto_0')}</p>
-            </div>
-
-            {/* URL Input */}
-            {!showResults && (
-                <div className="space-y-3">
-                    <div className="flex gap-2 ms-adaptive-row">
-                        <Input
-                            type="url"
-                            placeholder="https://example.com"
-                            value={url}
-                            onChange={(e) => {
-                                setUrl(e.target.value);
-                                setError('');
-                            }}
-                            disabled={isAnalyzing}
-                            className="text-left"
-                            aria-label={t('setupWorkspace.website')}
-                            dir="ltr"
-                            onKeyDown={(e) => e.key === 'Enter' && handleAnalyze()}
-                        />
-                        <Button
-                            onClick={handleAnalyze}
-                            disabled={isAnalyzing || !url.trim()}
-                            className="shrink-0"
-                        >
-                            {isAnalyzing ? (
-                                <>
-                                    <Loader2 className="w-4 h-4 ml-2 animate-spin" />{t('websiteStep.auto_1')}</>
-                            ) : (
-                                <>
-                                    <Search className="w-4 h-4 ml-2" />{t('websiteStep.auto_2')}</>
-                            )}
-                        </Button>
-                    </div>
-
-                    {error && (
-                        <div className="flex items-center gap-2 text-red-600 text-sm">
-                            <AlertCircle className="w-4 h-4" />
-                            {error}
-                        </div>
-                    )}
-
-                    {isAnalyzing && (
-                        <Card className="p-4 bg-accent border-border">
-                            <div className="flex items-center gap-3">
-                                <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                                <div>
-                                    <p className="font-medium text-primary">{t('websiteStep.auto_3')}</p>
-                                    <p className="text-sm text-primary">{t('websiteStep.auto_4')}</p>
-                                </div>
-                            </div>
-                        </Card>
-                    )}
-                </div>
-            )}
-
-            {/* Results */}
-            {showResults && (
-                <div className="space-y-5">
-                    {/* Success banner */}
-                    <Card className="p-4 bg-accent border-border">
-                        <div className="flex items-center gap-3">
-                            <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" />
-                            <div className="flex-1">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                    <p className="font-medium text-primary">{t('websiteStep.auto_5')}</p>
-                                    {analysisResult.siteType && getSiteTypeBadge(analysisResult.siteType)}
-                                </div>
-                                <div className="flex items-center gap-3 mt-1 text-sm text-primary">
-                                    <a href={safeWebUrl(url) || undefined} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:underline break-all">
-                                        <ExternalLink className="w-3 h-3" />
-                                        {url}
-                                    </a>
-                                    {analysisResult.crawlStats && (
-                                        <span className="text-primary">
-                                            ({analysisResult.crawlStats.totalPages} صفحة)
-                                        </span>
-                                    )}
-                                </div>
-                            </div>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-primary hover:bg-accent"
-                                onClick={() => {
-                                    setAnalysisResult(null);
-                                    setExtractedProducts([]);
-                                }}
-                            >
-                                <Search className="w-4 h-4 ml-1" />{t('websiteStep.auto_6')}</Button>
-                        </div>
-                    </Card>
-
-                    {/* Company Info */}
-                    {profileSuggestion?.fields?.length > 0 && (
-                        <Card className="p-4 border-border bg-accent">
-                            <div className="flex items-start gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center flex-shrink-0">
-                                    <Building2 className="w-5 h-5 text-primary" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <h3 className="font-bold text-foreground text-lg">
-                                        {analysisResult.companyInfo?.name || 'بيانات مقترحة من الموقع'}
-                                    </h3>
-                                    {analysisResult.companyInfo.description && (
-                                        <p className="text-sm text-muted-foreground mt-1 line-clamp-3">{analysisResult.companyInfo.description}</p>
-                                    )}
-                                    {analysisResult.companyInfo.industry && (
-                                        <span className="inline-block mt-2 text-xs bg-accent text-primary rounded-full px-3 py-0.5">
-                                            {analysisResult.companyInfo.industry}
-                                        </span>
-                                    )}
-                                    <p className="text-xs text-primary mt-3">
-                                        هذه اقتراحات مستخرجة فقط، ولن تستبدل ملف نشاطك إلا بعد موافقتك.
-                                    </p>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={handleApplyProfileSuggestion}
-                                        disabled={profileSuggestion.applied}
-                                        className="mt-3 border-border text-primary hover:bg-accent"
-                                    >
-                                        {profileSuggestion.applied ? (
-                                            <><CheckCircle2 className="w-4 h-4 ml-1" />تم اعتماد الاقتراحات</>
-                                        ) : (
-                                            'استخدام البيانات المقترحة'
-                                        )}
-                                    </Button>
-                                </div>
-                            </div>
-                        </Card>
-                    )}
-
-                    {/* Products/Services Grid */}
-                    {extractedProducts.length > 0 ? (
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-2">
-                                <ShoppingBag className="w-5 h-5 text-primary" />
-                                <h3 className="font-semibold text-lg">
-                                    تم استخراج {extractedProducts.length} عنصر
-                                </h3>
-                            </div>
-
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[400px] overflow-y-auto p-1">
-                                {extractedProducts.map((product: any, index: number) => (
-                                    <Card
-                                        key={index}
-                                        className="group overflow-hidden border hover:border-primary/40 hover:shadow-md transition-all duration-200"
-                                    >
-                                        {/* Product Image */}
-                                        <div className="aspect-square bg-muted relative overflow-hidden">
-                                            {safeWebUrl(product.imageUrl) ? (
-                                                <img
-                                                    src={safeWebUrl(product.imageUrl)}
-                                                    referrerPolicy="no-referrer"
-                                                    alt={product.name}
-                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                                    onError={(e) => {
-                                                        (e.target as HTMLImageElement).style.display = 'none';
-                                                        const fallback = (e.target as HTMLImageElement).nextElementSibling;
-                                                        if (fallback) (fallback as HTMLElement).style.display = 'flex';
-                                                    }}
-                                                />
-                                            ) : null}
-                                            <div
-                                                className={`absolute inset-0 bg-accent items-center justify-center ${product.imageUrl && typeof product.imageUrl === 'string' && product.imageUrl.trim() ? 'hidden' : 'flex'}`}
-                                            >
-                                                <Package className="w-10 h-10 text-primary/30" />
-                                            </div>
-                                            {setupCatalogDraft.safeParse({ products: [product] }).success && product.price !== '' ? (
-                                                <div className="absolute bottom-2 left-2 bg-white/95 backdrop-blur-sm rounded-full px-2.5 py-0.5 text-xs font-bold text-primary shadow-sm">
-                                                    {product.price} {product.currency === 'SAR' ? 'ر.س' : product.currency || 'ر.س'}
-                                                </div>
-                                            ) : <p className="absolute bottom-2 inset-x-2 rounded-lg bg-card p-2 text-xs text-foreground">{t('setupCatalogUx.extractedPriceReview')}</p>}
-                                        </div>
-                                        {/* Product Info */}
-                                        <div className="p-2.5">
-                                            <p className="font-medium text-sm leading-tight line-clamp-2 min-h-[2.5rem]">
-                                                {product.name}
-                                            </p>
-                                            {product.category && (
-                                                <span className="text-[10px] text-muted-foreground bg-muted rounded-full px-2 py-0.5 mt-1 inline-block">
-                                                    {product.category}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </Card>
-                                ))}
-                            </div>
-
-                            <p className="text-sm text-muted-foreground bg-muted p-3 rounded-lg text-center">{t('websiteStep.auto_7')}</p>
-                        </div>
-                    ) : (
-                        /* No products found */
-                        <div className="space-y-4">
-                            {/* Contact details */}
-                            <Card className="divide-y">
-                                {analysisResult.contactInfo?.phones?.length > 0 && (
-                                    <div className="flex items-center justify-between ms-adaptive-row p-3">
-                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                            <Phone className="w-4 h-4" />
-                                            <span>{t('websiteStep.auto_8')}</span>
-                                        </div>
-                                        <span className="text-sm font-medium text-primary" dir="ltr">
-                                            {analysisResult.contactInfo.phones[0]}
-                                        </span>
-                                    </div>
-                                )}
-                                {analysisResult.contactInfo?.emails?.length > 0 && (
-                                    <div className="flex items-center justify-between ms-adaptive-row p-3">
-                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                            <Mail className="w-4 h-4" />
-                                            <span>{t('websiteStep.auto_9')}</span>
-                                        </div>
-                                        <span className="text-sm font-medium text-primary" dir="ltr">
-                                            {analysisResult.contactInfo.emails[0]}
-                                        </span>
-                                    </div>
-                                )}
-                                {analysisResult.contactInfo?.whatsappNumber && (
-                                    <div className="flex items-center justify-between ms-adaptive-row p-3">
-                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                            <MessageCircle className="w-4 h-4" />
-                                            <span>{t('websiteStep.auto_10')}</span>
-                                        </div>
-                                        <span className="text-sm font-medium text-primary" dir="ltr">
-                                            ✅ +{analysisResult.contactInfo.whatsappNumber}
-                                        </span>
-                                    </div>
-                                )}
-                                {analysisResult.contactInfo?.address && (
-                                    <div className="flex items-center justify-between ms-adaptive-row p-3">
-                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                            <MapPin className="w-4 h-4" />
-                                            <span>{t('websiteStep.auto_11')}</span>
-                                        </div>
-                                        <span className="text-sm font-medium text-foreground max-w-[200px] truncate">
-                                            {analysisResult.contactInfo.address}
-                                        </span>
-                                    </div>
-                                )}
-                                {analysisResult.faqCount > 0 && (
-                                    <div className="flex items-center justify-between ms-adaptive-row p-3">
-                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                            <HelpCircle className="w-4 h-4" />
-                                            <span>{t('websiteStep.auto_12')}</span>
-                                        </div>
-                                        <span className="text-sm font-medium text-primary">
-                                            ✅ {analysisResult.faqCount} سؤال
-                                        </span>
-                                    </div>
-                                )}
-                            </Card>
-
-                            <p className="text-sm text-muted-foreground bg-amber-50 border border-amber-200 p-3 rounded-lg text-center">{t('websiteStep.auto_13')}</p>
-                        </div>
-                    )}
-                </div>
-            )}
-
-            {/* Actions */}
-            <div className="flex gap-3 pt-2">
-                {showResults ? (
-                    <Button onClick={handleContinue} className="flex-1">
-                        <ArrowRight className="w-4 h-4 ml-2" />
-                        {extractedProducts.length > 0
-                            ? `اعتماد التحليل والمتابعة مع ${extractedProducts.length} عنصر`
-                            : 'اعتماد التحليل والمتابعة'
-                        }
-                    </Button>
-                ) : (
-                    !isAnalyzing && (
-                        <Button onClick={skipStep} variant="ghost" className="flex-1">
-                            <SkipForward className="w-4 h-4 ml-2" />{t('websiteStep.auto_14')}</Button>
-                    )
-                )}
-            </div>
-        </div>
+      } catch {
+        setError(t("setupWebsiteUx.invalidResult"));
+        return;
+      }
+      const nextChoices = readSetupWebsiteChoices(null, proposal);
+      setPreview(proposal);
+      setChoiceState(nextChoices);
+      setPage(0);
+      setUrl(sourceUrl);
+      // Persist the proposal only. Applying reviewed choices is a separate action.
+      updateWizardData({
+        websiteInputUrl: sourceUrl,
+        websitePreview: proposal,
+        websitePreviewChoices: { ...nextChoices, previewId: proposal.id },
+      });
+    } catch (cause: any) {
+      if (
+        request !== requestRef.current ||
+        epoch.current !== knowledgeCacheEpoch()
+      )
+        return;
+      setError(
+        t(
+          cause?.data?.code === "TOO_MANY_REQUESTS"
+            ? "setupWebsiteUx.rateLimited"
+            : cause?.data?.code === "FORBIDDEN" ||
+                cause?.data?.code === "UNAUTHORIZED"
+              ? "setupWebsiteUx.accessDenied"
+              : "setupWebsiteUx.failed"
+        )
+      );
+    } finally {
+      if (request === requestRef.current) {
+        busyRef.current = false;
+        setBusy(false);
+      }
+    }
+  };
+  const apply = () => {
+    if (
+      !preview ||
+      applied ||
+      busy ||
+      !sourceMatches ||
+      !patch ||
+      epoch.current !== knowledgeCacheEpoch()
+    )
+      return;
+    updateWizardData(patch);
+    goToNextStep();
+  };
+  const chooseProduct = (id: string, checked: boolean) =>
+    setChoices(old => ({
+      ...old,
+      productIds: checked
+        ? [...old.productIds.filter(v => v !== id), id]
+        : old.productIds.filter(v => v !== id),
+    }));
+  const download = () => {
+    if (!preview) return;
+    const objectUrl = URL.createObjectURL(
+      new Blob([JSON.stringify(preview, null, 2)], { type: "application/json" })
     );
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = "sary-website-suggestions.json";
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+  };
+  return (
+    <div className="ms-website-entry space-y-5">
+      <p>{t("setupWebsiteUx.intro")}</p>
+      <label className="ms-catalog-field" htmlFor="setup-website-url">
+        {t("setupWorkspace.reviewWebsite")}
+      </label>
+      <div className="ms-actions">
+        <Input
+          id="setup-website-url"
+          type="url"
+          inputMode="url"
+          dir="ltr"
+          placeholder="https://example.com"
+          value={url}
+          disabled={busy}
+          aria-describedby={error ? "setup-website-error" : undefined}
+          onChange={event => {
+            setUrl(event.target.value);
+            setError("");
+            updateWizardData({ websiteInputUrl: event.target.value });
+          }}
+          onKeyDown={event => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              void analyze();
+            }
+          }}
+        />
+        <Button onClick={analyze} disabled={busy || !url.trim()}>
+          {busy ? (
+            <Loader2 aria-hidden="true" className="animate-spin" />
+          ) : (
+            <Search aria-hidden="true" />
+          )}
+          {t(busy ? "websiteStep.auto_1" : "websiteStep.auto_2")}
+        </Button>
+      </div>
+      {error && (
+        <p id="setup-website-error" role="alert">
+          {error}
+        </p>
+      )}
+      {busy && <p role="status">{t("setupWebsiteUx.analyzing")}</p>}
+      {wizardData.websitePreview && !restored.success && !preview && (
+        <p role="alert">{t("setupWebsiteUx.unreadable")}</p>
+      )}
+      {!preview && wizardData.websiteAnalysis?.confirmed && (
+        <p>{t("setupWebsiteUx.previouslyReviewed")}</p>
+      )}
+      {preview && (
+        <section
+          className="space-y-5"
+          aria-label={t("setupWebsiteUx.review")}
+          aria-busy={busy}
+        >
+          <header className="space-y-2">
+            <h2>{t("setupWebsiteUx.review")}</h2>
+            <p dir="ltr" className="break-all">
+              {preview.sourceUrl}
+            </p>
+            <p>{t("setupWebsiteUx.estimates")}</p>
+            <p>
+              {t("setupWebsiteUx.counts", {
+                products: preview.products.length,
+                pages: preview.pageCount ?? "—",
+                faqs: preview.faqCount ?? "—",
+              })}
+            </p>
+            <p>{t("setupApprovalUx.websiteAttribution")}</p>
+            {applied && <p role="status">{t("setupWebsiteUx.applied")}</p>}
+            {!sourceMatches && (
+              <p role="alert">{t("setupWebsiteUx.sourceChanged")}</p>
+            )}
+          </header>
+          <fieldset
+            disabled={busy || applied || !sourceMatches}
+            className="space-y-5 min-w-0"
+          >
+            <section
+              className="ms-catalog-item space-y-3"
+              aria-label={t("setupWorkspace.reviewCatalog")}
+            >
+              <h3>{t("setupWebsiteUx.products")}</h3>
+              <p>{t("setupWebsiteUx.selectHelp")}</p>
+              <label className="ms-catalog-field">
+                {t("setupWebsiteUx.catalogAction")}
+                <select
+                  value={choices.catalog}
+                  onChange={e =>
+                    setChoices(old => ({
+                      ...old,
+                      catalog: e.target.value as SetupWebsiteChoices["catalog"],
+                    }))
+                  }
+                >
+                  <option value="merge">{t("setupWebsiteUx.merge")}</option>
+                  <option value="replace">{t("setupWebsiteUx.replace")}</option>
+                  <option value="skip">{t("setupWebsiteUx.skip")}</option>
+                </select>
+              </label>
+              {choices.catalog === "replace" && (
+                <p role="alert">{t("setupWebsiteUx.replaceHelp")}</p>
+              )}
+              {preview.products.length === 0 ? (
+                <p>{t("setupWebsiteUx.empty")}</p>
+              ) : (
+                <>
+                  <p role="status">
+                    {t("setupWebsiteUx.selected", {
+                      count: choices.productIds.length,
+                      total: preview.products.length,
+                    })}
+                  </p>
+                  <div className="ms-actions">
+                    <Button
+                      variant="outline"
+                      onClick={() =>
+                        setChoices(old => ({ ...old, productIds: [] }))
+                      }
+                    >
+                      {t("setupWebsiteUx.clearSelection")}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() =>
+                        setChoices(old => ({
+                          ...old,
+                          productIds: Array.from(
+                            new Set([
+                              ...old.productIds,
+                              ...preview.products
+                                .slice(page * pageSize, (page + 1) * pageSize)
+                                .map(row => row.id),
+                            ])
+                          ),
+                        }))
+                      }
+                    >
+                      {t("setupWebsiteUx.selectPage")}
+                    </Button>
+                  </div>
+                  <ol className="ms-website-products">
+                    {preview.products
+                      .slice(page * pageSize, (page + 1) * pageSize)
+                      .map((row, index) => (
+                        <li key={row.id}>
+                          <label className="ms-website-pick">
+                            <input
+                              type="checkbox"
+                              checked={choices.productIds.includes(row.id)}
+                              onChange={e =>
+                                chooseProduct(row.id, e.target.checked)
+                              }
+                            />
+                            <strong>
+                              {row.name || t("setupDraftUx.unnamed")}{" "}
+                              <small>#{page * pageSize + index + 1}</small>
+                            </strong>
+                          </label>
+                          <p>
+                            {t("setupCatalogUx.price")}:{" "}
+                            <bdi>
+                              {row.price || t("setupWorkspace.notProvided")}{" "}
+                              {row.currency}
+                            </bdi>
+                          </p>
+                          {!setupCatalogDraft.safeParse({ products: [row] })
+                            .success && (
+                            <p>{t("setupCatalogUx.extractedPriceReview")}</p>
+                          )}
+                          <details>
+                            <summary>{t("setupCatalogUx.more")}</summary>
+                            <p>{row.description}</p>
+                            {row.category && (
+                              <p>
+                                {t("setupApprovalUx.category")}: {row.category}
+                              </p>
+                            )}
+                            {row.websiteOriginalPrice && (
+                              <p>
+                                {t("setupCatalogUx.sourcePrice", {
+                                  value: row.websiteOriginalPrice,
+                                })}
+                              </p>
+                            )}
+                            {row.productUrl && (
+                              <a
+                                href={row.productUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                dir="ltr"
+                                className="block break-all"
+                              >
+                                {row.productUrl}
+                              </a>
+                            )}
+                            {row.imageUrl && (
+                              <a
+                                href={row.imageUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="block break-all"
+                              >
+                                {t("setupApprovalUx.viewImage")}
+                              </a>
+                            )}
+                          </details>
+                        </li>
+                      ))}
+                  </ol>
+                  {preview.products.length > pageSize && (
+                    <nav
+                      className="ms-actions"
+                      aria-label={t("setupWebsiteUx.pagination")}
+                    >
+                      <Button
+                        variant="outline"
+                        disabled={page === 0}
+                        onClick={() => setPage(p => p - 1)}
+                      >
+                        {t("setupWizard.auto_0")}
+                      </Button>
+                      <span>
+                        {t("setupWebsiteUx.page", {
+                          current: page + 1,
+                          total: Math.ceil(preview.products.length / pageSize),
+                        })}
+                      </span>
+                      <Button
+                        variant="outline"
+                        disabled={
+                          (page + 1) * pageSize >= preview.products.length
+                        }
+                        onClick={() => setPage(p => p + 1)}
+                      >
+                        {t("basicInfoStep.auto_3")}
+                      </Button>
+                    </nav>
+                  )}
+                </>
+              )}
+            </section>
+            {Object.keys(preview.profile).length > 0 && (
+              <section
+                className="ms-catalog-item space-y-3"
+                aria-label={t("setupWebsiteUx.profile")}
+              >
+                <h3>{t("setupWebsiteUx.profile")}</h3>
+                <p>{t("setupWebsiteUx.profileHelp")}</p>
+                {(Object.keys(preview.profile) as SetupWebsiteProfileKey[]).map(
+                  key => (
+                    <div className="ms-website-profile" key={key}>
+                      <label className="ms-website-pick">
+                        <input
+                          type="checkbox"
+                          checked={choices.profile.includes(key)}
+                          disabled={
+                            !validSetupWebsiteProfile(key, preview.profile[key])
+                          }
+                          onChange={e =>
+                            setChoices(old => ({
+                              ...old,
+                              profile: e.target.checked
+                                ? [...old.profile, key]
+                                : old.profile.filter(k => k !== key),
+                            }))
+                          }
+                        />
+                        <strong>{labels[key]}</strong>
+                      </label>
+                      <dl>
+                        <div>
+                          <dt>{t("setupWebsiteUx.current")}</dt>
+                          <dd>{profileValue(key, wizardData[key])}</dd>
+                        </div>
+                        <div>
+                          <dt>{t("setupWebsiteUx.suggested")}</dt>
+                          <dd>{profileValue(key, preview.profile[key])}</dd>
+                        </div>
+                      </dl>
+                      {!validSetupWebsiteProfile(key, preview.profile[key]) && (
+                        <p role="alert">{t("setupWebsiteUx.invalidProfile")}</p>
+                      )}
+                    </div>
+                  )
+                )}
+              </section>
+            )}
+            {choiceError && <p role="alert">{choiceError}</p>}
+            <Button onClick={apply} disabled={!patch}>
+              {t("setupWebsiteUx.addDraft")}
+            </Button>
+          </fieldset>
+          <details className="ms-details">
+            <summary>{t("setupWebsiteUx.contact")}</summary>
+            <div className="space-y-2">
+              <p>{preview.industry}</p>
+              {preview.contact.phones.map((v, i) => (
+                <p key={`p${i}`} dir="ltr">
+                  {v}
+                </p>
+              ))}
+              {preview.contact.emails.map((v, i) => (
+                <p key={`e${i}`} dir="ltr">
+                  {v}
+                </p>
+              ))}
+              <p dir="ltr">{preview.contact.whatsapp}</p>
+              <p>{preview.contact.address}</p>
+              <p>{t("setupWebsiteUx.contactHelp")}</p>
+            </div>
+          </details>
+          <Button variant="outline" onClick={download}>
+            {t("setupWebsiteUx.download")}
+          </Button>
+        </section>
+      )}
+      <div className="ms-actions">
+        <Button onClick={skipStep} variant="ghost">
+          {t("setupTemplateUx.back")}
+        </Button>
+      </div>
+    </div>
+  );
 }

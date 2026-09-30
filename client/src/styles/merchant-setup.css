@@ -561,3 +561,16 @@
 .merchant-setup .ms-draft-choices { padding: 16px; border-radius: 12px; background: var(--muted); display: grid; gap: 12px; }
 .merchant-setup .ms-storage-warning { padding: 12px; margin-block: 12px; border: 1px solid var(--border); border-radius: 12px; }
 @media (max-width: 800px) { .merchant-setup .ms-draft-compare { grid-template-columns: minmax(0, 1fr); } }
+.merchant-setup .ms-website-entry h2 { font-size: 19px; font-weight: 700; }
+.merchant-setup .ms-website-entry h3 { font-weight: 700; }
+.merchant-setup .ms-website-products { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.merchant-setup .ms-website-products > li { min-width: 0; padding: 14px; border: 1px solid var(--border); border-radius: 12px; display: grid; gap: 8px; align-content: start; overflow-wrap: anywhere; }
+.merchant-setup .ms-website-pick { display: flex; gap: 10px; align-items: center; min-height: 44px; cursor: pointer; }
+.merchant-setup .ms-website-pick input { width: 20px; height: 20px; flex-shrink: 0; accent-color: var(--primary); }
+.merchant-setup .ms-website-pick strong { min-width: 0; overflow-wrap: anywhere; }
+.merchant-setup .ms-website-entry summary { cursor: pointer; min-height: 44px; padding-block: 10px; }
+.merchant-setup .ms-website-profile { padding-block: 12px; border-bottom: 1px solid var(--border); }
+.merchant-setup .ms-website-profile dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.merchant-setup .ms-website-profile dt { color: var(--muted-foreground); font-size: 12px; }
+.merchant-setup .ms-website-profile dd { white-space: pre-wrap; overflow-wrap: anywhere; }
+@media (max-width: 600px) { .merchant-setup .ms-website-products, .merchant-setup .ms-website-profile dl { grid-template-columns: minmax(0, 1fr); } }
