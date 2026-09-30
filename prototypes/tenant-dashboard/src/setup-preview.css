@@ -1,0 +1,111 @@
+body.sp-active > .sidebar,
+body.sp-active .topbar,
+body.sp-active > .bottom-nav,
+body.sp-active > .prototype-toggle,
+body.sp-active .page-footer {
+  display: none !important;
+}
+body.sp-active > .workspace {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100%;
+  min-width: 0;
+}
+body.sp-active #main {
+  padding: 0;
+  max-width: none;
+  margin: 0;
+  min-width: 0;
+}
+.sp-controls {
+  padding: 12px 24px;
+  background: #edf2e7;
+  border-bottom: 1px dashed #99ad8b;
+  color: #263e35;
+  font:
+    14px/1.8 system-ui,
+    sans-serif;
+}
+.sp-controls summary {
+  cursor: pointer;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+}
+.sp-controls p {
+  margin: 12px 0;
+  max-width: 95ch;
+}
+.sp-controls details > div {
+  display: flex;
+  gap: 12px;
+  align-items: end;
+  flex-wrap: wrap;
+}
+.sp-controls label {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.sp-controls button,
+.sp-controls select,
+.sp-controls a {
+  border: 1px solid #a9bba1;
+  border-radius: 10px;
+  background: #fffef9;
+  color: #263e35;
+  font: inherit;
+  font-size: 16px;
+  padding: 8px 12px;
+  min-height: 44px;
+  max-width: 100%;
+}
+.sp-controls [role="alert"] {
+  margin: 16px 0;
+  padding: 16px;
+  border: 1px solid #8f5745;
+  border-radius: 12px;
+}
+.sp-controls [role="alert"] p {
+  flex-basis: 100%;
+}
+@media (max-width: 600px) {
+  .sp-controls {
+    padding: 8px 16px;
+  }
+  .sp-controls label,
+  .sp-controls button {
+    flex: 1 1 180px;
+  }
+}
+@font-face {
+  font-family: "Expo Arabic";
+  src: url(./assets/ExpoArabic-Book.woff2) format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Expo Arabic";
+  src: url(./assets/ExpoArabic-SemiBold.woff2) format("woff2");
+  font-weight: 600 800;
+  font-display: swap;
+}
+body.sp-active > .skip {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  clip-path: inset(50%);
+  overflow: hidden;
+}
+body.sp-active > .skip:focus {
+  position: fixed;
+  width: auto;
+  height: auto;
+  clip-path: none;
+  top: 8px;
+  left: 8px;
+  z-index: 100;
+  padding: 12px;
+  background: white;
+}

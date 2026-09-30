@@ -121,6 +121,7 @@ window.TenantPages = (() => {
     if(window.OrderPreview?.handles(p))return window.OrderPreview.render();
     if(window.ReportPreview?.handles(p))return window.ReportPreview.render();
     if(window.CustomerPreview?.handles(p))return window.CustomerPreview.render();
+    if(window.SetupPreview?.handles(p))return window.SetupPreview.render();
     if(window.ProductPreview?.handles(p))return window.ProductPreview.render();
     if(window.ImportPreview?.handles(p))return window.ImportPreview.render(p);
     if(window.QuotationPreview?.handles(p))return window.QuotationPreview.render();
