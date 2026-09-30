@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-09-30T21:18:29.282Z",
+  "generatedAt": "2026-09-30T21:31:37.455Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,14 +10,16 @@
     },
     "after": {
       "routes": 126,
-      "files": 317,
-      "controls": 2136
+      "files": 319,
+      "controls": 2150
     }
   },
   "addedFiles": [
     "client/src/lib/merchant-viewport.ts",
     "client/src/lib/utils.ts",
     "client/src/lib/i18n.ts",
+    "client/src/lib/setup-field-validation.ts",
+    "client/src/pages/setup-wizard/WorkingHoursFields.tsx",
     "client/src/lib/knowledge-workspace-cache.ts",
     "client/src/lib/setup-website-draft.ts",
     "client/src/lib/setup-website-product.ts",
@@ -156,10 +158,14 @@
   ],
   "changedFiles": [
     "client/src/pages/SetupWizard.tsx",
+    "client/src/pages/setup-wizard/BusinessTypeStep.tsx",
     "client/src/pages/setup-wizard/TemplatesStep.tsx",
+    "client/src/pages/setup-wizard/BasicInfoStep.tsx",
     "client/src/pages/setup-wizard/WebsiteStep.tsx",
     "client/src/pages/setup-wizard/ProductsServicesStep.tsx",
+    "client/src/pages/setup-wizard/PersonalityStep.tsx",
     "client/src/components/PreviewChat.tsx",
+    "client/src/pages/setup-wizard/LanguageStep.tsx",
     "client/src/pages/setup-wizard/CompleteStep.tsx",
     "client/src/pages/merchant/Campaigns.tsx",
     "client/src/pages/merchant/Products.tsx",
@@ -249,7 +255,7 @@
     {
       "route": "/merchant/setup-wizard",
       "controlsBefore": 59,
-      "controlsNow": 92,
+      "controlsNow": 106,
       "removedQueries": [],
       "addedQueries": [
         "setupWizard.completionReceipt",

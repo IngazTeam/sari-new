@@ -6,6 +6,10 @@ import {
   setupCompletionReceipt,
 } from "@shared/setup-completion";
 import { knowledgeCacheEpoch } from "./knowledge-workspace-cache";
+import {
+  setupProfileDraft,
+  setupAssistantDraft,
+} from "./setup-field-validation";
 
 export function setupFieldsFromDraft(draft: Record<string, unknown>) {
   const catalog = setupCatalogDraft.parse(draft);
@@ -13,16 +17,8 @@ export function setupFieldsFromDraft(draft: Record<string, unknown>) {
     | { confirmed?: boolean; websiteUrl?: unknown; platform?: unknown }
     | undefined;
   return setupCompletionFields.parse({
-    businessType: draft.businessType ?? "store",
-    businessName: draft.businessName ?? "",
-    phone: draft.phone ?? "",
-    address: draft.address ?? "",
-    description: draft.description ?? "",
-    workingHoursType: draft.workingHoursType ?? "24_7",
-    workingHours: draft.workingHours,
-    botTone: draft.botTone ?? "friendly",
-    botLanguage: draft.botLanguage ?? "ar",
-    welcomeMessage: draft.welcomeMessage ?? "",
+    ...setupProfileDraft(draft),
+    ...setupAssistantDraft(draft),
     products: catalog.products,
     services: catalog.services,
     templateId: draft.templateId,

@@ -121,6 +121,7 @@ export default function SetupWizard() {
   const completionBusyRef = useRef(false);
   const scopeRef = useRef("");
   const [stepsOpen, setStepsOpen] = useState(false);
+  const [repairField, setRepairField] = useState<string | null>(null);
   const [catalogMode, setCatalogMode] = useState<
     "items" | "website" | "templates"
   >("items");
@@ -511,12 +512,24 @@ export default function SetupWizard() {
   useEffect(() => {
     setStepsOpen(false);
     if (!loadingProgress) stepHeadingRef.current?.focus();
-  }, [stage, loadingProgress]);
+    const targets: Record<string, string> = {
+      botTone: "assistant-tone-title",
+      botLanguage: "assistant-language-title",
+      welcomeMessage: "welcomeMessage",
+    };
+    if (repairField && targets[repairField]) {
+      const frame = requestAnimationFrame(() =>
+        document.getElementById(targets[repairField])?.focus()
+      );
+      return () => cancelAnimationFrame(frame);
+    }
+  }, [stage, loadingProgress, repairField]);
 
   // Keep saved progress compatible with existing ten-step drafts.
   const goToNextStep = () => {
     if (frozenDraftRef.current || stage >= SETUP_STAGE_ENDS.length - 1) return;
     setReview(null);
+    setRepairField(null);
     const completed = completedSetupStage(stage, completedSteps);
     const nextStep = SETUP_STAGE_ENDS[stage + 1];
     setCompletedSteps(completed);
@@ -525,10 +538,11 @@ export default function SetupWizard() {
     saveProgress({ step: nextStep, completed });
   };
 
-  const goToStep = (targetStep: number) => {
+  const goToStep = (targetStep: number, field?: string) => {
     const targetStage = setupStageForStep(targetStep);
     if (
-      !setupStageAvailable(targetStage, completedSteps) ||
+      (!setupStageAvailable(targetStage, completedSteps) &&
+        targetStage >= stage) ||
       isLoading ||
       attempt ||
       receipt ||
@@ -537,6 +551,7 @@ export default function SetupWizard() {
       return;
     const step = SETUP_STAGE_ENDS[targetStage];
     setReview(null);
+    setRepairField(field ?? null);
     setCurrentStep(step);
     setCatalogMode(targetStep === 4 ? "website" : "items");
     saveProgress({ step });
@@ -763,7 +778,7 @@ export default function SetupWizard() {
         return (
           <>
             <BusinessTypeStep {...stepProps} compact />
-            <BasicInfoStep {...stepProps} />
+            <BasicInfoStep {...stepProps} focusField={repairField} />
           </>
         );
       case 1:

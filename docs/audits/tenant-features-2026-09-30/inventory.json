@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-30T21:18:29.282Z",
+  "generatedAt": "2026-09-30T21:31:37.455Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -8,7 +8,7 @@
   "files": [
     {
       "file": "client/src/pages/SetupWizard.tsx",
-      "hash": "46d6df3be3bd",
+      "hash": "6e808ed2a973",
       "queries": [
         "setupWizard.getProgress",
         "setupWizard.completionReceipt"
@@ -23,14 +23,14 @@
           "procedure": "setupWizard.completionReceipt",
           "method": "fetch",
           "expression": "utils.setupWizard.completionReceipt.fetch",
-          "line": 206,
+          "line": 207,
           "provenance": "trpc-utility-static"
         },
         {
           "procedure": "setupWizard.getProgress",
           "method": "fetch",
           "expression": "utils.setupWizard.getProgress.fetch",
-          "line": 372,
+          "line": 373,
           "provenance": "trpc-utility-static"
         }
       ],
@@ -38,27 +38,27 @@
       "sections": [
         {
           "label": "setupWorkspace.loadFailed setupWorkspace.loading",
-          "line": 633,
+          "line": 648,
           "tag": "h1"
         },
         {
           "label": "",
-          "line": 674,
+          "line": 689,
           "tag": "h2"
         },
         {
           "label": "التحقق من نتيجة الاعتماد",
-          "line": 701,
+          "line": 716,
           "tag": "h2"
         },
         {
           "label": "أربع خطوات، وبدايتك جاهزة",
-          "line": 899,
+          "line": 914,
           "tag": "h2"
         },
         {
           "label": "حُفظ الإعداد بنجاح استعادة تعديلات الإعداد",
-          "line": 1033,
+          "line": 1048,
           "tag": "h1"
         }
       ],
@@ -72,7 +72,7 @@
         },
         {
           "name": "titles",
-          "line": 841,
+          "line": 856,
           "values": [
             "عرّفنا بنشاطك",
             "ماذا تقدّم لعملائك؟",
@@ -82,7 +82,7 @@
         },
         {
           "name": "descriptions",
-          "line": 847,
+          "line": 862,
           "values": [
             "اختر نوع نشاطك وأضف الاسم ورقم التواصل. هذا كل ما نحتاجه للبدء.",
             "أضف منتجًا أو خدمة، أو استورد من موقعك. يمكنك إكمال ذلك لاحقًا.",
@@ -94,7 +94,7 @@
       "handlers": [
         {
           "name": "updateWizardData",
-          "line": 495,
+          "line": 496,
           "calls": []
         }
       ],
@@ -102,7 +102,7 @@
         {
           "query": "setupWizard.getProgress",
           "binding": "{\n    data: progress,\n    isLoading: loadingProgress,\n    isFetching: fetchingProgress,\n    isError: progressError,\n    refetch,\n  }",
-          "line": 157,
+          "line": 158,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
@@ -222,7 +222,7 @@
     },
     {
       "file": "client/src/pages/setup-wizard/BusinessTypeStep.tsx",
-      "hash": "2837c52d9382",
+      "hash": "96476b60ae01",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
@@ -324,34 +324,75 @@
     },
     {
       "file": "client/src/pages/setup-wizard/BasicInfoStep.tsx",
-      "hash": "6cdb3e256491",
+      "hash": "4c8503314ecb",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
       "browserRequests": [],
       "sections": [
         {
+          "label": "عرض البيانات الأصلية",
+          "line": 69,
+          "tag": "summary"
+        },
+        {
           "label": "تفاصيل إضافية (اختياري)",
-          "line": 126,
+          "line": 153,
+          "tag": "summary"
+        }
+      ],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [
+        "client/src/lib/setup-field-validation.ts",
+        "client/src/pages/setup-wizard/WorkingHoursFields.tsx"
+      ],
+      "controlCount": 8
+    },
+    {
+      "file": "client/src/lib/setup-field-validation.ts",
+      "hash": "6b27932a99cd",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/pages/setup-wizard/WorkingHoursFields.tsx",
+      "hash": "f6de978c27e2",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [
+        {
+          "label": "عرض البيانات الأصلية",
+          "line": 42,
           "tag": "summary"
         }
       ],
       "choices": [],
       "handlers": [
         {
-          "name": "handleChange",
-          "line": 33,
-          "calls": []
-        },
-        {
-          "name": "handleNext",
-          "line": 59,
+          "name": "update",
+          "line": 52,
           "calls": []
         }
       ],
       "queryStates": [],
       "conditions": [],
-      "imports": [],
+      "imports": [
+        "client/src/lib/setup-field-validation.ts"
+      ],
       "controlCount": 6
     },
     {
@@ -526,7 +567,7 @@
     },
     {
       "file": "client/src/pages/setup-wizard/PersonalityStep.tsx",
-      "hash": "71eb6738b156",
+      "hash": "058ad787f9e9",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
@@ -534,19 +575,24 @@
       "sections": [
         {
           "label": "أسلوب المساعد",
-          "line": 46,
+          "line": 66,
           "tag": "h2"
         },
         {
           "label": "رسالة الترحيب والمعاينة (اختياري)",
-          "line": 72,
+          "line": 98,
+          "tag": "summary"
+        },
+        {
+          "label": "عرض البيانات الأصلية",
+          "line": 123,
           "tag": "summary"
         }
       ],
       "choices": [
         {
           "name": "tones",
-          "line": 23,
+          "line": 43,
           "values": [
             {
               "id": "friendly",
@@ -573,9 +619,10 @@
       "queryStates": [],
       "conditions": [],
       "imports": [
-        "client/src/components/PreviewChat.tsx"
+        "client/src/components/PreviewChat.tsx",
+        "client/src/lib/setup-field-validation.ts"
       ],
-      "controlCount": 4
+      "controlCount": 6
     },
     {
       "file": "client/src/components/PreviewChat.tsx",
@@ -644,7 +691,7 @@
     },
     {
       "file": "client/src/pages/setup-wizard/LanguageStep.tsx",
-      "hash": "f5a09d7dd3e1",
+      "hash": "2dee6dbd2764",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
@@ -652,75 +699,54 @@
       "sections": [
         {
           "label": "لغة ردود المساعد",
-          "line": 123,
+          "line": 102,
           "tag": "h2"
         },
         {
           "label": "لغات أخرى",
-          "line": 135,
+          "line": 118,
           "tag": "summary"
         }
       ],
       "choices": [
         {
           "name": "languages",
-          "line": 14,
+          "line": 15,
           "values": [
             {
               "code": "ar",
               "name": "Arabic",
-              "nativeName": "العربية",
-              "flag": "🇸🇦",
-              "currency": "SAR",
-              "currencySymbol": "ر.س"
+              "nativeName": "العربية"
             },
             {
               "code": "en",
               "name": "English",
-              "nativeName": "English",
-              "flag": "🇬🇧",
-              "currency": "USD",
-              "currencySymbol": "$"
+              "nativeName": "English"
             },
             {
               "code": "both",
               "name": "Arabic + English",
-              "nativeName": "العربية والإنجليزية",
-              "flag": "🌍",
-              "currency": "SAR",
-              "currencySymbol": "ر.س"
+              "nativeName": "العربية والإنجليزية"
             },
             {
               "code": "fr",
               "name": "French",
-              "nativeName": "Français",
-              "flag": "🇫🇷",
-              "currency": "EUR",
-              "currencySymbol": "€"
+              "nativeName": "Français"
             },
             {
               "code": "tr",
               "name": "Turkish",
-              "nativeName": "Türkçe",
-              "flag": "🇹🇷",
-              "currency": "TRY",
-              "currencySymbol": "₺"
+              "nativeName": "Türkçe"
             },
             {
               "code": "es",
               "name": "Spanish",
-              "nativeName": "Español",
-              "flag": "🇪🇸",
-              "currency": "EUR",
-              "currencySymbol": "€"
+              "nativeName": "Español"
             },
             {
               "code": "it",
               "name": "Italian",
-              "nativeName": "Italiano",
-              "flag": "🇮🇹",
-              "currency": "EUR",
-              "currencySymbol": "€"
+              "nativeName": "Italiano"
             }
           ]
         }
@@ -728,18 +754,20 @@
       "handlers": [
         {
           "name": "handleLanguageSelect",
-          "line": 88,
+          "line": 69,
           "calls": []
         }
       ],
       "queryStates": [],
       "conditions": [],
-      "imports": [],
+      "imports": [
+        "client/src/lib/setup-field-validation.ts"
+      ],
       "controlCount": 3
     },
     {
       "file": "client/src/pages/setup-wizard/CompleteStep.tsx",
-      "hash": "10e4ff2a78a4",
+      "hash": "299205c9b974",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
@@ -747,37 +775,37 @@
       "sections": [
         {
           "label": "معلومات النشاط",
-          "line": 96,
+          "line": 139,
           "tag": "h2"
         },
         {
           "label": "المنتجات والخدمات",
-          "line": 156,
+          "line": 217,
           "tag": "h2"
         },
         {
           "label": "products setupApprovalUx.products setupApprovalUx.services",
-          "line": 176,
+          "line": 237,
           "tag": "summary"
         },
         {
           "label": "إعدادات المساعد",
-          "line": 240,
+          "line": 301,
           "tag": "h2"
         },
         {
           "label": "الموقع",
-          "line": 262,
+          "line": 323,
           "tag": "h2"
         },
         {
           "label": "القالب المختار",
-          "line": 273,
+          "line": 334,
           "tag": "h2"
         },
         {
           "label": "معاينة توضيحية للمساعد",
-          "line": 283,
+          "line": 366,
           "tag": "summary"
         }
       ],
@@ -785,7 +813,7 @@
       "handlers": [
         {
           "name": "edit",
-          "line": 77,
+          "line": 99,
           "calls": []
         }
       ],
@@ -793,13 +821,14 @@
       "conditions": [],
       "imports": [
         "client/src/components/PreviewChat.tsx",
-        "client/src/lib/setup-completion-workspace.ts"
+        "client/src/lib/setup-completion-workspace.ts",
+        "client/src/lib/setup-field-validation.ts"
       ],
-      "controlCount": 6
+      "controlCount": 10
     },
     {
       "file": "client/src/lib/setup-completion-workspace.ts",
-      "hash": "6b0f0a980774",
+      "hash": "7f50231785bf",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
@@ -810,7 +839,8 @@
       "queryStates": [],
       "conditions": [],
       "imports": [
-        "client/src/lib/knowledge-workspace-cache.ts"
+        "client/src/lib/knowledge-workspace-cache.ts",
+        "client/src/lib/setup-field-validation.ts"
       ],
       "controlCount": 0
     },
@@ -17293,6 +17323,8 @@
         "client/src/pages/setup-wizard/BusinessTypeStep.tsx",
         "client/src/pages/setup-wizard/TemplatesStep.tsx",
         "client/src/pages/setup-wizard/BasicInfoStep.tsx",
+        "client/src/lib/setup-field-validation.ts",
+        "client/src/pages/setup-wizard/WorkingHoursFields.tsx",
         "client/src/pages/setup-wizard/WebsiteStep.tsx",
         "client/src/lib/knowledge-workspace-cache.ts",
         "client/src/lib/setup-website-draft.ts",
@@ -17309,21 +17341,21 @@
         "client/src/lib/merchant-setup-navigation.ts"
       ],
       "controls": [
-        "69230640eb55",
-        "4b942ace40b0",
-        "c5907434e314",
-        "e93b6adf17ef",
-        "8ebbf66f422a",
-        "d179450e5fae",
-        "246502421ae0",
-        "9e0fb08798bd",
-        "3d11d54d6725",
-        "30cdab581ddc",
-        "1b792efc4689",
-        "ff619c0570cd",
-        "b2a060d9fa06",
-        "c6dee3538b2b",
-        "aff92eedf3e4",
+        "8ded28568b99",
+        "5a018cd77c9f",
+        "0348bd74d5ce",
+        "12132e61f3ba",
+        "0c2be3e1c096",
+        "55f1a4aadaa4",
+        "d17fda87465e",
+        "8d302141337f",
+        "9321a75fd1af",
+        "91993c83c052",
+        "0f4cbc1f83bf",
+        "f2bdedd2ef65",
+        "9f53e66dbb31",
+        "5c408f44a286",
+        "df44417d0248",
         "9701db415e86",
         "71dd8839c2d7",
         "1edf0619da77",
@@ -17342,12 +17374,20 @@
         "66d74c3fedfa",
         "6204ad3c9cdb",
         "c1b4c678c19f",
-        "d9b84a62cb8d",
-        "c12a3e0765e7",
-        "70067fb6b4c8",
-        "07f3c3ff7912",
-        "76989e385d2f",
-        "79534b5268b2",
+        "ca48024bea9b",
+        "d9796c90d895",
+        "b6de0d7b28c1",
+        "8cd1b832a7b9",
+        "2757b506bff0",
+        "f219f51e50af",
+        "01fc9eda21d8",
+        "4b2f4b2d173f",
+        "e7b7d4ea5c7d",
+        "4f5fae354f61",
+        "d95440c59d73",
+        "ccc61675c187",
+        "7ee6a24d6780",
+        "c9c7dc29cdc7",
         "5c7e2e919f12",
         "8eafdadab90d",
         "0804f39a6b33",
@@ -17376,24 +17416,30 @@
         "a02a53f337ba",
         "93de516f5b0c",
         "00559551611f",
-        "6712705ff64c",
-        "61df4f2ad053",
-        "f1e21de09880",
-        "691b9a333dd4",
+        "1bec78033bc5",
+        "1eb20164b5ea",
+        "0940b80d9688",
+        "3e388a0c9f3d",
+        "0d8e013e851f",
+        "e77b70263196",
         "023a2767ee64",
         "05829d68f799",
         "19d3d91562ec",
         "ccc4b61cc55a",
         "afb2412d55d2",
-        "ab81db51734e",
-        "41b0b8dc9c8f",
-        "c41f1ac17453",
-        "818282c80005",
-        "d4640a7c9dc6",
-        "c527a7cce825",
-        "3317af45fdbd",
-        "da2c9f5546e8",
-        "c2c302cc5bdb",
+        "30b66b12f6c2",
+        "9822da281b79",
+        "b70fd12b489b",
+        "2921aafbeff4",
+        "ee457100bd90",
+        "cdf4d879104c",
+        "64335bb85caa",
+        "f8c9fdd31d49",
+        "970822eb8625",
+        "2900e5dfac1c",
+        "4e07f0719f15",
+        "51fda5fd47af",
+        "4eceff200f7d",
         "78ca2a1d6641",
         "7e36ce351e17",
         "c1371807b59b",
@@ -17424,7 +17470,7 @@
           "procedure": "setupWizard.completionReceipt",
           "method": "fetch",
           "expression": "utils.setupWizard.completionReceipt.fetch",
-          "line": 206,
+          "line": 207,
           "provenance": "trpc-utility-static"
         },
         {
@@ -17432,7 +17478,7 @@
           "procedure": "setupWizard.getProgress",
           "method": "fetch",
           "expression": "utils.setupWizard.getProgress.fetch",
-          "line": 372,
+          "line": 373,
           "provenance": "trpc-utility-static"
         }
       ],
@@ -23746,9 +23792,9 @@
   ],
   "controls": [
     {
-      "id": "69230640eb55",
+      "id": "8ded28568b99",
       "file": "client/src/pages/SetupWizard.tsx",
-      "line": 641,
+      "line": 656,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -23769,9 +23815,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "4b942ace40b0",
+      "id": "5a018cd77c9f",
       "file": "client/src/pages/SetupWizard.tsx",
-      "line": 665,
+      "line": 680,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -23790,9 +23836,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "c5907434e314",
+      "id": "0348bd74d5ce",
       "file": "client/src/pages/SetupWizard.tsx",
-      "line": 684,
+      "line": 699,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -23811,9 +23857,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "e93b6adf17ef",
+      "id": "12132e61f3ba",
       "file": "client/src/pages/SetupWizard.tsx",
-      "line": 708,
+      "line": 723,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -23832,9 +23878,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "8ebbf66f422a",
+      "id": "0c2be3e1c096",
       "file": "client/src/pages/SetupWizard.tsx",
-      "line": 715,
+      "line": 730,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -23855,9 +23901,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "d179450e5fae",
+      "id": "55f1a4aadaa4",
       "file": "client/src/pages/SetupWizard.tsx",
-      "line": 721,
+      "line": 736,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -23878,9 +23924,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "246502421ae0",
+      "id": "d17fda87465e",
       "file": "client/src/pages/SetupWizard.tsx",
-      "line": 777,
+      "line": 792,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -23899,9 +23945,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "9e0fb08798bd",
+      "id": "8d302141337f",
       "file": "client/src/pages/SetupWizard.tsx",
-      "line": 784,
+      "line": 799,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -23920,9 +23966,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "3d11d54d6725",
+      "id": "9321a75fd1af",
       "file": "client/src/pages/SetupWizard.tsx",
-      "line": 791,
+      "line": 806,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -23941,9 +23987,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "30cdab581ddc",
+      "id": "91993c83c052",
       "file": "client/src/pages/SetupWizard.tsx",
-      "line": 862,
+      "line": 877,
       "tag": "a",
       "role": "",
       "kind": "action",
@@ -23962,9 +24008,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "1b792efc4689",
+      "id": "0f4cbc1f83bf",
       "file": "client/src/pages/SetupWizard.tsx",
-      "line": 877,
+      "line": 892,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -23983,9 +24029,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ff619c0570cd",
+      "id": "f2bdedd2ef65",
       "file": "client/src/pages/SetupWizard.tsx",
-      "line": 920,
+      "line": 935,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -24004,9 +24050,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "b2a060d9fa06",
+      "id": "9f53e66dbb31",
       "file": "client/src/pages/SetupWizard.tsx",
-      "line": 946,
+      "line": 961,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -24025,9 +24071,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "c6dee3538b2b",
+      "id": "5c408f44a286",
       "file": "client/src/pages/SetupWizard.tsx",
-      "line": 1017,
+      "line": 1032,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -24052,9 +24098,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "aff92eedf3e4",
+      "id": "df44417d0248",
       "file": "client/src/pages/SetupWizard.tsx",
-      "line": 1058,
+      "line": 1073,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -24509,15 +24555,61 @@
       "review": "source-inventoried"
     },
     {
-      "id": "d9b84a62cb8d",
+      "id": "ca48024bea9b",
       "file": "client/src/pages/setup-wizard/BasicInfoStep.tsx",
-      "line": 75,
+      "line": 69,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "عرض البيانات الأصلية",
+      "section": "عرض البيانات الأصلية",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "data[key] != null &&\n    typeof data[key] !== \"string\" &&\n    key !== \"workingHours\""
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "d9796c90d895",
+      "file": "client/src/pages/setup-wizard/BasicInfoStep.tsx",
+      "line": 73,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "مسح القيمة غير الصالحة",
+      "section": "عرض البيانات الأصلية",
+      "binding": "() => updateWizardData({ [key]: \"\" })",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "data[key] != null &&\n    typeof data[key] !== \"string\" &&\n    key !== \"workingHours\""
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "b6de0d7b28c1",
+      "file": "client/src/pages/setup-wizard/BasicInfoStep.tsx",
+      "line": 115,
       "tag": "Input",
       "role": "",
       "kind": "field",
       "label": "اسم النشاط التجاري *",
-      "section": "BasicInfoStep",
-      "binding": "formData.businessName",
+      "section": "عرض البيانات الأصلية",
+      "binding": "setupTextValue(data.businessName)",
       "type": "text",
       "options": [],
       "min": "",
@@ -24530,14 +24622,136 @@
       "review": "source-inventoried"
     },
     {
-      "id": "c12a3e0765e7",
+      "id": "8cd1b832a7b9",
       "file": "client/src/pages/setup-wizard/BasicInfoStep.tsx",
-      "line": 126,
+      "line": 153,
       "tag": "summary",
       "role": "",
       "kind": "action",
       "label": "تفاصيل إضافية (اختياري)",
       "section": "تفاصيل إضافية (اختياري)",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "2757b506bff0",
+      "file": "client/src/pages/setup-wizard/BasicInfoStep.tsx",
+      "line": 159,
+      "tag": "Input",
+      "role": "",
+      "kind": "field",
+      "label": "العنوان (اختياري)",
+      "section": "تفاصيل إضافية (اختياري)",
+      "binding": "setupTextValue(data.address)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "f219f51e50af",
+      "file": "client/src/pages/setup-wizard/BasicInfoStep.tsx",
+      "line": 174,
+      "tag": "Textarea",
+      "role": "",
+      "kind": "field",
+      "label": "وصف النشاط (اختياري)",
+      "section": "تفاصيل إضافية (اختياري)",
+      "binding": "setupTextValue(data.description)",
+      "type": "textarea",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "01fc9eda21d8",
+      "file": "client/src/pages/setup-wizard/BasicInfoStep.tsx",
+      "line": 190,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "ساعات العمل 24_7 weekdays custom اختر أوقات العمل طوال اليوم أيام العمل أوقات مخصصة",
+      "section": "تفاصيل إضافية (اختياري)",
+      "binding": "setupTextValue(data.workingHoursType)",
+      "type": "text",
+      "options": [
+        {
+          "value": "setupTextValue(data.workingHoursType)",
+          "label": "اختر أوقات العمل"
+        },
+        {
+          "value": "24_7",
+          "label": "طوال اليوم"
+        },
+        {
+          "value": "weekdays",
+          "label": "أيام العمل"
+        },
+        {
+          "value": "custom",
+          "label": "أوقات مخصصة"
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "4b2f4b2d173f",
+      "file": "client/src/pages/setup-wizard/BasicInfoStep.tsx",
+      "line": 219,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "التالي",
+      "section": "تفاصيل إضافية (اختياري)",
+      "binding": "next",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "e7b7d4ea5c7d",
+      "file": "client/src/pages/setup-wizard/WorkingHoursFields.tsx",
+      "line": 42,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "عرض البيانات الأصلية",
+      "section": "عرض البيانات الأصلية",
       "binding": "",
       "type": "text",
       "options": [],
@@ -24551,15 +24765,15 @@
       "review": "source-inventoried"
     },
     {
-      "id": "70067fb6b4c8",
-      "file": "client/src/pages/setup-wizard/BasicInfoStep.tsx",
-      "line": 134,
-      "tag": "Input",
+      "id": "4f5fae354f61",
+      "file": "client/src/pages/setup-wizard/WorkingHoursFields.tsx",
+      "line": 47,
+      "tag": "Button",
       "role": "",
-      "kind": "field",
-      "label": "العنوان (اختياري)",
-      "section": "تفاصيل إضافية (اختياري)",
-      "binding": "formData.address",
+      "kind": "action",
+      "label": "مسح الأوقات غير الصالحة وإدخالها مجددًا",
+      "section": "عرض البيانات الأصلية",
+      "binding": "() => onChange({})",
       "type": "text",
       "options": [],
       "min": "",
@@ -24572,49 +24786,28 @@
       "review": "source-inventoried"
     },
     {
-      "id": "07f3c3ff7912",
-      "file": "client/src/pages/setup-wizard/BasicInfoStep.tsx",
-      "line": 148,
-      "tag": "Textarea",
+      "id": "d95440c59d73",
+      "file": "client/src/pages/setup-wizard/WorkingHoursFields.tsx",
+      "line": 81,
+      "tag": "select",
       "role": "",
       "kind": "field",
-      "label": "وصف النشاط (اختياري)",
-      "section": "تفاصيل إضافية (اختياري)",
-      "binding": "formData.description",
-      "type": "textarea",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "76989e385d2f",
-      "file": "client/src/pages/setup-wizard/BasicInfoStep.tsx",
-      "line": 166,
-      "tag": "RadioGroup",
-      "role": "",
-      "kind": "field",
-      "label": "ساعات العمل",
-      "section": "تفاصيل إضافية (اختياري)",
-      "binding": "formData.workingHoursType",
+      "label": "غير محدد مفتوح مغلق",
+      "section": "عرض البيانات الأصلية",
+      "binding": "status",
       "type": "text",
       "options": [
         {
-          "value": "24_7",
-          "label": "24_7"
+          "value": "unspecified",
+          "label": "غير محدد"
         },
         {
-          "value": "weekdays",
-          "label": "weekdays"
+          "value": "open",
+          "label": "مفتوح"
         },
         {
-          "value": "custom",
-          "label": "custom"
+          "value": "closed",
+          "label": "مغلق"
         }
       ],
       "min": "",
@@ -24627,15 +24820,61 @@
       "review": "source-inventoried"
     },
     {
-      "id": "79534b5268b2",
-      "file": "client/src/pages/setup-wizard/BasicInfoStep.tsx",
-      "line": 219,
+      "id": "ccc61675c187",
+      "file": "client/src/pages/setup-wizard/WorkingHoursFields.tsx",
+      "line": 103,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "يفتح",
+      "section": "عرض البيانات الأصلية",
+      "binding": "setupTextValue(day.open)",
+      "type": "time",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "status === \"open\""
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "7ee6a24d6780",
+      "file": "client/src/pages/setup-wizard/WorkingHoursFields.tsx",
+      "line": 116,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "يغلق",
+      "section": "عرض البيانات الأصلية",
+      "binding": "setupTextValue(day.close)",
+      "type": "time",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "status === \"open\""
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "c9c7dc29cdc7",
+      "file": "client/src/pages/setup-wizard/WorkingHoursFields.tsx",
+      "line": 132,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "التالي",
-      "section": "تفاصيل إضافية (اختياري)",
-      "binding": "handleNext",
+      "label": "ضبط {{day}} على09:00–17:00",
+      "section": "عرض البيانات الأصلية",
+      "binding": "() =>\n                    update(key, {\n                      open: \"09:00\",\n                      close: \"17:00\",\n                      isOpen: status === \"open\",\n                    })",
       "type": "text",
       "options": [],
       "min": "",
@@ -24643,8 +24882,10 @@
       "maxLength": "",
       "required": false,
       "conditional": false,
-      "conditions": [],
-      "disabled": "!wizardData.businessType",
+      "conditions": [
+        "issues.length > 0"
+      ],
+      "disabled": "",
       "review": "source-inventoried"
     },
     {
@@ -25306,9 +25547,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "6712705ff64c",
+      "id": "1bec78033bc5",
       "file": "client/src/pages/setup-wizard/PersonalityStep.tsx",
-      "line": 55,
+      "line": 75,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -25327,9 +25568,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "61df4f2ad053",
+      "id": "1eb20164b5ea",
       "file": "client/src/pages/setup-wizard/PersonalityStep.tsx",
-      "line": 72,
+      "line": 98,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -25342,41 +25583,87 @@
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": false,
+      "conditional": true,
       "conditions": [],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "f1e21de09880",
+      "id": "0940b80d9688",
       "file": "client/src/pages/setup-wizard/PersonalityStep.tsx",
-      "line": 75,
+      "line": 101,
       "tag": "Textarea",
       "role": "",
       "kind": "field",
       "label": "رسالة الترحيب المخصصة (اختياري)",
       "section": "رسالة الترحيب والمعاينة (اختياري)",
-      "binding": "wizardData.welcomeMessage || \"\"",
+      "binding": "setupTextValue(assistant.welcomeMessage)",
       "type": "textarea",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": false,
+      "conditional": true,
       "conditions": [],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "691b9a333dd4",
+      "id": "3e388a0c9f3d",
       "file": "client/src/pages/setup-wizard/PersonalityStep.tsx",
-      "line": 100,
+      "line": 123,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "عرض البيانات الأصلية",
+      "section": "عرض البيانات الأصلية",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "assistant.welcomeMessage != null &&\n            typeof assistant.welcomeMessage !== \"string\""
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "0d8e013e851f",
+      "file": "client/src/pages/setup-wizard/PersonalityStep.tsx",
+      "line": 127,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "مسح القيمة غير الصالحة",
+      "section": "عرض البيانات الأصلية",
+      "binding": "() => updateWizardData({ welcomeMessage: \"\" })",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "assistant.welcomeMessage != null &&\n            typeof assistant.welcomeMessage !== \"string\""
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "e77b70263196",
+      "file": "client/src/pages/setup-wizard/PersonalityStep.tsx",
+      "line": 171,
       "tag": "Button",
       "role": "",
       "kind": "action",
       "label": "التالي",
-      "section": "رسالة الترحيب والمعاينة (اختياري)",
+      "section": "عرض البيانات الأصلية",
       "binding": "goToNextStep",
       "type": "text",
       "options": [],
@@ -25388,7 +25675,7 @@
       "conditions": [
         "!compact"
       ],
-      "disabled": "",
+      "disabled": "issues.length > 0",
       "review": "source-inventoried"
     },
     {
@@ -25499,9 +25786,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ab81db51734e",
+      "id": "30b66b12f6c2",
       "file": "client/src/pages/setup-wizard/LanguageStep.tsx",
-      "line": 104,
+      "line": 83,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -25520,9 +25807,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "41b0b8dc9c8f",
+      "id": "9822da281b79",
       "file": "client/src/pages/setup-wizard/LanguageStep.tsx",
-      "line": 135,
+      "line": 118,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -25541,9 +25828,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "c41f1ac17453",
+      "id": "b70fd12b489b",
       "file": "client/src/pages/setup-wizard/LanguageStep.tsx",
-      "line": 142,
+      "line": 131,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -25558,13 +25845,13 @@
       "required": false,
       "conditional": false,
       "conditions": [],
-      "disabled": "",
+      "disabled": "issues.length > 0",
       "review": "source-inventoried"
     },
     {
-      "id": "818282c80005",
+      "id": "2921aafbeff4",
       "file": "client/src/pages/setup-wizard/CompleteStep.tsx",
-      "line": 78,
+      "line": 100,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -25583,9 +25870,55 @@
       "review": "source-inventoried"
     },
     {
-      "id": "d4640a7c9dc6",
+      "id": "ee457100bd90",
       "file": "client/src/pages/setup-wizard/CompleteStep.tsx",
-      "line": 176,
+      "line": 122,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "تعديل {{name}}",
+      "section": "CompleteStep",
+      "binding": "() => goToStep(3, key)",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "(profileIssues.length > 0 || assistantIssues.length > 0)"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "cdf4d879104c",
+      "file": "client/src/pages/setup-wizard/CompleteStep.tsx",
+      "line": 129,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "تعديل {{name}}",
+      "section": "CompleteStep",
+      "binding": "() => goToStep(7, key)",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "(profileIssues.length > 0 || assistantIssues.length > 0)"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "64335bb85caa",
+      "file": "client/src/pages/setup-wizard/CompleteStep.tsx",
+      "line": 237,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -25607,9 +25940,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "c527a7cce825",
+      "id": "f8c9fdd31d49",
       "file": "client/src/pages/setup-wizard/CompleteStep.tsx",
-      "line": 211,
+      "line": 272,
       "tag": "a",
       "role": "",
       "kind": "action",
@@ -25630,9 +25963,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "3317af45fdbd",
+      "id": "970822eb8625",
       "file": "client/src/pages/setup-wizard/CompleteStep.tsx",
-      "line": 221,
+      "line": 282,
       "tag": "a",
       "role": "",
       "kind": "action",
@@ -25653,9 +25986,56 @@
       "review": "source-inventoried"
     },
     {
-      "id": "da2c9f5546e8",
+      "id": "2900e5dfac1c",
       "file": "client/src/pages/setup-wizard/CompleteStep.tsx",
-      "line": 283,
+      "line": 337,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "إلغاء اختيار القالب",
+      "section": "القالب المختار",
+      "binding": "() => updateWizardData({ templateId: undefined })",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "updateWizardData",
+        "wizardData.templateId !== undefined"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "4e07f0719f15",
+      "file": "client/src/pages/setup-wizard/CompleteStep.tsx",
+      "line": 349,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "إزالة مرجع الموقع من الاعتماد",
+      "section": "القالب المختار",
+      "binding": "() =>\n                updateWizardData({ websiteAnalysis: undefined, websiteUrl: \"\" })",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "wizardData.websiteAnalysis !== undefined && updateWizardData"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "51fda5fd47af",
+      "file": "client/src/pages/setup-wizard/CompleteStep.tsx",
+      "line": 366,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -25676,9 +26056,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "c2c302cc5bdb",
+      "id": "4eceff200f7d",
       "file": "client/src/pages/setup-wizard/CompleteStep.tsx",
-      "line": 345,
+      "line": 428,
       "tag": "Button",
       "role": "",
       "kind": "action",

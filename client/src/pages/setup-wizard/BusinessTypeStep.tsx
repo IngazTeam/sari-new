@@ -38,7 +38,7 @@ export default function BusinessTypeStep({
   ];
   return (
     <div>
-      <h2 className="ms-field-title" id="business-type-title">
+      <h2 className="ms-field-title" id="business-type-title" tabIndex={-1}>
         {t("setupWorkspace.businessType")}
       </h2>
       <div

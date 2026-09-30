@@ -6,16 +6,21 @@ import { setupCatalogDraft } from "@shared/setup-catalog";
 import { setupFieldsFromDraft } from "@/lib/setup-completion-workspace";
 import type { SetupCompletionFields } from "@shared/setup-completion";
 import type { reviewSetupCompletion } from "../../../../server/setup-completion";
+import {
+  setupProfileIssues,
+  setupAssistantIssues,
+} from "@/lib/setup-field-validation";
 
 interface CompleteStepProps {
   wizardData: Record<string, any>;
-  goToStep: (step: number) => void;
+  goToStep: (step: number, field?: string) => void;
   completeSetup: () => void;
   isLoading: boolean;
   review?: Awaited<ReturnType<typeof reviewSetupCompletion>> | null;
   error?: string;
   blocked?: boolean;
   currency?: "SAR" | "USD";
+  updateWizardData?: (data: Record<string, unknown>) => void;
 }
 const text = (value: unknown) => (typeof value === "string" ? value : "");
 export default function CompleteStep({
@@ -27,6 +32,7 @@ export default function CompleteStep({
   error,
   blocked,
   currency = "SAR",
+  updateWizardData,
 }: CompleteStepProps) {
   const { t, i18n } = useTranslation();
   let fields: SetupCompletionFields | null = null;
@@ -36,6 +42,20 @@ export default function CompleteStep({
     /* Original draft stays editable. */
   }
   const catalog = setupCatalogDraft.safeParse(wizardData);
+  const profileIssues = Array.from(new Set(setupProfileIssues(wizardData)));
+  const assistantIssues = Array.from(new Set(setupAssistantIssues(wizardData)));
+  const issueLabels: Record<string, string> = {
+    businessType: t("setupWorkspace.businessType"),
+    businessName: t("setupWorkspace.nameLabel"),
+    phone: t("setupWorkspace.phoneLabel"),
+    address: t("setupApprovalUx.address"),
+    description: t("setupApprovalUx.description"),
+    workingHoursType: t("setupApprovalUx.hours"),
+    workingHours: t("setupApprovalUx.hours"),
+    botTone: t("setupWorkspace.toneLabel"),
+    botLanguage: t("setupWorkspace.languageLabel"),
+    welcomeMessage: t("setupApprovalUx.welcome"),
+  };
   const hasValidProfile =
     typeof wizardData.businessName === "string" &&
     wizardData.businessName.trim().length >= 2 &&
@@ -47,7 +67,9 @@ export default function CompleteStep({
       ? t("setupWorkspace.toneProfessional")
       : wizardData.botTone === "casual"
         ? t("setupWorkspace.toneCasual")
-        : t("setupWorkspace.toneFriendly");
+        : wizardData.botTone == null || wizardData.botTone === "friendly"
+          ? t("setupWorkspace.toneFriendly")
+          : t("setupFieldUx.toneError");
   const language =
     (
       {
@@ -91,12 +113,48 @@ export default function CompleteStep({
   return (
     <div className="space-y-5">
       <div className="ms-review-list">
+        {(profileIssues.length > 0 || assistantIssues.length > 0) && (
+          <div role="alert" className="space-y-2">
+            <p>{t("setupFieldUx.reviewErrors")}</p>
+            <ul>
+              {profileIssues.map(key => (
+                <li key={key}>
+                  <button type="button" onClick={() => goToStep(3, key)}>
+                    {t("setupWorkspace.editNamed", { name: issueLabels[key] })}
+                  </button>
+                </li>
+              ))}
+              {assistantIssues.map(key => (
+                <li key={key}>
+                  <button type="button" onClick={() => goToStep(7, key)}>
+                    {t("setupWorkspace.editNamed", { name: issueLabels[key] })}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         <section>
           <header>
             <h2>{t("setupWorkspace.reviewBusiness")}</h2>
             {edit(t("setupWorkspace.reviewBusiness"), 3)}
           </header>
           <dl>
+            <div>
+              <dt>{t("setupWorkspace.businessType")}</dt>
+              <dd>
+                {t(
+                  wizardData.businessType === "services"
+                    ? "setupWorkspace.servicesTitle"
+                    : wizardData.businessType === "both"
+                      ? "setupWorkspace.bothTitle"
+                      : wizardData.businessType == null ||
+                          wizardData.businessType === "store"
+                        ? "setupWorkspace.storeTitle"
+                        : "setupFieldUx.businessTypeError"
+                )}
+              </dd>
+            </div>
             <div>
               <dt>{t("setupWorkspace.nameLabel")}</dt>
               <dd>{value(wizardData.businessName)}</dd>
@@ -123,7 +181,10 @@ export default function CompleteStep({
                     ? "setupApprovalUx.customHours"
                     : wizardData.workingHoursType === "weekdays"
                       ? "setupApprovalUx.weekdays"
-                      : "setupApprovalUx.alwaysOpen"
+                      : wizardData.workingHoursType == null ||
+                          wizardData.workingHoursType === "24_7"
+                        ? "setupApprovalUx.alwaysOpen"
+                        : "setupFieldUx.hoursTypeError"
                 )}
               </dd>
             </div>
@@ -268,10 +329,32 @@ export default function CompleteStep({
             <small>{t("setupApprovalUx.websiteAttribution")}</small>
           </section>
         )}
-        {fields?.templateId && (
+        {wizardData.templateId !== undefined && (
           <section>
             <h2>{t("setupApprovalUx.template")}</h2>
             <p>{t("setupApprovalUx.templateUse")}</p>
+            {updateWizardData && (
+              <Button
+                variant="outline"
+                onClick={() => updateWizardData({ templateId: undefined })}
+              >
+                {t("setupFieldUx.clearTemplate")}
+              </Button>
+            )}
+            <p>{t("setupFieldUx.keepItems")}</p>
+          </section>
+        )}
+        {wizardData.websiteAnalysis !== undefined && updateWizardData && (
+          <section>
+            <Button
+              variant="outline"
+              onClick={() =>
+                updateWizardData({ websiteAnalysis: undefined, websiteUrl: "" })
+              }
+            >
+              {t("setupFieldUx.clearWebsite")}
+            </Button>
+            <p>{t("setupFieldUx.keepItems")}</p>
           </section>
         )}
       </div>

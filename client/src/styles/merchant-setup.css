@@ -574,3 +574,10 @@
 .merchant-setup .ms-website-profile dt { color: var(--muted-foreground); font-size: 12px; }
 .merchant-setup .ms-website-profile dd { white-space: pre-wrap; overflow-wrap: anywhere; }
 @media (max-width: 600px) { .merchant-setup .ms-website-products, .merchant-setup .ms-website-profile dl { grid-template-columns: minmax(0, 1fr); } }
+.merchant-setup .ms-field-error { color: var(--destructive); font-size: 13px; }
+.merchant-setup .ms-raw-field { white-space: pre-wrap; overflow-wrap: anywhere; margin-block: 12px; font-size: 12px; }
+.merchant-setup .ms-hours-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: end; padding-block: 12px; border-bottom: 1px solid var(--border); }
+.merchant-setup .ms-hours-row > label { display: grid; min-width: 0; gap: 8px; }
+.merchant-setup .ms-hours-row :where(input,select) { width: 100%; min-width: 0; min-height: 44px; border: 1px solid var(--border); border-radius: 8px; padding: 8px; background: var(--card); color: var(--foreground); }
+.merchant-setup .ms-hours-row > p { grid-column: 1 / -1; }
+@media (max-width: 600px) { .merchant-setup .ms-hours-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }.merchant-setup .ms-hours-row > label:first-child { grid-column: 1 / -1; } }
