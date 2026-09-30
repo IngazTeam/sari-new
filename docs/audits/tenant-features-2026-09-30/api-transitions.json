@@ -3,6 +3,14 @@
   "scope": "Reviewed API substitutions and moved controls. Evidence of intentional implementation changes, not a claim that every workflow passed runtime testing.",
   "transitions": [
     {
+      "routes": ["/merchant/sales-hub"],
+      "removed": ["sariBrain.sendQuotationToCustomer"],
+      "required": ["sariBrain.quotations.sendWorkspace", "sariBrain.quotations.prepareReview", "sariBrain.quotations.sendReviewed"],
+      "note": "Replace immediate unreviewed sending with a durable full-content review, fresh explicit consent and recoverable delivery receipt.",
+      "evidence": ["docs/audits/tenant-quotation-send-ui-2026-09-30/REPORT.md"],
+      "checks": [{"file":"client/src/components/merchant/QuotationDeliveryDialog.tsx","contains":"confirmed: true"}]
+    },
+    {
       "routes": [
         "/merchant/whatsapp",
         "/merchant/whatsapp-instances"

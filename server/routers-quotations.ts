@@ -3,10 +3,12 @@ import { ZodError } from "zod";
 import {
   quotationDeliveryInput,
   quotationDeliveryIdentity,
+  quotationSendWorkspaceInput,
 } from "../shared/quotation-delivery";
 import {
   sendReviewedQuotation,
   readQuotationDelivery,
+  readQuotationSendWorkspace,
 } from "./quotation-delivery";
 import {
   quotationReviewInput,
@@ -67,6 +69,13 @@ async function guarded<T>(read: () => Promise<T>): Promise<T> {
 }
 export { guarded as quotationGuard };
 export const quotationWorkspaceRouter = router({
+  sendWorkspace: permissionProcedure("orders.manage")
+    .input(quotationSendWorkspaceInput)
+    .query(({ ctx, input }) =>
+      guarded(() =>
+        readQuotationSendWorkspace(ctx.merchantId, ctx.user.id, input)
+      )
+    ),
   sendReviewed: permissionProcedure("orders.manage")
     .input(quotationDeliveryInput)
     .mutation(({ ctx, input }) =>

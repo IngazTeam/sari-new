@@ -5,6 +5,7 @@ import {
   quotationDeliveryInput,
   quotationDeliveryIdentity,
   quotationDeliveryGuard,
+  quotationSendWorkspaceInput,
 } from "../shared/quotation-delivery";
 import {
   quotationActor,
@@ -13,6 +14,7 @@ import {
   quotationReviewTransaction,
   readQuotationReviewRecord,
   loadQuotationReviewBasis,
+  publicQuotationReview,
 } from "./quotation-review";
 import { QuotationConflict, QuotationUnavailable } from "./quotation-mutations";
 import { assertRuntimeSchema } from "./db/schema-readiness";
@@ -48,6 +50,96 @@ const pdfUrl = z
   });
 export const quotationDeliveryKey = (merchant: number, delivery: number) =>
   `quotation_review:${merchant}:${delivery}`;
+
+export async function readQuotationSendWorkspace(
+  merchantId: number,
+  actorId: number,
+  raw: unknown
+) {
+  const input = quotationSendWorkspaceInput.parse(raw);
+  await schema();
+  return quotationReviewTransaction(async c => {
+    await quotationActor(c, merchantId, actorId);
+    const [quotes] = await c.execute<any[]>(
+      `SELECT id,quotation_number,status,offer_version,customer_phone,DATE_FORMAT(valid_until,'%Y-%m-%d') valid_until,
+      (source_message_id IS NOT NULL OR consent_message_id IS NOT NULL OR checkout_snapshot IS NOT NULL OR external_provider IS NOT NULL OR external_snapshot IS NOT NULL
+       OR execution_state IS NOT NULL OR order_id IS NOT NULL OR external_result IS NOT NULL OR execution_attempt_id IS NOT NULL OR external_order_key IS NOT NULL OR offer_expires_at IS NOT NULL) managed
+      FROM sales_quotations WHERE merchant_id=? AND id=?`,
+      [merchantId, input.quotationId]
+    );
+    if (quotes.length !== 1) throw new QuotationUnavailable();
+    const q = quotes[0],
+      now = await quotationClock(c);
+    const [accounts] = await c.execute<any[]>(
+      "SELECT id,provider,phone_number,instance_id,is_primary FROM whatsapp_instances WHERE merchant_id=? AND status='active' AND token<>'' AND instance_id<>'' AND (provider<>'meta_cloud' OR phone_number_id IS NOT NULL) ORDER BY is_primary DESC,id LIMIT 201",
+      [merchantId]
+    );
+    const [templates] = await c.execute<any[]>(
+      "SELECT id,name FROM quotation_templates WHERE merchant_id=? ORDER BY is_default DESC,id LIMIT 201",
+      [merchantId]
+    );
+    const [reviews] = await c.execute<any[]>(
+      "SELECT * FROM quotation_delivery_reviews WHERE merchant_id=? AND actor_id=? AND quotation_id=? ORDER BY id DESC LIMIT 1",
+      [merchantId, actorId, input.quotationId]
+    );
+    const [deliveries] = await c.execute<any[]>(
+      "SELECT id,actor_id FROM quotation_deliveries WHERE merchant_id=? AND quotation_id=? ORDER BY (state='dispatching') DESC,id DESC LIMIT 1",
+      [merchantId, input.quotationId]
+    );
+    const latest = deliveries.length
+      ? await load(c, merchantId, Number(deliveries[0].id))
+      : null;
+    const delivery = latest ? await receipt(c, latest) : null;
+    const [legacy] = await c.execute<any[]>(
+      "SELECT id FROM whatsapp_message_deliveries WHERE merchant_id=? AND idempotency_key IN (?,?) LIMIT 1",
+      [
+        merchantId,
+        `quotation:${merchantId}:${input.quotationId}:text`,
+        `quotation:${merchantId}:${input.quotationId}:pdf`,
+      ]
+    );
+    const reason = Number(q.managed)
+      ? "managed"
+      : !["draft", "sent", "viewed"].includes(q.status)
+        ? "closed"
+        : q.valid_until && q.valid_until < now.slice(0, 10)
+          ? "expired"
+          : !/^\+?\d{8,15}$/.test(q.customer_phone ?? "")
+            ? "phone"
+            : legacy.length
+              ? "legacy"
+              : delivery?.state === "dispatching"
+                ? "attempted"
+                : null;
+    return {
+      merchantId,
+      actorId,
+      quotationId: input.quotationId,
+      number: String(q.quotation_number),
+      revision: Number(q.offer_version),
+      reason,
+      accounts: accounts
+        .slice(0, 200)
+        .filter(a => a.provider !== "mock" || process.env.NODE_ENV === "test")
+        .map(a => ({
+          id: Number(a.id),
+          provider: String(a.provider),
+          label: String(a.phone_number || a.instance_id),
+          primary: Boolean(Number(a.is_primary)),
+        })),
+      templates: templates
+        .slice(0, 200)
+        .map(t => ({ id: Number(t.id), name: String(t.name) })),
+      accountsTruncated: accounts.length > 200,
+      templatesTruncated: templates.length > 200,
+      review: reviews.length
+        ? publicQuotationReview(readQuotationReviewRecord(reviews[0]), now)
+        : null,
+      delivery,
+      deliveryOwned: latest ? Number(latest.row.actor_id) === actorId : false,
+    };
+  });
+}
 async function review(c: PoolConnection, merchant: number, reviewId: number) {
   const [rows] = await c.execute<any[]>(
     "SELECT * FROM quotation_delivery_reviews WHERE merchant_id=? AND id=?",

@@ -1,4 +1,7 @@
 import { z } from "zod";
+export const quotationSendWorkspaceInput = z
+  .object({ quotationId: z.number().int().positive() })
+  .strict();
 export const quotationDeliveryIdentity = z
   .object({ requestId: z.string().uuid() })
   .strict();

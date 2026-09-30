@@ -42,6 +42,10 @@ describe('provider outcome classification', () => {
   }
 });
 describe('durable delivery boundaries', () => {
+  it('retires old quotation keys before reserving an outbox or contacting a provider', async () => {
+    expect(await sendMerchantWhatsApp({...input,idempotencyKey:'quotation:20:123:text'})).toMatchObject({accepted:false,errorCode:'quotation_legacy_retired'});
+    expect(mocks.execute).not.toHaveBeenCalled();expect(mocks.post).not.toHaveBeenCalled();
+  });
   it('never retries a failed quotation even if its authority is omitted from the retry', async () => {
     mocks.execute.mockRejectedValueOnce({code:'ER_DUP_ENTRY'}).mockResolvedValueOnce([[{status:'failed',error_code:'http_400',request_json:{quotationGuard:{deliveryId:2,snapshotHash:'a'.repeat(64)}}}]]);
     expect(await sendMerchantWhatsApp({...input,retryFailed:true})).toMatchObject({accepted:false,duplicate:true});

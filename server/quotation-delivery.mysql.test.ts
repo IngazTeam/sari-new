@@ -45,6 +45,7 @@ import {
   sendReviewedQuotation,
   readQuotationDelivery,
   quotationDeliveryKey,
+  readQuotationSendWorkspace,
 } from "./quotation-delivery";
 import { sendMerchantWhatsApp } from "./channels/whatsapp/service";
 describe.skipIf(!process.env.DATABASE_URL)(
@@ -110,6 +111,42 @@ describe.skipIf(!process.env.DATABASE_URL)(
       cleanupDisposableMerchants([owner?.userId, other?.userId].filter(Boolean))
     );
     afterAll(closeDb);
+    it("returns scoped account/template choices and a saved review without seeding terms or sending", async () => {
+      const first = await readQuotationSendWorkspace(
+        owner.merchantId,
+        owner.userId,
+        { quotationId: qid }
+      );
+      expect(first).toMatchObject({
+        merchantId: owner.merchantId,
+        actorId: owner.userId,
+        quotationId: qid,
+        reason: null,
+        review: { id: r.id },
+        delivery: null,
+        templates: [],
+        accounts: [{ id: account, primary: true }],
+      });
+      expect(JSON.stringify(first)).not.toContain("fixture-secret");
+      expect(mocks.send).not.toHaveBeenCalled();
+      expect(mocks.pdf).not.toHaveBeenCalled();
+      await expect(
+        readQuotationSendWorkspace(other.merchantId, other.userId, {
+          quotationId: qid,
+        })
+      ).rejects.toThrow();
+      const v = input();
+      await send(v);
+      expect(
+        await readQuotationSendWorkspace(owner.merchantId, owner.userId, {
+          quotationId: qid,
+        })
+      ).toMatchObject({
+        reason: "attempted",
+        delivery: { requestId: v.requestId, transport: "accepted" },
+        deliveryOwned: true,
+      });
+    });
     it("sends one reviewed PDF and reports provider acceptance separately from delivery", async () => {
       const v = input(),
         a = await send(v);

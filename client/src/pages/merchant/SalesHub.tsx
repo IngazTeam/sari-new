@@ -1,3 +1,5 @@
+import { KnowledgeWorkspaceScope } from "@/components/KnowledgeWorkspaceScope";
+import { QuotationDeliveryDialog } from "@/components/merchant/QuotationDeliveryDialog";
 import { trpc } from "@/lib/trpc";
 import {
   Card,
@@ -98,6 +100,13 @@ const STATUS_MAP: Record<
 };
 
 export default function SalesHub() {
+  return (
+    <KnowledgeWorkspaceScope slot="sales-hub">
+      {scope => <SalesHubWorkspace key={scope} scope={scope} />}
+    </KnowledgeWorkspaceScope>
+  );
+}
+function SalesHubWorkspace({ scope }: { scope: string }) {
   const { t } = useTranslation();
   const utils = trpc.useUtils();
   const { data: quotations, isLoading } = trpc.sariBrain.getQuotations.useQuery(
@@ -160,23 +169,9 @@ export default function SalesHub() {
     onError: e => toast.error("فشل: " + e.message),
   });
 
-  const sendPdfMut = trpc.sariBrain.sendQuotationToCustomer.useMutation({
-    onSuccess: () => {
-      toast.success(t("quotationEvidence.providerAccepted"));
-      utils.sariBrain.getQuotations.invalidate();
-      utils.sariBrain.getQuotationStats.invalidate();
-    },
-    onError: e => toast.error("فشل الإرسال: " + e.message),
-  });
-
-  const handleSendPdf = (quotation: any) => {
-    const phone = quotation.customerPhone;
-    if (!phone) {
-      toast.error("لا يوجد رقم هاتف للعميل — أضف رقم الجوال أولاً");
-      return;
-    }
-    sendPdfMut.mutate({ quotationId: quotation.id, customerPhone: phone });
-  };
+  const [sendQuoteId, setSendQuoteId] = useState<number | null>(null);
+  const handleSendPdf = (quotation: { id: number }) =>
+    setSendQuoteId(quotation.id);
 
   const resetForm = () => {
     setCustomerName("");
@@ -610,6 +605,19 @@ export default function SalesHub() {
         </Card>
       )}
 
+      {sendQuoteId !== null && (
+        <QuotationDeliveryDialog
+          key={sendQuoteId}
+          quotationId={sendQuoteId}
+          scope={scope}
+          onClose={() => setSendQuoteId(null)}
+          onSaved={() => {
+            void utils.sariBrain.getQuotations.invalidate();
+            void utils.sariBrain.getQuotationStats.invalidate();
+          }}
+        />
+      )}
+
       {/* Quotations List */}
       <Card>
         <CardHeader>
@@ -682,15 +690,10 @@ export default function SalesHub() {
                         variant="ghost"
                         size="sm"
                         className="h-8 w-8 p-0 text-primary"
-                        title="إرسال PDF عبر واتساب"
+                        title={t("quotationSend.open")}
                         onClick={() => handleSendPdf(q)}
-                        disabled={
-                          sendPdfMut.isPending ||
-                          q.managed ||
-                          q.validityElapsed ||
-                          !["draft", "sent", "viewed"].includes(q.status)
-                        }
-                        aria-label={t("merchantUx.actions.sendPdfNamed", {
+                        disabled={sendQuoteId !== null}
+                        aria-label={t("quotationSend.openNamed", {
                           name: q.quotationNumber,
                         })}
                       >

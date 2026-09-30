@@ -88,6 +88,9 @@ async function dispatchMerchantWhatsApp(input: SendMerchantWhatsAppInput): Promi
   accepted: boolean; duplicate: boolean; status: WhatsAppDeliveryStatus; providerMessageId?: string; errorCode?: string;
 }> {
   validateSendInput(input);
+  // Old clients must restore history and create a reviewed document, never bypass it.
+  if (input.idempotencyKey.startsWith('quotation:'))
+    return {accepted:false,duplicate:false,status:'failed',errorCode:'quotation_legacy_retired'};
   await ensureChannelSchema();
   const pool = await getPool();
   if (!pool) throw new Error('Database unavailable');

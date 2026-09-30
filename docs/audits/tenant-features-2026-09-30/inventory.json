@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-30T01:48:48.013Z",
+  "generatedAt": "2026-09-30T02:55:36.609Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -5305,7 +5305,7 @@
     },
     {
       "file": "client/src/lib/knowledge-workspace-cache.ts",
-      "hash": "3ad3d3f83232",
+      "hash": "389193c1f997",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
@@ -9649,7 +9649,7 @@
     },
     {
       "file": "client/src/pages/merchant/SalesHub.tsx",
-      "hash": "4d4afcd5938f",
+      "hash": "f88784bf7eb8",
       "queries": [
         "sariBrain.getQuotations",
         "sariBrain.getQuotationStats",
@@ -9659,15 +9659,14 @@
       "mutations": [
         "sariBrain.createQuotation",
         "sariBrain.updateQuotationStatus",
-        "sariBrain.setMonthlyTarget",
-        "sariBrain.sendQuotationToCustomer"
+        "sariBrain.setMonthlyTarget"
       ],
       "imperativeReads": [
         {
           "procedure": "sariBrain.formatQuotationForWhatsApp",
           "method": "fetch",
           "expression": "utils.sariBrain.formatQuotationForWhatsApp.fetch",
-          "line": 251,
+          "line": 246,
           "provenance": "trpc-utility-static"
         }
       ],
@@ -9675,34 +9674,34 @@
       "sections": [
         {
           "label": "مركز المبيعات",
-          "line": 276,
+          "line": 271,
           "tag": "h1"
         },
         {
           "label": "🎯 هدف المبيعات الشهري",
-          "line": 314,
+          "line": 309,
           "tag": "DialogTitle"
         },
         {
           "label": "📋 إنشاء عرض سعر جديد",
-          "line": 363,
+          "line": 358,
           "tag": "DialogTitle"
         },
         {
           "label": "🎯 هدف المبيعات الشهري",
-          "line": 570,
+          "line": 565,
           "tag": "CardTitle"
         },
         {
           "label": "📋 عروض الأسعار",
-          "line": 616,
+          "line": 624,
           "tag": "CardTitle"
         }
       ],
       "choices": [
         {
           "name": "newItems",
-          "line": 192,
+          "line": 187,
           "values": [
             "...items"
           ]
@@ -9711,24 +9710,22 @@
       "handlers": [
         {
           "name": "handleSendPdf",
-          "line": 172,
-          "calls": [
-            "sendPdfMut"
-          ]
+          "line": 173,
+          "calls": []
         },
         {
           "name": "updateItem",
-          "line": 191,
+          "line": 186,
           "calls": []
         },
         {
           "name": "removeItem",
-          "line": 206,
+          "line": 201,
           "calls": []
         },
         {
           "name": "handleCreate",
-          "line": 213,
+          "line": 208,
           "calls": [
             "createMut"
           ]
@@ -9738,7 +9735,7 @@
         {
           "query": "sariBrain.getQuotations",
           "binding": "{ data: quotations, isLoading }",
-          "line": 103,
+          "line": 112,
           "errorSignal": false,
           "loadingSignal": true,
           "enabled": null
@@ -9746,7 +9743,7 @@
         {
           "query": "sariBrain.getQuotationStats",
           "binding": "{ data: stats }",
-          "line": 106,
+          "line": 115,
           "errorSignal": false,
           "loadingSignal": false,
           "enabled": null
@@ -9754,15 +9751,128 @@
         {
           "query": "sariBrain.getCurrentTarget",
           "binding": "{\n    data: currentTarget,\n    isError: targetError,\n    isLoading: targetLoading,\n  }",
-          "line": 111,
+          "line": 120,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
         }
       ],
       "conditions": [],
-      "imports": [],
+      "imports": [
+        "client/src/components/KnowledgeWorkspaceScope.tsx",
+        "client/src/components/merchant/QuotationDeliveryDialog.tsx"
+      ],
       "controlCount": 24
+    },
+    {
+      "file": "client/src/components/merchant/QuotationDeliveryDialog.tsx",
+      "hash": "4b98232a340e",
+      "queries": [
+        "sariBrain.quotations.sendWorkspace",
+        "sariBrain.quotations.review",
+        "sariBrain.quotations.delivery"
+      ],
+      "mutations": [
+        "sariBrain.quotations.prepareReview",
+        "sariBrain.quotations.sendReviewed"
+      ],
+      "imperativeReads": [
+        {
+          "procedure": "sariBrain.quotations.review",
+          "method": "fetch",
+          "expression": "utils.sariBrain.quotations.review.fetch",
+          "line": 159,
+          "provenance": "trpc-utility-static"
+        },
+        {
+          "procedure": "sariBrain.quotations.delivery",
+          "method": "fetch",
+          "expression": "utils.sariBrain.quotations.delivery.fetch",
+          "line": 165,
+          "provenance": "trpc-utility-static"
+        }
+      ],
+      "browserRequests": [],
+      "sections": [
+        {
+          "label": "راجع العرض قبل الإرسال",
+          "line": 286,
+          "tag": "DialogTitle"
+        },
+        {
+          "label": "نتيجة المحاولة",
+          "line": 307,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 380,
+          "tag": "h2"
+        },
+        {
+          "label": "الشروط",
+          "line": 483,
+          "tag": "h3"
+        },
+        {
+          "label": "التذييل",
+          "line": 489,
+          "tag": "h3"
+        },
+        {
+          "label": "النص المرفق بالملف",
+          "line": 493,
+          "tag": "h3"
+        }
+      ],
+      "choices": [],
+      "handlers": [
+        {
+          "name": "saveAttempt",
+          "line": 123,
+          "calls": []
+        },
+        {
+          "name": "submit",
+          "line": 214,
+          "calls": [
+            "send"
+          ]
+        }
+      ],
+      "queryStates": [
+        {
+          "query": "sariBrain.quotations.sendWorkspace",
+          "binding": "query",
+          "line": 63,
+          "errorSignal": true,
+          "loadingSignal": false,
+          "enabled": null
+        }
+      ],
+      "conditions": [],
+      "imports": [
+        "client/src/lib/knowledge-workspace-cache.ts",
+        "client/src/lib/quotation-send-attempt.ts"
+      ],
+      "controlCount": 8
+    },
+    {
+      "file": "client/src/lib/quotation-send-attempt.ts",
+      "hash": "9c00bda602e1",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [
+        "client/src/lib/knowledge-workspace-cache.ts"
+      ],
+      "controlCount": 0
     },
     {
       "file": "client/src/pages/merchant/SalesPipeline.tsx",
@@ -18901,45 +19011,64 @@
         "SalesHub"
       ],
       "files": [
-        "client/src/pages/merchant/SalesHub.tsx"
+        "client/src/pages/merchant/SalesHub.tsx",
+        "client/src/components/KnowledgeWorkspaceScope.tsx",
+        "client/src/lib/knowledge-workspace-cache.ts",
+        "client/src/components/merchant/QuotationDeliveryDialog.tsx",
+        "client/src/lib/quotation-send-attempt.ts"
       ],
       "controls": [
-        "b6d2b91de81f",
-        "59de5f5d66bb",
-        "3e23cc4e60e0",
-        "1b859ec919c0",
-        "a7e492b30552",
-        "5745424bf118",
-        "8ce52f1b6f9c",
-        "fc5f71a01d30",
-        "8d92be162cb7",
-        "ed516b0f55c8",
-        "ed7328d98c4b",
-        "0aecc43062bb",
-        "cb4310f9ba8a",
-        "1c7bb6c4044f",
-        "b8ab9997d02b",
-        "003ea852cf43",
-        "d8fc15488738",
-        "fa20fe7e9ee3",
-        "67a1fb2587fd",
-        "206eaa1e275c",
-        "bbaa8fbaa6d5",
-        "f70ce54da037",
-        "d3a0423c2f30",
-        "0adb40df3931"
+        "4525f9032a7f",
+        "7868490d8eef",
+        "dedeba0d68b0",
+        "1a35e8bbc13f",
+        "a761ae460329",
+        "6ab673ba3aa6",
+        "156983e3170b",
+        "9fa42f589469",
+        "884fbdd2bbef",
+        "6067b9576cd2",
+        "bf96f99b3b4e",
+        "04298e84ed49",
+        "5ccedc62d2df",
+        "67d3313b22d4",
+        "37f060437d41",
+        "93358b3972c1",
+        "2bd8c84aa1d1",
+        "7497878b6649",
+        "a2626a3e6efb",
+        "3e55fd13bd8a",
+        "731041574d6b",
+        "9b7847e9f187",
+        "973fbbb3d989",
+        "b52327b75526",
+        "77ce5300e6f7",
+        "7c9eb4e4c4be",
+        "205791e78087",
+        "7ee03862437e",
+        "3261e6c0ea70",
+        "e99b0407173f",
+        "68a94f4e43aa",
+        "9973974efc70",
+        "c070bac0e018"
       ],
       "queries": [
         "sariBrain.getQuotations",
         "sariBrain.getQuotationStats",
         "sariBrain.getCurrentTarget",
-        "sariBrain.formatQuotationForWhatsApp"
+        "sariBrain.formatQuotationForWhatsApp",
+        "auth.me",
+        "merchants.getCurrent",
+        "sariBrain.quotations.sendWorkspace",
+        "sariBrain.quotations.review",
+        "sariBrain.quotations.delivery"
       ],
       "mutations": [
         "sariBrain.createQuotation",
         "sariBrain.updateQuotationStatus",
         "sariBrain.setMonthlyTarget",
-        "sariBrain.sendQuotationToCustomer"
+        "sariBrain.quotations.prepareReview",
+        "sariBrain.quotations.sendReviewed"
       ],
       "imperativeReads": [
         {
@@ -18947,7 +19076,23 @@
           "procedure": "sariBrain.formatQuotationForWhatsApp",
           "method": "fetch",
           "expression": "utils.sariBrain.formatQuotationForWhatsApp.fetch",
-          "line": 251,
+          "line": 246,
+          "provenance": "trpc-utility-static"
+        },
+        {
+          "file": "client/src/components/merchant/QuotationDeliveryDialog.tsx",
+          "procedure": "sariBrain.quotations.review",
+          "method": "fetch",
+          "expression": "utils.sariBrain.quotations.review.fetch",
+          "line": 159,
+          "provenance": "trpc-utility-static"
+        },
+        {
+          "file": "client/src/components/merchant/QuotationDeliveryDialog.tsx",
+          "procedure": "sariBrain.quotations.delivery",
+          "method": "fetch",
+          "expression": "utils.sariBrain.quotations.delivery.fetch",
+          "line": 165,
           "provenance": "trpc-utility-static"
         }
       ],
@@ -47984,9 +48129,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "b6d2b91de81f",
+      "id": "4525f9032a7f",
       "file": "client/src/pages/merchant/SalesHub.tsx",
-      "line": 285,
+      "line": 280,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -48005,9 +48150,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "59de5f5d66bb",
+      "id": "7868490d8eef",
       "file": "client/src/pages/merchant/SalesHub.tsx",
-      "line": 286,
+      "line": 281,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -48026,9 +48171,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "3e23cc4e60e0",
+      "id": "dedeba0d68b0",
       "file": "client/src/pages/merchant/SalesHub.tsx",
-      "line": 307,
+      "line": 302,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -48047,9 +48192,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "1b859ec919c0",
+      "id": "1a35e8bbc13f",
       "file": "client/src/pages/merchant/SalesHub.tsx",
-      "line": 312,
+      "line": 307,
       "tag": "DialogContent",
       "role": "",
       "kind": "dialog",
@@ -48068,9 +48213,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "a7e492b30552",
+      "id": "a761ae460329",
       "file": "client/src/pages/merchant/SalesHub.tsx",
-      "line": 323,
+      "line": 318,
       "tag": "Input",
       "role": "",
       "kind": "field",
@@ -48089,9 +48234,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "5745424bf118",
+      "id": "6ab673ba3aa6",
       "file": "client/src/pages/merchant/SalesHub.tsx",
-      "line": 332,
+      "line": 327,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -48110,9 +48255,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "8ce52f1b6f9c",
+      "id": "156983e3170b",
       "file": "client/src/pages/merchant/SalesHub.tsx",
-      "line": 356,
+      "line": 351,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -48131,9 +48276,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "fc5f71a01d30",
+      "id": "9fa42f589469",
       "file": "client/src/pages/merchant/SalesHub.tsx",
-      "line": 361,
+      "line": 356,
       "tag": "DialogContent",
       "role": "",
       "kind": "dialog",
@@ -48152,9 +48297,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "8d92be162cb7",
+      "id": "884fbdd2bbef",
       "file": "client/src/pages/merchant/SalesHub.tsx",
-      "line": 371,
+      "line": 366,
       "tag": "Input",
       "role": "",
       "kind": "field",
@@ -48173,9 +48318,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ed516b0f55c8",
+      "id": "6067b9576cd2",
       "file": "client/src/pages/merchant/SalesHub.tsx",
-      "line": 380,
+      "line": 375,
       "tag": "Input",
       "role": "",
       "kind": "field",
@@ -48194,9 +48339,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ed7328d98c4b",
+      "id": "bf96f99b3b4e",
       "file": "client/src/pages/merchant/SalesHub.tsx",
-      "line": 393,
+      "line": 388,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -48215,9 +48360,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "0aecc43062bb",
+      "id": "04298e84ed49",
       "file": "client/src/pages/merchant/SalesHub.tsx",
-      "line": 403,
+      "line": 398,
       "tag": "Input",
       "role": "",
       "kind": "field",
@@ -48236,9 +48381,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "cb4310f9ba8a",
+      "id": "5ccedc62d2df",
       "file": "client/src/pages/merchant/SalesHub.tsx",
-      "line": 411,
+      "line": 406,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -48259,9 +48404,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "1c7bb6c4044f",
+      "id": "67d3313b22d4",
       "file": "client/src/pages/merchant/SalesHub.tsx",
-      "line": 425,
+      "line": 420,
       "tag": "Input",
       "role": "",
       "kind": "field",
@@ -48280,9 +48425,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "b8ab9997d02b",
+      "id": "37f060437d41",
       "file": "client/src/pages/merchant/SalesHub.tsx",
-      "line": 437,
+      "line": 432,
       "tag": "Input",
       "role": "",
       "kind": "field",
@@ -48301,9 +48446,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "003ea852cf43",
+      "id": "93358b3972c1",
       "file": "client/src/pages/merchant/SalesHub.tsx",
-      "line": 449,
+      "line": 444,
       "tag": "Input",
       "role": "",
       "kind": "field",
@@ -48322,9 +48467,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "d8fc15488738",
+      "id": "2bd8c84aa1d1",
       "file": "client/src/pages/merchant/SalesHub.tsx",
-      "line": 461,
+      "line": 456,
       "tag": "Input",
       "role": "",
       "kind": "field",
@@ -48343,9 +48488,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "fa20fe7e9ee3",
+      "id": "7497878b6649",
       "file": "client/src/pages/merchant/SalesHub.tsx",
-      "line": 493,
+      "line": 488,
       "tag": "Input",
       "role": "",
       "kind": "field",
@@ -48364,9 +48509,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "67a1fb2587fd",
+      "id": "a2626a3e6efb",
       "file": "client/src/pages/merchant/SalesHub.tsx",
-      "line": 504,
+      "line": 499,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -48385,9 +48530,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "206eaa1e275c",
+      "id": "3e55fd13bd8a",
       "file": "client/src/pages/merchant/SalesHub.tsx",
-      "line": 664,
+      "line": 672,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -48406,13 +48551,13 @@
       "review": "source-inventoried"
     },
     {
-      "id": "bbaa8fbaa6d5",
+      "id": "731041574d6b",
       "file": "client/src/pages/merchant/SalesHub.tsx",
-      "line": 680,
+      "line": 688,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "t(\"merchantUx.actions.sendPdfNamed\", {\n                          name: q.quotationNumber,\n                        })",
+      "label": "t(\"quotationSend.openNamed\", {\n                          name: q.quotationNumber,\n                        })",
       "section": "📋 عروض الأسعار",
       "binding": "() => handleSendPdf(q)",
       "type": "button",
@@ -48423,13 +48568,13 @@
       "required": false,
       "conditional": true,
       "conditions": [],
-      "disabled": "sendPdfMut.isPending ||\n                          q.managed ||\n                          q.validityElapsed ||\n                          ![\"draft\", \"sent\", \"viewed\"].includes(q.status)",
+      "disabled": "sendQuoteId !== null",
       "review": "source-inventoried"
     },
     {
-      "id": "f70ce54da037",
+      "id": "9b7847e9f187",
       "file": "client/src/pages/merchant/SalesHub.tsx",
-      "line": 702,
+      "line": 705,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -48450,9 +48595,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "d3a0423c2f30",
+      "id": "973fbbb3d989",
       "file": "client/src/pages/merchant/SalesHub.tsx",
-      "line": 726,
+      "line": 729,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -48473,9 +48618,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "0adb40df3931",
+      "id": "b52327b75526",
       "file": "client/src/pages/merchant/SalesHub.tsx",
-      "line": 762,
+      "line": 765,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -48494,6 +48639,227 @@
         "isLoading"
       ],
       "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "7c9eb4e4c4be",
+      "file": "client/src/components/merchant/QuotationDeliveryDialog.tsx",
+      "line": 280,
+      "tag": "DialogContent",
+      "role": "",
+      "kind": "dialog",
+      "label": "راجع العرض قبل الإرسال ملف PDF واحد، مع مستلم وحساب وشروط واضحة. يمكنك العودة واستعادة نتيجة المحاولة. نتيجة المحاولة مرجع المزود : تعذر تجهيز الملف. يمكنك متابعة الطلب نفسه قبل انتهاء المراجعة. quote_changed تغير العرض ",
+      "section": "QuotationDeliveryDialog",
+      "binding": "",
+      "type": "text",
+      "options": [
+        {
+          "value": "0",
+          "label": "اختر حسابًا نشطًا"
+        },
+        {
+          "value": "a.id",
+          "label": "·"
+        },
+        {
+          "value": "0",
+          "label": "دون قالب إضافي"
+        },
+        {
+          "value": "a.id",
+          "label": ""
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "205791e78087",
+      "file": "client/src/components/merchant/QuotationDeliveryDialog.tsx",
+      "line": 329,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "حساب واتساب المُرسل",
+      "section": "نتيجة المحاولة",
+      "binding": "account",
+      "type": "text",
+      "options": [
+        {
+          "value": "0",
+          "label": "اختر حسابًا نشطًا"
+        },
+        {
+          "value": "a.id",
+          "label": "·"
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!review",
+        "!source || query.isFetching",
+        "query.error"
+      ],
+      "disabled": "frozen || !!source.reason",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "7ee03862437e",
+      "file": "client/src/components/merchant/QuotationDeliveryDialog.tsx",
+      "line": 350,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "الشروط والتذييل",
+      "section": "نتيجة المحاولة",
+      "binding": "template",
+      "type": "text",
+      "options": [
+        {
+          "value": "0",
+          "label": "دون قالب إضافي"
+        },
+        {
+          "value": "a.id",
+          "label": ""
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!review",
+        "!source || query.isFetching",
+        "query.error"
+      ],
+      "disabled": "frozen || !!source.reason",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "3261e6c0ea70",
+      "file": "client/src/components/merchant/QuotationDeliveryDialog.tsx",
+      "line": 367,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "حساب واتساب المُرسل",
+      "section": "نتيجة المحاولة",
+      "binding": "() => void prepareReview()",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!review",
+        "!source || query.isFetching",
+        "query.error"
+      ],
+      "disabled": "frozen || !!source.reason || !account",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "e99b0407173f",
+      "file": "client/src/components/merchant/QuotationDeliveryDialog.tsx",
+      "line": 506,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "مراجعة جديدة",
+      "section": "النص المرفق بالملف",
+      "binding": "newReview",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!source.reason",
+        "doc",
+        "!review"
+      ],
+      "disabled": "frozen || delivery?.state === \"dispatching\"",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "68a94f4e43aa",
+      "file": "client/src/components/merchant/QuotationDeliveryDialog.tsx",
+      "line": 533,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "راجعت المستلم والحساب وكل البنود والشروط، وأوافق على إرسال هذه النسخة.",
+      "section": "النص المرفق بالملف",
+      "binding": "confirmed",
+      "type": "checkbox",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "review && !delivery?.providerMessageId && !source?.reason"
+      ],
+      "disabled": "frozen || expired",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "9973974efc70",
+      "file": "client/src/components/merchant/QuotationDeliveryDialog.tsx",
+      "line": 543,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "تحقق من السجل",
+      "section": "النص المرفق بالملف",
+      "binding": "() => void refresh()",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "busy || query.isFetching",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "c070bac0e018",
+      "file": "client/src/components/merchant/QuotationDeliveryDialog.tsx",
+      "line": 550,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "جارٍ التحقق… not_attempted متابعة نفس المحاولة إرسال النسخة المراجعة",
+      "section": "النص المرفق بالملف",
+      "binding": "() => void submit()",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "frozen ||\n                !source ||\n                !!source.reason ||\n                !review ||\n                expired ||\n                !confirmed ||\n                (!!delivery && delivery.transport !== \"not_attempted\")",
       "review": "source-inventoried"
     },
     {

@@ -1,6 +1,7 @@
 import { pageUrlInput, pagePreviewReadInput, pagePreviewSaveInput } from '../shared/knowledge-page-intake';
 import { quotationWorkspaceRouter, quotationGuard } from './routers-quotations';
-import { assertQuotationDocument } from './quotation-legacy';
+import { quotationDeliveryInput } from '../shared/quotation-delivery';
+import { sendReviewedQuotation } from './quotation-delivery';
 import { storePagePreview, readPageIntake, savePagePreview } from './knowledge/page-intake';
 import { fetchPageSnapshot } from './knowledge/page-fetch';
 import { pageListInput, pageReadInput, pageChangeInput } from '../shared/knowledge-pages';
@@ -1604,93 +1605,10 @@ ${sanitizedContent}`
     }),
 
 
-  /** Send quotation as PDF to customer via WhatsApp */
+  /** Compatibility name requires the same explicit reviewed document as the current route. */
   sendQuotationToCustomer: permissionProcedure('orders.manage')
-    .input(z.object({
-      quotationId: z.number().int().positive(),
-      customerPhone: z.string().min(8).max(20).regex(/^\+?[0-9]+$/, 'رقم هاتف غير صالح'),
-    }))
-    .mutation(async ({ ctx, input }) => {
-      const merchant = await getMerchantById(ctx.merchantId);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-
-      // SEC: Rate limit — max 1 PDF send per 5 seconds
-      checkTestRateLimit(merchant.id, 5_000);
-
-      const quotationsDb = await import('./db/sales-quotations');
-      const quotation = await quotationGuard(() => quotationsDb.getQuotationById(input.quotationId, merchant.id));
-      if (!quotation) throw new TRPCError({ code: 'NOT_FOUND', message: 'عرض السعر غير موجود' });
-
-      try { assertQuotationDocument(quotation); }
-      catch { throw new TRPCError({ code: 'CONFLICT', message: 'راجع مصدر العرض وبنوده قبل الإرسال' }); }
-      if (quotation.customerPhone !== input.customerPhone || quotation.validityElapsed || !['draft', 'sent', 'viewed'].includes(quotation.status))
-        throw new TRPCError({ code: 'CONFLICT', message: 'راجع العرض والعميل قبل الإرسال' });
-
-      const { getPrimaryWhatsAppInstance } = await import('./db');
-      const instance = await getPrimaryWhatsAppInstance(merchant.id);
-      if (!instance) throw new TRPCError({ code: 'BAD_REQUEST', message: 'لا يوجد اتصال واتساب نشط' });
-
-      // Get template for terms/footer
-      const templates = await quotationsDb.getTemplates(merchant.id);
-      const defaultTemplate = templates.find((t: any) => t.isDefault) || templates[0] || null;
-
-      // Generate PDF
-      const { generateQuotationPDF } = await import('./services/quotation-pdf');
-      const pdfUrl = await generateQuotationPDF({
-        quotationNumber: quotation.quotationNumber,
-        merchantName: merchant.businessName,
-        merchantLogo: (merchant as any).logoUrl || (merchant as any).logo_url || defaultTemplate?.headerImageUrl || null,
-        merchantPhone: merchant.phone,
-        customerName: quotation.customerName,
-        customerPhone: input.customerPhone,
-        items: quotation.items,
-        subtotal: quotation.subtotal,
-        taxRate: quotation.taxRate ?? undefined,
-        taxAmount: quotation.taxAmount,
-        total: quotation.total,
-        currency: quotation.currency,
-        validUntil: quotation.validUntil,
-        termsText: defaultTemplate?.termsText || null,
-        footerText: defaultTemplate?.footerText || null,
-        createdAt: new Date(quotation.createdAt).toLocaleDateString('ar-SA'),
-      });
-
-      // Send text summary + PDF via WhatsApp
-      const whatsapp = await import('./whatsapp');
-      const instancePrefix = instance.instanceId.substring(0, 4);
-      const apiUrl = instance.provider === 'meta_cloud' ? 'https://graph.facebook.com' : `https://${instancePrefix}.api.greenapi.com`;
-
-      // Send text summary first
-      const textMessage = quotationsDb.formatQuotationMessage(quotation, merchant.businessName, defaultTemplate);
-      const textResult = await whatsapp.sendMessageWithCredentials(
-        instance.instanceId, instance.token, apiUrl,
-        input.customerPhone, textMessage,
-        { idempotencyKey: `quotation:${merchant.id}:${quotation.id}:text` }
-      );
-      if (!textResult.success || !textResult.messageId) throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'نتيجة إرسال النص غير مؤكدة؛ راجع السجل قبل إعادة المحاولة' });
-
-      // Then send PDF document
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      const fileResult = await whatsapp.sendFileWithCredentials(
-        instance.instanceId, instance.token, apiUrl,
-        input.customerPhone, pdfUrl,
-        `عرض-سعر-${quotation.quotationNumber.replace(/[^a-zA-Z0-9-]/g, "")}.pdf`,
-        `📄 عرض سعر #${quotation.quotationNumber} من ${merchant.businessName}`,
-        { idempotencyKey: `quotation:${merchant.id}:${quotation.id}:pdf` }
-      );
-      if (!fileResult.success || !fileResult.messageId) throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'قُبل النص ونتيجة ملف PDF غير مؤكدة؛ راجع السجل قبل إعادة المحاولة' });
-
-      // Update quotation status to 'sent'
-      await quotationGuard(() => quotationsDb.updateQuotationStatus(input.quotationId, merchant.id, 'sent',
-        { actorId: ctx.user.id, expectedRevision: quotation.offerVersion, expectedStatus: quotation.status }));
-
-      await logBrainActivity(merchant.id, 'quotation_sent',
-        `تم إرسال عرض سعر #${quotation.quotationNumber} كـ PDF إلى ${input.customerPhone}`
-      );
-
-      // STR-03: Don't expose storage URL to frontend — only confirm send success
-      return sanitizeForTRPC({ success: true, providerAccepted: true, delivered: false, sentAt: new Date().toISOString() });
-    }),
+    .input(quotationDeliveryInput)
+    .mutation(({ ctx, input }) => quotationGuard(() => sendReviewedQuotation(ctx.merchantId, ctx.user.id, input))),
 
   // ─── Sales Targets ─────────────────────────────
 

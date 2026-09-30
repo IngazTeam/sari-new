@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-09-30T01:48:48.013Z",
+  "generatedAt": "2026-09-30T02:55:36.609Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 266,
-      "controls": 1883
+      "files": 268,
+      "controls": 1891
     }
   },
   "addedFiles": [
@@ -83,6 +83,8 @@
     "client/src/components/KnowledgeDocumentCopies.tsx",
     "client/src/lib/sales-reply-send-state.ts",
     "client/src/lib/sales-reply-review-state.ts",
+    "client/src/components/merchant/QuotationDeliveryDialog.tsx",
+    "client/src/lib/quotation-send-attempt.ts",
     "client/src/components/merchant/PipelineWorkspace.tsx",
     "client/src/lib/pipeline-labels.ts",
     "client/src/components/merchant/PipelineReport.tsx",
@@ -789,13 +791,23 @@
     {
       "route": "/merchant/sales-hub",
       "controlsBefore": 24,
-      "controlsNow": 24,
+      "controlsNow": 33,
       "removedQueries": [],
       "addedQueries": [
-        "sariBrain.formatQuotationForWhatsApp"
+        "sariBrain.formatQuotationForWhatsApp",
+        "auth.me",
+        "merchants.getCurrent",
+        "sariBrain.quotations.sendWorkspace",
+        "sariBrain.quotations.review",
+        "sariBrain.quotations.delivery"
       ],
-      "removedMutations": [],
-      "addedMutations": []
+      "removedMutations": [
+        "sariBrain.sendQuotationToCustomer"
+      ],
+      "addedMutations": [
+        "sariBrain.quotations.prepareReview",
+        "sariBrain.quotations.sendReviewed"
+      ]
     },
     {
       "route": "/merchant/sales-pipeline",
