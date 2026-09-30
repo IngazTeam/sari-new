@@ -38,6 +38,7 @@ const fail = (code: string): never => {
 export class OrderPreviewModel {
   mode: OrderMode = "data";
   revision = 0;
+  generation = 0;
   rows: OrderDetail[] = [];
   private listeners = new Set<() => void>();
   private versions = new Map<number, number>();
@@ -61,6 +62,7 @@ export class OrderPreviewModel {
     this.reset();
   }
   reset() {
+    this.generation++;
     this.mode = "data";
     this.receipts.clear();
     this.versions.clear();

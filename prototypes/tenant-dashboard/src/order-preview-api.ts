@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { orders, useOrderVersion } from "./order-preview-state";
+import { finances, orders, useOrderVersion } from "./order-preview-state";
 // Prototype-only adapter. No fetch, server connection, payment or message provider.
 const reads: Record<string, (input: any) => any> = {
   list: input => orders.workspace(input),
@@ -7,10 +7,11 @@ const reads: Record<string, (input: any) => any> = {
   statusHistory: input => orders.history(input),
   statusReview: input => orders.review(input),
   statusReceipt: input => orders.receipt(input),
-  // Financial/provider journeys get their own fixture pass next. These are explicit empty read examples.
-  getCheckoutMarginException: () => null,
-  getCheckoutAttempts: () => [],
-  getCheckoutDiscountRelease: () => null,
+  getMarginPolicy: () => finances.policy(),
+  previewCheckoutMargin: input => finances.preview(input),
+  getCheckoutMarginException: input => finances.marginAudit(input.orderId),
+  getCheckoutAttempts: input => finances.attempts(input.orderId),
+  getCheckoutDiscountRelease: input => finances.discount(input.orderId),
   listZidReconciliations: () => ({
     items: [],
     nextCursor: null,
@@ -24,16 +25,21 @@ function query(name: string) {
       const version = useOrderVersion(),
         key = JSON.stringify(input),
         enabled = options?.enabled !== false;
+      const [manual, setManual] = useState<any>(null);
       const result = useMemo(() => {
-        if (!enabled || orders.mode === "loading")
-          return { data: undefined, error: null };
+        finances.sync();
+        if (!enabled)
+          return manual?.key === key && manual?.version === version
+            ? manual.result
+            : { data: undefined, error: null };
+        if (orders.mode === "loading") return { data: undefined, error: null };
         try {
           orders.access();
           return { data: reads[name](input), error: null };
         } catch (error) {
           return { data: undefined, error };
         }
-      }, [version, key, enabled]);
+      }, [version, key, enabled, manual]);
       return {
         ...result,
         isLoading: enabled && orders.mode === "loading",
@@ -45,10 +51,13 @@ function query(name: string) {
           try {
             orders.access();
             const data = reads[name](input);
-            orders.changed();
+            if (enabled) orders.changed();
+            else setManual({ key, version, result: { data, error: null } });
             return { data, isError: false, error: null };
           } catch (error) {
-            orders.changed();
+            if (enabled) orders.changed();
+            else
+              setManual({ key, version, result: { data: undefined, error } });
             return { data: undefined, isError: true, error };
           }
         },
@@ -115,6 +124,7 @@ const utilities = Object.fromEntries(
   ])
 );
 export const trpc = {
+  botSettings: { getMarginPolicy: query("getMarginPolicy") },
   orders: {
     workspace,
     ...Object.fromEntries(
@@ -123,8 +133,9 @@ export const trpc = {
         .map(k => [k, query(k)])
     ),
     reconcileZidCheckout: mutation(notPrepared),
-    releaseCheckoutDiscount: mutation(notPrepared),
-    reconcileCheckoutAttempt: mutation(notPrepared),
+    approveCheckoutInvoice: mutation(input => finances.approve(input)),
+    releaseCheckoutDiscount: mutation(input => finances.release(input)),
+    reconcileCheckoutAttempt: mutation(input => finances.reconcile(input)),
   },
   useUtils: () => ({ orders: { workspace: utilities } }),
 };

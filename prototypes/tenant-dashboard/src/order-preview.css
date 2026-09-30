@@ -4,7 +4,7 @@
   --background: #fffef9;
   --foreground: #263e35;
   --muted-foreground: #5d6b60;
-  --muted: #edf1e7;
+  --muted: #5d6b60;
   --primary: #29483a;
   --primary-foreground: #fff;
   --mw-surface: #fffef9;
@@ -28,4 +28,69 @@
 }
 .op-active .ow-operations button:disabled {
   opacity: 0.5;
+}
+.op-active .ow-operations :is(input:not([type="checkbox"]), textarea) {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+  padding: 10px 12px;
+  color: var(--foreground);
+  font: inherit;
+  font-size: 16px;
+}
+.op-active .ow-operations textarea[id] {
+  min-height: 96px;
+  resize: vertical;
+}
+.op-active .ow-operations label {
+  display: block;
+  line-height: 1.7;
+}
+.op-active .ow-operations label:has(input[type="checkbox"]) {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  min-height: 44px;
+}
+.op-active .ow-operations input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  min-height: 20px;
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+.op-active .ow-operations [class*="space-y-"] > * + * {
+  margin-top: 12px;
+}
+.op-active .ow-operations [class~="grid"] {
+  display: grid;
+  gap: 12px;
+}
+.op-active .ow-operations :is(section, article, [class~="border"]) {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  min-width: 0;
+}
+.op-active .ow-operations :is(code, bdi) {
+  overflow-wrap: anywhere;
+}
+.op-active .ow-operations [role="alert"] {
+  color: var(--destructive);
+}
+.op-active .ow-operations :is(input, textarea, button):focus-visible {
+  outline: 3px solid #5c8765;
+  outline-offset: 3px;
+}
+@media (min-width: 640px) {
+  .op-active .ow-operations [class~="sm:grid-cols-3"] {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .op-active .ow-operations [class~="sm:grid-cols-2"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }

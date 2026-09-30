@@ -36,6 +36,7 @@ vi.mock("react-i18next", async () => {
 });
 import { OrderWorkspace } from "../client/src/components/merchant/OrderWorkspace";
 import {
+  finances,
   orders,
   setOrderLanguage,
 } from "../prototypes/tenant-dashboard/src/order-preview-state";
@@ -70,6 +71,31 @@ const click = async (text: string) => {
   await act(async () => node!.click());
 };
 const l = ar.orderWorkspace;
+const edit = async (selector: string, value: string) => {
+  const node = host.querySelector<HTMLInputElement | HTMLTextAreaElement>(
+    selector
+  )!;
+  expect(node, selector).toBeTruthy();
+  const prototype =
+    node.tagName === "TEXTAREA"
+      ? HTMLTextAreaElement.prototype
+      : HTMLInputElement.prototype;
+  await act(async () => {
+    Object.getOwnPropertyDescriptor(prototype, "value")!.set!.call(node, value);
+    node.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+};
+const press = (selector: string) =>
+  act(async () => {
+    const node = host.querySelector<HTMLElement>(selector);
+    expect(node, selector).toBeTruthy();
+    node!.click();
+  });
+const marginPreview = async () => {
+  for (const field of ["tax", "shipping", "other"])
+    await edit(`#invoice-${field}-2`, "0");
+  await press("#invoice-margin-preview-2");
+};
 const start = async () => {
   await click("فتح الطلب DEMO-ORD-001");
   await click(l.statusChange);
@@ -83,6 +109,65 @@ const approve = async () => {
   await click(l.save);
 };
 describe("actual order workspace with prototype API adapter", () => {
+  it("reviews exact margin costs, invalidates editing, and refreshes the approved invoice", async () => {
+    await render();
+    await click("فتح الطلب DEMO-ORD-002");
+    await marginPreview();
+    expect(host.textContent).toContain(uxAr.invoiceMargin.pass);
+    await press("#invoice-final-attested-2");
+    expect(
+      host.querySelector<HTMLButtonElement>("[data-invoice-approve]")?.disabled
+    ).toBe(false);
+    await edit("#invoice-tax-2", "1");
+    expect(
+      host.querySelector<HTMLButtonElement>("[data-invoice-approve]")?.disabled
+    ).toBe(true);
+    await press("#invoice-margin-preview-2");
+    await press("#invoice-final-attested-2");
+    await press("[data-invoice-approve]");
+    expect(orders.detail(2)?.checkoutReviewRequired).toBe(false);
+    expect(host.querySelector("[data-invoice-approve]")).toBeNull();
+  });
+  it("requires an explicit exception and preserves its reason in the refreshed detail", async () => {
+    finances.setMode("below");
+    await render();
+    await click("فتح الطلب DEMO-ORD-002");
+    await marginPreview();
+    expect(host.querySelector("[data-margin-exception]")).toBeTruthy();
+    await edit("#invoice-exception-reason-2", "استثناء توضيحي لعميل مستمر");
+    await press("#invoice-exception-reviewed-2");
+    await press("#invoice-final-attested-2");
+    expect(
+      host.querySelector<HTMLButtonElement>("[data-invoice-approve]")?.disabled
+    ).toBe(false);
+    await press("[data-invoice-approve]");
+    expect(host.textContent).toContain("استثناء توضيحي لعميل مستمر");
+  });
+  it("records the verified checkout attempt without marking the order paid", async () => {
+    await render();
+    await click("فتح الطلب DEMO-ORD-001");
+    await edit(
+      "[data-checkout-review] input:not([type=checkbox])",
+      "chg_demo000065"
+    );
+    await press("[data-checkout-review] input[type=checkbox]");
+    await press("[data-checkout-reconcile]");
+    expect(
+      host.querySelector("[data-checkout-review-outcome]")?.textContent
+    ).toBe(uxAr.checkoutAttempts.verified);
+    expect(orders.detail(1)?.paymentStatus).toBe("unpaid");
+  });
+  it("refreshes discount release details after the reviewed write", async () => {
+    await render();
+    await click("فتح الطلب DEMO-ORD-006");
+    await edit("#coupon-release-reason-6", "إلغاء المثال بطلب العميل");
+    await press("[data-coupon-release-review] input[type=checkbox]");
+    await press("[data-coupon-release-save]");
+    expect(
+      host.querySelector("[data-coupon-release-audit]")?.textContent
+    ).toContain("إلغاء المثال بطلب العميل");
+    expect(host.querySelector("[data-coupon-release-review]")).toBeNull();
+  });
   it("navigates both pages and renders every scoped record", async () => {
     await render();
     expect(host.querySelectorAll(".ow-open")).toHaveLength(25);
