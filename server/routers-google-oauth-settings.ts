@@ -8,12 +8,13 @@
 import { z } from "zod";
 import { adminProcedure, router } from "./_core/trpc";
 import { getGoogleOAuthSettings, toggleGoogleOAuthEnabled, upsertGoogleOAuthSettings } from './db';
+import { buildPublicUrl } from './utils/public-url';
 
 export const googleOAuthSettingsRouter = router({
     // Get Google OAuth settings
     get: adminProcedure.query(async () => {
         const settings = await getGoogleOAuthSettings();
-        return { settings };
+        return { settings, sheetsRedirectUri: buildPublicUrl('/api/auth/oauth/google/sheets/callback') };
     }),
 
     // Update Google OAuth settings

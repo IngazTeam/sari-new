@@ -2642,14 +2642,14 @@
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 185 | Button | فتح | حالة الاتصال |
-| 210 | Button | إعداد Spreadsheet | حالة الاتصال |
-| 221 | Button | تحديث الحالة | حالة الاتصال |
-| 226 | Button | فصل الاتصال | حالة الاتصال |
-| 246 | Button | ربط Google Sheets | حالة الاتصال |
-| 285 | Switch | التقارير اليومية | إعدادات التقارير التلقائية |
-| 307 | Switch | التقارير الأسبوعية | إعدادات التقارير التلقائية |
-| 329 | Switch | التقارير الشهرية | إعدادات التقارير التلقائية |
+| 217 | Button | فتح | حالة الاتصال |
+| 242 | Button | إعداد Spreadsheet | حالة الاتصال |
+| 253 | Button | تحديث الحالة | حالة الاتصال |
+| 258 | Button | فصل الاتصال | حالة الاتصال |
+| 278 | Button | ربط Google Sheets | حالة الاتصال |
+| 317 | Switch | التقارير اليومية | إعدادات التقارير التلقائية |
+| 339 | Switch | التقارير الأسبوعية | إعدادات التقارير التلقائية |
+| 361 | Switch | التقارير الشهرية | إعدادات التقارير التلقائية |
 
 ## client/src/components/merchant/ProductSheetPolicyNotice.tsx
 
@@ -2855,8 +2855,8 @@
 | 273 | Button | إدارة الإعدادات | مربوط |
 | 279 | Button | جاري الفصل... فصل المنصة | مربوط |
 | 318 | Button | غير متاح حاليًا غير متاح (افصل المنصة الحالية أولاً) ربط الآن | PlatformIntegrations |
-| 354 | Link | إدارة الإعدادات ربط Google Sheets | Google Sheets مربوط |
-| 355 | Button | إدارة الإعدادات ربط Google Sheets | Google Sheets مربوط |
+| 354 | Link | تعذر التحقق من اتصال Google Sheets إدارة الإعدادات ربط Google Sheets | Google Sheets مربوط |
+| 355 | Button | تعذر التحقق من اتصال Google Sheets إدارة الإعدادات ربط Google Sheets | Google Sheets مربوط |
 | 366 | Calendar | تسمية ديناميكية / تحتاج مراجعة | Google Sheets مربوط |
 | 380 | Link | إدارة الإعدادات ربط Google Calendar | Google Calendar مربوط |
 | 381 | Button | إدارة الإعدادات ربط Google Calendar | Google Calendar مربوط |

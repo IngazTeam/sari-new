@@ -81,7 +81,7 @@ export default function PlatformIntegrations() {
   const utils = trpc.useUtils();
 
   // استعلام حالة Google Services
-  const { data: sheetsStatus } = trpc.sheets.getStatus.useQuery();
+  const { data: sheetsStatus, error: sheetsError, isLoading: sheetsLoading } = trpc.sheets.getStatus.useQuery(undefined,{retry:false});
   const { data: calendarStatus } = trpc.calendar.getStatus.useQuery();
 
   // استعلام المنصة المربوطة حالياً
@@ -341,7 +341,7 @@ export default function PlatformIntegrations() {
                 <div>
                   <CardTitle className="flex items-center gap-2">
                     Google Sheets
-                    {sheetsStatus?.isConnected && (
+                    {!sheetsError && !sheetsLoading && sheetsStatus?.isConnected && (
                       <Badge variant="default" className="bg-green-600">
                         <CheckCircle2 className="h-3 w-3 mr-1" />{t('platformIntegrations.auto_6')}</Badge>
                     )}
@@ -352,8 +352,8 @@ export default function PlatformIntegrations() {
             </CardHeader>
             <CardContent>
               <Link href="/merchant/sheets/settings">
-                <Button variant={sheetsStatus?.isConnected ? 'outline' : 'default'} className="w-full">
-                  {sheetsStatus?.isConnected ? 'إدارة الإعدادات' : 'ربط Google Sheets'}
+                <Button variant={!sheetsError && sheetsStatus?.isConnected ? 'outline' : 'default'} className="w-full">
+                  {sheetsError ? t('sheetsConnectionUx.unknown') : sheetsLoading ? t('merchantUx.knowledgeDraft.loading') : sheetsStatus?.isConnected ? 'إدارة الإعدادات' : 'ربط Google Sheets'}
                 </Button>
               </Link>
             </CardContent>

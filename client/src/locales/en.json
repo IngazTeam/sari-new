@@ -1,4 +1,10 @@
 {
+  "sheetsConnectionUx": {
+    "disconnectConfirm": "Disconnect Google Sheets and disable automatic reports? Reconnecting requires a new grant. No Google files are deleted.",
+    "reportConfirm": "Enable automatic generation of this report and delivery to the merchant's registered WhatsApp number?",
+    "unknown": "Unable to verify the Google Sheets connection",
+    "sheetsCallback": "Google Sheets callback URL"
+  },
   "sheetsOAuth": {
     "connected": "Account connected. Set a new destination and review report settings.",
     "cancelled": "Connection cancelled. The previous connection is unchanged.",

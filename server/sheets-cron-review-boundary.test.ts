@@ -54,7 +54,7 @@ describe("review-required Sheet product imports", () => {
       ]);
       for (const call of m.schedule.mock.calls) await call[1]();
       for (const report of [m.daily, m.weekly, m.monthly])
-        expect(report).toHaveBeenCalledExactlyOnceWith(7);
+        expect(report).not.toHaveBeenCalled();
       expect(m.send).not.toHaveBeenCalled();
       expect(m.create).not.toHaveBeenCalled();
       expect(m.update).not.toHaveBeenCalled();
@@ -69,6 +69,7 @@ describe("review-required Sheet product imports", () => {
       id: 8,
       isActive: 1,
       sheetId: "local",
+      credentials: "private-fixture",
       settings: JSON.stringify({
         sendDailyReports: true,
         autoSyncProducts: true,
@@ -80,4 +81,50 @@ describe("review-required Sheet product imports", () => {
     expect(m.create).not.toHaveBeenCalled();
     expect(m.update).not.toHaveBeenCalled();
   });
+  it.each([
+    null,
+    "bad",
+    "{}",
+    '{"sendDailyReports":"true"}',
+    '{"sendDailyReports":false}',
+  ])("does not generate or send a report for settings %s", async settings => {
+    m.integration.mockResolvedValue({
+      id: 8,
+      isActive: 1,
+      sheetId: "local",
+      credentials: "private",
+      settings,
+    });
+    startAllSheetsCronJobs();
+    for (const call of m.schedule.mock.calls) await call[1]();
+    for (const action of [m.daily, m.weekly, m.monthly, m.send])
+      expect(action).not.toHaveBeenCalled();
+  });
+  it.each(["disabled", "destination", "credentials", "disconnected"])(
+    "does not send if %s changes during generation",
+    async mode => {
+      const original = {
+        id: 8,
+        isActive: 1,
+        sheetId: "local",
+        credentials: "private",
+        settings: '{"sendDailyReports":true}',
+      };
+      const changed = {
+        ...original,
+        ...(mode === "disabled"
+          ? { settings: "{}" }
+          : mode === "destination"
+            ? { sheetId: "new" }
+            : mode === "credentials"
+              ? { credentials: "new" }
+              : { isActive: 0 }),
+      };
+      m.integration.mockResolvedValueOnce(original).mockResolvedValue(changed);
+      startAllSheetsCronJobs();
+      await m.schedule.mock.calls[0][1]();
+      expect(m.daily).toHaveBeenCalledTimes(1);
+      expect(m.send).not.toHaveBeenCalled();
+    }
+  );
 });

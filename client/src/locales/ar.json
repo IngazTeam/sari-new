@@ -1,4 +1,10 @@
 {
+  "sheetsConnectionUx": {
+    "disconnectConfirm": "فصل Google Sheets وتعطيل التقارير التلقائية؟ ستحتاج تفويضًا جديدًا لإعادة الربط. لا نحذف أي ملف من Google.",
+    "reportConfirm": "تفعيل إنشاء هذا التقرير تلقائيًا وإرساله إلى رقم واتساب التاجر المسجل؟",
+    "unknown": "تعذر التحقق من اتصال Google Sheets",
+    "sheetsCallback": "عنوان عودة Google Sheets"
+  },
   "sheetsOAuth": {
     "connected": "تم ربط الحساب. اختر وجهة جديدة وأعد مراجعة إعدادات التقارير.",
     "cancelled": "أُلغي الربط؛ بقي الاتصال السابق كما هو.",

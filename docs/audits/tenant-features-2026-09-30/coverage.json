@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-30T15:38:30.702Z",
+  "generatedAt": "2026-09-30T15:49:28.753Z",
   "definition": "Every registered route is accounted for; source inventory and design completion are different statuses.",
   "routes": [
     {
@@ -50866,14 +50866,14 @@
         "client/src/components/merchant/ProductSheetPolicyNotice.tsx"
       ],
       "controls": [
-        "49ba3bb26246",
-        "257ff64cf84d",
-        "764040e28dbd",
-        "14cf59b4618e",
-        "3102a2e1e165",
-        "cfaaff9528fa",
-        "69c45458ae28",
-        "47f233472f60",
+        "7e2ed1cee802",
+        "6caa794ffd15",
+        "2b0497c2f73f",
+        "0146af1b155b",
+        "14522469849b",
+        "f863dd2b2060",
+        "3a3efb08bba2",
+        "03a2ca2fe4d2",
         "4dd41ef0dd70"
       ],
       "queries": [
@@ -50897,9 +50897,9 @@
       ],
       "controlDetails": [
         {
-          "id": "49ba3bb26246",
+          "id": "7e2ed1cee802",
           "file": "client/src/pages/SheetsSettings.tsx",
-          "line": 185,
+          "line": 217,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -50921,9 +50921,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "257ff64cf84d",
+          "id": "6caa794ffd15",
           "file": "client/src/pages/SheetsSettings.tsx",
-          "line": 210,
+          "line": 242,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -50945,9 +50945,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "764040e28dbd",
+          "id": "2b0497c2f73f",
           "file": "client/src/pages/SheetsSettings.tsx",
-          "line": 221,
+          "line": 253,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -50968,9 +50968,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "14cf59b4618e",
+          "id": "0146af1b155b",
           "file": "client/src/pages/SheetsSettings.tsx",
-          "line": 226,
+          "line": 258,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -50991,9 +50991,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "3102a2e1e165",
+          "id": "14522469849b",
           "file": "client/src/pages/SheetsSettings.tsx",
-          "line": 246,
+          "line": 278,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -51014,9 +51014,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "cfaaff9528fa",
+          "id": "f863dd2b2060",
           "file": "client/src/pages/SheetsSettings.tsx",
-          "line": 285,
+          "line": 317,
           "tag": "Switch",
           "role": "",
           "kind": "field",
@@ -51037,9 +51037,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "69c45458ae28",
+          "id": "3a3efb08bba2",
           "file": "client/src/pages/SheetsSettings.tsx",
-          "line": 307,
+          "line": 339,
           "tag": "Switch",
           "role": "",
           "kind": "field",
@@ -51060,9 +51060,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "47f233472f60",
+          "id": "03a2ca2fe4d2",
           "file": "client/src/pages/SheetsSettings.tsx",
-          "line": 329,
+          "line": 361,
           "tag": "Switch",
           "role": "",
           "kind": "field",
@@ -54801,7 +54801,7 @@
           "tag": "Link",
           "role": "",
           "kind": "action",
-          "label": "إدارة الإعدادات ربط Google Sheets",
+          "label": "تعذر التحقق من اتصال Google Sheets إدارة الإعدادات ربط Google Sheets",
           "section": "Google Sheets مربوط",
           "binding": "/merchant/sheets/settings",
           "type": "text",
@@ -54822,7 +54822,7 @@
           "tag": "Button",
           "role": "",
           "kind": "action",
-          "label": "إدارة الإعدادات ربط Google Sheets",
+          "label": "تعذر التحقق من اتصال Google Sheets إدارة الإعدادات ربط Google Sheets",
           "section": "Google Sheets مربوط",
           "binding": "",
           "type": "text",

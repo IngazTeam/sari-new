@@ -6,7 +6,7 @@
   "imperativeReads": 32,
   "unresolvedReads": 0,
   "queryCalls": 300,
-  "errorSignalMissing": 130,
+  "errorSignalMissing": 127,
   "choices": 59,
   "conditions": 1009
 }

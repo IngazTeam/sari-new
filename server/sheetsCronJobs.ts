@@ -11,6 +11,17 @@ import {
   sendReportViaWhatsApp,
 } from './sheetsReports';
 
+type ReportFlag = 'sendDailyReports' | 'sendWeeklyReports' | 'sendMonthlyReports';
+function reportEnabled(integration: any, flag: ReportFlag): boolean {
+  if (!integration || Number(integration.isActive) !== 1 || !integration.sheetId || !integration.credentials
+      || typeof integration.settings !== 'string' || integration.settings.length > 65536) return false;
+  try { return JSON.parse(integration.settings)?.[flag] === true; } catch { return false; }
+}
+async function stillEnabled(merchantId: number, previous: any, flag: ReportFlag) {
+  const current = await getGoogleIntegration(merchantId, 'sheets');
+  return reportEnabled(current, flag) && current!.id === previous.id && current!.sheetId === previous.sheetId && current!.credentials === previous.credentials;
+}
+
 /**
  * تشغيل التقارير اليومية
  * يعمل كل يوم في الساعة 11:59 مساءً
@@ -26,7 +37,7 @@ export function startDailyReportsCron() {
       for (const merchant of merchants) {
         const integration = await getGoogleIntegration(merchant.id, 'sheets');
 
-        if (!integration || !integration.isActive) {
+        if (merchant.status === 'suspended' || !reportEnabled(integration, 'sendDailyReports')) {
           continue;
         }
 
@@ -36,11 +47,7 @@ export function startDailyReportsCron() {
         if (result.success && result.data) {
           console.log(`[Sheets Cron] Daily report generated for merchant ${merchant.id}`);
 
-          // إرسال التقرير عبر WhatsApp (اختياري)
-          // RPT-04 FIX: Safe JSON parse
-          let settings: any = {};
-          try { settings = integration.settings ? JSON.parse(integration.settings) : {}; } catch { /* corrupted */ }
-          if (settings.sendDailyReports) {
+          if (await stillEnabled(merchant.id, integration, 'sendDailyReports')) {
             await sendReportViaWhatsApp(merchant.id, 'يومي', result.data);
           }
         }
@@ -67,7 +74,7 @@ export function startWeeklyReportsCron() {
       for (const merchant of merchants) {
         const integration = await getGoogleIntegration(merchant.id, 'sheets');
 
-        if (!integration || !integration.isActive) {
+        if (merchant.status === 'suspended' || !reportEnabled(integration, 'sendWeeklyReports')) {
           continue;
         }
 
@@ -76,10 +83,7 @@ export function startWeeklyReportsCron() {
         if (result.success && result.data) {
           console.log(`[Sheets Cron] Weekly report generated for merchant ${merchant.id}`);
 
-          // RPT-04 FIX: Safe JSON parse
-          let settings: any = {};
-          try { settings = integration.settings ? JSON.parse(integration.settings) : {}; } catch { /* corrupted */ }
-          if (settings.sendWeeklyReports) {
+          if (await stillEnabled(merchant.id, integration, 'sendWeeklyReports')) {
             await sendReportViaWhatsApp(merchant.id, 'أسبوعي', result.data);
           }
         }
@@ -116,7 +120,7 @@ export function startMonthlyReportsCron() {
       for (const merchant of merchants) {
         const integration = await getGoogleIntegration(merchant.id, 'sheets');
 
-        if (!integration || !integration.isActive) {
+        if (merchant.status === 'suspended' || !reportEnabled(integration, 'sendMonthlyReports')) {
           continue;
         }
 
@@ -125,10 +129,7 @@ export function startMonthlyReportsCron() {
         if (result.success && result.data) {
           console.log(`[Sheets Cron] Monthly report generated for merchant ${merchant.id}`);
 
-          // RPT-04 FIX: Safe JSON parse
-          let settings: any = {};
-          try { settings = integration.settings ? JSON.parse(integration.settings) : {}; } catch { /* corrupted */ }
-          if (settings.sendMonthlyReports) {
+          if (await stillEnabled(merchant.id, integration, 'sendMonthlyReports')) {
             await sendReportViaWhatsApp(merchant.id, 'شهري', result.data);
           }
         }

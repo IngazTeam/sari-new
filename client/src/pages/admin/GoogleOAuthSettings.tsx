@@ -76,7 +76,7 @@ export default function GoogleOAuthSettings() {
     );
   }
 
-  const redirectUri = `${window.location.origin}/api/auth/google/callback`;
+  const redirectUri = data?.sheetsRedirectUri || '';
 
   return (
     <div className="container max-w-4xl py-8 space-y-6">
@@ -150,7 +150,7 @@ export default function GoogleOAuthSettings() {
           </div>
 
           <div className="space-y-2">
-            <Label>Redirect URI</Label>
+            <Label>{t('sheetsConnectionUx.sheetsCallback')}</Label>
             <div className="flex gap-2">
               <Input
                 type="text"

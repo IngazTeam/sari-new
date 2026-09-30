@@ -9,19 +9,18 @@ import { inventorySheetExportInput } from '../shared/inventory-sheet-export';
 import { exportInventoryToSheet, readInventoryExportStatus } from './inventory-sheet-export';
 import { guardInventoryExport } from './inventory-sheet-export-api';
 import { reserveApiRateLimit } from './api/distributed-rate-limit';
-import * as sheets from './_core/googleSheets';
 import * as sheetsSync from './sheetsSync';
 import * as sheetsReports from './sheetsReports';
 import {
-  getGoogleIntegration,
   getMerchantByUserId,
   getOrderById,
-  updateGoogleIntegration,
 } from './db';
 
 import { TRPCError } from '@trpc/server';
 import { beginSheetsOAuth } from './sheets-oauth';
 import { guardSheetsOAuth } from './sheets-oauth-api';
+import { readSheetsSettings, writeSheetsReportSettings, disconnectSheets } from './sheets-settings';
+import { sheetsSettingsChange, sheetsDisconnect } from '../shared/sheets-settings';
 
 export const sheetsRouter = router({
   beginOAuth: permissionProcedure('integrations.manage').mutation(({ctx}) => {
@@ -30,10 +29,9 @@ export const sheetsRouter = router({
   }),
 
   // الحصول على حالة الاتصال
-  getStatus: protectedProcedure.query(async ({ ctx }) => {
-    const merchant = await getMerchantByUserId(ctx.user.id);
-    if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-    return await sheets.getConnectionStatus(merchant.id);
+  getStatus: permissionProcedure('integrations.manage').query(({ ctx }) => {
+    if (!ctx.session?.sessionId) throw new TRPCError({code:'UNAUTHORIZED',message:'sheets_oauth:session'});
+    return guardSheetsOAuth(() => readSheetsSettings({merchantId:ctx.merchantId,userId:ctx.user.id,sessionId:ctx.session!.sessionId}));
   }),
 
   // إعداد Spreadsheet الرئيسي
@@ -175,60 +173,20 @@ export const sheetsRouter = router({
     }),
 
   // تحديث إعدادات التقارير التلقائية
-  updateReportSettings: protectedProcedure
-    .input(z.object({
-      sendDailyReports: z.boolean().optional(),
-      sendWeeklyReports: z.boolean().optional(),
-      sendMonthlyReports: z.boolean().optional(),
-    }))
-    .mutation(async ({ ctx, input }) => {
-      const merchant = await getMerchantByUserId(ctx.user.id);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-
-      const integration = await getGoogleIntegration(merchant.id, 'sheets');
-
-      if (!integration) {
-        return { success: false, message: 'Google Sheets غير مربوط' };
-      }
-
-      const currentSettings = integration.settings ? JSON.parse(integration.settings) : {};
-      const newSettings = { ...currentSettings, ...input };
-
-      await updateGoogleIntegration(integration.id, {
-        settings: JSON.stringify(newSettings),
-      });
-
-      return { success: true, message: 'تم تحديث الإعدادات بنجاح' };
-    }),
+  updateReportSettings: permissionProcedure('integrations.manage').input(sheetsSettingsChange).mutation(({ctx,input}) => {
+    if (!ctx.session?.sessionId) throw new TRPCError({code:'UNAUTHORIZED',message:'sheets_oauth:session'});
+    return guardSheetsOAuth(() => writeSheetsReportSettings({merchantId:ctx.merchantId,userId:ctx.user.id,sessionId:ctx.session!.sessionId},input));
+  }),
 
   // الحصول على إعدادات التقارير
-  getReportSettings: protectedProcedure.query(async ({ ctx }) => {
-    const merchant = await getMerchantByUserId(ctx.user.id);
-    if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-
-    const integration = await getGoogleIntegration(merchant.id, 'sheets');
-
-    if (!integration) {
-      return {
-        sendDailyReports: false,
-        sendWeeklyReports: false,
-        sendMonthlyReports: false,
-      };
-    }
-
-    const settings = integration.settings ? JSON.parse(integration.settings) : {};
-
-    return {
-      sendDailyReports: settings.sendDailyReports || false,
-      sendWeeklyReports: settings.sendWeeklyReports || false,
-      sendMonthlyReports: settings.sendMonthlyReports || false,
-    };
+  getReportSettings: permissionProcedure('integrations.manage').query(({ctx}) => {
+    if (!ctx.session?.sessionId) throw new TRPCError({code:'UNAUTHORIZED',message:'sheets_oauth:session'});
+    return guardSheetsOAuth(async () => (await readSheetsSettings({merchantId:ctx.merchantId,userId:ctx.user.id,sessionId:ctx.session!.sessionId})).reports);
   }),
 
   // فصل الاتصال
-  disconnect: protectedProcedure.mutation(async ({ ctx }) => {
-    const merchant = await getMerchantByUserId(ctx.user.id);
-    if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-    return await sheets.disconnect(merchant.id);
+  disconnect: permissionProcedure('integrations.manage').input(sheetsDisconnect).mutation(({ctx,input}) => {
+    if (!ctx.session?.sessionId) throw new TRPCError({code:'UNAUTHORIZED',message:'sheets_oauth:session'});
+    return guardSheetsOAuth(() => disconnectSheets({merchantId:ctx.merchantId,userId:ctx.user.id,sessionId:ctx.session!.sessionId},input));
   }),
 });

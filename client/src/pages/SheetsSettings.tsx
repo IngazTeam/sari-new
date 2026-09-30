@@ -16,6 +16,10 @@ import {
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import ProductSheetPolicyNotice from "@/components/merchant/ProductSheetPolicyNotice";
+import {
+  WorkspaceState,
+  workspaceFailureKind,
+} from "@/components/merchant/WorkspaceState";
 
 export default function SheetsSettings() {
   const { t } = useTranslation();
@@ -27,12 +31,18 @@ export default function SheetsSettings() {
   const {
     data: status,
     isLoading: statusLoading,
+    error: statusError,
+    isFetching: statusFetching,
     refetch: refetchStatus,
   } = trpc.sheets.getStatus.useQuery();
 
   // الحصول على إعدادات التقارير
-  const { data: reportSettings, refetch: refetchSettings } =
-    trpc.sheets.getReportSettings.useQuery();
+  const {
+    data: reportSettings,
+    error: reportError,
+    isLoading: reportLoading,
+    refetch: refetchSettings,
+  } = trpc.sheets.getReportSettings.useQuery();
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -66,6 +76,7 @@ export default function SheetsSettings() {
       if (data.success) {
         toast.success("تم التحديث", { description: data.message });
         refetchSettings();
+        refetchStatus();
       } else {
         toast.error("فشل التحديث", { description: data.message });
       }
@@ -117,18 +128,39 @@ export default function SheetsSettings() {
   };
 
   const handleDisconnect = () => {
-    if (confirm("هل أنت متأكد من فصل الاتصال بـ Google Sheets؟")) {
-      disconnectMutation.mutate();
+    if (!status || statusFetching) return;
+    if (confirm(t("sheetsConnectionUx.disconnectConfirm"))) {
+      disconnectMutation.mutate({
+        expectedDigest: status.digest,
+        reviewed: true,
+      });
     }
   };
 
-  const handleToggleSetting = (setting: string, value: boolean) => {
+  const handleToggleSetting = (
+    setting: "sendDailyReports" | "sendWeeklyReports" | "sendMonthlyReports",
+    value: boolean
+  ) => {
+    if (!status || statusFetching || reportError || reportLoading) return;
+    if (value && !confirm(t("sheetsConnectionUx.reportConfirm"))) return;
     updateSettingsMutation.mutate({
-      [setting]: value,
+      expectedDigest: status.digest,
+      reviewed: true,
+      changes: { [setting]: value },
     });
   };
 
-  if (statusLoading) {
+  if (statusError || reportError)
+    return (
+      <WorkspaceState
+        kind={workspaceFailureKind(statusError || reportError)}
+        onRetry={() => {
+          void refetchStatus();
+          void refetchSettings();
+        }}
+      />
+    );
+  if (statusLoading || reportLoading) {
     return (
       <>
         <div className="flex items-center justify-center min-h-[400px]">
