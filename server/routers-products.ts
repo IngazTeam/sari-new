@@ -7,6 +7,9 @@
 
 import { z } from "zod";
 import { majorToMinor } from '../shared/product-money';
+import { productCatalogInput } from '../shared/product-catalog';
+import { readProductCatalog } from './product-catalog';
+import { hasPermission } from './_core/permissions';
 const majorPriceSchema = z.number().refine(value => {
   try { majorToMinor(value); return true; } catch { return false; }
 }, 'Price must be nonnegative with at most two decimal places');
@@ -26,7 +29,6 @@ import {
   getKnowledgeDocByMerchantId,
   getMerchantById,
   getProductById,
-  getProductCountByMerchantId,
   getProductsByMerchantId,
   updateGoogleIntegration,
   updateKnowledgeDoc,
@@ -303,33 +305,14 @@ function buildSheetRows(
 export const productsRouter = router({
     // List products for merchant — PERF-03 FIX: server-side pagination + search
     list: merchantProcedure
-        .input(z.object({
-            page: z.number().min(1).default(1),
-            pageSize: z.number().min(1).max(100).default(50),
-            search: z.string().max(200).optional(),
-        }).optional())
+        .input(productCatalogInput)
         .query(async ({ ctx, input }) => {
-            const merchant = await getMerchantById(ctx.merchantId);
-            if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-
-
-            const page = input?.page ?? 1;
-            const pageSize = input?.pageSize ?? 50;
-            const search = input?.search?.trim() || undefined;
-            const offset = (page - 1) * pageSize;
-
-            const [items, total] = await Promise.all([
-                getProductsByMerchantId(merchant.id, { limit: pageSize, offset, search }),
-                getProductCountByMerchantId(merchant.id, { search }),
-            ]);
-
-            return {
-                items,
-                total,
-                page,
-                pageSize,
-                totalPages: Math.ceil(total / pageSize),
-            };
+            try {
+                return { ...(await readProductCatalog(ctx.merchantId, input)),
+                    canManage: hasPermission(ctx.merchantRole, 'products.manage') };
+            } catch {
+                throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Product catalog unavailable' });
+            }
         }),
 
     // Create product (with advanced fields)
