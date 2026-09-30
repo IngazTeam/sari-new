@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { productEditableFields } from "./product-editor";
+import { productImportField } from "./product-import";
 import {
   productImportInput,
   productImportPreviewSchema,
@@ -75,3 +77,89 @@ export const productSheetConnection = z
   })
   .strict()
   .refine(v => (v.source !== null) === (v.reason === null));
+export const productSheetMatchMode = z.enum(["create_only", "sku", "name"]);
+export const productSheetCatalogItem = z
+  .object({
+    id: z.number().int().positive(),
+    name: z.string().max(255),
+    sku: z.string().max(100).nullable(),
+    locked: z.boolean(),
+    digest: z
+      .string()
+      .regex(/^[a-f0-9]{64}$/)
+      .nullable(),
+    fields: productEditableFields.nullable(),
+  })
+  .strict();
+export const productSheetPlanRow = z
+  .object({
+    number: z.number().int().positive(),
+    action: z.enum(["create", "update", "unchanged", "blocked"]),
+    productId: z.number().int().positive().nullable(),
+    expectedDigest: z
+      .string()
+      .regex(/^[a-f0-9]{64}$/)
+      .nullable(),
+    before: productEditableFields.nullable(),
+    after: productEditableFields.nullable(),
+    changes: z.array(productImportField).max(17),
+    issues: z
+      .array(
+        z.enum([
+          "invalid_row",
+          "missing_key",
+          "ambiguous_match",
+          "duplicate_match",
+          "existing_sku",
+          "source_locked",
+          "current_fields_invalid",
+          "currency_mismatch",
+          "category_linked",
+        ])
+      )
+      .max(8),
+    warnings: z.array(z.enum(["existing_name"])).max(1),
+  })
+  .strict()
+  .refine(
+    v =>
+      new Set(v.changes).size === v.changes.length &&
+      (v.action === "blocked"
+        ? v.issues.length > 0 && v.after === null && v.changes.length === 0
+        : v.issues.length === 0 &&
+          v.after !== null &&
+          (v.action === "create"
+            ? v.productId === null &&
+              v.before === null &&
+              v.expectedDigest === null
+            : !!v.productId &&
+              !!v.before &&
+              !!v.expectedDigest &&
+              (v.action === "unchanged"
+                ? v.changes.length === 0
+                : v.changes.length > 0)))
+  );
+export const productSheetPlan = z
+  .object({
+    mode: productSheetMatchMode,
+    sourceDigest: z.string().regex(/^[a-f0-9]{64}$/),
+    digest: z.string().regex(/^[a-f0-9]{64}$/),
+    rows: z.array(productSheetPlanRow).min(1).max(5000),
+    counts: z
+      .object({
+        create: z.number().int().min(0),
+        update: z.number().int().min(0),
+        unchanged: z.number().int().min(0),
+        blocked: z.number().int().min(0),
+      })
+      .strict(),
+  })
+  .strict()
+  .refine(
+    v =>
+      new Set(v.rows.map(r => r.number)).size === v.rows.length &&
+      Object.entries(v.counts).every(
+        ([action, count]) =>
+          v.rows.filter(r => r.action === action).length === count
+      )
+  );
