@@ -16,6 +16,7 @@ import {
   updateQuotationStatus,
   formatQuotationMessage,
   getTemplates,
+  getTemplateById,
 } from "./db/sales-quotations";
 describe.skipIf(!process.env.DATABASE_URL)(
   "quotation compatibility in MySQL",
@@ -150,6 +151,27 @@ describe.skipIf(!process.env.DATABASE_URL)(
       expect(saved.items[0].unitPrice).toBeNull();
       expect(saved.rawItems).toContain('"price":1000');
       expect(() => formatQuotationMessage(saved, "Local")).toThrow();
+    });
+    it("does not create templates while reading an empty workspace", async () => {
+      expect(await getTemplates(owner.merchantId)).toEqual([]);
+      expect(await getTemplates(owner.merchantId)).toEqual([]);
+      expect(
+        await query("SELECT id FROM quotation_templates WHERE merchant_id=?", [
+          owner.merchantId,
+        ])
+      ).toHaveLength(0);
+    });
+    it("isolates explicit selections and never falls back to a default", async () => {
+      const result = await query(
+        "INSERT INTO quotation_templates (merchant_id,name,is_default) VALUES (?,'Selected',1)",
+        [owner.merchantId]
+      );
+      expect(
+        await getTemplateById(Number(result.insertId), other.merchantId)
+      ).toBeNull();
+      expect(
+        await getTemplateById(Number(result.insertId), owner.merchantId)
+      ).toMatchObject({ name: "Selected", isDefault: true });
     });
     it("maps the stored default template and its footer/terms without snake-case loss", async () => {
       await query(

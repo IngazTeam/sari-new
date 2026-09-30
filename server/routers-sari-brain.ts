@@ -1587,7 +1587,7 @@ ${sanitizedContent}`
 
   /** Format quotation for WhatsApp */
   formatQuotationForWhatsApp: permissionProcedure('analytics.read')
-    .input(z.object({ quotationId: z.number().int().positive() }))
+    .input(z.object({ quotationId: z.number().int().positive(), templateId: z.number().int().positive().nullable().optional() }).strict())
     .query(async ({ ctx, input }) => {
       const merchant = await getMerchantById(ctx.merchantId);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
@@ -1596,11 +1596,10 @@ ${sanitizedContent}`
       const quotation = await quotationGuard(() => quotationsDb.getQuotationById(input.quotationId, merchant.id));
       if (!quotation) throw new TRPCError({ code: 'NOT_FOUND', message: 'عرض السعر غير موجود' });
 
-      // Get default template
-      const templates = await quotationsDb.getTemplates(merchant.id);
-      const defaultTemplate = templates.find(t => t.isDefault) || templates[0] || null;
-
-      const message = await quotationGuard(async () => quotationsDb.formatQuotationMessage(quotation, merchant.businessName, defaultTemplate));
+      // A saved default is a sorting preference, never consent to add commercial terms.
+      const template = input.templateId == null ? null : await quotationGuard(() => quotationsDb.getTemplateById(input.templateId!, merchant.id));
+      if (input.templateId != null && !template) throw new TRPCError({ code: 'NOT_FOUND', message: 'Quotation template unavailable' });
+      const message = await quotationGuard(async () => quotationsDb.formatQuotationMessage(quotation, merchant.businessName, template));
       return sanitizeForTRPC({ message, quotation });
     }),
 
@@ -1653,12 +1652,12 @@ ${sanitizedContent}`
   // ─── Quotation Templates ─────────────────────────
 
   /** Get templates */
-  getQuotationTemplates: merchantProcedure.query(async ({ ctx }) => {
+  getQuotationTemplates: permissionProcedure('analytics.read').query(async ({ ctx }) => {
     const merchant = await getMerchantById(ctx.merchantId);
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
     const quotationsDb = await import('./db/sales-quotations');
-    return sanitizeForTRPC(await quotationsDb.getTemplates(merchant.id));
+    return sanitizeForTRPC(await quotationGuard(() => quotationsDb.getTemplates(merchant.id)));
   }),
 
   /** Create template */
