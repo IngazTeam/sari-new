@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import ProductSheetPolicyNotice from "@/components/merchant/ProductSheetPolicyNotice";
 
 export default function SheetsSettings() {
   const { t } = useTranslation();
@@ -123,6 +124,7 @@ export default function SheetsSettings() {
           <p className="text-muted-foreground">{t("sheetsSettings.auto_0")}</p>
         </div>
 
+        <ProductSheetPolicyNotice />
         {/* حالة الاتصال */}
         <Card className="p-6 mb-6">
           <div className="flex items-center justify-between mb-4">

@@ -602,6 +602,7 @@ export function ProductSheetWorkspace({
       <header>
         <h2>{t("productSheetUx.title")}</h2>
         <p>{t("productSheetUx.intro")}</p>
+        <p className="pw-notice">{t("productSheetUx.reviewRequiredHint")}</p>
       </header>
       {notice && (
         <p role="alert" className="pw-notice">

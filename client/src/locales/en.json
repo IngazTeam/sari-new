@@ -8358,10 +8358,10 @@
     "auto_2": "إرسال عبر WhatsApp"
   },
   "sheetsSettings": {
-    "auto_0": "ربط حسابك في Google Sheets لحفظ البيانات تلقائياً",
+    "auto_0": "Connect Google Sheets for reports, exports, and reviewed product imports.",
     "auto_1": "فتح",
     "auto_2": "تحديث الحالة",
-    "auto_3": "قم بربط حسابك في Google Sheets لتفعيل المزامنة التلقائية للبيانات",
+    "auto_3": "Connect your Google account to configure the spreadsheet and choose what to export or review.",
     "auto_4": "ربط Google Sheets",
     "auto_5": "تفعيل إرسال التقارير عبر WhatsApp",
     "auto_6": "التقارير اليومية",
@@ -11119,6 +11119,9 @@
     "discardTitle": "Finish this review?",
     "discardHint": "Remove this review reference to start another. Applied products and their receipt remain saved; the Google file is unchanged.",
     "discardConfirm": "Finish and start a new review",
-    "keepReview": "Keep this review"
+    "keepReview": "Keep this review",
+    "reviewRequiredTitle": "Product imports need your review",
+    "reviewRequiredHint": "The old automatic product sync has been stopped. Product-sheet changes are not applied on a schedule. Read a snapshot, review additions and updates, then approve it. Report settings and inventory export are separate from this import.",
+    "openReview": "Open product import review"
   }
 }

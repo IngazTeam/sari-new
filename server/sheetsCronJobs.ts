@@ -148,50 +148,7 @@ export function startAllSheetsCronJobs() {
   startDailyReportsCron();
   startWeeklyReportsCron();
   startMonthlyReportsCron();
-  startProductAutoSyncCron();
+  // Product imports require an explicit reviewed snapshot; no unattended product writer.
 
   console.log('[Sheets Cron] All cron jobs started successfully');
-}
-
-/**
- * مزامنة المنتجات تلقائياً من Google Sheets
- * يعمل كل 30 دقيقة لضمان تحديث البوت بأحدث المنتجات
- */
-export function startProductAutoSyncCron() {
-  cron.schedule('*/30 * * * *', async () => {
-    console.log('[Sheets Cron] Running product auto-sync...');
-
-    try {
-      const merchants = await getAllMerchants();
-
-      for (const merchant of merchants) {
-        const integration = await getGoogleIntegration(merchant.id, 'sheets');
-
-        if (!integration || !integration.isActive || !integration.sheetId) {
-          continue;
-        }
-
-        // Check if auto-sync is enabled in settings
-        const settings = integration.settings ? JSON.parse(integration.settings) : {};
-        if (settings.autoSyncProducts === false) {
-          continue; // Skip if explicitly disabled
-        }
-
-        try {
-          const { syncProductsFromSheets } = await import('./sheetsSync');
-          const result = await syncProductsFromSheets(merchant.id);
-
-          if (result.success && (result.created > 0 || result.updated > 0)) {
-            console.log(`[Sheets Cron] Product sync for merchant ${merchant.id}: ${result.created} new, ${result.updated} updated`);
-          }
-        } catch (error) {
-          console.error(`[Sheets Cron] Product sync error for merchant ${merchant.id}:`, error);
-        }
-      }
-    } catch (error) {
-      console.error('[Sheets Cron] Error running product auto-sync:', error);
-    }
-  });
-
-  console.log('[Sheets Cron] Product auto-sync cron job started (every 30 minutes)');
 }

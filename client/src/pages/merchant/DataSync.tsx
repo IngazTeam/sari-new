@@ -8,6 +8,7 @@ import { Loader2, CheckCircle2, XCircle, Clock, RefreshCw, ExternalLink, AlertCi
 import { useTranslation } from 'react-i18next';
 import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import ProductSheetPolicyNotice from '@/components/merchant/ProductSheetPolicyNotice';
 
 export default function DataSync() {
   const { t } = useTranslation();
@@ -94,6 +95,7 @@ export default function DataSync() {
         </Button>
       </div>
 
+      <ProductSheetPolicyNotice />
       {syncMutation.isError && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />

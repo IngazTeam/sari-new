@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-30T13:33:38.085Z",
+  "generatedAt": "2026-09-30T13:43:48.830Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -2922,7 +2922,7 @@
     },
     {
       "file": "client/src/components/merchant/ProductSheetWorkspace.tsx",
-      "hash": "2cf7bd076398",
+      "hash": "fcc9f25e57c1",
       "queries": [
         "products.sheetImport.connection",
         "products.sheetImport.list",
@@ -2959,57 +2959,57 @@
         },
         {
           "label": "اكتمل اعتماد المراجعة",
-          "line": 635,
+          "line": 636,
           "tag": "h3"
         },
         {
           "label": "صفوف الإيصال ومعرّفات المنتجات",
-          "line": 650,
+          "line": 651,
           "tag": "summary"
         },
         {
           "label": "جهّز اتصال Google Sheets",
-          "line": 697,
+          "line": 698,
           "tag": "h3"
         },
         {
           "label": "1. اختر المصدر",
-          "line": 715,
+          "line": 716,
           "tag": "h3"
         },
         {
           "label": "خيارات الأعمدة غير الموجودة",
-          "line": 781,
+          "line": 782,
           "tag": "summary"
         },
         {
           "label": "2. راجع التغييرات",
-          "line": 801,
+          "line": 802,
           "tag": "h3"
         },
         {
           "label": "ربط الأعمدة والخيارات",
-          "line": 840,
+          "line": 841,
           "tag": "summary"
         },
         {
           "label": "الصف {{number}} · راجع القيم الأصلية",
-          "line": 943,
+          "line": 944,
           "tag": "summary"
         },
         {
           "label": "القيم الأصلية في الورقة",
-          "line": 1019,
+          "line": 1020,
           "tag": "summary"
         },
         {
           "label": "3. اعتماد المراجعة",
-          "line": 1072,
+          "line": 1073,
           "tag": "h3"
         },
         {
           "label": "إنهاء هذه المراجعة؟",
-          "line": 1113,
+          "line": 1114,
           "tag": "h3"
         }
       ],
@@ -11551,7 +11551,7 @@
     },
     {
       "file": "client/src/pages/merchant/DataSync.tsx",
-      "hash": "443a963d18d1",
+      "hash": "a094672fa5ed",
       "queries": [
         "sheets.getStatus"
       ],
@@ -11563,27 +11563,27 @@
       "sections": [
         {
           "label": "مزامنة البيانات",
-          "line": 73,
+          "line": 74,
           "tag": "h1"
         },
         {
           "label": "الحالة العامة",
-          "line": 118,
+          "line": 120,
           "tag": "CardTitle"
         },
         {
           "label": "سجل المزامنة",
-          "line": 187,
+          "line": 189,
           "tag": "CardTitle"
         },
         {
           "label": "معلومات الإعداد",
-          "line": 231,
+          "line": 233,
           "tag": "CardTitle"
         },
         {
           "label": "كيف تعمل المزامنة؟",
-          "line": 272,
+          "line": 274,
           "tag": "CardTitle"
         }
       ],
@@ -11591,7 +11591,7 @@
       "handlers": [
         {
           "name": "handleSync",
-          "line": 30,
+          "line": 31,
           "calls": [
             "syncMutation"
           ]
@@ -11601,15 +11601,38 @@
         {
           "query": "sheets.getStatus",
           "binding": "",
-          "line": 17,
+          "line": 18,
           "errorSignal": false,
           "loadingSignal": false,
           "enabled": null
         }
       ],
       "conditions": [],
-      "imports": [],
+      "imports": [
+        "client/src/components/merchant/ProductSheetPolicyNotice.tsx"
+      ],
       "controlCount": 3
+    },
+    {
+      "file": "client/src/components/merchant/ProductSheetPolicyNotice.tsx",
+      "hash": "3326913ba4ca",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [
+        {
+          "label": "استيراد المنتجات يحتاج مراجعتك",
+          "line": 13,
+          "tag": "h2"
+        }
+      ],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 1
     },
     {
       "file": "client/src/pages/merchant/Reviews.tsx",
@@ -13465,7 +13488,7 @@
     },
     {
       "file": "client/src/pages/SheetsSettings.tsx",
-      "hash": "ae278f667e57",
+      "hash": "0e793fb504a0",
       "queries": [
         "sheets.getStatus",
         "sheets.getReportSettings",
@@ -13481,22 +13504,22 @@
       "sections": [
         {
           "label": "ربط Google Sheets",
-          "line": 120,
+          "line": 121,
           "tag": "h1"
         },
         {
           "label": "حالة الاتصال",
-          "line": 132,
+          "line": 134,
           "tag": "h2"
         },
         {
           "label": "إعدادات التقارير التلقائية",
-          "line": 234,
+          "line": 236,
           "tag": "h2"
         },
         {
           "label": "ملاحظات مهمة:",
-          "line": 316,
+          "line": 318,
           "tag": "h3"
         }
       ],
@@ -13504,26 +13527,26 @@
       "handlers": [
         {
           "name": "handleConnect",
-          "line": 82,
+          "line": 83,
           "calls": []
         },
         {
           "name": "handleSetup",
-          "line": 90,
+          "line": 91,
           "calls": [
             "setupMutation"
           ]
         },
         {
           "name": "handleDisconnect",
-          "line": 94,
+          "line": 95,
           "calls": [
             "disconnectMutation"
           ]
         },
         {
           "name": "handleToggleSetting",
-          "line": 100,
+          "line": 101,
           "calls": [
             "updateSettingsMutation"
           ]
@@ -13533,7 +13556,7 @@
         {
           "query": "sheets.getStatus",
           "binding": "{\n    data: status,\n    isLoading: statusLoading,\n    refetch: refetchStatus,\n  }",
-          "line": 28,
+          "line": 29,
           "errorSignal": false,
           "loadingSignal": true,
           "enabled": null
@@ -13541,7 +13564,7 @@
         {
           "query": "sheets.getReportSettings",
           "binding": "{ data: reportSettings, refetch: refetchSettings }",
-          "line": 32,
+          "line": 33,
           "errorSignal": false,
           "loadingSignal": false,
           "enabled": null
@@ -13549,14 +13572,16 @@
         {
           "query": "sheets.getAuthUrl",
           "binding": "{ data: authData }",
-          "line": 35,
+          "line": 36,
           "errorSignal": false,
           "loadingSignal": false,
           "enabled": null
         }
       ],
       "conditions": [],
-      "imports": [],
+      "imports": [
+        "client/src/components/merchant/ProductSheetPolicyNotice.tsx"
+      ],
       "controlCount": 8
     },
     {
@@ -17452,30 +17477,30 @@
         "7ec32dcca131",
         "3a363e06066c",
         "9136194d00a7",
-        "5c6762ffa715",
-        "116c60167aeb",
-        "ce115e617c4e",
-        "dc80bac9cbdb",
-        "2a524b6a995f",
-        "28af7490afce",
-        "84034c66e13c",
-        "ed3637146b15",
-        "5f38f7df7dc6",
-        "ad1dd82e9363",
-        "34b4b4c8c62c",
-        "147612928dc0",
-        "922d8a442f0d",
-        "400358c346d8",
-        "c93012090a88",
-        "32d7e110157b",
-        "f1bda9debccb",
-        "8ec6ea9191d4",
-        "8d8977c46686",
-        "038ddf4d06fd",
-        "e716c4883aa2",
-        "d6f9f9397078",
-        "471dedf6aa6b",
-        "0a8f68ecc971",
+        "10ea652429e3",
+        "8d31ee282722",
+        "d1bd67dcc2ef",
+        "e90cc185896d",
+        "bf5544dc779b",
+        "b92b88435975",
+        "2b632c5766a8",
+        "89a1bb4e9661",
+        "aec3156a28bb",
+        "a004279e81c1",
+        "0695f116c6e9",
+        "1be02dedc92d",
+        "e1ddfa3c4ac0",
+        "163317b39334",
+        "34e569140c49",
+        "ca3d18ef8868",
+        "a78527465e57",
+        "5b002189ea69",
+        "0dbb76c9b612",
+        "a631a804c67b",
+        "92b61a5e63e1",
+        "deb6305d1f93",
+        "64bfad373ae4",
+        "e4e695089a73",
         "434dc8944caa",
         "5af9243e8c34",
         "209682d391e9",
@@ -20525,12 +20550,14 @@
         "DataSync"
       ],
       "files": [
-        "client/src/pages/merchant/DataSync.tsx"
+        "client/src/pages/merchant/DataSync.tsx",
+        "client/src/components/merchant/ProductSheetPolicyNotice.tsx"
       ],
       "controls": [
-        "861ee1dc823b",
-        "a70672449eff",
-        "2a1311291d37"
+        "b1a1758dbb7d",
+        "1ce7c21f3f72",
+        "00f0f066b939",
+        "4dd41ef0dd70"
       ],
       "queries": [
         "sheets.getStatus"
@@ -21336,17 +21363,19 @@
         "SheetsSettings"
       ],
       "files": [
-        "client/src/pages/SheetsSettings.tsx"
+        "client/src/pages/SheetsSettings.tsx",
+        "client/src/components/merchant/ProductSheetPolicyNotice.tsx"
       ],
       "controls": [
-        "78a9f2e1dd4f",
-        "c702f076f859",
-        "abb416959e03",
-        "10fd52991a8c",
-        "38be42c3c75c",
-        "fa7594738b96",
-        "aa848168b2bf",
-        "d97b49bc6d77"
+        "4765c30ccbc6",
+        "91f9b67674fc",
+        "cd140670e227",
+        "e12e0a3f9325",
+        "ead427eb497d",
+        "0f314daa2962",
+        "72b0bdf0714a",
+        "661df2b184f4",
+        "4dd41ef0dd70"
       ],
       "queries": [
         "sheets.getStatus",
@@ -30962,9 +30991,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "5c6762ffa715",
+      "id": "10ea652429e3",
       "file": "client/src/components/merchant/ProductSheetWorkspace.tsx",
-      "line": 650,
+      "line": 651,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -30987,9 +31016,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "116c60167aeb",
+      "id": "8d31ee282722",
       "file": "client/src/components/merchant/ProductSheetWorkspace.tsx",
-      "line": 660,
+      "line": 661,
       "tag": "a",
       "role": "",
       "kind": "action",
@@ -31012,9 +31041,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ce115e617c4e",
+      "id": "d1bd67dcc2ef",
       "file": "client/src/components/merchant/ProductSheetWorkspace.tsx",
-      "line": 663,
+      "line": 664,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -31037,9 +31066,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "dc80bac9cbdb",
+      "id": "e90cc185896d",
       "file": "client/src/components/merchant/ProductSheetWorkspace.tsx",
-      "line": 675,
+      "line": 676,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -31062,9 +31091,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "2a524b6a995f",
+      "id": "bf5544dc779b",
       "file": "client/src/components/merchant/ProductSheetWorkspace.tsx",
-      "line": 679,
+      "line": 680,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -31087,9 +31116,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "28af7490afce",
+      "id": "b92b88435975",
       "file": "client/src/components/merchant/ProductSheetWorkspace.tsx",
-      "line": 705,
+      "line": 706,
       "tag": "a",
       "role": "",
       "kind": "action",
@@ -31112,9 +31141,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "84034c66e13c",
+      "id": "2b632c5766a8",
       "file": "client/src/components/merchant/ProductSheetWorkspace.tsx",
-      "line": 717,
+      "line": 718,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -31137,9 +31166,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ed3637146b15",
+      "id": "89a1bb4e9661",
       "file": "client/src/components/merchant/ProductSheetWorkspace.tsx",
-      "line": 736,
+      "line": 737,
       "tag": "select",
       "role": "",
       "kind": "field",
@@ -31171,9 +31200,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "5f38f7df7dc6",
+      "id": "aec3156a28bb",
       "file": "client/src/components/merchant/ProductSheetWorkspace.tsx",
-      "line": 759,
+      "line": 760,
       "tag": "select",
       "role": "",
       "kind": "field",
@@ -31209,9 +31238,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ad1dd82e9363",
+      "id": "a004279e81c1",
       "file": "client/src/components/merchant/ProductSheetWorkspace.tsx",
-      "line": 781,
+      "line": 782,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -31234,9 +31263,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "34b4b4c8c62c",
+      "id": "0695f116c6e9",
       "file": "client/src/components/merchant/ProductSheetWorkspace.tsx",
-      "line": 785,
+      "line": 786,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -31259,9 +31288,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "147612928dc0",
+      "id": "1be02dedc92d",
       "file": "client/src/components/merchant/ProductSheetWorkspace.tsx",
-      "line": 840,
+      "line": 841,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -31284,9 +31313,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "922d8a442f0d",
+      "id": "e1ddfa3c4ac0",
       "file": "client/src/components/merchant/ProductSheetWorkspace.tsx",
-      "line": 854,
+      "line": 855,
       "tag": "select",
       "role": "",
       "kind": "field",
@@ -31314,9 +31343,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "400358c346d8",
+      "id": "163317b39334",
       "file": "client/src/components/merchant/ProductSheetWorkspace.tsx",
-      "line": 898,
+      "line": 899,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -31339,9 +31368,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "c93012090a88",
+      "id": "34e569140c49",
       "file": "client/src/components/merchant/ProductSheetWorkspace.tsx",
-      "line": 909,
+      "line": 910,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -31364,9 +31393,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "32d7e110157b",
+      "id": "ca3d18ef8868",
       "file": "client/src/components/merchant/ProductSheetWorkspace.tsx",
-      "line": 920,
+      "line": 921,
       "tag": "select",
       "role": "",
       "kind": "field",
@@ -31398,9 +31427,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "f1bda9debccb",
+      "id": "a78527465e57",
       "file": "client/src/components/merchant/ProductSheetWorkspace.tsx",
-      "line": 943,
+      "line": 944,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -31419,9 +31448,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "8ec6ea9191d4",
+      "id": "5b002189ea69",
       "file": "client/src/components/merchant/ProductSheetWorkspace.tsx",
-      "line": 1019,
+      "line": 1020,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -31440,9 +31469,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "8d8977c46686",
+      "id": "0dbb76c9b612",
       "file": "client/src/components/merchant/ProductSheetWorkspace.tsx",
-      "line": 1050,
+      "line": 1051,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -31465,9 +31494,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "038ddf4d06fd",
+      "id": "a631a804c67b",
       "file": "client/src/components/merchant/ProductSheetWorkspace.tsx",
-      "line": 1063,
+      "line": 1064,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -31490,9 +31519,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "e716c4883aa2",
+      "id": "92b61a5e63e1",
       "file": "client/src/components/merchant/ProductSheetWorkspace.tsx",
-      "line": 1078,
+      "line": 1079,
       "tag": "input",
       "role": "",
       "kind": "field",
@@ -31515,9 +31544,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "d6f9f9397078",
+      "id": "deb6305d1f93",
       "file": "client/src/components/merchant/ProductSheetWorkspace.tsx",
-      "line": 1088,
+      "line": 1089,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -31540,9 +31569,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "471dedf6aa6b",
+      "id": "64bfad373ae4",
       "file": "client/src/components/merchant/ProductSheetWorkspace.tsx",
-      "line": 1117,
+      "line": 1118,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -31565,9 +31594,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "0a8f68ecc971",
+      "id": "e4e695089a73",
       "file": "client/src/components/merchant/ProductSheetWorkspace.tsx",
-      "line": 1120,
+      "line": 1121,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -55138,9 +55167,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "861ee1dc823b",
+      "id": "b1a1758dbb7d",
       "file": "client/src/pages/merchant/DataSync.tsx",
-      "line": 78,
+      "line": 79,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -55159,9 +55188,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "a70672449eff",
+      "id": "1ce7c21f3f72",
       "file": "client/src/pages/merchant/DataSync.tsx",
-      "line": 150,
+      "line": 152,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -55183,9 +55212,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "2a1311291d37",
+      "id": "00f0f066b939",
       "file": "client/src/pages/merchant/DataSync.tsx",
-      "line": 155,
+      "line": 157,
       "tag": "a",
       "role": "",
       "kind": "action",
@@ -55203,6 +55232,27 @@
         "syncStatus.spreadsheetUrl",
         "syncStatus"
       ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "4dd41ef0dd70",
+      "file": "client/src/components/merchant/ProductSheetPolicyNotice.tsx",
+      "line": 19,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "فتح مراجعة استيراد المنتجات",
+      "section": "استيراد المنتجات يحتاج مراجعتك",
+      "binding": "/merchant/products/upload",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
       "disabled": "",
       "review": "source-inventoried"
     },
@@ -60560,9 +60610,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "78a9f2e1dd4f",
+      "id": "4765c30ccbc6",
       "file": "client/src/pages/SheetsSettings.tsx",
-      "line": 159,
+      "line": 161,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -60584,9 +60634,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "c702f076f859",
+      "id": "91f9b67674fc",
       "file": "client/src/pages/SheetsSettings.tsx",
-      "line": 184,
+      "line": 186,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -60608,9 +60658,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "abb416959e03",
+      "id": "cd140670e227",
       "file": "client/src/pages/SheetsSettings.tsx",
-      "line": 195,
+      "line": 197,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -60631,9 +60681,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "10fd52991a8c",
+      "id": "e12e0a3f9325",
       "file": "client/src/pages/SheetsSettings.tsx",
-      "line": 200,
+      "line": 202,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -60654,9 +60704,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "38be42c3c75c",
+      "id": "ead427eb497d",
       "file": "client/src/pages/SheetsSettings.tsx",
-      "line": 217,
+      "line": 219,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -60677,9 +60727,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "fa7594738b96",
+      "id": "0f314daa2962",
       "file": "client/src/pages/SheetsSettings.tsx",
-      "line": 256,
+      "line": 258,
       "tag": "Switch",
       "role": "",
       "kind": "field",
@@ -60700,9 +60750,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "aa848168b2bf",
+      "id": "72b0bdf0714a",
       "file": "client/src/pages/SheetsSettings.tsx",
-      "line": 278,
+      "line": 280,
       "tag": "Switch",
       "role": "",
       "kind": "field",
@@ -60723,9 +60773,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "d97b49bc6d77",
+      "id": "661df2b184f4",
       "file": "client/src/pages/SheetsSettings.tsx",
-      "line": 300,
+      "line": 302,
       "tag": "Switch",
       "role": "",
       "kind": "field",
