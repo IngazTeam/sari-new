@@ -224,12 +224,16 @@ describe("file advice workspace", () => {
     await render();
     await check();
     await click("Analyze and suggest");
-    expect(m.start).toHaveBeenCalledTimes(1);
+    await act(async () => { await vi.waitFor(() => expect(m.start).toHaveBeenCalledTimes(1)); });
     expect(readAdviceReference(scope)).not.toBeNull();
     expect(button("Analyze and suggest")).toBeUndefined();
     await click("Retry");
     expect(m.start).toHaveBeenCalledTimes(1);
     expect(m.refresh).toHaveBeenCalledTimes(1);
+    m.data = { ...receipt(), requestId: readAdviceReference(scope)!.requestId };
+    await render();
+    expect(body()).not.toContain(en.productAdviceUx.unknownResult);
+    expect(body()).toContain(en.productAdviceUx.completed);
   });
   it("reads a saved result and applies only reviewed mappings to the same file", async () => {
     await save();

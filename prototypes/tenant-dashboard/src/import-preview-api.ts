@@ -1,4 +1,4 @@
-import { imports, useImportVersion } from "./import-preview-state";
+import { imports, advice, useImportVersion } from "./import-preview-state";
 function query(read: () => unknown, enabled = true) {
   useImportVersion();
   let data: unknown,
@@ -29,6 +29,15 @@ function query(read: () => unknown, enabled = true) {
 }
 export const trpc = {
   products: {
+    fileAdvice: {
+      start: { useMutation: () => ({ mutateAsync: advice.start }) },
+      read: {
+        useQuery: (input: unknown, options?: { enabled?: boolean }) => ({
+          ...query(() => advice.read(input), options?.enabled !== false),
+          refetch: advice.refresh,
+        }),
+      },
+    },
     list: { useQuery: (input: unknown) => query(() => imports.list(input)) },
     importReview: {
       read: {
@@ -42,6 +51,7 @@ export const trpc = {
   },
   useUtils: () => ({
     products: {
+      fileAdvice: { read: { invalidate: async () => imports.changed() } },
       list: { invalidate: async () => {} },
       importReview: {
         read: {

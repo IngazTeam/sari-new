@@ -11,6 +11,7 @@ for (const language of ["ar", "en"]) {
   );
   copy[language] = {
     productImportUx: text.productImportUx,
+    productAdviceUx: text.productAdviceUx,
     productWorkspaceUx: text.productWorkspaceUx,
     uploadProductsPage: { viewProducts: text.uploadProductsPage.viewProducts },
   };

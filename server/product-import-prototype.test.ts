@@ -281,4 +281,52 @@ describe("built import prototype with actual workspace", () => {
     expect(w.document.querySelector("input[type=file]")).not.toBeNull();
     expect(text()).not.toContain("راجع الملف قبل الإضافة");
   });
+  it("analyzes a local file, recovers its lost reply and applies only the mapping", async () => {
+    await choose(".pp-controls select", "empty");
+    await click("نعم، إعادة المثال");
+    await choose(".pp-controls label:nth-of-type(3) select", "lostReply");
+    const file = new w.File(["name,price\nExample,12.34"], "example.csv", {
+      type: "text/csv",
+    });
+    file.arrayBuffer = async () =>
+      new TextEncoder().encode("name,price\nExample,12.34").buffer;
+    const picker = w.document.querySelector("input[type=file]");
+    Object.defineProperty(picker, "files", { value: [file] });
+    picker.dispatchEvent(new w.Event("change", { bubbles: true }));
+    await vi.waitFor(() =>
+      expect(
+        w.document.querySelector(".pa-workspace input[type=checkbox]").disabled
+      ).toBe(false)
+    );
+    w.document.querySelector(".pa-workspace input[type=checkbox]").click();
+    await vi.waitFor(() =>
+      expect(button("حلّل الملف واقترح").disabled).toBe(false)
+    );
+    await click("حلّل الملف واقترح");
+    await vi.waitFor(() => expect(text()).toContain("لم يصل تأكيد النتيجة"));
+    expect(text()).toContain("عدد التحليلات المحلية: 1");
+    const retry = Array.from(
+      w.document.querySelectorAll(".pa-workspace button")
+    ).find((b: any) => b.textContent.includes("إعادة المحاولة")) as any;
+    expect(retry).toBeTruthy();
+    retry.click();
+    await vi.waitFor(() =>
+      expect(text()).toContain("الاقتراحات جاهزة للمراجعة")
+    );
+    expect(text()).not.toContain("لم يصل تأكيد النتيجة");
+    expect(text()).toContain("Example");
+    w.document.querySelector(".pa-workspace input[type=checkbox]").click();
+    await vi.waitFor(() =>
+      expect(button("استخدم ربط الأعمدة").disabled).toBe(false)
+    );
+    await click("استخدم ربط الأعمدة");
+    await vi.waitFor(() =>
+      expect(text()).toContain("طُبق ربط الأعمدة في نموذج الملف فقط")
+    );
+    expect(text()).toContain("عدد العناصر المنشأة في المحاكاة: 0");
+    await choose(".pp-controls label:nth-of-type(2) select", "en");
+    expect(text()).not.toMatch(/product(?:Advice|Import|Workspace)Ux\./);
+    expect(text()).toContain("Example");
+    expect(w.fetch).not.toHaveBeenCalled();
+  });
 });

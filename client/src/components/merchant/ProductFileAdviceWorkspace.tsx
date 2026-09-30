@@ -117,6 +117,10 @@ export function ProductFileAdviceWorkspace({
     setMappingConsent(false);
   }, [query.dataUpdatedAt, receipt?.sampleDigest]);
   useEffect(() => {
+    if (receipt?.state === "completed" || receipt?.state === "failed")
+      setNotice("");
+  }, [receipt?.state, receipt?.requestId]);
+  useEffect(() => {
     if (confirm) heading.current?.focus();
   }, [confirm]);
   function remember(value: FileAdviceReference) {
@@ -350,6 +354,24 @@ export function ProductFileAdviceWorkspace({
           {!receipt && !busy && (
             <WorkspaceState
               inline
+              title={
+                missing
+                  ? t("productAdviceUx.missing")
+                  : workspaceFailureKind(query.error) === "error" &&
+                      !query.isFetching &&
+                      query.fetchStatus !== "paused"
+                    ? t("productAdviceUx.readFailed")
+                    : undefined
+              }
+              description={
+                missing
+                  ? t("productAdviceUx.missingHint")
+                  : workspaceFailureKind(query.error) === "error" &&
+                      !query.isFetching &&
+                      query.fetchStatus !== "paused"
+                    ? t("productAdviceUx.readFailedHint")
+                    : undefined
+              }
               kind={
                 query.error
                   ? workspaceFailureKind(query.error)

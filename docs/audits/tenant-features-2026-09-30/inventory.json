@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-30T11:47:15.982Z",
+  "generatedAt": "2026-09-30T12:07:08.065Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -2944,7 +2944,7 @@
     },
     {
       "file": "client/src/components/merchant/ProductFileAdviceWorkspace.tsx",
-      "hash": "b3e5d272e69b",
+      "hash": "f9fc55039427",
       "queries": [
         "products.fileAdvice.read"
       ],
@@ -2956,37 +2956,37 @@
       "sections": [
         {
           "label": "عرض الشواهد من الملف",
-          "line": 263,
+          "line": 267,
           "tag": "summary"
         },
         {
           "label": "مساعدة في فهم الملف · اختياري",
-          "line": 290,
+          "line": 294,
           "tag": "summary"
         },
         {
           "label": "راجع ربط الأعمدة المقترح",
-          "line": 402,
+          "line": 424,
           "tag": "h3"
         },
         {
           "label": "ملخص مقترح",
-          "line": 449,
+          "line": 471,
           "tag": "h3"
         },
         {
           "label": "نصائح بيع للمراجعة",
-          "line": 457,
+          "line": 479,
           "tag": "h3"
         },
         {
           "label": "فرص بيع متقاطع مقترحة",
-          "line": 462,
+          "line": 484,
           "tag": "h3"
         },
         {
           "label": "الانتقال لتحليل آخر؟",
-          "line": 486,
+          "line": 508,
           "tag": "h3"
         }
       ],
@@ -17326,18 +17326,18 @@
         "9365a139d675",
         "92ed900ecc5c",
         "a994041f743e",
-        "12b21bfb10db",
-        "f4f5ac07dad9",
-        "8c0df61aabd4",
-        "28f3d92ecbd0",
-        "f7ccfec778a3",
-        "111e0477583b",
-        "ef5fcd86c1e1",
-        "86910b19a9f4",
-        "3b1e7a6654dc",
-        "4876290debe2",
-        "a053c824f9e4",
-        "27896e580c5d"
+        "434dc8944caa",
+        "5af9243e8c34",
+        "209682d391e9",
+        "d85d103ec675",
+        "34f5bc52d544",
+        "b2394e5e98b0",
+        "42ce522c1921",
+        "f78cf0bf5d89",
+        "253709160414",
+        "212735037240",
+        "f22ae35ab452",
+        "35634acd5a61"
       ],
       "queries": [
         "auth.me",
@@ -30781,9 +30781,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "12b21bfb10db",
+      "id": "434dc8944caa",
       "file": "client/src/components/merchant/ProductFileAdviceWorkspace.tsx",
-      "line": 263,
+      "line": 267,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -30802,9 +30802,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "f4f5ac07dad9",
+      "id": "5af9243e8c34",
       "file": "client/src/components/merchant/ProductFileAdviceWorkspace.tsx",
-      "line": 290,
+      "line": 294,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -30823,9 +30823,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "8c0df61aabd4",
+      "id": "209682d391e9",
       "file": "client/src/components/merchant/ProductFileAdviceWorkspace.tsx",
-      "line": 310,
+      "line": 314,
       "tag": "select",
       "role": "",
       "kind": "field",
@@ -30859,9 +30859,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "28f3d92ecbd0",
+      "id": "d85d103ec675",
       "file": "client/src/components/merchant/ProductFileAdviceWorkspace.tsx",
-      "line": 323,
+      "line": 327,
       "tag": "input",
       "role": "",
       "kind": "field",
@@ -30882,9 +30882,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "f7ccfec778a3",
+      "id": "34f5bc52d544",
       "file": "client/src/components/merchant/ProductFileAdviceWorkspace.tsx",
-      "line": 331,
+      "line": 335,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -30905,9 +30905,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "111e0477583b",
+      "id": "b2394e5e98b0",
       "file": "client/src/components/merchant/ProductFileAdviceWorkspace.tsx",
-      "line": 376,
+      "line": 398,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -30929,9 +30929,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ef5fcd86c1e1",
+      "id": "42ce522c1921",
       "file": "client/src/components/merchant/ProductFileAdviceWorkspace.tsx",
-      "line": 420,
+      "line": 442,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -30953,9 +30953,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "86910b19a9f4",
+      "id": "f78cf0bf5d89",
       "file": "client/src/components/merchant/ProductFileAdviceWorkspace.tsx",
-      "line": 428,
+      "line": 450,
       "tag": "input",
       "role": "",
       "kind": "field",
@@ -30977,9 +30977,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "3b1e7a6654dc",
+      "id": "253709160414",
       "file": "client/src/components/merchant/ProductFileAdviceWorkspace.tsx",
-      "line": 436,
+      "line": 458,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -31001,9 +31001,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "4876290debe2",
+      "id": "212735037240",
       "file": "client/src/components/merchant/ProductFileAdviceWorkspace.tsx",
-      "line": 476,
+      "line": 498,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -31025,9 +31025,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "a053c824f9e4",
+      "id": "f22ae35ab452",
       "file": "client/src/components/merchant/ProductFileAdviceWorkspace.tsx",
-      "line": 493,
+      "line": 515,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -31049,9 +31049,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "27896e580c5d",
+      "id": "35634acd5a61",
       "file": "client/src/components/merchant/ProductFileAdviceWorkspace.tsx",
-      "line": 504,
+      "line": 526,
       "tag": "button",
       "role": "",
       "kind": "action",

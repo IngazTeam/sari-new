@@ -10980,6 +10980,10 @@
     "confirmForget": "Start a new file"
   },
   "productAdviceUx": {
+    "readFailed": "Could not read the analysis result",
+    "readFailedHint": "Your request reference is saved. Check again; the file will not be sent for analysis again.",
+    "missing": "Analysis reference not found",
+    "missingHint": "Check again, or start another analysis after reviewing the local reference removal notice.",
     "title": "Help understanding this file · optional",
     "hint": "Column mapping and sales suggestions with evidence from your file. You can import without analysis.",
     "storageError": "This browser could not retain the analysis reference. Retry before sending.",

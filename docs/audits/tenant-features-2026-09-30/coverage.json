@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-30T11:47:15.982Z",
+  "generatedAt": "2026-09-30T12:07:08.065Z",
   "definition": "Every registered route is accounted for; source inventory and design completion are different statuses.",
   "routes": [
     {
@@ -8351,18 +8351,18 @@
         "9365a139d675",
         "92ed900ecc5c",
         "a994041f743e",
-        "12b21bfb10db",
-        "f4f5ac07dad9",
-        "8c0df61aabd4",
-        "28f3d92ecbd0",
-        "f7ccfec778a3",
-        "111e0477583b",
-        "ef5fcd86c1e1",
-        "86910b19a9f4",
-        "3b1e7a6654dc",
-        "4876290debe2",
-        "a053c824f9e4",
-        "27896e580c5d"
+        "434dc8944caa",
+        "5af9243e8c34",
+        "209682d391e9",
+        "d85d103ec675",
+        "34f5bc52d544",
+        "b2394e5e98b0",
+        "42ce522c1921",
+        "f78cf0bf5d89",
+        "253709160414",
+        "212735037240",
+        "f22ae35ab452",
+        "35634acd5a61"
       ],
       "queries": [
         "auth.me",
@@ -8405,12 +8405,13 @@
         "شاشة مراجعة CSV/Excel الفعلية وقارئ الملفات نفسه داخل المتصفح، مع17 حقلًا وأخطاء صفوف ومعادلات وترقيم وربط أعمدة",
         "22 حالة تشمل الفراغ والصلاحيات والمصدر والفشل والتعارض وانتهاء المراجعة والإيصال غير المطابق والنتيجة غير المؤكدة",
         "الموافقة مرتبطة بالمراجعة واستعادة الطلب نفسه، والمنتجات والإيصالات محاكاة معزولة عن كتالوج المثال",
-        "العربية والإنجليزية ونموذج CSV وتنزيل قوالب المنتج والخدمة"
+        "العربية والإنجليزية ونموذج CSV وتنزيل قوالب المنتج والخدمة",
+        "مساعدة الملف بمكوّن التطبيق وعينة الملف واقتباساته مع12 حالة؛ تطبيق الربط فقط واستعادة التحليل دون تكراره"
       ],
       "acceptancePlan": "حقول الإضافة والتعديل والتحقق؛ المصدر والسعر والمخزون؛ الاستيراد والصور والفئات؛ الحالات والتفعيل والحذف والتصفية.",
       "gaps": [
         "راجع tenant-product-import-workspace/prototype-2026-09-30. الملفات تقرأ محليًا في الموك أب دون رفع؛ الكتابات في الذاكرة والبصمات تجريبية وليست ضمان أمان أو حفظ خادم.",
-        "مساعدة الملف الاختيارية مربوطة بالتطبيق مع اقتباسات وربط أعمدة وموافقة واستعادة؛ موك أب المساعدة وأدوات Google Sheets ما زالت تحتاج تحويلًا. أُغلق uploadCSV/uploadExcel القديمان بعد فحص المستهلكين؛ راجع tenant-product-file-advice-workspace-2026-09-30.",
+        "مساعدة الملف مطابقة للتطبيق؛ نصائح الموك أب ثابتة محلية وليست تحليل نموذج حقيقي. أُغلقت uploadCSV/uploadExcel/smartImport القديمة. أدوات Google Sheets ما زالت تحتاج تحويلًا؛ راجع tenant-product-file-advice-prototype-2026-09-30.",
         "تحقق العرض المكتبي و480 فقط؛ Safari/iPhone و320/390 وحفظ التنزيل ما زالت مفتوحة."
       ],
       "controlDetails": [
@@ -9331,9 +9332,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "12b21bfb10db",
+          "id": "434dc8944caa",
           "file": "client/src/components/merchant/ProductFileAdviceWorkspace.tsx",
-          "line": 263,
+          "line": 267,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -9352,9 +9353,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "f4f5ac07dad9",
+          "id": "5af9243e8c34",
           "file": "client/src/components/merchant/ProductFileAdviceWorkspace.tsx",
-          "line": 290,
+          "line": 294,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -9373,9 +9374,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "8c0df61aabd4",
+          "id": "209682d391e9",
           "file": "client/src/components/merchant/ProductFileAdviceWorkspace.tsx",
-          "line": 310,
+          "line": 314,
           "tag": "select",
           "role": "",
           "kind": "field",
@@ -9409,9 +9410,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "28f3d92ecbd0",
+          "id": "d85d103ec675",
           "file": "client/src/components/merchant/ProductFileAdviceWorkspace.tsx",
-          "line": 323,
+          "line": 327,
           "tag": "input",
           "role": "",
           "kind": "field",
@@ -9432,9 +9433,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "f7ccfec778a3",
+          "id": "34f5bc52d544",
           "file": "client/src/components/merchant/ProductFileAdviceWorkspace.tsx",
-          "line": 331,
+          "line": 335,
           "tag": "button",
           "role": "",
           "kind": "action",
@@ -9455,9 +9456,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "111e0477583b",
+          "id": "b2394e5e98b0",
           "file": "client/src/components/merchant/ProductFileAdviceWorkspace.tsx",
-          "line": 376,
+          "line": 398,
           "tag": "button",
           "role": "",
           "kind": "action",
@@ -9479,9 +9480,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "ef5fcd86c1e1",
+          "id": "42ce522c1921",
           "file": "client/src/components/merchant/ProductFileAdviceWorkspace.tsx",
-          "line": 420,
+          "line": 442,
           "tag": "button",
           "role": "",
           "kind": "action",
@@ -9503,9 +9504,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "86910b19a9f4",
+          "id": "f78cf0bf5d89",
           "file": "client/src/components/merchant/ProductFileAdviceWorkspace.tsx",
-          "line": 428,
+          "line": 450,
           "tag": "input",
           "role": "",
           "kind": "field",
@@ -9527,9 +9528,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "3b1e7a6654dc",
+          "id": "253709160414",
           "file": "client/src/components/merchant/ProductFileAdviceWorkspace.tsx",
-          "line": 436,
+          "line": 458,
           "tag": "button",
           "role": "",
           "kind": "action",
@@ -9551,9 +9552,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "4876290debe2",
+          "id": "212735037240",
           "file": "client/src/components/merchant/ProductFileAdviceWorkspace.tsx",
-          "line": 476,
+          "line": 498,
           "tag": "button",
           "role": "",
           "kind": "action",
@@ -9575,9 +9576,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "a053c824f9e4",
+          "id": "f22ae35ab452",
           "file": "client/src/components/merchant/ProductFileAdviceWorkspace.tsx",
-          "line": 493,
+          "line": 515,
           "tag": "button",
           "role": "",
           "kind": "action",
@@ -9599,9 +9600,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "27896e580c5d",
+          "id": "35634acd5a61",
           "file": "client/src/components/merchant/ProductFileAdviceWorkspace.tsx",
-          "line": 504,
+          "line": 526,
           "tag": "button",
           "role": "",
           "kind": "action",

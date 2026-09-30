@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { ProductImportWorkspace } from "../../../client/src/components/merchant/ProductImportWorkspace";
+import { ProductFileAdviceWorkspace } from "../../../client/src/components/merchant/ProductFileAdviceWorkspace";
+import { clearAdviceReference } from "../../../client/src/lib/product-file-advice-workspace";
+import { adviceModes, type AdviceMode } from "./import-advice-model";
 import {
   readImportAttempt,
   saveImportAttempt,
@@ -16,6 +19,7 @@ import {
 } from "./import-model";
 import {
   imports,
+  advice,
   importLanguage,
   importHint,
   useImportVersion,
@@ -70,6 +74,21 @@ function Preview() {
               <option value="en">English</option>
             </select>
           </label>
+          <label>
+            حالة مساعدة الملف
+            <select
+              value={advice.mode}
+              onChange={event =>
+                advice.setMode(event.target.value as AdviceMode)
+              }
+            >
+              {Object.entries(adviceModes).map(([key, label]) => (
+                <option key={key} value={key}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
           <button
             type="button"
             onClick={() =>
@@ -82,6 +101,7 @@ function Preview() {
             إعادة المثال
           </button>
           <span>عدد العناصر المنشأة في المحاكاة: {imports.createdCount}</span>
+          <span>عدد التحليلات المحلية: {advice.starts}</span>
         </div>
         {confirm && (
           <div role="alert">
@@ -91,6 +111,11 @@ function Preview() {
               onClick={() => {
                 try {
                   clearImportAttempt(importPreviewScope, knowledgeCacheEpoch());
+                  clearAdviceReference(
+                    importPreviewScope,
+                    knowledgeCacheEpoch()
+                  );
+                  advice.reset();
                   imports.reset();
                   if (confirm === "data")
                     saveImportAttempt(
@@ -125,12 +150,14 @@ function Preview() {
         key={generation}
         scope={importPreviewScope}
         href={path => "#/page" + path}
+        renderAdvice={props => <ProductFileAdviceWorkspace {...props} />}
       />
       <aside className="pp-controls">
         <p>
-          أدوات الاستيراد الذكي وGoogle Sheets ما زالت ضمن مرحلة تحويل مستقلة.
-          هذا المثال يغطي مراجعة CSV/Excel فقط ولا يدّعي تنفيذ الذكاء الاصطناعي
-          أو المزامنة.
+          مساعدة الملف تعرض اقتراحات محلية ثابتة مع شواهد من الملف، دون ذكاء
+          اصطناعي أو إرسال أو رسوم. اختر «قبل اختيار الملف» لتجربتها. لا تتغير
+          المعرفة أو المنتجات عند التحليل؛ تطبيق الربط يجهّز معاينة فقط. أدوات
+          Google Sheets ما زالت ضمن مرحلة تحويل مستقلة.
         </p>
         <a href="#/page/merchant/sheets/settings">عرض إعدادات Google Sheets</a>
       </aside>
@@ -146,6 +173,7 @@ export function mount() {
     // Navigating between prototype pages keeps both until a full reload.
     if (!initialized) {
       clearImportAttempt(importPreviewScope, knowledgeCacheEpoch());
+      clearAdviceReference(importPreviewScope, knowledgeCacheEpoch());
       initialized = true;
     }
     if (imports.mode !== "empty" && !readImportAttempt(importPreviewScope))
