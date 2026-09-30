@@ -9,6 +9,7 @@ import {
   productSheetSnapshot,
 } from "../shared/product-sheet-import";
 import { previewProductImportRows } from "./product-import-preview";
+import { productSheetGrid } from "../shared/product-sheet-grid";
 export class ProductSheetReadError extends Error {
   constructor(
     public readonly reason:
@@ -134,20 +135,16 @@ const grid = z
       .optional(),
   })
   .strict();
-export function previewProductSheet(
+export function readProductSheetGrid(
   raw: unknown,
   selection: {
     spreadsheetId: string;
     sheet: unknown;
-    options: unknown;
     readAt: string;
   }
 ) {
   const spreadsheetId = productSpreadsheetId.parse(selection.spreadsheetId),
-    sheet = productSheet.parse(selection.sheet),
-    options = productSheetOptions.parse(selection.options);
-  if (options.sheetId !== sheet.id)
-    throw new ProductSheetReadError("source_changed");
+    sheet = productSheet.parse(selection.sheet);
   const data = z
     .object({
       spreadsheetId: productSpreadsheetId,
@@ -208,6 +205,7 @@ export function previewProductSheet(
       if (text.length > 16000) throw new ProductSheetReadError("cell_limit");
       return {
         text,
+        ...(v?.boolValue !== undefined ? { boolean: true } : {}),
         ...(formula
           ? { issue: "formula" as const }
           : unsupported
@@ -216,6 +214,37 @@ export function previewProductSheet(
       };
     }),
   }));
+  return productSheetGrid.parse({
+    spreadsheetId,
+    sheet,
+    range: productSheetRange(sheet),
+    readAt: selection.readAt,
+    coveredRows,
+    coveredColumns,
+    limitedRange: sheet.rows > coveredRows || sheet.columns > coveredColumns,
+    rows,
+  });
+}
+export function previewProductSheet(
+  raw: unknown,
+  selection: {
+    spreadsheetId: string;
+    sheet: unknown;
+    options: unknown;
+    readAt: string;
+  }
+) {
+  const options = productSheetOptions.parse(selection.options),
+    sheet = productSheet.parse(selection.sheet);
+  if (options.sheetId !== sheet.id)
+    throw new ProductSheetReadError("source_changed");
+  const grid = readProductSheetGrid(raw, selection);
+  // Preserve existing product-import semantics and snapshot identities.
+  const rows = grid.rows.map(row => ({
+    ...row,
+    cells: row.cells.map(({ boolean, ...cell }) => cell),
+  }));
+  const { spreadsheetId, coveredRows, coveredColumns } = grid;
   const { sheetId, ...defaults } = options;
   const preview = previewProductImportRows(
     {
