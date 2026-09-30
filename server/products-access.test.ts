@@ -8,6 +8,10 @@ const mocks = vi.hoisted(() => ({
   update: vi.fn(),
   remove: vi.fn(),
   pool: vi.fn(),
+  reviewedDelete: vi.fn(),
+}));
+vi.mock("./product-delete", () => ({
+  deleteReviewedProducts: mocks.reviewedDelete,
 }));
 vi.mock("./accounts/merchant-access", () => ({
   resolveMerchantAccess: mocks.access,
@@ -90,26 +94,34 @@ describe("product reads and team permissions", () => {
       memberId: 3,
       role: "viewer",
     });
-    await expect(caller().delete({ productId: 1 })).rejects.toMatchObject({
+    await expect(
+      caller().editor.deleteWrite({
+        ids: [1],
+        reviewed: true,
+        requestId: "11111111-1111-4111-8111-111111111111",
+        expectedDigest: "a".repeat(64),
+      })
+    ).rejects.toMatchObject({
       code: "FORBIDDEN",
     });
     expect(mocks.getProduct).not.toHaveBeenCalled();
   });
   it("lets a manager mutate their own product without needing merchants.userId ownership", async () => {
-    mocks.getProduct.mockResolvedValue({ id: 1, merchantId: 20 });
-    await expect(caller().delete({ productId: 1 })).resolves.toEqual({
-      success: true,
+    const input = {
+      ids: [1],
+      reviewed: true as const,
+      requestId: "11111111-1111-4111-8111-111111111111",
+      expectedDigest: "a".repeat(64),
+    };
+    mocks.reviewedDelete.mockResolvedValue({ requestId: input.requestId });
+    await expect(caller().editor.deleteWrite(input)).resolves.toEqual({
+      requestId: input.requestId,
     });
-    expect(mocks.merchant).toHaveBeenCalledWith(20);
-    expect(mocks.remove).toHaveBeenCalledWith(1);
+    expect(mocks.reviewedDelete).toHaveBeenCalledWith(20, 7, input);
   });
-  it("blocks cross-tenant read, write and delete before side effects", async () => {
+  it("blocks cross-tenant compatibility reads before side effects", async () => {
     mocks.getProduct.mockResolvedValue({ id: 1, merchantId: 30 });
-    for (const request of [
-      caller().getById({ productId: 1 }),
-      caller().update({ productId: 1, name: "changed" }),
-      caller().delete({ productId: 1 }),
-    ]) {
+    for (const request of [caller().getById({ productId: 1 })]) {
       await expect(request).rejects.toMatchObject({ code: "FORBIDDEN" });
     }
     expect(mocks.remove).not.toHaveBeenCalled();

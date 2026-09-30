@@ -72,13 +72,6 @@ export async function updateProduct(id: number, data: Partial<InsertProduct>, in
     await db.update(products).set(normalizeProductMoneyWrite(data, inputUnit)).where(eq(products.id, id));
 }
 
-export async function deleteProduct(id: number): Promise<void> {
-    const db = await getDb();
-    if (!db) return;
-
-    await db.delete(products).where(eq(products.id, id));
-}
-
 export async function bulkCreateProducts(productList: InsertProduct[]): Promise<void> {
     const db = await getDb();
     if (!db) return;
