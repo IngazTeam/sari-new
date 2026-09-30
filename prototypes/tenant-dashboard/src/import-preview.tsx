@@ -6,6 +6,7 @@ import { ProductSheetWorkspace } from "../../../client/src/components/merchant/P
 import { clearSheetAttempt } from "../../../client/src/lib/product-sheet-workspace";
 import { sheetModes, type SheetMode } from "./import-sheet-model";
 import { InventoryPreview } from "./inventory-preview";
+import { ExportPreview } from "./export-preview";
 import { inventoryPreviewScope } from "./inventory-sheet-model";
 import { clearSheetAttempt as clearInventoryAttempt } from "../../../client/src/lib/inventory-sheet-workspace";
 import { clearAdviceReference } from "../../../client/src/lib/product-file-advice-workspace";
@@ -37,11 +38,13 @@ import "./product-preview.css";
 let root: Root | null = null;
 let initialized = false;
 export const handles = (page: { route: string }) =>
-  ["/merchant/products/upload", "/merchant/sheets/inventory"].includes(
-    page?.route
-  );
+  [
+    "/merchant/products/upload",
+    "/merchant/sheets/inventory",
+    "/merchant/data-sync",
+  ].includes(page?.route);
 export const render = (page?: { route: string }) =>
-  `<div id="import-prototype-root" data-kind="${page?.route === "/merchant/sheets/inventory" ? "inventory" : "import"}"></div>`;
+  `<div id="import-prototype-root" data-kind="${page?.route === "/merchant/data-sync" ? "export" : page?.route === "/merchant/sheets/inventory" ? "inventory" : "import"}"></div>`;
 function Preview() {
   useImportVersion();
   const [generation, setGeneration] = useState(0),
@@ -223,7 +226,7 @@ export function mount() {
       initialized = true;
     }
     if (
-      node.dataset.kind !== "inventory" &&
+      node.dataset.kind === "import" &&
       imports.mode !== "empty" &&
       !readImportAttempt(importPreviewScope)
     )
@@ -237,7 +240,13 @@ export function mount() {
   }
   root = createRoot(node);
   root.render(
-    node.dataset.kind === "inventory" ? <InventoryPreview /> : <Preview />
+    node.dataset.kind === "export" ? (
+      <ExportPreview />
+    ) : node.dataset.kind === "inventory" ? (
+      <InventoryPreview />
+    ) : (
+      <Preview />
+    )
   );
 }
 export function unmount() {

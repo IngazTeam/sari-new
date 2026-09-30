@@ -1,18 +1,16 @@
+import { projectInventoryExport } from "../shared/inventory-sheet-export-plan";
 import { and, eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { products } from "../drizzle/schema";
 import {
   inventoryExportReceipt,
-  inventoryExportRows,
   inventorySheetExportInput,
   INVENTORY_EXPORT_MAX_ROWS,
 } from "../shared/inventory-sheet-export";
-import { verifiedProductMoney } from "../shared/product-money";
 import { catalogVisibleSql } from "./integrations/catalog-scope";
 import {
   productEditorStore as store,
   ProductEditorForbidden,
-  ProductEditorInvalid,
 } from "./product-editor";
 import {
   readProductSheetConnectionOn,
@@ -23,67 +21,12 @@ import {
   InventoryExportProviderError,
 } from "./inventory-sheet-export-provider";
 
-export class InventoryExportLimit extends Error {}
-export class InventoryExportEmpty extends Error {}
-export function projectInventoryExport(
-  products: readonly {
-    id: number;
-    merchantId: number;
-    name: string;
-    category: string | null;
-    price: number;
-    priceUnit: string;
-    currency: string;
-    stock: number | null;
-  }[],
-  merchantId: number,
-  at: string
-) {
-  if (!products.length) throw new InventoryExportEmpty();
-  if (products.length > INVENTORY_EXPORT_MAX_ROWS)
-    throw new InventoryExportLimit();
-  let unknownStock = 0,
-    unverifiedPrice = 0;
-  const ids = new Set<number>();
-  const rows = products.map(p => {
-    if (
-      p.merchantId !== merchantId ||
-      !Number.isInteger(p.id) ||
-      p.id < 1 ||
-      p.id > 2147483647 ||
-      ids.has(p.id)
-    )
-      throw new ProductEditorInvalid();
-    ids.add(p.id);
-    let price = "";
-    try {
-      const v = verifiedProductMoney(p);
-      price = `${Math.floor(v.minor / 100)}.${String(v.minor % 100).padStart(2, "0")} ${v.currency}`;
-    } catch {
-      unverifiedPrice++;
-    }
-    const validStock =
-      typeof p.stock === "number" &&
-      Number.isInteger(p.stock) &&
-      p.stock >= 0 &&
-      p.stock <= 2147483647;
-    if (!validStock) unknownStock++;
-    return [
-      String(p.id),
-      p.name,
-      p.category ?? "",
-      price,
-      validStock ? String(p.stock) : "",
-      at,
-    ];
-  });
-  return {
-    rows: inventoryExportRows.parse(rows),
-    unknownStock,
-    unverifiedPrice,
-  };
-}
-
+export {
+  InventoryExportLimit,
+  InventoryExportEmpty,
+  InventoryExportInvalid,
+  projectInventoryExport,
+} from "../shared/inventory-sheet-export-plan";
 export async function readInventoryExportStatus(
   merchantId: number,
   actorId: number

@@ -1006,10 +1006,10 @@ window.TENANT_PAGES = [
   },
   {
     "route": "/merchant/data-sync",
-    "title": "مزامنة Google Sheets",
+    "title": "تصدير المخزون إلى Google Sheets",
     "group": "settings",
     "file": "client/src/pages/merchant/DataSync.tsx",
-    "note": "إجراء ربط قبل مزامنة الآن؛ بيان عدم التفعيل بدل تعليمات تبدو كحالة تشغيل.",
+    "note": "موافقة قبل التصدير ونتيجة مؤكدة أو تنبيه محفوظ؛19 حالة محلية ووجهة تجريبية قابلة للفحص.",
     "kind": "integration",
     "action": "مراجعة المزامنة",
     "labels": [

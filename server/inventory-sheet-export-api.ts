@@ -10,6 +10,7 @@ import { ProductSheetDisconnected } from "./product-sheet-source";
 import {
   InventoryExportLimit,
   InventoryExportEmpty,
+  InventoryExportInvalid,
 } from "./inventory-sheet-export";
 import { InventoryExportProviderError } from "./inventory-sheet-export-provider";
 export async function guardInventoryExport<T>(run: () => Promise<T>) {
@@ -26,6 +27,7 @@ export async function guardInventoryExport<T>(run: () => Promise<T>) {
             : error instanceof ProductSheetDisconnected
               ? "PRECONDITION_FAILED"
               : error instanceof ProductEditorInvalid ||
+                  error instanceof InventoryExportInvalid ||
                   error instanceof ZodError ||
                   error instanceof InventoryExportLimit ||
                   error instanceof InventoryExportEmpty

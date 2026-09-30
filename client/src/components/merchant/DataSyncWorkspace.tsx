@@ -18,9 +18,14 @@ import "@/styles/product-workspace.css";
 export function DataSyncWorkspace({
   scope,
   href = (path: string) => path,
+  sheetHref = (id: string) =>
+    `https://docs.google.com/spreadsheets/d/${id}/edit`,
+  openSheet,
 }: {
   scope: string;
   href?: (path: string) => string;
+  sheetHref?: (id: string) => string;
+  openSheet?: (id: string) => void;
 }) {
   const { t, i18n } = useTranslation(),
     utils = trpc.useUtils();
@@ -282,8 +287,16 @@ export function DataSyncWorkspace({
           <p>{t("dataSyncUx.pendingHint")}</p>
           <a
             className="pw-button"
-            href={`https://docs.google.com/spreadsheets/d/${attempt.spreadsheetId}/edit`}
-            target="_blank"
+            href={sheetHref(attempt.spreadsheetId)}
+            onClick={
+              openSheet
+                ? e => {
+                    e.preventDefault();
+                    openSheet(attempt.spreadsheetId);
+                  }
+                : undefined
+            }
+            target={openSheet ? undefined : "_blank"}
             rel="noopener noreferrer"
           >
             {t("dataSyncUx.openAttempt")}
@@ -324,8 +337,16 @@ export function DataSyncWorkspace({
               <p className="pw-muted">{t("dataSyncUx.activityHint")}</p>
               <a
                 className="pw-button"
-                href={`https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`}
-                target="_blank"
+                href={sheetHref(spreadsheetId!)}
+                onClick={
+                  openSheet
+                    ? e => {
+                        e.preventDefault();
+                        openSheet(spreadsheetId!);
+                      }
+                    : undefined
+                }
+                target={openSheet ? undefined : "_blank"}
                 rel="noopener noreferrer"
               >
                 {t("dataSyncUx.openSheet")}

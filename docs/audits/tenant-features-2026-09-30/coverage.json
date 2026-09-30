@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-30T15:12:13.004Z",
+  "generatedAt": "2026-09-30T15:26:26.914Z",
   "definition": "Every registered route is accounted for; source inventory and design completion are different statuses.",
   "routes": [
     {
@@ -43087,7 +43087,7 @@
     },
     {
       "route": "/merchant/data-sync",
-      "title": "مزامنة Google Sheets",
+      "title": "تصدير المخزون إلى Google Sheets",
       "prototype": true,
       "entryComponents": [
         "DataSync"
@@ -43102,17 +43102,17 @@
       ],
       "controls": [
         "77ce5300e6f7",
-        "58e823bb83ed",
-        "68f5ab2227f3",
-        "e12ba1fd7d7a",
-        "7ea46ac0a835",
-        "64a1a74aeb86",
-        "d58b69287d1d",
-        "fdef7636444a",
-        "3127f516940e",
-        "986fdf895ce4",
-        "9e554a5c9b27",
-        "56ab58d9849c",
+        "7d99371887ea",
+        "a7054f0a0a01",
+        "0817d056ef20",
+        "3216cbedb57e",
+        "3faff29cc94e",
+        "4e2ccb521744",
+        "e588cbf67b3b",
+        "2cc6322039e1",
+        "81c1dedd8a9f",
+        "ee729338b566",
+        "12dcbb25c8f1",
         "8781b3ad3758",
         "ab0c78e94084"
       ],
@@ -43126,16 +43126,17 @@
       ],
       "imperativeReads": [],
       "browserRequests": [],
-      "design": "موك أب عام",
+      "design": "تفصيلي جزئي",
       "productionChanged": true,
       "designSections": [
         "واجهة فعلية موحدة تعرض الاتصال ووجهة التصدير واتجاهه والتأكيد قبل الكتابة",
         "فصل نتيجة الفشل عن HTTP الناجح وفقد الرد، ومنع الإرسال المتكرر وإخفاء نتيجة الوجهة السابقة",
-        "وقت نشاط الاتصال لا يُقدم كإيصال تصدير، وروابط المراجعة المستقلة للمنتجات والكميات"
+        "وقت نشاط الاتصال لا يُقدم كإيصال تصدير، وروابط المراجعة المستقلة للمنتجات والكميات",
+        "موك أب يستخدم مكوّن التطبيق وخطة التصدير نفسها مع19 حالة و25 صفًا محليًا ووجهة قابلة للفحص دون شبكة"
       ],
       "acceptancePlan": "الدخول والإعداد والتنقل والبحث والحفظ والتحقق من الحالة.",
       "gaps": [
-        "راجع tenant-data-sync-feedback-2026-09-30؛ الموك أب التفصيلي المطابق تالٍ لتصحيح مصدر التصدير.",
+        "راجع tenant-inventory-export-prototype-2026-09-30؛ الموك أب يطابق المكوّن وقواعد الإسقاط ولا يثبت OAuth أو كتابة Google الحقيقية.",
         "صُحح مصدر التصدير وصلاحيته والكتابة الحرفية وحماية الكمية المجهولة ومسح الصفوف الزائدة؛ راجع tenant-inventory-export-2026-09-30. بقي getStatus القديم لشاشات الربط الأخرى حتى مراجعتها.",
         "حالة الرد غير المؤكد محفوظة في علامة التبويب عبر التنقل وإعادة التحميل مع الوجهة الأصلية؛ راجع tenant-inventory-export-recovery-2026-09-30. الإيصال الدائم في الخادم ومطابقة نسخة الكتالوج لم ينفذا بعد. لم يحدث اتصال Google حقيقي ولا اختبار Safari/iPhone."
       ],
@@ -43162,9 +43163,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "58e823bb83ed",
+          "id": "7d99371887ea",
           "file": "client/src/components/merchant/DataSyncWorkspace.tsx",
-          "line": 262,
+          "line": 267,
           "tag": "a",
           "role": "",
           "kind": "action",
@@ -43183,9 +43184,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "68f5ab2227f3",
+          "id": "a7054f0a0a01",
           "file": "client/src/components/merchant/DataSyncWorkspace.tsx",
-          "line": 270,
+          "line": 275,
           "tag": "button",
           "role": "",
           "kind": "action",
@@ -43206,9 +43207,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "e12ba1fd7d7a",
+          "id": "0817d056ef20",
           "file": "client/src/components/merchant/DataSyncWorkspace.tsx",
-          "line": 273,
+          "line": 278,
           "tag": "button",
           "role": "",
           "kind": "action",
@@ -43229,22 +43230,22 @@
           "review": "source-inventoried"
         },
         {
-          "id": "7ea46ac0a835",
+          "id": "3216cbedb57e",
           "file": "client/src/components/merchant/DataSyncWorkspace.tsx",
-          "line": 283,
+          "line": 288,
           "tag": "a",
           "role": "",
           "kind": "action",
           "label": "فتح وجهة المحاولة السابقة ↗",
           "section": "محاولة تصدير تحتاج مراجعتك",
-          "binding": "`https://docs.google.com/spreadsheets/d/${attempt.spreadsheetId}/edit`",
+          "binding": "openSheet\n                ? e => {\n                    e.preventDefault();\n                    openSheet(attempt.spreadsheetId);\n                  }\n                : undefined",
           "type": "text",
           "options": [],
           "min": "",
           "max": "",
           "maxLength": "",
           "required": false,
-          "conditional": false,
+          "conditional": true,
           "conditions": [
             "attempt && !busy && canShowResult"
           ],
@@ -43252,22 +43253,22 @@
           "review": "source-inventoried"
         },
         {
-          "id": "64a1a74aeb86",
+          "id": "3faff29cc94e",
           "file": "client/src/components/merchant/DataSyncWorkspace.tsx",
-          "line": 325,
+          "line": 338,
           "tag": "a",
           "role": "",
           "kind": "action",
           "label": "فتح الجدول ↗",
           "section": "وجهة التصدير",
-          "binding": "`https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`",
+          "binding": "openSheet\n                    ? e => {\n                        e.preventDefault();\n                        openSheet(spreadsheetId!);\n                      }\n                    : undefined",
           "type": "text",
           "options": [],
           "min": "",
           "max": "",
           "maxLength": "",
           "required": false,
-          "conditional": false,
+          "conditional": true,
           "conditions": [
             "ready",
             "status.isLoading || status.isFetching",
@@ -43278,9 +43279,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "d58b69287d1d",
+          "id": "4e2ccb521744",
           "file": "client/src/components/merchant/DataSyncWorkspace.tsx",
-          "line": 336,
+          "line": 357,
           "tag": "button",
           "role": "",
           "kind": "action",
@@ -43303,9 +43304,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "fdef7636444a",
+          "id": "e588cbf67b3b",
           "file": "client/src/components/merchant/DataSyncWorkspace.tsx",
-          "line": 374,
+          "line": 395,
           "tag": "button",
           "role": "",
           "kind": "action",
@@ -43327,9 +43328,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "3127f516940e",
+          "id": "2cc6322039e1",
           "file": "client/src/components/merchant/DataSyncWorkspace.tsx",
-          "line": 381,
+          "line": 402,
           "tag": "input",
           "role": "",
           "kind": "field",
@@ -43348,9 +43349,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "986fdf895ce4",
+          "id": "81c1dedd8a9f",
           "file": "client/src/components/merchant/DataSyncWorkspace.tsx",
-          "line": 390,
+          "line": 411,
           "tag": "button",
           "role": "",
           "kind": "action",
@@ -43369,9 +43370,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "9e554a5c9b27",
+          "id": "ee729338b566",
           "file": "client/src/components/merchant/DataSyncWorkspace.tsx",
-          "line": 406,
+          "line": 427,
           "tag": "a",
           "role": "",
           "kind": "action",
@@ -43390,9 +43391,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "56ab58d9849c",
+          "id": "12dcbb25c8f1",
           "file": "client/src/components/merchant/DataSyncWorkspace.tsx",
-          "line": 409,
+          "line": 430,
           "tag": "a",
           "role": "",
           "kind": "action",

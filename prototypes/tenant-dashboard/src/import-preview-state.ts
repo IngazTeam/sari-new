@@ -3,10 +3,12 @@ import { ImportPreviewStore } from "./import-model";
 import { ImportAdviceStore } from "./import-advice-model";
 import { ImportSheetStore } from "./import-sheet-model";
 import { InventorySheetStore } from "./inventory-sheet-model";
+import { ExportPreviewStore } from "./export-model";
 export const imports = new ImportPreviewStore();
 export const advice = new ImportAdviceStore(() => imports.changed());
 export const sheets = new ImportSheetStore(() => imports.changed());
 export const inventorySheets = new InventorySheetStore(() => imports.changed());
+export const exportSheets = new ExportPreviewStore(() => imports.changed());
 export let importLanguage = "ar",
   importHint = "";
 export function useImportVersion() {

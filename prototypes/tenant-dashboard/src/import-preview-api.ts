@@ -3,6 +3,7 @@ import {
   advice,
   sheets,
   inventorySheets,
+  exportSheets,
   useImportVersion,
 } from "./import-preview-state";
 function sheetQuery(
@@ -61,6 +62,12 @@ function query(read: () => unknown, enabled = true) {
   };
 }
 export const trpc = {
+  sheets: {
+    inventoryStatus: {
+      useQuery: () => sheetQuery(exportSheets.status, true, exportSheets),
+    },
+    syncInventory: { useMutation: () => ({ mutateAsync: exportSheets.send }) },
+  },
   products: {
     sheetInventory: {
       connection: {
@@ -126,6 +133,7 @@ export const trpc = {
     },
   },
   useUtils: () => ({
+    sheets: { inventoryStatus: { invalidate: async () => imports.changed() } },
     products: {
       sheetInventory: {
         read: {

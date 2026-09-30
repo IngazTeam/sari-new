@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-30T15:12:13.004Z",
+  "generatedAt": "2026-09-30T15:26:26.914Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -11569,7 +11569,7 @@
     },
     {
       "file": "client/src/components/merchant/DataSyncWorkspace.tsx",
-      "hash": "c1d80639343e",
+      "hash": "83ff4fa6e562",
       "queries": [
         "sheets.inventoryStatus"
       ],
@@ -11581,22 +11581,22 @@
       "sections": [
         {
           "label": "محاولة تصدير تحتاج مراجعتك",
-          "line": 281,
+          "line": 286,
           "tag": "h2"
         },
         {
           "label": "وجهة التصدير",
-          "line": 311,
+          "line": 324,
           "tag": "h2"
         },
         {
           "label": "من ساري إلى Google Sheets",
-          "line": 350,
+          "line": 371,
           "tag": "h2"
         },
         {
           "label": "إدخال التغييرات إلى ساري",
-          "line": 403,
+          "line": 424,
           "tag": "h2"
         }
       ],
@@ -11606,7 +11606,7 @@
         {
           "query": "sheets.inventoryStatus",
           "binding": "status",
-          "line": 27,
+          "line": 32,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
@@ -20643,7 +20643,7 @@
     },
     {
       "route": "/merchant/data-sync",
-      "title": "مزامنة Google Sheets",
+      "title": "تصدير المخزون إلى Google Sheets",
       "prototype": true,
       "entryComponents": [
         "DataSync"
@@ -20658,17 +20658,17 @@
       ],
       "controls": [
         "77ce5300e6f7",
-        "58e823bb83ed",
-        "68f5ab2227f3",
-        "e12ba1fd7d7a",
-        "7ea46ac0a835",
-        "64a1a74aeb86",
-        "d58b69287d1d",
-        "fdef7636444a",
-        "3127f516940e",
-        "986fdf895ce4",
-        "9e554a5c9b27",
-        "56ab58d9849c",
+        "7d99371887ea",
+        "a7054f0a0a01",
+        "0817d056ef20",
+        "3216cbedb57e",
+        "3faff29cc94e",
+        "4e2ccb521744",
+        "e588cbf67b3b",
+        "2cc6322039e1",
+        "81c1dedd8a9f",
+        "ee729338b566",
+        "12dcbb25c8f1",
         "8781b3ad3758",
         "ab0c78e94084"
       ],
@@ -55338,9 +55338,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "58e823bb83ed",
+      "id": "7d99371887ea",
       "file": "client/src/components/merchant/DataSyncWorkspace.tsx",
-      "line": 262,
+      "line": 267,
       "tag": "a",
       "role": "",
       "kind": "action",
@@ -55359,9 +55359,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "68f5ab2227f3",
+      "id": "a7054f0a0a01",
       "file": "client/src/components/merchant/DataSyncWorkspace.tsx",
-      "line": 270,
+      "line": 275,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -55382,9 +55382,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "e12ba1fd7d7a",
+      "id": "0817d056ef20",
       "file": "client/src/components/merchant/DataSyncWorkspace.tsx",
-      "line": 273,
+      "line": 278,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -55405,22 +55405,22 @@
       "review": "source-inventoried"
     },
     {
-      "id": "7ea46ac0a835",
+      "id": "3216cbedb57e",
       "file": "client/src/components/merchant/DataSyncWorkspace.tsx",
-      "line": 283,
+      "line": 288,
       "tag": "a",
       "role": "",
       "kind": "action",
       "label": "فتح وجهة المحاولة السابقة ↗",
       "section": "محاولة تصدير تحتاج مراجعتك",
-      "binding": "`https://docs.google.com/spreadsheets/d/${attempt.spreadsheetId}/edit`",
+      "binding": "openSheet\n                ? e => {\n                    e.preventDefault();\n                    openSheet(attempt.spreadsheetId);\n                  }\n                : undefined",
       "type": "text",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": false,
+      "conditional": true,
       "conditions": [
         "attempt && !busy && canShowResult"
       ],
@@ -55428,22 +55428,22 @@
       "review": "source-inventoried"
     },
     {
-      "id": "64a1a74aeb86",
+      "id": "3faff29cc94e",
       "file": "client/src/components/merchant/DataSyncWorkspace.tsx",
-      "line": 325,
+      "line": 338,
       "tag": "a",
       "role": "",
       "kind": "action",
       "label": "فتح الجدول ↗",
       "section": "وجهة التصدير",
-      "binding": "`https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`",
+      "binding": "openSheet\n                    ? e => {\n                        e.preventDefault();\n                        openSheet(spreadsheetId!);\n                      }\n                    : undefined",
       "type": "text",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": false,
+      "conditional": true,
       "conditions": [
         "ready",
         "status.isLoading || status.isFetching",
@@ -55454,9 +55454,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "d58b69287d1d",
+      "id": "4e2ccb521744",
       "file": "client/src/components/merchant/DataSyncWorkspace.tsx",
-      "line": 336,
+      "line": 357,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -55479,9 +55479,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "fdef7636444a",
+      "id": "e588cbf67b3b",
       "file": "client/src/components/merchant/DataSyncWorkspace.tsx",
-      "line": 374,
+      "line": 395,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -55503,9 +55503,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "3127f516940e",
+      "id": "2cc6322039e1",
       "file": "client/src/components/merchant/DataSyncWorkspace.tsx",
-      "line": 381,
+      "line": 402,
       "tag": "input",
       "role": "",
       "kind": "field",
@@ -55524,9 +55524,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "986fdf895ce4",
+      "id": "81c1dedd8a9f",
       "file": "client/src/components/merchant/DataSyncWorkspace.tsx",
-      "line": 390,
+      "line": 411,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -55545,9 +55545,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "9e554a5c9b27",
+      "id": "ee729338b566",
       "file": "client/src/components/merchant/DataSyncWorkspace.tsx",
-      "line": 406,
+      "line": 427,
       "tag": "a",
       "role": "",
       "kind": "action",
@@ -55566,9 +55566,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "56ab58d9849c",
+      "id": "12dcbb25c8f1",
       "file": "client/src/components/merchant/DataSyncWorkspace.tsx",
-      "line": 409,
+      "line": 430,
       "tag": "a",
       "role": "",
       "kind": "action",
