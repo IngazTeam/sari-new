@@ -8,6 +8,7 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { protectedProcedure, publicProcedure, router } from './_core/trpc';
+import { setupProductSchema, setupServiceSchema } from '../shared/setup-catalog';
 import {
   completeSetupWizard,
   createProduct,
@@ -30,36 +31,10 @@ import {
 const TOTAL_STEPS = 10;
 const MAX_WIZARD_DRAFT_BYTES = 1_000_000;
 
-const optionalWebUrl = z.string().trim().max(500).refine((value) => {
-  if (!value) return true;
-  try {
-    const url = new URL(value);
-    return url.protocol === 'https:' || url.protocol === 'http:';
-  } catch {
-    return false;
-  }
-}, 'Invalid web URL');
-
 const requiredWebUrl = z.string().trim().url().max(500).refine((value) => {
   const url = new URL(value);
   return url.protocol === 'https:' || url.protocol === 'http:';
 }, 'Invalid website URL');
-
-const setupProductSchema = z.object({
-  name: z.string().trim().min(1).max(255),
-  description: z.string().trim().max(5000).optional().default(''),
-  priceMinor: z.number().int().nonnegative().max(100_000_000),
-  currency: z.enum(['SAR', 'USD']).optional().default('SAR'),
-  imageUrl: optionalWebUrl.optional().default(''),
-  productUrl: optionalWebUrl.optional().default(''),
-  category: z.string().trim().max(100).optional().default(''),
-});
-
-const setupServiceSchema = z.object({
-  name: z.string().trim().min(1).max(255),
-  description: z.string().trim().max(5000).optional().default(''),
-  priceMinor: z.number().int().nonnegative().max(100_000_000),
-});
 
 const websiteConfirmationSchema = z.object({
   websiteUrl: requiredWebUrl,

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-30T19:18:43.023Z",
+  "generatedAt": "2026-09-30T19:29:52.008Z",
   "definition": "Every registered route is accounted for; source inventory and design completion are different statuses.",
   "routes": [
     {
@@ -28,16 +28,16 @@
         "client/src/lib/merchant-setup-navigation.ts"
       ],
       "controls": [
-        "db60a62f2519",
-        "03d12c8ed892",
-        "f807ac1aa352",
-        "5899d4bc82a1",
-        "7f6165751863",
-        "3b4fceee9350",
-        "bb07f44eaafe",
-        "9294fed7b838",
-        "d1fcba4607e6",
-        "2dd23dee58aa",
+        "a87e396142d5",
+        "82044e8f165c",
+        "210ee71ed6b6",
+        "0664dabb0957",
+        "3b83bd942c62",
+        "f82f62c24a0d",
+        "a47909fd0f70",
+        "d08b922389d4",
+        "51f57481f64c",
+        "f8f4b048d5e6",
         "9701db415e86",
         "71dd8839c2d7",
         "1edf0619da77",
@@ -86,9 +86,9 @@
         "ab81db51734e",
         "41b0b8dc9c8f",
         "c41f1ac17453",
-        "963f7b09fd42",
-        "9881c840ba97",
-        "97ed97010b27"
+        "08e3829ee64e",
+        "e3ecea6dfa22",
+        "bb5f286de4cd"
       ],
       "queries": [
         "setupWizard.getProgress",
@@ -115,9 +115,9 @@
       ],
       "controlDetails": [
         {
-          "id": "db60a62f2519",
+          "id": "a87e396142d5",
           "file": "client/src/pages/SetupWizard.tsx",
-          "line": 324,
+          "line": 303,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -138,9 +138,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "03d12c8ed892",
+          "id": "82044e8f165c",
           "file": "client/src/pages/SetupWizard.tsx",
-          "line": 365,
+          "line": 344,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -159,9 +159,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "f807ac1aa352",
+          "id": "210ee71ed6b6",
           "file": "client/src/pages/SetupWizard.tsx",
-          "line": 372,
+          "line": 351,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -180,9 +180,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "5899d4bc82a1",
+          "id": "0664dabb0957",
           "file": "client/src/pages/SetupWizard.tsx",
-          "line": 379,
+          "line": 358,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -201,9 +201,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "7f6165751863",
+          "id": "3b83bd942c62",
           "file": "client/src/pages/SetupWizard.tsx",
-          "line": 445,
+          "line": 424,
           "tag": "a",
           "role": "",
           "kind": "action",
@@ -222,9 +222,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "3b4fceee9350",
+          "id": "f82f62c24a0d",
           "file": "client/src/pages/SetupWizard.tsx",
-          "line": 460,
+          "line": 439,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -243,9 +243,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "bb07f44eaafe",
+          "id": "a47909fd0f70",
           "file": "client/src/pages/SetupWizard.tsx",
-          "line": 496,
+          "line": 475,
           "tag": "button",
           "role": "",
           "kind": "action",
@@ -264,9 +264,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "9294fed7b838",
+          "id": "d08b922389d4",
           "file": "client/src/pages/SetupWizard.tsx",
-          "line": 522,
+          "line": 501,
           "tag": "button",
           "role": "",
           "kind": "action",
@@ -285,9 +285,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "d1fcba4607e6",
+          "id": "51f57481f64c",
           "file": "client/src/pages/SetupWizard.tsx",
-          "line": 572,
+          "line": 551,
           "tag": "button",
           "role": "",
           "kind": "action",
@@ -309,9 +309,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "2dd23dee58aa",
+          "id": "f8f4b048d5e6",
           "file": "client/src/pages/SetupWizard.tsx",
-          "line": 603,
+          "line": 582,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -1393,9 +1393,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "963f7b09fd42",
+          "id": "08e3829ee64e",
           "file": "client/src/pages/setup-wizard/CompleteStep.tsx",
-          "line": 23,
+          "line": 25,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -1414,9 +1414,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "9881c840ba97",
+          "id": "e3ecea6dfa22",
           "file": "client/src/pages/setup-wizard/CompleteStep.tsx",
-          "line": 44,
+          "line": 46,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -1430,14 +1430,16 @@
           "maxLength": "",
           "required": false,
           "conditional": false,
-          "conditions": [],
+          "conditions": [
+            "catalog.success"
+          ],
           "disabled": "",
           "review": "source-inventoried"
         },
         {
-          "id": "97ed97010b27",
+          "id": "bb5f286de4cd",
           "file": "client/src/pages/setup-wizard/CompleteStep.tsx",
-          "line": 49,
+          "line": 51,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -1452,7 +1454,7 @@
           "required": false,
           "conditional": true,
           "conditions": [],
-          "disabled": "isLoading || !hasValidProfile",
+          "disabled": "isLoading || !hasValidProfile || !catalog.success",
           "review": "source-inventoried"
         }
       ]

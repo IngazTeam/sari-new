@@ -44,6 +44,26 @@ beforeEach(() => {
 afterEach(async () => { await act(async () => root.unmount()); container.remove(); vi.unstubAllGlobals(); });
 
 describe('merchant setup resume and confirmation', () => {
+  it.each([[{ name: 'سعر ناقص', price: '' }], [{ name: '', price: '7' }], null, 'broken'])('blocks invalid review data without losing it or approving it: %j', async products => {
+    api.query.data = draft(10);
+    const raw = JSON.parse(api.query.data.wizardData);
+    api.query.data.wizardData = JSON.stringify({ ...raw, products });
+    await render();
+    expect(container.textContent).toContain(ar.setupCatalogUx.reviewInvalid);
+    expect(button(ar.setupWorkspace.reviewConfirm).disabled).toBe(true);
+    await act(async () => { button(ar.setupWorkspace.reviewConfirm).click(); });
+    expect(api.complete).not.toHaveBeenCalled();
+    expect(api.save).not.toHaveBeenCalled();
+  });
+
+  it('approves the exact reviewed price and explicit free service in minor units', async () => {
+    api.query.data = draft(10);
+    const raw = JSON.parse(api.query.data.wizardData);
+    api.query.data.wizardData = JSON.stringify({ ...raw, products: [{ name: 'منتج', price: '12.34', currency: 'USD' }], services: [{ name: 'خدمة مجانية', price: '0' }] });
+    await render();
+    await act(async () => { button(ar.setupWorkspace.reviewConfirm).click(); });
+    expect(api.complete).toHaveBeenCalledWith(expect.objectContaining({ products: [expect.objectContaining({ priceMinor: 1234, currency: 'USD' })], services: [expect.objectContaining({ priceMinor: 0 })] }));
+  });
   it('waits for the fresh draft instead of saving stale cached values on mount', async () => {
     api.query = { ...api.query, data: draft(1, 'بيانات قديمة'), isFetching: true };
     await render();

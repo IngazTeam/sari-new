@@ -142,16 +142,16 @@
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 324 | Button | إعادة المحاولة | setupWorkspace.loadFailed setupWorkspace.loading |
-| 365 | Button | إضافة يدويًا | setupWorkspace.loadFailed setupWorkspace.loading |
-| 372 | Button | استيراد من موقع | setupWorkspace.loadFailed setupWorkspace.loading |
-| 379 | Button | استخدام قالب | setupWorkspace.loadFailed setupWorkspace.loading |
-| 445 | a | انتقل إلى الخطوة الحالية | setupWorkspace.loadFailed setupWorkspace.loading |
-| 460 | Button | حفظ واستكشاف اللوحة | setupWorkspace.loadFailed setupWorkspace.loading |
-| 496 | button | كل الخطوات | أربع خطوات، وبدايتك جاهزة |
-| 522 | button | اختياري مكتملة | أربع خطوات، وبدايتك جاهزة |
-| 572 | button | إعادة المحاولة | أربع خطوات، وبدايتك جاهزة |
-| 603 | Button | السابق | SetupWizard |
+| 303 | Button | إعادة المحاولة | setupWorkspace.loadFailed setupWorkspace.loading |
+| 344 | Button | إضافة يدويًا | setupWorkspace.loadFailed setupWorkspace.loading |
+| 351 | Button | استيراد من موقع | setupWorkspace.loadFailed setupWorkspace.loading |
+| 358 | Button | استخدام قالب | setupWorkspace.loadFailed setupWorkspace.loading |
+| 424 | a | انتقل إلى الخطوة الحالية | setupWorkspace.loadFailed setupWorkspace.loading |
+| 439 | Button | حفظ واستكشاف اللوحة | setupWorkspace.loadFailed setupWorkspace.loading |
+| 475 | button | كل الخطوات | أربع خطوات، وبدايتك جاهزة |
+| 501 | button | اختياري مكتملة | أربع خطوات، وبدايتك جاهزة |
+| 551 | button | إعادة المحاولة | أربع خطوات، وبدايتك جاهزة |
+| 582 | Button | السابق | SetupWizard |
 
 ## client/src/components/LanguageSwitcher.tsx
 
@@ -250,9 +250,9 @@
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 23 | Button | تعديل {{name}} | CompleteStep |
-| 44 | summary | معاينة توضيحية للمساعد | معاينة توضيحية للمساعد |
-| 49 | Button | جاري الإعداد... تأكيد الإعداد وفتح اللوحة | معاينة توضيحية للمساعد |
+| 25 | Button | تعديل {{name}} | CompleteStep |
+| 46 | summary | معاينة توضيحية للمساعد | معاينة توضيحية للمساعد |
+| 51 | Button | جاري الإعداد... تأكيد الإعداد وفتح اللوحة | معاينة توضيحية للمساعد |
 
 ## client/src/pages/merchant/Dashboard.tsx
 

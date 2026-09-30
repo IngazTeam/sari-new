@@ -11241,6 +11241,9 @@
     "active": "Available for sale",
     "inactive": "Unavailable for sale"
   },
+  "setupCatalogUx": {
+    "reviewInvalid":"Review product and service details before confirming. Each item needs a name and a valid price; enter 0 only for a free item. Blank or invalid prices will not be accepted automatically."
+  },
   "productSourceUx": {
     "title":"Catalog source",
     "salla":"Salla",

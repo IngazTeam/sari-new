@@ -32,6 +32,7 @@ import PersonalityStep from "./setup-wizard/PersonalityStep";
 import LanguageStep from "./setup-wizard/LanguageStep";
 import CompleteStep from "./setup-wizard/CompleteStep";
 import { useTranslation } from "react-i18next";
+import { setupCatalogDraft } from "@shared/setup-catalog";
 
 import {
   SETUP_STAGE_ENDS,
@@ -69,11 +70,6 @@ function parseWizardData(
   } catch {
     return {};
   }
-}
-
-function toMinorUnits(value: unknown): number {
-  const amount = Number(value || 0);
-  return Number.isFinite(amount) && amount >= 0 ? Math.round(amount * 100) : 0;
 }
 
 const OPTIONAL_STAGES = [1];
@@ -235,12 +231,11 @@ export default function SetupWizard() {
       // Final confirmation follows any pending draft writes.
       if (!(await saveProgress())) return;
       const latestWizardData = wizardDataRef.current;
-      const products = Array.isArray(latestWizardData.products)
-        ? latestWizardData.products
-        : [];
-      const services = Array.isArray(latestWizardData.services)
-        ? latestWizardData.services
-        : [];
+      const catalog = setupCatalogDraft.safeParse(latestWizardData);
+      if (!catalog.success) {
+        toast.error(t("setupCatalogUx.reviewInvalid"));
+        return;
+      }
       await completeSetupMutation.mutateAsync({
         businessType: latestWizardData.businessType || "store",
         businessName: latestWizardData.businessName || "",
@@ -252,24 +247,8 @@ export default function SetupWizard() {
         botTone: latestWizardData.botTone || "friendly",
         botLanguage: latestWizardData.botLanguage || "ar",
         welcomeMessage: latestWizardData.welcomeMessage || "",
-        products: products
-          .filter((p: any) => p?.name?.trim())
-          .map((p: any) => ({
-            name: p.name,
-            description: p.description || "",
-            priceMinor: toMinorUnits(p.price),
-            currency: p.currency || "SAR",
-            imageUrl: p.imageUrl || "",
-            productUrl: p.productUrl || "",
-            category: p.category || "",
-          })),
-        services: services
-          .filter((s: any) => s?.name?.trim())
-          .map((s: any) => ({
-            name: s.name,
-            description: s.description || "",
-            priceMinor: toMinorUnits(s.price),
-          })),
+        products: catalog.data.products,
+        services: catalog.data.services,
         websiteAnalysis:
           latestWizardData.websiteAnalysis?.confirmed &&
           latestWizardData.websiteAnalysis?.websiteUrl

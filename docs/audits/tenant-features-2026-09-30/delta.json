@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-09-30T19:18:43.023Z",
+  "generatedAt": "2026-09-30T19:29:52.008Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -150,7 +150,9 @@
     "client/src/lib/customer-workspace-cache.ts"
   ],
   "changedFiles": [
+    "client/src/pages/SetupWizard.tsx",
     "client/src/components/PreviewChat.tsx",
+    "client/src/pages/setup-wizard/CompleteStep.tsx",
     "client/src/pages/merchant/Campaigns.tsx",
     "client/src/pages/merchant/Products.tsx",
     "client/src/pages/merchant/UploadProducts.tsx",

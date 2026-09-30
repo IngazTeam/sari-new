@@ -22,13 +22,13 @@ describe('onboarding remediation guards', () => {
     const end = routers.indexOf('// Get templates', start);
     const completion = routers.slice(start, end);
 
-    expect(wizard).toMatch(/products:\s*products\s*\.filter/);
-    expect(wizard).toMatch(/services:\s*services\s*\.filter/);
+    expect(wizard).toContain('products: catalog.data.products');
+    expect(wizard).toContain('services: catalog.data.services');
     expect(completion).toContain('products: z.array(setupProductSchema).max(100)');
     expect(completion).toContain('services: z.array(setupServiceSchema).max(100)');
   });
 
-  it('persists catalog idempotently before marking setup complete', () => {
+  it('skips names already read before marking setup complete (not a concurrency guarantee)', () => {
     const routers = read('./server/routers-setup-wizard.ts');
     const start = routers.indexOf('completeSetup: protectedProcedure');
     const end = routers.indexOf('// Get templates', start);
