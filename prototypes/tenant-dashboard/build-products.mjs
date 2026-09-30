@@ -11,6 +11,7 @@ for (const language of ["ar", "en"]) {
     productWorkspaceUx: text.productWorkspaceUx,
     categoryUx: text.categoryUx,
     detailUx: text.detailUx,
+    stockUx: text.stockUx,
   };
 }
 await build({

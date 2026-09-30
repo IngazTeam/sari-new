@@ -2,6 +2,7 @@ import {
   products,
   categories,
   details,
+  stock,
   useProductVersion,
 } from "./product-preview-state";
 function detailResult(input: { productId: number }) {
@@ -72,6 +73,19 @@ function result(read: () => unknown, enabled = true) {
 }
 export const trpc = {
   products: {
+    getLowStock: {
+      useQuery: (input: unknown) => {
+        const value = result(() => stock.read(input));
+        const modes = [stock.mode, products.mode, details.mode];
+        return {
+          ...value,
+          isLoading: modes.includes("loading"),
+          isFetching: modes.includes("loading"),
+          fetchStatus: modes.includes("offline") ? "paused" : "idle",
+          refetch: stock.refresh,
+        };
+      },
+    },
     details: {
       read: { useQuery: detailResult },
       write: { useMutation: () => ({ mutateAsync: details.write }) },

@@ -175,6 +175,7 @@ export class ProductPreviewStore {
   private canManage() {
     return !["viewer", "forbidden", "session"].includes(this.mode);
   }
+  stockProducts = () => structuredClone(this.all());
   private source() {
     return this.mode === "source" ? "salla" : "none";
   }

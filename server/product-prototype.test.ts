@@ -266,6 +266,26 @@ describe("built product prototype with actual UI", () => {
     dom.window.close();
   });
   const c = arCopy.categoryUx;
+  it("opens matching stock UI, filters variants and returns from details with the same filter", async () => {
+    await click(arCopy.stockUx.title);
+    expect(text()).toContain(arCopy.stockUx.scope);
+    expect(text()).toContain("النسخة الصغيرة");
+    await choose(".pw-filters label:nth-of-type(2) select", "variant");
+    await click(arCopy.stockUx.openVariants);
+    expect(text()).toContain(arCopy.stockUx.back);
+    await click(arCopy.stockUx.back);
+    expect(w.document.querySelector(".pw-filters select").value).toBe("variant");
+    await choose(".pp-controls label:nth-of-type(2) select", "en");
+    expect(text()).toContain("Review inventory");
+    expect(text()).not.toContain("stockUx.");
+  });
+  it.each(["loading", "error", "offline", "forbidden", "session", "wrongTenant", "wrongSelection", "malformed"])("hides stock rows and counts for %s", async value => {
+    await click(arCopy.stockUx.title);
+    await choose(".pp-controls label:nth-of-type(5) select", value);
+    expect(w.document.querySelector(".pw-catalog-list")).toBeNull();
+    expect(w.document.querySelector(".pw-summary")).toBeNull();
+    expect(w.document.querySelector("[data-state]")).not.toBeNull();
+  });
   const categoryMode = (value: string) => choose(".pp-controls label:nth-of-type(3) select", value);
   const field = (key: keyof typeof c) => Array.from(w.document.querySelectorAll(".pw-workspace label")).find((l: any) => l.textContent.startsWith(c[key])) as any;
   async function categoryName(value: string) {

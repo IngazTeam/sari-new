@@ -5,6 +5,7 @@ import { clearProductWorkspaceCache } from "../../../client/src/lib/product-work
 import { clearCategoryDraft } from "../../../client/src/lib/product-category-workspace";
 import { clearDetailDraft } from "../../../client/src/lib/product-details-workspace";
 import { detailModes, type DetailMode } from "./product-detail-model";
+import { stockModes, type StockMode } from "./product-stock-model";
 import { categoryModes, type CategoryMode } from "./product-category-model";
 import { knowledgeCacheEpoch } from "../../../client/src/lib/knowledge-workspace-cache";
 import {
@@ -16,6 +17,7 @@ import {
   products,
   categories,
   details,
+  stock,
   useProductVersion,
   productLanguage,
   setProductLanguage,
@@ -98,6 +100,19 @@ function Preview() {
           <button type="button" onClick={details.conflict}>
             محاكاة تعديل زميل للخيارات والنسخ
           </button>
+          <label>
+            حالة المخزون
+            <select
+              value={stock.mode}
+              onChange={e => stock.setMode(e.target.value as StockMode)}
+            >
+              {Object.entries(stockModes).map(([id, label]) => (
+                <option key={id} value={id}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
           <button type="button" onClick={products.conflict}>
             محاكاة تعديل زميل للمنتج 27
           </button>
@@ -132,6 +147,7 @@ function Preview() {
                       knowledgeCacheEpoch()
                     );
                   details.reset();
+                  stock.reset();
                   categories.reset();
                   products.reset();
                   setGeneration(v => v + 1);
