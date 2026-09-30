@@ -10,7 +10,7 @@ import {
 } from "@shared/product-import";
 import { knowledgeCacheEpoch } from "./knowledge-workspace-cache";
 const hash = z.string().regex(/^[a-f0-9]{64}$/);
-const importOptionsSchema = z
+export const importOptionsSchema = z
   .object({
     currency: z.enum(["SAR", "USD"]),
     productType: z.enum(["physical", "digital", "service"]),

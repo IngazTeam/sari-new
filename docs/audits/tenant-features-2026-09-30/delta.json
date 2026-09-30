@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-09-30T11:21:10.133Z",
+  "generatedAt": "2026-09-30T11:47:15.982Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 297,
-      "controls": 1963
+      "files": 299,
+      "controls": 1967
     }
   },
   "addedFiles": [
@@ -40,6 +40,8 @@
     "client/src/components/merchant/ProductImportWorkspace.tsx",
     "client/src/lib/product-import-workspace.ts",
     "client/src/components/merchant/ProductImportProviderTools.tsx",
+    "client/src/components/merchant/ProductFileAdviceWorkspace.tsx",
+    "client/src/lib/product-file-advice-workspace.ts",
     "client/src/lib/staff-voice-attempt.ts",
     "client/src/lib/staff-dashboard-attempt.ts",
     "client/src/lib/meta-embedded-signup.ts",
@@ -348,23 +350,26 @@
     {
       "route": "/merchant/products/upload",
       "controlsBefore": 17,
-      "controlsNow": 45,
+      "controlsNow": 49,
       "removedQueries": [],
       "addedQueries": [
         "auth.me",
         "merchants.getCurrent",
         "products.importReview.read",
         "products.list",
-        "products.importReview.receipt"
+        "products.importReview.receipt",
+        "products.fileAdvice.read"
       ],
       "removedMutations": [
         "products.uploadCSV",
-        "products.uploadExcel"
+        "products.uploadExcel",
+        "products.smartImport"
       ],
       "addedMutations": [
         "products.importReview.prepare",
         "products.importReview.commit",
-        "products.importReview.discard"
+        "products.importReview.discard",
+        "products.fileAdvice.start"
       ]
     },
     {

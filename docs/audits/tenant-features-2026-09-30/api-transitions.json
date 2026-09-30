@@ -4,9 +4,9 @@
   "transitions": [
     {
       "routes": ["/merchant/products/upload"],
-      "removed": ["products.uploadCSV", "products.uploadExcel"],
-      "required": ["products.importReview.prepare", "products.importReview.read", "products.importReview.commit", "products.importReview.receipt", "products.importReview.discard", "products.smartImport", "products.syncFromGoogleSheets", "products.getSheetSyncStatus"],
-      "note": "CSV/XLSX import now previews exact fields and errors before an atomic reviewed commit and scoped receipt. Existing AI and Sheets tools remain reachable in a separate disclosure pending their own conversion. The old createSheet checkbox never sent its value and was removed; no functioning provider option was lost.",
+      "removed": ["products.uploadCSV", "products.uploadExcel", "products.smartImport"],
+      "required": ["products.importReview.prepare", "products.importReview.read", "products.importReview.commit", "products.importReview.receipt", "products.importReview.discard", "products.fileAdvice.start", "products.fileAdvice.read", "products.syncFromGoogleSheets", "products.getSheetSyncStatus"],
+      "note": "CSV/XLSX import now previews exact fields and errors before an atomic reviewed commit and scoped receipt. AI is now an optional file-form assistant with a durable request, cited suggestions, sample disclosure and explicit mapping approval before ordinary import review. It does not automatically insert model prose into products, knowledge or Sheets. Sheets sync remains in its existing disclosure pending conversion. The old createSheet checkbox never sent its value and was removed; no functioning provider option was lost.",
       "evidence": ["docs/audits/tenant-product-import-parser-2026-09-30/REPORT.md", "docs/audits/tenant-product-import-review-2026-09-30/REPORT.md", "docs/audits/tenant-product-import-workspace-2026-09-30/REPORT.md"],
       "checks": [{"file":"client/src/components/merchant/ProductImportWorkspace.tsx","contains":"productImportFields"}, {"file":"client/src/lib/product-import-workspace.ts","contains":"productImportTemplate"}]
     },

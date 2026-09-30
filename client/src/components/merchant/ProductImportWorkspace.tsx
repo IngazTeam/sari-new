@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import type { ProductFileAdviceProps } from "./ProductFileAdviceWorkspace";
 import { useTranslation } from "react-i18next";
 import { trpc } from "@/lib/trpc";
 import {
@@ -46,9 +47,11 @@ const defaults: ImportOptions = {
 export function ProductImportWorkspace({
   scope,
   href = (path: string) => path,
+  renderAdvice,
 }: {
   scope: string;
   href?: (path: string) => string;
+  renderAdvice?: (props: ProductFileAdviceProps) => ReactNode;
 }) {
   const { t, i18n } = useTranslation(),
     labels = productLabels(t),
@@ -797,6 +800,14 @@ export function ProductImportWorkspace({
                   </button>
                 </div>
                 <p className="pw-muted">{t("productImportUx.noChangesYet")}</p>
+                {renderAdvice?.({
+                  scope,
+                  file,
+                  options,
+                  disabled: !canPrepare,
+                  onApply: mapping => changeOptions({ mapping }),
+                  onRestoreOptions: restored => changeOptions(restored),
+                })}
               </details>
               {cached && !cached.digest && (
                 <section className="pw-notice">

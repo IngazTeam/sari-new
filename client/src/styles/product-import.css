@@ -84,6 +84,23 @@
 .pi-approval {
   border-color: var(--primary);
 }
+.pa-workspace > ul {
+  display: grid;
+  gap: 0.75rem;
+  list-style: none;
+  padding: 0;
+}
+.pa-workspace blockquote {
+  margin-inline: 0;
+  padding-inline-start: 0.75rem;
+  border-inline-start: 3px solid var(--primary);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.pa-workspace button {
+  margin-block: 0.3rem;
+  margin-inline-end: 0.5rem;
+}
 @media (max-width: 640px) {
   .pi-row-summary,
   .pi-row-details {
