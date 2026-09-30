@@ -17,7 +17,8 @@ import { productCategoryRouter } from "./routers-product-categories";
 import { productDetailsRouter } from "./routers-product-details";
 import { TRPCError } from "@trpc/server";
 import { merchantProcedure, router } from "./_core/trpc";
-import { getMerchantById } from "./db";
+import { readProductStock } from "./product-stock";
+import { productStockInput } from "../shared/product-stock";
 
 export const productsRouter = router({
   editor: productEditorRouter,
@@ -47,15 +48,18 @@ export const productsRouter = router({
   // Low Stock Alerts
   // ============================================
 
-  getLowStock: merchantProcedure.query(async ({ ctx }) => {
-    const merchant = await getMerchantById(ctx.merchantId);
-    if (!merchant)
-      throw new TRPCError({ code: "NOT_FOUND", message: "Merchant not found" });
-    const prodDb = await import("./db/products");
-    const products = await prodDb.getLowStockProducts(merchant.id);
-    const variants = await prodDb.getLowStockVariants(merchant.id);
-    return { products, variants, total: products.length + variants.length };
-  }),
+  getLowStock: merchantProcedure
+    .input(productStockInput)
+    .query(async ({ ctx, input }) => {
+      try {
+        return await readProductStock(ctx.merchantId, input);
+      } catch {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Product stock unavailable",
+        });
+      }
+    }),
 });
 
 export type ProductsRouter = typeof productsRouter;

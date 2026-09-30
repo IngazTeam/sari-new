@@ -5,13 +5,11 @@ import { normalizeProductMoneyWrite } from '../../shared/product-money';
  * Product Management Database Functions
  * Extracted from db.ts for better maintainability
  */
-import { eq, and, desc, lte, gt, sql } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 import {
     products,
     Product,
     InsertProduct,
-    productVariants,
-    ProductVariant,
 } from "../../drizzle/schema";
 
 // Import getDb directly from main db file
@@ -79,37 +77,4 @@ export async function deleteAllProductsByMerchantId(merchantId: number): Promise
     if (!db) return;
 
     await db.delete(products).where(and(eq(products.merchantId, merchantId),sql.raw(zidCatalogVisibleSql())));
-}
-
-// ============================================
-// Low Stock Alerts
-// ============================================
-
-export async function getLowStockProducts(merchantId: number): Promise<Product[]> {
-    const db = await getDb();
-    if (!db) return [];
-    return db.select().from(products)
-        .where(and(
-            eq(products.merchantId, merchantId),
-            eq(products.trackInventory, 1),
-            sql.raw(catalogVisibleSql()),
-            // @ts-ignore
-            eq(products.isActive, true),
-            sql`${products.stock} <= ${products.lowStockAlert}`,
-            gt(products.lowStockAlert, 0)
-        ))
-        .orderBy(products.stock);
-}
-
-export async function getLowStockVariants(merchantId: number): Promise<ProductVariant[]> {
-    const db = await getDb();
-    if (!db) return [];
-    // Get variants where stock <= 5 (global threshold for variants)
-    return db.select().from(productVariants)
-        .where(and(
-            eq(productVariants.merchantId, merchantId),
-            eq(productVariants.isActive, 1),
-            lte(productVariants.stock, 5)
-        ))
-        .orderBy(productVariants.stock);
 }
