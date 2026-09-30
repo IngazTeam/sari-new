@@ -10,6 +10,10 @@ const state = vi.hoisted(() => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
 vi.mock("sonner", () => ({ toast: state.toast }));
+vi.mock("wouter", () => ({
+  Link: ({ href, children, ...props }: any) =>
+    createElement("a", { href, ...props }, children),
+}));
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
     t: (key: string) => key.split(".").reduce((o: any, k) => o?.[k], ar) || key,
@@ -37,7 +41,6 @@ vi.mock("@/lib/trpc", () => ({
 
 import SheetsSettings from "../client/src/pages/SheetsSettings";
 import SheetsReports from "../client/src/pages/SheetsReports";
-import SheetsInventory from "../client/src/pages/SheetsInventory";
 
 beforeEach(() => {
   vi.stubGlobal("React", React);
@@ -60,14 +63,7 @@ describe("merchant integration feedback follows the action state", () => {
     expect(html).toContain("أكثر 5 منتجات مبيعاً");
     expect(html).not.toMatch(/تم توليد التقرير اليومي بنجاح|فشل التوليد/);
   });
-  it("describes import and export without displaying operation results initially", () => {
-    const html = renderToStaticMarkup(createElement(SheetsInventory));
-    expect(html).toContain("تصدير إلى Sheets");
-    expect(html).toContain("كيف تعمل المزامنة؟");
-    expect(html).toContain("الكميات فقط");
-    expect(html).not.toMatch(/تم الاستيراد بنجاح|فشلت المزامنة|فشل التحديث/);
-  });
-  it.each([SheetsSettings, SheetsReports, SheetsInventory])(
+  it.each([SheetsSettings, SheetsReports])(
     "reports a rejected operation as an error toast",
     Component => {
       renderToStaticMarkup(createElement(Component));
@@ -79,11 +75,5 @@ describe("merchant integration feedback follows the action state", () => {
       }
     }
   );
-  it("blocks concurrent inventory writes while either direction is pending", () => {
-    for (const pending of ["syncInventory", "updateInventoryFromSheets"]) {
-      state.pending = pending;
-      const html = renderToStaticMarkup(createElement(SheetsInventory));
-      expect((html.match(/<button[^>]*disabled=""/g) || []).length).toBe(2);
-    }
-  });
+  // Inventory approval, failure and pending-write protection are covered by inventory-sheet-workspace.test.ts.
 });

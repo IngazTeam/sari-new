@@ -108,13 +108,6 @@ export const sheetsRouter = router({
     return await sheetsSync.syncInventoryToSheets(merchant.id);
   }),
 
-  // تحديث المخزون من Sheets
-  updateInventoryFromSheets: protectedProcedure.mutation(async ({ ctx }) => {
-    const merchant = await getMerchantByUserId(ctx.user.id);
-    if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-    return await sheetsSync.updateInventoryFromSheets(merchant.id);
-  }),
-
   // توليد تقرير يومي
   generateDailyReport: protectedProcedure.mutation(async ({ ctx }) => {
     const merchant = await getMerchantByUserId(ctx.user.id);

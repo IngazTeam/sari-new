@@ -764,10 +764,11 @@
         "products.sheetInventory.receipt",
         "products.sheetInventory.discard"
       ],
-      "note": "Inventory imports now use a scoped immutable review, explicit product IDs and quantities, atomic commit and recoverable receipt. Export remains accessible through the visible DataSync link. Legacy import server retirement and export correctness are separate follow-ups, not claimed complete here.",
+      "note": "Inventory imports use scoped immutable reviews, explicit product IDs and quantities, atomic commit and recoverable receipts. The old direct import router and writer are retired after consumer auditing. Export remains accessible through the visible DataSync link and awaits its own correctness review.",
       "evidence": [
         "docs/audits/tenant-sheet-inventory-review-2026-09-30/REPORT.md",
-        "docs/audits/tenant-sheet-inventory-workspace-2026-09-30/REPORT.md"
+        "docs/audits/tenant-sheet-inventory-workspace-2026-09-30/REPORT.md",
+        "docs/audits/tenant-sheet-inventory-retirement-2026-09-30/REPORT.md"
       ],
       "checks": [
         {

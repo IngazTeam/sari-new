@@ -11,7 +11,6 @@ import {
   getOrderById,
   getProductsByMerchantId,
   updateGoogleIntegration,
-  updateProduct,
 } from './db';
 import * as sheets from './_core/googleSheets';
 import { formatMinorMoney } from '../shared/product-money';
@@ -387,78 +386,6 @@ export async function syncInventoryToSheets(merchantId: number): Promise<{
     return {
       success: false,
       message: error.message || 'فشل مزامنة المخزون',
-    };
-  }
-}
-
-/**
- * تحديث المخزون من Google Sheets
- */
-export async function updateInventoryFromSheets(merchantId: number): Promise<{
-  success: boolean;
-  updatedCount: number;
-  message: string;
-}> {
-  try {
-    const integration = await getGoogleIntegration(merchantId, 'sheets');
-
-    if (!integration || !integration.isActive || !integration.sheetId) {
-      return { success: false, updatedCount: 0, message: 'Google Sheets غير مربوط' };
-    }
-
-    const spreadsheetId = integration.sheetId;
-
-    // قراءة البيانات من Sheet
-    const result = await sheets.readFromSheet(
-      merchantId,
-      spreadsheetId,
-      'المخزون!A2:F'
-    );
-
-    if (!result.success || !result.values || result.values.length === 0) {
-      return { success: false, updatedCount: 0, message: 'لا توجد بيانات للتحديث' };
-    }
-
-    let updatedCount = 0;
-
-    const ownedProductIds = new Set((await getProductsByMerchantId(merchantId)).map(product => product.id));
-    // تحديث كل منتج
-    for (const row of result.values) {
-      const [productIdStr, , , , stockStr] = row;
-
-      if (!productIdStr || !stockStr) continue;
-
-      const productId = Number(productIdStr);
-      const stock = Number(stockStr);
-
-      if (!Number.isSafeInteger(productId) || !ownedProductIds.has(productId)
-        || !Number.isSafeInteger(stock) || stock < 0 || stock > 2_147_483_647) continue;
-
-      try {
-        await updateProduct(productId, { stock }, 'major');
-        updatedCount++;
-      } catch (error) {
-        console.error(`[Sheets Sync] Error updating product ${productId}:`, error);
-      }
-    }
-
-    if (updatedCount > 0) {
-      await updateGoogleIntegration(integration.id, {
-        lastSync: new Date().toISOString(),
-      });
-    }
-
-    return {
-      success: true,
-      updatedCount,
-      message: `تم تحديث ${updatedCount} منتج بنجاح`,
-    };
-  } catch (error: any) {
-    console.error('[Sheets Sync] Error updating inventory from sheets:', error);
-    return {
-      success: false,
-      updatedCount: 0,
-      message: error.message || 'فشل تحديث المخزون',
     };
   }
 }

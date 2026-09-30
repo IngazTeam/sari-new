@@ -61,7 +61,7 @@ describe("review-required Sheet product imports", () => {
       expect(m.read).not.toHaveBeenCalled();
       expect("syncProductsFromSheets" in sync).toBe(false);
       expect(typeof sync.syncInventoryToSheets).toBe("function");
-      expect(typeof sync.updateInventoryFromSheets).toBe("function");
+      expect("updateInventoryFromSheets" in sync).toBe(false);
     }
   );
   it("still honors opted-in report delivery without a product import job", async () => {
