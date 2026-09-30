@@ -38,7 +38,13 @@ type Modal =
   | { kind: "create" }
   | { kind: "target"; period: string; revision: number | null }
   | { kind: "status"; row: QuotationDetail; status: "accepted" | "rejected" };
-export function QuotationWorkspace({ scope }: { scope: string }) {
+export function QuotationWorkspace({
+  scope,
+  href = (path: string) => path,
+}: {
+  scope: string;
+  href?: (path: string) => string;
+}) {
   const { t, i18n } = useTranslation(),
     language = i18n.language?.startsWith("en") ? "en-GB" : "ar-SA",
     f = quotationDisplay(t, language),
@@ -472,7 +478,7 @@ export function QuotationWorkspace({ scope }: { scope: string }) {
           >
             {t("quotationWorkspace.refresh")}
           </button>
-          <a href="/merchant/quotation-templates">
+          <a href={href("/merchant/quotation-templates")}>
             {t("quotationWorkspace.templates")}
           </a>
           <button
@@ -509,6 +515,7 @@ export function QuotationWorkspace({ scope }: { scope: string }) {
         <WorkspaceState inline kind="loading" />
       ) : (
         <QuotationReport
+          href={href}
           key={quotationSelectionKey(selection)}
           data={data}
           t={t}
@@ -547,7 +554,12 @@ export function QuotationWorkspace({ scope }: { scope: string }) {
               ) : !detail || detailQuery.isFetching ? (
                 <WorkspaceState inline kind="loading" />
               ) : (
-                <QuotationDetailView data={detail} t={t} language={language} />
+                <QuotationDetailView
+                  data={detail}
+                  t={t}
+                  language={language}
+                  href={href}
+                />
               )}
             </div>
             <div className="qt-detail-actions">
@@ -683,6 +695,7 @@ export function QuotationWorkspace({ scope }: { scope: string }) {
               ) : (
                 <>
                   <QuotationDetailView
+                    href={href}
                     data={modal.row}
                     t={t}
                     language={language}

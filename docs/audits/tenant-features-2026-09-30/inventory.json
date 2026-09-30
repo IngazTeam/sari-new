@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-30T03:19:27.307Z",
+  "generatedAt": "2026-09-30T03:35:20.369Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -9667,7 +9667,7 @@
     },
     {
       "file": "client/src/components/merchant/QuotationWorkspace.tsx",
-      "hash": "216d0c2e0fb2",
+      "hash": "b83ede729a90",
       "queries": [
         "sariBrain.quotations.workspace",
         "sariBrain.quotations.detail",
@@ -9683,14 +9683,14 @@
           "procedure": "sariBrain.quotations.receipt",
           "method": "fetch",
           "expression": "utils.sariBrain.quotations.receipt.fetch",
-          "line": 307,
+          "line": 313,
           "provenance": "trpc-utility-static"
         },
         {
           "procedure": "sariBrain.quotations.detail",
           "method": "fetch",
           "expression": "utils.sariBrain.quotations.detail.fetch",
-          "line": 376,
+          "line": 382,
           "provenance": "trpc-utility-static"
         }
       ],
@@ -9698,17 +9698,17 @@
       "sections": [
         {
           "label": "عروض الأسعار",
-          "line": 464,
+          "line": 470,
           "tag": "h1"
         },
         {
           "label": "تفاصيل عرض السعر",
-          "line": 535,
+          "line": 542,
           "tag": "DialogTitle"
         },
         {
           "label": "create عرض سعر جديد target تعديل الهدف مراجعة تغيير الحالة",
-          "line": 629,
+          "line": 641,
           "tag": "DialogTitle"
         }
       ],
@@ -9716,22 +9716,22 @@
       "handlers": [
         {
           "name": "updateForm",
-          "line": 143,
+          "line": 149,
           "calls": []
         },
         {
           "name": "openCreate",
-          "line": 185,
+          "line": 191,
           "calls": []
         },
         {
           "name": "openTarget",
-          "line": 193,
+          "line": 199,
           "calls": []
         },
         {
           "name": "openStatus",
-          "line": 209,
+          "line": 215,
           "calls": []
         }
       ],
@@ -9739,7 +9739,7 @@
         {
           "query": "sariBrain.quotations.workspace",
           "binding": "query",
-          "line": 56,
+          "line": 62,
           "errorSignal": true,
           "loadingSignal": false,
           "enabled": null
@@ -9747,7 +9747,7 @@
         {
           "query": "sariBrain.quotations.detail",
           "binding": "detailQuery",
-          "line": 62,
+          "line": 68,
           "errorSignal": true,
           "loadingSignal": false,
           "enabled": "detailId !== null"
@@ -19122,26 +19122,26 @@
       ],
       "controls": [
         "77ce5300e6f7",
-        "35718b10726d",
-        "f4b0694a8f9d",
-        "270021226b65",
-        "f288f933b6ce",
-        "238fd46264ac",
-        "5476ae0ee15f",
-        "b22d03bea7fe",
-        "34af214d8e8a",
-        "5b7af4d86e05",
-        "f13c3d52ccb7",
-        "b445f29d664b",
-        "8d5d375f1bbd",
-        "019173be141a",
-        "925f3bf8ced3",
-        "27edf7a2f267",
-        "7c417d0aa1f0",
-        "f470aea9a940",
-        "92926a02713e",
-        "22f931f22be5",
-        "02ec6103a8ed",
+        "8a65e676bd23",
+        "79ac41cb2334",
+        "210892d6b477",
+        "9b35ca5f800c",
+        "efecd6751744",
+        "ac60c1112177",
+        "1a38ac1193b5",
+        "11eea6999df5",
+        "12c86106af15",
+        "f52d02bda27c",
+        "69457bff6f0d",
+        "7da97c624ba5",
+        "3cb66adf0e79",
+        "3dedaaffd3c1",
+        "5f5200f05f3b",
+        "92dd2756b205",
+        "297aceccedf4",
+        "8a6735d83ffd",
+        "931fc8f9fc27",
+        "17e7ce7587bd",
         "89039dc60907",
         "62572365aa32",
         "78d2df4c98bb",
@@ -19190,7 +19190,7 @@
           "procedure": "sariBrain.quotations.receipt",
           "method": "fetch",
           "expression": "utils.sariBrain.quotations.receipt.fetch",
-          "line": 307,
+          "line": 313,
           "provenance": "trpc-utility-static"
         },
         {
@@ -19198,7 +19198,7 @@
           "procedure": "sariBrain.quotations.detail",
           "method": "fetch",
           "expression": "utils.sariBrain.quotations.detail.fetch",
-          "line": 376,
+          "line": 382,
           "provenance": "trpc-utility-static"
         },
         {
@@ -48251,9 +48251,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "35718b10726d",
+      "id": "8a65e676bd23",
       "file": "client/src/components/merchant/QuotationWorkspace.tsx",
-      "line": 432,
+      "line": 438,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -48274,9 +48274,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "f4b0694a8f9d",
+      "id": "79ac41cb2334",
       "file": "client/src/components/merchant/QuotationWorkspace.tsx",
-      "line": 439,
+      "line": 445,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -48297,9 +48297,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "270021226b65",
+      "id": "210892d6b477",
       "file": "client/src/components/merchant/QuotationWorkspace.tsx",
-      "line": 451,
+      "line": 457,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -48321,9 +48321,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "f288f933b6ce",
+      "id": "9b35ca5f800c",
       "file": "client/src/components/merchant/QuotationWorkspace.tsx",
-      "line": 468,
+      "line": 474,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -48342,15 +48342,15 @@
       "review": "source-inventoried"
     },
     {
-      "id": "238fd46264ac",
+      "id": "efecd6751744",
       "file": "client/src/components/merchant/QuotationWorkspace.tsx",
-      "line": 475,
+      "line": 481,
       "tag": "a",
       "role": "",
       "kind": "action",
       "label": "قوالب العروض",
       "section": "عروض الأسعار",
-      "binding": "/merchant/quotation-templates",
+      "binding": "href(\"/merchant/quotation-templates\")",
       "type": "text",
       "options": [],
       "min": "",
@@ -48363,9 +48363,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "5476ae0ee15f",
+      "id": "ac60c1112177",
       "file": "client/src/components/merchant/QuotationWorkspace.tsx",
-      "line": 478,
+      "line": 484,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -48384,9 +48384,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "b22d03bea7fe",
+      "id": "1a38ac1193b5",
       "file": "client/src/components/merchant/QuotationWorkspace.tsx",
-      "line": 493,
+      "line": 499,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -48407,9 +48407,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "34af214d8e8a",
+      "id": "11eea6999df5",
       "file": "client/src/components/merchant/QuotationWorkspace.tsx",
-      "line": 529,
+      "line": 536,
       "tag": "DialogContent",
       "role": "",
       "kind": "dialog",
@@ -48430,9 +48430,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "5b7af4d86e05",
+      "id": "12c86106af15",
       "file": "client/src/components/merchant/QuotationWorkspace.tsx",
-      "line": 554,
+      "line": 566,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -48453,9 +48453,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "f13c3d52ccb7",
+      "id": "f52d02bda27c",
       "file": "client/src/components/merchant/QuotationWorkspace.tsx",
-      "line": 566,
+      "line": 578,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -48476,9 +48476,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "b445f29d664b",
+      "id": "69457bff6f0d",
       "file": "client/src/components/merchant/QuotationWorkspace.tsx",
-      "line": 582,
+      "line": 594,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -48500,9 +48500,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "8d5d375f1bbd",
+      "id": "7da97c624ba5",
       "file": "client/src/components/merchant/QuotationWorkspace.tsx",
-      "line": 595,
+      "line": 607,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -48524,9 +48524,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "019173be141a",
+      "id": "3cb66adf0e79",
       "file": "client/src/components/merchant/QuotationWorkspace.tsx",
-      "line": 623,
+      "line": 635,
       "tag": "DialogContent",
       "role": "",
       "kind": "dialog",
@@ -48547,9 +48547,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "925f3bf8ced3",
+      "id": "3dedaaffd3c1",
       "file": "client/src/components/merchant/QuotationWorkspace.tsx",
-      "line": 663,
+      "line": 675,
       "tag": "input",
       "role": "",
       "kind": "field",
@@ -48571,9 +48571,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "27edf7a2f267",
+      "id": "5f5200f05f3b",
       "file": "client/src/components/merchant/QuotationWorkspace.tsx",
-      "line": 698,
+      "line": 711,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -48595,9 +48595,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "7c417d0aa1f0",
+      "id": "92dd2756b205",
       "file": "client/src/components/merchant/QuotationWorkspace.tsx",
-      "line": 713,
+      "line": 726,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -48619,9 +48619,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "f470aea9a940",
+      "id": "297aceccedf4",
       "file": "client/src/components/merchant/QuotationWorkspace.tsx",
-      "line": 730,
+      "line": 743,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -48643,9 +48643,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "92926a02713e",
+      "id": "8a6735d83ffd",
       "file": "client/src/components/merchant/QuotationWorkspace.tsx",
-      "line": 735,
+      "line": 748,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -48668,9 +48668,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "22f931f22be5",
+      "id": "931fc8f9fc27",
       "file": "client/src/components/merchant/QuotationWorkspace.tsx",
-      "line": 743,
+      "line": 756,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -48691,9 +48691,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "02ec6103a8ed",
+      "id": "17e7ce7587bd",
       "file": "client/src/components/merchant/QuotationWorkspace.tsx",
-      "line": 752,
+      "line": 765,
       "tag": "button",
       "role": "",
       "kind": "action",
