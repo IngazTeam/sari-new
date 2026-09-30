@@ -203,7 +203,7 @@ export function CustomerAnnotations({
             )
           );
           void query.refetch();
-        } else setNotice(t("customerWorkspaceUx.pending"));
+        } else setNotice("");
       }
     } finally {
       lock.current = false;
@@ -226,7 +226,7 @@ export function CustomerAnnotations({
         else setNotice(t("customerWorkspaceUx.notFoundReceipt"));
       }
     } catch {
-      if (current()) setNotice(t("customerWorkspaceUx.pending"));
+      if (current()) setNotice("");
     } finally {
       lock.current = false;
       if (current()) setBusy(false);

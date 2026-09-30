@@ -172,6 +172,7 @@ function demoState(){
 }
 const renderers={overview,inbox,sales,catalog,customers,ai,marketing,analytics,settings,tools:toolsPage};
 function render(keepFocus=false){
+  window.CustomerPreview?.unmount();
   window.ReportPreview?.unmount();
   window.OrderPreview?.unmount();
   window.QuotationPreview?.unmount();
@@ -181,6 +182,7 @@ function render(keepFocus=false){
   window.QuotationPreview?.mount();
   window.OrderPreview?.mount();
   window.ReportPreview?.mount();
+  window.CustomerPreview?.mount();
   for(const anchor of document.querySelectorAll('a[href^="#/"]')){
     const legacy=anchor.getAttribute('href').match(/^#\/(?!page\/)([^/]+)(?:\/([^/]+))?$/);
     if(legacy)anchor.setAttribute('href',route(legacy[1],legacy[2]||''));

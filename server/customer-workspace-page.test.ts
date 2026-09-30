@@ -411,6 +411,7 @@ describe("customer annotation writes", () => {
     await click(en.customerWorkspaceUx.saveNote);
     const attempt = readCustomerCache(scope, key).attempt!;
     expect(host.querySelector("textarea")?.disabled).toBe(true);
+    expect(host.textContent!.split(en.customerWorkspaceUx.pending)).toHaveLength(2);
     await act(() => root.render(null));
     await render("annotations");
     m.receipt.mockResolvedValue(receipt(attempt));
