@@ -111,8 +111,14 @@ async function readSnapshot(connection: PoolConnection, merchantId: number, sele
     if (p.track_inventory && p.product_type === 'physical' && Number(v ? v.stock : p.stock) < item.quantity) throw new Error('Checkout quantity unavailable');
     if (p.max_students != null && p.registration_open && Number(p.max_students) - Number(p.enrolled_count || 0) < item.quantity) throw new Error('Checkout seats unavailable');
     const price = v?.price == null ? productMoney.minor : verifiedProductMoney({ ...v, priceUnit: v.price_unit, currency: p.currency }).minor;
+    if (v && v.updated_at == null) throw new Error('Checkout option version unavailable');
+    // SQL uses updated_at. Include identifying selections too: timestamp columns
+    // can have second precision and miss two edits made within the same second.
+    const variantVersion = v ? createHash('sha256').update(JSON.stringify([
+      v.updated_at, v.name, v.sku, v.barcode, v.weight, v.options, v.price, v.price_unit, v.is_active,
+    ])).digest('hex') : null;
     items.push({ ...item, name: v ? `${p.name} — ${v.name}` : p.name, price,
-      productVersion: String(p.updatedAt), variantVersion: v ? String(v.updatedAt) : null });
+      productVersion: String(p.updatedAt), variantVersion });
   }
   const totalMinor = requireMinor(items.reduce((sum, i) => sum + requireMinor(i.quantity * i.price), 0));
   const body = { version: 1 as const, items, totalMinor, currency: 'SAR' as const, pricing: 'catalog_subtotal_requires_billing_review' as const };

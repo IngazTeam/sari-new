@@ -5,6 +5,7 @@ import { prepareCheckoutQuote, acceptCheckoutQuote, approveCheckoutInvoice, type
 import { issueCanonicalOrderPaymentLink } from '../payment/order-payment-link';
 import { stageCheckoutOfferFixture } from '../tests/helpers/checkout-offer';
 import { buildReplyPlan } from '../messaging/reply-plan';
+import { createHash } from 'node:crypto';
 
 describe.skipIf(!process.env.DATABASE_URL)('persisted checkout agreement and consent', () => {
   let fixture: Awaited<ReturnType<typeof createDisposableMerchant>>, identity: CheckoutIdentity, productId: number;
@@ -26,8 +27,8 @@ describe.skipIf(!process.env.DATABASE_URL)('persisted checkout agreement and con
     const m = await query("INSERT INTO messages (conversationId, direction, messageType, content) VALUES (?, 'incoming', 'text', ?)", [identity.conversationId, content]);
     return { ...identity, incomingMessageId: m.insertId };
   }
-  async function offer(accepted = true) {
-    const result = await prepareCheckoutQuote(identity, selection());
+  async function offer(accepted = true, variantId: number | null = null) {
+    const result = await prepareCheckoutQuote(identity, [{...selection()[0],variantId}]);
     expect(result.kind).toBe('quote'); const quote = result as Extract<CheckoutResult, {kind:'quote'}>;
     const reply = buildReplyPlan({ ...identity, instanceId: 1, providerAccount: 'fixture', eventId: String(identity.incomingMessageId), to: phone, text: quote.text });
     await stageCheckoutOfferFixture(reply, accepted);
@@ -145,6 +146,38 @@ describe.skipIf(!process.env.DATABASE_URL)('persisted checkout agreement and con
     await expect(prepareCheckoutQuote(identity, selection())).rejects.toThrow('option required');
     const result = await prepareCheckoutQuote(identity, [{ productId, variantId: v.insertId, quantity: 2 }]);
     expect(result.kind === 'quote' && result.snapshot.totalMinor).toBe(0);
+  });
+  async function variantOffer() {
+    await query('UPDATE products SET has_variants = 1 WHERE id = ?', [productId]);
+    const v=await query("INSERT INTO product_variants (product_id,merchant_id,name,price,price_unit,stock,options) VALUES (?,?,'صغير',1000,'minor',20,?)",[productId,fixture.merchantId,'[{"optionId":1,"value":"S"}]']);
+    return {id:v.insertId,quote:await offer(true,v.insertId)};
+  }
+  it('binds a stable variant version to the quote and accepts an unchanged reviewed variant',async()=>{
+    const {quote}=await variantOffer();expect(quote.snapshot.items[0].variantVersion).toMatch(/^[a-f0-9]{64}$/);
+    expect((await acceptCheckoutQuote(await incoming(),quote.quotationId)).kind).toBe('order');
+    expect((await orders())[0].totalAmount).toBe(3000);
+  });
+  it.each([
+    'updated_at=TIMESTAMPADD(SECOND,1,updated_at)',
+    `options='[{"optionId":1,"value":"L"}]',updated_at=updated_at`,
+    "sku='DIFFERENT-ITEM',updated_at=updated_at",
+    "barcode='DIFFERENT-BARCODE',updated_at=updated_at",
+    "weight='250g',updated_at=updated_at",
+  ])('rejects changed variant terms even when price and name are unchanged: %s',async change=>{
+    const {id,quote}=await variantOffer();await query(`UPDATE product_variants SET ${change} WHERE id=?`,[id]);
+    expect((await acceptCheckoutQuote(await incoming(),quote.quotationId)).kind).toBe('changed');expect(await orders()).toHaveLength(0);
+  });
+  it('requires a new agreement when an accepted variant changes before invoice approval',async()=>{
+    const {id,quote}=await variantOffer();await acceptCheckoutQuote(await incoming(),quote.quotationId);const [order]=await orders();
+    await query(`UPDATE product_variants SET options='[{"optionId":1,"value":"L"}]',updated_at=updated_at WHERE id=?`,[id]);
+    await expect(approveCheckoutInvoice({merchantId:fixture.merchantId,orderId:order.id,actorUserId:fixture.userId,expectedAmountMinor:3000,totalIsFinal:true})).rejects.toThrow('catalogue changed');
+    expect((await orders())[0].checkout_review_required).toBe(1);
+  });
+  it('expires a legacy variant quote whose version was the literal undefined',async()=>{
+    const {quote}=await variantOffer();const body={...quote.snapshot,items:quote.snapshot.items.map(item=>({...item,variantVersion:'undefined'}))};
+    const {digest:_,...terms}=body;body.digest=createHash('sha256').update(JSON.stringify(terms)).digest('hex');
+    await query('UPDATE sales_quotations SET checkout_snapshot=? WHERE id=?',[JSON.stringify(body),quote.quotationId]);
+    expect((await acceptCheckoutQuote(await incoming(),quote.quotationId)).kind).toBe('changed');expect(await orders()).toHaveLength(0);
   });
   it('does not create local orders for externally managed commerce products', async () => {
     await query("UPDATE products SET sallaProductId = 'external-order-owner' WHERE id = ?", [productId]);
