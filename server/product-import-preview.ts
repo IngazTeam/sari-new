@@ -70,7 +70,16 @@ const aliases: Record<ProductImportField, string[]> = {
   ],
   currency: ["currency", "العملة", "عملة"],
   imageUrl: ["imageurl", "image url", "image", "رابط الصورة", "الصورة"],
-  stock: ["stock", "quantity", "الكمية", "المخزون", "كمية", "seats", "المقاعد"],
+  stock: [
+    "stock",
+    "quantity",
+    "الكمية",
+    "الكمية المتاحة",
+    "المخزون",
+    "كمية",
+    "seats",
+    "المقاعد",
+  ],
   sku: ["sku", "رمز الصنف", "رمز المنتج"],
   barcode: ["barcode", "الباركود", "باركود"],
   compareAtPrice: [
@@ -414,6 +423,27 @@ function buildProductImportPreview(
             ? fields[field]
             : null;
       else fields[field] = value;
+    }
+    // Inventory exports preserve the currency beside the human-readable price.
+    // An explicit currency column must agree; never silently override it.
+    const pricedCurrency =
+      typeof fields.price === "string"
+        ? /^(\d+(?:\.\d{1,2})?) (SAR|USD)$/.exec(fields.price)
+        : null;
+    if (pricedCurrency) {
+      const currencyColumn = byField.get("currency");
+      if (
+        currencyColumn !== undefined &&
+        values[currencyColumn].trim() &&
+        fields.currency !== pricedCurrency[2]
+      )
+        rowIssues.push({
+          code: "invalid_value",
+          field: "currency",
+          column: currencyColumn,
+        });
+      else fields.currency = pricedCurrency[2];
+      fields.price = pricedCurrency[1];
     }
     if (!fields.name)
       rowIssues.push({
