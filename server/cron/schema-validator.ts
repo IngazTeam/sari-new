@@ -62,6 +62,7 @@ export const CRITICAL_SCHEMA_REQUIREMENTS: readonly SchemaRequirement[] = [
   { table: 'zid_oauth_states', columns: ['state_hash', 'session_hash', 'expires_at', 'consumed_at'] },
   { table: 'sheets_oauth_states', columns: ['state_hash', 'session_hash', 'source_hash', 'expires_at', 'consumed_at'], uniqueIndexes: [{name:'uq_sheets_oauth_state',columns:['state_hash']},{name:'uq_sheets_oauth_merchant_user',columns:['merchant_id','user_id']}] },
   { table: 'sheets_setup_attempts', columns: ['execution_hash','source_hash','state','receipt','receipt_hash','lease_until'],uniqueIndexes:[{name:'uq_sheets_setup_request',columns:['merchant_id','request_id']}] },
+  { table: 'product_category_receipts', columns: ['actor_id','input_hash','result'], uniqueIndexes:[{name:'uq_product_category_request',columns:['merchant_id','request_id']}] },
   { table: 'merchants', columns: [
     'timezone', 'integration_source', 'provision_idempotency_hash', 'provision_payload_hash',
     'escalation_phones', 'emergency_phone',

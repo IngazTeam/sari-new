@@ -1261,6 +1261,13 @@
       "when": 1795392000041,
       "tag": "0179_sheets_setup_attempts",
       "breakpoints": true
+    },
+    {
+      "idx": 180,
+      "version": "5",
+      "when": 1795392000042,
+      "tag": "0180_product_category_receipts",
+      "breakpoints": true
     }
   ]
 }

@@ -15,6 +15,7 @@ import { productImportRouter } from './routers-product-import';
 import { productFileAdviceRouter } from './routers-product-file-advice';
 import { productSheetRouter } from './routers-product-sheet';
 import { sheetInventoryRouter } from './routers-sheet-inventory';
+import { productCategoryRouter } from './routers-product-categories';
 const majorPriceSchema = z.number().refine(value => {
   try { majorToMinor(value); return true; } catch { return false; }
 }, 'Price must be nonnegative with at most two decimal places');
@@ -32,6 +33,7 @@ export const productsRouter = router({
     fileAdvice: productFileAdviceRouter,
     sheetImport: productSheetRouter,
     sheetInventory: sheetInventoryRouter,
+    categories: productCategoryRouter,
     // List products for merchant — PERF-03 FIX: server-side pagination + search
     list: merchantProcedure
         .input(productCatalogInput)
