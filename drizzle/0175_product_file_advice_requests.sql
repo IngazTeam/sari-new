@@ -1,0 +1,21 @@
+CREATE TABLE IF NOT EXISTS `product_file_advice_requests` (
+  `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `merchant_id` INT NOT NULL,
+  `actor_id` INT NOT NULL,
+  `request_id` CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `execution_token` CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `input_hash` CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `file_name` VARCHAR(255) NOT NULL,
+  `file_digest` CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `sample_digest` CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `state` VARCHAR(16) NOT NULL DEFAULT 'processing',
+  `failure_code` VARCHAR(32) NULL,
+  `result` JSON NULL,
+  `result_digest` CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NULL,
+  `started_at` TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  `lease_until` TIMESTAMP(3) NOT NULL,
+  `finished_at` TIMESTAMP(3) NULL,
+  UNIQUE KEY `uq_product_file_advice_request` (`merchant_id`,`request_id`),
+  KEY `idx_product_file_advice_active` (`merchant_id`,`state`,`lease_until`),
+  CONSTRAINT `fk_product_file_advice_merchant` FOREIGN KEY (`merchant_id`) REFERENCES `merchants` (`id`) ON DELETE CASCADE
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

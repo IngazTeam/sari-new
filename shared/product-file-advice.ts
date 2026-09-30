@@ -56,3 +56,58 @@ export const productFileAdviceProposal = z
 export type ProductFileAdviceProposal = z.infer<
   typeof productFileAdviceProposal
 >;
+
+const digest = z.string().regex(/^[a-f0-9]{64}$/);
+export const productFileAdviceResult = z
+  .object({
+    fileName: z.string().min(1).max(255),
+    fileDigest: digest,
+    sampleDigest: digest,
+    totalRows: z.number().int().min(1).max(5000),
+    sampledRows: z.number().int().min(1).max(100),
+    omittedRows: z.number().int().min(0).max(5000),
+    truncatedCells: z.number().int().min(0).max(6060),
+    advisoryOnly: z.literal(true),
+    productsCreated: z.literal(0),
+    knowledgeChanged: z.literal(false),
+    proposal: productFileAdviceProposal,
+  })
+  .strict()
+  .refine(v => v.sampledRows + v.omittedRows === v.totalRows);
+export const productFileAdviceStart = productFileAdviceInput.extend({
+  requestId: z.string().uuid(),
+  reviewed: z.literal(true),
+});
+export const productFileAdviceRead = z
+  .object({ requestId: z.string().uuid() })
+  .strict();
+export const productFileAdviceReceipt = z
+  .object({
+    merchantId: z.number().int().positive(),
+    actorId: z.number().int().positive(),
+    requestId: z.string().uuid(),
+    fileName: z.string().min(1).max(255),
+    fileDigest: digest,
+    sampleDigest: digest,
+    state: z.enum(["processing", "completed", "failed", "uncertain"]),
+    failure: z.enum(["invalid_result", "provider_unknown"]).nullable(),
+    startedAt: z.string().datetime(),
+    finishedAt: z.string().datetime().nullable(),
+    result: productFileAdviceResult.nullable(),
+  })
+  .strict()
+  .refine(
+    v =>
+      (v.state === "completed") === (v.result !== null) &&
+      (!v.result ||
+        (v.fileDigest === v.result.fileDigest &&
+          v.sampleDigest === v.result.sampleDigest &&
+          v.fileName === v.result.fileName)) &&
+      (v.state === "completed"
+        ? v.failure === null && !!v.finishedAt
+        : v.state === "failed"
+          ? v.failure === "invalid_result" && !!v.finishedAt
+          : v.state === "processing"
+            ? v.failure === null && v.finishedAt === null
+            : v.failure === null || v.failure === "provider_unknown")
+  );

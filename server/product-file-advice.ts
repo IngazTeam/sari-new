@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import {
   productFileAdviceInput,
   productFileAdviceProposal,
+  productFileAdviceResult,
   type ProductFileAdviceProposal,
 } from "../shared/product-file-advice";
 import { productImportInput } from "../shared/product-import";
@@ -134,7 +135,7 @@ export function parseProductFileAdvice(
       if (!source || !source.value.includes(evidence.quote))
         throw new ProductFileAdviceError("invalid_citation");
     }
-  return {
+  return productFileAdviceResult.parse({
     fileName: context.preview.fileName,
     fileDigest: context.preview.digest,
     sampleDigest: context.sampleDigest,
@@ -149,7 +150,7 @@ export function parseProductFileAdvice(
     productsCreated: 0 as const,
     knowledgeChanged: false as const,
     proposal: { ...proposal, mapping },
-  };
+  });
 }
 /** Reparse the original bytes under a merchant-reviewed mapping. Model prose is never a catalog value. */
 export async function previewAdvisedProductFile(

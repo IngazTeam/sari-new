@@ -3767,6 +3767,18 @@ export const productImportReviews = mysqlTable('product_import_reviews', {
 	expiresAt: timestamp('expires_at', { mode: 'string', fsp: 3 }).notNull(),
 }, table => [uniqueIndex('uq_product_import_review').on(table.merchantId, table.reviewId), index('idx_product_import_expiry').on(table.merchantId, table.expiresAt)]);
 
+export const productFileAdviceRequests = mysqlTable('product_file_advice_requests', {
+	id: int().autoincrement().primaryKey(),
+	merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+	actorId: int('actor_id').notNull(), requestId: char('request_id', { length: 36 }).notNull(),
+	executionToken: char('execution_token', { length: 36 }).notNull(), inputHash: char('input_hash', { length: 64 }).notNull(),
+	fileName: varchar('file_name', { length: 255 }).notNull(), fileDigest: char('file_digest', { length: 64 }).notNull(), sampleDigest: char('sample_digest', { length: 64 }).notNull(),
+	state: varchar({ length: 16 }).default('processing').notNull(), failureCode: varchar('failure_code', { length: 32 }),
+	result: json(), resultDigest: char('result_digest', { length: 64 }),
+	startedAt: timestamp('started_at', { mode: 'string', fsp: 3 }).defaultNow().notNull(), leaseUntil: timestamp('lease_until', { mode: 'string', fsp: 3 }).notNull(),
+	finishedAt: timestamp('finished_at', { mode: 'string', fsp: 3 }),
+}, table => [uniqueIndex('uq_product_file_advice_request').on(table.merchantId, table.requestId), index('idx_product_file_advice_active').on(table.merchantId, table.state, table.leaseUntil)]);
+
 export const quotationTemplates = mysqlTable("quotation_templates", {
 	id: int().autoincrement().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),

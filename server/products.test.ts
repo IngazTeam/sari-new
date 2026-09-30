@@ -58,6 +58,8 @@ describe("retired product writes", () => {
       "smartImport",
       "syncFromGoogleSheets",
       "getSheetSyncStatus",
+      "fileAdvice.start",
+      "fileAdvice.read",
       "editor.read",
       "editor.write",
       "editor.receipt",
