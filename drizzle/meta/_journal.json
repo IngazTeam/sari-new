@@ -1198,6 +1198,13 @@
       "when": 1795392000032,
       "tag": "0170_quotation_template_receipts",
       "breakpoints": true
+    },
+    {
+      "idx": 171,
+      "version": "5",
+      "when": 1795392000033,
+      "tag": "0171_order_status_receipts",
+      "breakpoints": true
     }
   ]
 }

@@ -3713,6 +3713,18 @@ export const quotationTemplateReceipts = mysqlTable('quotation_template_receipts
 	createdAt: timestamp('created_at', { mode: 'string', fsp: 3 }).defaultNow().notNull(),
 }, table => [uniqueIndex('uq_quotation_template_request').on(table.merchantId, table.requestId)]);
 
+export const orderStatusReceipts = mysqlTable('order_status_receipts', {
+	id: int().autoincrement().primaryKey(),
+	merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+	actorId: int('actor_id').notNull(),
+	orderId: int('order_id').notNull(),
+	requestId: char('request_id', { length: 36 }).notNull(),
+	inputHash: char('input_hash', { length: 64 }).notNull(),
+	result: json('result').notNull(),
+	createdAt: timestamp('created_at', { mode: 'string', fsp: 3 }).defaultNow().notNull(),
+}, table => [uniqueIndex('uq_order_status_request').on(table.merchantId, table.requestId),
+	index('idx_order_status_history').on(table.merchantId, table.orderId, table.id)]);
+
 export const quotationTemplates = mysqlTable("quotation_templates", {
 	id: int().autoincrement().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
