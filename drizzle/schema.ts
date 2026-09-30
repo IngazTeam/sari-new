@@ -2006,6 +2006,7 @@ export const bookingReviews = mysqlTable("booking_reviews", {
 
 export const setupWizardProgress = mysqlTable("setup_wizard_progress", {
 	id: int().autoincrement().notNull().primaryKey(),
+	revision: int().default(0).notNull(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }).unique(),
 	currentStep: int("current_step").default(1).notNull(),
 	completedSteps: text("completed_steps"), // JSON array [1, 2, 3]
@@ -2015,6 +2016,16 @@ export const setupWizardProgress = mysqlTable("setup_wizard_progress", {
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 });
+
+export const setupCompletionReceipts = mysqlTable("setup_completion_receipts", {
+	id: int().autoincrement().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	actorId: int("actor_id").notNull(),
+	requestId: char("request_id", { length: 36 }).notNull(),
+	inputHash: char("input_hash", { length: 64 }).notNull(),
+	result: json().notNull(),
+	createdAt: timestamp("created_at", { mode: "string", fsp: 3 }).defaultNow().notNull(),
+}, table => [uniqueIndex("uq_setup_completion_request").on(table.merchantId, table.requestId)]);
 
 // Platform Integrations (Zid, Calendly, etc.)
 export const platformIntegrations = mysqlTable("platform_integrations", {

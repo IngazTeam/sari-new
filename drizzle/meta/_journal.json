@@ -1275,6 +1275,13 @@
       "when": 1795392000043,
       "tag": "0181_product_detail_receipts",
       "breakpoints": true
+    },
+    {
+      "idx": 182,
+      "version": "5",
+      "when": 1795392000044,
+      "tag": "0182_setup_completion_receipts",
+      "breakpoints": true
     }
   ]
 }
