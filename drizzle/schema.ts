@@ -3725,6 +3725,30 @@ export const orderStatusReceipts = mysqlTable('order_status_receipts', {
 }, table => [uniqueIndex('uq_order_status_request').on(table.merchantId, table.requestId),
 	index('idx_order_status_history').on(table.merchantId, table.orderId, table.id)]);
 
+export const customerWorkspaceTags = mysqlTable('customer_workspace_tags', {
+	id: int().autoincrement().primaryKey(),
+	merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+	customerKey: varchar('customer_key', { length: 50 }).notNull(),
+	revision: int({ unsigned: true }).default(0).notNull(), tags: json().notNull(),
+	updatedAt: timestamp('updated_at', { mode: 'string', fsp: 3 }).defaultNow().onUpdateNow().notNull(),
+}, table => [uniqueIndex('uq_customer_workspace_tags').on(table.merchantId, table.customerKey)]);
+
+export const customerWorkspaceNotes = mysqlTable('customer_workspace_notes', {
+	id: int().autoincrement().primaryKey(),
+	merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+	customerKey: varchar('customer_key', { length: 50 }).notNull(), actorId: int('actor_id').notNull(),
+	content: varchar({ length: 2000 }).notNull(),
+	createdAt: timestamp('created_at', { mode: 'string', fsp: 3 }).defaultNow().notNull(),
+}, table => [index('idx_customer_workspace_notes').on(table.merchantId, table.customerKey, table.id)]);
+
+export const customerAnnotationReceipts = mysqlTable('customer_annotation_receipts', {
+	id: int().autoincrement().primaryKey(),
+	merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+	actorId: int('actor_id').notNull(), requestId: char('request_id', { length: 36 }).notNull(),
+	inputHash: char('input_hash', { length: 64 }).notNull(), result: json().notNull(),
+	createdAt: timestamp('created_at', { mode: 'string', fsp: 3 }).defaultNow().notNull(),
+}, table => [uniqueIndex('uq_customer_annotation_request').on(table.merchantId, table.requestId)]);
+
 export const quotationTemplates = mysqlTable("quotation_templates", {
 	id: int().autoincrement().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),

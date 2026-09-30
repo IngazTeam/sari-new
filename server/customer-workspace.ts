@@ -34,7 +34,7 @@ const paging = (total: number, page: number) => ({
 });
 
 /** Read-only identity projection. Stored phones and customer memory are never rewritten. */
-function sourceCte(merchantId: number, through: string) {
+export function customerSourceCte(merchantId: number, through: string) {
   const time = through.slice(0, 19).replace("T", " ");
   return sql`WITH raw AS (
     SELECT 'conversation' AS source, id, customerPhone AS phone, customerName AS name,
@@ -139,7 +139,7 @@ async function snapshot<T>(
       );
       if (owner.length !== 1 || integer(owner[0].id) !== merchantId)
         throw Error("Customer merchant unavailable");
-      return run(rows, sourceCte(merchantId, through), through);
+      return run(rows, customerSourceCte(merchantId, through), through);
     },
     { isolationLevel: "repeatable read", accessMode: "read only" }
   );

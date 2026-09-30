@@ -10,6 +10,7 @@ import { TRPCError } from "@trpc/server";
 import { permissionProcedure, router } from "./_core/trpc";
 import { customerListInput, customerDetailInput } from "../shared/customer-workspace";
 import { readCustomerList, readCustomerDetail } from "./customer-workspace";
+import { customerAnnotationsRouter } from "./routers-customer-annotations";
 import {
   getCustomerByPhone,
   getCustomerStats,
@@ -19,6 +20,7 @@ import {
 } from './db';
 
 export const customersRouter = router({
+    annotations: customerAnnotationsRouter,
     workspace: router({
         list: permissionProcedure('conversations.read').input(customerListInput).query(async ({ctx,input}) => {
             try { return await readCustomerList(ctx.merchantId,input); }
