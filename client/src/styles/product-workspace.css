@@ -98,6 +98,19 @@
   min-width: 0;
   font-weight: 600;
 }
+.pw-workspace .ds-consent {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 46px;
+  overflow-wrap: anywhere;
+}
+.pw-workspace .ds-consent input {
+  width: 22px;
+  min-height: 22px;
+  flex: 0 0 22px;
+  accent-color: var(--primary);
+}
 .pw-panel,
 .pw-filters,
 .pw-summary > div,

@@ -776,7 +776,7 @@
           "contains": "/merchant/data-sync"
         },
         {
-          "file": "client/src/pages/merchant/DataSync.tsx",
+          "file": "client/src/components/merchant/DataSyncWorkspace.tsx",
           "contains": "sheets.syncInventory"
         }
       ]

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-30T14:18:04.008Z",
+  "generatedAt": "2026-09-30T14:46:07.645Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -11551,7 +11551,25 @@
     },
     {
       "file": "client/src/pages/merchant/DataSync.tsx",
-      "hash": "a094672fa5ed",
+      "hash": "cb6881269c36",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [
+        "client/src/components/KnowledgeWorkspaceScope.tsx",
+        "client/src/components/merchant/DataSyncWorkspace.tsx"
+      ],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/components/merchant/DataSyncWorkspace.tsx",
+      "hash": "d0542b1409eb",
       "queries": [
         "sheets.getStatus"
       ],
@@ -11562,77 +11580,38 @@
       "browserRequests": [],
       "sections": [
         {
-          "label": "مزامنة البيانات",
-          "line": 74,
-          "tag": "h1"
+          "label": "وجهة التصدير",
+          "line": 112,
+          "tag": "h2"
         },
         {
-          "label": "الحالة العامة",
-          "line": 120,
-          "tag": "CardTitle"
+          "label": "من ساري إلى Google Sheets",
+          "line": 149,
+          "tag": "h2"
         },
         {
-          "label": "سجل المزامنة",
-          "line": 189,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "معلومات الإعداد",
-          "line": 233,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "كيف تعمل المزامنة؟",
-          "line": 274,
-          "tag": "CardTitle"
-        }
-      ],
-      "choices": [],
-      "handlers": [
-        {
-          "name": "handleSync",
-          "line": 31,
-          "calls": [
-            "syncMutation"
-          ]
-        }
-      ],
-      "queryStates": [
-        {
-          "query": "sheets.getStatus",
-          "binding": "",
-          "line": 18,
-          "errorSignal": false,
-          "loadingSignal": false,
-          "enabled": null
-        }
-      ],
-      "conditions": [],
-      "imports": [
-        "client/src/components/merchant/ProductSheetPolicyNotice.tsx"
-      ],
-      "controlCount": 3
-    },
-    {
-      "file": "client/src/components/merchant/ProductSheetPolicyNotice.tsx",
-      "hash": "3326913ba4ca",
-      "queries": [],
-      "mutations": [],
-      "imperativeReads": [],
-      "browserRequests": [],
-      "sections": [
-        {
-          "label": "استيراد المنتجات يحتاج مراجعتك",
-          "line": 13,
+          "label": "إدخال التغييرات إلى ساري",
+          "line": 198,
           "tag": "h2"
         }
       ],
       "choices": [],
       "handlers": [],
-      "queryStates": [],
+      "queryStates": [
+        {
+          "query": "sheets.getStatus",
+          "binding": "status",
+          "line": 16,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        }
+      ],
       "conditions": [],
-      "imports": [],
-      "controlCount": 1
+      "imports": [
+        "client/src/components/merchant/ProductWorkspaceView.tsx"
+      ],
+      "controlCount": 8
     },
     {
       "file": "client/src/pages/merchant/Reviews.tsx",
@@ -13583,6 +13562,27 @@
         "client/src/components/merchant/ProductSheetPolicyNotice.tsx"
       ],
       "controlCount": 8
+    },
+    {
+      "file": "client/src/components/merchant/ProductSheetPolicyNotice.tsx",
+      "hash": "3326913ba4ca",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [
+        {
+          "label": "استيراد المنتجات يحتاج مراجعتك",
+          "line": 13,
+          "tag": "h2"
+        }
+      ],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 1
     },
     {
       "file": "client/src/pages/SheetsExport.tsx",
@@ -20626,15 +20626,27 @@
       ],
       "files": [
         "client/src/pages/merchant/DataSync.tsx",
-        "client/src/components/merchant/ProductSheetPolicyNotice.tsx"
+        "client/src/components/KnowledgeWorkspaceScope.tsx",
+        "client/src/lib/knowledge-workspace-cache.ts",
+        "client/src/components/merchant/DataSyncWorkspace.tsx",
+        "client/src/components/merchant/ProductWorkspaceView.tsx"
       ],
       "controls": [
-        "b1a1758dbb7d",
-        "1ce7c21f3f72",
-        "00f0f066b939",
-        "4dd41ef0dd70"
+        "77ce5300e6f7",
+        "753ff1307fca",
+        "5ed6f4b7d8df",
+        "d681e9184bf3",
+        "4538e4846e43",
+        "2d048b65e524",
+        "907a121c2432",
+        "8b65b65b0f46",
+        "3fae20c2ea55",
+        "8781b3ad3758",
+        "ab0c78e94084"
       ],
       "queries": [
+        "auth.me",
+        "merchants.getCurrent",
         "sheets.getStatus"
       ],
       "mutations": [
@@ -55298,16 +55310,133 @@
       "review": "source-inventoried"
     },
     {
-      "id": "b1a1758dbb7d",
-      "file": "client/src/pages/merchant/DataSync.tsx",
-      "line": 79,
-      "tag": "Button",
+      "id": "753ff1307fca",
+      "file": "client/src/components/merchant/DataSyncWorkspace.tsx",
+      "line": 90,
+      "tag": "a",
       "role": "",
       "kind": "action",
-      "label": "جاري المزامنة... مزامنة الآن",
-      "section": "مزامنة البيانات",
-      "binding": "handleSync",
+      "label": "إعدادات الاتصال",
+      "section": "DataSyncWorkspace",
+      "binding": "href(\"/merchant/sheets/settings\")",
       "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "5ed6f4b7d8df",
+      "file": "client/src/components/merchant/DataSyncWorkspace.tsx",
+      "line": 124,
+      "tag": "a",
+      "role": "",
+      "kind": "action",
+      "label": "فتح الجدول ↗",
+      "section": "وجهة التصدير",
+      "binding": "`https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "ready",
+        "status.isLoading || status.isFetching",
+        "status.fetchStatus === \"paused\"",
+        "status.error"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "d681e9184bf3",
+      "file": "client/src/components/merchant/DataSyncWorkspace.tsx",
+      "line": 135,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "تحديث حالة الاتصال",
+      "section": "وجهة التصدير",
+      "binding": "() => {\n                setReviewed(false);\n                void status.refetch();\n              }",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "status.isLoading || status.isFetching",
+        "status.fetchStatus === \"paused\"",
+        "status.error"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "4538e4846e43",
+      "file": "client/src/components/merchant/DataSyncWorkspace.tsx",
+      "line": 162,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "راجعت الجدول",
+      "section": "من ساري إلى Google Sheets",
+      "binding": "() => {\n                  setResult(null);\n                  setReviewed(false);\n                  void status.refetch();\n                }",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "needsCheck",
+        "result"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "2d048b65e524",
+      "file": "client/src/components/merchant/DataSyncWorkspace.tsx",
+      "line": 176,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "راجعت الوجهة وأوافق على كتابة المخزون فيها.",
+      "section": "من ساري إلى Google Sheets",
+      "binding": "reviewed",
+      "type": "checkbox",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "!ready || busy || needsCheck",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "907a121c2432",
+      "file": "client/src/components/merchant/DataSyncWorkspace.tsx",
+      "line": 185,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "راجعت الوجهة وأوافق على كتابة المخزون فيها.",
+      "section": "من ساري إلى Google Sheets",
+      "binding": "() => {\n              void send();\n            }",
+      "type": "button",
       "options": [],
       "min": "",
       "max": "",
@@ -55315,43 +55444,19 @@
       "required": false,
       "conditional": true,
       "conditions": [],
-      "disabled": "syncing || syncMutation.isPending",
+      "disabled": "!ready || !reviewed || busy || needsCheck",
       "review": "source-inventoried"
     },
     {
-      "id": "1ce7c21f3f72",
-      "file": "client/src/pages/merchant/DataSync.tsx",
-      "line": 152,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "فتح جدول البيانات",
-      "section": "الحالة العامة",
-      "binding": "",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [
-        "syncStatus.spreadsheetUrl",
-        "syncStatus"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "00f0f066b939",
-      "file": "client/src/pages/merchant/DataSync.tsx",
-      "line": 157,
+      "id": "8b65b65b0f46",
+      "file": "client/src/components/merchant/DataSyncWorkspace.tsx",
+      "line": 201,
       "tag": "a",
       "role": "",
       "kind": "action",
-      "label": "فتح جدول البيانات",
-      "section": "الحالة العامة",
-      "binding": "syncStatus.spreadsheetUrl",
+      "label": "مراجعة استيراد المنتجات",
+      "section": "إدخال التغييرات إلى ساري",
+      "binding": "href(\"/merchant/products/upload\")",
       "type": "text",
       "options": [],
       "min": "",
@@ -55359,23 +55464,20 @@
       "maxLength": "",
       "required": false,
       "conditional": false,
-      "conditions": [
-        "syncStatus.spreadsheetUrl",
-        "syncStatus"
-      ],
+      "conditions": [],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "4dd41ef0dd70",
-      "file": "client/src/components/merchant/ProductSheetPolicyNotice.tsx",
-      "line": 19,
-      "tag": "Link",
+      "id": "3fae20c2ea55",
+      "file": "client/src/components/merchant/DataSyncWorkspace.tsx",
+      "line": 204,
+      "tag": "a",
       "role": "",
       "kind": "action",
-      "label": "فتح مراجعة استيراد المنتجات",
-      "section": "استيراد المنتجات يحتاج مراجعتك",
-      "binding": "/merchant/products/upload",
+      "label": "مراجعة استيراد الكميات",
+      "section": "إدخال التغييرات إلى ساري",
+      "binding": "href(\"/merchant/sheets/inventory\")",
       "type": "text",
       "options": [],
       "min": "",
@@ -60924,6 +61026,27 @@
         "status?.isConnected"
       ],
       "disabled": "updateSettingsMutation.isPending",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "4dd41ef0dd70",
+      "file": "client/src/components/merchant/ProductSheetPolicyNotice.tsx",
+      "line": 19,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "فتح مراجعة استيراد المنتجات",
+      "section": "استيراد المنتجات يحتاج مراجعتك",
+      "binding": "/merchant/products/upload",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
       "review": "source-inventoried"
     },
     {
