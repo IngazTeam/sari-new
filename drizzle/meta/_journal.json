@@ -1219,6 +1219,13 @@
       "when": 1795392000035,
       "tag": "0173_product_editor_receipts",
       "breakpoints": true
+    },
+    {
+      "idx": 174,
+      "version": "5",
+      "when": 1795392000036,
+      "tag": "0174_product_import_reviews",
+      "breakpoints": true
     }
   ]
 }

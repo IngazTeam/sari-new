@@ -3757,6 +3757,16 @@ export const productEditorReceipts = mysqlTable('product_editor_receipts', {
 	createdAt: timestamp('created_at', { mode: 'string', fsp: 3 }).defaultNow().notNull(),
 }, table => [uniqueIndex('uq_product_editor_request').on(table.merchantId, table.requestId)]);
 
+export const productImportReviews = mysqlTable('product_import_reviews', {
+	id: int().autoincrement().primaryKey(),
+	merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+	actorId: int('actor_id').notNull(), reviewId: char('review_id', { length: 36 }).notNull(),
+	inputHash: char('input_hash', { length: 64 }).notNull(), digest: char({ length: 64 }).notNull(),
+	preview: json().notNull(), receipt: json(),
+	createdAt: timestamp('created_at', { mode: 'string', fsp: 3 }).defaultNow().notNull(),
+	expiresAt: timestamp('expires_at', { mode: 'string', fsp: 3 }).notNull(),
+}, table => [uniqueIndex('uq_product_import_review').on(table.merchantId, table.reviewId), index('idx_product_import_expiry').on(table.merchantId, table.expiresAt)]);
+
 export const quotationTemplates = mysqlTable("quotation_templates", {
 	id: int().autoincrement().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),

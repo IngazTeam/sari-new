@@ -11,6 +11,7 @@ import { productCatalogInput } from '../shared/product-catalog';
 import { readProductCatalog } from './product-catalog';
 import { hasPermission } from './_core/permissions';
 import { productEditorRouter } from './routers-product-editor';
+import { productImportRouter } from './routers-product-import';
 const majorPriceSchema = z.number().refine(value => {
   try { majorToMinor(value); return true; } catch { return false; }
 }, 'Price must be nonnegative with at most two decimal places');
@@ -304,6 +305,7 @@ function buildSheetRows(
 // Data repair belongs in reviewed migrations, never in product reads.
 export const productsRouter = router({
     editor: productEditorRouter,
+    importReview: productImportRouter,
     // List products for merchant — PERF-03 FIX: server-side pagination + search
     list: merchantProcedure
         .input(productCatalogInput)
