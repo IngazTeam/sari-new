@@ -18,6 +18,10 @@ import {
 } from "../shared/product-sheet-import";
 import { z } from "zod";
 import type { PoolConnection } from "mysql2/promise";
+import {
+  sheetInventorySelection,
+  sheetInventoryPreview,
+} from "../shared/product-sheet-inventory";
 export class ProductSheetDisconnected extends Error {}
 async function connectionOn(
   c: PoolConnection,
@@ -206,5 +210,34 @@ export async function snapshotProductSheetSource(
     actorId,
     source: current.view.source,
     snapshot: productSheetSnapshot.parse(snapshot),
+  };
+}
+
+/** Stock-only preparation uses the same scoped, bounded Google connection. */
+export async function snapshotSheetInventorySource(
+  merchantId: number,
+  actorId: number,
+  raw: unknown
+) {
+  const input = sheetInventorySelection.parse(raw),
+    current = await selected(merchantId, actorId, input.expectedSourceDigest);
+  const snapshot = await readProductSheetProvider({
+    spreadsheetId: current.view.source.spreadsheetId,
+    auth: current.auth,
+    assertCurrent: async () => {
+      await selected(merchantId, actorId, input.expectedSourceDigest);
+    },
+    selection: {
+      sheet: input.sheet,
+      options: input.options,
+      kind: "inventory",
+    },
+  });
+  await selected(merchantId, actorId, input.expectedSourceDigest);
+  return {
+    merchantId,
+    actorId,
+    source: current.view.source,
+    snapshot: sheetInventoryPreview.parse(snapshot),
   };
 }

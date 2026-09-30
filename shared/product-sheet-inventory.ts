@@ -3,6 +3,8 @@ import { productSheetGrid, productSheetCell } from "./product-sheet-grid";
 import {
   PRODUCT_SHEET_ROWS,
   PRODUCT_SHEET_COLUMNS,
+  productSheet,
+  productSheetListInput,
 } from "./product-sheet-import";
 const id = z.number().int().min(1).max(2147483647),
   stock = z.number().int().min(0).max(2147483647),
@@ -14,6 +16,12 @@ export const sheetInventoryMapping = z
   .refine(v => v.productId !== v.stock);
 export const sheetInventoryOptions = z
   .object({ mapping: sheetInventoryMapping.optional() })
+  .strict();
+export const sheetInventorySelection = productSheetListInput
+  .extend({
+    sheet: productSheet,
+    options: sheetInventoryOptions,
+  })
   .strict();
 export const sheetInventoryIssue = z.enum([
   "missing_mapping",

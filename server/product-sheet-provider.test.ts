@@ -66,6 +66,60 @@ beforeEach(() => {
 });
 afterEach(() => vi.unstubAllGlobals());
 describe("bounded read-only Sheets provider", () => {
+  it("reads inventory IDs and explicit zero without requiring or parsing a price", async () => {
+    m.fetch.mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          ...metadata,
+          sheets: [
+            {
+              properties: props,
+              data: [
+                {
+                  rowData: [
+                    {
+                      values: [
+                        { userEnteredValue: { stringValue: "id" } },
+                        { userEnteredValue: { stringValue: "stock" } },
+                        { userEnteredValue: { stringValue: "price" } },
+                      ],
+                    },
+                    {
+                      values: [
+                        { userEnteredValue: { numberValue: 12 } },
+                        { userEnteredValue: { numberValue: 0 } },
+                        { userEnteredValue: { formulaValue: "=BAD()" } },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        })
+      )
+    );
+    const result: any = await call({ sheet, kind: "inventory", options: {} });
+    expect(result.kind).toBe("sheet_inventory");
+    expect(result.rows[0]).toMatchObject({
+      productId: 12,
+      stock: 0,
+      issues: [],
+    });
+    expect(result.rows[0].cells[2].issue).toBe("formula");
+    expect(m.fetch).toHaveBeenCalledTimes(1);
+    expect(m.fetch.mock.calls[0][1].method).toBe("GET");
+    expect(m.check).toHaveBeenCalledTimes(3);
+  });
+  it.each([
+    { currency: "SAR" },
+    { mapping: { productId: 0, stock: 0 } },
+    { mapping: { productId: 0, stock: 60 } },
+  ])("rejects unsafe inventory options before OAuth %#", async options => {
+    await expect(call({ sheet, kind: "inventory", options })).rejects.toThrow();
+    expect(m.token).not.toHaveBeenCalled();
+    expect(m.fetch).not.toHaveBeenCalled();
+  });
   it("uses one GET to the fixed Google endpoint with restricted fields, fresh auth and checks", async () => {
     expect(await call()).toEqual([sheet]);
     expect(m.fetch).toHaveBeenCalledTimes(1);

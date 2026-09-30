@@ -3777,6 +3777,16 @@ export const productSheetReviews = mysqlTable('product_sheet_reviews', {
 	expiresAt: timestamp('expires_at', { mode: 'string', fsp: 3 }).notNull(),
 }, table => [uniqueIndex('uq_product_sheet_review').on(table.merchantId, table.reviewId), index('idx_product_sheet_expiry').on(table.merchantId, table.expiresAt)]);
 
+export const inventorySheetReviews = mysqlTable('inventory_sheet_reviews', {
+	id: int().autoincrement().primaryKey(),
+	merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+	actorId: int('actor_id').notNull(), reviewId: char('review_id', { length: 36 }).notNull(),
+	inputHash: char('input_hash', { length: 64 }).notNull(), digest: char({ length: 64 }).notNull(),
+	payload: json().notNull(), receipt: json(),
+	createdAt: timestamp('created_at', { mode: 'string', fsp: 3 }).defaultNow().notNull(),
+	expiresAt: timestamp('expires_at', { mode: 'string', fsp: 3 }).notNull(),
+}, table => [uniqueIndex('uq_inventory_sheet_review').on(table.merchantId, table.reviewId), index('idx_inventory_sheet_expiry').on(table.merchantId, table.expiresAt)]);
+
 export const productFileAdviceRequests = mysqlTable('product_file_advice_requests', {
 	id: int().autoincrement().primaryKey(),
 	merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),

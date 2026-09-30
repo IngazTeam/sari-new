@@ -1240,6 +1240,13 @@
       "when": 1795392000038,
       "tag": "0176_product_sheet_reviews",
       "breakpoints": true
+    },
+    {
+      "idx": 177,
+      "version": "5",
+      "when": 1795392000039,
+      "tag": "0177_inventory_sheet_reviews",
+      "breakpoints": true
     }
   ]
 }

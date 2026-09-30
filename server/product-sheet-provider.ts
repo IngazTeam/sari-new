@@ -8,7 +8,10 @@ import {
   productSheetRange,
   readProductSheetList,
   previewProductSheet,
+  readProductSheetGrid,
 } from "./product-sheet-preview";
+import { previewSheetInventory } from "./product-sheet-inventory";
+import { sheetInventoryOptions } from "../shared/product-sheet-inventory";
 export class ProductSheetProviderError extends Error {
   constructor(
     public readonly reason:
@@ -48,10 +51,12 @@ export async function readProductSheetProvider(input: {
   spreadsheetId: string;
   auth: ProductSheetAuth;
   assertCurrent: () => Promise<void>;
-  selection?: { sheet: unknown; options: unknown };
+  selection?: { sheet: unknown; options: unknown; kind?: "inventory" };
 }) {
   const spreadsheetId = productSpreadsheetId.parse(input.spreadsheetId),
     sheet = input.selection ? productSheet.parse(input.selection.sheet) : null;
+  if (input.selection?.kind === "inventory")
+    sheetInventoryOptions.parse(input.selection.options);
   let auth: ReturnType<typeof authSchema.parse>;
   try {
     auth = authSchema.parse(input.auth);
@@ -137,6 +142,15 @@ export async function readProductSheetProvider(input: {
     reader.releaseLock();
   }
   await input.assertCurrent();
+  if (input.selection?.kind === "inventory")
+    return previewSheetInventory(
+      readProductSheetGrid(raw, {
+        spreadsheetId,
+        sheet,
+        readAt: new Date().toISOString(),
+      }),
+      input.selection.options
+    );
   return input.selection
     ? previewProductSheet(raw, {
         spreadsheetId,
