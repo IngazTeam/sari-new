@@ -22,7 +22,7 @@ beforeEach(() => {
   w.HTMLDialogElement.prototype.close = function () { this.removeAttribute('open'); };
   for (const script of [...w.document.querySelectorAll('script[src]')] as any[]) runInContext(readFileSync(base + script.getAttribute('src'), 'utf8'), dom.getInternalVMContext());
 });
-afterEach(() => { w.CustomerPreview?.unmount(); w.ReportPreview?.unmount(); w.OrderPreview?.unmount(); w.QuotationPreview?.unmount(); dom.window.close(); });
+afterEach(() => { w.ProductPreview?.unmount(); w.CustomerPreview?.unmount(); w.ReportPreview?.unmount(); w.OrderPreview?.unmount(); w.QuotationPreview?.unmount(); dom.window.close(); });
 function route(path: string) { w.history.replaceState(null, '', w.TenantPages.href(path)); w.dispatchEvent(new w.HashChangeEvent('hashchange')); }
 function click(action: string) { const node = w.document.querySelector(`[data-page-action="${action}"]`); expect(node, action).toBeTruthy(); node.click(); }
 function input(selector: string, value: string) { const node = w.document.querySelector(selector); node.value = value; node.dispatchEvent(new w.Event('input', { bubbles: true })); }
@@ -73,12 +73,12 @@ describe('complete tenant page prototype', () => {
   });
 
   it('persists new records and renders user input as text, never executable HTML', () => {
-    route('/merchant/products'); click('primary');
+    route('/merchant/service-categories'); click('primary');
     input('#dialog #page-f0', '<img src=x onerror=alert(1)>'); submit('create');
     expect(w.document.querySelectorAll('tbody tr')).toHaveLength(9);
     expect(text()).toContain('<img src=x onerror=alert(1)>');
     expect(w.document.querySelector('#main img[src=x]')).toBeNull();
-    route('/merchant/tools'); route('/merchant/products');
+    route('/merchant/tools'); route('/merchant/service-categories');
     expect(w.document.querySelectorAll('tbody tr')).toHaveLength(9);
   });
 

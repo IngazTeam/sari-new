@@ -1,0 +1,63 @@
+.pp-active {
+  --border: #d9dfd5;
+  --card: #fffef9;
+  --background: #fffef9;
+  --foreground: #263e35;
+  --muted-foreground: #5d6b60;
+  --muted: #5d6b60;
+  --secondary: #edf2e7;
+  --primary: #29483a;
+  --primary-foreground: #fff;
+  --mw-surface: #fffef9;
+  --mw-text: #263e35;
+}
+.pp-controls {
+  border: 1px dashed #a7b69c;
+  padding: 16px;
+  border-radius: 16px;
+  margin-bottom: 24px;
+  background: #f0f3e9;
+  color: #263e35;
+}
+.pp-controls > div {
+  display: flex;
+  gap: 12px;
+  align-items: end;
+  flex-wrap: wrap;
+}
+.pp-controls p {
+  line-height: 1.8;
+  margin: 0 0 12px;
+}
+.pp-controls label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.pp-controls select,
+.pp-controls button {
+  font: inherit;
+  font-size: 16px;
+  min-height: 46px;
+  max-width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #b1c0a7;
+  border-radius: 10px;
+  background: #fffef9;
+  color: #263e35;
+}
+.pp-active .pw-workspace th {
+  background: #edf2e7;
+}
+.pp-active .pw-notice {
+  background: var(--secondary);
+}
+@media (max-width: 600px) {
+  .pp-controls label,
+  .pp-controls button {
+    flex: 1 1 160px;
+  }
+  .pp-active #main {
+    min-width: 0;
+  }
+}

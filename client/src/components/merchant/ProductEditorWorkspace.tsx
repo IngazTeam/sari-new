@@ -143,7 +143,11 @@ export function ProductEditorWorkspace({
   }, [loaded, ready, data?.digest, target]);
   const pending = draft?.attempt,
     conflict =
-      !!draft && target !== "new" && ready && draft.digest !== data!.digest,
+      !!draft &&
+      !pending &&
+      target !== "new" &&
+      ready &&
+      draft.digest !== data!.digest,
     dirty =
       !!draft && productFormChanged(draft.form, draft.baseline).length > 0;
   useEffect(() => {
