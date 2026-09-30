@@ -36,7 +36,9 @@ describe("quotation read boundary", () => {
     "uses selected merchant for %s",
     async role => {
       m.access.mockResolvedValue({ merchantId: 20, role, memberId: 4 });
-      await caller().workspace({});
+      const workspace = await caller().workspace({});
+      expect(workspace.canManage).toBe(role !== "viewer");
+      expect(workspace.canSetTarget).toBe(["owner", "manager"].includes(role));
       await caller().detail({ id: 1 });
       expect(m.access).toHaveBeenCalledWith(7, 20);
       expect(m.read).toHaveBeenCalledWith(20, {

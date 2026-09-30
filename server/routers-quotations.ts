@@ -19,6 +19,7 @@ import {
   readQuotationReview,
 } from "./quotation-review";
 import { router, permissionProcedure } from "./_core/trpc";
+import { hasPermission } from "./_core/permissions";
 import {
   quotationDraftInput,
   quotationChangeInput,
@@ -118,9 +119,11 @@ export const quotationWorkspaceRouter = router({
     ),
   workspace: permissionProcedure("analytics.read")
     .input(quotationListInput)
-    .query(({ ctx, input }) =>
-      guarded(() => readQuotationWorkspace(ctx.merchantId, input))
-    ),
+    .query(async ({ ctx, input }) => ({
+      ...(await guarded(() => readQuotationWorkspace(ctx.merchantId, input))),
+      canManage: hasPermission(ctx.merchantRole, "orders.manage"),
+      canSetTarget: hasPermission(ctx.merchantRole, "settings.manage"),
+    })),
   detail: permissionProcedure("analytics.read")
     .input(quotationReadInput)
     .query(async ({ ctx, input }) => {

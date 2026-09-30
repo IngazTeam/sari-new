@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-09-30T02:55:36.609Z",
+  "generatedAt": "2026-09-30T03:19:27.307Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 268,
-      "controls": 1891
+      "files": 273,
+      "controls": 1903
     }
   },
   "addedFiles": [
@@ -83,6 +83,11 @@
     "client/src/components/KnowledgeDocumentCopies.tsx",
     "client/src/lib/sales-reply-send-state.ts",
     "client/src/lib/sales-reply-review-state.ts",
+    "client/src/components/merchant/QuotationWorkspace.tsx",
+    "client/src/lib/quotation-editor-cache.ts",
+    "client/src/lib/quotation-display.ts",
+    "client/src/components/merchant/QuotationReport.tsx",
+    "client/src/components/merchant/QuotationEditor.tsx",
     "client/src/components/merchant/QuotationDeliveryDialog.tsx",
     "client/src/lib/quotation-send-attempt.ts",
     "client/src/components/merchant/PipelineWorkspace.tsx",
@@ -791,20 +796,32 @@
     {
       "route": "/merchant/sales-hub",
       "controlsBefore": 24,
-      "controlsNow": 33,
-      "removedQueries": [],
+      "controlsNow": 45,
+      "removedQueries": [
+        "sariBrain.getQuotations",
+        "sariBrain.getQuotationStats",
+        "sariBrain.getCurrentTarget"
+      ],
       "addedQueries": [
-        "sariBrain.formatQuotationForWhatsApp",
         "auth.me",
         "merchants.getCurrent",
+        "sariBrain.quotations.workspace",
+        "sariBrain.quotations.detail",
+        "sariBrain.quotations.receipt",
         "sariBrain.quotations.sendWorkspace",
         "sariBrain.quotations.review",
         "sariBrain.quotations.delivery"
       ],
       "removedMutations": [
+        "sariBrain.createQuotation",
+        "sariBrain.updateQuotationStatus",
+        "sariBrain.setMonthlyTarget",
         "sariBrain.sendQuotationToCustomer"
       ],
       "addedMutations": [
+        "sariBrain.quotations.create",
+        "sariBrain.quotations.change",
+        "sariBrain.quotations.target",
         "sariBrain.quotations.prepareReview",
         "sariBrain.quotations.sendReviewed"
       ]

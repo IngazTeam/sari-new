@@ -16,8 +16,8 @@ export const quotationDraftInput = z
       .string()
       .trim()
       .min(8)
-      .max(20)
-      .regex(/^\+?[0-9]+$/)
+      .max(16)
+      .regex(/^\+?[0-9]{8,15}$/)
       .optional(),
     items: z
       .array(
