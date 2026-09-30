@@ -704,7 +704,7 @@ export const appRouter = router({
 
 
 
-  // Products Management (standalone module with uploadExcel, CSV, Google Sheets sync)
+  // Products Management (reviewed CSV/Excel imports and Google Sheets tools)
   products: productsRouter,
 
   // Virtual Agents — AI team personas
