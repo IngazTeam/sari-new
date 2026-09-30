@@ -2,6 +2,9 @@ import { useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { ProductImportWorkspace } from "../../../client/src/components/merchant/ProductImportWorkspace";
 import { ProductFileAdviceWorkspace } from "../../../client/src/components/merchant/ProductFileAdviceWorkspace";
+import { ProductSheetWorkspace } from "../../../client/src/components/merchant/ProductSheetWorkspace";
+import { clearSheetAttempt } from "../../../client/src/lib/product-sheet-workspace";
+import { sheetModes, type SheetMode } from "./import-sheet-model";
 import { clearAdviceReference } from "../../../client/src/lib/product-file-advice-workspace";
 import { adviceModes, type AdviceMode } from "./import-advice-model";
 import {
@@ -20,6 +23,7 @@ import {
 import {
   imports,
   advice,
+  sheets,
   importLanguage,
   importHint,
   useImportVersion,
@@ -102,6 +106,25 @@ function Preview() {
           </button>
           <span>عدد العناصر المنشأة في المحاكاة: {imports.createdCount}</span>
           <span>عدد التحليلات المحلية: {advice.starts}</span>
+          <label>
+            حالة Google Sheets
+            <select
+              value={sheets.mode}
+              onChange={event =>
+                sheets.setMode(event.target.value as SheetMode)
+              }
+            >
+              {Object.entries(sheetModes).map(([key, label]) => (
+                <option key={key} value={key}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <span>
+            قراءات الورقة المحلية: {sheets.reads} · إضافات:{" "}
+            {sheets.createdCount} · تحديثات: {sheets.updatedCount}
+          </span>
         </div>
         {confirm && (
           <div role="alert">
@@ -116,6 +139,8 @@ function Preview() {
                     knowledgeCacheEpoch()
                   );
                   advice.reset();
+                  clearSheetAttempt(importPreviewScope, knowledgeCacheEpoch());
+                  sheets.reset();
                   imports.reset();
                   if (confirm === "data")
                     saveImportAttempt(
@@ -156,11 +181,24 @@ function Preview() {
         <p>
           مساعدة الملف تعرض اقتراحات محلية ثابتة مع شواهد من الملف، دون ذكاء
           اصطناعي أو إرسال أو رسوم. اختر «قبل اختيار الملف» لتجربتها. لا تتغير
-          المعرفة أو المنتجات عند التحليل؛ تطبيق الربط يجهّز معاينة فقط. أدوات
-          Google Sheets ما زالت ضمن مرحلة تحويل مستقلة.
+          المعرفة أو المنتجات عند التحليل؛ تطبيق الربط يجهّز معاينة فقط.
         </p>
         <a href="#/page/merchant/sheets/settings">عرض إعدادات Google Sheets</a>
       </aside>
+      <details className="pw-panel">
+        <summary>استيراد من Google Sheets</summary>
+        <p>
+          هذا ملف Sheets محلي اصطناعي، لا يتصل بحساب Google. اختَر حالة البيانات
+          قبل القراءة أو أعد المراجعة بعد تغييرها. اختر ورقة العروض المخفية
+          لتجربة النطاق المحدود. المطابقة بـSKU تعطي إضافة وتحديثًا وصفًا دون
+          تغيير. كل النتائج في الذاكرة.
+        </p>
+        <ProductSheetWorkspace
+          key={`sheets-${generation}`}
+          scope={importPreviewScope}
+          href={path => "#/page" + path}
+        />
+      </details>
     </div>
   );
 }
@@ -174,6 +212,7 @@ export function mount() {
     if (!initialized) {
       clearImportAttempt(importPreviewScope, knowledgeCacheEpoch());
       clearAdviceReference(importPreviewScope, knowledgeCacheEpoch());
+      clearSheetAttempt(importPreviewScope, knowledgeCacheEpoch());
       initialized = true;
     }
     if (imports.mode !== "empty" && !readImportAttempt(importPreviewScope))

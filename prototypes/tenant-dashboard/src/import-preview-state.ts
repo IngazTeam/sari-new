@@ -1,8 +1,10 @@
 import { useSyncExternalStore } from "react";
 import { ImportPreviewStore } from "./import-model";
 import { ImportAdviceStore } from "./import-advice-model";
+import { ImportSheetStore } from "./import-sheet-model";
 export const imports = new ImportPreviewStore();
 export const advice = new ImportAdviceStore(() => imports.changed());
+export const sheets = new ImportSheetStore(() => imports.changed());
 export let importLanguage = "ar",
   importHint = "";
 export function useImportVersion() {

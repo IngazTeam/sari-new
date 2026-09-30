@@ -186,6 +186,25 @@ async function choose(selector: string, value: string) {
   await new Promise(r => setTimeout(r, 20));
 }
 describe("built import prototype with actual workspace", () => {
+  const sheetText = () => w.document.querySelector(".ps-workspace").textContent;
+  const sheetButton = (name: string) =>
+    Array.from(w.document.querySelectorAll(".ps-workspace button")).find(
+      (b: any) => b.textContent.trim() === name
+    ) as any;
+  async function sheetClick(name: string) {
+    const b = sheetButton(name);
+    expect(b, name).toBeTruthy();
+    expect(b.disabled, name).toBe(false);
+    b.click();
+    await new Promise(r => setTimeout(r, 20));
+  }
+  async function startSheet(mode = "ready") {
+    await choose(".pp-controls label:nth-of-type(4) select", mode);
+    await sheetClick("عرض أوراق الملف");
+    await choose(".ps-workspace label:nth-of-type(1) select", "0");
+    await choose(".ps-workspace label:nth-of-type(2) select", "sku");
+    await sheetClick("قراءة الورقة للمراجعة");
+  }
   beforeEach(async () => {
     errors = [];
     const vc = new VirtualConsole();
@@ -243,6 +262,89 @@ describe("built import prototype with actual workspace", () => {
     dom.window.close();
     expect(errors).toEqual([]);
     expect(w.fetch).not.toHaveBeenCalled();
+  });
+  it("reviews Sheet pages, preserves fields, and changes locale without leaking keys", async () => {
+    await startSheet();
+    expect(w.document.querySelectorAll(".ps-row")).toHaveLength(20);
+    const priceChange = w.document.querySelector(
+      ".ps-row .ps-changes"
+    ).textContent;
+    expect(priceChange).toContain("10.00");
+    expect(priceChange).toContain("12.34");
+    await sheetClick("التالي");
+    expect(w.document.querySelectorAll(".ps-row")).toHaveLength(5);
+    await choose(".ps-workspace .pw-panel > label select", "unchanged");
+    expect(w.document.querySelectorAll(".ps-row")).toHaveLength(1);
+    expect(sheetText()).toContain("منتج محلي 2");
+    await choose(".pp-controls label:nth-of-type(2) select", "en");
+    expect(sheetText()).toContain("Review the changes");
+    expect(sheetText()).not.toMatch(/product(?:Sheet|Workspace|Import)Ux\./);
+  });
+  it("recovers a lost Sheet commit reply and keeps the receipt after navigation", async () => {
+    await startSheet("commitLost");
+    w.document.querySelector(".ps-workspace input[type=checkbox]").click();
+    await vi.waitFor(() =>
+      expect(sheetButton("اعتماد 24 تغييرًا").disabled).toBe(false)
+    );
+    await sheetClick("اعتماد 24 تغييرًا");
+    expect(sheetText()).toContain("نحتاج تأكيد نتيجة العملية");
+    await sheetClick("فحص النتيجة");
+    await vi.waitFor(() =>
+      expect(sheetText()).toContain("اكتمل اعتماد المراجعة")
+    );
+    expect(text()).toContain(
+      "قراءات الورقة المحلية: 1 · إضافات: 23 · تحديثات: 1"
+    );
+    w.location.hash = "#/page/merchant/tools";
+    await vi.waitFor(() =>
+      expect(w.document.querySelector(".ps-workspace")).toBeNull()
+    );
+    w.location.hash = "#/page/merchant/products/upload";
+    await vi.waitFor(() =>
+      expect(sheetText()).toContain("اكتمل اعتماد المراجعة")
+    );
+    expect(text()).toContain(
+      "قراءات الورقة المحلية: 1 · إضافات: 23 · تحديثات: 1"
+    );
+  });
+  it("recovers an uncertain Sheet preparation without rereading the source", async () => {
+    await startSheet("prepareLost");
+    expect(sheetText()).toContain("مرجع المراجعة المحفوظ");
+    await sheetClick("تحقق من المراجعة");
+    expect(sheetText()).toContain("2. راجع التغييرات");
+    expect(text()).toContain("قراءات الورقة المحلية: 1");
+  });
+  it("invalidates approval for changed mapping and rebuilds blocked rows", async () => {
+    await startSheet();
+    w.document.querySelector(".ps-workspace input[type=checkbox]").click();
+    await vi.waitFor(() =>
+      expect(sheetButton("اعتماد 24 تغييرًا").disabled).toBe(false)
+    );
+    await choose(".ps-workspace .pw-form-grid label:nth-child(2) select", "");
+    expect(sheetButton("اعتماد 24 تغييرًا").disabled).toBe(true);
+    expect(sheetText()).toContain("تغيرت الخيارات");
+    await sheetClick("إعادة قراءة ومراجعة");
+    expect(sheetText()).toContain("صحح الصفوف الممنوعة");
+    expect(
+      w.document.querySelector(".ps-workspace input[type=checkbox]").disabled
+    ).toBe(true);
+    expect(text()).toContain(
+      "قراءات الورقة المحلية: 2 · إضافات: 0 · تحديثات: 0"
+    );
+  });
+  it.each([
+    "loading",
+    "offline",
+    "readError",
+    "wrongTenant",
+    "session",
+    "forbidden",
+  ])("hides reviewed Sheet values after %s", async mode => {
+    await startSheet();
+    await choose(".pp-controls label:nth-of-type(4) select", mode);
+    expect(sheetText()).not.toContain("منتج محلي 1");
+    expect(w.document.querySelectorAll(".ps-row")).toHaveLength(0);
+    expect(sheetButton("اعتماد 24 تغييرًا")).toBeUndefined();
   });
   it("paginates and changes language without untranslated keys or duplicate headings", async () => {
     expect(w.document.querySelectorAll(".pi-rows > li")).toHaveLength(20);

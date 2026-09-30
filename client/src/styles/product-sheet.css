@@ -56,6 +56,27 @@
   justify-content: space-between;
   gap: 0.65rem;
   overflow-wrap: anywhere;
+  list-style: none;
+}
+.ps-row > summary::-webkit-details-marker {
+  display: none;
+}
+.ps-row > summary > span {
+  flex: 1;
+  min-width: 0;
+}
+.ps-row > summary::after {
+  content: "";
+  width: 0.5rem;
+  height: 0.5rem;
+  flex-shrink: 0;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+  margin: 0.25rem;
+}
+.ps-row[open] > summary::after {
+  transform: rotate(225deg);
 }
 .ps-action {
   flex-shrink: 0;

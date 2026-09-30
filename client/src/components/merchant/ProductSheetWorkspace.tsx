@@ -515,8 +515,10 @@ export function ProductSheetWorkspace({
       if (current()) setBusy(false);
     }
   }
-  function value(field: ProductImportField, raw: unknown) {
+  function value(field: ProductImportField, raw: unknown, currency?: string) {
     if (raw === null || raw === "") return t("productSheetUx.emptyValue");
+    if (["price", "costPrice", "compareAtPrice"].includes(field) && currency)
+      return `${String(raw)} ${currency}`;
     if (field === "status")
       return choices.status[raw as keyof typeof choices.status];
     if (field === "productType")
@@ -993,12 +995,20 @@ export function ProductSheetWorkspace({
                                       <small>
                                         {t("productSheetUx.before")}
                                       </small>
-                                      {value(field, change.before[field])}
+                                      {value(
+                                        field,
+                                        change.before[field],
+                                        change.before.currency
+                                      )}
                                     </span>
                                   )}
                                   <span>
                                     <small>{t("productSheetUx.after")}</small>
-                                    {value(field, change.after![field])}
+                                    {value(
+                                      field,
+                                      change.after![field],
+                                      change.after!.currency
+                                    )}
                                   </span>
                                 </dd>
                               </div>

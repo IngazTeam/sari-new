@@ -1,4 +1,32 @@
-import { imports, advice, useImportVersion } from "./import-preview-state";
+import {
+  imports,
+  advice,
+  sheets,
+  useImportVersion,
+} from "./import-preview-state";
+function sheetQuery(read: () => unknown, enabled = true) {
+  useImportVersion();
+  let data: unknown,
+    error: unknown = null;
+  if (enabled)
+    try {
+      data = read();
+    } catch (reason) {
+      error = reason;
+    }
+  return {
+    data,
+    error:
+      enabled && sheets.mode === "readError"
+        ? { data: { code: "INTERNAL_SERVER_ERROR" } }
+        : error,
+    isFetching: enabled && sheets.mode === "loading",
+    isLoading: false,
+    fetchStatus: sheets.mode === "offline" ? "paused" : "idle",
+    dataUpdatedAt: imports.version,
+    refetch: sheets.refresh,
+  };
+}
 function query(read: () => unknown, enabled = true) {
   useImportVersion();
   let data: unknown,
@@ -29,6 +57,20 @@ function query(read: () => unknown, enabled = true) {
 }
 export const trpc = {
   products: {
+    sheetImport: {
+      connection: { useQuery: () => sheetQuery(sheets.connection) },
+      list: {
+        useQuery: (input: unknown, options?: { enabled?: boolean }) =>
+          sheetQuery(() => sheets.list(input), options?.enabled !== false),
+      },
+      read: {
+        useQuery: (input: unknown, options?: { enabled?: boolean }) =>
+          sheetQuery(() => sheets.read(input), options?.enabled !== false),
+      },
+      prepare: { useMutation: () => ({ mutateAsync: sheets.prepare }) },
+      commit: { useMutation: () => ({ mutateAsync: sheets.commit }) },
+      discard: { useMutation: () => ({ mutateAsync: sheets.discard }) },
+    },
     fileAdvice: {
       start: { useMutation: () => ({ mutateAsync: advice.start }) },
       read: {
@@ -51,6 +93,16 @@ export const trpc = {
   },
   useUtils: () => ({
     products: {
+      sheetImport: {
+        read: {
+          fetch: async (input: unknown) => {
+            await sheets.refresh();
+            return sheets.read(input);
+          },
+          invalidate: async () => imports.changed(),
+        },
+        receipt: { fetch: sheets.receipt },
+      },
       fileAdvice: { read: { invalidate: async () => imports.changed() } },
       list: { invalidate: async () => {} },
       importReview: {
