@@ -124,6 +124,19 @@ async function connectionOn(
 }
 const connection = (merchantId: number, actorId: number) =>
   store.transaction(false, c => connectionOn(c, merchantId, actorId));
+/** Internal export credentials, never returned by a router. Export does not modify an external catalog. */
+export async function resolveInventorySheetExportSource(
+  merchantId: number,
+  actorId: number,
+  expected: string
+) {
+  const current = await connection(merchantId, actorId);
+  if (!current.view.source || !current.auth)
+    throw new ProductSheetDisconnected();
+  if (current.view.source.digest !== expected)
+    throw new ProductEditorConflict();
+  return { source: current.view.source, auth: current.auth };
+}
 export async function readProductSheetConnectionOn(
   c: PoolConnection,
   merchantId: number,

@@ -780,6 +780,28 @@
           "contains": "sheets.syncInventory"
         }
       ]
+    },
+    {
+      "routes": [
+        "/merchant/data-sync"
+      ],
+      "removed": [
+        "sheets.getStatus"
+      ],
+      "required": [
+        "sheets.inventoryStatus",
+        "sheets.syncInventory"
+      ],
+      "note": "Inventory export now reads the authenticated actor/tenant connection and requires its current digest and explicit approval. The old writer is retired; literal stock export preserves unknown quantities and verified price currencies, with bounded provider acknowledgement. Other Sheets settings retain their separate legacy APIs until their review.",
+      "evidence": [
+        "docs/audits/tenant-inventory-export-2026-09-30/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "server/routers-sheets.ts",
+          "contains": "syncInventory: permissionProcedure('products.manage')"
+        }
+      ]
     }
   ]
 }

@@ -4,7 +4,11 @@
  */
 
 import { z } from 'zod';
-import { router, protectedProcedure } from './_core/trpc';
+import { router, protectedProcedure, permissionProcedure } from './_core/trpc';
+import { inventorySheetExportInput } from '../shared/inventory-sheet-export';
+import { exportInventoryToSheet, readInventoryExportStatus } from './inventory-sheet-export';
+import { guardInventoryExport } from './inventory-sheet-export-api';
+import { reserveApiRateLimit } from './api/distributed-rate-limit';
 import * as sheets from './_core/googleSheets';
 import * as sheetsSync from './sheetsSync';
 import * as sheetsReports from './sheetsReports';
@@ -101,11 +105,12 @@ export const sheetsRouter = router({
       );
     }),
 
-  // مزامنة المخزون
-  syncInventory: protectedProcedure.mutation(async ({ ctx }) => {
-    const merchant = await getMerchantByUserId(ctx.user.id);
-    if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-    return await sheetsSync.syncInventoryToSheets(merchant.id);
+  inventoryStatus: permissionProcedure('products.manage').query(({ctx}) =>
+    guardInventoryExport(() => readInventoryExportStatus(ctx.merchantId,ctx.user.id))),
+  syncInventory: permissionProcedure('products.manage').input(inventorySheetExportInput).mutation(async ({ctx,input}) => {
+    if (!(await reserveApiRateLimit({namespace:'merchant_inventory_export',identity:String(ctx.merchantId),maxRequests:10,windowMs:60*60*1000})).allowed)
+      throw new TRPCError({code:'TOO_MANY_REQUESTS',message:'inventory_export:rate_limit'});
+    return guardInventoryExport(()=>exportInventoryToSheet(ctx.merchantId,ctx.user.id,input));
   }),
 
   // توليد تقرير يومي
@@ -240,4 +245,3 @@ export const sheetsRouter = router({
     return await sheets.disconnect(merchant.id);
   }),
 });
-

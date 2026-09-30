@@ -17,9 +17,11 @@ const m = vi.hoisted(() => ({
 }));
 vi.mock("../client/src/lib/trpc", () => ({
   trpc: {
-    useUtils: () => ({ sheets: { getStatus: { invalidate: m.invalidate } } }),
+    useUtils: () => ({
+      sheets: { inventoryStatus: { invalidate: m.invalidate } },
+    }),
     sheets: {
-      getStatus: {
+      inventoryStatus: {
         useQuery: () => ({
           data: m.data,
           error: m.error,
@@ -61,7 +63,11 @@ vi.mock("../client/src/components/merchant/WorkspaceState", () => ({
 import { DataSyncWorkspace } from "../client/src/components/merchant/DataSyncWorkspace";
 let host: HTMLDivElement, root: Root;
 const render = async () =>
-  act(async () => root.render(React.createElement(DataSyncWorkspace)));
+  act(async () =>
+    root.render(
+      React.createElement(DataSyncWorkspace, { scope: "7:20:data-sync" })
+    )
+  );
 const button = (text: string) =>
   Array.from(host.querySelectorAll("button")).find(
     b => b.textContent === text
@@ -75,7 +81,10 @@ beforeEach(async () => {
   vi.clearAllMocks();
   m.data = {
     isConnected: true,
+    merchantId: 20,
+    actorId: 7,
     spreadsheetId: "local-export-109",
+    sourceDigest: "a".repeat(64),
     lastSync: new Date("2026-09-30T12:00:00Z"),
   };
   m.error = null;
@@ -83,7 +92,18 @@ beforeEach(async () => {
   m.loading = false;
   m.paused = false;
   m.language = "en";
-  m.send.mockResolvedValue({ success: true });
+  m.send.mockResolvedValue({
+    success: true,
+    merchantId: 20,
+    actorId: 7,
+    sourceDigest: "a".repeat(64),
+    spreadsheetId: "local-export-109",
+    sheetId: 0,
+    rows: 2,
+    unknownStock: 1,
+    unverifiedPrice: 0,
+    confirmedAt: "2026-09-30T12:00:00.000Z",
+  });
   m.invalidate.mockResolvedValue(undefined);
   host = document.createElement("div");
   document.body.append(host);
@@ -96,6 +116,54 @@ afterEach(async () => {
   vi.unstubAllGlobals();
 });
 describe("inventory export feedback and interaction", () => {
+  it.each(["merchant", "actor", "source"])(
+    "rejects stale identity or source in %s receipt",
+    async kind => {
+      const receipt = await m.send();
+      m.send.mockClear();
+      m.send.mockResolvedValue({
+        ...receipt,
+        ...(kind === "merchant"
+          ? { merchantId: 21 }
+          : kind === "actor"
+            ? { actorId: 8 }
+            : { sourceDigest: "b".repeat(64) }),
+      });
+      await click(consent());
+      await click(button("Export inventory"));
+      expect(text()).not.toContain("confirmed replacing");
+      expect(text()).toContain("response was lost");
+    }
+  );
+  it("does not expose another tenant's destination", async () => {
+    m.data = { ...m.data, merchantId: 21 };
+    await render();
+    expect(host.querySelector("a[target]")).toBeNull();
+    expect(consent().disabled).toBe(true);
+  });
+  it("revokes approval after reconnection to the same spreadsheet", async () => {
+    await click(consent());
+    m.data = { ...m.data, sourceDigest: "b".repeat(64) };
+    await render();
+    expect(consent().checked).toBe(false);
+  });
+  it.each([
+    ["BAD_REQUEST", "empty", "no visible products"],
+    ["BAD_REQUEST", "limit", "5,000"],
+    ["BAD_GATEWAY", "destination", "No visible tab"],
+    ["CONFLICT", "unavailable", "write did not start"],
+    ["TOO_MANY_REQUESTS", "rate_limit", "hour’s"],
+  ])("explains a pre-write rejection %s/%s", async (code, reason, expected) => {
+    m.send.mockRejectedValue({
+      data: { code },
+      message: `inventory_export:${reason}`,
+    });
+    await click(consent());
+    await click(button("Export inventory"));
+    expect(text()).toContain(expected);
+    expect(text()).not.toContain("response was lost");
+    expect(consent().checked).toBe(false);
+  });
   it("uses actual status fields, names the destination and requires fresh consent", async () => {
     expect(text()).toContain("active connection");
     expect(text()).toContain("shared connection activity");
@@ -103,8 +171,11 @@ describe("inventory export feedback and interaction", () => {
     expect(button("Export inventory").disabled).toBe(true);
     await click(consent());
     await click(button("Export inventory"));
-    expect(m.send).toHaveBeenCalledExactlyOnceWith();
-    expect(text()).toContain("service confirmed");
+    expect(m.send).toHaveBeenCalledExactlyOnceWith({
+      expectedSourceDigest: "a".repeat(64),
+      reviewed: true,
+    });
+    expect(text()).toContain("confirmed replacing");
     expect(consent().checked).toBe(false);
     expect(m.invalidate).toHaveBeenCalledOnce();
   });
@@ -116,7 +187,7 @@ describe("inventory export feedback and interaction", () => {
     await click(consent());
     await click(button("Export inventory"));
     expect(text()).toContain("did not confirm");
-    expect(text()).not.toContain("service confirmed");
+    expect(text()).not.toContain("confirmed replacing");
     expect(text()).not.toContain("private upstream");
     expect(button("Export inventory").disabled).toBe(true);
     await click(button("I checked the spreadsheet"));
@@ -201,7 +272,7 @@ describe("inventory export feedback and interaction", () => {
     m.data = { ...m.data, spreadsheetId: "changed" };
     await render();
     await act(async () => resolve({ success: true }));
-    expect(text()).not.toContain("service confirmed");
+    expect(text()).not.toContain("confirmed replacing");
     expect(m.send).toHaveBeenCalledOnce();
   });
   it("retains both reviewed imports and settings in Arabic", async () => {

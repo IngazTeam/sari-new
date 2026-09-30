@@ -58,7 +58,7 @@ describe("retired direct inventory import", () => {
     ])
       expect(Object.keys(sheetsRouter._def.procedures)).toContain(name);
     expect("updateInventoryFromSheets" in sync).toBe(false);
-    expect(typeof sync.syncInventoryToSheets).toBe("function");
+    expect("syncInventoryToSheets" in sync).toBe(false);
   });
   it("has no client consumer or direct product update in the old Sheets sync module", () => {
     const walk = (dir: string): string[] =>

@@ -9,7 +9,6 @@ import {
   getMerchantById,
   getMessagesByConversationId,
   getOrderById,
-  getProductsByMerchantId,
   updateGoogleIntegration,
 } from './db';
 import * as sheets from './_core/googleSheets';
@@ -328,64 +327,6 @@ export async function exportConversationsToSheets(
     return {
       success: false,
       message: error.message || 'فشل تصدير المحادثات',
-    };
-  }
-}
-
-/**
- * مزامنة المخزون إلى Google Sheets
- */
-export async function syncInventoryToSheets(merchantId: number): Promise<{
-  success: boolean;
-  message: string;
-}> {
-  try {
-    const integration = await getGoogleIntegration(merchantId, 'sheets');
-
-    if (!integration || !integration.isActive || !integration.sheetId) {
-      return { success: false, message: 'Google Sheets غير مربوط' };
-    }
-
-    const spreadsheetId = integration.sheetId;
-
-    // جلب المنتجات
-    const products = await getProductsByMerchantId(merchantId);
-
-    if (products.length === 0) {
-      return { success: false, message: 'لا توجد منتجات للمزامنة' };
-    }
-
-    // مسح البيانات القديمة (بعد الـ header)
-    // ثم إضافة البيانات الجديدة
-    const rows = products.map(product => [
-      product.id.toString(),
-      product.name,
-      product.category || '-',
-      product.priceUnit === 'minor' ? String(product.price / 100) : '',
-      product.stock?.toString() || '0',
-      new Date().toLocaleDateString('ar-SA')
-    ]);
-
-    // كتابة البيانات (بدءاً من الصف 2)
-    const result = await sheets.writeToSheet(
-      merchantId,
-      spreadsheetId,
-      `المخزون!A2:F${rows.length + 1}`,
-      rows
-    );
-
-    if (result.success) {
-      await updateGoogleIntegration(integration.id, {
-        lastSync: new Date().toISOString(),
-      });
-    }
-
-    return result;
-  } catch (error: any) {
-    console.error('[Sheets Sync] Error syncing inventory:', error);
-    return {
-      success: false,
-      message: error.message || 'فشل مزامنة المخزون',
     };
   }
 }

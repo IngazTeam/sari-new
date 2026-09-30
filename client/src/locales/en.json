@@ -11168,9 +11168,9 @@
     "openSheet": "Open spreadsheet ↗",
     "refresh": "Refresh connection",
     "exportTitle": "From Sari to Google Sheets",
-    "exportHint": "Writes product IDs, names, categories, prices, quantities and the export date to the “المخزون” tab.",
-    "destinationHint": "The export overwrites matching cells from A2 through F. Extra older rows are not removed by this exporter. Review the destination before exporting.",
-    "success": "The service confirmed the export.",
+    "exportHint": "Writes product IDs, names, categories, prices with currency, quantities and the export date to the “المخزون” tab.",
+    "destinationHint": "Replaces all inventory values below the headers in columns A–F, including clearing extra older rows in those columns. Headers, formatting and other columns are preserved. Unknown quantities and unverified prices are left blank.",
+    "success": "Google Sheets confirmed replacing the inventory data.",
     "failed": "The service did not confirm the export. Check the spreadsheet before trying again.",
     "uncertain": "The response was lost. The write may have reached Google Sheets. Check the spreadsheet before trying again.",
     "checkedSheet": "I checked the spreadsheet",
@@ -11180,6 +11180,13 @@
     "importTitle": "Bring changes into Sari",
     "importHint": "Importing products or quantities is a separate action with a review before approval. There is no automatic inventory import.",
     "importProducts": "Review product import",
-    "importInventory": "Review quantity import"
+    "importInventory": "Review quantity import",
+    "oauthUnavailable": "The connection is not ready. Check Google Sheets settings.",
+    "summary": "Products: {{count}}. Unknown quantities: {{stock}}. Prices needing review: {{price}}.",
+    "empty": "There are no visible products to export. The sheet was not changed.",
+    "limit": "The catalog exceeds this export limit: 5,000 products and 2 MiB of row data. The write did not start.",
+    "destination": "No visible tab named “المخزون” was found. Check the spreadsheet settings.",
+    "rateLimit": "This hour’s export attempt limit was reached. Try again later.",
+    "refreshRequired": "The write did not start because the connection or access could not be confirmed. Refresh the connection and review the destination."
   }
 }

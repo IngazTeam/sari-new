@@ -60,7 +60,7 @@ describe("review-required Sheet product imports", () => {
       expect(m.update).not.toHaveBeenCalled();
       expect(m.read).not.toHaveBeenCalled();
       expect("syncProductsFromSheets" in sync).toBe(false);
-      expect(typeof sync.syncInventoryToSheets).toBe("function");
+      expect("syncInventoryToSheets" in sync).toBe(false);
       expect("updateInventoryFromSheets" in sync).toBe(false);
     }
   );
