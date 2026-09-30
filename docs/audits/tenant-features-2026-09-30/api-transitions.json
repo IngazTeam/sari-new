@@ -3,6 +3,14 @@
   "scope": "Reviewed API substitutions and moved controls. Evidence of intentional implementation changes, not a claim that every workflow passed runtime testing.",
   "transitions": [
     {
+      "routes": ["/merchant/products/upload"],
+      "removed": ["products.uploadCSV", "products.uploadExcel"],
+      "required": ["products.importReview.prepare", "products.importReview.read", "products.importReview.commit", "products.importReview.receipt", "products.importReview.discard", "products.smartImport", "products.syncFromGoogleSheets", "products.getSheetSyncStatus"],
+      "note": "CSV/XLSX import now previews exact fields and errors before an atomic reviewed commit and scoped receipt. Existing AI and Sheets tools remain reachable in a separate disclosure pending their own conversion. The old createSheet checkbox never sent its value and was removed; no functioning provider option was lost.",
+      "evidence": ["docs/audits/tenant-product-import-parser-2026-09-30/REPORT.md", "docs/audits/tenant-product-import-review-2026-09-30/REPORT.md", "docs/audits/tenant-product-import-workspace-2026-09-30/REPORT.md"],
+      "checks": [{"file":"client/src/components/merchant/ProductImportWorkspace.tsx","contains":"productImportFields"}, {"file":"client/src/lib/product-import-workspace.ts","contains":"productImportTemplate"}]
+    },
+    {
       "routes": ["/merchant/products"],
       "removed": ["products.create", "products.update", "products.delete", "products.bulkDelete"],
       "required": ["products.list", "products.editor.read", "products.editor.write", "products.editor.receipt", "products.editor.deleteReview", "products.editor.deleteWrite", "products.editor.deleteReceipt"],

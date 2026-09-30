@@ -1,0 +1,104 @@
+.pi-workspace .pw-summary {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.pi-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  list-style: none;
+  padding: 0;
+  counter-reset: steps;
+}
+.pi-steps li {
+  counter-increment: steps;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--muted-foreground);
+  padding: 0.45rem 0.7rem;
+  border-radius: 12px;
+  background: var(--card);
+  border: 1px solid var(--border);
+}
+.pi-steps li::before {
+  content: counter(steps);
+  font-variant-numeric: tabular-nums;
+}
+.pi-steps [aria-current] {
+  color: var(--primary);
+  border-color: var(--primary);
+  font-weight: 700;
+}
+.pi-rows {
+  display: grid;
+  gap: 0.85rem;
+  list-style: none;
+  padding: 0;
+  min-width: 0;
+}
+.pi-row-summary,
+.pi-row-details {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+.pi-row-details {
+  margin-top: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.pi-row-details dd {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.pi-errors {
+  padding-inline-start: 1.3rem;
+  color: #b42318;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+.dark .pi-errors {
+  color: #ffb4ab;
+}
+.pi-workspace input[type="file"] {
+  display: block;
+  padding: 0.8rem;
+  border-style: dashed;
+  white-space: normal;
+}
+.pi-workspace input::file-selector-button {
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--secondary);
+  color: var(--foreground);
+  padding: 0.4rem 0.6rem;
+  margin-inline-end: 0.5rem;
+  cursor: pointer;
+}
+.pi-rows summary {
+  min-height: 44px;
+  align-content: center;
+  cursor: pointer;
+  font-weight: 650;
+}
+.pi-approval {
+  border-color: var(--primary);
+}
+@media (max-width: 640px) {
+  .pi-row-summary,
+  .pi-row-details {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .pi-steps {
+    font-size: 0.875rem;
+  }
+  .pi-workspace .pw-summary {
+    gap: 0.5rem;
+  }
+  .pi-workspace .pw-summary > div {
+    padding: 0.65rem;
+  }
+  .pi-workspace .pw-summary dd {
+    font-size: 1.35rem;
+  }
+}

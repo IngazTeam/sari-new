@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-09-30T09:56:39.062Z",
+  "generatedAt": "2026-09-30T10:50:28.868Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 294,
-      "controls": 1938
+      "files": 297,
+      "controls": 1960
     }
   },
   "addedFiles": [
@@ -37,6 +37,9 @@
     "client/src/components/merchant/ProductWorkspaceView.tsx",
     "client/src/components/merchant/ProductEditorWorkspace.tsx",
     "client/src/components/merchant/ProductDeleteWorkspace.tsx",
+    "client/src/components/merchant/ProductImportWorkspace.tsx",
+    "client/src/lib/product-import-workspace.ts",
+    "client/src/components/merchant/ProductImportProviderTools.tsx",
     "client/src/lib/staff-voice-attempt.ts",
     "client/src/lib/staff-dashboard-attempt.ts",
     "client/src/lib/meta-embedded-signup.ts",
@@ -135,6 +138,7 @@
     "client/src/components/PreviewChat.tsx",
     "client/src/pages/merchant/Campaigns.tsx",
     "client/src/pages/merchant/Products.tsx",
+    "client/src/pages/merchant/UploadProducts.tsx",
     "client/src/pages/merchant/WhatsAppInstancesPage.tsx",
     "client/src/pages/ByaanDashboard.tsx",
     "client/src/pages/merchant/Analytics.tsx",
@@ -344,11 +348,24 @@
     {
       "route": "/merchant/products/upload",
       "controlsBefore": 17,
-      "controlsNow": 17,
+      "controlsNow": 42,
       "removedQueries": [],
-      "addedQueries": [],
-      "removedMutations": [],
-      "addedMutations": []
+      "addedQueries": [
+        "auth.me",
+        "merchants.getCurrent",
+        "products.importReview.read",
+        "products.list",
+        "products.importReview.receipt"
+      ],
+      "removedMutations": [
+        "products.uploadCSV",
+        "products.uploadExcel"
+      ],
+      "addedMutations": [
+        "products.importReview.prepare",
+        "products.importReview.commit",
+        "products.importReview.discard"
+      ]
     },
     {
       "route": "/merchant/conversations",
