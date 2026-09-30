@@ -1,4 +1,5 @@
 import { pageUrlInput, pagePreviewReadInput, pagePreviewSaveInput } from '../shared/knowledge-page-intake';
+import { quotationWorkspaceRouter } from './routers-quotations';
 import { storePagePreview, readPageIntake, savePagePreview } from './knowledge/page-intake';
 import { fetchPageSnapshot } from './knowledge/page-fetch';
 import { pageListInput, pageReadInput, pageChangeInput } from '../shared/knowledge-pages';
@@ -1498,6 +1499,8 @@ ${sanitizedContent}`
   // ═══════════════════════════════════════════════════════════════
 
   /** Create a quotation */
+  quotations: quotationWorkspaceRouter,
+
   createQuotation: permissionProcedure('orders.manage')
     .input(z.object({
       // UX-05: Standardize phone validation (same regex as sendQuotationToCustomer)
