@@ -39,7 +39,6 @@ vi.mock("@/lib/trpc", () => ({
   },
 }));
 
-import SheetsSettings from "../client/src/pages/SheetsSettings";
 import SheetsReports from "../client/src/pages/SheetsReports";
 
 beforeEach(() => {
@@ -50,12 +49,6 @@ beforeEach(() => {
 });
 afterEach(() => vi.unstubAllGlobals());
 describe("merchant integration feedback follows the action state", () => {
-  it("renders connection and report settings without announcing an attempted operation", () => {
-    const html = renderToStaticMarkup(createElement(SheetsSettings));
-    expect(html).toContain("حالة الاتصال");
-    expect(html).toContain("إعدادات التقارير التلقائية");
-    expect(html).not.toMatch(/فشل الإعداد|نجح الإعداد|تم التحديث/);
-  });
   it("describes report contents instead of displaying success before generation", () => {
     const html = renderToStaticMarkup(createElement(SheetsReports));
     expect(html).toContain("محتويات التقارير");
@@ -63,7 +56,7 @@ describe("merchant integration feedback follows the action state", () => {
     expect(html).toContain("أكثر 5 منتجات مبيعاً");
     expect(html).not.toMatch(/تم توليد التقرير اليومي بنجاح|فشل التوليد/);
   });
-  it.each([SheetsSettings, SheetsReports])(
+  it.each([SheetsReports])(
     "reports a rejected operation as an error toast",
     Component => {
       renderToStaticMarkup(createElement(Component));
@@ -76,4 +69,5 @@ describe("merchant integration feedback follows the action state", () => {
     }
   );
   // Inventory approval, failure and pending-write protection are covered by inventory-sheet-workspace.test.ts.
+  // Connection/settings/setup confirmation and errors use the actual workspace in sheets-settings-workspace.test.ts.
 });

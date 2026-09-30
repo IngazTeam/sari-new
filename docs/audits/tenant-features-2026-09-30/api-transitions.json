@@ -4,6 +4,14 @@
   "transitions": [
     {
       "routes": ["/merchant/sheets/settings"],
+      "removed": ["sheets.getReportSettings", "sheets.setupSpreadsheet"],
+      "required": ["sheets.getStatus", "sheets.updateReportSettings", "sheets.disconnect", "sheets.setup.start", "sheets.setup.read", "sheets.setup.recover", "sheets.setup.acknowledge"],
+      "note": "The connection workspace uses one scoped settings snapshot and explicit reviewed actions. Setup now uses a durable request and recoverable receipt; the old setup API has no UI consumer and is next for retirement.",
+      "evidence": ["docs/audits/tenant-sheets-settings-workspace-2026-09-30/REPORT.md"],
+      "checks": [{"file":"client/src/pages/SheetsSettings.tsx","contains":"SheetsSettingsWorkspace"}]
+    },
+    {
+      "routes": ["/merchant/sheets/settings"],
       "removed": ["sheets.getAuthUrl", "sheets.handleCallback"],
       "required": ["sheets.beginOAuth"],
       "note": "OAuth starts explicitly as a mutation and completes only through a session-bound one-time callback. No client consumes the retired unsafe entries.",

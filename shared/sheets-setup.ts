@@ -48,7 +48,28 @@ export const sheetsSetupAttempt = z
       .regex(/^[A-Za-z0-9_-]{1,255}$/)
       .nullable(),
   })
-  .strict();
+  .strict()
+  .superRefine((value, ctx) => {
+    if (
+      ["created", "completed", "detached"].includes(value.state) &&
+      !value.receipt
+    )
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Creation evidence required",
+        path: ["receipt"],
+      });
+    if (
+      value.receipt &&
+      (value.receipt.requestId !== value.requestId ||
+        value.receipt.spreadsheetId !== value.spreadsheetId)
+    )
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Creation evidence mismatch",
+        path: ["receipt"],
+      });
+  });
 export const sheetsSetupTabs = [
   {
     id: 1,

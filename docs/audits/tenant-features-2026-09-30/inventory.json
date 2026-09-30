@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-30T15:49:28.753Z",
+  "generatedAt": "2026-09-30T16:17:09.213Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -13491,14 +13491,34 @@
     },
     {
       "file": "client/src/pages/SheetsSettings.tsx",
-      "hash": "39fbf5ef773f",
+      "hash": "0cccf9c8f640",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [
+        "client/src/components/KnowledgeWorkspaceScope.tsx",
+        "client/src/components/merchant/SheetsSettingsWorkspace.tsx"
+      ],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
+      "hash": "5b009fd91dbf",
       "queries": [
         "sheets.getStatus",
-        "sheets.getReportSettings"
+        "sheets.setup.read"
       ],
       "mutations": [
         "sheets.beginOAuth",
-        "sheets.setupSpreadsheet",
+        "sheets.setup.start",
+        "sheets.setup.recover",
+        "sheets.setup.acknowledge",
         "sheets.updateReportSettings",
         "sheets.disconnect"
       ],
@@ -13506,70 +13526,66 @@
       "browserRequests": [],
       "sections": [
         {
-          "label": "ربط Google Sheets",
-          "line": 177,
-          "tag": "h1"
-        },
-        {
-          "label": "حالة الاتصال",
-          "line": 190,
+          "label": "حساب Google والوجهة",
+          "line": 393,
           "tag": "h2"
         },
         {
-          "label": "إعدادات التقارير التلقائية",
-          "line": 295,
+          "label": "ربط الحساب أو تغييره",
+          "line": 421,
+          "tag": "summary"
+        },
+        {
+          "label": "آخر محاولة لإعداد الوجهة",
+          "line": 487,
           "tag": "h2"
         },
         {
-          "label": "ملاحظات مهمة:",
-          "line": 377,
-          "tag": "h3"
+          "label": "إعداد ملف البيانات",
+          "line": 561,
+          "tag": "h2"
+        },
+        {
+          "label": "التقارير التلقائية",
+          "line": 591,
+          "tag": "h2"
+        },
+        {
+          "label": "المنتجات والمخزون والتقارير",
+          "line": 654,
+          "tag": "h2"
         }
       ],
       "choices": [],
       "handlers": [
         {
-          "name": "handleConnect",
-          "line": 104,
+          "name": "createNow",
+          "line": 244,
           "calls": [
-            "connectMutation"
+            "start"
           ]
         },
         {
-          "name": "handleSetup",
-          "line": 126,
+          "name": "saveNow",
+          "line": 265,
           "calls": [
-            "setupMutation"
-          ]
-        },
-        {
-          "name": "handleDisconnect",
-          "line": 130,
-          "calls": [
-            "disconnectMutation"
-          ]
-        },
-        {
-          "name": "handleToggleSetting",
-          "line": 140,
-          "calls": [
-            "updateSettingsMutation"
+            "save"
           ]
         }
       ],
       "queryStates": [
         {
           "query": "sheets.getStatus",
-          "binding": "{\n    data: status,\n    isLoading: statusLoading,\n    error: statusError,\n    isFetching: statusFetching,\n    refetch: refetchStatus,\n  }",
-          "line": 37,
+          "binding": "status",
+          "line": 34,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
         },
         {
-          "query": "sheets.getReportSettings",
-          "binding": "{\n    data: reportSettings,\n    error: reportError,\n    isLoading: reportLoading,\n    refetch: refetchSettings,\n  }",
-          "line": 45,
+          "query": "sheets.setup.read",
+          "binding": "setup",
+          "line": 38,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
@@ -13577,30 +13593,10 @@
       ],
       "conditions": [],
       "imports": [
-        "client/src/components/merchant/ProductSheetPolicyNotice.tsx"
+        "client/src/lib/knowledge-workspace-cache.ts",
+        "client/src/components/merchant/ProductWorkspaceView.tsx"
       ],
-      "controlCount": 8
-    },
-    {
-      "file": "client/src/components/merchant/ProductSheetPolicyNotice.tsx",
-      "hash": "3326913ba4ca",
-      "queries": [],
-      "mutations": [],
-      "imperativeReads": [],
-      "browserRequests": [],
-      "sections": [
-        {
-          "label": "استيراد المنتجات يحتاج مراجعتك",
-          "line": 13,
-          "tag": "h2"
-        }
-      ],
-      "choices": [],
-      "handlers": [],
-      "queryStates": [],
-      "conditions": [],
-      "imports": [],
-      "controlCount": 1
+      "controlCount": 25
     },
     {
       "file": "client/src/pages/SheetsExport.tsx",
@@ -21473,26 +21469,52 @@
       ],
       "files": [
         "client/src/pages/SheetsSettings.tsx",
-        "client/src/components/merchant/ProductSheetPolicyNotice.tsx"
+        "client/src/components/KnowledgeWorkspaceScope.tsx",
+        "client/src/lib/knowledge-workspace-cache.ts",
+        "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
+        "client/src/components/merchant/ProductWorkspaceView.tsx"
       ],
       "controls": [
-        "7e2ed1cee802",
-        "6caa794ffd15",
-        "2b0497c2f73f",
-        "0146af1b155b",
-        "14522469849b",
-        "f863dd2b2060",
-        "3a3efb08bba2",
-        "03a2ca2fe4d2",
-        "4dd41ef0dd70"
+        "77ce5300e6f7",
+        "3ab5bb005a54",
+        "fd3e9cad94c0",
+        "d77a34492429",
+        "638f0c591a86",
+        "9641d216e7aa",
+        "c461605fae3d",
+        "cffeac9c3711",
+        "ee95c4da2364",
+        "973bc2bef4cd",
+        "da81bcfc046d",
+        "7b204459d3ba",
+        "628fc099bdd8",
+        "c9d356648b04",
+        "439db7cb16ea",
+        "49c803e135d0",
+        "fb8663d41c14",
+        "28a9035a8b48",
+        "f58a9d7f32e3",
+        "79481e00c1ab",
+        "783148e9b27e",
+        "ebbfce11bd6a",
+        "32eead9e1fe1",
+        "72d71cd18980",
+        "b6f0309c4141",
+        "f449a31ecdcd",
+        "8781b3ad3758",
+        "ab0c78e94084"
       ],
       "queries": [
+        "auth.me",
+        "merchants.getCurrent",
         "sheets.getStatus",
-        "sheets.getReportSettings"
+        "sheets.setup.read"
       ],
       "mutations": [
         "sheets.beginOAuth",
-        "sheets.setupSpreadsheet",
+        "sheets.setup.start",
+        "sheets.setup.recover",
+        "sheets.setup.acknowledge",
         "sheets.updateReportSettings",
         "sheets.disconnect"
       ],
@@ -60934,201 +60956,15 @@
       "review": "source-inventoried"
     },
     {
-      "id": "7e2ed1cee802",
-      "file": "client/src/pages/SheetsSettings.tsx",
-      "line": 217,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "فتح",
-      "section": "حالة الاتصال",
-      "binding": "() =>\n                      window.open(\n                        `https://docs.google.com/spreadsheets/d/${status.spreadsheetId}`,\n                        \"_blank\"\n                      )",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [
-        "status.spreadsheetId",
-        "status?.isConnected"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "6caa794ffd15",
-      "file": "client/src/pages/SheetsSettings.tsx",
-      "line": 242,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "إعداد Spreadsheet",
-      "section": "حالة الاتصال",
-      "binding": "handleSetup",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [
-        "!status.spreadsheetId",
-        "status?.isConnected"
-      ],
-      "disabled": "setupMutation.isPending",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "2b0497c2f73f",
-      "file": "client/src/pages/SheetsSettings.tsx",
-      "line": 253,
-      "tag": "Button",
+      "id": "3ab5bb005a54",
+      "file": "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
+      "line": 356,
+      "tag": "button",
       "role": "",
       "kind": "action",
       "label": "تحديث الحالة",
-      "section": "حالة الاتصال",
-      "binding": "() => refetchStatus()",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [
-        "status?.isConnected"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "0146af1b155b",
-      "file": "client/src/pages/SheetsSettings.tsx",
-      "line": 258,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "فصل الاتصال",
-      "section": "حالة الاتصال",
-      "binding": "handleDisconnect",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [
-        "status?.isConnected"
-      ],
-      "disabled": "disconnectMutation.isPending",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "14522469849b",
-      "file": "client/src/pages/SheetsSettings.tsx",
-      "line": 278,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "ربط Google Sheets",
-      "section": "حالة الاتصال",
-      "binding": "handleConnect",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [
-        "status?.isConnected"
-      ],
-      "disabled": "isConnecting",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "f863dd2b2060",
-      "file": "client/src/pages/SheetsSettings.tsx",
-      "line": 317,
-      "tag": "Switch",
-      "role": "",
-      "kind": "field",
-      "label": "التقارير اليومية",
-      "section": "إعدادات التقارير التلقائية",
-      "binding": "reportSettings?.sendDailyReports || false",
-      "type": "checkbox",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [
-        "status?.isConnected"
-      ],
-      "disabled": "updateSettingsMutation.isPending",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "3a3efb08bba2",
-      "file": "client/src/pages/SheetsSettings.tsx",
-      "line": 339,
-      "tag": "Switch",
-      "role": "",
-      "kind": "field",
-      "label": "التقارير الأسبوعية",
-      "section": "إعدادات التقارير التلقائية",
-      "binding": "reportSettings?.sendWeeklyReports || false",
-      "type": "checkbox",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [
-        "status?.isConnected"
-      ],
-      "disabled": "updateSettingsMutation.isPending",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "03a2ca2fe4d2",
-      "file": "client/src/pages/SheetsSettings.tsx",
-      "line": 361,
-      "tag": "Switch",
-      "role": "",
-      "kind": "field",
-      "label": "التقارير الشهرية",
-      "section": "إعدادات التقارير التلقائية",
-      "binding": "reportSettings?.sendMonthlyReports || false",
-      "type": "checkbox",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [
-        "status?.isConnected"
-      ],
-      "disabled": "updateSettingsMutation.isPending",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "4dd41ef0dd70",
-      "file": "client/src/components/merchant/ProductSheetPolicyNotice.tsx",
-      "line": 19,
-      "tag": "Link",
-      "role": "",
-      "kind": "action",
-      "label": "فتح مراجعة استيراد المنتجات",
-      "section": "استيراد المنتجات يحتاج مراجعتك",
-      "binding": "/merchant/products/upload",
+      "section": "SheetsSettingsWorkspace",
+      "binding": "() => void refresh()",
       "type": "text",
       "options": [],
       "min": "",
@@ -61137,6 +60973,603 @@
       "required": false,
       "conditional": false,
       "conditions": [],
+      "disabled": "busy || status.isFetching || setup.isFetching",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "fd3e9cad94c0",
+      "file": "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
+      "line": 384,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "تحديث الحالة",
+      "section": "SheetsSettingsWorkspace",
+      "binding": "() => void refresh()",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "mustRefresh",
+        "data",
+        "loading",
+        "paused"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "d77a34492429",
+      "file": "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
+      "line": 401,
+      "tag": "a",
+      "role": "",
+      "kind": "action",
+      "label": "فتح وجهة البيانات ↗",
+      "section": "حساب Google والوجهة",
+      "binding": "sheetHref(data.spreadsheetId)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "data.spreadsheetId",
+        "data",
+        "loading",
+        "paused"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "638f0c591a86",
+      "file": "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
+      "line": 421,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "ربط الحساب أو تغييره",
+      "section": "ربط الحساب أو تغييره",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "data",
+        "loading",
+        "paused",
+        "error || (!loading && !paused && !valid)"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "9641d216e7aa",
+      "file": "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
+      "line": 425,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "إعادة ربط الحساب ربط حساب Google",
+      "section": "ربط الحساب أو تغييره",
+      "binding": "() => void connectNow()",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "data",
+        "loading",
+        "paused"
+      ],
+      "disabled": "!ready || !data.oauthReady || openAttempt",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "c461605fae3d",
+      "file": "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
+      "line": 435,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "فصل الاتصال",
+      "section": "ربط الحساب أو تغييره",
+      "binding": "() => {\n                          setDisconnectOpen(true);\n                          setDisconnectReviewed(false);\n                        }",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "data.hasIntegration",
+        "data"
+      ],
+      "disabled": "!ready",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "cffeac9c3711",
+      "file": "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
+      "line": 456,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "راجعت أثر الفصل وأوافق عليه.",
+      "section": "ربط الحساب أو تغييره",
+      "binding": "disconnectReviewed",
+      "type": "checkbox",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "disconnectOpen",
+        "data"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "ee95c4da2364",
+      "file": "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
+      "line": 465,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "راجعت أثر الفصل وأوافق عليه.",
+      "section": "ربط الحساب أو تغييره",
+      "binding": "() => void disconnectNow()",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "disconnectOpen",
+        "data"
+      ],
+      "disabled": "!ready || !disconnectReviewed",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "973bc2bef4cd",
+      "file": "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
+      "line": 472,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "راجعت أثر الفصل وأوافق عليه.",
+      "section": "ربط الحساب أو تغييره",
+      "binding": "() => setDisconnectOpen(false)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "disconnectOpen",
+        "data"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "da81bcfc046d",
+      "file": "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
+      "line": 499,
+      "tag": "a",
+      "role": "",
+      "kind": "action",
+      "label": "فتح ملف هذه المحاولة ↗",
+      "section": "آخر محاولة لإعداد الوجهة",
+      "binding": "sheetHref(attempt.spreadsheetId)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "attempt.spreadsheetId",
+        "attempt",
+        "data"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "7b204459d3ba",
+      "file": "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
+      "line": 514,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "استكمال اعتماد الملف المحفوظ",
+      "section": "آخر محاولة لإعداد الوجهة",
+      "binding": "() => void recoverNow()",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "attempt.state === \"created\"",
+        "attempt",
+        "data"
+      ],
+      "disabled": "!ready",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "628fc099bdd8",
+      "file": "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
+      "line": 519,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "مراجعة النتيجة يدويًا",
+      "section": "آخر محاولة لإعداد الوجهة",
+      "binding": "() => {\n                      setAckOpen(true);\n                      setAckReviewed(false);\n                    }",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "attempt.canAcknowledge",
+        "attempt",
+        "data"
+      ],
+      "disabled": "!ready",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "c9d356648b04",
+      "file": "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
+      "line": 533,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "راجعت Google وأفهم أثر بدء محاولة جديدة.",
+      "section": "آخر محاولة لإعداد الوجهة",
+      "binding": "ackReviewed",
+      "type": "checkbox",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "ackOpen",
+        "attempt"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "439db7cb16ea",
+      "file": "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
+      "line": 542,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "راجعت Google وأفهم أثر بدء محاولة جديدة.",
+      "section": "آخر محاولة لإعداد الوجهة",
+      "binding": "() => void acknowledgeNow()",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "ackOpen",
+        "attempt"
+      ],
+      "disabled": "!ready || !ackReviewed",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "49c803e135d0",
+      "file": "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
+      "line": 548,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "راجعت Google وأفهم أثر بدء محاولة جديدة.",
+      "section": "آخر محاولة لإعداد الوجهة",
+      "binding": "() => setAckOpen(false)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "ackOpen",
+        "attempt"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "fb8663d41c14",
+      "file": "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
+      "line": 569,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "أوافق على إنشاء ملف جديد في الحساب المربوط.",
+      "section": "إعداد ملف البيانات",
+      "binding": "reviewed",
+      "type": "checkbox",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "data.state === \"needs_destination\"",
+        "data",
+        "loading"
+      ],
+      "disabled": "!ready || openAttempt",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "28a9035a8b48",
+      "file": "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
+      "line": 577,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "أوافق على إنشاء ملف جديد في الحساب المربوط.",
+      "section": "إعداد ملف البيانات",
+      "binding": "() => void createNow()",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "data.state === \"needs_destination\"",
+        "data",
+        "loading",
+        "paused"
+      ],
+      "disabled": "!ready || !reviewed || openAttempt",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "f58a9d7f32e3",
+      "file": "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
+      "line": 597,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "التقارير التلقائية",
+      "binding": "draft[key]",
+      "type": "checkbox",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "data.hasIntegration"
+      ],
+      "disabled": "!ready || (!draft[key] && data.state !== \"ready\")",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "79481e00c1ab",
+      "file": "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
+      "line": 616,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "أوافق على إنشاء التقارير المختارة وإرسالها تلقائيًا.",
+      "section": "التقارير التلقائية",
+      "binding": "saveReviewed",
+      "type": "checkbox",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "dirty && Object.values(draft).some(Boolean)",
+        "data.hasIntegration"
+      ],
+      "disabled": "!ready",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "783148e9b27e",
+      "file": "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
+      "line": 626,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "حفظ خيارات التقارير",
+      "section": "التقارير التلقائية",
+      "binding": "() => void saveNow()",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "data.hasIntegration",
+        "data",
+        "loading"
+      ],
+      "disabled": "!ready ||\n                      !dirty ||\n                      conflict ||\n                      (Object.values(draft).some(Boolean) && !saveReviewed)",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "ebbfce11bd6a",
+      "file": "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
+      "line": 639,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "تحميل الخيارات المحفوظة",
+      "section": "التقارير التلقائية",
+      "binding": "() => {\n                        setDraft(data.reports);\n                        setBase(data.digest);\n                        setSaveReviewed(false);\n                      }",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "dirty",
+        "data.hasIntegration"
+      ],
+      "disabled": "!ready",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "32eead9e1fe1",
+      "file": "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
+      "line": 657,
+      "tag": "a",
+      "role": "",
+      "kind": "action",
+      "label": "استيراد المنتجات",
+      "section": "المنتجات والمخزون والتقارير",
+      "binding": "href(\"/merchant/products/upload\")",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "data",
+        "loading",
+        "paused",
+        "error || (!loading && !paused && !valid)"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "72d71cd18980",
+      "file": "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
+      "line": 663,
+      "tag": "a",
+      "role": "",
+      "kind": "action",
+      "label": "استيراد الكميات",
+      "section": "المنتجات والمخزون والتقارير",
+      "binding": "href(\"/merchant/sheets/inventory\")",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "data",
+        "loading",
+        "paused",
+        "error || (!loading && !paused && !valid)"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "b6f0309c4141",
+      "file": "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
+      "line": 669,
+      "tag": "a",
+      "role": "",
+      "kind": "action",
+      "label": "تصدير المخزون",
+      "section": "المنتجات والمخزون والتقارير",
+      "binding": "href(\"/merchant/data-sync\")",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "data",
+        "loading",
+        "paused",
+        "error || (!loading && !paused && !valid)"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "f449a31ecdcd",
+      "file": "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
+      "line": 672,
+      "tag": "a",
+      "role": "",
+      "kind": "action",
+      "label": "التقارير اليدوية",
+      "section": "المنتجات والمخزون والتقارير",
+      "binding": "href(\"/merchant/sheets/reports\")",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "data",
+        "loading",
+        "paused",
+        "error || (!loading && !paused && !valid)"
+      ],
       "disabled": "",
       "review": "source-inventoried"
     },

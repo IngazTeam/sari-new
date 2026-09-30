@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-09-30T15:49:28.753Z",
+  "generatedAt": "2026-09-30T16:17:09.213Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -11,7 +11,7 @@
     "after": {
       "routes": 126,
       "files": 306,
-      "controls": 2023
+      "controls": 2039
     }
   },
   "addedFiles": [
@@ -124,7 +124,7 @@
     "client/src/components/merchant/PerformanceReport.tsx",
     "client/src/components/merchant/DataSyncWorkspace.tsx",
     "client/src/lib/inventory-export-attempt.ts",
-    "client/src/components/merchant/ProductSheetPolicyNotice.tsx",
+    "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
     "client/src/components/merchant/InventorySheetWorkspace.tsx",
     "client/src/lib/inventory-sheet-workspace.ts",
     "client/src/components/merchant/ReportsWorkspace.tsx",
@@ -1307,14 +1307,24 @@
     {
       "route": "/merchant/sheets/settings",
       "controlsBefore": 8,
-      "controlsNow": 9,
+      "controlsNow": 28,
       "removedQueries": [
+        "sheets.getReportSettings",
         "sheets.getAuthUrl"
       ],
-      "addedQueries": [],
-      "removedMutations": [],
+      "addedQueries": [
+        "auth.me",
+        "merchants.getCurrent",
+        "sheets.setup.read"
+      ],
+      "removedMutations": [
+        "sheets.setupSpreadsheet"
+      ],
       "addedMutations": [
-        "sheets.beginOAuth"
+        "sheets.beginOAuth",
+        "sheets.setup.start",
+        "sheets.setup.recover",
+        "sheets.setup.acknowledge"
       ]
     },
     {
