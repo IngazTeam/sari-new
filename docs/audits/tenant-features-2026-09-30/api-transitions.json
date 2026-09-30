@@ -724,11 +724,13 @@
         "products.sheetImport.receipt",
         "products.sheetImport.discard"
       ],
-      "note": "The actual Sheets UI now selects a scoped sheet and explicit matching mode, previews original values and before/after field changes, and applies one atomic reviewed snapshot with a durable receipt. Failure is not shown as disconnection. The legacy server procedures remain until the prototype is verified and their remaining consumers are audited.",
+      "note": "The actual Sheets UI and prototype select a scoped sheet and explicit matching mode, preview original values and before/after changes, and apply one reviewed snapshot with a receipt. The old products.syncFromGoogleSheets/getSheetSyncStatus server procedures are retired after consumer auditing. The separate sheetsCronJobs product importer and inventory sync remain separate, pending audit; their retirement is not claimed here.",
       "evidence": [
         "docs/audits/tenant-product-sheet-plan-2026-09-30/REPORT.md",
         "docs/audits/tenant-product-sheet-review-2026-09-30/REPORT.md",
-        "docs/audits/tenant-product-sheet-workspace-2026-09-30/REPORT.md"
+        "docs/audits/tenant-product-sheet-workspace-2026-09-30/REPORT.md",
+        "docs/audits/tenant-product-sheet-prototype-2026-09-30/REPORT.md",
+        "docs/audits/tenant-product-sheet-retirement-2026-09-30/REPORT.md"
       ],
       "checks": [
         {

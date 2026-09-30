@@ -20,29 +20,37 @@ beforeEach(() => {
   });
 });
 describe("retired product writes", () => {
-  it.each(["create", "update", "delete", "bulkDelete", "uploadCSV", "uploadExcel", "smartImport"])(
-    "does not register %s or reach a data writer",
-    async operation => {
-      const caller: any = productsRouter.createCaller({
-        user: { id: 7 },
-        req: {},
-        res: {},
-      } as any);
-      await expect(
-        caller[operation]({
-          productId: 1,
-          productIds: [1],
-          name: "Old write",
-          price: 1,
-          variants: [{ name: "Variant" }],
-          options: [{ name: "Size", values: "S" }],
-        })
-      ).rejects.toMatchObject({ code: "NOT_FOUND" });
-      expect(mocks.pool).not.toHaveBeenCalled();
-      expect(mocks.getDb).not.toHaveBeenCalled();
-    }
-  );
-  it("keeps reviewed writes, import, sync and product details registered", () => {
+  it.each([
+    "create",
+    "update",
+    "delete",
+    "bulkDelete",
+    "uploadCSV",
+    "uploadExcel",
+    "smartImport",
+    "syncFromGoogleSheets",
+    "getSheetSyncStatus",
+  ])("does not register %s or reach a data writer", async operation => {
+    const caller: any = productsRouter.createCaller({
+      user: { id: 7 },
+      req: {},
+      res: {},
+    } as any);
+    await expect(
+      caller[operation]({
+        productId: 1,
+        productIds: [1],
+        name: "Old write",
+        price: 1,
+        variants: [{ name: "Variant" }],
+        options: [{ name: "Size", values: "S" }],
+      })
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    expect(mocks.pool).not.toHaveBeenCalled();
+    expect(mocks.getDb).not.toHaveBeenCalled();
+    expect(mocks.access).not.toHaveBeenCalled();
+  });
+  it("keeps reviewed writes, imports and product details registered", () => {
     const procedures = productsRouter._def.procedures;
     for (const name of [
       "list",
@@ -55,12 +63,15 @@ describe("retired product writes", () => {
       "importReview.commit",
       "importReview.receipt",
       "importReview.discard",
-      "syncFromGoogleSheets",
-      "getSheetSyncStatus",
       "fileAdvice.start",
       "fileAdvice.read",
       "sheetImport.connection",
       "sheetImport.list",
+      "sheetImport.prepare",
+      "sheetImport.read",
+      "sheetImport.commit",
+      "sheetImport.receipt",
+      "sheetImport.discard",
       "editor.read",
       "editor.write",
       "editor.receipt",
@@ -69,7 +80,9 @@ describe("retired product writes", () => {
       "editor.deleteReceipt",
     ])
       expect(Object.keys(procedures), name).toContain(name);
-    expect(Object.keys(procedures).some(name => /sync/i.test(name))).toBe(true);
+    expect(Object.keys(procedures).some(name => /sync/i.test(name))).toBe(
+      false
+    );
   });
   it("has no client calls to retired writes or unused single-product deletion helpers", () => {
     const walk = (dir: string): string[] =>
@@ -82,7 +95,7 @@ describe("retired product writes", () => {
       );
     for (const file of walk("client/src"))
       expect(readFileSync(file, "utf8"), file).not.toMatch(
-        /\bproducts\.(?:create|update|delete|bulkDelete|uploadCSV|uploadExcel|smartImport)\b/
+        /\bproducts\.(?:create|update|delete|bulkDelete|uploadCSV|uploadExcel|smartImport|syncFromGoogleSheets|getSheetSyncStatus)\b/
       );
     for (const file of ["server/db.ts", "server/db/products.ts"])
       expect(readFileSync(file, "utf8"), file).not.toContain(
