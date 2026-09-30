@@ -83,6 +83,8 @@ export function productChoices(t: TFunction) {
       service: t("productWorkspaceUx.service"),
     },
     inventory: {
+      variants: t("stockUx.managedVariants"),
+      not_applicable: t("stockUx.serviceInventory"),
       out: t("productWorkspaceUx.out"),
       low: t("productWorkspaceUx.low"),
       untracked: t("productWorkspaceUx.untracked"),

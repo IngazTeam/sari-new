@@ -425,6 +425,9 @@ export function ProductCatalogWorkspace({
               untracked: data!.summary.untracked,
             })}
           </p>
+          <p className="pw-muted">
+            {t("stockUx.catalogHint", { variants: data!.summary.variants, services: data!.summary.notApplicable })}
+          </p>
           {!!data!.items.length && (
             <div className="pw-actions">
               <label className="pw-check">
@@ -526,7 +529,7 @@ export function ProductCatalogWorkspace({
                         <dt>{t("productWorkspaceUx.inventory")}</dt>
                         <dd>
                           {choices.inventory[stock]}
-                          {!["untracked", "unknown"].includes(stock) && (
+                          {["out", "low", "available"].includes(stock) && (
                             <span> · {row.stock}</span>
                           )}
                         </dd>

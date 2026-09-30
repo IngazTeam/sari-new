@@ -164,6 +164,8 @@ function fixtures() {
         untracked: 0,
         unknown: 1,
         priceReview: 0,
+        variants: 0,
+        notApplicable: 0,
       },
     },
     read: {
@@ -353,6 +355,21 @@ describe("stock attention workspace", () => {
   });
 });
 describe("product workspace UI", () => {
+  it.each([
+    ["physical", 1, "managedVariants"],
+    ["service", 0, "serviceInventory"],
+  ] as const)("does not expose the base stock as available inventory for %s (%s)", async (productType, hasVariants, label) => {
+    m.data.list.items[0] = { ...row, stock: 987, productType, hasVariants };
+    await render(React.createElement(ProductCatalogWorkspace, { scope }));
+    const card = host.querySelector(".pw-product")!;
+    expect(card.textContent).toContain(en.stockUx[label]);
+    expect(card.textContent).not.toContain("987");
+  });
+  it("explains base quantity when editing a product with variants", async () => {
+    m.data.read.product.hasVariants = 1;
+    await render(editor());
+    expect(host.textContent).toContain(en.stockUx.baseQuantityHint);
+  });
   async function selectCategory(value: string) {
     const select = host.querySelector<HTMLSelectElement>("#product-categoryId")!;
     await act(async () => { select.value = value; select.dispatchEvent(new Event("change", { bubbles: true })); });

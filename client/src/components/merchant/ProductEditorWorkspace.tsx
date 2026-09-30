@@ -726,6 +726,9 @@ export function ProductEditorWorkspace({
             onToggle={event => setInventoryOpen(event.currentTarget.open)}
           >
             <summary>{t("productWorkspaceUx.inventory")}</summary>
+            {data?.product.hasVariants === 1 && (
+              <p className="pw-notice">{t("stockUx.baseQuantityHint")}</p>
+            )}
             <div className="pw-fields">
               {field("trackInventory", {
                 options: {

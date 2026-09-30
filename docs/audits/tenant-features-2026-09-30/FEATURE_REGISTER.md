@@ -593,22 +593,22 @@
 | 328 | select | المخزون كل المخزون available | الفلاتر · {{count}} مفعلة |
 | 351 | select | السعر كل الأسعار سعر موثق الوحدة سعر يحتاج مراجعة | الفلاتر · {{count}} مفعلة |
 | 371 | button | البحث في الكتالوج | الفلاتر · {{count}} مفعلة |
-| 431 | input | تحديد الصفحة الحالية | الفلاتر · {{count}} مفعلة |
-| 448 | button | تحديد الصفحة الحالية | الفلاتر · {{count}} مفعلة |
-| 471 | button | إظهار كل المنتجات | ابدأ بأول منتج لا توجد منتجات في هذه النتائج |
-| 490 | input | t("productWorkspaceUx.selectProduct", {                             name: row.name,                           }) | ابدأ بأول منتج لا توجد منتجات في هذه النتائج |
-| 548 | button | الخيارات والنسخ | ProductCatalogWorkspace |
-| 557 | button | مراجعة وتعديل عرض المنتج | ProductCatalogWorkspace |
-| 565 | button | مراجعة الحذف | ProductCatalogWorkspace |
-| 590 | button | السابق | ProductCatalogWorkspace |
-| 597 | button | التالي | ProductCatalogWorkspace |
+| 434 | input | تحديد الصفحة الحالية | الفلاتر · {{count}} مفعلة |
+| 451 | button | تحديد الصفحة الحالية | الفلاتر · {{count}} مفعلة |
+| 474 | button | إظهار كل المنتجات | ابدأ بأول منتج لا توجد منتجات في هذه النتائج |
+| 493 | input | t("productWorkspaceUx.selectProduct", {                             name: row.name,                           }) | ابدأ بأول منتج لا توجد منتجات في هذه النتائج |
+| 551 | button | الخيارات والنسخ | ProductCatalogWorkspace |
+| 560 | button | مراجعة وتعديل عرض المنتج | ProductCatalogWorkspace |
+| 568 | button | مراجعة الحذف | ProductCatalogWorkspace |
+| 593 | button | السابق | ProductCatalogWorkspace |
+| 600 | button | التالي | ProductCatalogWorkspace |
 
 ## client/src/components/merchant/ProductWorkspaceView.tsx
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 111 | button | فحص النتيجة | نحتاج تأكيد نتيجة العملية |
-| 114 | button | إعادة الطلب نفسه | نحتاج تأكيد نتيجة العملية |
+| 113 | button | فحص النتيجة | نحتاج تأكيد نتيجة العملية |
+| 116 | button | إعادة الطلب نفسه | نحتاج تأكيد نتيجة العملية |
 
 ## client/src/components/merchant/ProductEditorWorkspace.tsx
 
@@ -625,10 +625,10 @@
 | 660 | button | إعادة تحميل الفئات | المعلومات الأساسية |
 | 691 | summary | التفاصيل والتسعير الإضافي | التفاصيل والتسعير الإضافي |
 | 728 | summary | المخزون | المخزون |
-| 742 | button | جارٍ الحفظ… حفظ المنتج | المخزون |
-| 756 | button | التخلص من المسودة | المخزون |
-| 771 | button | نعم، تخلص من المسودة | المخزون |
-| 774 | button | الاحتفاظ بالمسودة | المخزون |
+| 745 | button | جارٍ الحفظ… حفظ المنتج | المخزون |
+| 759 | button | التخلص من المسودة | المخزون |
+| 774 | button | نعم، تخلص من المسودة | المخزون |
+| 777 | button | الاحتفاظ بالمسودة | المخزون |
 
 ## client/src/components/merchant/ProductDeleteWorkspace.tsx
 

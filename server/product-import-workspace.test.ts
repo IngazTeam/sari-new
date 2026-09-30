@@ -245,6 +245,8 @@ beforeEach(async () => {
         untracked: 0,
         unknown: 0,
         priceReview: 0,
+        variants: 0,
+        notApplicable: 0,
       },
     },
     read: await fixture(),

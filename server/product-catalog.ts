@@ -49,11 +49,15 @@ export async function readProductCatalog(
         sql.raw(catalogVisibleSql())
       );
       const verified = sql`(${products.priceUnit}='minor' AND ${products.price}>=0 AND ${products.currency} IN ('SAR','USD'))`;
-      const out = sql`(${products.trackInventory}=1 AND ${products.stock}=0)`;
-      const low = sql`(${products.trackInventory}=1 AND ${products.stock}>0 AND ${products.lowStockAlert}>=0 AND ${products.stock}<=${products.lowStockAlert})`;
-      const untracked = eq(products.trackInventory, 0);
-      const unknown = sql`(${products.trackInventory} NOT IN (0,1) OR (${products.trackInventory}=1 AND (${products.stock} IS NULL OR ${products.stock}<0)))`;
-      const inventory = { all: undefined, out, low, untracked, unknown }[
+      const notApplicable = eq(products.productType, "service");
+      const stockApplicable = sql`COALESCE(${products.productType},'')<>'service'`;
+      const baseTracked = sql`(${stockApplicable} AND ${products.trackInventory}=1 AND ${products.hasVariants}=0)`;
+      const out = sql`(${baseTracked} AND ${products.stock}=0)`;
+      const low = sql`(${baseTracked} AND ${products.stock}>0 AND ${products.lowStockAlert}>=0 AND ${products.stock}<=${products.lowStockAlert})`;
+      const untracked = sql`(${stockApplicable} AND ${products.trackInventory}=0)`;
+      const variants = sql`(${stockApplicable} AND ${products.trackInventory}=1 AND ${products.hasVariants}=1)`;
+      const unknown = sql`(${stockApplicable} AND (${products.trackInventory} NOT IN (0,1) OR (${products.trackInventory}=1 AND (${products.hasVariants} NOT IN (0,1) OR (${products.hasVariants}=0 AND (${products.stock} IS NULL OR ${products.stock}<0))))))`;
+      const inventory = { all: undefined, out, low, untracked, unknown, variants, not_applicable: notApplicable }[
         selection.inventory
       ];
       const searched = selection.search
@@ -84,6 +88,8 @@ export async function readProductCatalog(
           low: sql`COALESCE(SUM(${low}),0)`,
           untracked: sql`COALESCE(SUM(${untracked}),0)`,
           unknown: sql`COALESCE(SUM(${unknown}),0)`,
+          variants: sql`COALESCE(SUM(${variants}),0)`,
+          notApplicable: sql`COALESCE(SUM(${notApplicable}),0)`,
           priceReview: sql`COALESCE(SUM(NOT ${verified}),0)`,
         })
         .from(products)
@@ -119,6 +125,8 @@ export async function readProductCatalog(
           low: count(summary.low),
           untracked: count(summary.untracked),
           unknown: count(summary.unknown),
+          variants: count(summary.variants),
+          notApplicable: count(summary.notApplicable),
           priceReview: count(summary.priceReview),
         },
       };

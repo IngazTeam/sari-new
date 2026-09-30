@@ -12,7 +12,7 @@ beforeEach(() => {
   vi.resetAllMocks();
   results = [
     [{ id: 20, currency: "SAR", integrationSource: "none" }],
-    [{ all: 0, out: 0, low: 0, untracked: 0, unknown: 0, priceReview: 0 }],
+    [{ all: 0, out: 0, low: 0, untracked: 0, unknown: 0, priceReview: 0, variants: 0, notApplicable: 0 }],
     [{ total: 0 }],
     [],
   ];
@@ -97,6 +97,7 @@ describe("product catalog source", () => {
     (trackInventory, stock, lowStockAlert, expected) => {
       expect(
         productInventoryState({
+          productType: "physical", hasVariants: 0,
           trackInventory: trackInventory as number,
           stock: stock as number | null,
           lowStockAlert: lowStockAlert as number | null,
@@ -104,4 +105,18 @@ describe("product catalog source", () => {
       ).toBe(expected);
     }
   );
+  it.each([
+    ["physical",1,1,0,"variants"],
+    ["physical",1,1,null,"variants"],
+    ["physical",1,0,0,"untracked"],
+    ["physical",1,2,0,"unknown"],
+    ["physical",2,1,0,"unknown"],
+    ["service",0,1,0,"not_applicable"],
+    ["service",1,1,0,"not_applicable"],
+    ["service",0,0,0,"not_applicable"],
+    ["digital",0,1,0,"out"],
+    [null,0,1,0,"out"],
+  ] as const)("classifies type %s, variant flag %s, tracking %s and base stock %s as %s", (productType, hasVariants, trackInventory, stock, expected) => {
+    expect(productInventoryState({ productType, hasVariants, trackInventory, stock, lowStockAlert: 5 })).toBe(expected);
+  });
 });

@@ -121,6 +121,8 @@ describe.skipIf(!process.env.DATABASE_URL)("product catalog MySQL", () => {
       unknown: 3,
       untracked: 1,
       priceReview: 2,
+      variants: 0,
+      notApplicable: 0,
     });
     for (const inventory of ["out", "low", "unknown", "untracked"] as const) {
       const selected = await list({ inventory });
@@ -134,6 +136,31 @@ describe.skipIf(!process.env.DATABASE_URL)("product catalog MySQL", () => {
     expect(
       (await list({ status: "draft", price: "review" })).items[0].price
     ).toBe(999);
+  });
+  it("keeps variant-managed products and services out of base-stock counters and matches every filter", async () => {
+    const cases = [
+      { has_variants: 1, stock: 0, name: "Variants with empty base" },
+      { has_variants: 1, stock: null, name: "Variants with unknown base" },
+      { has_variants: 1, track_inventory: 0, stock: 0 },
+      { has_variants: 2, stock: 0 },
+      { has_variants: 1, track_inventory: 2, stock: 0 },
+      { product_type: "service", stock: 0 },
+      { product_type: "service", stock: 2 },
+      { product_type: "service", stock: null, track_inventory: 0, has_variants: 1 },
+      { product_type: "digital", stock: 0 },
+      { product_type: null, stock: 0 },
+      { stock: 2, low_stock_alert: 5 },
+    ];
+    for (const row of cases) await insert(row);
+    await insert({ merchantId: other.merchantId, has_variants: 1 });
+    const result = await list();
+    expect(result.summary).toEqual({ all: 11, out: 2, low: 1, unknown: 2, untracked: 1, variants: 2, notApplicable: 3, priceReview: 0 });
+    for (const inventory of ["out", "low", "unknown", "untracked", "variants", "not_applicable"] as const) {
+      const selected = await list({ inventory });
+      expect(selected.total).toBe(result.summary[inventory === "not_applicable" ? "notApplicable" : inventory]);
+      expect(selected.items.every(row => productInventoryState(row) === inventory)).toBe(true);
+    }
+    expect((await list({ inventory: "variants", search: "empty base" })).items[0].stock).toBe(0);
   });
   it("returns stored integration identity without treating a failed read as editable", async () => {
     await query(

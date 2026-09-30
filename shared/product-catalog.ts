@@ -11,7 +11,7 @@ export const productCatalogInput = z
       .default(""),
     status: z.enum(["all", "active", "draft", "archived"]).default("all"),
     inventory: z
-      .enum(["all", "out", "low", "untracked", "unknown"])
+      .enum(["all", "out", "low", "untracked", "unknown", "variants", "not_applicable"])
       .default("all"),
     price: z.enum(["all", "verified", "review"]).default("all"),
   })
@@ -67,6 +67,8 @@ export const productCatalogSchema = z.object({
     low: integer.nonnegative(),
     untracked: integer.nonnegative(),
     unknown: integer.nonnegative(),
+    variants: integer.nonnegative(),
+    notApplicable: integer.nonnegative(),
     priceReview: integer.nonnegative(),
   }),
 });
@@ -84,13 +86,18 @@ export type ProductWorkspaceRow = z.infer<typeof productWorkspaceRow>;
 
 /** Missing or malformed inventory is never presented as unlimited stock. */
 export function productInventoryState(product: {
+  productType: ProductWorkspaceRow["productType"];
+  hasVariants: number;
   trackInventory: number;
   stock: number | null;
   lowStockAlert: number | null;
-}): "untracked" | "unknown" | "out" | "low" | "available" {
+}): "untracked" | "unknown" | "out" | "low" | "available" | "variants" | "not_applicable" {
+  if (product.productType === "service") return "not_applicable";
   if (product.trackInventory === 0) return "untracked";
+  if (product.trackInventory !== 1) return "unknown";
+  if (product.hasVariants === 1) return "variants";
   if (
-    product.trackInventory !== 1 ||
+    product.hasVariants !== 0 ||
     product.stock === null ||
     !Number.isSafeInteger(product.stock) ||
     product.stock < 0

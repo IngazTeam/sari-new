@@ -11242,6 +11242,10 @@
     "inactive": "Unavailable for sale"
   },
   "stockUx": {
+    "managedVariants":"Stock managed by variants",
+    "serviceInventory":"Service · quantity does not apply",
+    "catalogHint":"{{variants}} products use variant quantities and {{services}} services are excluded from out-of-stock and low-stock counters. Open inventory review for active physical products and their variants.",
+    "baseQuantityHint":"This product uses variant quantities for sales. The base quantity here does not represent its variants; review them in options and variants.",
     "back":"Back to inventory review",
     "title":"Review inventory",
     "subtitle":"Start with items needing attention, then open the product or its variants to review.",

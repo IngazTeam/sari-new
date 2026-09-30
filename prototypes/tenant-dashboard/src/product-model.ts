@@ -230,6 +230,8 @@ export class ProductPreviewStore {
           .length,
         untracked: all.filter(row => productInventoryState(row) === "untracked")
           .length,
+        variants: all.filter(row => productInventoryState(row) === "variants").length,
+        notApplicable: all.filter(row => productInventoryState(row) === "not_applicable").length,
         priceReview: all.filter(
           row => row.priceUnit !== "minor" || row.price < 0
         ).length,
