@@ -1177,6 +1177,13 @@
       "when": 1795392000029,
       "tag": "0167_manual_quotation_receipts",
       "breakpoints": true
+    },
+    {
+      "idx": 168,
+      "version": "5",
+      "when": 1795392000030,
+      "tag": "0168_quotation_delivery_reviews",
+      "breakpoints": true
     }
   ]
 }

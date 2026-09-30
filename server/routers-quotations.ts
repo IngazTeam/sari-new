@@ -1,5 +1,13 @@
 import { TRPCError } from "@trpc/server";
 import { ZodError } from "zod";
+import {
+  quotationReviewInput,
+  quotationReviewReadInput,
+} from "../shared/quotation-review";
+import {
+  prepareQuotationReview,
+  readQuotationReview,
+} from "./quotation-review";
 import { router, permissionProcedure } from "./_core/trpc";
 import {
   quotationDraftInput,
@@ -51,6 +59,16 @@ async function guarded<T>(read: () => Promise<T>): Promise<T> {
 }
 export { guarded as quotationGuard };
 export const quotationWorkspaceRouter = router({
+  prepareReview: permissionProcedure("orders.manage")
+    .input(quotationReviewInput)
+    .mutation(({ ctx, input }) =>
+      guarded(() => prepareQuotationReview(ctx.merchantId, ctx.user.id, input))
+    ),
+  review: permissionProcedure("orders.manage")
+    .input(quotationReviewReadInput)
+    .query(({ ctx, input }) =>
+      guarded(() => readQuotationReview(ctx.merchantId, ctx.user.id, input))
+    ),
   create: permissionProcedure("orders.manage")
     .input(quotationDraftInput)
     .mutation(({ ctx, input }) =>

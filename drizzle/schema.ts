@@ -3666,6 +3666,20 @@ export const quotationActionReceipts = mysqlTable('quotation_action_receipts', {
 	createdAt: timestamp('created_at', { mode: 'string', fsp: 3 }).defaultNow().notNull(),
 }, table => [uniqueIndex('uq_quotation_action_request').on(table.merchantId, table.requestId)]);
 
+export const quotationDeliveryReviews = mysqlTable('quotation_delivery_reviews', {
+	id: int().autoincrement().primaryKey(),
+	merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+	quotationId: int('quotation_id').notNull(),
+	actorId: int('actor_id').notNull(),
+	requestId: char('request_id', { length: 36 }).notNull(),
+	inputHash: char('input_hash', { length: 64 }).notNull(),
+	snapshotHash: char('snapshot_hash', { length: 64 }).notNull(),
+	snapshot: json('snapshot').notNull(),
+	createdAt: timestamp('created_at', { mode: 'string', fsp: 3 }).defaultNow().notNull(),
+	expiresAt: datetime('expires_at', { mode: 'string', fsp: 3 }).notNull(),
+}, table => [uniqueIndex('uq_quotation_review_request').on(table.merchantId, table.requestId),
+	index('idx_quotation_review_quote').on(table.merchantId, table.quotationId, table.id)]);
+
 export const quotationTemplates = mysqlTable("quotation_templates", {
 	id: int().autoincrement().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
