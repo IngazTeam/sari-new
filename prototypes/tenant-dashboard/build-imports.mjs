@@ -13,6 +13,7 @@ for (const language of ["ar", "en"]) {
     productImportUx: text.productImportUx,
     productAdviceUx: text.productAdviceUx,
     productSheetUx: text.productSheetUx,
+    inventorySheetUx: text.inventorySheetUx,
     productWorkspaceUx: text.productWorkspaceUx,
     uploadProductsPage: { viewProducts: text.uploadProductsPage.viewProducts },
   };

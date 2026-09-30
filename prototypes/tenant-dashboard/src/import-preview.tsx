@@ -5,6 +5,9 @@ import { ProductFileAdviceWorkspace } from "../../../client/src/components/merch
 import { ProductSheetWorkspace } from "../../../client/src/components/merchant/ProductSheetWorkspace";
 import { clearSheetAttempt } from "../../../client/src/lib/product-sheet-workspace";
 import { sheetModes, type SheetMode } from "./import-sheet-model";
+import { InventoryPreview } from "./inventory-preview";
+import { inventoryPreviewScope } from "./inventory-sheet-model";
+import { clearSheetAttempt as clearInventoryAttempt } from "../../../client/src/lib/inventory-sheet-workspace";
 import { clearAdviceReference } from "../../../client/src/lib/product-file-advice-workspace";
 import { adviceModes, type AdviceMode } from "./import-advice-model";
 import {
@@ -34,8 +37,11 @@ import "./product-preview.css";
 let root: Root | null = null;
 let initialized = false;
 export const handles = (page: { route: string }) =>
-  page?.route === "/merchant/products/upload";
-export const render = () => '<div id="import-prototype-root"></div>';
+  ["/merchant/products/upload", "/merchant/sheets/inventory"].includes(
+    page?.route
+  );
+export const render = (page?: { route: string }) =>
+  `<div id="import-prototype-root" data-kind="${page?.route === "/merchant/sheets/inventory" ? "inventory" : "import"}"></div>`;
 function Preview() {
   useImportVersion();
   const [generation, setGeneration] = useState(0),
@@ -213,9 +219,14 @@ export function mount() {
       clearImportAttempt(importPreviewScope, knowledgeCacheEpoch());
       clearAdviceReference(importPreviewScope, knowledgeCacheEpoch());
       clearSheetAttempt(importPreviewScope, knowledgeCacheEpoch());
+      clearInventoryAttempt(inventoryPreviewScope, knowledgeCacheEpoch());
       initialized = true;
     }
-    if (imports.mode !== "empty" && !readImportAttempt(importPreviewScope))
+    if (
+      node.dataset.kind !== "inventory" &&
+      imports.mode !== "empty" &&
+      !readImportAttempt(importPreviewScope)
+    )
       saveImportAttempt(
         importPreviewScope,
         imports.sample(),
@@ -225,7 +236,9 @@ export function mount() {
     /* Actual workspace shows storage failure. */
   }
   root = createRoot(node);
-  root.render(<Preview />);
+  root.render(
+    node.dataset.kind === "inventory" ? <InventoryPreview /> : <Preview />
+  );
 }
 export function unmount() {
   root?.unmount();

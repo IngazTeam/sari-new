@@ -2,9 +2,14 @@ import {
   imports,
   advice,
   sheets,
+  inventorySheets,
   useImportVersion,
 } from "./import-preview-state";
-function sheetQuery(read: () => unknown, enabled = true) {
+function sheetQuery(
+  read: () => unknown,
+  enabled = true,
+  store: { mode: string; refresh: () => Promise<void> } = sheets
+) {
   useImportVersion();
   let data: unknown,
     error: unknown = null;
@@ -17,14 +22,14 @@ function sheetQuery(read: () => unknown, enabled = true) {
   return {
     data,
     error:
-      enabled && sheets.mode === "readError"
+      enabled && store.mode === "readError"
         ? { data: { code: "INTERNAL_SERVER_ERROR" } }
         : error,
-    isFetching: enabled && sheets.mode === "loading",
+    isFetching: enabled && store.mode === "loading",
     isLoading: false,
-    fetchStatus: sheets.mode === "offline" ? "paused" : "idle",
+    fetchStatus: store.mode === "offline" ? "paused" : "idle",
     dataUpdatedAt: imports.version,
-    refetch: sheets.refresh,
+    refetch: store.refresh,
   };
 }
 function query(read: () => unknown, enabled = true) {
@@ -57,6 +62,35 @@ function query(read: () => unknown, enabled = true) {
 }
 export const trpc = {
   products: {
+    sheetInventory: {
+      connection: {
+        useQuery: () =>
+          sheetQuery(inventorySheets.connection, true, inventorySheets),
+      },
+      list: {
+        useQuery: (input: unknown, options?: { enabled?: boolean }) =>
+          sheetQuery(
+            () => inventorySheets.list(input),
+            options?.enabled !== false,
+            inventorySheets
+          ),
+      },
+      read: {
+        useQuery: (input: unknown, options?: { enabled?: boolean }) =>
+          sheetQuery(
+            () => inventorySheets.read(input),
+            options?.enabled !== false,
+            inventorySheets
+          ),
+      },
+      prepare: {
+        useMutation: () => ({ mutateAsync: inventorySheets.prepare }),
+      },
+      commit: { useMutation: () => ({ mutateAsync: inventorySheets.commit }) },
+      discard: {
+        useMutation: () => ({ mutateAsync: inventorySheets.discard }),
+      },
+    },
     sheetImport: {
       connection: { useQuery: () => sheetQuery(sheets.connection) },
       list: {
@@ -93,6 +127,16 @@ export const trpc = {
   },
   useUtils: () => ({
     products: {
+      sheetInventory: {
+        read: {
+          fetch: async (input: unknown) => {
+            await inventorySheets.refresh();
+            return inventorySheets.read(input);
+          },
+          invalidate: async () => imports.changed(),
+        },
+        receipt: { fetch: inventorySheets.receipt },
+      },
       sheetImport: {
         read: {
           fetch: async (input: unknown) => {
