@@ -187,7 +187,7 @@ const specifics = {
     ],
     gaps: [
       "راجع tenant-customer-data/annotations/workspace/prototype-2026-09-30. بيانات الموك أب مصطنعة، وتصديره مثال محلي وليس بيانات تيننت.",
-      "تنظيف واجهاتcustomers القديمة وحفظ تنزيل المتصفح و320/390 وSafari/iPhone الفعلي مفتوحة.",
+      "أُغلقت واجهاتcustomers الخمس القديمة وقارئها والصفحة غير المستخدمة؛ راجع tenant-customer-retirement-2026-09-30. حفظ تنزيل المتصفح و320/390 وSafari/iPhone الفعلي مفتوحة.",
     ],
   },
   "/merchant/customers/:phone": {

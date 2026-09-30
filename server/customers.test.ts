@@ -1,187 +1,146 @@
-import { describe, it, expect, beforeAll } from 'vitest';
-import * as db from './db';
-
-describe('Customers Management', () => {
-  let testMerchantId: number;
-  let testCustomerPhone: string;
-
-  beforeAll(async () => {
-    // Use existing merchant or create test data
-    testMerchantId = 150001; // Default test merchant
-    testCustomerPhone = '+966500000001'; // Test customer phone
+import { beforeEach, describe, expect, it, vi } from "vitest";
+const m = vi.hoisted(() => ({
+  access: vi.fn(),
+  list: vi.fn(),
+  detail: vi.fn(),
+  export: vi.fn(),
+}));
+vi.mock("./accounts/merchant-access", () => ({
+  resolveMerchantAccess: m.access,
+}));
+vi.mock("./customer-workspace", async original => ({
+  ...(await original<typeof import("./customer-workspace")>()),
+  readCustomerList: m.list,
+  readCustomerDetail: m.detail,
+  exportCustomerWorkspace: m.export,
+}));
+import { customersRouter } from "./routers-customers";
+import { CustomerExportLimit } from "./customer-workspace";
+const caller = (user: any = { id: 7, role: "user" }, selected = "20") =>
+  customersRouter.createCaller({
+    user,
+    req: { headers: { "x-merchant-id": selected } },
+    res: {},
+    merchantId: 999,
+  } as any);
+beforeEach(() => {
+  vi.clearAllMocks();
+  m.access.mockResolvedValue({ merchantId: 20, role: "manager", memberId: 3 });
+  m.list.mockResolvedValue({ merchantId: 20, rows: [], canManage: false });
+  m.detail.mockResolvedValue({ merchantId: 20, customer: null });
+  m.export.mockResolvedValue({ merchantId: 20, count: 0 });
+});
+describe("retired customer browser APIs", () => {
+  it.each(["list", "getByPhone", "getStats", "export", "exportCsv"])(
+    "does not mount legacy %s or read data through it",
+    async name => {
+      await expect((caller() as any)[name]({})).rejects.toMatchObject({
+        code: "NOT_FOUND",
+      });
+      expect(m.list).not.toHaveBeenCalled();
+      expect(m.detail).not.toHaveBeenCalled();
+      expect(m.export).not.toHaveBeenCalled();
+    }
+  );
+});
+describe("canonical customer workspace permissions", () => {
+  it.each(["owner", "manager", "sales_supervisor", "viewer"])(
+    "uses selected verified membership for %s reads",
+    async role => {
+      m.access.mockResolvedValue({ merchantId: 20, role, memberId: 3 });
+      await expect(
+        caller().workspace.list({ search: "%_" })
+      ).resolves.toMatchObject({
+        merchantId: 20,
+        canManage: role !== "viewer",
+      });
+      expect(m.access).toHaveBeenCalledWith(7, 20);
+      expect(m.list).toHaveBeenCalledWith(20, {
+        search: "%_",
+        activity: "all",
+        page: 1,
+      });
+      await expect(
+        caller().workspace.detail({ key: "customer%2F" })
+      ).resolves.toMatchObject({ customer: null });
+      expect(m.detail).toHaveBeenCalledWith(20, {
+        key: "customer%2F",
+        ordersPage: 1,
+        conversationsPage: 1,
+      });
+    }
+  );
+  it.each(["owner", "manager", "sales_supervisor"])(
+    "allows filtered export for %s",
+    async role => {
+      m.access.mockResolvedValue({ merchantId: 20, role, memberId: 3 });
+      await caller().workspace.export({ activity: "unknown", language: "en" });
+      expect(m.export).toHaveBeenCalledWith(20, {
+        search: "",
+        activity: "unknown",
+        language: "en",
+      });
+    }
+  );
+  it("denies bulk export before reading data for a viewer", async () => {
+    m.access.mockResolvedValue({ merchantId: 20, role: "viewer", memberId: 3 });
+    await expect(caller().workspace.export({})).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+    expect(m.export).not.toHaveBeenCalled();
   });
-
-  describe('Customer Database Functions', () => {
-    it('should get customers by merchant', async () => {
-      const customers = await db.getCustomersByMerchant(testMerchantId);
-      
-      expect(customers).toBeDefined();
-      expect(Array.isArray(customers)).toBe(true);
-      
-      if (customers.length > 0) {
-        const customer = customers[0];
-        expect(customer).toHaveProperty('customerPhone');
-        expect(customer).toHaveProperty('customerName');
-        expect(customer).toHaveProperty('orderCount');
-        expect(customer).toHaveProperty('totalSpent');
-        expect(customer).toHaveProperty('loyaltyPoints');
-        expect(customer).toHaveProperty('status');
-        expect(['active', 'new', 'inactive']).toContain(customer.status);
-      }
-    });
-
-    it('should get customer stats', async () => {
-      const stats = await db.getCustomerStats(testMerchantId);
-      
-      expect(stats).toBeDefined();
-      expect(stats).toHaveProperty('total');
-      expect(stats).toHaveProperty('active');
-      expect(stats).toHaveProperty('new');
-      expect(stats).toHaveProperty('inactive');
-      
-      expect(typeof stats.total).toBe('number');
-      expect(typeof stats.active).toBe('number');
-      expect(typeof stats.new).toBe('number');
-      expect(typeof stats.inactive).toBe('number');
-      
-      // Total should equal sum of all statuses
-      expect(stats.total).toBe(stats.active + stats.new + stats.inactive);
-    });
-
-    it('should search customers by query', async () => {
-      const customers = await db.getCustomersByMerchant(testMerchantId);
-      
-      if (customers.length > 0) {
-        const firstCustomer = customers[0];
-        const searchQuery = firstCustomer.customerPhone.slice(-4); // Last 4 digits
-        
-        const searchResults = await db.searchCustomers(testMerchantId, searchQuery);
-        
-        expect(searchResults).toBeDefined();
-        expect(Array.isArray(searchResults)).toBe(true);
-        
-        // Should find at least the customer we searched for
-        const found = searchResults.some(c => c.customerPhone === firstCustomer.customerPhone);
-        expect(found).toBe(true);
-      }
-    });
-
-    it('should get customer by phone', async () => {
-      const customers = await db.getCustomersByMerchant(testMerchantId);
-      
-      if (customers.length > 0) {
-        const testPhone = customers[0].customerPhone;
-        const customer = await db.getCustomerByPhone(testMerchantId, testPhone);
-        
-        expect(customer).toBeDefined();
-        expect(customer?.customerPhone).toBe(testPhone);
-        expect(customer).toHaveProperty('orders');
-        expect(customer).toHaveProperty('conversations');
-        expect(customer).toHaveProperty('orderCount');
-        expect(customer).toHaveProperty('totalSpent');
-        expect(customer).toHaveProperty('loyaltyPoints');
-        
-        // Verify orders and conversations are arrays
-        expect(Array.isArray(customer?.orders)).toBe(true);
-        expect(Array.isArray(customer?.conversations)).toBe(true);
-      }
-    });
-
-    it('should return null for non-existent customer', async () => {
-      const nonExistentPhone = '+966999999999';
-      const customer = await db.getCustomerByPhone(testMerchantId, nonExistentPhone);
-      
-      expect(customer).toBeNull();
-    });
-
-    it('should get customer count', async () => {
-      const count = await db.getCustomerCountByMerchant(testMerchantId);
-      
-      expect(typeof count).toBe('number');
-      expect(count).toBeGreaterThanOrEqual(0);
-    });
+  it("fails closed after revoked access and for a platform admin without membership", async () => {
+    m.access.mockResolvedValue(null);
+    for (const user of [
+      { id: 7, role: "user" },
+      { id: 7, role: "admin" },
+    ])
+      await expect(caller(user).workspace.list({})).rejects.toMatchObject({
+        code: "FORBIDDEN",
+      });
+    expect(m.list).not.toHaveBeenCalled();
   });
-
-  describe('Customer Status Logic', () => {
-    it('should correctly determine customer status', async () => {
-      const customers = await db.getCustomersByMerchant(testMerchantId);
-      
-      customers.forEach(customer => {
-        const daysSinceLastMessage = Math.floor(
-          (new Date().getTime() - new Date(customer.lastMessageAt).getTime()) / (1000 * 60 * 60 * 24)
-        );
-        
-        if (daysSinceLastMessage <= 7) {
-          expect(customer.status).toBe('active');
-        } else if (daysSinceLastMessage <= 30) {
-          expect(customer.status).toBe('new');
-        } else {
-          expect(customer.status).toBe('inactive');
-        }
-      });
-    });
+  it("rejects unauthenticated reads", async () => {
+    await expect(
+      caller(null).workspace.detail({ key: "a" })
+    ).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+    expect(m.detail).not.toHaveBeenCalled();
   });
-
-  describe('Customer Data Integrity', () => {
-    it('should have valid phone numbers', async () => {
-      const customers = await db.getCustomersByMerchant(testMerchantId);
-      
-      customers.forEach(customer => {
-        expect(customer.customerPhone).toBeTruthy();
-        expect(typeof customer.customerPhone).toBe('string');
-        // Should start with + or be a valid number
-        expect(customer.customerPhone.length).toBeGreaterThan(0);
-      });
-    });
-
-    it('should have non-negative order counts and totals', async () => {
-      const customers = await db.getCustomersByMerchant(testMerchantId);
-      
-      customers.forEach(customer => {
-        expect(customer.orderCount).toBeGreaterThanOrEqual(0);
-        expect(customer.totalSpent).toBeGreaterThanOrEqual(0);
-        expect(customer.loyaltyPoints).toBeGreaterThanOrEqual(0);
-      });
-    });
-
-    it('should have valid timestamps', async () => {
-      const customers = await db.getCustomersByMerchant(testMerchantId);
-      
-      customers.forEach(customer => {
-        const lastMessageDate = new Date(customer.lastMessageAt);
-        expect(lastMessageDate.toString()).not.toBe('Invalid Date');
-        expect(lastMessageDate.getTime()).toBeLessThanOrEqual(Date.now());
-      });
-    });
+  it("rejects merchant injection and unbounded paging", async () => {
+    await expect(
+      caller().workspace.list({ merchantId: 30 } as any)
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(
+      caller().workspace.list({ page: 1000001 })
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(
+      caller().workspace.export({ page: 1 } as any)
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(m.list).not.toHaveBeenCalled();
+    expect(m.export).not.toHaveBeenCalled();
   });
-
-  describe('Customer Filtering', () => {
-    it('should filter customers by status', async () => {
-      const allCustomers = await db.getCustomersByMerchant(testMerchantId);
-      
-      const statuses: Array<'active' | 'new' | 'inactive'> = ['active', 'new', 'inactive'];
-      
-      statuses.forEach(status => {
-        const filtered = allCustomers.filter(c => c.status === status);
-        
-        filtered.forEach(customer => {
-          expect(customer.status).toBe(status);
-        });
+  it("hides database failure details without claiming empty data", async () => {
+    m.list.mockRejectedValue(Error("private SQL"));
+    m.detail.mockRejectedValue(Error("private SQL"));
+    m.export.mockRejectedValue(Error("private SQL"));
+    for (const action of [
+      () => caller().workspace.list({}),
+      () => caller().workspace.detail({ key: "a" }),
+      () => caller().workspace.export({}),
+    ]) {
+      await expect(action()).rejects.toMatchObject({
+        code: "INTERNAL_SERVER_ERROR",
       });
-    });
-
-    it('should sort customers by last message date', async () => {
-      const customers = await db.getCustomersByMerchant(testMerchantId);
-      
-      if (customers.length > 1) {
-        for (let i = 0; i < customers.length - 1; i++) {
-          const current = new Date(customers[i].lastMessageAt).getTime();
-          const next = new Date(customers[i + 1].lastMessageAt).getTime();
-          
-          // Should be sorted in descending order (newest first)
-          expect(current).toBeGreaterThanOrEqual(next);
-        }
-      }
+      await expect(action()).rejects.not.toHaveProperty(
+        "message",
+        "private SQL"
+      );
+    }
+  });
+  it("reports the export limit distinctly", async () => {
+    m.export.mockRejectedValue(new CustomerExportLimit());
+    await expect(caller().workspace.export({})).rejects.toMatchObject({
+      code: "PRECONDITION_FAILED",
     });
   });
 });

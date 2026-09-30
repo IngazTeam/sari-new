@@ -168,7 +168,6 @@ const PushNotificationsSettings = lazyLoad(() => import("./pages/merchant/PushNo
 const NotificationsPage = lazyLoad(() => import("./pages/merchant/NotificationsPage"));
 const ScheduledReports = lazyLoad(() => import("./pages/ScheduledReports"));
 const WhatsAppAutoNotifications = lazyLoad(() => import("./pages/WhatsAppAutoNotifications"));
-const CustomersManagement = lazyLoad(() => import("./pages/CustomersManagement"));
 const Customers = lazyLoad(() => import("./pages/Customers"));
 const CustomerDetails = lazyLoad(() => import("./pages/CustomerDetails"));
 const CompetitorAnalysis = lazyLoad(() => import("./pages/CompetitorAnalysis"));

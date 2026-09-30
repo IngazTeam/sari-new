@@ -3,7 +3,7 @@ const mocks = vi.hoisted(() => ({
   access: vi.fn(),
   merchant: vi.fn(),
   customers: vi.fn(),
-  customer: vi.fn(),
+  customerExport: vi.fn(),
   campaigns: vi.fn(),
   campaign: vi.fn(),
   create: vi.fn(),
@@ -17,8 +17,6 @@ vi.mock("./accounts/merchant-access", () => ({
 vi.mock("./db", async original => ({
   ...(await original<typeof import("./db")>()),
   getMerchantById: mocks.merchant,
-  getCustomersByMerchant: mocks.customers,
-  getCustomerByPhone: mocks.customer,
   getCampaignsByMerchantId: mocks.campaigns,
   getCampaignById: mocks.campaign,
   createCampaign: mocks.create,
@@ -26,6 +24,11 @@ vi.mock("./db", async original => ({
   getBotSettings: mocks.settings,
   getAssistantSettings: mocks.settings,
   getCampaignLogsWithStats: mocks.logs,
+}));
+vi.mock("./customer-workspace", async original => ({
+  ...(await original<typeof import("./customer-workspace")>()),
+  readCustomerList: mocks.customers,
+  exportCustomerWorkspace: mocks.customerExport,
 }));
 import { appRouter } from "./routers";
 const caller = (selected = "20", platformRole = "user") =>
@@ -43,7 +46,8 @@ beforeEach(() => {
     memberId: 3,
   });
   mocks.merchant.mockResolvedValue({ id: 20, status: "active" });
-  mocks.customers.mockResolvedValue([]);
+  mocks.customers.mockResolvedValue({ merchantId: 20, rows: [] });
+  mocks.customerExport.mockResolvedValue({ merchantId: 20, count: 0 });
   mocks.campaigns.mockResolvedValue([]);
   mocks.settings.mockResolvedValue({ autoReplyEnabled: true });
   mocks.create.mockImplementation(async data => ({ id: 1, ...data }));
@@ -54,26 +58,32 @@ describe("mounted customer, bot and campaign permissions", () => {
     "allows %s to read only the selected customer list",
     async role => {
       mocks.access.mockResolvedValue({ merchantId: 20, role, memberId: 3 });
-      await expect(caller().customers.list({})).resolves.toEqual([]);
+      await expect(
+        caller().customers.workspace.list({})
+      ).resolves.toMatchObject({ merchantId: 20, rows: [] });
       expect(mocks.access).toHaveBeenCalledWith(7, 20);
-      expect(mocks.customers).toHaveBeenCalledWith(20);
-      expect(mocks.merchant).toHaveBeenCalledWith(20);
+      expect(mocks.customers).toHaveBeenCalledWith(20, {
+        search: "",
+        activity: "all",
+        page: 1,
+      });
     }
   );
   it("prevents viewer bulk exports while allowing permitted customer managers", async () => {
-    await expect(caller().customers.exportCsv()).rejects.toMatchObject({
-      code: "FORBIDDEN",
-    });
-    await expect(caller().customers.export()).rejects.toMatchObject({
-      code: "FORBIDDEN",
-    });
-    expect(mocks.customers).not.toHaveBeenCalled();
+    await expect(caller().customers.workspace.export({})).rejects.toMatchObject(
+      {
+        code: "FORBIDDEN",
+      }
+    );
+    expect(mocks.customerExport).not.toHaveBeenCalled();
     mocks.access.mockResolvedValue({
       merchantId: 20,
       role: "sales_supervisor",
       memberId: 3,
     });
-    await expect(caller().customers.exportCsv()).resolves.toMatchObject({
+    await expect(
+      caller().customers.workspace.export({})
+    ).resolves.toMatchObject({
       count: 0,
     });
   });
@@ -133,7 +143,10 @@ describe("mounted customer, bot and campaign permissions", () => {
     async role => {
       mocks.access.mockResolvedValue({ merchantId: 20, role, memberId: 3 });
       await expect(
-        caller().botSettings.update({ autoReplyEnabled: false, expectedRevision: "a".repeat(64) })
+        caller().botSettings.update({
+          autoReplyEnabled: false,
+          expectedRevision: "a".repeat(64),
+        })
       ).rejects.toMatchObject({ code: "FORBIDDEN" });
       await expect(
         caller().botSettings.sendTestMessage()
@@ -146,15 +159,22 @@ describe("mounted customer, bot and campaign permissions", () => {
     "allows %s to configure the selected bot",
     async role => {
       mocks.access.mockResolvedValue({ merchantId: 20, role, memberId: 3 });
-      await caller().botSettings.update({ autoReplyEnabled: false, expectedRevision: "a".repeat(64) });
-      expect(mocks.updateBot).toHaveBeenCalledWith(20, {
+      await caller().botSettings.update({
         autoReplyEnabled: false,
-      }, {expectedRevision: "a".repeat(64)});
+        expectedRevision: "a".repeat(64),
+      });
+      expect(mocks.updateBot).toHaveBeenCalledWith(
+        20,
+        {
+          autoReplyEnabled: false,
+        },
+        { expectedRevision: "a".repeat(64) }
+      );
     }
   );
   it("fails before domain reads after access is revoked or identity cannot be verified", async () => {
     mocks.access.mockResolvedValue(null);
-    await expect(caller().customers.list({})).rejects.toMatchObject({
+    await expect(caller().customers.workspace.list({})).rejects.toMatchObject({
       code: "FORBIDDEN",
     });
     mocks.access.mockRejectedValue(new Error("database unavailable"));

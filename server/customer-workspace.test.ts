@@ -5,13 +5,6 @@ vi.mock("./db/connection", () => ({ getDb: mocks.db }));
 vi.mock("./accounts/merchant-access", () => ({
   resolveMerchantAccess: mocks.access,
 }));
-vi.mock("./db", () => ({
-  getCustomerByPhone: vi.fn(),
-  getCustomerStats: vi.fn(),
-  getCustomersByMerchant: vi.fn(),
-  getMerchantById: vi.fn(),
-  searchCustomers: vi.fn(),
-}));
 import { customersRouter } from "./routers-customers";
 import { readCustomerList, readCustomerDetail } from "./customer-workspace";
 import {
