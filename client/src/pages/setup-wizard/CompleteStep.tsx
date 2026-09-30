@@ -1,57 +1,370 @@
-import { Button } from '@/components/ui/button';
-import { AlertCircle, Loader2, Pencil, ArrowRight } from 'lucide-react';
-import PreviewChat from '@/components/PreviewChat';
-import { useTranslation } from 'react-i18next';
-import { setupCatalogDraft } from '@shared/setup-catalog';
+import { Button } from "@/components/ui/button";
+import { Loader2, Pencil, ArrowRight } from "lucide-react";
+import PreviewChat from "@/components/PreviewChat";
+import { useTranslation } from "react-i18next";
+import { setupCatalogDraft } from "@shared/setup-catalog";
+import { setupFieldsFromDraft } from "@/lib/setup-completion-workspace";
+import type { SetupCompletionFields } from "@shared/setup-completion";
+import type { reviewSetupCompletion } from "../../../../server/setup-completion";
 
 interface CompleteStepProps {
   wizardData: Record<string, any>;
   goToStep: (step: number) => void;
   completeSetup: () => void;
   isLoading: boolean;
+  review?: Awaited<ReturnType<typeof reviewSetupCompletion>> | null;
+  error?: string;
+  blocked?: boolean;
+  currency?: "SAR" | "USD";
 }
-
-export default function CompleteStep({ wizardData, goToStep, completeSetup, isLoading }: CompleteStepProps) {
-  const { t } = useTranslation();
-  const websiteReview = wizardData.websiteAnalysis?.confirmed ? wizardData.websiteAnalysis : null;
-  const hasValidProfile =
-    typeof wizardData.businessName === 'string' && wizardData.businessName.trim().length >= 2 &&
-    typeof wizardData.phone === 'string' && /^[+0-9][0-9\s()\-]{6,19}$/.test(wizardData.phone.trim());
+const text = (value: unknown) => (typeof value === "string" ? value : "");
+export default function CompleteStep({
+  wizardData,
+  goToStep,
+  completeSetup,
+  isLoading,
+  review,
+  error,
+  blocked,
+  currency = "SAR",
+}: CompleteStepProps) {
+  const { t, i18n } = useTranslation();
+  let fields: SetupCompletionFields | null = null;
+  try {
+    fields = setupFieldsFromDraft(wizardData);
+  } catch {
+    /* Original draft stays editable. */
+  }
   const catalog = setupCatalogDraft.safeParse(wizardData);
-  const products = catalog.success ? catalog.data.products.map(row => ({ ...row, price: row.priceMinor / 100 })) : [];
-  const services = catalog.success ? catalog.data.services.map(row => ({ ...row, price: row.priceMinor / 100 })) : [];
-  const tone = wizardData.botTone === 'professional' ? t('setupWorkspace.toneProfessional') : wizardData.botTone === 'casual' ? t('setupWorkspace.toneCasual') : t('setupWorkspace.toneFriendly');
-  const language = ({ ar: 'العربية', en: 'English', both: 'العربية والإنجليزية', fr: 'Français', tr: 'Türkçe', es: 'Español', it: 'Italiano' } as Record<string, string>)[wizardData.botLanguage || 'ar'];
-  const edit = (name: string, action: () => void) => <Button type="button" variant="ghost" size="sm" onClick={action} disabled={isLoading} aria-label={t('setupWorkspace.editNamed', { name })}><Pencil aria-hidden="true" />{t('setupWorkspace.edit')}</Button>;
-  return <div className="space-y-5">
-    <div className="ms-review-list">
-      <section>
-        <header><h2>{t('setupWorkspace.reviewBusiness')}</h2>{edit(t('setupWorkspace.reviewBusiness'), () => goToStep(3))}</header>
-        <dl><div><dt>{t('setupWorkspace.nameLabel')}</dt><dd>{wizardData.businessName || t('setupWorkspace.notProvided')}</dd></div><div><dt>{t('setupWorkspace.phoneLabel')}</dt><dd><bdi>{wizardData.phone || t('setupWorkspace.notProvided')}</bdi></dd></div></dl>
-      </section>
-      <section>
-        <header><h2>{t('setupWorkspace.reviewCatalog')}</h2>{edit(t('setupWorkspace.reviewCatalog'), () => goToStep(6))}</header>
-        {!catalog.success ? <p role="alert">{t('setupCatalogUx.reviewInvalid')}</p> : products.length + services.length > 0 ? <><p>{t('setupWorkspace.catalogCount', { products: products.length, services: services.length })}</p><small>{t('setupWorkspace.catalogReviewNote')}</small></> : <p>{t('setupWorkspace.catalogEmpty')}</p>}
-      </section>
-      <section>
-        <header><h2>{t('setupWorkspace.reviewAssistant')}</h2>{edit(t('setupWorkspace.reviewAssistant'), () => goToStep(8))}</header>
-        <dl><div><dt>{t('setupWorkspace.toneLabel')}</dt><dd>{tone}</dd></div><div><dt>{t('setupWorkspace.languageLabel')}</dt><dd>{language}</dd></div></dl>
-      </section>
-      {websiteReview && <section>
-        <header><h2>{t('setupWorkspace.reviewWebsite')}</h2>{edit(t('setupWorkspace.reviewWebsite'), () => goToStep(4))}</header>
-        <p className="break-all" dir="ltr">{websiteReview.websiteUrl}</p>
-      </section>}
+  const hasValidProfile =
+    typeof wizardData.businessName === "string" &&
+    wizardData.businessName.trim().length >= 2 &&
+    wizardData.businessName.length <= 255 &&
+    typeof wizardData.phone === "string" &&
+    /^[+0-9][0-9\s()\-]{6,19}$/.test(wizardData.phone.trim());
+  const tone =
+    wizardData.botTone === "professional"
+      ? t("setupWorkspace.toneProfessional")
+      : wizardData.botTone === "casual"
+        ? t("setupWorkspace.toneCasual")
+        : t("setupWorkspace.toneFriendly");
+  const language =
+    (
+      {
+        ar: "العربية",
+        en: "English",
+        both: t("setupApprovalUx.bothLanguages"),
+        fr: "Français",
+        tr: "Türkçe",
+        es: "Español",
+        it: "Italiano",
+      } as Record<string, string>
+    )[wizardData.botLanguage || "ar"] || t("setupWorkspace.notProvided");
+  const money = (minor: number, unit: string) =>
+    new Intl.NumberFormat(i18n?.language?.startsWith("ar") ? "ar-SA" : "en", {
+      style: "currency",
+      currency: unit,
+    }).format(minor / 100);
+  const dayNames: Record<string, string> = {
+    saturday: t("setupTemplateUx.saturday"),
+    sunday: t("setupTemplateUx.sunday"),
+    monday: t("setupTemplateUx.monday"),
+    tuesday: t("setupTemplateUx.tuesday"),
+    wednesday: t("setupTemplateUx.wednesday"),
+    thursday: t("setupTemplateUx.thursday"),
+    friday: t("setupTemplateUx.friday"),
+  };
+  const edit = (name: string, step: number) => (
+    <Button
+      type="button"
+      variant="ghost"
+      size="sm"
+      onClick={() => goToStep(step)}
+      disabled={isLoading}
+      aria-label={t("setupWorkspace.editNamed", { name })}
+    >
+      <Pencil aria-hidden="true" />
+      {t("setupWorkspace.edit")}
+    </Button>
+  );
+  const value = (v: unknown) => text(v) || t("setupWorkspace.notProvided");
+  return (
+    <div className="space-y-5">
+      <div className="ms-review-list">
+        <section>
+          <header>
+            <h2>{t("setupWorkspace.reviewBusiness")}</h2>
+            {edit(t("setupWorkspace.reviewBusiness"), 3)}
+          </header>
+          <dl>
+            <div>
+              <dt>{t("setupWorkspace.nameLabel")}</dt>
+              <dd>{value(wizardData.businessName)}</dd>
+            </div>
+            <div>
+              <dt>{t("setupWorkspace.phoneLabel")}</dt>
+              <dd>
+                <bdi>{value(wizardData.phone)}</bdi>
+              </dd>
+            </div>
+            <div>
+              <dt>{t("setupApprovalUx.address")}</dt>
+              <dd>{value(wizardData.address)}</dd>
+            </div>
+            <div>
+              <dt>{t("setupApprovalUx.description")}</dt>
+              <dd>{value(wizardData.description)}</dd>
+            </div>
+            <div>
+              <dt>{t("setupApprovalUx.hours")}</dt>
+              <dd>
+                {t(
+                  wizardData.workingHoursType === "custom"
+                    ? "setupApprovalUx.customHours"
+                    : wizardData.workingHoursType === "weekdays"
+                      ? "setupApprovalUx.weekdays"
+                      : "setupApprovalUx.alwaysOpen"
+                )}
+              </dd>
+            </div>
+          </dl>
+          {fields?.workingHoursType === "custom" &&
+            (fields.workingHours && Object.keys(fields.workingHours).length ? (
+              <ul className="mt-3 space-y-2 text-sm">
+                {Object.entries(fields.workingHours).map(
+                  ([day, hours]) =>
+                    hours && (
+                      <li key={day}>
+                        {dayNames[day]} ·{" "}
+                        {hours.isOpen ? (
+                          <bdi>
+                            {hours.open}–{hours.close}
+                          </bdi>
+                        ) : (
+                          t("setupTemplateUx.closed")
+                        )}
+                      </li>
+                    )
+                )}
+              </ul>
+            ) : (
+              <p>{t("setupApprovalUx.hoursLater")}</p>
+            ))}
+        </section>
+        <section>
+          <header>
+            <h2>{t("setupWorkspace.reviewCatalog")}</h2>
+            {edit(t("setupWorkspace.reviewCatalog"), 6)}
+          </header>
+          {!catalog.success ? (
+            <p role="alert">{t("setupCatalogUx.reviewInvalid")}</p>
+          ) : (
+            <>
+              <p>
+                {t("setupWorkspace.catalogCount", {
+                  products: catalog.data.products.length,
+                  services: catalog.data.services.length,
+                })}
+              </p>
+              {catalog.data.products.length > 0 && (
+                <p>{t("setupApprovalUx.stockUnknown")}</p>
+              )}
+              {(["products", "services"] as const).map(
+                kind =>
+                  catalog.data[kind].length > 0 && (
+                    <details className="ms-details" key={kind} open>
+                      <summary>
+                        {t(
+                          kind === "products"
+                            ? "setupApprovalUx.products"
+                            : "setupApprovalUx.services"
+                        )}
+                      </summary>
+                      <ol className="ms-approval-items">
+                        {catalog.data[kind].map((row, index) => (
+                          <li key={index}>
+                            <div>
+                              <strong>{row.name}</strong>
+                              <bdi>
+                                {money(
+                                  row.priceMinor,
+                                  "currency" in row
+                                    ? row.currency
+                                    : review?.currency || currency
+                                )}
+                              </bdi>
+                            </div>
+                            {row.description && <p>{row.description}</p>}
+                            {row.category && (
+                              <p>
+                                {t("setupApprovalUx.category")}: {row.category}
+                              </p>
+                            )}
+                            {"durationMinutes" in row && (
+                              <p>
+                                {t("setupApprovalUx.duration", {
+                                  minutes: row.durationMinutes,
+                                })}
+                              </p>
+                            )}
+                            {"productUrl" in row && row.productUrl && (
+                              <a
+                                href={row.productUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="break-all"
+                              >
+                                {row.productUrl}
+                              </a>
+                            )}
+                            {"imageUrl" in row && row.imageUrl && (
+                              <a
+                                href={row.imageUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                {t("setupApprovalUx.viewImage")}
+                              </a>
+                            )}
+                          </li>
+                        ))}
+                      </ol>
+                    </details>
+                  )
+              )}
+            </>
+          )}
+        </section>
+        <section>
+          <header>
+            <h2>{t("setupWorkspace.reviewAssistant")}</h2>
+            {edit(t("setupWorkspace.reviewAssistant"), 8)}
+          </header>
+          <dl>
+            <div>
+              <dt>{t("setupWorkspace.toneLabel")}</dt>
+              <dd>{tone}</dd>
+            </div>
+            <div>
+              <dt>{t("setupWorkspace.languageLabel")}</dt>
+              <dd>{language}</dd>
+            </div>
+            <div>
+              <dt>{t("setupApprovalUx.welcome")}</dt>
+              <dd>{value(wizardData.welcomeMessage)}</dd>
+            </div>
+          </dl>
+          <small>{t("setupApprovalUx.replyUnchanged")}</small>
+        </section>
+        {fields?.websiteAnalysis && (
+          <section>
+            <header>
+              <h2>{t("setupWorkspace.reviewWebsite")}</h2>
+              {edit(t("setupWorkspace.reviewWebsite"), 4)}
+            </header>
+            <p className="break-all" dir="ltr">
+              {fields.websiteAnalysis.websiteUrl}
+            </p>
+            <small>{t("setupApprovalUx.websiteAttribution")}</small>
+          </section>
+        )}
+        {fields?.templateId && (
+          <section>
+            <h2>{t("setupApprovalUx.template")}</h2>
+            <p>{t("setupApprovalUx.templateUse")}</p>
+          </section>
+        )}
+      </div>
+      {fields &&
+        (fields.botLanguage === "ar" ||
+          fields.botLanguage === "en" ||
+          fields.botLanguage === "both") && (
+          <details className="ms-details">
+            <summary>{t("setupWorkspace.previewTitle")}</summary>
+            <PreviewChat
+              businessName={fields.businessName}
+              botTone={fields.botTone}
+              botLanguage={fields.botLanguage}
+              products={fields.products.map(row => ({
+                ...row,
+                price: row.priceMinor / 100,
+              }))}
+              services={fields.services.map(row => ({
+                ...row,
+                price: row.priceMinor / 100,
+              }))}
+              welcomeMessage={fields.welcomeMessage}
+              useAI={false}
+              className="max-w-md mx-auto"
+            />
+          </details>
+        )}
+      {!hasValidProfile && (
+        <p role="alert">{t("setupWorkspace.invalidProfile")}</p>
+      )}
+      {!fields && hasValidProfile && catalog.success && (
+        <p role="alert">{t("setupApprovalUx.invalidFields")}</p>
+      )}
+      {error && <p role="alert">{error}</p>}
+      {review && (
+        <div
+          role={review.canComplete ? "status" : "alert"}
+          className="ms-approval-status"
+        >
+          <p>
+            {t(
+              review.canComplete
+                ? "setupApprovalUx.ready"
+                : "setupApprovalUx.needsReview"
+            )}
+          </p>
+          {review.alreadyCompleted && (
+            <p>{t("setupApprovalUx.alreadyCompleted")}</p>
+          )}
+          {review.catalogLocked && <p>{t("setupApprovalUx.catalogLocked")}</p>}
+          {!review.templateAvailable && (
+            <p>{t("setupApprovalUx.templateUnavailable")}</p>
+          )}
+          {review.conflicts.length > 0 && (
+            <ul>
+              {review.conflicts.map((conflict, i) => (
+                <li key={i}>
+                  {review.fields[conflict.kind][conflict.index]?.name} ·{" "}
+                  {t(
+                    conflict.reason === "existing_name"
+                      ? "setupApprovalUx.existingName"
+                      : "setupApprovalUx.duplicateName"
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+      <div className="ms-actions">
+        <Button
+          size="lg"
+          onClick={completeSetup}
+          disabled={
+            isLoading ||
+            !hasValidProfile ||
+            !catalog.success ||
+            !fields ||
+            blocked ||
+            Boolean(review && !review.canComplete)
+          }
+        >
+          {isLoading ? (
+            <Loader2 className="animate-spin" aria-hidden="true" />
+          ) : (
+            <ArrowRight aria-hidden="true" />
+          )}
+          {t(review ? "setupWorkspace.reviewConfirm" : "setupApprovalUx.check")}
+        </Button>
+      </div>
+      <p className="text-xs text-muted-foreground leading-relaxed">
+        {t("setupApprovalUx.confirmHelp")}
+      </p>
     </div>
-    {catalog.success && <details className="ms-details">
-      <summary>{t('setupWorkspace.previewTitle')}</summary>
-      <PreviewChat businessName={wizardData.businessName} botTone={wizardData.botTone || 'friendly'} botLanguage={wizardData.botLanguage || 'ar'} products={products} services={services} welcomeMessage={wizardData.welcomeMessage || ''} useAI={false} className="max-w-md mx-auto" />
-    </details>}
-    {!hasValidProfile && <div role="alert" className="flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900"><AlertCircle aria-hidden="true" />{t('setupWorkspace.invalidProfile')}</div>}
-    <div className="ms-actions">
-      <Button size="lg" onClick={completeSetup} disabled={isLoading || !hasValidProfile || !catalog.success}>
-        {isLoading ? <><Loader2 className="animate-spin" aria-hidden="true" />{t('completeStep.auto_4')}</> : <>{t('setupWorkspace.reviewConfirm')}<ArrowRight aria-hidden="true" /></>}
-      </Button>
-    </div>
-    <p className="text-xs text-muted-foreground leading-relaxed">{t('setupWorkspace.confirmHint')}</p>
-  </div>;
+  );
 }

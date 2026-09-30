@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useMerchantViewport } from '@/lib/merchant-viewport';
+import { useMerchantViewport } from "@/lib/merchant-viewport";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,7 @@ import {
 import { toast } from "sonner";
 import "@/styles/merchant-workspace.css";
 import "@/styles/merchant-setup.css";
-import '@/styles/merchant-mobile.css';
+import "@/styles/merchant-mobile.css";
 
 // Import step components
 import BusinessTypeStep from "./setup-wizard/BusinessTypeStep";
@@ -33,6 +33,17 @@ import LanguageStep from "./setup-wizard/LanguageStep";
 import CompleteStep from "./setup-wizard/CompleteStep";
 import { useTranslation } from "react-i18next";
 import { setupCatalogDraft } from "@shared/setup-catalog";
+import {
+  setupFieldsFromDraft,
+  readSetupAttempt,
+  rememberSetupAttempt,
+  forgetSetupAttempt,
+  checkedSetupReceipt,
+  type SetupAttempt,
+} from "@/lib/setup-completion-workspace";
+import { knowledgeCacheEpoch } from "@/lib/knowledge-workspace-cache";
+import type { SetupCompletionReceipt } from "@shared/setup-completion";
+import type { reviewSetupCompletion } from "../../../server/setup-completion";
 
 import {
   SETUP_STAGE_ENDS,
@@ -87,6 +98,19 @@ export default function SetupWizard() {
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [saveError, setSaveError] = useState(false);
+  const [saveConflict, setSaveConflict] = useState(false);
+  const [review, setReview] = useState<Awaited<
+    ReturnType<typeof reviewSetupCompletion>
+  > | null>(null);
+  const [attempt, setAttempt] = useState<SetupAttempt | null>(null);
+  const [receipt, setReceipt] = useState<SetupCompletionReceipt | null>(null);
+  const [completionError, setCompletionError] = useState("");
+  const [receiptChecked, setReceiptChecked] = useState(false);
+  const [storageError, setStorageError] = useState(false);
+  const digestRef = useRef("");
+  const epochRef = useRef(knowledgeCacheEpoch());
+  const completionBusyRef = useRef(false);
+  const scopeRef = useRef("");
   const [stepsOpen, setStepsOpen] = useState(false);
   const [catalogMode, setCatalogMode] = useState<
     "items" | "website" | "templates"
@@ -113,22 +137,60 @@ export default function SetupWizard() {
   });
   const saveProgressMutation = trpc.setupWizard.saveProgress.useMutation();
   const completeSetupMutation = trpc.setupWizard.completeSetup.useMutation();
+  const reviewSetupMutation = trpc.setupWizard.reviewSetup.useMutation();
+
+  const recoverCompletion = async (pending: SetupAttempt) => {
+    setIsLoading(true);
+    setReceiptChecked(false);
+    setCompletionError("");
+    try {
+      const found = await utils.setupWizard.completionReceipt.fetch({
+        requestId: pending.input.requestId,
+      });
+      if (epochRef.current !== knowledgeCacheEpoch()) return;
+      if (found) setReceipt(checkedSetupReceipt(found, pending));
+      else setReceiptChecked(true);
+    } catch {
+      setCompletionError(t("setupApprovalUx.recoveryFailed"));
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Load saved progress
   useEffect(() => {
     if (fetchingProgress) return;
-    if (progress && !progress.isCompleted && !hydratedRef.current) {
+    if (progress && !hydratedRef.current) {
       hydratedRef.current = true;
+      digestRef.current = progress.digest;
+      scopeRef.current = `${progress.actorId}:${progress.merchantId}`;
+      let pending: SetupAttempt | null = null;
+      try {
+        pending = readSetupAttempt(progress.actorId, progress.merchantId);
+      } catch {
+        setStorageError(true);
+      }
+      if (pending) {
+        setAttempt(pending);
+        setCurrentStep(10);
+        void recoverCompletion(pending);
+      } else if (progress.isCompleted) {
+        setLocation("/merchant/dashboard");
+        return;
+      }
       const restoredData = parseWizardData(progress.wizardData);
-      setCurrentStep(
-        Math.min(TOTAL_STEPS, Math.max(1, progress.currentStep || 1))
-      );
+      if (!pending)
+        setCurrentStep(
+          Math.min(TOTAL_STEPS, Math.max(1, progress.currentStep || 1))
+        );
       setCompletedSteps(parseJsonArray(progress.completedSteps));
       setWizardData(restoredData);
       wizardDataRef.current = restoredData;
-    } else if (progress?.isCompleted) {
-      // Already completed, redirect to dashboard
-      setLocation("/merchant/dashboard");
+    } else if (
+      progress &&
+      scopeRef.current !== `${progress.actorId}:${progress.merchantId}`
+    ) {
+      setStorageError(true);
     }
   }, [progress, fetchingProgress]);
 
@@ -148,16 +210,23 @@ export default function SetupWizard() {
       setIsSaving(true);
       const save = saveQueueRef.current.then(async () => {
         try {
-          await saveProgressMutation.mutateAsync(snapshot);
+          const saved = await saveProgressMutation.mutateAsync({
+            ...snapshot,
+            expectedDigest: digestRef.current,
+          });
+          if (epochRef.current !== knowledgeCacheEpoch()) return false;
+          digestRef.current = saved.digest;
           if (snapshot.wizardData === wizardDataRef.current) {
             setLastSaved(new Date());
             dirtyRef.current = false;
           }
           setSaveError(false);
+          setSaveConflict(false);
           return true;
         } catch (error) {
           console.error("Failed to save progress:", error);
           setSaveError(true);
+          setSaveConflict((error as any)?.data?.code === "CONFLICT");
           return false;
         } finally {
           pendingSavesRef.current -= 1;
@@ -172,14 +241,22 @@ export default function SetupWizard() {
 
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
-    if (!hydratedRef.current || !dirtyRef.current || isLoading) return;
+    if (
+      !hydratedRef.current ||
+      !dirtyRef.current ||
+      isLoading ||
+      attempt ||
+      receipt ||
+      saveConflict
+    )
+      return;
     saveTimerRef.current = setTimeout(() => {
       saveProgress();
     }, 2000);
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     };
-  }, [wizardData, currentStep, isLoading]);
+  }, [wizardData, currentStep, isLoading, attempt, receipt, saveConflict]);
 
   // Update wizard data
   const updateWizardData = (stepData: Record<string, any>) => {
@@ -190,6 +267,8 @@ export default function SetupWizard() {
     dirtyRef.current = true;
     setWizardData(next);
     setLastSaved(null);
+    setReview(null);
+    setCompletionError("");
   };
 
   useEffect(() => {
@@ -200,6 +279,7 @@ export default function SetupWizard() {
   // Keep saved progress compatible with existing ten-step drafts.
   const goToNextStep = () => {
     if (stage >= SETUP_STAGE_ENDS.length - 1) return;
+    setReview(null);
     const completed = completedSetupStage(stage, completedSteps);
     const nextStep = SETUP_STAGE_ENDS[stage + 1];
     setCompletedSteps(completed);
@@ -210,8 +290,15 @@ export default function SetupWizard() {
 
   const goToStep = (targetStep: number) => {
     const targetStage = setupStageForStep(targetStep);
-    if (!setupStageAvailable(targetStage, completedSteps) || isLoading) return;
+    if (
+      !setupStageAvailable(targetStage, completedSteps) ||
+      isLoading ||
+      attempt ||
+      receipt
+    )
+      return;
     const step = SETUP_STAGE_ENDS[targetStage];
+    setReview(null);
     setCurrentStep(step);
     setCatalogMode(targetStep === 4 ? "website" : "items");
     saveProgress({ step });
@@ -225,57 +312,64 @@ export default function SetupWizard() {
 
   // Complete setup
   const completeSetup = async () => {
+    if (completionBusyRef.current || !progress || storageError || saveConflict)
+      return;
+    completionBusyRef.current = true;
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     setIsLoading(true);
+    setCompletionError("");
     try {
-      // Final confirmation follows any pending draft writes.
-      if (!(await saveProgress())) return;
-      const latestWizardData = wizardDataRef.current;
-      const catalog = setupCatalogDraft.safeParse(latestWizardData);
-      if (!catalog.success) {
-        toast.error(t("setupCatalogUx.reviewInvalid"));
+      if (!review && !attempt) {
+        if (!(await saveProgress())) return;
+        const fields = setupFieldsFromDraft(wizardDataRef.current);
+        const result = await reviewSetupMutation.mutateAsync({ fields });
+        if (
+          result.actorId !== progress.actorId ||
+          result.merchantId !== progress.merchantId ||
+          JSON.stringify(result.fields) !== JSON.stringify(fields)
+        )
+          throw Error("Review mismatch");
+        setReview(result);
         return;
       }
-      await completeSetupMutation.mutateAsync({
-        businessType: latestWizardData.businessType || "store",
-        businessName: latestWizardData.businessName || "",
-        phone: latestWizardData.phone || "",
-        address: latestWizardData.address || "",
-        description: latestWizardData.description || "",
-        workingHoursType: latestWizardData.workingHoursType || "24_7",
-        workingHours: latestWizardData.workingHours,
-        botTone: latestWizardData.botTone || "friendly",
-        botLanguage: latestWizardData.botLanguage || "ar",
-        welcomeMessage: latestWizardData.welcomeMessage || "",
-        products: catalog.data.products,
-        services: catalog.data.services,
-        websiteAnalysis:
-          latestWizardData.websiteAnalysis?.confirmed &&
-          latestWizardData.websiteAnalysis?.websiteUrl
-            ? {
-                websiteUrl: latestWizardData.websiteAnalysis.websiteUrl,
-                platform:
-                  latestWizardData.websiteAnalysis.platform || "unknown",
-              }
-            : undefined,
-      });
-
-      await Promise.all([
+      if (!attempt && !review?.canComplete) return;
+      const pending = attempt ?? {
+        actorId: progress.actorId,
+        merchantId: progress.merchantId,
+        input: {
+          fields: review!.fields,
+          expectedDigest: review!.digest,
+          reviewed: true as const,
+          requestId: crypto.randomUUID(),
+        },
+      };
+      rememberSetupAttempt(pending, epochRef.current);
+      setAttempt(pending);
+      setReceiptChecked(false);
+      const result = checkedSetupReceipt(
+        await completeSetupMutation.mutateAsync(pending.input),
+        pending
+      );
+      if (epochRef.current !== knowledgeCacheEpoch()) return;
+      setReceipt(result);
+      // A cache refresh failure cannot undo a confirmed receipt.
+      await Promise.allSettled([
         utils.merchants.getCurrent.invalidate(),
         utils.merchants.getOnboardingStatus.invalidate(),
         utils.products.list.invalidate(),
         utils.services.list.invalidate(),
       ]);
       toast.success(t("setupWizardPage.text10"));
-
-      setLocation("/merchant/dashboard");
     } catch (error: any) {
-      toast.error(
-        error?.data?.code === "BAD_REQUEST"
-          ? error.message
-          : t("setupWorkspace.completeFailed")
+      setCompletionError(
+        t(
+          error?.data?.code === "CONFLICT"
+            ? "setupApprovalUx.conflict"
+            : "setupWorkspace.completeFailed"
+        )
       );
     } finally {
+      completionBusyRef.current = false;
       setIsLoading(false);
     }
   };
@@ -310,14 +404,91 @@ export default function SetupWizard() {
   }
 
   // The review screen is not completion; only completeSetup confirms that.
-  const progressPercentage =
-    (SETUP_STAGE_ENDS.slice(0, -1).filter(step => completedSteps.includes(step))
-      .length /
-      SETUP_STAGE_ENDS.length) *
-    100;
+  const progressPercentage = receipt
+    ? 100
+    : (SETUP_STAGE_ENDS.slice(0, -1).filter(step =>
+        completedSteps.includes(step)
+      ).length /
+        SETUP_STAGE_ENDS.length) *
+      100;
 
   // Render current step component
   const renderStep = () => {
+    if (storageError || progress?.draftUnreadable)
+      return (
+        <div role="alert" className="space-y-3">
+          <p>{t("setupApprovalUx.unreadable")}</p>
+          <Button onClick={() => setLocation("/merchant/settings")}>
+            {t("setupApprovalUx.openSettings")}
+          </Button>
+        </div>
+      );
+    if (receipt)
+      return (
+        <div className="ms-approval-receipt space-y-4" role="status">
+          <Check aria-hidden="true" />
+          <h2>{receipt.businessName}</h2>
+          <p>
+            {t("setupWorkspace.catalogCount", {
+              products: receipt.products.length,
+              services: receipt.services.length,
+            })}
+          </p>
+          <p>
+            {t("setupApprovalUx.receiptLabel")} <bdi>{receipt.requestId}</bdi>
+          </p>
+          <Button
+            onClick={() => {
+              try {
+                if (attempt) forgetSetupAttempt(attempt);
+              } catch {
+                /* The confirmed receipt remains recoverable. */
+              }
+              setLocation("/merchant/dashboard");
+            }}
+          >
+            {t("setupApprovalUx.openDashboard")}
+          </Button>
+        </div>
+      );
+    if (attempt)
+      return (
+        <div className="space-y-4">
+          <h2>{t("setupApprovalUx.pending")}</h2>
+          <p>{t("setupApprovalUx.pendingHelp")}</p>
+          <p className="break-all">
+            <bdi>{attempt.input.requestId}</bdi>
+          </p>
+          {completionError && <p role="alert">{completionError}</p>}
+          <div className="ms-actions">
+            <Button
+              onClick={() => recoverCompletion(attempt)}
+              disabled={isLoading}
+            >
+              {t("setupApprovalUx.recover")}
+            </Button>
+            {receiptChecked && (
+              <Button onClick={completeSetup} disabled={isLoading}>
+                {t("setupApprovalUx.retrySame")}
+              </Button>
+            )}
+          </div>
+          {receiptChecked && (
+            <Button
+              variant="ghost"
+              onClick={() => {
+                forgetSetupAttempt(attempt);
+                setAttempt(null);
+                setReview(null);
+                setReceiptChecked(false);
+                setCompletionError("");
+              }}
+            >
+              {t("setupApprovalUx.reviewAgain")}
+            </Button>
+          )}
+        </div>
+      );
     const stepProps = {
       wizardData,
       updateWizardData,
@@ -394,6 +565,10 @@ export default function SetupWizard() {
             goToStep={goToStep}
             completeSetup={completeSetup}
             isLoading={isLoading}
+            review={review}
+            error={completionError}
+            blocked={saveConflict}
+            currency={progress?.currency || "SAR"}
           />
         );
       default:
@@ -415,6 +590,7 @@ export default function SetupWizard() {
   ];
 
   const leaveSetup = async () => {
+    if (attempt || receipt) return;
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     if (await saveProgress()) setLocation("/merchant/dashboard");
   };
@@ -439,7 +615,9 @@ export default function SetupWizard() {
           <Button
             variant="outline"
             onClick={leaveSetup}
-            disabled={isSaving || isLoading}
+            disabled={
+              isSaving || isLoading || Boolean(attempt) || Boolean(receipt)
+            }
           >
             <LayoutDashboard aria-hidden="true" />
             {t("setupWorkspace.explore")}
@@ -501,7 +679,12 @@ export default function SetupWizard() {
                     <button
                       type="button"
                       onClick={() => goToStep(step)}
-                      disabled={!available || isLoading}
+                      disabled={
+                        !available ||
+                        isLoading ||
+                        Boolean(attempt) ||
+                        Boolean(receipt)
+                      }
                       aria-current={index === stage ? "step" : undefined}
                     >
                       <span className="ms-step-number" aria-hidden="true">
@@ -539,7 +722,12 @@ export default function SetupWizard() {
               })}
             </span>
             <div className="ms-save-status" role="status" aria-live="polite">
-              {isSaving ? (
+              {receipt ? (
+                <>
+                  <Check aria-hidden="true" />
+                  {t("setupWizardPage.text14")}
+                </>
+              ) : isSaving ? (
                 <>
                   <Loader2 className="animate-spin" aria-hidden="true" />
                   {t("setupWizardPage.text13")}
@@ -547,10 +735,18 @@ export default function SetupWizard() {
               ) : saveError ? (
                 <>
                   <CircleAlert aria-hidden="true" />
-                  <span>{t("setupWorkspace.saveFailed")}</span>
-                  <button type="button" onClick={() => saveProgress()}>
-                    {t("setupWorkspace.retry")}
-                  </button>
+                  <span>
+                    {t(
+                      saveConflict
+                        ? "setupApprovalUx.draftConflict"
+                        : "setupWorkspace.saveFailed"
+                    )}
+                  </span>
+                  {!saveConflict && (
+                    <button type="button" onClick={() => saveProgress()}>
+                      {t("setupWorkspace.retry")}
+                    </button>
+                  )}
                 </>
               ) : lastSaved ? (
                 <>
@@ -564,9 +760,9 @@ export default function SetupWizard() {
           </div>
           <div className="ms-heading">
             <h1 ref={stepHeadingRef} tabIndex={-1}>
-              {titles[stage]}
+              {receipt ? t("setupApprovalUx.saved") : titles[stage]}
             </h1>
-            <p>{descriptions[stage]}</p>
+            {!receipt && <p>{descriptions[stage]}</p>}
           </div>
           <section
             className="ms-panel"
@@ -578,7 +774,7 @@ export default function SetupWizard() {
             </fieldset>
           </section>
           <footer className="ms-footer">
-            {stage > 0 && (
+            {stage > 0 && !attempt && !receipt && (
               <Button
                 variant="ghost"
                 onClick={goToPreviousStep}
@@ -588,7 +784,7 @@ export default function SetupWizard() {
                 {t("setupWizard.auto_0")}
               </Button>
             )}
-            <p>{t("setupWorkspace.reviewHint")}</p>
+            {!receipt && <p>{t("setupWorkspace.reviewHint")}</p>}
           </footer>
         </main>
       </div>

@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-09-30T20:02:22.487Z",
+  "generatedAt": "2026-09-30T20:44:49.430Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 313,
-      "controls": 2111
+      "files": 314,
+      "controls": 2120
     }
   },
   "addedFiles": [
@@ -20,6 +20,8 @@
     "client/src/lib/i18n.ts",
     "client/src/lib/setup-website-product.ts",
     "client/src/lib/test-sari-session.ts",
+    "client/src/lib/setup-completion-workspace.ts",
+    "client/src/lib/knowledge-workspace-cache.ts",
     "client/src/lib/merchant-setup-navigation.ts",
     "client/src/lib/learning-policy-review-version.ts",
     "client/src/lib/learning-policy-evaluation-state.ts",
@@ -31,7 +33,6 @@
     "client/src/components/merchant/CampaignPerformance.tsx",
     "client/src/lib/merchant-date.ts",
     "client/src/components/KnowledgeWorkspaceScope.tsx",
-    "client/src/lib/knowledge-workspace-cache.ts",
     "client/src/components/merchant/ProductCatalogWorkspace.tsx",
     "client/src/lib/product-workspace-cache.ts",
     "client/src/lib/product-workspace-model.ts",
@@ -184,6 +185,7 @@
     "client/src/pages/merchant/DataSync.tsx",
     "client/src/pages/merchant/OrderNotificationsSettings.tsx",
     "client/src/pages/merchant/Settings.tsx",
+    "client/src/components/SetupWizardReset.tsx",
     "client/src/pages/merchant/LanguageSettings.tsx",
     "client/src/pages/SheetsSettings.tsx",
     "client/src/pages/SheetsInventory.tsx",
@@ -244,15 +246,17 @@
     {
       "route": "/merchant/setup-wizard",
       "controlsBefore": 59,
-      "controlsNow": 68,
+      "controlsNow": 76,
       "removedQueries": [],
       "addedQueries": [
+        "setupWizard.completionReceipt",
         "setupWizard.previewTemplate"
       ],
       "removedMutations": [
         "setupWizard.applyTemplate"
       ],
       "addedMutations": [
+        "setupWizard.reviewSetup",
         "testSari.createConversation",
         "testSari.saveMessage",
         "testSari.markAsDeal"
@@ -1175,13 +1179,14 @@
     {
       "route": "/merchant/settings",
       "controlsBefore": 23,
-      "controlsNow": 48,
+      "controlsNow": 49,
       "removedQueries": [
         "knowledgeDocs.getCurrent"
       ],
       "addedQueries": [
         "sariBrain.getIntakeReceipt",
-        "knowledgeDocs.reviewSource"
+        "knowledgeDocs.reviewSource",
+        "setupWizard.getProgress"
       ],
       "removedMutations": [
         "knowledgeDocs.delete"

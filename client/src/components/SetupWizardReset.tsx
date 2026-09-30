@@ -1,11 +1,16 @@
-import { useState } from 'react';
-import { useLocation } from 'wouter';
-import { trpc } from '@/lib/trpc';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState } from "react";
+import { useLocation } from "wouter";
+import { trpc } from "@/lib/trpc";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -13,90 +18,123 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import { RefreshCw, AlertTriangle } from 'lucide-react';
-import { toast } from 'sonner';
-import { useTranslation } from 'react-i18next';
+} from "@/components/ui/alert-dialog";
+import { RefreshCw, Loader2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export default function SetupWizardReset() {
-  const { t } = useTranslation();
-  const [, setLocation] = useLocation();
-  const [isOpen, setIsOpen] = useState(false);
-
-  const resetWizardMutation = trpc.setupWizard.resetWizard.useMutation({
-    onSuccess: () => {
-      toast.success(t('compSetupWizardResetPage.text0'));
-      setIsOpen(false);
-      // Redirect to wizard
-      setTimeout(() => {
-        setLocation('/merchant/setup-wizard');
-      }, 500);
-    },
-    onError: (error: any) => {
-      toast.error(error.message || 'فشل إعادة تعيين معالج الإعداد');
-    },
+  const { t } = useTranslation(),
+    [, setLocation] = useLocation(),
+    utils = trpc.useUtils();
+  const [open, setOpen] = useState(false),
+    [error, setError] = useState("");
+  const progress = trpc.setupWizard.getProgress.useQuery(undefined, {
+    enabled: open,
+    refetchOnMount: "always",
+    staleTime: 0,
   });
-
-  const handleReset = () => {
-    resetWizardMutation.mutate();
+  const reset = trpc.setupWizard.resetWizard.useMutation();
+  const confirm = async () => {
+    if (
+      !progress.data ||
+      progress.isFetching ||
+      progress.error ||
+      reset.isPending
+    )
+      return;
+    setError("");
+    try {
+      await reset.mutateAsync({
+        expectedDigest: progress.data.digest,
+        reviewed: true,
+      });
+      await Promise.allSettled([
+        utils.setupWizard.getProgress.invalidate(),
+        utils.merchants.getCurrent.invalidate(),
+        utils.merchants.getOnboardingStatus.invalidate(),
+      ]);
+      setOpen(false);
+      setLocation("/merchant/setup-wizard");
+    } catch (e) {
+      setError(
+        t(
+          (e as any)?.data?.code === "CONFLICT"
+            ? "setupApprovalUx.resetConflict"
+            : "setupApprovalUx.resetFailed"
+        )
+      );
+    }
   };
-
   return (
-    <Card className="border-orange-200 bg-gradient-to-br from-orange-50 to-yellow-50">
+    <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-orange-900">
-          <RefreshCw className="w-5 h-5" />{t('setupWizardReset.auto_0')}</CardTitle>
-        <CardDescription className="text-orange-700">{t('setupWizardReset.auto_1')}</CardDescription>
+        <CardTitle className="flex items-center gap-2">
+          <RefreshCw aria-hidden="true" />
+          {t("setupApprovalUx.resetTitle")}
+        </CardTitle>
+        <CardDescription>
+          {t("setupApprovalUx.resetDescription")}
+        </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="bg-white/60 p-4 rounded-lg border border-orange-200">
-          <div className="flex items-start space-x-3 space-x-reverse mb-3">
-            <AlertTriangle className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <h4 className="font-semibold text-orange-900 mb-1">{t('compSetupWizardResetPage.text1')}</h4>
-              <p className="text-sm text-orange-700">{t('setupWizardReset.auto_2')}</p>
-            </div>
-          </div>
-          
-          <ul className="text-sm text-orange-700 space-y-1 mr-8">
-            <li>{t('compSetupWizardResetPage.text2')}</li>
-            <li>{t('compSetupWizardResetPage.text3')}</li>
-            <li>{t('compSetupWizardResetPage.text4')}</li>
-            <li>{t('compSetupWizardResetPage.text5')}</li>
-          </ul>
-        </div>
-
-        <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
+      <CardContent>
+        <AlertDialog
+          open={open}
+          onOpenChange={value => {
+            if (!reset.isPending) {
+              setOpen(value);
+              setError("");
+            }
+          }}
+        >
           <AlertDialogTrigger asChild>
-            <Button
-              variant="outline"
-              className="w-full border-orange-600 text-orange-600 hover:bg-orange-600 hover:text-white"
-            >
-              <RefreshCw className="w-4 h-4 ml-2" />{t('setupWizardReset.auto_3')}</Button>
+            <Button variant="outline">{t("setupApprovalUx.resetOpen")}</Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle className="flex items-center gap-2">
-                <RefreshCw className="w-5 h-5 text-orange-600" />{t('setupWizardReset.auto_4')}</AlertDialogTitle>
-              <AlertDialogDescription className="space-y-2">
-                <p>{t('setupWizardReset.auto_5')}</p>
-                <ul className="list-disc list-inside space-y-1 text-sm">
-                  <li>{t('compSetupWizardResetPage.text6')}</li>
-                  <li>{t('compSetupWizardResetPage.text7')}</li>
-                  <li>{t('compSetupWizardResetPage.text8')}</li>
-                </ul>
-                <p className="font-semibold text-orange-600 mt-3">{t('setupWizardReset.auto_6')}</p>
+              <AlertDialogTitle>
+                {t("setupApprovalUx.resetTitle")}
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                {t("setupApprovalUx.resetDescription")}
               </AlertDialogDescription>
             </AlertDialogHeader>
+            {progress.isFetching && (
+              <p role="status">{t("setupWorkspace.loading")}</p>
+            )}
+            {(progress.error || error) && (
+              <div role="alert">
+                <p>{error || t("setupWorkspace.loadFailed")}</p>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setError("");
+                    void progress.refetch();
+                  }}
+                  disabled={reset.isPending}
+                >
+                  {t("setupWorkspace.retry")}
+                </Button>
+              </div>
+            )}
             <AlertDialogFooter>
-              <AlertDialogCancel>{t('compSetupWizardResetPage.text9')}</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={handleReset}
-                disabled={resetWizardMutation.isPending}
-                className="bg-orange-600 hover:bg-orange-700"
+              <AlertDialogCancel disabled={reset.isPending}>
+                {t("compSetupWizardResetPage.text9")}
+              </AlertDialogCancel>
+              <Button
+                onClick={confirm}
+                disabled={
+                  !progress.data ||
+                  progress.isFetching ||
+                  Boolean(progress.error) ||
+                  reset.isPending ||
+                  Boolean(error)
+                }
               >
-                {resetWizardMutation.isPending ? 'جاري الإعادة...' : 'نعم، إعادة التشغيل'}
-              </AlertDialogAction>
+                {reset.isPending && (
+                  <Loader2 aria-hidden="true" className="animate-spin" />
+                )}
+                {t("setupApprovalUx.resetConfirm")}
+              </Button>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>

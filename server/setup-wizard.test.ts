@@ -1,414 +1,244 @@
-/**
- * Setup Wizard Tests
- * Tests for Setup Wizard APIs and functionality
- */
-
-import { describe, it, expect, beforeAll } from 'vitest';
-import * as db from './db';
-
-describe('Setup Wizard - Progress Management', () => {
-  let testMerchantId: number;
-
-  beforeAll(async () => {
-    // Create a test merchant for wizard testing
-    const testUser = await db.createUser({
-      openId: `test-wizard-${Date.now()}`,
-      name: 'Test Wizard User',
-      email: `wizard-test-${Date.now()}@test.com`,
-      role: 'user',
-    });
-
-    if (!testUser) throw new Error('Failed to create test user');
-
-    const merchant = await db.createMerchant({
-      userId: testUser.id,
-      businessName: 'Test Wizard Business',
-      phone: '+966500000999',
-    });
-
-    if (!merchant) throw new Error('Failed to create test merchant');
-    testMerchantId = merchant.id;
+import {
+  beforeEach,
+  afterEach,
+  afterAll,
+  describe,
+  it,
+  expect,
+  vi,
+} from "vitest";
+import { getPool, closeDb } from "./db/connection";
+import {
+  createDisposableMerchant,
+  cleanupDisposableMerchants,
+} from "./tests/helpers/disposable-merchant";
+import {
+  readSetupProgress,
+  saveSetupProgress,
+  resetSetupProgress,
+} from "./setup-progress";
+import { SetupConflict, SetupForbidden } from "./setup-store";
+describe.skipIf(!process.env.DATABASE_URL)("setup progress MySQL", () => {
+  let owner: Awaited<ReturnType<typeof createDisposableMerchant>>,
+    other: typeof owner;
+  const q = async (text: string, params: any[] = []) =>
+    (await (await getPool())!.execute<any>(text, params))[0];
+  const read = () => readSetupProgress(owner.merchantId, owner.userId);
+  const input = async (patch = {}) => ({
+    expectedDigest: (await read()).digest,
+    currentStep: 6,
+    completedSteps: [1, 2, 3],
+    wizardData: {
+      businessName: "Draft name",
+      products: [{ name: "Keep this", price: "" }],
+    },
+    ...patch,
   });
-
-  it('should get initial wizard progress', async () => {
-    const progress = await db.getSetupWizardProgress(testMerchantId);
-    
-    expect(progress).toBeDefined();
-    expect(progress?.currentStep).toBe(1);
-    expect(progress?.isCompleted).toBe(0);
-    
-    const completedSteps = JSON.parse(progress?.completedSteps || '[]');
-    expect(completedSteps).toEqual([]);
+  const save = (raw: unknown) =>
+    saveSetupProgress(owner.merchantId, owner.userId, raw);
+  beforeEach(async () => {
+    owner = await createDisposableMerchant("progress144");
+    other = await createDisposableMerchant("progress-other");
   });
-
-  it('should save wizard progress', async () => {
-    const wizardData = {
-      businessType: 'store',
-      businessName: 'Test Store',
-      selectedTemplate: 1,
-    };
-
-    await db.updateSetupWizardProgress(testMerchantId, {
-      currentStep: 3,
-      completedSteps: JSON.stringify([1, 2]),
-      wizardData: JSON.stringify(wizardData),
-    });
-
-    const progress = await db.getSetupWizardProgress(testMerchantId);
-    
-    expect(progress?.currentStep).toBe(3);
-    
-    const completedSteps = JSON.parse(progress?.completedSteps || '[]');
-    expect(completedSteps).toContain(1);
-    expect(completedSteps).toContain(2);
-    
-    const savedData = JSON.parse(progress?.wizardData || '{}');
-    expect(savedData.businessType).toBe('store');
-    expect(savedData.businessName).toBe('Test Store');
+  afterEach(async () => {
+    vi.restoreAllMocks();
+    await cleanupDisposableMerchants(
+      [owner?.userId, other?.userId].filter(Boolean)
+    );
   });
-
-  it('should mark wizard as completed', async () => {
-    await db.completeSetupWizard(testMerchantId);
-
-    const progress = await db.getSetupWizardProgress(testMerchantId);
-    
-    expect(progress?.isCompleted).toBe(1);
-  });
-
-  it('should reset wizard progress', async () => {
-    await db.updateSetupWizardProgress(testMerchantId, {
+  afterAll(closeDb);
+  it("reads defaults without initializing database records or enabling replies", async () => {
+    const result = await read();
+    expect(result).toMatchObject({
+      merchantId: owner.merchantId,
+      actorId: owner.userId,
       currentStep: 1,
-      completedSteps: JSON.stringify([]),
-      wizardData: JSON.stringify({}),
+      revision: 0,
       isCompleted: 0,
     });
-
-    const progress = await db.getSetupWizardProgress(testMerchantId);
-    
-    expect(progress?.currentStep).toBe(1);
-    expect(progress?.isCompleted).toBe(0);
-    
-    const completedSteps = JSON.parse(progress?.completedSteps || '[]');
-    expect(completedSteps).toEqual([]);
+    expect(JSON.parse(result.wizardData).products).toEqual([]);
+    expect(
+      await q("SELECT id FROM setup_wizard_progress WHERE merchant_id=?", [
+        owner.merchantId,
+      ])
+    ).toEqual([]);
   });
-});
-
-describe('Setup Wizard - Templates', () => {
-  it('should get all business templates', async () => {
-    const templates = await db.getAllBusinessTemplates();
-    
-    expect(templates).toBeDefined();
-    expect(templates.length).toBeGreaterThan(0);
-    
-    // Check that we have templates for all business types
-    const storeTemplates = templates.filter(t => t.businessType === 'store');
-    const servicesTemplates = templates.filter(t => t.businessType === 'services');
-    const bothTemplates = templates.filter(t => t.businessType === 'both');
-    
-    expect(storeTemplates.length).toBeGreaterThan(0);
-    expect(servicesTemplates.length).toBeGreaterThan(0);
-    expect(bothTemplates.length).toBeGreaterThan(0);
+  it("saves bounded raw fields and navigation without writing the live store", async () => {
+    const original = await q("SELECT businessName FROM merchants WHERE id=?", [
+      owner.merchantId,
+    ]);
+    const result = await save(await input({ completedSteps: [3, 2, 1, 1] }));
+    expect(result.revision).toBe(1);
+    expect(result.completedSteps).toBe("[1,2,3]");
+    expect(JSON.parse(result.wizardData).products[0].price).toBe("");
+    expect(
+      await q("SELECT businessName FROM merchants WHERE id=?", [
+        owner.merchantId,
+      ])
+    ).toEqual(original);
+    expect(
+      await q("SELECT id FROM products WHERE merchantId=?", [owner.merchantId])
+    ).toEqual([]);
   });
-
-  it('should get templates by business type', async () => {
-    const storeTemplates = await db.getBusinessTemplatesByType('store');
-    
-    expect(storeTemplates).toBeDefined();
-    expect(storeTemplates.length).toBeGreaterThan(0);
-    
-    // All returned templates should be of type 'store'
-    storeTemplates.forEach(template => {
-      expect(template.businessType).toBe('store');
+  it("rejects stale drafts but safely acknowledges identical retries without another revision", async () => {
+    const a = await input(),
+      saved = await save(a);
+    expect((await save(a)).revision).toBe(saved.revision);
+    await expect(
+      save({ ...a, wizardData: { businessName: "Stale" } })
+    ).rejects.toBeInstanceOf(SetupConflict);
+    expect(JSON.parse((await read()).wizardData).businessName).toBe(
+      "Draft name"
+    );
+  });
+  it("accepts only one of two concurrent different drafts", async () => {
+    const a = await input(),
+      b = { ...a, wizardData: { businessName: "Other tab" } };
+    const result = await Promise.allSettled([save(a), save(b)]);
+    expect(result.filter(v => v.status === "fulfilled")).toHaveLength(1);
+    expect((await read()).revision).toBe(1);
+  });
+  it("does not let an old draft reopen completed setup", async () => {
+    const a = await input();
+    await save(a);
+    await q("UPDATE merchants SET setupCompleted=1 WHERE id=?", [
+      owner.merchantId,
+    ]);
+    await expect(save(a)).rejects.toBeInstanceOf(SetupConflict);
+    expect((await read()).isCompleted).toBe(1);
+  });
+  it("preserves malformed saved JSON, blocks autosave, and allows a reviewed reset", async () => {
+    await q(
+      "INSERT INTO setup_wizard_progress (merchant_id,wizard_data) VALUES (?,'broken')",
+      [owner.merchantId]
+    );
+    const current = await read();
+    expect(current.draftUnreadable).toBe(true);
+    expect(current.wizardData).toBe("broken");
+    await expect(save(await input())).rejects.toBeInstanceOf(SetupConflict);
+    const reset = await resetSetupProgress(owner.merchantId, owner.userId, {
+      expectedDigest: current.digest,
+      reviewed: true,
     });
+    expect(reset.draftUnreadable).toBe(false);
+    expect(reset.revision).toBe(1);
   });
-
-  it('should get template by ID', async () => {
-    const allTemplates = await db.getAllBusinessTemplates();
-    const firstTemplate = allTemplates[0];
-    
-    const template = await db.getBusinessTemplateById(firstTemplate.id);
-    
-    expect(template).toBeDefined();
-    expect(template?.id).toBe(firstTemplate.id);
-    expect(template?.templateName).toBe(firstTemplate.templateName);
-  });
-
-  it('should have valid template structure', async () => {
-    const templates = await db.getAllBusinessTemplates();
-    const template = templates[0];
-    
-    // Check required fields
-    expect(template.templateName).toBeDefined();
-    expect(template.businessType).toBeDefined();
-    expect(template.icon).toBeDefined();
-    expect(template.description).toBeDefined();
-    expect(template.suitableFor).toBeDefined();
-    
-    // Check JSON fields can be parsed
-    expect(() => JSON.parse(template.services || '[]')).not.toThrow();
-    expect(() => JSON.parse(template.products || '[]')).not.toThrow();
-    expect(() => JSON.parse(template.workingHours || '{}')).not.toThrow();
-    expect(() => JSON.parse(template.botPersonality || '{}')).not.toThrow();
-    expect(() => JSON.parse(template.settings || '{}')).not.toThrow();
-  });
-
-  it('should increment template usage count', async () => {
-    const templates = await db.getAllBusinessTemplates();
-    const template = templates[0];
-    
-    const initialUsage = template.usageCount;
-    
-    await db.incrementTemplateUsage(template.id);
-    
-    const updatedTemplate = await db.getBusinessTemplateById(template.id);
-    
-    expect(updatedTemplate?.usageCount).toBe(initialUsage + 1);
-  });
-});
-
-describe('Setup Wizard - Template Application', () => {
-  let testMerchantId: number;
-
-  beforeAll(async () => {
-    // Create a test merchant for template application
-    const testUser = await db.createUser({
-      openId: `test-template-${Date.now()}`,
-      name: 'Test Template User',
-      email: `template-test-${Date.now()}@test.com`,
-      role: 'user',
-    });
-
-    if (!testUser) throw new Error('Failed to create test user');
-
-    const merchant = await db.createMerchant({
-      userId: testUser.id,
-      businessName: 'Test Template Business',
-      phone: '+966500000888',
-    });
-
-    if (!merchant) throw new Error('Failed to create test merchant');
-    testMerchantId = merchant.id;
-  });
-
-  it('should apply template with products', async () => {
-    // Get a store template
-    const storeTemplates = await db.getBusinessTemplatesByType('store');
-    const template = storeTemplates[0];
-    
-    // Parse template data
-    const products = JSON.parse(template.products || '[]');
-    
-    // Apply products from template
-    for (const product of products) {
-      await db.createProduct({
-        merchantId: testMerchantId,
-        ...product,
+  it("resets progress and canonical flags atomically while preserving the live catalog and assistant", async () => {
+    await save(await input());
+    await q(
+      "UPDATE merchants SET setupCompleted=1,onboardingCompleted=1,onboardingStep=4 WHERE id=?",
+      [owner.merchantId]
+    );
+    await q(
+      "UPDATE setup_wizard_progress SET is_completed=1,completed_at=UTC_TIMESTAMP() WHERE merchant_id=?",
+      [owner.merchantId]
+    );
+    await q(
+      "INSERT INTO products (merchantId,name,price) VALUES (?,'Existing',100)",
+      [owner.merchantId]
+    );
+    await q(
+      "INSERT INTO bot_settings (merchant_id,tone,welcome_message,auto_reply_enabled) VALUES (?,'professional','Existing greeting',0)",
+      [owner.merchantId]
+    );
+    const current = await read(),
+      reset = await resetSetupProgress(owner.merchantId, owner.userId, {
+        expectedDigest: current.digest,
+        reviewed: true,
       });
-    }
-    
-    // Verify products were created
-    const merchantProducts = await db.getProductsByMerchantId(testMerchantId);
-    
-    expect(merchantProducts.length).toBe(products.length);
-  });
-
-  it('should apply template with services', async () => {
-    // Get a services template
-    const servicesTemplates = await db.getBusinessTemplatesByType('services');
-    const template = servicesTemplates[0];
-    
-    // Parse template data
-    const services = JSON.parse(template.services || '[]');
-    
-    // Create a new merchant for services test
-    const testUser = await db.createUser({
-      openId: `test-services-${Date.now()}`,
-      name: 'Test Services User',
-      email: `services-test-${Date.now()}@test.com`,
-      role: 'user',
-    });
-
-    if (!testUser) throw new Error('Failed to create test user');
-
-    const merchant = await db.createMerchant({
-      userId: testUser.id,
-      businessName: 'Test Services Business',
-      phone: '+966500000777',
-    });
-
-    if (!merchant) throw new Error('Failed to create test merchant');
-    
-    // Apply services from template
-    for (const service of services) {
-      await db.createService({
-        merchantId: merchant.id,
-        ...service,
-      });
-    }
-    
-    // Verify services were created
-    const merchantServices = await db.getServicesByMerchantId(merchant.id);
-    
-    expect(merchantServices.length).toBe(services.length);
-  });
-
-  it('should apply template working hours', async () => {
-    const templates = await db.getAllBusinessTemplates();
-    const template = templates[0];
-    
-    const workingHours = JSON.parse(template.workingHours || '{}');
-    
-    // Update merchant with working hours
-    await db.updateMerchant(testMerchantId, {
-      workingHours: JSON.stringify(workingHours),
-    });
-    
-    // Verify working hours were applied
-    const merchant = await db.getMerchantById(testMerchantId);
-    const savedWorkingHours = JSON.parse(merchant?.workingHours || '{}');
-    
-    expect(savedWorkingHours).toEqual(workingHours);
-  });
-
-  it('should apply template bot personality', async () => {
-    const templates = await db.getAllBusinessTemplates();
-    const template = templates[0];
-    
-    const botPersonality = JSON.parse(template.botPersonality || '{}');
-    
-    // Update bot settings
-    await db.updateBotSettings(testMerchantId, botPersonality);
-    
-    // Verify bot settings were applied
-    const botSettings = await db.getBotSettings(testMerchantId);
-    
-    expect(botSettings?.tone).toBe(botPersonality.tone);
-    expect(botSettings?.language).toBe(botPersonality.language);
-    expect(botSettings?.welcomeMessage).toBe(botPersonality.welcomeMessage);
-  });
-});
-
-describe('Setup Wizard - Integration Tests', () => {
-  it('should complete full wizard flow', async () => {
-    // 1. Create test user and merchant
-    const testUser = await db.createUser({
-      openId: `test-flow-${Date.now()}`,
-      name: 'Test Flow User',
-      email: `flow-test-${Date.now()}@test.com`,
-      role: 'user',
-    });
-
-    if (!testUser) throw new Error('Failed to create test user');
-
-    const merchant = await db.createMerchant({
-      userId: testUser.id,
-      businessName: 'Test Flow Business',
-      phone: '+966500000666',
-    });
-
-    if (!merchant) throw new Error('Failed to create test merchant');
-
-    // 2. Get initial progress
-    const initialProgress = await db.getSetupWizardProgress(merchant.id);
-    expect(initialProgress?.currentStep).toBe(1);
-
-    // 3. Progress through wizard steps
-    await db.updateSetupWizardProgress(merchant.id, {
-      currentStep: 2,
-      completedSteps: JSON.stringify([1]),
-      wizardData: JSON.stringify({ businessType: 'both' }),
-    });
-
-    await db.updateSetupWizardProgress(merchant.id, {
-      currentStep: 3,
-      completedSteps: JSON.stringify([1, 2]),
-      wizardData: JSON.stringify({ 
-        businessType: 'both',
-        selectedTemplate: 1,
-      }),
-    });
-
-    // 4. Apply template
-    const templates = await db.getBusinessTemplatesByType('both');
-    const template = templates[0];
-    
-    const products = JSON.parse(template.products || '[]');
-    const services = JSON.parse(template.services || '[]');
-    
-    for (const product of products) {
-      await db.createProduct({
-        merchantId: merchant.id,
-        ...product,
-      });
-    }
-    
-    for (const service of services) {
-      await db.createService({
-        merchantId: merchant.id,
-        ...service,
-      });
-    }
-
-    // 5. Complete wizard
-    await db.completeSetupWizard(merchant.id);
-
-    // 6. Verify final state
-    const finalProgress = await db.getSetupWizardProgress(merchant.id);
-    expect(finalProgress?.isCompleted).toBe(1);
-
-    const merchantProducts = await db.getProductsByMerchantId(merchant.id);
-    const merchantServices = await db.getServicesByMerchantId(merchant.id);
-    
-    expect(merchantProducts.length).toBeGreaterThan(0);
-    expect(merchantServices.length).toBeGreaterThan(0);
-  });
-
-  it('should handle wizard reset correctly', async () => {
-    // Create test merchant
-    const testUser = await db.createUser({
-      openId: `test-reset-${Date.now()}`,
-      name: 'Test Reset User',
-      email: `reset-test-${Date.now()}@test.com`,
-      role: 'user',
-    });
-
-    if (!testUser) throw new Error('Failed to create test user');
-
-    const merchant = await db.createMerchant({
-      userId: testUser.id,
-      businessName: 'Test Reset Business',
-      phone: '+966500000555',
-    });
-
-    if (!merchant) throw new Error('Failed to create test merchant');
-
-    // Progress through wizard
-    await db.updateSetupWizardProgress(merchant.id, {
-      currentStep: 5,
-      completedSteps: JSON.stringify([1, 2, 3, 4]),
-      wizardData: JSON.stringify({ test: 'data' }),
-    });
-
-    await db.completeSetupWizard(merchant.id);
-
-    // Verify completed
-    let progress = await db.getSetupWizardProgress(merchant.id);
-    expect(progress?.isCompleted).toBe(1);
-
-    // Reset wizard
-    await db.updateSetupWizardProgress(merchant.id, {
-      currentStep: 1,
-      completedSteps: JSON.stringify([]),
-      wizardData: JSON.stringify({}),
+    expect(reset).toMatchObject({
       isCompleted: 0,
+      currentStep: 1,
+      revision: 2,
     });
-
-    // Verify reset
-    progress = await db.getSetupWizardProgress(merchant.id);
-    expect(progress?.currentStep).toBe(1);
-    expect(progress?.isCompleted).toBe(0);
-    
-    const completedSteps = JSON.parse(progress?.completedSteps || '[]');
-    expect(completedSteps).toEqual([]);
+    expect(JSON.parse(reset.wizardData)).toMatchObject({
+      products: [],
+      services: [],
+      botTone: "professional",
+      welcomeMessage: "Existing greeting",
+    });
+    expect(
+      (
+        await q(
+          "SELECT setupCompleted,onboardingCompleted,onboardingStep FROM merchants WHERE id=?",
+          [owner.merchantId]
+        )
+      )[0]
+    ).toEqual({ setupCompleted: 0, onboardingCompleted: 0, onboardingStep: 0 });
+    expect(
+      await q("SELECT name FROM products WHERE merchantId=?", [
+        owner.merchantId,
+      ])
+    ).toEqual([{ name: "Existing" }]);
+    expect(
+      (
+        await q(
+          "SELECT auto_reply_enabled FROM bot_settings WHERE merchant_id=?",
+          [owner.merchantId]
+        )
+      )[0].auto_reply_enabled
+    ).toBe(0);
+    await expect(
+      resetSetupProgress(owner.merchantId, owner.userId, {
+        expectedDigest: current.digest,
+        reviewed: true,
+      })
+    ).rejects.toBeInstanceOf(SetupConflict);
+  });
+  it("rolls back reset flags when the progress write fails", async () => {
+    await save(await input());
+    await q("UPDATE merchants SET setupCompleted=1 WHERE id=?", [
+      owner.merchantId,
+    ]);
+    const current = await read(),
+      pool = (await getPool())!,
+      original = pool.getConnection.bind(pool);
+    vi.spyOn(pool, "getConnection").mockImplementation(async () => {
+      const c = await original(),
+        execute = c.execute.bind(c);
+      vi.spyOn(c, "execute").mockImplementation((...args: any[]) => {
+        if (
+          String(args[0]).startsWith(
+            "UPDATE setup_wizard_progress SET current_step=1"
+          )
+        )
+          throw Error("Reset failed");
+        return (execute as any)(...args);
+      });
+      return c;
+    });
+    await expect(
+      resetSetupProgress(owner.merchantId, owner.userId, {
+        expectedDigest: current.digest,
+        reviewed: true,
+      })
+    ).rejects.toThrow("Reset failed");
+    vi.restoreAllMocks();
+    expect((await read()).isCompleted).toBe(1);
+  });
+  it("rejects another tenant actor and does not transfer draft defaults", async () => {
+    await save(await input());
+    await expect(
+      readSetupProgress(owner.merchantId, other.userId)
+    ).rejects.toBeInstanceOf(SetupForbidden);
+    expect(
+      JSON.parse(
+        (await readSetupProgress(other.merchantId, other.userId)).wizardData
+      ).businessName
+    ).not.toBe("Draft name");
+  });
+  it("bounds Unicode bytes and navigation before any write", async () => {
+    for (const patch of [
+      { wizardData: { description: "س".repeat(500001) } },
+      { currentStep: 11 },
+      { completedSteps: [0] },
+      { merchantId: other.merchantId },
+    ])
+      await expect(save(await input(patch))).rejects.toThrow();
+    expect(
+      await q("SELECT id FROM setup_wizard_progress WHERE merchant_id=?", [
+        owner.merchantId,
+      ])
+    ).toEqual([]);
   });
 });

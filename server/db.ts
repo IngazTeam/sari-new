@@ -5705,42 +5705,6 @@ export async function getSetupWizardProgress(merchantId: number) {
   return results[0];
 }
 
-export async function createSetupWizardProgress(progress: InsertSetupWizardProgress) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  const result = await db.insert(setupWizardProgress).values(progress);
-  return (result as any).insertId;
-}
-
-export async function updateSetupWizardProgress(merchantId: number, data: Partial<InsertSetupWizardProgress>) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  await db.update(setupWizardProgress)
-    .set(data)
-    .where(eq(setupWizardProgress.merchantId, merchantId));
-}
-
-export async function completeSetupWizard(merchantId: number) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
-  await db.update(setupWizardProgress)
-    .set({ isCompleted: 1, completedAt: now })
-    .where(eq(setupWizardProgress.merchantId, merchantId));
-
-  // setupCompleted is the canonical readiness source. Legacy onboarding fields
-  // remain synchronized only for backwards-compatible reporting/migrations.
-  await db.update(merchants)
-    .set({
-      setupCompleted: 1,
-      setupCompletedAt: now,
-      onboardingCompleted: 1,
-      onboardingStep: 4,
-      onboardingCompletedAt: formatDateForDB(new Date()),
-    })
-    .where(eq(merchants.id, merchantId));
-}
-
 // Google Integrations
 export async function createGoogleIntegration(integration: InsertGoogleIntegration) {
   const db = await getDb();

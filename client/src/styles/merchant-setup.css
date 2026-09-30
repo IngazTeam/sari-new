@@ -387,6 +387,14 @@
 .ms-review-list dt { width: 60px; flex: none; color: var(--muted-foreground); font-size: 12px; }
 .ms-review-list dd, .ms-review-list p { font-size: 13px; overflow-wrap: anywhere; }
 .ms-review-list small { display: block; color: var(--muted-foreground); margin-top: 6px; font-size: 11px; }
+.ms-approval-items { display: grid; gap: 12px; padding-block: 12px; }
+.ms-approval-items > li { padding: 12px; border: 1px solid var(--border); border-radius: 10px; min-width: 0; overflow-wrap: anywhere; }
+.ms-approval-items > li > div { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.ms-approval-items a { display: block; margin-top: 8px; }
+.ms-approval-status { border: 1px solid var(--border); border-radius: 12px; padding: 16px; overflow-wrap: anywhere; }
+.ms-approval-status li { margin-block: 8px; }
+.ms-approval-receipt { overflow-wrap: anywhere; }
+.ms-approval-receipt > svg { color: var(--primary); width: 36px; height: 36px; }
 .ms-loading {
   display: grid;
   place-items: center;
