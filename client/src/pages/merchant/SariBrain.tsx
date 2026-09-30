@@ -1,3 +1,4 @@
+import { WebsiteAnalysisDialog, type WebsiteAnalysisIssue } from '@/components/WebsiteAnalysisDialog';
 import { KnowledgeWebsiteIntake } from '@/components/KnowledgeWebsiteIntake';
 import { KnowledgeWebsiteWorkspace } from '@/components/KnowledgeWebsiteWorkspace';
 import { KnowledgeSourceInventory } from '@/components/KnowledgeSourceInventory';
@@ -95,49 +96,10 @@ export default function SariBrain() {
 
   // Reanalyze progress modal
   const [analysisDialogOpen, setAnalysisDialogOpen] = useState(false);
-  const [analysisStep, setAnalysisStep] = useState(0);
-  const [analysisResults, setAnalysisResults] = useState<any>(null);
-  const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [analysisStep, setAnalysisStep] = useState('');
+  const [analysisResults, setAnalysisResults] = useState<unknown | null>(null);
+  const [analysisError, setAnalysisError] = useState<WebsiteAnalysisIssue>(null);
   const [reportedProgress, setReportedProgress] = useState(0);
-  const [reassuranceIdx, setReassuranceIdx] = useState(0);
-
-  // Cycling reassurance messages
-  const REASSURANCE = [
-    'ساري يبني فهمًا عميقًا لنشاطك...',
-    'يتعرف على خدماتك ومنتجاتك...',
-    'يحلل نقاط القوة في نشاطك...',
-    'يجهّز ردود ذكية لعملائك...',
-    'عادةً أقل من دقيقة...',
-  ];
-  // AI insight messages per step
-  const STEP_INSIGHTS: string[][] = [
-    ['🌐 جارٍ الاتصال بالموقع والتحقق من استجابته...'],
-    ['📄 يقرأ المحتوى ويتعرف على طبيعة نشاطك...'],
-    ['🔍 يبحث عن كل الصفحات الداخلية ويسحبها...'],
-    ['🧠 يصنّف المعرفة ويبني خريطة ذهنية لنشاطك...'],
-    ['💎 يحلل نقاط القوة ويجهّز عبارات بيعية...'],
-    ['🎯 يبحث عن فرص تحسين تزيد مبيعاتك...'],
-    ['✨ يحفظ كل شيء في قاعدة المعرفة...'],
-  ];
-
-  const ANALYSIS_STEPS = [
-    { label: 'فهم الموقع', detail: 'جارٍ الاتصال واكتشاف نشاطك التجاري',
-      svg: <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6"><circle cx="12" cy="12" r="10" stroke="url(#g1)" strokeWidth="2"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10A15.3 15.3 0 0 1 12 2z" stroke="url(#g1)" strokeWidth="2"/><defs><linearGradient id="g1" x1="0" y1="0" x2="24" y2="24"><stop stopColor="#6366f1"/><stop offset="1" stopColor="#06b6d4"/></linearGradient></defs></svg> },
-    { label: 'تحليل المحتوى', detail: 'تحليل الخدمات والمنتجات والمعلومات الرئيسية',
-      svg: <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" stroke="url(#g2)" strokeWidth="2" strokeLinejoin="round"/><path d="M14 2v6h6M8 13h8M8 17h5" stroke="url(#g2)" strokeWidth="2" strokeLinecap="round"/><defs><linearGradient id="g2" x1="4" y1="2" x2="20" y2="22"><stop stopColor="#818cf8"/><stop offset="1" stopColor="#c084fc"/></linearGradient></defs></svg> },
-    { label: 'اكتشاف كل الصفحات', detail: 'سحب جميع صفحات الموقع وتجميع المعرفة',
-      svg: <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6"><circle cx="11" cy="11" r="7" stroke="url(#g3)" strokeWidth="2"/><path d="m21 21-4.35-4.35" stroke="url(#g3)" strokeWidth="2" strokeLinecap="round"/><path d="M11 8v6M8 11h6" stroke="url(#g3)" strokeWidth="1.5" strokeLinecap="round"/><defs><linearGradient id="g3" x1="4" y1="4" x2="21" y2="21"><stop stopColor="#06b6d4"/><stop offset="1" stopColor="#6366f1"/></linearGradient></defs></svg> },
-    { label: 'بناء قاعدة المعرفة', detail: 'ساري يبني خريطة ذهنية لنشاطك بالذكاء الاصطناعي',
-      svg: <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6"><rect x="3" y="3" width="18" height="18" rx="4" stroke="url(#g4)" strokeWidth="2"/><circle cx="9" cy="10" r="1.5" fill="url(#g4)"/><circle cx="15" cy="10" r="1.5" fill="url(#g4)"/><path d="M9 15c.83.83 2.17 1.5 3 1.5s2.17-.67 3-1.5" stroke="url(#g4)" strokeWidth="2" strokeLinecap="round"/><defs><linearGradient id="g4" x1="3" y1="3" x2="21" y2="21"><stop stopColor="#f472b6"/><stop offset="1" stopColor="#fb923c"/></linearGradient></defs></svg> },
-    { label: 'ذكاء المبيعات', detail: 'استخراج نقاط القوة وتجهيز عبارات بيعية ذكية',
-      svg: <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6"><path d="M12 2L2 7l10 5 10-5-10-5z" stroke="url(#g5)" strokeWidth="2" strokeLinejoin="round"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="url(#g5)" strokeWidth="2" strokeLinejoin="round"/><defs><linearGradient id="g5" x1="2" y1="2" x2="22" y2="22"><stop stopColor="#14b8a6"/><stop offset="1" stopColor="#6366f1"/></linearGradient></defs></svg> },
-    { label: 'فرص التطوير', detail: 'اكتشاف تحسينات تزيد مبيعاتك وتحويلاتك',
-      svg: <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6"><path d="M12 3l2.5 5.5L20 9.5l-4 4 1 5.5L12 16.5 7 19l1-5.5-4-4 5.5-1L12 3z" stroke="url(#g6)" strokeWidth="2" strokeLinejoin="round"/><defs><linearGradient id="g6" x1="3" y1="3" x2="20" y2="19"><stop stopColor="#fb923c"/><stop offset="1" stopColor="#f472b6"/></linearGradient></defs></svg> },
-    { label: 'حفظ وتجهيز ساري', detail: 'تحديث قاعدة المعرفة وتجهيز ردود ذكية للعملاء',
-      svg: <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6"><path d="M12 2l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1 3-6z" fill="url(#g7)" opacity="0.2"/><path d="M12 2l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1 3-6z" stroke="url(#g7)" strokeWidth="2" strokeLinejoin="round"/><defs><linearGradient id="g7" x1="2" y1="2" x2="22" y2="22"><stop stopColor="#fbbf24"/><stop offset="1" stopColor="#f472b6"/></linearGradient></defs></svg> },
-  ];
-
-
   const deleteSourceMutation = trpc.sariBrain.deleteSource.useMutation({
     onSuccess: () => {
       toast.success('تم حذف المصدر بنجاح');
@@ -163,8 +125,8 @@ export default function SariBrain() {
       // Mutation returns immediately — start polling for results
       setPolling(true);
     },
-    onError: (error: any) => {
-      setAnalysisError(error.message);
+    onError: () => {
+      setAnalysisError('startUnconfirmed');
     },
   });
 
@@ -177,16 +139,13 @@ export default function SariBrain() {
     refetchInterval: query => polling && !query.state.error ? 3000 : false,
   });
 
-  // React to status changes — use REAL progress from server
-  const STEP_MAP: Record<string, number> = { scraping: 0, processing: 2, knowledge: 3, embedding: 5, completed: 6 };
-
   useEffect(() => {
     if (!polling || statusQuery.dataUpdatedAt < requestedStatusAfter.current || !statusQuery.isFetchedAfterMount || statusQuery.isFetching || statusQuery.isError || !statusQuery.data) return;
     const data = statusQuery.data as any;
 
     if (data.status === 'completed') {
       setPolling(false);
-      setAnalysisStep(ANALYSIS_STEPS.length);
+      setAnalysisStep('completed');
       setReportedProgress(100);
       setAnalysisResults(data);
       utils.sariBrain.getSources.invalidate();
@@ -197,33 +156,22 @@ export default function SariBrain() {
       utils.sariBrain.getHealthScore.invalidate();
     } else if (data.status === 'error') {
       setPolling(false);
-      setAnalysisError(data.error || 'فشل التحليل');
+      setAnalysisError('failed');
     } else if (data.status === 'idle') {
-      setPolling(false); setAnalysisError(t('merchantUx.knowledgeIntake.statusMissing'));
+      setPolling(false); setAnalysisError('missing');
     } else if (data.status === 'running') {
       // Real progress from server
-      if (data.currentStep && STEP_MAP[data.currentStep] !== undefined) {
-        setAnalysisStep(STEP_MAP[data.currentStep]);
-      }
-      if (data.progress && data.progress > 0) {
-        setReportedProgress(Math.max(0, Math.min(100, Number(data.progress) || 0)));
-      }
+      if (typeof data.currentStep === 'string') setAnalysisStep(data.currentStep);
+      setReportedProgress(typeof data.progress === 'number' && Number.isFinite(data.progress) && data.progress >= 0 && data.progress <= 100 ? data.progress : 0);
     }
   }, [statusQuery.data, statusQuery.dataUpdatedAt, statusQuery.isFetchedAfterMount, statusQuery.isFetching, statusQuery.isError, polling]);
-
-  useEffect(() => {
-    if (!polling) return;
-    const timer=setInterval(()=>setReassuranceIdx(prev=>(prev+1)%REASSURANCE.length),4000);
-    return ()=>clearInterval(timer);
-  },[polling]);
 
   const startAnalysis = () => {
     requestedStatusAfter.current = Date.now();
     setAnalysisResults(null);
     setAnalysisError(null);
-    setAnalysisStep(0);
+    setAnalysisStep('');
     setReportedProgress(0);
-    setReassuranceIdx(0);
     setAnalysisDialogOpen(true);
     reanalyzeMutation.mutate();
   };
@@ -269,9 +217,9 @@ export default function SariBrain() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={() => setLocation('/merchant/settings')}>
+          <Button variant="outline" onClick={() => { changeBrainView('sources'); requestAnimationFrame(() => { const upload = document.getElementById('brain-document-upload'); upload?.scrollIntoView({block:'start'}); upload?.querySelector<HTMLButtonElement>('button')?.focus({preventScroll:true}); }); }}>
             <Upload className="h-4 w-4 ml-2" />
-            رفع ملف جديد
+            {t('websiteAnalysisUx.upload')}
           </Button>
           <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -301,7 +249,7 @@ export default function SariBrain() {
       </div>
 
       {/* Stats Cards */}
-      {polling && !analysisDialogOpen && <Button variant="outline" onClick={()=>setAnalysisDialogOpen(true)}>{t('brainWorkspaceUx.showProgress')}</Button>}
+      {(polling || reanalyzeMutation.isPending || analysisResults !== null || analysisError) && !analysisDialogOpen && <Button variant="outline" onClick={()=>setAnalysisDialogOpen(true)}>{t('brainWorkspaceUx.showProgress')}</Button>}
       <nav className="mw-feature-nav" aria-label={t('brainWorkspaceUx.navigation')}>
         {brainViews.map(view=><Button key={view.id} type="button" variant={brainView===view.id?'secondary':'ghost'} aria-pressed={brainView===view.id} onClick={()=>changeBrainView(view.id)}>{view.label}</Button>)}
       </nav>
@@ -349,33 +297,23 @@ export default function SariBrain() {
             <AlertDialogTrigger asChild>
               <Button variant="outline" size="sm" disabled={polling || reanalyzeMutation.isPending}>
                 <RotateCcw className="h-4 w-4 ml-2" />
-                🔄 إعادة تحليل الموقع
+                {t('websiteAnalysisUx.title')}
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle className="text-right">🔄 إعادة تحليل الموقع</AlertDialogTitle>
+                <AlertDialogTitle className="text-right">{t('websiteAnalysisUx.title')}</AlertDialogTitle>
                 <AlertDialogDescription className="text-right space-y-3" asChild>
                   <div>
-                    <p>سيتم استبدال جميع البيانات المسحوبة الحالية ({websiteKnowledge.totalPages} صفحة) ببيانات جديدة من الموقع.</p>
-                    <div className="p-3 rounded-lg bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-700 space-y-2 text-right">
-                      <p className="font-semibold text-yellow-800 dark:text-yellow-200 flex items-center gap-2 justify-end">
-                        <AlertTriangle className="h-4 w-4" />
-                        تنبيهات مهمة
-                      </p>
-                      <ul className="text-xs text-yellow-700 dark:text-yellow-300 space-y-1.5 list-none">
-                        <li>⚠️ البيانات الحالية ستُستبدل بالكامل</li>
-                        <li>⏳ قد تتأثر ردود ساري على العملاء لمدة قصيرة أثناء التحديث</li>
-                        <li>❓ هل يوجد بيانات جديدة بالموقع تستدعي إعادة التحليل؟</li>
-                      </ul>
-                    </div>
+                    <p>{t('websiteAnalysisUx.confirmHelp', { count: websiteKnowledge.totalPages })}</p>
+                    <p className="rounded-lg border bg-muted/40 p-3">{t('websiteAnalysisUx.confirmReview')}</p>
                   </div>
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter className="flex-row-reverse gap-2">
                 <AlertDialogCancel>إلغاء</AlertDialogCancel>
                 <AlertDialogAction onClick={startAnalysis} className="bg-primary text-primary-foreground hover:bg-primary/90">
-                  نعم، أعد التحليل
+                  {t('websiteAnalysisUx.start')}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -384,7 +322,7 @@ export default function SariBrain() {
           /* ── First-time analysis: direct button ── */
           <Button variant="default" size="sm" onClick={startAnalysis} disabled={polling || reanalyzeMutation.isPending}>
             <Globe className="h-4 w-4 ml-2" />
-            🌐 تحليل موقعك
+            {t('websiteAnalysisUx.start')}
           </Button>
         )}
         <Button variant="outline" size="sm" onClick={() => setLocation('/merchant/products')}>
@@ -399,176 +337,18 @@ export default function SariBrain() {
 
       </section>
 
-      {/* ═══ Analysis Progress Modal ═══ */}
-      <Dialog open={analysisDialogOpen} onOpenChange={setAnalysisDialogOpen}>
-        <DialogContent className="max-w-lg [&>button]:hidden max-h-[90vh] overflow-y-auto">
-          <style>{`@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-              @keyframes fadeInUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-              .insight-enter { animation: fadeInUp 0.5s ease-out; }`}</style>
-          {/* Top animated bar */}
-          {!analysisResults && !analysisError && (
-            <div className="absolute top-0 left-0 right-0 h-1.5 rounded-t-lg bg-primary bg-[length:200%_100%] animate-[shimmer_2s_linear_infinite]" />
-          )}
-          {polling && <Button variant="outline" onClick={()=>setAnalysisDialogOpen(false)}>{t('brainWorkspaceUx.background')}</Button>}
-          {statusQuery.isError && <QueryStateCard kind="error" title={t('merchantUx.knowledgeIntake.statusError')} retryLabel={t('merchantUx.knowledgeIntake.retry')} onRetry={() => { void statusQuery.refetch(); }} />}
-          <DialogHeader>
-            <DialogTitle className="text-right flex items-center gap-3 justify-end">
-              {analysisResults ? (
-                <>
-                  <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6"><path d="M20 6L9 17l-5-5" stroke="#22c55e" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  ساري جاهز لخدمة عملائك!
-                </>
-              ) : analysisError ? (
-                <>❌ حدث خطأ أثناء التحليل</>
-              ) : (
-                <>
-                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                  🧠 ساري يبني عقله...
-                </>
-              )}
-            </DialogTitle>
-            <DialogDescription className="text-right">
-              {analysisResults ? `${analysisResults.title || ''} — تقييم ${analysisResults.score}/100` : analysisError ? analysisError : (
-                <span key={reassuranceIdx} className="insight-enter inline-block">{REASSURANCE[reassuranceIdx]}</span>
-              )}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-2.5 py-2">
-            {/* Expected results preview — shown only at start */}
-            {!analysisResults && !analysisError && analysisStep < 2 && (
-              <div className="p-3 rounded-lg bg-accent border border-primary/10 mb-3 insight-enter">
-                <p className="text-xs font-medium text-muted-foreground mb-2">بعد التحليل سيقوم ساري بـ:</p>
-                <div className="grid grid-cols-2 gap-1.5 text-[11px] text-foreground/80">
-                  <span>✓ بناء قاعدة معرفة ذكية</span>
-                  <span>✓ فهم خدماتك ومنتجاتك</span>
-                  <span>✓ تجهيز ردود ذكية للعملاء</span>
-                  <span>✓ اكتشاف فرص زيادة المبيعات</span>
-                </div>
-              </div>
-            )}
-
-            {/* Step-by-step indicators */}
-            {ANALYSIS_STEPS.map((step: any, i: number) => {
-              const done = i < analysisStep || !!analysisResults;
-              const active = i === analysisStep && !analysisResults && !analysisError;
-              return (
-                <div key={i} className={`flex items-center gap-3 p-2.5 rounded-lg border transition-all duration-500 ${
-                  done ? 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800' :
-                  active ? 'bg-primary/5 border-primary/30 shadow-sm' :
-                  'bg-muted/20 border-transparent opacity-60'
-                }`}>
-                  <div className="relative w-9 h-9 shrink-0">
-                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-500 ${done ? 'bg-green-50 dark:bg-green-950/30' : active ? 'bg-primary/10 ring-2 ring-primary/30' : 'bg-muted/30'}`}>
-                      {active ? (
-                        <Loader2 className="h-5 w-5 text-primary animate-spin" />
-                      ) : (
-                        <>{step.svg}</>
-                      )}
-                    </div>
-                    {done && (
-                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center shadow-sm">
-                        <svg viewBox="0 0 12 12" className="w-2.5 h-2.5"><path d="M10 3L4.5 8.5 2 6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-medium ${
-                      done ? 'text-green-700 dark:text-green-300' : active ? 'text-foreground' : 'text-muted-foreground'
-                    }`}>{step.label}</p>
-                    <p className="text-[10px] text-muted-foreground">{active ? STEP_INSIGHTS[i]?.[0] || step.detail : step.detail}</p>
-                  </div>
-                  {/* Show real stats next to completed steps */}
-                  {done && analysisResults?.crawlStats && (
-                    <span className="text-[10px] text-green-600 dark:text-green-400 font-mono whitespace-nowrap">
-                      {i === 0 && '✅'}
-                      {i === 1 && `${(analysisResults.crawlStats.mainPageWords || 0).toLocaleString()} كلمة`}
-                      {i === 2 && `${analysisResults.crawlStats.pagesSuccess || 0}/${analysisResults.crawlStats.pagesDiscovered || 0} صفحة`}
-                      {i === 3 && `${analysisResults.crawlStats.totalWords?.toLocaleString() || 0} كلمة`}
-                      {i === 4 && (analysisResults.salesIntelSummary?.hasIntel ? '✅' : '—')}
-                      {i === 5 && (analysisResults.salesIntelSummary?.hasOpportunities ? '✅' : '—')}
-                      {i === 6 && `${analysisResults.salesIntelSummary?.totalSections || 0} قسم`}
-                    </span>
-                  )}
-                  {done && !analysisResults?.crawlStats && <span className="text-xs text-green-600 font-medium">✅</span>}
-                </div>
-              );
-            })}
-
-            {/* Progress reported by the analysis worker */}
-            {!analysisResults && !analysisError && (
-              <div className="mt-3">
-                <div className="flex justify-end mb-1.5">
-                  <span className="font-mono font-semibold text-primary text-xs">{reportedProgress > 0 ? `${Math.round(reportedProgress)}%` : t('brainWorkspaceUx.waiting')}</span>
-                </div>
-                <div className="h-2.5 bg-muted rounded-full overflow-hidden">
-                  <div className="h-full bg-primary rounded-full transition-all duration-500 ease-out" style={{ width: `${reportedProgress}%` }} />
-                </div>
-              </div>
-            )}
-
-            {/* Results summary */}
-            {analysisResults && (
-              <div className="mt-3 p-4 rounded-lg bg-accent border border-primary/20 space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="text-center p-2 rounded-lg bg-background border">
-                    <p className="text-2xl font-bold text-primary">{analysisResults.score}</p>
-                    <p className="text-[10px] text-muted-foreground">التقييم التقني (SEO)</p>
-                  </div>
-                  <div className="text-center p-2 rounded-lg bg-background border">
-                    <p className="text-2xl font-bold text-emerald-600">{analysisResults.salesIntelSummary?.totalSections || 0}</p>
-                    <p className="text-[10px] text-muted-foreground">قسم معرفة</p>
-                  </div>
-                </div>
-                {analysisResults.knowledgeEvolution && (
-                  <div className="flex flex-wrap gap-2 justify-center">
-                    {analysisResults.knowledgeEvolution.added > 0 && <Badge className="bg-green-100 text-green-800 border-green-200">➕ {analysisResults.knowledgeEvolution.added} جديد</Badge>}
-                    {analysisResults.knowledgeEvolution.evolved > 0 && <Badge className="bg-blue-100 text-blue-800 border-blue-200">↗️ {analysisResults.knowledgeEvolution.evolved} تطوير</Badge>}
-                    {analysisResults.knowledgeEvolution.conflicts > 0 && <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">⚠️ {analysisResults.knowledgeEvolution.conflicts} تعارض</Badge>}
-                  </div>
-                )}
-                {analysisResults.salesIntelSummary?.hasIntel && (
-                  <div className="flex items-center gap-2 text-sm text-emerald-700 dark:text-emerald-300">
-                    <Sparkles className="h-4 w-4" /> تم استخراج ذكاء المبيعات
-                  </div>
-                )}
-                {analysisResults.salesIntelSummary?.hasOpportunities && (
-                  <div className="flex items-center gap-2 text-sm text-amber-700 dark:text-amber-300">
-                    <Target className="h-4 w-4" /> تم اكتشاف فرص تطوير
-                  </div>
-                )}
-                {/* Knowledge Engine error — show if pipeline failed */}
-                {analysisResults.knowledgeError && (
-                  <div className="flex items-start gap-2 p-2.5 rounded-lg bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-300 dark:border-yellow-700">
-                    <AlertTriangle className="h-4 w-4 text-yellow-600 mt-0.5 shrink-0" />
-                    <div>
-                      <p className="text-xs font-semibold text-yellow-800 dark:text-yellow-200">⚠️ تصنيف المعرفة لم يكتمل</p>
-                      <p className="text-[10px] text-yellow-700 dark:text-yellow-300 mt-0.5">{analysisResults.knowledgeError}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Error */}
-            {analysisError && (
-              <div className="mt-3 p-4 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 text-center">
-                <XCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
-                <p className="text-sm text-red-700 dark:text-red-300">{analysisError}</p>
-              </div>
-            )}
-          </div>
-
-          {/* Footer — only show close button when done */}
-          {(analysisResults || analysisError) && (
-            <DialogFooter className="flex-row-reverse">
-              <Button onClick={() => { setAnalysisDialogOpen(false); setAnalysisResults(null); setAnalysisError(null); setReportedProgress(0); }}>
-                {analysisResults ? '👍 ممتاز، إغلاق' : 'إغلاق'}
-              </Button>
-            </DialogFooter>
-          )}
-        </DialogContent>
-      </Dialog>
+      <WebsiteAnalysisDialog
+        open={analysisDialogOpen} onOpenChange={setAnalysisDialogOpen}
+        result={analysisResults} issue={analysisError} pending={reanalyzeMutation.isPending}
+        currentStep={analysisStep} progress={reportedProgress}
+        statusError={!reanalyzeMutation.isPending && statusQuery.isError} statusFetching={statusQuery.isFetching}
+        onReadStatus={() => { requestedStatusAfter.current = Date.now(); setAnalysisError(null); setPolling(true); void statusQuery.refetch(); }}
+        onOpenDestination={destination => {
+          if (destination === 'settings') setLocation('/merchant/settings');
+          else if (destination === 'testing') changeBrainView('testing');
+          else { setKnowledgePane(destination); changeBrainView('knowledge'); }
+        }}
+      />
 
       <section hidden={brainView !== 'knowledge' || knowledgePane !== 'conflicts'} className="space-y-6" data-brain-section="knowledge">
 {/* ═══ Knowledge Engine v4: Health Score + Sections + Conflicts ═══ */}
@@ -810,7 +590,7 @@ export default function SariBrain() {
         </CardContent>
       </Card>
 
-      <KnowledgeDocumentUpload />
+      <div id="brain-document-upload" className="scroll-mt-6"><KnowledgeDocumentUpload /></div>
       <KnowledgeLibrary />
 
       </section>

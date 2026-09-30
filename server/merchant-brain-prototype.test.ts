@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { runInContext } from 'node:vm';
 import { JSDOM, VirtualConsole } from 'jsdom';
 import { beforeEach, afterEach, expect, it } from 'vitest';
+import { MessageChannel } from 'node:worker_threads';
 
 let dom: JSDOM, w: any;
 let errors: Error[];
@@ -12,6 +13,8 @@ beforeEach(() => {
   virtualConsole.on('jsdomError', error => errors.push(error));
   dom = new JSDOM(readFileSync(base + 'index.html', 'utf8'), { url: 'http://127.0.0.1:4329/#/page/merchant/sari-brain', runScripts: 'outside-only', pretendToBeVisual: true, virtualConsole });
   w = dom.window; w.scrollTo = () => {}; w.structuredClone = structuredClone; w.TextEncoder = TextEncoder;
+  w.TextDecoder = TextDecoder;
+  w.MessageChannel = class extends MessageChannel { constructor() { super(); this.port1.unref(); this.port2.unref(); } };
   w.HTMLDialogElement.prototype.showModal = function () { this.setAttribute('open', ''); };
   w.HTMLDialogElement.prototype.close = function () { this.removeAttribute('open'); };
   for (const script of [...w.document.querySelectorAll('script[src]')] as any[]) runInContext(readFileSync(base + script.getAttribute('src'), 'utf8'), dom.getInternalVMContext());
