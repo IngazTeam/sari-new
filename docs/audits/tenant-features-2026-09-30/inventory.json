@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-30T01:03:27.946Z",
+  "generatedAt": "2026-09-30T01:48:48.013Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -9649,7 +9649,7 @@
     },
     {
       "file": "client/src/pages/merchant/SalesHub.tsx",
-      "hash": "4214806e9cdd",
+      "hash": "4d4afcd5938f",
       "queries": [
         "sariBrain.getQuotations",
         "sariBrain.getQuotationStats",
@@ -9667,7 +9667,7 @@
           "procedure": "sariBrain.formatQuotationForWhatsApp",
           "method": "fetch",
           "expression": "utils.sariBrain.formatQuotationForWhatsApp.fetch",
-          "line": 133,
+          "line": 251,
           "provenance": "trpc-utility-static"
         }
       ],
@@ -9675,34 +9675,34 @@
       "sections": [
         {
           "label": "مركز المبيعات",
-          "line": 149,
+          "line": 276,
           "tag": "h1"
         },
         {
           "label": "🎯 هدف المبيعات الشهري",
-          "line": 173,
+          "line": 314,
           "tag": "DialogTitle"
         },
         {
           "label": "📋 إنشاء عرض سعر جديد",
-          "line": 196,
+          "line": 363,
           "tag": "DialogTitle"
         },
         {
           "label": "🎯 هدف المبيعات الشهري",
-          "line": 318,
+          "line": 570,
           "tag": "CardTitle"
         },
         {
           "label": "📋 عروض الأسعار",
-          "line": 355,
+          "line": 616,
           "tag": "CardTitle"
         }
       ],
       "choices": [
         {
           "name": "newItems",
-          "line": 105,
+          "line": 192,
           "values": [
             "...items"
           ]
@@ -9711,24 +9711,24 @@
       "handlers": [
         {
           "name": "handleSendPdf",
-          "line": 89,
+          "line": 172,
           "calls": [
             "sendPdfMut"
           ]
         },
         {
           "name": "updateItem",
-          "line": 104,
+          "line": 191,
           "calls": []
         },
         {
           "name": "removeItem",
-          "line": 114,
+          "line": 206,
           "calls": []
         },
         {
           "name": "handleCreate",
-          "line": 120,
+          "line": 213,
           "calls": [
             "createMut"
           ]
@@ -9738,7 +9738,7 @@
         {
           "query": "sariBrain.getQuotations",
           "binding": "{ data: quotations, isLoading }",
-          "line": 35,
+          "line": 103,
           "errorSignal": false,
           "loadingSignal": true,
           "enabled": null
@@ -9746,17 +9746,17 @@
         {
           "query": "sariBrain.getQuotationStats",
           "binding": "{ data: stats }",
-          "line": 36,
+          "line": 106,
           "errorSignal": false,
           "loadingSignal": false,
           "enabled": null
         },
         {
           "query": "sariBrain.getCurrentTarget",
-          "binding": "{ data: currentTarget }",
-          "line": 37,
-          "errorSignal": false,
-          "loadingSignal": false,
+          "binding": "{\n    data: currentTarget,\n    isError: targetError,\n    isLoading: targetLoading,\n  }",
+          "line": 111,
+          "errorSignal": true,
+          "loadingSignal": true,
           "enabled": null
         }
       ],
@@ -18904,30 +18904,30 @@
         "client/src/pages/merchant/SalesHub.tsx"
       ],
       "controls": [
-        "703097fa732f",
-        "677ad6f16e59",
-        "7a117b5d4a8a",
-        "b38d69917889",
-        "a29bd491e6a6",
-        "9e08b242ff67",
-        "a7641eacbee9",
-        "8319ee7d5133",
-        "927ed85fd0cb",
-        "35bc669925fd",
-        "56d1af80e764",
-        "e3f8620841fa",
-        "7f338ffe78b4",
-        "7dc2cc6433b6",
-        "7c2774b4fff1",
-        "deb543ba20b4",
-        "ac37f972cba2",
-        "09fa84bab325",
-        "571fd6b8a005",
-        "04d0ab695adb",
-        "f15af99ee7bf",
-        "acdef01d4b97",
-        "77fbe8b5f21a",
-        "78a46c31f8c4"
+        "b6d2b91de81f",
+        "59de5f5d66bb",
+        "3e23cc4e60e0",
+        "1b859ec919c0",
+        "a7e492b30552",
+        "5745424bf118",
+        "8ce52f1b6f9c",
+        "fc5f71a01d30",
+        "8d92be162cb7",
+        "ed516b0f55c8",
+        "ed7328d98c4b",
+        "0aecc43062bb",
+        "cb4310f9ba8a",
+        "1c7bb6c4044f",
+        "b8ab9997d02b",
+        "003ea852cf43",
+        "d8fc15488738",
+        "fa20fe7e9ee3",
+        "67a1fb2587fd",
+        "206eaa1e275c",
+        "bbaa8fbaa6d5",
+        "f70ce54da037",
+        "d3a0423c2f30",
+        "0adb40df3931"
       ],
       "queries": [
         "sariBrain.getQuotations",
@@ -18947,7 +18947,7 @@
           "procedure": "sariBrain.formatQuotationForWhatsApp",
           "method": "fetch",
           "expression": "utils.sariBrain.formatQuotationForWhatsApp.fetch",
-          "line": 133,
+          "line": 251,
           "provenance": "trpc-utility-static"
         }
       ],
@@ -47984,9 +47984,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "703097fa732f",
+      "id": "b6d2b91de81f",
       "file": "client/src/pages/merchant/SalesHub.tsx",
-      "line": 158,
+      "line": 285,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -48005,9 +48005,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "677ad6f16e59",
+      "id": "59de5f5d66bb",
       "file": "client/src/pages/merchant/SalesHub.tsx",
-      "line": 159,
+      "line": 286,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -48026,9 +48026,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "7a117b5d4a8a",
+      "id": "3e23cc4e60e0",
       "file": "client/src/pages/merchant/SalesHub.tsx",
-      "line": 166,
+      "line": 307,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -48047,9 +48047,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "b38d69917889",
+      "id": "1b859ec919c0",
       "file": "client/src/pages/merchant/SalesHub.tsx",
-      "line": 171,
+      "line": 312,
       "tag": "DialogContent",
       "role": "",
       "kind": "dialog",
@@ -48062,15 +48062,15 @@
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": false,
+      "conditional": true,
       "conditions": [],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "a29bd491e6a6",
+      "id": "a7e492b30552",
       "file": "client/src/pages/merchant/SalesHub.tsx",
-      "line": 178,
+      "line": 323,
       "tag": "Input",
       "role": "",
       "kind": "field",
@@ -48089,30 +48089,30 @@
       "review": "source-inventoried"
     },
     {
-      "id": "9e08b242ff67",
+      "id": "5745424bf118",
       "file": "client/src/pages/merchant/SalesHub.tsx",
-      "line": 181,
+      "line": 332,
       "tag": "Button",
       "role": "",
       "kind": "action",
       "label": "💾 حفظ",
       "section": "🎯 هدف المبيعات الشهري",
-      "binding": "() => targetMut.mutate({ targetAmount: Number(targetAmount) })",
+      "binding": "() =>\n                    targetReview &&\n                    targetMut.mutate({\n                      targetAmount: Number(targetAmount),\n                      expectedRevision: targetReview.revision,\n                      period: targetReview.period,\n                      requestId: crypto.randomUUID(),\n                    })",
       "type": "text",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": false,
+      "conditional": true,
       "conditions": [],
-      "disabled": "!targetAmount || Number(targetAmount) <= 0",
+      "disabled": "targetMut.isPending ||\n                    !targetReview ||\n                    !targetAmount ||\n                    Number(targetAmount) <= 0",
       "review": "source-inventoried"
     },
     {
-      "id": "a7641eacbee9",
+      "id": "8ce52f1b6f9c",
       "file": "client/src/pages/merchant/SalesHub.tsx",
-      "line": 189,
+      "line": 356,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -48131,9 +48131,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "8319ee7d5133",
+      "id": "fc5f71a01d30",
       "file": "client/src/pages/merchant/SalesHub.tsx",
-      "line": 194,
+      "line": 361,
       "tag": "DialogContent",
       "role": "",
       "kind": "dialog",
@@ -48152,9 +48152,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "927ed85fd0cb",
+      "id": "8d92be162cb7",
       "file": "client/src/pages/merchant/SalesHub.tsx",
-      "line": 202,
+      "line": 371,
       "tag": "Input",
       "role": "",
       "kind": "field",
@@ -48173,9 +48173,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "35bc669925fd",
+      "id": "ed516b0f55c8",
       "file": "client/src/pages/merchant/SalesHub.tsx",
-      "line": 206,
+      "line": 380,
       "tag": "Input",
       "role": "",
       "kind": "field",
@@ -48194,9 +48194,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "56d1af80e764",
+      "id": "ed7328d98c4b",
       "file": "client/src/pages/merchant/SalesHub.tsx",
-      "line": 214,
+      "line": 393,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -48215,9 +48215,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "e3f8620841fa",
+      "id": "0aecc43062bb",
       "file": "client/src/pages/merchant/SalesHub.tsx",
-      "line": 222,
+      "line": 403,
       "tag": "Input",
       "role": "",
       "kind": "field",
@@ -48236,13 +48236,13 @@
       "review": "source-inventoried"
     },
     {
-      "id": "7f338ffe78b4",
+      "id": "cb4310f9ba8a",
       "file": "client/src/pages/merchant/SalesHub.tsx",
-      "line": 224,
+      "line": 411,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "",
+      "label": "t(\"merchantUx.actions.removeNamed\", {\n                              name: item.name || `${i + 1}`,\n                            })",
       "section": "📋 إنشاء عرض سعر جديد",
       "binding": "() => removeItem(i)",
       "type": "button",
@@ -48259,9 +48259,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "7dc2cc6433b6",
+      "id": "1c7bb6c4044f",
       "file": "client/src/pages/merchant/SalesHub.tsx",
-      "line": 236,
+      "line": 425,
       "tag": "Input",
       "role": "",
       "kind": "field",
@@ -48280,9 +48280,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "7c2774b4fff1",
+      "id": "b8ab9997d02b",
       "file": "client/src/pages/merchant/SalesHub.tsx",
-      "line": 240,
+      "line": 437,
       "tag": "Input",
       "role": "",
       "kind": "field",
@@ -48301,9 +48301,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "deb543ba20b4",
+      "id": "003ea852cf43",
       "file": "client/src/pages/merchant/SalesHub.tsx",
-      "line": 244,
+      "line": 449,
       "tag": "Input",
       "role": "",
       "kind": "field",
@@ -48322,9 +48322,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ac37f972cba2",
+      "id": "d8fc15488738",
       "file": "client/src/pages/merchant/SalesHub.tsx",
-      "line": 248,
+      "line": 461,
       "tag": "Input",
       "role": "",
       "kind": "field",
@@ -48343,9 +48343,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "09fa84bab325",
+      "id": "fa20fe7e9ee3",
       "file": "client/src/pages/merchant/SalesHub.tsx",
-      "line": 273,
+      "line": 493,
       "tag": "Input",
       "role": "",
       "kind": "field",
@@ -48364,9 +48364,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "571fd6b8a005",
+      "id": "67a1fb2587fd",
       "file": "client/src/pages/merchant/SalesHub.tsx",
-      "line": 277,
+      "line": 504,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -48385,13 +48385,13 @@
       "review": "source-inventoried"
     },
     {
-      "id": "04d0ab695adb",
+      "id": "206eaa1e275c",
       "file": "client/src/pages/merchant/SalesHub.tsx",
-      "line": 384,
+      "line": 664,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "",
+      "label": "t(\"merchantUx.actions.copyQuotationNamed\", {\n                          name: q.quotationNumber,\n                        })",
       "section": "📋 عروض الأسعار",
       "binding": "() => copyWhatsApp(q.id)",
       "type": "button",
@@ -48402,17 +48402,17 @@
       "required": false,
       "conditional": true,
       "conditions": [],
-      "disabled": "",
+      "disabled": "q.managed || q.rawItems !== null || q.itemsTruncated",
       "review": "source-inventoried"
     },
     {
-      "id": "f15af99ee7bf",
+      "id": "bbaa8fbaa6d5",
       "file": "client/src/pages/merchant/SalesHub.tsx",
-      "line": 395,
+      "line": 680,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "",
+      "label": "t(\"merchantUx.actions.sendPdfNamed\", {\n                          name: q.quotationNumber,\n                        })",
       "section": "📋 عروض الأسعار",
       "binding": "() => handleSendPdf(q)",
       "type": "button",
@@ -48423,19 +48423,19 @@
       "required": false,
       "conditional": true,
       "conditions": [],
-      "disabled": "sendPdfMut.isPending",
+      "disabled": "sendPdfMut.isPending ||\n                          q.managed ||\n                          q.validityElapsed ||\n                          ![\"draft\", \"sent\", \"viewed\"].includes(q.status)",
       "review": "source-inventoried"
     },
     {
-      "id": "acdef01d4b97",
+      "id": "f70ce54da037",
       "file": "client/src/pages/merchant/SalesHub.tsx",
-      "line": 407,
+      "line": 702,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "",
+      "label": "t(\"merchantUx.actions.acceptNamed\", {\n                                name: q.quotationNumber,\n                              })",
       "section": "📋 عروض الأسعار",
-      "binding": "() => statusMut.mutate({ quotationId: q.id, status: 'accepted' })",
+      "binding": "() =>\n                                statusMut.mutate({\n                                  quotationId: q.id,\n                                  status: \"accepted\",\n                                  expectedRevision: q.offerVersion,\n                                  expectedStatus: q.status,\n                                  requestId: crypto.randomUUID(),\n                                })",
       "type": "button",
       "options": [],
       "min": "",
@@ -48444,21 +48444,21 @@
       "required": false,
       "conditional": false,
       "conditions": [
-        "q.status === 'sent'"
+        "!q.managed &&\n                        [\"draft\", \"sent\", \"viewed\"].includes(q.status)"
       ],
-      "disabled": "",
+      "disabled": "statusMut.isPending || q.validityElapsed",
       "review": "source-inventoried"
     },
     {
-      "id": "77fbe8b5f21a",
+      "id": "d3a0423c2f30",
       "file": "client/src/pages/merchant/SalesHub.tsx",
-      "line": 418,
+      "line": 726,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "",
+      "label": "t(\"merchantUx.actions.rejectNamed\", {\n                                name: q.quotationNumber,\n                              })",
       "section": "📋 عروض الأسعار",
-      "binding": "() => statusMut.mutate({ quotationId: q.id, status: 'rejected' })",
+      "binding": "() =>\n                                statusMut.mutate({\n                                  quotationId: q.id,\n                                  status: \"rejected\",\n                                  expectedRevision: q.offerVersion,\n                                  expectedStatus: q.status,\n                                  requestId: crypto.randomUUID(),\n                                })",
       "type": "button",
       "options": [],
       "min": "",
@@ -48467,15 +48467,15 @@
       "required": false,
       "conditional": false,
       "conditions": [
-        "q.status === 'sent'"
+        "!q.managed &&\n                        [\"draft\", \"sent\", \"viewed\"].includes(q.status)"
       ],
-      "disabled": "",
+      "disabled": "statusMut.isPending",
       "review": "source-inventoried"
     },
     {
-      "id": "78a46c31f8c4",
+      "id": "0adb40df3931",
       "file": "client/src/pages/merchant/SalesHub.tsx",
-      "line": 441,
+      "line": 762,
       "tag": "Button",
       "role": "",
       "kind": "action",

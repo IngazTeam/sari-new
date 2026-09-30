@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-09-30T01:03:27.946Z",
+  "generatedAt": "2026-09-30T01:48:48.013Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -117,6 +117,7 @@
     "client/src/pages/merchant/VirtualTeamPage.tsx",
     "client/src/pages/merchant/SariBrain.tsx",
     "client/src/pages/SariPlayground.tsx",
+    "client/src/pages/merchant/SalesHub.tsx",
     "client/src/pages/merchant/SalesPipeline.tsx",
     "client/src/pages/merchant/QuickResponses.tsx",
     "client/src/pages/merchant/InsightsDashboard.tsx",

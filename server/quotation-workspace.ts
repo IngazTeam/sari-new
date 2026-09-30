@@ -232,3 +232,27 @@ export async function readQuotationDetail(
       }
     : null;
 }
+
+/** Compatibility read retains the old bounded list size without leaking checkout snapshots. */
+export async function readQuotationLegacyList(
+  merchantId: number,
+  limit: number,
+  now = new Date()
+): Promise<QuotationDetail[]> {
+  owner(merchantId);
+  quotationMonth(now);
+  if (!Number.isInteger(limit) || limit < 1 || limit > 200)
+    throw Error("Invalid quotation limit");
+  const db = await getDb();
+  if (!db) throw Error("Quotations unavailable");
+  const [result] =
+    await db.execute(sql`SELECT ${columns},LEFT(q.items,131072) rawItems,CHAR_LENGTH(q.items)>131072 itemsTruncated
+    FROM sales_quotations q WHERE q.merchant_id=${merchantId} ORDER BY q.created_at DESC,q.id DESC LIMIT ${limit}`);
+  return (result as unknown as any[]).map(r => ({
+    ...mapQuotationRow(r, now),
+    ...parseQuotationItems(
+      String(r.rawItems),
+      Boolean(Number(r.itemsTruncated))
+    ),
+  }));
+}

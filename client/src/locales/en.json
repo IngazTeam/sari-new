@@ -10211,5 +10211,14 @@
     "payment_abandoned": "Incomplete payment",
     "no_response": "No response",
     "human_needed": "Human needed"
+  },
+  "quotationEvidence": {
+    "providerAccepted": "WhatsApp provider accepted the text and file; delivery to the customer is not yet confirmed.",
+    "invalidFields": "Check every item name, quantity, price and validity. No item was dropped.",
+    "acceptedSar": "Accepted quotation value · SAR",
+    "acceptedShare": "Current accepted status / all quotations",
+    "measurementLimit": "Acceptance does not prove payment or sales proficiency. The monthly target uses quotations created in that month and currently accepted in SAR. Sent status alone does not prove delivery.",
+    "createdInMonth": "Quotations created this month",
+    "acceptedSarCount": "Accepted SAR quotations"
   }
 }

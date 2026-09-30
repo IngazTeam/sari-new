@@ -1,4 +1,5 @@
 import { TRPCError } from "@trpc/server";
+import { ZodError } from "zod";
 import { router, permissionProcedure } from "./_core/trpc";
 import {
   quotationDraftInput,
@@ -27,6 +28,11 @@ async function guarded<T>(read: () => Promise<T>): Promise<T> {
   try {
     return await read();
   } catch (error) {
+    if (error instanceof ZodError)
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: "Invalid quotation fields",
+      });
     if (error instanceof QuotationConflict)
       throw new TRPCError({
         code: "CONFLICT",
@@ -43,6 +49,7 @@ async function guarded<T>(read: () => Promise<T>): Promise<T> {
     });
   }
 }
+export { guarded as quotationGuard };
 export const quotationWorkspaceRouter = router({
   create: permissionProcedure("orders.manage")
     .input(quotationDraftInput)

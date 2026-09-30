@@ -10,6 +10,7 @@
 
 import { getPool } from '../db';
 import { ensureKnowledgeTables } from './knowledge';
+import { assertQuotationDocument } from '../quotation-legacy';
 
 // ═══════════════════════════════════════════════════════════════
 // PEN-TMPL-03 FIX: URL Sanitization for header images
@@ -42,36 +43,8 @@ export interface QuotationItem {
   total: number;
 }
 
-export interface SalesQuotation {
-  id: number;
-  merchantId: number;
-  customerPhone: string | null;
-  customerName: string | null;
-  quotationNumber: string;
-  items: QuotationItem[];
-  subtotal: number;
-  taxAmount: number;
-  total: number;
-  currency: string;
-  status: 'sent' | 'viewed' | 'accepted' | 'rejected' | 'expired';
-  validUntil: string | null;
-  pdfUrl: string | null;
-  conversationId: number | null;
-  createdAt: Date;
-}
-
-export interface SalesTarget {
-  id: number;
-  merchantId: number;
-  periodType: 'monthly' | 'quarterly' | 'yearly';
-  periodStart: string;
-  periodEnd: string;
-  targetAmount: number;
-  achievedAmount: number;
-  quotationsSent: number;
-  quotationsWon: number;
-  createdAt: Date;
-}
+export type SalesQuotation = import('../quotation-legacy').LegacyQuotation;
+export type SalesTarget = NonNullable<Awaited<ReturnType<typeof import('../quotation-legacy').getCurrentTarget>>>;
 
 export interface QuotationTemplate {
   id: number;
@@ -88,285 +61,11 @@ export interface QuotationTemplate {
 // Quotation CRUD
 // ═══════════════════════════════════════════════════════════════
 
-/** Generate a unique quotation number */
-function generateQuotationNumber(merchantId: number): string {
-  const now = new Date();
-  const y = now.getFullYear().toString().slice(-2);
-  const m = String(now.getMonth() + 1).padStart(2, '0');
-  const d = String(now.getDate()).padStart(2, '0');
-  const r = String(Math.floor(Math.random() * 9000 + 1000));
-  return `Q-${y}${m}${d}-${merchantId}-${r}`;
-}
+// Compatibility calls share the scoped readers and reviewed transaction writers.
+export { createQuotation, getQuotations, getQuotationById, updateQuotationStatus, getQuotationStats,
+  getCurrentTarget, setMonthlyTarget, getTargetHistory, assertQuotationDocument } from '../quotation-legacy';
 
-/** Create a quotation */
-export async function createQuotation(data: {
-  merchantId: number;
-  customerPhone?: string | null;
-  customerName?: string | null;
-  items: QuotationItem[];
-  taxRate?: number;  // 0.15 for 15% VAT
-  currency?: string;
-  validDays?: number;
-  conversationId?: number | null;
-}): Promise<SalesQuotation> {
-  await ensureKnowledgeTables();
-  const pool = await getPool();
-  if (!pool) throw new Error('DB unavailable');
-
-  // SEC-V4-01 FIX: Re-calculate totals server-side — NEVER trust client values
-  const safeItems = data.items.map(item => ({
-    ...item,
-    total: Math.round(item.quantity * item.unitPrice * 100) / 100,
-  }));
-  const subtotal = safeItems.reduce((sum, item) => sum + item.total, 0);
-  const taxRate = data.taxRate ?? 0.15;
-  const taxAmount = Math.round(subtotal * taxRate * 100) / 100;
-  const total = Math.round((subtotal + taxAmount) * 100) / 100;
-  const currency = data.currency || 'SAR';
-  const quotationNumber = generateQuotationNumber(data.merchantId);
-
-  let validUntil: string | null = null;
-  if (data.validDays) {
-    const d = new Date();
-    d.setDate(d.getDate() + data.validDays);
-    validUntil = d.toISOString().split('T')[0];
-  }
-
-  const [result] = await pool.execute(
-    `INSERT INTO sales_quotations 
-     (merchant_id, customer_phone, customer_name, quotation_number, 
-      items, subtotal, tax_amount, total, currency, status, valid_until, conversation_id)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'sent', ?, ?)`,
-    [
-      data.merchantId,
-      data.customerPhone ?? null,
-      data.customerName ?? null,
-      quotationNumber,
-      JSON.stringify(safeItems),
-      subtotal,
-      taxAmount,
-      total,
-      currency,
-      validUntil,
-      data.conversationId ?? null,
-    ]
-  );
-
-  const id = (result as any).insertId;
-
-  // Update sales targets
-  try {
-    await incrementTargetQuotationsSent(data.merchantId);
-  } catch { /* non-blocking */ }
-
-  return {
-    id,
-    merchantId: data.merchantId,
-    customerPhone: data.customerPhone ?? null,
-    customerName: data.customerName ?? null,
-    quotationNumber,
-    items: safeItems,
-    subtotal,
-    taxAmount,
-    total,
-    currency,
-    status: 'sent',
-    validUntil,
-    pdfUrl: null,
-    conversationId: data.conversationId ?? null,
-    createdAt: new Date(),
-  };
-}
-
-/** Get quotations for a merchant */
-export async function getQuotations(merchantId: number, limit: number = 50): Promise<SalesQuotation[]> {
-  await ensureKnowledgeTables();
-  const pool = await getPool();
-  if (!pool) return [];
-
-  const safeLimit = Math.min(Math.max(limit, 1), 200);
-  const [rows] = await pool.execute(
-    `SELECT * FROM sales_quotations WHERE merchant_id = ? ORDER BY created_at DESC LIMIT ${safeLimit}`,
-    [merchantId]
-  );
-
-  return (rows as any[]).map(row => ({
-    ...row,
-    items: typeof row.items === 'string' ? JSON.parse(row.items) : row.items,
-  }));
-}
-
-/** Get quotation by ID (with ownership check) */
-export async function getQuotationById(id: number, merchantId: number): Promise<SalesQuotation | null> {
-  await ensureKnowledgeTables();
-  const pool = await getPool();
-  if (!pool) return null;
-
-  const [rows] = await pool.execute(
-    `SELECT * FROM sales_quotations WHERE id = ? AND merchant_id = ? LIMIT 1`,
-    [id, merchantId]
-  );
-  const results = rows as any[];
-  if (results.length === 0) return null;
-  return {
-    ...results[0],
-    items: typeof results[0].items === 'string' ? JSON.parse(results[0].items) : results[0].items,
-  };
-}
-
-/** Update quotation status */
-export async function updateQuotationStatus(
-  id: number, merchantId: number, status: SalesQuotation['status'], achievedAmount?: number
-): Promise<void> {
-  await ensureKnowledgeTables();
-  const pool = await getPool();
-  if (!pool) return;
-
-  await pool.execute(
-    `UPDATE sales_quotations SET status = ? WHERE id = ? AND merchant_id = ?`,
-    [status, id, merchantId]
-  );
-
-  // If accepted, update target achieved amount
-  if (status === 'accepted') {
-    try {
-      const quotation = await getQuotationById(id, merchantId);
-      if (quotation) {
-        await incrementTargetAchieved(merchantId, achievedAmount ?? quotation.total);
-      }
-    } catch { /* non-blocking */ }
-  }
-}
-
-/** Get quotation stats for a merchant */
-export async function getQuotationStats(merchantId: number): Promise<{
-  total: number;
-  sent: number;
-  accepted: number;
-  rejected: number;
-  totalRevenue: number;
-  conversionRate: number;
-}> {
-  await ensureKnowledgeTables();
-  const pool = await getPool();
-  if (!pool) return { total: 0, sent: 0, accepted: 0, rejected: 0, totalRevenue: 0, conversionRate: 0 };
-
-  const [rows] = await pool.execute(
-    `SELECT 
-       COUNT(*) as total,
-       SUM(CASE WHEN status = 'sent' THEN 1 ELSE 0 END) as sent,
-       SUM(CASE WHEN status = 'accepted' THEN 1 ELSE 0 END) as accepted,
-       SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) as rejected,
-       SUM(CASE WHEN status = 'accepted' THEN total ELSE 0 END) as revenue
-     FROM sales_quotations WHERE merchant_id = ?`,
-    [merchantId]
-  );
-
-  const stats = (rows as any[])[0] || {};
-  const total = Number(stats.total) || 0;
-  const accepted = Number(stats.accepted) || 0;
-
-  return {
-    total,
-    sent: Number(stats.sent) || 0,
-    accepted,
-    rejected: Number(stats.rejected) || 0,
-    totalRevenue: Number(stats.revenue) || 0,
-    conversionRate: total > 0 ? Math.round((accepted / total) * 100) : 0,
-  };
-}
-
-// ═══════════════════════════════════════════════════════════════
-// Sales Targets
-// ═══════════════════════════════════════════════════════════════
-
-/** Get or create current monthly target */
-export async function getCurrentTarget(merchantId: number): Promise<SalesTarget | null> {
-  await ensureKnowledgeTables();
-  const pool = await getPool();
-  if (!pool) return null;
-
-  const now = new Date();
-  const periodStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
-
-  const [rows] = await pool.execute(
-    `SELECT * FROM sales_targets WHERE merchant_id = ? AND period_type = 'monthly' AND period_start = ? LIMIT 1`,
-    [merchantId, periodStart]
-  );
-  const results = rows as SalesTarget[];
-  return results.length > 0 ? results[0] : null;
-}
-
-/** Set monthly sales target */
-export async function setMonthlyTarget(merchantId: number, targetAmount: number): Promise<SalesTarget> {
-  await ensureKnowledgeTables();
-  const pool = await getPool();
-  if (!pool) throw new Error('DB unavailable');
-
-  const now = new Date();
-  const periodStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
-  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-  const periodEnd = `${lastDay.getFullYear()}-${String(lastDay.getMonth() + 1).padStart(2, '0')}-${String(lastDay.getDate()).padStart(2, '0')}`;
-
-  await pool.execute(
-    `INSERT INTO sales_targets (merchant_id, period_type, period_start, period_end, target_amount)
-     VALUES (?, 'monthly', ?, ?, ?)
-     ON DUPLICATE KEY UPDATE target_amount = ?`,
-    [merchantId, periodStart, periodEnd, targetAmount, targetAmount]
-  );
-
-  return (await getCurrentTarget(merchantId))!;
-}
-
-/** Increment quotations_sent for current month */
-async function incrementTargetQuotationsSent(merchantId: number): Promise<void> {
-  const pool = await getPool();
-  if (!pool) return;
-
-  const now = new Date();
-  const periodStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
-
-  await pool.execute(
-    `UPDATE sales_targets SET quotations_sent = quotations_sent + 1 
-     WHERE merchant_id = ? AND period_type = 'monthly' AND period_start = ?`,
-    [merchantId, periodStart]
-  );
-}
-
-/** Increment achieved_amount + quotations_won for current month */
-async function incrementTargetAchieved(merchantId: number, amount: number): Promise<void> {
-  const pool = await getPool();
-  if (!pool) return;
-
-  const now = new Date();
-  const periodStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
-
-  await pool.execute(
-    `UPDATE sales_targets 
-     SET achieved_amount = achieved_amount + ?, quotations_won = quotations_won + 1 
-     WHERE merchant_id = ? AND period_type = 'monthly' AND period_start = ?`,
-    [amount, merchantId, periodStart]
-  );
-}
-
-/** Get target history */
-export async function getTargetHistory(merchantId: number, limit: number = 12): Promise<SalesTarget[]> {
-  await ensureKnowledgeTables();
-  const pool = await getPool();
-  if (!pool) return [];
-
-  const safeLimit = Math.min(Math.max(limit, 1), 24);
-  const [rows] = await pool.execute(
-    `SELECT * FROM sales_targets WHERE merchant_id = ? ORDER BY period_start DESC LIMIT ${safeLimit}`,
-    [merchantId]
-  );
-  return rows as SalesTarget[];
-}
-
-// ═══════════════════════════════════════════════════════════════
-// Quotation Templates
-// ═══════════════════════════════════════════════════════════════
-
+// Quotation templates
 /** Ready-made templates — seeded automatically on first access */
 const DEFAULT_TEMPLATES: Array<{
   name: string;
@@ -445,7 +144,9 @@ export async function getTemplates(merchantId: number): Promise<QuotationTemplat
     [merchantId]
   );
   
-  const templates = rows as QuotationTemplate[];
+  const mapTemplate = (row: any): QuotationTemplate => ({ id: Number(row.id), merchantId: Number(row.merchant_id), name: row.name,
+    headerImageUrl: row.header_image_url, footerText: row.footer_text, termsText: row.terms_text, isDefault: Boolean(Number(row.is_default)), createdAt: new Date(row.created_at) });
+  const templates = (rows as any[]).map(mapTemplate);
   
   // Auto-seed default templates on first access
   if (templates.length === 0) {
@@ -455,7 +156,7 @@ export async function getTemplates(merchantId: number): Promise<QuotationTemplat
       `SELECT * FROM quotation_templates WHERE merchant_id = ? ORDER BY is_default DESC, created_at`,
       [merchantId]
     );
-    return seeded as QuotationTemplate[];
+    return (seeded as any[]).map(mapTemplate);
   }
   
   return templates;
@@ -587,6 +288,7 @@ export function formatQuotationMessage(
   merchantName: string,
   template?: QuotationTemplate | null
 ): string {
+  assertQuotationDocument(quotation);
   let msg = `📋 *عرض سعر رقم: ${quotation.quotationNumber}*\n`;
   msg += `من: *${merchantName}*\n`;
   if (quotation.customerName) msg += `إلى: ${quotation.customerName}\n`;
@@ -602,7 +304,7 @@ export function formatQuotationMessage(
   msg += `\n━━━━━━━━━━━━━━━━\n`;
   msg += `المجموع: ${quotation.subtotal.toFixed(2)} ${quotation.currency}\n`;
   if (quotation.taxAmount > 0) {
-    msg += `الضريبة (15%): ${quotation.taxAmount.toFixed(2)} ${quotation.currency}\n`;
+    msg += `الضريبة${quotation.taxRate === null ? "" : ` (${Number((quotation.taxRate * 100).toFixed(2))}%)`}: ${quotation.taxAmount.toFixed(2)} ${quotation.currency}\n`;
   }
   msg += `*الإجمالي: ${quotation.total.toFixed(2)} ${quotation.currency}*\n`;
 

@@ -1,5 +1,6 @@
 import { pageUrlInput, pagePreviewReadInput, pagePreviewSaveInput } from '../shared/knowledge-page-intake';
-import { quotationWorkspaceRouter } from './routers-quotations';
+import { quotationWorkspaceRouter, quotationGuard } from './routers-quotations';
+import { assertQuotationDocument } from './quotation-legacy';
 import { storePagePreview, readPageIntake, savePagePreview } from './knowledge/page-intake';
 import { fetchPageSnapshot } from './knowledge/page-fetch';
 import { pageListInput, pageReadInput, pageChangeInput } from '../shared/knowledge-pages';
@@ -1503,6 +1504,7 @@ ${sanitizedContent}`
 
   createQuotation: permissionProcedure('orders.manage')
     .input(z.object({
+      requestId: z.string().uuid().optional(),
       // UX-05: Standardize phone validation (same regex as sendQuotationToCustomer)
       customerPhone: z.string().min(8).max(20).regex(/^\+?[0-9]+$/, 'رقم هاتف غير صالح').optional(),
       customerName: z.string().max(255).optional(),
@@ -1515,8 +1517,8 @@ ${sanitizedContent}`
       })).min(1).max(50),
       taxRate: z.number().min(0).max(1).optional(),
       currency: z.string().max(3).optional(),
-      validDays: z.number().min(1).max(365).optional(),
-      conversationId: z.number().optional(),
+      validDays: z.number().int().min(1).max(365).optional(),
+      conversationId: z.number().int().positive().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       const merchant = await getMerchantById(ctx.merchantId);
@@ -1526,10 +1528,11 @@ ${sanitizedContent}`
       checkTestRateLimit(merchant.id, 2_000);
 
       const quotationsDb = await import('./db/sales-quotations');
-      const quotation = await quotationsDb.createQuotation({
+      const quotation = await quotationGuard(() => quotationsDb.createQuotation({
         merchantId: merchant.id,
+        actorId: ctx.user.id,
         ...input,
-      });
+      }));
 
       await logBrainActivity(merchant.id, 'quotation_created',
         `إنشاء عرض سعر #${quotation.quotationNumber} — ${quotation.total} ${quotation.currency}`
@@ -1539,60 +1542,64 @@ ${sanitizedContent}`
     }),
 
   /** Get quotations list */
-  getQuotations: merchantProcedure
-    .input(z.object({ limit: z.number().min(1).max(200).optional() }))
+  getQuotations: permissionProcedure('analytics.read')
+    .input(z.object({ limit: z.number().int().min(1).max(200).optional() }))
     .query(async ({ ctx, input }) => {
       const merchant = await getMerchantById(ctx.merchantId);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
       const quotationsDb = await import('./db/sales-quotations');
-      return sanitizeForTRPC(await quotationsDb.getQuotations(merchant.id, input.limit || 50));
+      return sanitizeForTRPC(await quotationGuard(() => quotationsDb.getQuotations(merchant.id, input.limit || 50)));
     }),
 
   /** Get quotation stats */
-  getQuotationStats: merchantProcedure.query(async ({ ctx }) => {
+  getQuotationStats: permissionProcedure('analytics.read').query(async ({ ctx }) => {
     const merchant = await getMerchantById(ctx.merchantId);
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
     const quotationsDb = await import('./db/sales-quotations');
-    return sanitizeForTRPC(await quotationsDb.getQuotationStats(merchant.id));
+    return sanitizeForTRPC(await quotationGuard(() => quotationsDb.getQuotationStats(merchant.id)));
   }),
 
   /** Update quotation status */
   updateQuotationStatus: permissionProcedure('orders.manage')
     .input(z.object({
-      quotationId: z.number(),
-      status: z.enum(['sent', 'viewed', 'accepted', 'rejected', 'expired']),
+      quotationId: z.number().int().positive(),
+      requestId: z.string().uuid().optional(),
+      expectedRevision: z.number().int().positive(),
+      expectedStatus: z.enum(['draft', 'sent', 'viewed', 'accepted', 'rejected', 'expired', 'unknown']),
+      status: z.enum(['draft', 'sent', 'viewed', 'accepted', 'rejected', 'expired']),
     }))
     .mutation(async ({ ctx, input }) => {
       const merchant = await getMerchantById(ctx.merchantId);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
       const quotationsDb = await import('./db/sales-quotations');
-      await quotationsDb.updateQuotationStatus(input.quotationId, merchant.id, input.status);
+      const receipt = await quotationGuard(() => quotationsDb.updateQuotationStatus(input.quotationId, merchant.id, input.status,
+        { actorId: ctx.user.id, requestId: input.requestId, expectedRevision: input.expectedRevision, expectedStatus: input.expectedStatus }));
 
       await logBrainActivity(merchant.id, 'quotation_updated',
         `تحديث حالة عرض سعر #${input.quotationId} → ${input.status}`
       );
-      return { success: true };
+      return { success: true, receipt };
     }),
 
   /** Format quotation for WhatsApp */
-  formatQuotationForWhatsApp: merchantProcedure
-    .input(z.object({ quotationId: z.number() }))
+  formatQuotationForWhatsApp: permissionProcedure('analytics.read')
+    .input(z.object({ quotationId: z.number().int().positive() }))
     .query(async ({ ctx, input }) => {
       const merchant = await getMerchantById(ctx.merchantId);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
       const quotationsDb = await import('./db/sales-quotations');
-      const quotation = await quotationsDb.getQuotationById(input.quotationId, merchant.id);
+      const quotation = await quotationGuard(() => quotationsDb.getQuotationById(input.quotationId, merchant.id));
       if (!quotation) throw new TRPCError({ code: 'NOT_FOUND', message: 'عرض السعر غير موجود' });
 
       // Get default template
       const templates = await quotationsDb.getTemplates(merchant.id);
       const defaultTemplate = templates.find(t => t.isDefault) || templates[0] || null;
 
-      const message = quotationsDb.formatQuotationMessage(quotation, merchant.businessName, defaultTemplate);
+      const message = await quotationGuard(async () => quotationsDb.formatQuotationMessage(quotation, merchant.businessName, defaultTemplate));
       return sanitizeForTRPC({ message, quotation });
     }),
 
@@ -1600,7 +1607,7 @@ ${sanitizedContent}`
   /** Send quotation as PDF to customer via WhatsApp */
   sendQuotationToCustomer: permissionProcedure('orders.manage')
     .input(z.object({
-      quotationId: z.number(),
+      quotationId: z.number().int().positive(),
       customerPhone: z.string().min(8).max(20).regex(/^\+?[0-9]+$/, 'رقم هاتف غير صالح'),
     }))
     .mutation(async ({ ctx, input }) => {
@@ -1611,8 +1618,17 @@ ${sanitizedContent}`
       checkTestRateLimit(merchant.id, 5_000);
 
       const quotationsDb = await import('./db/sales-quotations');
-      const quotation = await quotationsDb.getQuotationById(input.quotationId, merchant.id);
+      const quotation = await quotationGuard(() => quotationsDb.getQuotationById(input.quotationId, merchant.id));
       if (!quotation) throw new TRPCError({ code: 'NOT_FOUND', message: 'عرض السعر غير موجود' });
+
+      try { assertQuotationDocument(quotation); }
+      catch { throw new TRPCError({ code: 'CONFLICT', message: 'راجع مصدر العرض وبنوده قبل الإرسال' }); }
+      if (quotation.customerPhone !== input.customerPhone || quotation.validityElapsed || !['draft', 'sent', 'viewed'].includes(quotation.status))
+        throw new TRPCError({ code: 'CONFLICT', message: 'راجع العرض والعميل قبل الإرسال' });
+
+      const { getPrimaryWhatsAppInstance } = await import('./db');
+      const instance = await getPrimaryWhatsAppInstance(merchant.id);
+      if (!instance) throw new TRPCError({ code: 'BAD_REQUEST', message: 'لا يوجد اتصال واتساب نشط' });
 
       // Get template for terms/footer
       const templates = await quotationsDb.getTemplates(merchant.id);
@@ -1629,8 +1645,7 @@ ${sanitizedContent}`
         customerPhone: input.customerPhone,
         items: quotation.items,
         subtotal: quotation.subtotal,
-        // @ts-ignore
-        taxRate: quotation.taxRate || 0,
+        taxRate: quotation.taxRate ?? undefined,
         taxAmount: quotation.taxAmount,
         total: quotation.total,
         currency: quotation.currency,
@@ -1641,63 +1656,64 @@ ${sanitizedContent}`
       });
 
       // Send text summary + PDF via WhatsApp
-      const { getPrimaryWhatsAppInstance } = await import('./db');
-      const instance = await getPrimaryWhatsAppInstance(merchant.id);
-      if (!instance) {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'لا يوجد اتصال واتساب نشط' });
-      }
-
       const whatsapp = await import('./whatsapp');
       const instancePrefix = instance.instanceId.substring(0, 4);
-      const apiUrl = `https://${instancePrefix}.api.greenapi.com`;
+      const apiUrl = instance.provider === 'meta_cloud' ? 'https://graph.facebook.com' : `https://${instancePrefix}.api.greenapi.com`;
 
       // Send text summary first
       const textMessage = quotationsDb.formatQuotationMessage(quotation, merchant.businessName, defaultTemplate);
-      await whatsapp.sendMessageWithCredentials(
+      const textResult = await whatsapp.sendMessageWithCredentials(
         instance.instanceId, instance.token, apiUrl,
-        input.customerPhone, textMessage
+        input.customerPhone, textMessage,
+        { idempotencyKey: `quotation:${merchant.id}:${quotation.id}:text` }
       );
+      if (!textResult.success || !textResult.messageId) throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'نتيجة إرسال النص غير مؤكدة؛ راجع السجل قبل إعادة المحاولة' });
 
       // Then send PDF document
       await new Promise(resolve => setTimeout(resolve, 1500));
-      await whatsapp.sendFileWithCredentials(
+      const fileResult = await whatsapp.sendFileWithCredentials(
         instance.instanceId, instance.token, apiUrl,
         input.customerPhone, pdfUrl,
         `عرض-سعر-${quotation.quotationNumber.replace(/[^a-zA-Z0-9-]/g, "")}.pdf`,
-        `📄 عرض سعر #${quotation.quotationNumber} من ${merchant.businessName}`
+        `📄 عرض سعر #${quotation.quotationNumber} من ${merchant.businessName}`,
+        { idempotencyKey: `quotation:${merchant.id}:${quotation.id}:pdf` }
       );
+      if (!fileResult.success || !fileResult.messageId) throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'قُبل النص ونتيجة ملف PDF غير مؤكدة؛ راجع السجل قبل إعادة المحاولة' });
 
       // Update quotation status to 'sent'
-      await quotationsDb.updateQuotationStatus(input.quotationId, merchant.id, 'sent');
+      await quotationGuard(() => quotationsDb.updateQuotationStatus(input.quotationId, merchant.id, 'sent',
+        { actorId: ctx.user.id, expectedRevision: quotation.offerVersion, expectedStatus: quotation.status }));
 
       await logBrainActivity(merchant.id, 'quotation_sent',
         `تم إرسال عرض سعر #${quotation.quotationNumber} كـ PDF إلى ${input.customerPhone}`
       );
 
       // STR-03: Don't expose storage URL to frontend — only confirm send success
-      return sanitizeForTRPC({ success: true, sentAt: new Date().toISOString() });
+      return sanitizeForTRPC({ success: true, providerAccepted: true, delivered: false, sentAt: new Date().toISOString() });
     }),
 
   // ─── Sales Targets ─────────────────────────────
 
   /** Get current target */
-  getCurrentTarget: merchantProcedure.query(async ({ ctx }) => {
+  getCurrentTarget: permissionProcedure('analytics.read').query(async ({ ctx }) => {
     const merchant = await getMerchantById(ctx.merchantId);
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
     const quotationsDb = await import('./db/sales-quotations');
-    return sanitizeForTRPC(await quotationsDb.getCurrentTarget(merchant.id));
+    return sanitizeForTRPC(await quotationGuard(() => quotationsDb.getCurrentTarget(merchant.id)));
   }),
 
   /** Set monthly target */
   setMonthlyTarget: permissionProcedure('settings.manage')
-    .input(z.object({ targetAmount: z.number().min(0).max(999999999) }))
+    .input(z.object({ targetAmount: z.number().finite().min(0).max(999999999), requestId: z.string().uuid().optional(),
+      expectedRevision: z.number().int().positive().nullable(), period: z.string().regex(/^\d{4}-(?:0[1-9]|1[0-2])$/) }))
     .mutation(async ({ ctx, input }) => {
       const merchant = await getMerchantById(ctx.merchantId);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
       const quotationsDb = await import('./db/sales-quotations');
-      const target = await quotationsDb.setMonthlyTarget(merchant.id, input.targetAmount);
+      const target = await quotationGuard(() => quotationsDb.setMonthlyTarget(merchant.id, input.targetAmount,
+        { actorId: ctx.user.id, requestId: input.requestId, expectedRevision: input.expectedRevision, period: input.period }));
 
       await logBrainActivity(merchant.id, 'target_set',
         `تحديد هدف مبيعات شهري: ${input.targetAmount} ر.س`
@@ -1706,14 +1722,14 @@ ${sanitizedContent}`
     }),
 
   /** Get target history */
-  getTargetHistory: merchantProcedure
-    .input(z.object({ limit: z.number().min(1).max(24).optional() }))
+  getTargetHistory: permissionProcedure('analytics.read')
+    .input(z.object({ limit: z.number().int().min(1).max(24).optional() }))
     .query(async ({ ctx, input }) => {
       const merchant = await getMerchantById(ctx.merchantId);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
       const quotationsDb = await import('./db/sales-quotations');
-      return sanitizeForTRPC(await quotationsDb.getTargetHistory(merchant.id, input.limit || 12));
+      return sanitizeForTRPC(await quotationGuard(() => quotationsDb.getTargetHistory(merchant.id, input.limit || 12)));
     }),
 
   // ─── Quotation Templates ─────────────────────────

@@ -144,7 +144,7 @@ function buildQuotationHTML(data: QuotationData): string {
   
   const taxSection = data.taxAmount > 0 ? `
     <tr>
-      <td style="padding:8px 16px; color:#666;">الضريبة (${((data.taxRate || 0.15) * 100).toFixed(0)}%)</td>
+      <td style="padding:8px 16px; color:#666;">الضريبة${data.taxRate == null ? '' : ` (${Number((data.taxRate * 100).toFixed(2))}%)`}</td>
       <td style="padding:8px 16px; text-align:left; color:#666;">${formatPrice(data.taxAmount)} ${data.currency}</td>
     </tr>
   ` : '';
