@@ -24,6 +24,7 @@ import {
 } from "./import-preview-state";
 import "./product-preview.css";
 let root: Root | null = null;
+let initialized = false;
 export const handles = (page: { route: string }) =>
   page?.route === "/merchant/products/upload";
 export const render = () => '<div id="import-prototype-root"></div>';
@@ -141,6 +142,12 @@ export function mount() {
   if (!node) return;
   document.body.classList.add("pp-active", "pi-active");
   try {
+    // Reload resets the in-memory store; its local reference must reset with it.
+    // Navigating between prototype pages keeps both until a full reload.
+    if (!initialized) {
+      clearImportAttempt(importPreviewScope, knowledgeCacheEpoch());
+      initialized = true;
+    }
     if (imports.mode !== "empty" && !readImportAttempt(importPreviewScope))
       saveImportAttempt(
         importPreviewScope,

@@ -71,11 +71,15 @@ vi.mock("react-i18next", () => ({
   }),
 }));
 vi.mock("../client/src/components/merchant/WorkspaceState", () => ({
-  WorkspaceState: ({ kind, onRetry }: any) =>
+  WorkspaceState: ({ kind, onRetry, action, title, description }: any) =>
     React.createElement(
       "div",
       { "data-state": kind },
-      onRetry && React.createElement("button", { onClick: onRetry }, "Retry")
+      title,
+      description,
+      action ||
+        (onRetry &&
+          React.createElement("button", { onClick: onRetry }, "Retry"))
     ),
   workspaceFailureKind: (error: any) =>
     error?.data?.code === "FORBIDDEN"
@@ -366,6 +370,70 @@ describe("import reference storage and file contracts", () => {
   });
 });
 describe("reviewed product import screen", () => {
+  it("clears only a missing review reference after confirmation, without server writes", async () => {
+    saveImportAttempt(scope, cached(), knowledgeCacheEpoch());
+    m.error = { data: { code: "NOT_FOUND" } };
+    m.data.read = undefined;
+    await render();
+    await click("Import another file");
+    expect(readImportAttempt(scope)).not.toBeNull();
+    expect(document.activeElement?.textContent).toBe("Start a new review?");
+    await click("Start a new file");
+    expect(readImportAttempt(scope)).toBeNull();
+    expect(m.discard).not.toHaveBeenCalled();
+    expect(m.commit).not.toHaveBeenCalled();
+    expect(host.querySelector("details")?.open).toBe(true);
+  });
+  it("never offers to forget an unresolved import even when the review is missing", async () => {
+    saveImportAttempt(
+      scope,
+      { ...cached(), attempt: write() },
+      knowledgeCacheEpoch()
+    );
+    m.error = { data: { code: "NOT_FOUND" } };
+    m.data.read = undefined;
+    await render();
+    expect(host.textContent).toContain("Confirm the operation result");
+    expect(host.textContent).not.toContain("Import another file");
+    expect(readImportAttempt(scope)?.attempt).toEqual(write());
+  });
+  it.each(["INTERNAL_SERVER_ERROR", "UNAUTHORIZED", "FORBIDDEN"])(
+    "does not forget a review for %s",
+    async code => {
+      saveImportAttempt(scope, cached(), knowledgeCacheEpoch());
+      m.error = { data: { code } };
+      m.data.read = undefined;
+      await render();
+      expect(host.textContent).not.toContain("Import another file");
+      expect(readImportAttempt(scope)).not.toBeNull();
+    }
+  );
+  it("rechecks missing status before confirming local cleanup", async () => {
+    saveImportAttempt(scope, cached(), knowledgeCacheEpoch());
+    m.error = { data: { code: "NOT_FOUND" } };
+    await render();
+    await click("Import another file");
+    m.error = null;
+    m.updated++;
+    await render();
+    expect(button("Start a new file").disabled).toBe(true);
+    expect(readImportAttempt(scope)).not.toBeNull();
+    expect(m.discard).not.toHaveBeenCalled();
+  });
+  it("provides an immediate restart action on expired reviews and waits for server cleanup", async () => {
+    saveImportAttempt(scope, cached(), knowledgeCacheEpoch());
+    m.data.read.expired = true;
+    m.data.read.canCommit = false;
+    await render();
+    await click("Import another file");
+    m.discard.mockRejectedValue(Error("offline"));
+    await click("Remove review");
+    expect(readImportAttempt(scope)).not.toBeNull();
+    m.discard.mockResolvedValue({ discarded: true });
+    await click("Remove review");
+    expect(readImportAttempt(scope)).toBeNull();
+    expect(m.commit).not.toHaveBeenCalled();
+  });
   it("does not accept a foreign receipt nested inside a valid review", async () => {
     saveImportAttempt(scope, cached(), knowledgeCacheEpoch());
     m.data.read.receipt = { ...receipt(), merchantId: 99 };

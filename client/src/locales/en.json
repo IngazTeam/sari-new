@@ -10972,6 +10972,11 @@
     "providers": "AI import and Google Sheets",
     "providersHint": "Additional sources use their existing workflows. Their results are separate from the file review above.",
     "smartTools": "AI import",
-    "effectiveValues": "Values to import after applying defaults"
+    "effectiveValues": "Values to import after applying defaults",
+    "missingReviewTitle": "This file review is no longer available",
+    "missingReviewHint": "Retry or start another file. This review has no locally saved unresolved import request.",
+    "forgetReviewTitle": "Start a new review?",
+    "forgetReviewHint": "Only the unavailable review reference in this browser will be cleared. No product or server receipt is changed.",
+    "confirmForget": "Start a new file"
   }
 }

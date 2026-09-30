@@ -67,9 +67,12 @@ export function ProductImportWorkspace({
     [busy, setBusy] = useState(false),
     [notice, setNotice] = useState(""),
     [fileError, setFileError] = useState(""),
-    [cancelReview, setCancelReview] = useState(false);
+    [cancelReview, setCancelReview] = useState<false | "local" | "server">(
+      false
+    );
   const [fileEditorOpen, setFileEditorOpen] = useState(true);
   const reviewHeading = useRef<HTMLHeadingElement>(null),
+    cancelHeading = useRef<HTMLHeadingElement>(null),
     focusedReview = useRef("");
   const alive = useRef(true),
     epoch = useRef(knowledgeCacheEpoch()),
@@ -125,6 +128,16 @@ export function ProductImportWorkspace({
         ? catalogParsed.data.integrationSource
         : null;
   const reviewReceipt = ready ? data?.receipt : null;
+  const missingReview =
+    loaded &&
+    !!cached?.digest &&
+    !cached.attempt &&
+    !cached.receipt &&
+    !!query.error &&
+    workspaceFailureKind(query.error) === "missing" &&
+    !query.isFetching &&
+    !query.isLoading &&
+    query.fetchStatus !== "paused";
   const receipt =
       cached?.receipt ??
       (cached?.attempt && reviewReceipt?.requestId !== cached.attempt.requestId
@@ -174,6 +187,9 @@ export function ProductImportWorkspace({
   useEffect(() => {
     setReviewed(false);
   }, [query.dataUpdatedAt, page, filter, dirty, data?.preview.digest]);
+  useEffect(() => {
+    if (cancelReview) cancelHeading.current?.focus();
+  }, [cancelReview]);
   useEffect(() => {
     if (
       ready &&
@@ -446,6 +462,41 @@ export function ProductImportWorkspace({
       if (current()) setBusy(false);
     }
   }
+  function resetReview() {
+    clearImportAttempt(scope, epoch.current);
+    cacheRef.current = null;
+    setCached(null);
+    setCancelReview(false);
+    setFile(null);
+    if (fileInput.current) fileInput.current.value = "";
+    setOptions(defaults);
+    setFileEditorOpen(true);
+    setDirty(false);
+    setReviewed(false);
+    setPage(1);
+    setFilter("all");
+    setFileError("");
+    setNotice("");
+    focusedReview.current = "";
+  }
+  function clearMissing() {
+    const saved = cacheRef.current;
+    if (
+      !current() ||
+      lock.current ||
+      !missingReview ||
+      !saved ||
+      saved.attempt ||
+      saved.receipt ||
+      saved.reviewId !== cached?.reviewId
+    )
+      return;
+    try {
+      resetReview();
+    } catch {
+      setStorageError(true);
+    }
+  }
   async function clear() {
     if (!current() || lock.current || pending) return;
     const saved = cacheRef.current;
@@ -459,18 +510,7 @@ export function ProductImportWorkspace({
           expectedDigest: saved.digest,
         });
       if (!current()) return;
-      clearImportAttempt(scope, epoch.current);
-      cacheRef.current = null;
-      setCached(null);
-      setCancelReview(false);
-      setFile(null);
-      if (fileInput.current) fileInput.current.value = "";
-      setOptions(defaults);
-      setFileEditorOpen(true);
-      setDirty(false);
-      setReviewed(false);
-      setPage(1);
-      setFilter("all");
+      resetReview();
     } catch (error) {
       if (current()) setNotice(failure(error));
     } finally {
@@ -772,7 +812,7 @@ export function ProductImportWorkspace({
                   <button
                     type="button"
                     disabled={busy || storageError}
-                    onClick={() => setCancelReview(true)}
+                    onClick={() => setCancelReview("server")}
                   >
                     {t("productImportUx.discard")}
                   </button>
@@ -783,6 +823,36 @@ export function ProductImportWorkspace({
           {cached?.digest && !ready && !pending && (
             <WorkspaceState
               inline
+              title={
+                missingReview
+                  ? t("productImportUx.missingReviewTitle")
+                  : undefined
+              }
+              description={
+                missingReview
+                  ? t("productImportUx.missingReviewHint")
+                  : undefined
+              }
+              action={
+                missingReview ? (
+                  <div className="pw-actions">
+                    <button
+                      type="button"
+                      disabled={busy || storageError}
+                      onClick={() => query.refetch()}
+                    >
+                      {t("productWorkspaceUx.refresh")}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={busy || storageError}
+                      onClick={() => setCancelReview("local")}
+                    >
+                      {t("productImportUx.startAnother")}
+                    </button>
+                  </div>
+                ) : undefined
+              }
               kind={
                 query.error
                   ? workspaceFailureKind(query.error)
@@ -821,9 +891,16 @@ export function ProductImportWorkspace({
                   </button>
                 </header>
                 {data.expired && (
-                  <p className="pw-error" role="alert">
-                    {t("productImportUx.expired")}
-                  </p>
+                  <div className="pw-error" role="alert">
+                    <p>{t("productImportUx.expired")}</p>
+                    <button
+                      type="button"
+                      disabled={busy || storageError}
+                      onClick={() => setCancelReview("server")}
+                    >
+                      {t("productImportUx.startAnother")}
+                    </button>
+                  </div>
                 )}
                 {dirty && (
                   <p className="pw-notice">
@@ -1083,7 +1160,7 @@ export function ProductImportWorkspace({
                   <button
                     type="button"
                     disabled={busy || storageError}
-                    onClick={() => setCancelReview(true)}
+                    onClick={() => setCancelReview("server")}
                   >
                     {t("productImportUx.discard")}
                   </button>
@@ -1093,11 +1170,29 @@ export function ProductImportWorkspace({
           )}
           {cancelReview && !pending && (
             <section className="pw-notice">
-              <h2>{t("productImportUx.discardTitle")}</h2>
-              <p>{t("productImportUx.discardHint")}</p>
+              <h2 ref={cancelHeading} tabIndex={-1}>
+                {cancelReview === "local"
+                  ? t("productImportUx.forgetReviewTitle")
+                  : t("productImportUx.discardTitle")}
+              </h2>
+              <p>
+                {cancelReview === "local"
+                  ? t("productImportUx.forgetReviewHint")
+                  : t("productImportUx.discardHint")}
+              </p>
               <div className="pw-actions">
-                <button type="button" disabled={busy} onClick={clear}>
-                  {t("productImportUx.confirmDiscard")}
+                <button
+                  type="button"
+                  disabled={
+                    busy ||
+                    storageError ||
+                    (cancelReview === "local" && !missingReview)
+                  }
+                  onClick={cancelReview === "local" ? clearMissing : clear}
+                >
+                  {cancelReview === "local"
+                    ? t("productImportUx.confirmForget")
+                    : t("productImportUx.confirmDiscard")}
                 </button>
                 <button
                   type="button"

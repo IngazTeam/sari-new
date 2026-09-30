@@ -10,6 +10,7 @@ import {
   importModes,
   importSampleId,
   importPreviewId,
+  importPreviewScope,
 } from "../prototypes/tenant-dashboard/src/import-model";
 import { productImportReviewSchema } from "../shared/product-import";
 const requestId = "11111111-1111-4111-8111-111111111111";
@@ -197,6 +198,17 @@ describe("built import prototype with actual workspace", () => {
       virtualConsole: vc,
     });
     w = dom.window;
+    // A previous page load left a reference to an in-memory review that no longer exists.
+    w.sessionStorage.setItem(
+      "sary:product-import:v1:" + importPreviewScope,
+      JSON.stringify({
+        reviewId,
+        fingerprint: "b".repeat(64),
+        digest: "a".repeat(64),
+        attempt: null,
+        receipt: null,
+      })
+    );
     w.structuredClone = structuredClone;
     w.TextEncoder = TextEncoder;
     w.TextDecoder = TextDecoder;
@@ -250,6 +262,13 @@ describe("built import prototype with actual workspace", () => {
       expect(text()).toContain("نحتاج تأكيد نتيجة العملية")
     );
     await click("فحص النتيجة");
+    await vi.waitFor(() => expect(text()).toContain("تمت إضافة 25 عنصرًا"));
+    expect(text()).toContain("عدد العناصر المنشأة في المحاكاة: 25");
+    w.location.hash = "#/page/merchant/tools";
+    await vi.waitFor(() =>
+      expect(w.document.querySelector(".pi-workspace")).toBeNull()
+    );
+    w.location.hash = "#/page/merchant/products/upload";
     await vi.waitFor(() => expect(text()).toContain("تمت إضافة 25 عنصرًا"));
     expect(text()).toContain("عدد العناصر المنشأة في المحاكاة: 25");
   });
