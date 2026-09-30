@@ -31,3 +31,37 @@ export const productDeleteReceipt = z
   })
   .strict();
 export type ProductDeleteReceipt = z.infer<typeof productDeleteReceipt>;
+
+const count = z.number().int().nonnegative().safe();
+export const productDeleteReviewSchema = z.object({
+  merchantId: id,
+  selection: productDeleteReviewInput,
+  digest,
+  canManage: z.boolean(),
+  canDelete: z.boolean(),
+  items: z
+    .array(
+      z.object({
+        id,
+        name: z.string(),
+        price: z.number().int(),
+        priceUnit: z.enum(["minor", "unverified"]),
+        currency: z.enum(["SAR", "USD"]),
+        status: z.enum(["active", "draft", "archived"]),
+        variants: count,
+        options: count,
+        locked: z.boolean(),
+        blocked: z.boolean(),
+        references: z.object({
+          rewards: count,
+          comparisons: count,
+          reviews: count,
+          promotions: count,
+          unreadablePromotions: count,
+          foreignDetails: count,
+        }),
+      })
+    )
+    .min(1)
+    .max(100),
+});

@@ -3,6 +3,18 @@
   "scope": "Reviewed API substitutions and moved controls. Evidence of intentional implementation changes, not a claim that every workflow passed runtime testing.",
   "transitions": [
     {
+      "routes": ["/merchant/products"],
+      "removed": ["products.create", "products.update", "products.delete", "products.bulkDelete"],
+      "required": ["products.list", "products.editor.read", "products.editor.write", "products.editor.receipt", "products.editor.deleteReview", "products.editor.deleteWrite", "products.editor.deleteReceipt"],
+      "note": "The old product modal and bulk delete are replaced by a scoped editor and reviewed deletion with atomic receipts. All 16 prior editor fields, images, margin/discount previews, source locks and import navigation are preserved; currency and precise field errors are explicit. The old server CRUD remains until consumer retirement is audited.",
+      "evidence": ["docs/audits/tenant-product-workspace-2026-09-30/REPORT.md", "docs/audits/tenant-product-editor-2026-09-30/REPORT.md", "docs/audits/tenant-product-deletion-2026-09-30/REPORT.md"],
+      "checks": [
+        {"file":"client/src/components/merchant/ProductCatalogWorkspace.tsx","contains":"/merchant/products/upload"},
+        {"file":"client/src/components/merchant/ProductEditorWorkspace.tsx","contains":"productPricePreview"},
+        {"file":"server/product-workspace-page.test.ts","contains":"17"}
+      ]
+    },
+    {
       "routes": [
         "/merchant/quotation-templates"
       ],

@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-09-30T08:24:22.327Z",
+  "generatedAt": "2026-09-30T09:41:23.915Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 289,
-      "controls": 1958
+      "files": 294,
+      "controls": 1938
     }
   },
   "addedFiles": [
@@ -29,6 +29,14 @@
     "client/src/lib/sales-cohort-inspection.ts",
     "client/src/components/merchant/CampaignPerformance.tsx",
     "client/src/lib/merchant-date.ts",
+    "client/src/components/KnowledgeWorkspaceScope.tsx",
+    "client/src/lib/knowledge-workspace-cache.ts",
+    "client/src/components/merchant/ProductCatalogWorkspace.tsx",
+    "client/src/lib/product-workspace-cache.ts",
+    "client/src/lib/product-workspace-model.ts",
+    "client/src/components/merchant/ProductWorkspaceView.tsx",
+    "client/src/components/merchant/ProductEditorWorkspace.tsx",
+    "client/src/components/merchant/ProductDeleteWorkspace.tsx",
     "client/src/lib/staff-voice-attempt.ts",
     "client/src/lib/staff-dashboard-attempt.ts",
     "client/src/lib/meta-embedded-signup.ts",
@@ -36,9 +44,7 @@
     "client/src/components/ByaanSalesReview.tsx",
     "client/src/components/merchant/WorkspaceState.tsx",
     "client/src/_core/hooks/useAuth.ts",
-    "client/src/lib/knowledge-workspace-cache.ts",
     "client/src/lib/assistant-draft-cache.ts",
-    "client/src/components/KnowledgeWorkspaceScope.tsx",
     "client/src/components/merchant/MessageWorkspace.tsx",
     "client/src/lib/message-labels.ts",
     "client/src/lib/message-export.ts",
@@ -128,6 +134,7 @@
   "changedFiles": [
     "client/src/components/PreviewChat.tsx",
     "client/src/pages/merchant/Campaigns.tsx",
+    "client/src/pages/merchant/Products.tsx",
     "client/src/pages/merchant/WhatsAppInstancesPage.tsx",
     "client/src/pages/ByaanDashboard.tsx",
     "client/src/pages/merchant/Analytics.tsx",
@@ -161,7 +168,12 @@
     "client/src/components/merchant/MerchantShell.tsx",
     "client/src/components/MerchantSelector.tsx"
   ],
-  "noLongerReachable": [],
+  "noLongerReachable": [
+    {
+      "file": "client/src/components/ProductsSkeleton.tsx",
+      "exists": true
+    }
+  ],
   "priorOrphans": [
     {
       "file": "client/src/pages/merchant/AdvancedAnalytics.tsx",
@@ -309,11 +321,25 @@
     {
       "route": "/merchant/products",
       "controlsBefore": 57,
-      "controlsNow": 57,
+      "controlsNow": 38,
       "removedQueries": [],
-      "addedQueries": [],
-      "removedMutations": [],
-      "addedMutations": []
+      "addedQueries": [
+        "auth.me",
+        "products.editor.read",
+        "products.editor.receipt",
+        "products.editor.deleteReview",
+        "products.editor.deleteReceipt"
+      ],
+      "removedMutations": [
+        "products.create",
+        "products.update",
+        "products.delete",
+        "products.bulkDelete"
+      ],
+      "addedMutations": [
+        "products.editor.write",
+        "products.editor.deleteWrite"
+      ]
     },
     {
       "route": "/merchant/products/upload",
