@@ -24,11 +24,13 @@ export function SheetsSettingsWorkspace({
   navigate = (url: string) => window.location.assign(url),
   sheetHref = (id: string) =>
     `https://docs.google.com/spreadsheets/d/${id}/edit`,
+  openSheet,
 }: {
   scope: string;
   href?: (p: string) => string;
   navigate?: (url: string) => void;
   sheetHref?: (id: string) => string;
+  openSheet?: (id: string) => void;
 }) {
   const { t, i18n } = useTranslation();
   const status = trpc.sheets.getStatus.useQuery(undefined, {
@@ -401,6 +403,14 @@ export function SheetsSettingsWorkspace({
                 <a
                   className="pw-button"
                   href={sheetHref(data.spreadsheetId)}
+                  onClick={
+                    openSheet
+                      ? e => {
+                          e.preventDefault();
+                          openSheet(data.spreadsheetId!);
+                        }
+                      : undefined
+                  }
                   target="_blank"
                   rel="noopener noreferrer"
                 >
@@ -499,6 +509,14 @@ export function SheetsSettingsWorkspace({
                   <a
                     className="pw-button"
                     href={sheetHref(attempt.spreadsheetId)}
+                    onClick={
+                      openSheet
+                        ? e => {
+                            e.preventDefault();
+                            openSheet(attempt.spreadsheetId!);
+                          }
+                        : undefined
+                    }
                     target="_blank"
                     rel="noopener noreferrer"
                   >

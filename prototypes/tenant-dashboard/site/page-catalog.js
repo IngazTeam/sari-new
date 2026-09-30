@@ -1312,7 +1312,7 @@ window.TENANT_PAGES = [
     "title": "ربط Google Sheets",
     "group": "settings",
     "file": "client/src/pages/SheetsSettings.tsx",
-    "note": "نجح الإعداد وفشل الإعداد عناوين ثابتة خاطئة؛ تصحيح النصوص.",
+    "note": "ربط الحساب والوجهة وإيصال الإنشاء وخيارات التقارير في مساحة واحدة.",
     "kind": "integration",
     "action": "ربط Google Sheets",
     "labels": [

@@ -4,8 +4,29 @@ import {
   sheets,
   inventorySheets,
   exportSheets,
+  settingsSheets,
   useImportVersion,
 } from "./import-preview-state";
+function settingsQuery(read: () => unknown) {
+  useImportVersion();
+  const result = () => {
+    try {
+      return { data: read(), error: null };
+    } catch (error) {
+      return { data: undefined, error };
+    }
+  };
+  return {
+    ...result(),
+    isLoading: settingsSheets.mode === "loading",
+    isFetching: settingsSheets.mode === "loading",
+    fetchStatus: settingsSheets.mode === "offline" ? "paused" : "idle",
+    refetch: async () => {
+      await settingsSheets.refresh();
+      return result();
+    },
+  };
+}
 function sheetQuery(
   read: () => unknown,
   enabled = true,
@@ -63,6 +84,22 @@ function query(read: () => unknown, enabled = true) {
 }
 export const trpc = {
   sheets: {
+    getStatus: { useQuery: () => settingsQuery(settingsSheets.status) },
+    beginOAuth: { useMutation: () => ({ mutateAsync: settingsSheets.begin }) },
+    updateReportSettings: {
+      useMutation: () => ({ mutateAsync: settingsSheets.save }),
+    },
+    disconnect: {
+      useMutation: () => ({ mutateAsync: settingsSheets.disconnect }),
+    },
+    setup: {
+      read: { useQuery: () => settingsQuery(settingsSheets.read) },
+      start: { useMutation: () => ({ mutateAsync: settingsSheets.start }) },
+      recover: { useMutation: () => ({ mutateAsync: settingsSheets.recover }) },
+      acknowledge: {
+        useMutation: () => ({ mutateAsync: settingsSheets.acknowledge }),
+      },
+    },
     inventoryStatus: {
       useQuery: () => sheetQuery(exportSheets.status, true, exportSheets),
     },

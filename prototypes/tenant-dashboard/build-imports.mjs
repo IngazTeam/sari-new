@@ -15,6 +15,9 @@ for (const language of ["ar", "en"]) {
     productSheetUx: text.productSheetUx,
     inventorySheetUx: text.inventorySheetUx,
     dataSyncUx: text.dataSyncUx,
+    sheetsSettingsUx: text.sheetsSettingsUx,
+    sheetsOAuth: text.sheetsOAuth,
+    sheetsConnectionUx: text.sheetsConnectionUx,
     productWorkspaceUx: text.productWorkspaceUx,
     uploadProductsPage: { viewProducts: text.uploadProductsPage.viewProducts },
   };

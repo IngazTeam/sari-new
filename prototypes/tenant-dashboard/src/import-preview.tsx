@@ -7,6 +7,7 @@ import { clearSheetAttempt } from "../../../client/src/lib/product-sheet-workspa
 import { sheetModes, type SheetMode } from "./import-sheet-model";
 import { InventoryPreview } from "./inventory-preview";
 import { ExportPreview } from "./export-preview";
+import { SheetsSettingsPreview } from "./sheets-settings-preview";
 import { inventoryPreviewScope } from "./inventory-sheet-model";
 import { clearSheetAttempt as clearInventoryAttempt } from "../../../client/src/lib/inventory-sheet-workspace";
 import { clearAdviceReference } from "../../../client/src/lib/product-file-advice-workspace";
@@ -42,9 +43,10 @@ export const handles = (page: { route: string }) =>
     "/merchant/products/upload",
     "/merchant/sheets/inventory",
     "/merchant/data-sync",
+    "/merchant/sheets/settings",
   ].includes(page?.route);
 export const render = (page?: { route: string }) =>
-  `<div id="import-prototype-root" data-kind="${page?.route === "/merchant/data-sync" ? "export" : page?.route === "/merchant/sheets/inventory" ? "inventory" : "import"}"></div>`;
+  `<div id="import-prototype-root" data-kind="${page?.route === "/merchant/sheets/settings" ? "settings" : page?.route === "/merchant/data-sync" ? "export" : page?.route === "/merchant/sheets/inventory" ? "inventory" : "import"}"></div>`;
 function Preview() {
   useImportVersion();
   const [generation, setGeneration] = useState(0),
@@ -240,7 +242,9 @@ export function mount() {
   }
   root = createRoot(node);
   root.render(
-    node.dataset.kind === "export" ? (
+    node.dataset.kind === "settings" ? (
+      <SheetsSettingsPreview />
+    ) : node.dataset.kind === "export" ? (
       <ExportPreview />
     ) : node.dataset.kind === "inventory" ? (
       <InventoryPreview />

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-30T16:17:09.213Z",
+  "generatedAt": "2026-09-30T16:33:37.222Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -13509,7 +13509,7 @@
     },
     {
       "file": "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
-      "hash": "5b009fd91dbf",
+      "hash": "9dc9ea1451ca",
       "queries": [
         "sheets.getStatus",
         "sheets.setup.read"
@@ -13527,32 +13527,32 @@
       "sections": [
         {
           "label": "حساب Google والوجهة",
-          "line": 393,
+          "line": 395,
           "tag": "h2"
         },
         {
           "label": "ربط الحساب أو تغييره",
-          "line": 421,
+          "line": 431,
           "tag": "summary"
         },
         {
           "label": "آخر محاولة لإعداد الوجهة",
-          "line": 487,
+          "line": 497,
           "tag": "h2"
         },
         {
           "label": "إعداد ملف البيانات",
-          "line": 561,
+          "line": 579,
           "tag": "h2"
         },
         {
           "label": "التقارير التلقائية",
-          "line": 591,
+          "line": 609,
           "tag": "h2"
         },
         {
           "label": "المنتجات والمخزون والتقارير",
-          "line": 654,
+          "line": 672,
           "tag": "h2"
         }
       ],
@@ -13560,14 +13560,14 @@
       "handlers": [
         {
           "name": "createNow",
-          "line": 244,
+          "line": 246,
           "calls": [
             "start"
           ]
         },
         {
           "name": "saveNow",
-          "line": 265,
+          "line": 267,
           "calls": [
             "save"
           ]
@@ -13577,7 +13577,7 @@
         {
           "query": "sheets.getStatus",
           "binding": "status",
-          "line": 34,
+          "line": 36,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
@@ -13585,7 +13585,7 @@
         {
           "query": "sheets.setup.read",
           "binding": "setup",
-          "line": 38,
+          "line": 40,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
@@ -21476,31 +21476,31 @@
       ],
       "controls": [
         "77ce5300e6f7",
-        "3ab5bb005a54",
-        "fd3e9cad94c0",
-        "d77a34492429",
-        "638f0c591a86",
-        "9641d216e7aa",
-        "c461605fae3d",
-        "cffeac9c3711",
-        "ee95c4da2364",
-        "973bc2bef4cd",
-        "da81bcfc046d",
-        "7b204459d3ba",
-        "628fc099bdd8",
-        "c9d356648b04",
-        "439db7cb16ea",
-        "49c803e135d0",
-        "fb8663d41c14",
-        "28a9035a8b48",
-        "f58a9d7f32e3",
-        "79481e00c1ab",
-        "783148e9b27e",
-        "ebbfce11bd6a",
-        "32eead9e1fe1",
-        "72d71cd18980",
-        "b6f0309c4141",
-        "f449a31ecdcd",
+        "e7bf43d89cd6",
+        "06131af00f83",
+        "3766f6866b45",
+        "ef32f801d9b3",
+        "20618c06a381",
+        "edac6e416bd6",
+        "47609635d933",
+        "6f6b94884f2a",
+        "7feeb0775c1a",
+        "346bdd731954",
+        "089023c1de3b",
+        "ccb9a64fcc14",
+        "1ae52e472d19",
+        "dd764533e867",
+        "cade3b695400",
+        "0c8bd2eec87e",
+        "0a9c1d3c5a0e",
+        "9b0a456e3fec",
+        "c4af35b35325",
+        "2e78a951e48e",
+        "91b79e3125b0",
+        "89129989c3bc",
+        "4c983812460e",
+        "dfb1b6043583",
+        "183fed1fdf17",
         "8781b3ad3758",
         "ab0c78e94084"
       ],
@@ -60956,9 +60956,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "3ab5bb005a54",
+      "id": "e7bf43d89cd6",
       "file": "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
-      "line": 356,
+      "line": 358,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -60977,9 +60977,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "fd3e9cad94c0",
+      "id": "06131af00f83",
       "file": "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
-      "line": 384,
+      "line": 386,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -61003,22 +61003,22 @@
       "review": "source-inventoried"
     },
     {
-      "id": "d77a34492429",
+      "id": "3766f6866b45",
       "file": "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
-      "line": 401,
+      "line": 403,
       "tag": "a",
       "role": "",
       "kind": "action",
       "label": "فتح وجهة البيانات ↗",
       "section": "حساب Google والوجهة",
-      "binding": "sheetHref(data.spreadsheetId)",
+      "binding": "openSheet\n                      ? e => {\n                          e.preventDefault();\n                          openSheet(data.spreadsheetId!);\n                        }\n                      : undefined",
       "type": "text",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": false,
+      "conditional": true,
       "conditions": [
         "data.spreadsheetId",
         "data",
@@ -61029,9 +61029,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "638f0c591a86",
+      "id": "ef32f801d9b3",
       "file": "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
-      "line": 421,
+      "line": 431,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -61055,9 +61055,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "9641d216e7aa",
+      "id": "20618c06a381",
       "file": "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
-      "line": 425,
+      "line": 435,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -61080,9 +61080,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "c461605fae3d",
+      "id": "edac6e416bd6",
       "file": "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
-      "line": 435,
+      "line": 445,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -61104,9 +61104,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "cffeac9c3711",
+      "id": "47609635d933",
       "file": "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
-      "line": 456,
+      "line": 466,
       "tag": "input",
       "role": "",
       "kind": "field",
@@ -61128,9 +61128,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ee95c4da2364",
+      "id": "6f6b94884f2a",
       "file": "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
-      "line": 465,
+      "line": 475,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -61152,9 +61152,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "973bc2bef4cd",
+      "id": "7feeb0775c1a",
       "file": "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
-      "line": 472,
+      "line": 482,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -61176,22 +61176,22 @@
       "review": "source-inventoried"
     },
     {
-      "id": "da81bcfc046d",
+      "id": "346bdd731954",
       "file": "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
-      "line": 499,
+      "line": 509,
       "tag": "a",
       "role": "",
       "kind": "action",
       "label": "فتح ملف هذه المحاولة ↗",
       "section": "آخر محاولة لإعداد الوجهة",
-      "binding": "sheetHref(attempt.spreadsheetId)",
+      "binding": "openSheet\n                        ? e => {\n                            e.preventDefault();\n                            openSheet(attempt.spreadsheetId!);\n                          }\n                        : undefined",
       "type": "text",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": false,
+      "conditional": true,
       "conditions": [
         "attempt.spreadsheetId",
         "attempt",
@@ -61201,9 +61201,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "7b204459d3ba",
+      "id": "089023c1de3b",
       "file": "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
-      "line": 514,
+      "line": 532,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -61226,9 +61226,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "628fc099bdd8",
+      "id": "ccb9a64fcc14",
       "file": "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
-      "line": 519,
+      "line": 537,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -61251,9 +61251,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "c9d356648b04",
+      "id": "1ae52e472d19",
       "file": "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
-      "line": 533,
+      "line": 551,
       "tag": "input",
       "role": "",
       "kind": "field",
@@ -61275,9 +61275,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "439db7cb16ea",
+      "id": "dd764533e867",
       "file": "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
-      "line": 542,
+      "line": 560,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -61299,9 +61299,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "49c803e135d0",
+      "id": "cade3b695400",
       "file": "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
-      "line": 548,
+      "line": 566,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -61323,9 +61323,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "fb8663d41c14",
+      "id": "0c8bd2eec87e",
       "file": "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
-      "line": 569,
+      "line": 587,
       "tag": "input",
       "role": "",
       "kind": "field",
@@ -61348,9 +61348,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "28a9035a8b48",
+      "id": "0a9c1d3c5a0e",
       "file": "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
-      "line": 577,
+      "line": 595,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -61374,9 +61374,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "f58a9d7f32e3",
+      "id": "9b0a456e3fec",
       "file": "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
-      "line": 597,
+      "line": 615,
       "tag": "input",
       "role": "",
       "kind": "field",
@@ -61397,9 +61397,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "79481e00c1ab",
+      "id": "c4af35b35325",
       "file": "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
-      "line": 616,
+      "line": 634,
       "tag": "input",
       "role": "",
       "kind": "field",
@@ -61421,9 +61421,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "783148e9b27e",
+      "id": "2e78a951e48e",
       "file": "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
-      "line": 626,
+      "line": 644,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -61446,9 +61446,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ebbfce11bd6a",
+      "id": "91b79e3125b0",
       "file": "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
-      "line": 639,
+      "line": 657,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -61470,9 +61470,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "32eead9e1fe1",
+      "id": "89129989c3bc",
       "file": "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
-      "line": 657,
+      "line": 675,
       "tag": "a",
       "role": "",
       "kind": "action",
@@ -61496,9 +61496,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "72d71cd18980",
+      "id": "4c983812460e",
       "file": "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
-      "line": 663,
+      "line": 681,
       "tag": "a",
       "role": "",
       "kind": "action",
@@ -61522,9 +61522,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "b6f0309c4141",
+      "id": "dfb1b6043583",
       "file": "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
-      "line": 669,
+      "line": 687,
       "tag": "a",
       "role": "",
       "kind": "action",
@@ -61548,9 +61548,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "f449a31ecdcd",
+      "id": "183fed1fdf17",
       "file": "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
-      "line": 672,
+      "line": 690,
       "tag": "a",
       "role": "",
       "kind": "action",
