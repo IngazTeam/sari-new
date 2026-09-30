@@ -88,6 +88,7 @@ export type TemplateRecord = TemplateFields & {
 };
 export type TemplateWorkspace = {
   merchantId: number;
+  selection: { page: number; search: string };
   page: number;
   pageSize: 20;
   total: number;

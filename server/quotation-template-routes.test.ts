@@ -37,6 +37,16 @@ beforeEach(() => {
   m.format.mockReturnValue("Only explicitly selected content");
 });
 describe("template selection and copy compatibility", () => {
+  it("retires every unreviewed template write route", () => {
+    const procedures = sariBrainRouter._def.procedures;
+    for (const name of [
+      "createQuotationTemplate",
+      "updateQuotationTemplate",
+      "deleteQuotationTemplate",
+    ])
+      expect(procedures).not.toHaveProperty(name);
+    expect(procedures["quotationTemplates.write"]).toBeDefined();
+  });
   it("uses resolved membership for listing", async () => {
     expect(await caller().getQuotationTemplates()).toEqual([]);
     expect(m.list).toHaveBeenCalledWith(20);

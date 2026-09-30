@@ -107,6 +107,7 @@ export async function readTemplateWorkspace(merchantId: number, raw: unknown) {
     );
     return {
       merchantId,
+      selection: input,
       page,
       pageSize: 20 as const,
       total,

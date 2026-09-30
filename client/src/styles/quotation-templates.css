@@ -1,0 +1,135 @@
+.tt-workspace {
+  min-width: 0;
+}
+.tt-editor-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+.tt-form,
+.tt-field {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+.tt-form {
+  gap: 22px;
+}
+.tt-field :is(input, textarea) {
+  width: 100%;
+  font-size: 16px;
+}
+.tt-field textarea {
+  resize: vertical;
+  min-height: 140px;
+  line-height: 1.8;
+}
+.tt-field small,
+.tt-preview small {
+  color: var(--muted-foreground);
+}
+.tt-field [aria-invalid="true"] {
+  border-color: #b43c35;
+}
+.tt-error {
+  color: #a52f29;
+  font-size: 0.9rem;
+}
+.tt-check {
+  display: flex;
+  align-items: start;
+  gap: 10px;
+  line-height: 1.8;
+}
+.tt-check input[type="checkbox"] {
+  width: 22px;
+  height: 22px;
+  min-height: 22px;
+  margin-top: 4px;
+  flex-shrink: 0;
+  accent-color: var(--primary);
+}
+.tt-preview {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  color: var(--foreground);
+}
+.tt-preview :is(p, h3, h4) {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.tt-preview h3 {
+  font-size: 1.25rem !important;
+  padding-block-end: 20px;
+  border-bottom: 1px solid var(--border);
+}
+.tt-preview h4 {
+  font-weight: 700;
+  margin-top: 10px;
+}
+.tt-fulltext {
+  white-space: pre-wrap;
+  line-height: 1.9;
+}
+.tt-selection-note {
+  padding: 16px;
+  background: var(--muted);
+  border-radius: 12px;
+  margin-top: 16px !important;
+}
+.tt-preview-actions {
+  margin-top: 24px;
+}
+.tt-badge {
+  display: inline-block;
+  background: #e4eedc;
+  color: #365534;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+}
+.tt-empty {
+  padding: 36px 12px;
+  line-height: 1.8;
+  text-align: center;
+}
+.tt-form summary {
+  cursor: pointer;
+  min-height: 44px;
+  align-content: center;
+  font-weight: 600;
+}
+.tt-form details[open] summary {
+  margin-bottom: 16px;
+}
+.tt-form details > p {
+  margin-block: 10px;
+  line-height: 1.8;
+}
+.tt-delete .qsend-footer button {
+  min-height: 44px;
+}
+@media (max-width: 900px) {
+  .tt-editor-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 600px) {
+  .tt-workspace .qt-row {
+    flex-wrap: wrap;
+  }
+  .tt-workspace .qt-row > button {
+    width: 100%;
+  }
+  .tt-workspace .qt-panel {
+    padding: 18px;
+  }
+  .tt-editor-layout {
+    gap: 16px;
+  }
+  .tt-delete .qsend-footer {
+    flex-wrap: wrap;
+  }
+}

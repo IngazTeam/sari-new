@@ -3,20 +3,89 @@
   "scope": "Reviewed API substitutions and moved controls. Evidence of intentional implementation changes, not a claim that every workflow passed runtime testing.",
   "transitions": [
     {
-      "routes": ["/merchant/sales-hub"],
-      "removed": ["sariBrain.getQuotations", "sariBrain.getQuotationStats", "sariBrain.getCurrentTarget", "sariBrain.createQuotation", "sariBrain.updateQuotationStatus", "sariBrain.setMonthlyTarget", "sariBrain.formatQuotationForWhatsApp"],
-      "required": ["sariBrain.quotations.workspace", "sariBrain.quotations.detail", "sariBrain.quotations.create", "sariBrain.quotations.change", "sariBrain.quotations.target"],
-      "note": "Paged canonical quotation workspace preserves list, create, target, copy and status actions with detailed review, actor-scoped drafts, recoverable receipts and complete locally formatted saved text.",
-      "evidence": ["docs/audits/tenant-quotation-workspace-2026-09-30/REPORT.md"],
-      "checks": [{"file":"client/src/lib/quotation-display.ts","contains":"quotationPlainText"}]
+      "routes": [
+        "/merchant/quotation-templates"
+      ],
+      "removed": [
+        "sariBrain.getQuotationTemplates",
+        "sariBrain.createQuotationTemplate",
+        "sariBrain.updateQuotationTemplate",
+        "sariBrain.deleteQuotationTemplate"
+      ],
+      "required": [
+        "sariBrain.quotationTemplates.workspace",
+        "sariBrain.quotationTemplates.detail",
+        "sariBrain.quotationTemplates.write"
+      ],
+      "note": "Template list, create, edit, preferred ordering, complete preview and reviewed deletion use a single scoped writer with content digests and durable receipts. Images are retained as reviewed URLs and never auto-loaded in the editor.",
+      "evidence": [
+        "docs/audits/tenant-quotation-template-workspace-2026-09-30/REPORT.md",
+        "docs/audits/tenant-quotation-template-writes-2026-09-30/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "client/src/components/merchant/QuotationTemplateWorkspace.tsx",
+          "contains": "quotationTemplates.receipt.fetch"
+        },
+        {
+          "file": "client/src/components/merchant/QuotationTemplateReport.tsx",
+          "contains": "TemplatePreview"
+        }
+      ]
     },
     {
-      "routes": ["/merchant/sales-hub"],
-      "removed": ["sariBrain.sendQuotationToCustomer"],
-      "required": ["sariBrain.quotations.sendWorkspace", "sariBrain.quotations.prepareReview", "sariBrain.quotations.sendReviewed"],
+      "routes": [
+        "/merchant/sales-hub"
+      ],
+      "removed": [
+        "sariBrain.getQuotations",
+        "sariBrain.getQuotationStats",
+        "sariBrain.getCurrentTarget",
+        "sariBrain.createQuotation",
+        "sariBrain.updateQuotationStatus",
+        "sariBrain.setMonthlyTarget",
+        "sariBrain.formatQuotationForWhatsApp"
+      ],
+      "required": [
+        "sariBrain.quotations.workspace",
+        "sariBrain.quotations.detail",
+        "sariBrain.quotations.create",
+        "sariBrain.quotations.change",
+        "sariBrain.quotations.target"
+      ],
+      "note": "Paged canonical quotation workspace preserves list, create, target, copy and status actions with detailed review, actor-scoped drafts, recoverable receipts and complete locally formatted saved text.",
+      "evidence": [
+        "docs/audits/tenant-quotation-workspace-2026-09-30/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "client/src/lib/quotation-display.ts",
+          "contains": "quotationPlainText"
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/sales-hub"
+      ],
+      "removed": [
+        "sariBrain.sendQuotationToCustomer"
+      ],
+      "required": [
+        "sariBrain.quotations.sendWorkspace",
+        "sariBrain.quotations.prepareReview",
+        "sariBrain.quotations.sendReviewed"
+      ],
       "note": "Replace immediate unreviewed sending with a durable full-content review, fresh explicit consent and recoverable delivery receipt.",
-      "evidence": ["docs/audits/tenant-quotation-send-ui-2026-09-30/REPORT.md"],
-      "checks": [{"file":"client/src/components/merchant/QuotationDeliveryDialog.tsx","contains":"confirmed: true"}]
+      "evidence": [
+        "docs/audits/tenant-quotation-send-ui-2026-09-30/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "client/src/components/merchant/QuotationDeliveryDialog.tsx",
+          "contains": "confirmed: true"
+        }
+      ]
     },
     {
       "routes": [

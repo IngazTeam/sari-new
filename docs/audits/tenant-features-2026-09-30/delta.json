@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-09-30T03:35:20.369Z",
+  "generatedAt": "2026-09-30T04:08:16.534Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 273,
-      "controls": 1903
+      "files": 276,
+      "controls": 1922
     }
   },
   "addedFiles": [
@@ -93,6 +93,9 @@
     "client/src/components/merchant/PipelineWorkspace.tsx",
     "client/src/lib/pipeline-labels.ts",
     "client/src/components/merchant/PipelineReport.tsx",
+    "client/src/components/merchant/QuotationTemplateWorkspace.tsx",
+    "client/src/lib/quotation-template-cache.ts",
+    "client/src/components/merchant/QuotationTemplateReport.tsx",
     "client/src/components/merchant/QuickResponseWorkspace.tsx",
     "client/src/components/merchant/InsightsWorkspace.tsx",
     "client/src/components/merchant/KeywordReviewDialog.tsx",
@@ -126,6 +129,7 @@
     "client/src/pages/SariPlayground.tsx",
     "client/src/pages/merchant/SalesHub.tsx",
     "client/src/pages/merchant/SalesPipeline.tsx",
+    "client/src/pages/merchant/QuotationTemplates.tsx",
     "client/src/pages/merchant/QuickResponses.tsx",
     "client/src/pages/merchant/InsightsDashboard.tsx",
     "client/src/pages/merchant/PerformanceMetrics.tsx",
@@ -856,11 +860,25 @@
     {
       "route": "/merchant/quotation-templates",
       "controlsBefore": 15,
-      "controlsNow": 15,
-      "removedQueries": [],
-      "addedQueries": [],
-      "removedMutations": [],
-      "addedMutations": []
+      "controlsNow": 35,
+      "removedQueries": [
+        "sariBrain.getQuotationTemplates"
+      ],
+      "addedQueries": [
+        "auth.me",
+        "merchants.getCurrent",
+        "sariBrain.quotationTemplates.workspace",
+        "sariBrain.quotationTemplates.detail",
+        "sariBrain.quotationTemplates.receipt"
+      ],
+      "removedMutations": [
+        "sariBrain.createQuotationTemplate",
+        "sariBrain.updateQuotationTemplate",
+        "sariBrain.deleteQuotationTemplate"
+      ],
+      "addedMutations": [
+        "sariBrain.quotationTemplates.write"
+      ]
     },
     {
       "route": "/merchant/media-library",
