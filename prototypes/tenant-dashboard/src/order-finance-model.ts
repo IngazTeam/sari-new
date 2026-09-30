@@ -19,9 +19,9 @@ export const financeModes = {
   releaseBlocked: "تحرير الخصم محظور بدليل دفع",
 } as const;
 export type FinanceMode = keyof typeof financeModes;
-const fail = (code = "PRECONDITION_FAILED"): never => {
+function fail(code = "PRECONDITION_FAILED"): never {
   throw Object.assign(Error("Local financial simulation"), { data: { code } });
-};
+}
 const token = (value: unknown) => {
   const s = JSON.stringify(value);
   let n = 2166136261;

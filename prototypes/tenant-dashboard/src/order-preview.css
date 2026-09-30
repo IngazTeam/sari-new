@@ -29,7 +29,7 @@
 .op-active .ow-operations button:disabled {
   opacity: 0.5;
 }
-.op-active .ow-operations :is(input:not([type="checkbox"]), textarea) {
+.op-active .ow-operations :is(input:not([type="checkbox"]), textarea, select) {
   display: block;
   width: 100%;
   min-width: 0;
@@ -41,6 +41,19 @@
   color: var(--foreground);
   font: inherit;
   font-size: 16px;
+}
+@media (min-width: 768px) {
+  .op-active .ow-operations [class~="md:grid-cols-2"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .op-active .ow-operations [class~="md:col-span-2"] {
+    grid-column: span 2;
+  }
+}
+@media (min-width: 1024px) {
+  .op-active .ow-operations [class~="lg:grid-cols-2"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 .op-active .ow-operations textarea[id] {
   min-height: 96px;

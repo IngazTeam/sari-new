@@ -31,9 +31,9 @@ export const orderModes = {
   history: "سجل توضيحي طويل",
 } as const;
 export type OrderMode = keyof typeof orderModes;
-const fail = (code: string): never => {
+function fail(code: string): never {
   throw Object.assign(Error("Local order simulation"), { data: { code } });
-};
+}
 /** Memory-only fixture. Review tokens model interaction; they are not server signatures. */
 export class OrderPreviewModel {
   mode: OrderMode = "data";

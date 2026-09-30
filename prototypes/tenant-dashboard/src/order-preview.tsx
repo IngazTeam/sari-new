@@ -3,12 +3,15 @@ import { createRoot, type Root } from "react-dom/client";
 import { OrderWorkspace } from "../../../client/src/components/merchant/OrderWorkspace";
 import { orderModes, orderPreviewScope, type OrderMode } from "./order-model";
 import { financeModes, type FinanceMode } from "./order-finance-model";
+import { platformModes, type PlatformMode } from "./order-platform-model";
 import {
   finances,
+  platforms,
   orders,
   orderLanguage,
   setOrderLanguage,
   useOrderVersion,
+  useOrderLanguage,
 } from "./order-preview-state";
 import "./quotation-preview.css";
 import "./order-preview.css";
@@ -23,7 +26,9 @@ export function unmount() {
 }
 function Preview() {
   useOrderVersion();
+  useOrderLanguage();
   finances.sync();
+  platforms.sync();
   const [generation, setGeneration] = useState(0),
     [confirm, setConfirm] = useState(false),
     [error, setError] = useState(false);
@@ -56,6 +61,19 @@ function Preview() {
               onChange={e => finances.setMode(e.target.value as FinanceMode)}
             >
               {Object.entries(financeModes).map(([v, label]) => (
+                <option key={v} value={v}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            حالة المنصات
+            <select
+              value={platforms.mode}
+              onChange={e => platforms.setMode(e.target.value as PlatformMode)}
+            >
+              {Object.entries(platformModes).map(([v, label]) => (
                 <option key={v} value={v}>
                   {label}
                 </option>
@@ -111,9 +129,10 @@ function Preview() {
       />
       <p className="qp-footnote">
         مثال 002 لمراجعة الفاتورة والهامش، و001 لمحاولات الدفع، و006 لتحرير
-        الخصم. العمليات توضيحية في الذاكرة ولا تحرك أموالًا. أمثلة سلة وزد
-        تُستكمل بشكل منفصل. المحاكاة لا تثبت صلاحيات الخادم أو دوام الإيصالات أو
-        وصول إشعار.
+        الخصم. العمليات توضيحية في الذاكرة ولا تحرك أموالًا. افتح أدوات سلة وزد
+        من قائمة الطلبات لتجربة الفحص والسجل والاستعادة. المراجع والسجل الطويل
+        مصطنعان؛ المحاكاة لا تثبت صلاحيات الخادم أو دوام الإيصالات أو وصول
+        إشعار.
       </p>
     </div>
   );

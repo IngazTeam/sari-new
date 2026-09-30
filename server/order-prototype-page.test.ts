@@ -16,7 +16,7 @@ vi.mock("react-i18next", async () => {
     await import("../prototypes/tenant-dashboard/src/order-preview-state");
   return {
     useTranslation: () => {
-      s.useOrderVersion();
+      s.useOrderLanguage();
       return {
         i18n: { language: s.orderLanguage },
         t: (key: string, values: any = {}) =>
@@ -37,6 +37,7 @@ vi.mock("react-i18next", async () => {
 import { OrderWorkspace } from "../client/src/components/merchant/OrderWorkspace";
 import {
   finances,
+  platforms,
   orders,
   setOrderLanguage,
 } from "../prototypes/tenant-dashboard/src/order-preview-state";
@@ -71,6 +72,18 @@ const click = async (text: string) => {
   await act(async () => node!.click());
 };
 const l = ar.orderWorkspace;
+const expand = async (selector: string) => {
+  const node = host.querySelector<HTMLDetailsElement>(selector)!;
+  expect(node, selector).toBeTruthy();
+  await act(async () => {
+    node.open = true;
+    node.dispatchEvent(new Event("toggle", { bubbles: false }));
+  });
+};
+const openSalla = async () => {
+  await render();
+  await expand("[data-salla-checkout-review]");
+};
 const edit = async (selector: string, value: string) => {
   const node = host.querySelector<HTMLInputElement | HTMLTextAreaElement>(
     selector
@@ -109,6 +122,68 @@ const approve = async () => {
   await click(l.save);
 };
 describe("actual order workspace with prototype API adapter", () => {
+  it("paginates ready carts and restores the latest page", async () => {
+    await openSalla();
+    expect(host.querySelectorAll("[data-checkout-row]")).toHaveLength(20);
+    await press("[data-checkout-older]");
+    expect(host.querySelectorAll("[data-checkout-row]")).toHaveLength(2);
+    await press("[data-checkout-browser] > div > [data-checkout-refresh]");
+    expect(host.querySelectorAll("[data-checkout-row]")).toHaveLength(20);
+  });
+  it("keeps inspection mounted when a saved audit invalidates history", async () => {
+    await openSalla();
+    await press('[data-checkout-row="100"] [data-checkout-select]');
+    await edit("[data-checkout-order]", "٧٧٠٠١");
+    await edit("[data-checkout-transaction]", "88001");
+    await press("[data-checkout-submit]");
+    expect(
+      host.querySelectorAll('[data-checkout-comparison="equal"]')
+    ).toHaveLength(3);
+    await press("[data-checkout-save]");
+    expect(host.querySelector("[data-checkout-saved]")).toBeTruthy();
+    await act(async () => setOrderLanguage("en"));
+    expect(host.querySelector("[data-checkout-saved]")).toBeTruthy();
+    expect(
+      host.querySelector<HTMLInputElement>("[data-checkout-order]")?.value
+    ).toBe("٧٧٠٠١");
+    expect(host.textContent).not.toContain("merchantUx.");
+    expect(
+      host.querySelector<HTMLInputElement>("[data-checkout-order]")?.value
+    ).toBe("٧٧٠٠١");
+    await expand("[data-checkout-history]");
+    expect(host.querySelectorAll("[data-checkout-audit]")).toHaveLength(1);
+    expect(host.querySelector("[data-checkout-saved]")).toBeTruthy();
+  });
+  it("retries the same audit after lost response without duplication", async () => {
+    platforms.setMode("lostAudit");
+    await openSalla();
+    await press('[data-checkout-row="100"] [data-checkout-select]');
+    await edit("[data-checkout-order]", "77001");
+    await press("[data-checkout-submit]");
+    await press("[data-checkout-save]");
+    expect(host.querySelector("[data-checkout-save-error]")).toBeTruthy();
+    await press("[data-checkout-save]");
+    expect(host.querySelector("[data-checkout-saved]")).toBeTruthy();
+    expect(platforms.listAudits({}).items).toHaveLength(1);
+  });
+  it("keeps recovery confirmation until refresh then lists the recovered cart", async () => {
+    await openSalla();
+    await expand("[data-cart-problems]");
+    await press('[data-cart-problem="200"] [data-cart-recover]');
+    expect(host.querySelector("[data-cart-recovered]")).toBeTruthy();
+    await press("[data-cart-problems-refresh]");
+    expect(host.querySelector('[data-cart-problem="200"]')).toBeNull();
+    expect(host.querySelector('[data-checkout-row="200"]')).toBeTruthy();
+  });
+  it("refreshes verified Zid rows without presenting a paid order", async () => {
+    await render();
+    await edit("#zid-order-366", "9900");
+    await press("div:has(> label > #zid-order-366) input[type=checkbox]");
+    await press("div:has(> label > #zid-order-366) button");
+    expect(host.querySelector("#zid-order-366")).toBeNull();
+    expect(host.textContent).toContain(uxAr.zidReconciliation.verified);
+    expect(orders.detail(1)?.paymentStatus).toBe("unpaid");
+  });
   it("reviews exact margin costs, invalidates editing, and refreshes the approved invoice", async () => {
     await render();
     await click("فتح الطلب DEMO-ORD-002");

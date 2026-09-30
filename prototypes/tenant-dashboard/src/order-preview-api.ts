@@ -1,5 +1,10 @@
-import { useMemo, useState } from "react";
-import { finances, orders, useOrderVersion } from "./order-preview-state";
+import { useMemo, useState, useSyncExternalStore } from "react";
+import {
+  finances,
+  orders,
+  platforms,
+  useOrderVersion,
+} from "./order-preview-state";
 // Prototype-only adapter. No fetch, server connection, payment or message provider.
 const reads: Record<string, (input: any) => any> = {
   list: input => orders.workspace(input),
@@ -12,22 +17,38 @@ const reads: Record<string, (input: any) => any> = {
   getCheckoutMarginException: input => finances.marginAudit(input.orderId),
   getCheckoutAttempts: input => finances.attempts(input.orderId),
   getCheckoutDiscountRelease: input => finances.discount(input.orderId),
-  listZidReconciliations: () => ({
-    items: [],
-    nextCursor: null,
-    canManage: orders.mode !== "viewer",
-  }),
-  checkoutEvidenceAccess: () => ({ merchantId: 9000064, canInspect: false }),
+  listZidReconciliations: input => platforms.listZid(input),
+  checkoutEvidenceAccess: () => platforms.accessInfo(),
+  listSallaCheckoutCarts: input => platforms.listCarts(input),
+  listSallaCheckoutAudits: input => platforms.listAudits(input),
+  listSallaCartProblems: input => platforms.listProblems(input),
 };
+const readVersions = new Map<string, number>();
+const subscribers = new Map<string, Set<() => void>>();
+function invalidate(name: string) {
+  readVersions.set(name, (readVersions.get(name) ?? 0) + 1);
+  subscribers.get(name)?.forEach(fn => fn());
+}
 function query(name: string) {
   return {
     useQuery: (input: any, options?: { enabled?: boolean }) => {
       const version = useOrderVersion(),
         key = JSON.stringify(input),
         enabled = options?.enabled !== false;
+      const readVersion = useSyncExternalStore(
+        fn => {
+          if (!subscribers.has(name)) subscribers.set(name, new Set());
+          subscribers.get(name)!.add(fn);
+          return () => {
+            subscribers.get(name)?.delete(fn);
+          };
+        },
+        () => readVersions.get(name) ?? 0
+      );
       const [manual, setManual] = useState<any>(null);
       const result = useMemo(() => {
         finances.sync();
+        platforms.sync();
         if (!enabled)
           return manual?.key === key && manual?.version === version
             ? manual.result
@@ -39,23 +60,23 @@ function query(name: string) {
         } catch (error) {
           return { data: undefined, error };
         }
-      }, [version, key, enabled, manual]);
+      }, [version, readVersion, key, enabled, manual]);
       return {
         ...result,
         isLoading: enabled && orders.mode === "loading",
         isFetching: enabled && orders.mode === "loading",
         isError: !!result.error,
         isPaused: false,
-        dataUpdatedAt: version,
+        dataUpdatedAt: version * 100000 + readVersion,
         refetch: async () => {
           try {
             orders.access();
             const data = reads[name](input);
-            if (enabled) orders.changed();
+            if (enabled) invalidate(name);
             else setManual({ key, version, result: { data, error: null } });
             return { data, isError: false, error: null };
           } catch (error) {
-            if (enabled) orders.changed();
+            if (enabled) invalidate(name);
             else
               setManual({ key, version, result: { data: undefined, error } });
             return { data: undefined, isError: true, error };
@@ -103,11 +124,6 @@ function mutation(action: (input: any) => any) {
     },
   };
 }
-const notPrepared = () => {
-  throw Object.assign(Error("This financial simulation is not prepared"), {
-    data: { code: "PRECONDITION_FAILED" },
-  });
-};
 const workspace = {
   list: query("list"),
   detail: query("detail"),
@@ -119,7 +135,7 @@ const utilities = Object.fromEntries(
     name,
     {
       fetch: async (input: any) => read(input),
-      invalidate: async () => orders.changed(),
+      invalidate: async () => invalidate(name),
     },
   ])
 );
@@ -132,10 +148,25 @@ export const trpc = {
         .filter(k => !Object.hasOwn(workspace, k))
         .map(k => [k, query(k)])
     ),
-    reconcileZidCheckout: mutation(notPrepared),
+    reconcileZidCheckout: mutation(input => platforms.reconcileZid(input)),
     approveCheckoutInvoice: mutation(input => finances.approve(input)),
     releaseCheckoutDiscount: mutation(input => finances.release(input)),
     reconcileCheckoutAttempt: mutation(input => finances.reconcile(input)),
   },
-  useUtils: () => ({ orders: { workspace: utilities } }),
+  useUtils: () => ({
+    orders: { ...utilities, workspace: utilities },
+    client: {
+      orders: {
+        inspectSallaCheckoutEvidence: {
+          query: async (input: any) => platforms.inspect(input),
+        },
+        saveSallaCheckoutAudit: {
+          mutate: async (input: any) => platforms.saveAudit(input),
+        },
+        recoverSallaCart: {
+          mutate: async (input: any) => platforms.recover(input),
+        },
+      },
+    },
+  }),
 };
