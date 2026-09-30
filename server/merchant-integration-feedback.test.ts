@@ -67,7 +67,7 @@ describe("merchant integration feedback follows the action state", () => {
     "reports a rejected operation as an error toast",
     Component => {
       renderToStaticMarkup(createElement(Component));
-      for (const callbacks of Object.values(state.mutations)) {
+      for (const callbacks of Object.values(state.mutations).filter(Boolean)) {
         state.toast.error.mockClear();
         callbacks.onError(new Error("تعذر الاتصال بالخدمة"));
         expect(state.toast.error).toHaveBeenCalledWith("تعذر الاتصال بالخدمة");

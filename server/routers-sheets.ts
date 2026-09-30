@@ -20,27 +20,14 @@ import {
 } from './db';
 
 import { TRPCError } from '@trpc/server';
+import { beginSheetsOAuth } from './sheets-oauth';
+import { guardSheetsOAuth } from './sheets-oauth-api';
 
 export const sheetsRouter = router({
-  // Helper to get merchantId from user
-  // الحصول على رابط التفويض
-  getAuthUrl: protectedProcedure.query(async ({ ctx }) => {
-    const merchant = await getMerchantByUserId(ctx.user.id);
-    if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-    const authUrl = sheets.getAuthorizationUrl(merchant.id);
-    return { authUrl };
+  beginOAuth: permissionProcedure('integrations.manage').mutation(({ctx}) => {
+    if (!ctx.session?.sessionId) throw new TRPCError({code:'UNAUTHORIZED',message:'sheets_oauth:session'});
+    return guardSheetsOAuth(() => beginSheetsOAuth({merchantId:ctx.merchantId,userId:ctx.user.id,sessionId:ctx.session!.sessionId}));
   }),
-
-  // معالجة OAuth callback
-  handleCallback: protectedProcedure
-    .input(z.object({
-      code: z.string(),
-    }))
-    .mutation(async ({ ctx, input }) => {
-      const merchant = await getMerchantByUserId(ctx.user.id);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-      return await sheets.handleOAuthCallback(input.code, merchant.id);
-    }),
 
   // الحصول على حالة الاتصال
   getStatus: protectedProcedure.query(async ({ ctx }) => {

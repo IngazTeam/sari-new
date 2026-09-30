@@ -1,4 +1,10 @@
 {
+  "sheetsOAuth": {
+    "connected": "Account connected. Set a new destination and review report settings.",
+    "cancelled": "Connection cancelled. The previous connection is unchanged.",
+    "failed": "Could not complete the connection. Check your session and integration permissions, then try again.",
+    "notice": "You will go to Google to choose an account and grant spreadsheet access. A successful new connection clears the previous sheet destination and report schedule so you can set them up again."
+  },
   "orderWorkspace": {
     "paymentFilter": "Payment status",
     "savedWithoutNotification": "Saved without a customer notification.",

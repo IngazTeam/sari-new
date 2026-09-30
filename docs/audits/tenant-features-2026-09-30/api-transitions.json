@@ -3,6 +3,14 @@
   "scope": "Reviewed API substitutions and moved controls. Evidence of intentional implementation changes, not a claim that every workflow passed runtime testing.",
   "transitions": [
     {
+      "routes": ["/merchant/sheets/settings"],
+      "removed": ["sheets.getAuthUrl", "sheets.handleCallback"],
+      "required": ["sheets.beginOAuth"],
+      "note": "OAuth starts explicitly as a mutation and completes only through a session-bound one-time callback. No client consumes the retired unsafe entries.",
+      "evidence": ["docs/audits/tenant-sheets-oauth-2026-09-30/REPORT.md"],
+      "checks": [{"file":"server/auth-routes.ts","contains":"router.get('/oauth/google/sheets/callback', sheetsOAuthCallback)"}]
+    },
+    {
       "routes": [
         "/merchant/products/upload"
       ],

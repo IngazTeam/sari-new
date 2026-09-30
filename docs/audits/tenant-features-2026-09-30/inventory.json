@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-30T15:26:26.914Z",
+  "generatedAt": "2026-09-30T15:38:30.702Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -13491,13 +13491,13 @@
     },
     {
       "file": "client/src/pages/SheetsSettings.tsx",
-      "hash": "0e793fb504a0",
+      "hash": "2f781edc1e9b",
       "queries": [
         "sheets.getStatus",
-        "sheets.getReportSettings",
-        "sheets.getAuthUrl"
+        "sheets.getReportSettings"
       ],
       "mutations": [
+        "sheets.beginOAuth",
         "sheets.setupSpreadsheet",
         "sheets.updateReportSettings",
         "sheets.disconnect"
@@ -13507,22 +13507,22 @@
       "sections": [
         {
           "label": "ربط Google Sheets",
-          "line": 121,
+          "line": 145,
           "tag": "h1"
         },
         {
           "label": "حالة الاتصال",
-          "line": 134,
+          "line": 158,
           "tag": "h2"
         },
         {
           "label": "إعدادات التقارير التلقائية",
-          "line": 236,
+          "line": 263,
           "tag": "h2"
         },
         {
           "label": "ملاحظات مهمة:",
-          "line": 318,
+          "line": 345,
           "tag": "h3"
         }
       ],
@@ -13530,26 +13530,28 @@
       "handlers": [
         {
           "name": "handleConnect",
-          "line": 83,
-          "calls": []
+          "line": 93,
+          "calls": [
+            "connectMutation"
+          ]
         },
         {
           "name": "handleSetup",
-          "line": 91,
+          "line": 115,
           "calls": [
             "setupMutation"
           ]
         },
         {
           "name": "handleDisconnect",
-          "line": 95,
+          "line": 119,
           "calls": [
             "disconnectMutation"
           ]
         },
         {
           "name": "handleToggleSetting",
-          "line": 101,
+          "line": 125,
           "calls": [
             "updateSettingsMutation"
           ]
@@ -13559,7 +13561,7 @@
         {
           "query": "sheets.getStatus",
           "binding": "{\n    data: status,\n    isLoading: statusLoading,\n    refetch: refetchStatus,\n  }",
-          "line": 29,
+          "line": 31,
           "errorSignal": false,
           "loadingSignal": true,
           "enabled": null
@@ -13567,15 +13569,7 @@
         {
           "query": "sheets.getReportSettings",
           "binding": "{ data: reportSettings, refetch: refetchSettings }",
-          "line": 33,
-          "errorSignal": false,
-          "loadingSignal": false,
-          "enabled": null
-        },
-        {
-          "query": "sheets.getAuthUrl",
-          "binding": "{ data: authData }",
-          "line": 36,
+          "line": 35,
           "errorSignal": false,
           "loadingSignal": false,
           "enabled": null
@@ -21482,22 +21476,22 @@
         "client/src/components/merchant/ProductSheetPolicyNotice.tsx"
       ],
       "controls": [
-        "4765c30ccbc6",
-        "91f9b67674fc",
-        "cd140670e227",
-        "e12e0a3f9325",
-        "ead427eb497d",
-        "0f314daa2962",
-        "72b0bdf0714a",
-        "661df2b184f4",
+        "49ba3bb26246",
+        "257ff64cf84d",
+        "764040e28dbd",
+        "14cf59b4618e",
+        "3102a2e1e165",
+        "cfaaff9528fa",
+        "69c45458ae28",
+        "47f233472f60",
         "4dd41ef0dd70"
       ],
       "queries": [
         "sheets.getStatus",
-        "sheets.getReportSettings",
-        "sheets.getAuthUrl"
+        "sheets.getReportSettings"
       ],
       "mutations": [
+        "sheets.beginOAuth",
         "sheets.setupSpreadsheet",
         "sheets.updateReportSettings",
         "sheets.disconnect"
@@ -60940,9 +60934,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "4765c30ccbc6",
+      "id": "49ba3bb26246",
       "file": "client/src/pages/SheetsSettings.tsx",
-      "line": 161,
+      "line": 185,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -60964,9 +60958,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "91f9b67674fc",
+      "id": "257ff64cf84d",
       "file": "client/src/pages/SheetsSettings.tsx",
-      "line": 186,
+      "line": 210,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -60988,9 +60982,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "cd140670e227",
+      "id": "764040e28dbd",
       "file": "client/src/pages/SheetsSettings.tsx",
-      "line": 197,
+      "line": 221,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -61011,9 +61005,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "e12e0a3f9325",
+      "id": "14cf59b4618e",
       "file": "client/src/pages/SheetsSettings.tsx",
-      "line": 202,
+      "line": 226,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -61034,9 +61028,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ead427eb497d",
+      "id": "3102a2e1e165",
       "file": "client/src/pages/SheetsSettings.tsx",
-      "line": 219,
+      "line": 246,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -61057,9 +61051,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "0f314daa2962",
+      "id": "cfaaff9528fa",
       "file": "client/src/pages/SheetsSettings.tsx",
-      "line": 258,
+      "line": 285,
       "tag": "Switch",
       "role": "",
       "kind": "field",
@@ -61080,9 +61074,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "72b0bdf0714a",
+      "id": "69c45458ae28",
       "file": "client/src/pages/SheetsSettings.tsx",
-      "line": 280,
+      "line": 307,
       "tag": "Switch",
       "role": "",
       "kind": "field",
@@ -61103,9 +61097,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "661df2b184f4",
+      "id": "47f233472f60",
       "file": "client/src/pages/SheetsSettings.tsx",
-      "line": 302,
+      "line": 329,
       "tag": "Switch",
       "role": "",
       "kind": "field",

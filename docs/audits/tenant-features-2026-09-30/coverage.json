@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-30T15:26:26.914Z",
+  "generatedAt": "2026-09-30T15:38:30.702Z",
   "definition": "Every registered route is accounted for; source inventory and design completion are different statuses.",
   "routes": [
     {
@@ -50866,22 +50866,22 @@
         "client/src/components/merchant/ProductSheetPolicyNotice.tsx"
       ],
       "controls": [
-        "4765c30ccbc6",
-        "91f9b67674fc",
-        "cd140670e227",
-        "e12e0a3f9325",
-        "ead427eb497d",
-        "0f314daa2962",
-        "72b0bdf0714a",
-        "661df2b184f4",
+        "49ba3bb26246",
+        "257ff64cf84d",
+        "764040e28dbd",
+        "14cf59b4618e",
+        "3102a2e1e165",
+        "cfaaff9528fa",
+        "69c45458ae28",
+        "47f233472f60",
         "4dd41ef0dd70"
       ],
       "queries": [
         "sheets.getStatus",
-        "sheets.getReportSettings",
-        "sheets.getAuthUrl"
+        "sheets.getReportSettings"
       ],
       "mutations": [
+        "sheets.beginOAuth",
         "sheets.setupSpreadsheet",
         "sheets.updateReportSettings",
         "sheets.disconnect"
@@ -50897,9 +50897,9 @@
       ],
       "controlDetails": [
         {
-          "id": "4765c30ccbc6",
+          "id": "49ba3bb26246",
           "file": "client/src/pages/SheetsSettings.tsx",
-          "line": 161,
+          "line": 185,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -50921,9 +50921,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "91f9b67674fc",
+          "id": "257ff64cf84d",
           "file": "client/src/pages/SheetsSettings.tsx",
-          "line": 186,
+          "line": 210,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -50945,9 +50945,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "cd140670e227",
+          "id": "764040e28dbd",
           "file": "client/src/pages/SheetsSettings.tsx",
-          "line": 197,
+          "line": 221,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -50968,9 +50968,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "e12e0a3f9325",
+          "id": "14cf59b4618e",
           "file": "client/src/pages/SheetsSettings.tsx",
-          "line": 202,
+          "line": 226,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -50991,9 +50991,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "ead427eb497d",
+          "id": "3102a2e1e165",
           "file": "client/src/pages/SheetsSettings.tsx",
-          "line": 219,
+          "line": 246,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -51014,9 +51014,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "0f314daa2962",
+          "id": "cfaaff9528fa",
           "file": "client/src/pages/SheetsSettings.tsx",
-          "line": 258,
+          "line": 285,
           "tag": "Switch",
           "role": "",
           "kind": "field",
@@ -51037,9 +51037,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "72b0bdf0714a",
+          "id": "69c45458ae28",
           "file": "client/src/pages/SheetsSettings.tsx",
-          "line": 280,
+          "line": 307,
           "tag": "Switch",
           "role": "",
           "kind": "field",
@@ -51060,9 +51060,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "661df2b184f4",
+          "id": "47f233472f60",
           "file": "client/src/pages/SheetsSettings.tsx",
-          "line": 302,
+          "line": 329,
           "tag": "Switch",
           "role": "",
           "kind": "field",

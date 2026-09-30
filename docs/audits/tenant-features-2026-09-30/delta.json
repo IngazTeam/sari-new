@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-09-30T15:26:26.914Z",
+  "generatedAt": "2026-09-30T15:38:30.702Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -1307,10 +1307,14 @@
       "route": "/merchant/sheets/settings",
       "controlsBefore": 8,
       "controlsNow": 9,
-      "removedQueries": [],
+      "removedQueries": [
+        "sheets.getAuthUrl"
+      ],
       "addedQueries": [],
       "removedMutations": [],
-      "addedMutations": []
+      "addedMutations": [
+        "sheets.beginOAuth"
+      ]
     },
     {
       "route": "/merchant/sheets/export",

@@ -6,13 +6,12 @@
 import { google } from 'googleapis';
 import { makeSheetIntent, verifySheetAppend, type SheetEvidenceHooks } from '../integrations/salla-sheet-evidence';
 import {
-  createGoogleIntegration,
   getGoogleIntegration,
   getGoogleOAuthSettings,
   updateGoogleIntegration,
 } from '../db';
 
-const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
+import { buildPublicUrl } from '../utils/public-url';
 
 /**
  * إنشاء OAuth2 client
@@ -29,75 +28,8 @@ async function createOAuth2Client() {
     throw new Error('Google OAuth is currently disabled');
   }
 
-  const redirectUri = `${process.env.VITE_APP_URL || 'http://localhost:3000'}/api/oauth/google/sheets/callback`;
+  const redirectUri = buildPublicUrl('/api/auth/oauth/google/sheets/callback');
   return new google.auth.OAuth2(settings.clientId, settings.clientSecret, redirectUri);
-}
-
-/**
- * الحصول على رابط التفويض
- */
-export async function getAuthorizationUrl(merchantId: number): Promise<string> {
-  const oauth2Client = await createOAuth2Client();
-  
-  const authUrl = oauth2Client.generateAuthUrl({
-    access_type: 'offline',
-    scope: SCOPES,
-    state: merchantId.toString(), // لتتبع التاجر
-    prompt: 'consent', // لضمان الحصول على refresh token
-  });
-
-  return authUrl;
-}
-
-/**
- * معالجة OAuth callback والحصول على credentials
- */
-export async function handleOAuthCallback(
-  code: string,
-  merchantId: number
-): Promise<{ success: boolean; message: string }> {
-  try {
-    const oauth2Client = await createOAuth2Client();
-    
-    // تبديل الكود بـ tokens
-    const { tokens } = await oauth2Client.getToken(code);
-    oauth2Client.setCredentials(tokens);
-
-    // حفظ credentials في قاعدة البيانات (مشفرة)
-    const credentialsJson = JSON.stringify(tokens);
-    
-    // التحقق من وجود integration سابق
-    const existing = await getGoogleIntegration(merchantId, 'sheets');
-    
-    if (existing) {
-      // تحديث credentials
-      await updateGoogleIntegration(existing.id, {
-        credentials: credentialsJson,
-        isActive: 1,
-      });
-    } else {
-      // إنشاء integration جديد
-      await createGoogleIntegration({
-        merchantId,
-        integrationType: 'sheets',
-        credentials: credentialsJson,
-        isActive: 1,
-      });
-    }
-
-    console.log('[Google Sheets] OAuth completed for merchant:', merchantId);
-    
-    return {
-      success: true,
-      message: 'تم ربط Google Sheets بنجاح',
-    };
-  } catch (error: any) {
-    console.error('[Google Sheets] OAuth error:', error);
-    return {
-      success: false,
-      message: error.message || 'فشل ربط Google Sheets',
-    };
-  }
 }
 
 /**

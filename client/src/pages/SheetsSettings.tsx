@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -20,6 +20,8 @@ import ProductSheetPolicyNotice from "@/components/merchant/ProductSheetPolicyNo
 export default function SheetsSettings() {
   const { t } = useTranslation();
   const [isConnecting, setIsConnecting] = useState(false);
+  const connectLock = useRef(false);
+  const connectMutation = trpc.sheets.beginOAuth.useMutation();
 
   // الحصول على حالة الاتصال
   const {
@@ -32,8 +34,16 @@ export default function SheetsSettings() {
   const { data: reportSettings, refetch: refetchSettings } =
     trpc.sheets.getReportSettings.useQuery();
 
-  // الحصول على رابط التفويض
-  const { data: authData } = trpc.sheets.getAuthUrl.useQuery();
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const result = url.searchParams.get("oauth");
+    if (!result) return;
+    url.searchParams.delete("oauth");
+    window.history.replaceState(window.history.state, "", url);
+    if (result === "connected") toast.success(t("sheetsOAuth.connected"));
+    else if (result === "cancelled") toast.info(t("sheetsOAuth.cancelled"));
+    else toast.error(t("sheetsOAuth.failed"));
+  }, [t]);
 
   // إعداد Spreadsheet
   const setupMutation = trpc.sheets.setupSpreadsheet.useMutation({
@@ -80,11 +90,25 @@ export default function SheetsSettings() {
     },
   });
 
-  const handleConnect = () => {
-    if (authData?.authUrl) {
-      setIsConnecting(true);
-      // @ts-ignore
-      window.location.href = authData.authUrl;
+  const handleConnect = async () => {
+    if (connectLock.current) return;
+    connectLock.current = true;
+    setIsConnecting(true);
+    try {
+      const result = await connectMutation.mutateAsync();
+      const target = new URL(result.authorizationUrl);
+      if (
+        target.origin !== "https://accounts.google.com" ||
+        target.pathname !== "/o/oauth2/v2/auth" ||
+        target.username ||
+        target.password
+      )
+        throw Error();
+      window.location.assign(target.href);
+    } catch {
+      connectLock.current = false;
+      setIsConnecting(false);
+      toast.error(t("sheetsOAuth.failed"));
     }
   };
 
@@ -215,6 +239,9 @@ export default function SheetsSettings() {
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
                 {t("sheetsSettings.auto_3")}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {t("sheetsOAuth.notice")}
               </p>
               <Button onClick={handleConnect} disabled={isConnecting} size="lg">
                 {isConnecting && (
