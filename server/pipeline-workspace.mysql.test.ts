@@ -4,7 +4,11 @@ import {
   createDisposableMerchant,
   cleanupDisposableMerchants,
 } from "./tests/helpers/disposable-merchant";
-import { readPipelineWorkspace } from "./pipeline-workspace";
+import {
+  readPipelineWorkspace,
+  readPipelineBundle,
+} from "./pipeline-workspace";
+import { legacyPipelineSummary } from "./pipeline-legacy";
 import type { PipelineInput } from "../shared/pipeline-workspace";
 describe.skipIf(!process.env.DATABASE_URL)("pipeline evidence in MySQL", () => {
   let owner: Awaited<ReturnType<typeof createDisposableMerchant>>,
@@ -210,5 +214,51 @@ describe.skipIf(!process.env.DATABASE_URL)("pipeline evidence in MySQL", () => {
     expect(d.list.items[0].lastMessageAt).toBe("2026-09-29T12:00:00.000Z");
     expect(d.list.items[0].paymentLinkSentAt).toBeNull();
     expect(d.list.items[0]).not.toHaveProperty("lastMessage");
+  });
+  it("reads the five legacy previews with the same snapshot and explicit limits", async () => {
+    for (const stage of ["ready", "payment_link_sent", "paid", "lost"])
+      for (let i = 0; i < 12; i++) await conversation(stage);
+    await conversation("qualified", { at: "2026-09-01 00:00:00" });
+    await conversation("paid", { merchant: other.merchantId });
+    const bundle = await readPipelineBundle(
+      owner.merchantId,
+      { queue: "ready", page: 1, pageSize: 20 },
+      now,
+      { previews: true }
+    );
+    const r = legacyPipelineSummary(bundle.snapshot, bundle.previews!);
+    expect(r.hotLeads).toHaveLength(10);
+    expect(r.paymentPending).toHaveLength(10);
+    expect(r.recentWins).toHaveLength(10);
+    expect(r.recentLosses).toHaveLength(10);
+    expect(r.stalledDeals).toHaveLength(1);
+    expect(r.evidence.queues).toMatchObject({
+      ready: 12,
+      pending: 12,
+      paid: 12,
+      lost: 12,
+      stalled: 1,
+      all: 49,
+    });
+    expect(r.evidence.list.total).toBe(12);
+    const custom = await readPipelineBundle(
+      owner.merchantId,
+      { queue: "ready", page: 1, pageSize: 20 },
+      now,
+      { days: 1 }
+    );
+    expect(custom.previews).toBeUndefined();
+    expect(custom.snapshot.windows.lookbackDays).toBe(1);
+    expect(custom.snapshot.outcomes.lost).toBe(12);
+    const old = await conversation("lost", { at: "2026-09-28 12:00:00" });
+    const one = await readPipelineBundle(
+      owner.merchantId,
+      { queue: "lost", page: 1, pageSize: 20 },
+      now,
+      { days: 1 }
+    );
+    expect(one.snapshot.outcomes.lost).toBe(12);
+    expect(one.snapshot.list.items.map(r => r.id)).toContain(old); // queue is 7 days; lookback only controls the aggregate sample
+    expect((await read()).outcomes.lost).toBe(13);
   });
 });

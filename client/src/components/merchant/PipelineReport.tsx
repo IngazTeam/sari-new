@@ -80,7 +80,8 @@ export function PipelineReport({
     human_needed: l.human_needed,
     unknown: l.unclassified,
   };
-  const reason = (s: string | null) => (s ? (reasons[s] ?? s) : l.unclassified);
+  const reason = (s: string | null) =>
+    s ? (Object.hasOwn(reasons, s) ? reasons[s] : s) : l.unclassified;
   const select = (value: string) => {
     const [queue, stage] = value.split(":");
     onSelect?.({

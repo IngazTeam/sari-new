@@ -15,10 +15,29 @@ export async function readPipelineWorkspace(
   input: PipelineInput,
   now = new Date()
 ): Promise<PipelineSnapshot> {
+  return (await readPipelineBundle(merchantId, input, now)).snapshot;
+}
+export const pipelinePreviewQueues = [
+  "ready",
+  "stalled",
+  "pending",
+  "paid",
+  "lost",
+] as const;
+export type PipelinePreviews = Record<
+  (typeof pipelinePreviewQueues)[number],
+  PipelineItem[]
+>;
+export async function readPipelineBundle(
+  merchantId: number,
+  input: PipelineInput,
+  now = new Date(),
+  options: { previews?: boolean; days?: number } = {}
+): Promise<{ snapshot: PipelineSnapshot; previews?: PipelinePreviews }> {
   if (!Number.isSafeInteger(merchantId) || merchantId < 1)
     throw Error("Invalid merchant");
   const selection = pipelineInput.parse(input),
-    windows = pipelineWindows(now),
+    windows = pipelineWindows(now, options.days ?? 30),
     db = await getDb();
   if (!db) throw Error("Pipeline unavailable");
   const stamp = (value: string) => value.slice(0, 19).replace("T", " ");
@@ -92,17 +111,33 @@ export async function readPipelineWorkspace(
         selection.queue === "stage"
           ? stageCounts.find(r => r.stage === selection.stage)!.count
           : queues[selection.queue];
-      const records =
-        await rows(sql`SELECT c.id,c.customerName,c.customerPhone,${stage} stage,c.loss_reason lossReason,
+      const readItems = async (
+        selected: PipelineInput
+      ): Promise<PipelineItem[]> => {
+        const records =
+          await rows(sql`SELECT c.id,c.customerName,c.customerPhone,${stage} stage,c.loss_reason lossReason,
       LEFT(c.lastMessage,300) preview,CHAR_LENGTH(c.lastMessage)>300 previewTruncated,
       DATE_FORMAT(c.lastMessageAt,'%Y-%m-%dT%H:%i:%s.000Z') lastMessageAt,
       DATE_FORMAT(c.payment_link_sent_at,'%Y-%m-%dT%H:%i:%s.000Z') paymentLinkSentAt,
       DATE_FORMAT(c.stalled_since,'%Y-%m-%dT%H:%i:%s.000Z') stalledSince
-      FROM conversations c WHERE c.merchantId=${merchantId} AND (${filters[selection.queue]})
-      ORDER BY c.lastMessageAt DESC,c.id DESC LIMIT ${selection.pageSize} OFFSET ${(selection.page - 1) * selection.pageSize}`);
+      FROM conversations c WHERE c.merchantId=${merchantId} AND (${filters[selected.queue]})
+      ORDER BY c.lastMessageAt DESC,c.id DESC LIMIT ${selected.pageSize} OFFSET ${(selected.page - 1) * selected.pageSize}`);
+        return records.map(r => ({
+          id: n(r.id),
+          customerName: r.customerName,
+          customerPhone: r.customerPhone,
+          stage: r.stage,
+          lossReason: r.lossReason,
+          preview: r.preview,
+          previewTruncated: Boolean(r.previewTruncated),
+          lastMessageAt: r.lastMessageAt,
+          paymentLinkSentAt: r.paymentLinkSentAt,
+          stalledSince: r.stalledSince,
+        }));
+      };
       const paid = n(counts.monthPaid),
         lost = n(counts.monthLost);
-      return {
+      const snapshot: PipelineSnapshot = {
         merchantId,
         selection,
         windows,
@@ -132,18 +167,7 @@ export async function readPipelineWorkspace(
           };
         }),
         list: {
-          items: records.map(r => ({
-            id: n(r.id),
-            customerName: r.customerName,
-            customerPhone: r.customerPhone,
-            stage: r.stage,
-            lossReason: r.lossReason,
-            preview: r.preview,
-            previewTruncated: Boolean(r.previewTruncated),
-            lastMessageAt: r.lastMessageAt,
-            paymentLinkSentAt: r.paymentLinkSentAt,
-            stalledSince: r.stalledSince,
-          })) as PipelineItem[],
+          items: await readItems(selection),
           total: listTotal,
           page: selection.page,
           pageSize: selection.pageSize,
@@ -156,6 +180,11 @@ export async function readPipelineWorkspace(
           salesProficiency: null,
         },
       };
+      if (!options.previews) return { snapshot };
+      const previews = {} as PipelinePreviews;
+      for (const queue of pipelinePreviewQueues)
+        previews[queue] = await readItems({ queue, page: 1, pageSize: 10 });
+      return { snapshot, previews };
     },
     { isolationLevel: "repeatable read", accessMode: "read only" }
   );

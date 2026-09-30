@@ -27,13 +27,16 @@ export const pipelineInput = z
 export type PipelineInput = z.infer<typeof pipelineInput>;
 export type PipelineStage = (typeof pipelineStages)[number];
 export type PipelineQueue = (typeof pipelineQueues)[number];
-export function pipelineWindows(now: Date) {
+export function pipelineWindows(now: Date, lookbackDays = 30) {
+  if (!Number.isInteger(lookbackDays) || lookbackDays < 1 || lookbackDays > 365)
+    throw Error("Invalid pipeline lookback");
   if (!Number.isFinite(now.getTime())) throw Error("Invalid pipeline clock");
   const end = Math.floor(now.getTime() / 1000) * 1000;
   const iso = (value: number) => new Date(value).toISOString();
   return {
     through: iso(end),
-    monthFrom: iso(end - 30 * 86400000 + 1000),
+    monthFrom: iso(end - lookbackDays * 86400000 + 1000),
+    lookbackDays,
     weekFrom: iso(end - 7 * 86400000 + 1000),
     previousFrom: iso(end - 14 * 86400000 + 1000),
     previousThrough: iso(end - 7 * 86400000),

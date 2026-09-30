@@ -102,6 +102,20 @@ afterEach(async () => {
   vi.unstubAllGlobals();
 });
 describe("sales pipeline action workspace", () => {
+  it.each(["__proto__", "constructor", "toString"])(
+    "renders unrecognized loss reason %s as text",
+    async reason => {
+      m.data.losses = [{ reason, count: 1, share: 100 }];
+      m.data.list.items[0].lossReason = reason;
+      await render();
+      expect(
+        container.querySelector(".pl-analysis tbody th")?.textContent
+      ).toBe(reason);
+      expect(container.querySelector(".pl-items dl")?.textContent).toContain(
+        reason
+      );
+    }
+  );
   it("preserves every stage and action with results collapsed after the work list", async () => {
     await render();
     expect(container.querySelectorAll(".pl-actions button")).toHaveLength(4);

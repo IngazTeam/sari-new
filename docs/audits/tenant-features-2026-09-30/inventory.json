@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-30T00:55:01.672Z",
+  "generatedAt": "2026-09-30T01:03:27.946Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -9843,7 +9843,7 @@
     },
     {
       "file": "client/src/components/merchant/PipelineReport.tsx",
-      "hash": "4fabd76d9f5e",
+      "hash": "970bf8e2b411",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
@@ -9851,37 +9851,37 @@
       "sections": [
         {
           "label": "",
-          "line": 117,
+          "line": 118,
           "tag": "h2"
         },
         {
           "label": "",
-          "line": 146,
+          "line": 147,
           "tag": "h3"
         },
         {
           "label": "",
-          "line": 163,
+          "line": 164,
           "tag": "h3"
         },
         {
           "label": "",
-          "line": 256,
+          "line": 257,
           "tag": "summary"
         },
         {
           "label": "",
-          "line": 294,
+          "line": 295,
           "tag": "h3"
         },
         {
           "label": "",
-          "line": 319,
+          "line": 320,
           "tag": "h3"
         },
         {
           "label": "",
-          "line": 349,
+          "line": 350,
           "tag": "h3"
         }
       ],
@@ -9894,7 +9894,7 @@
         },
         {
           "name": "select",
-          "line": 84,
+          "line": 85,
           "calls": []
         }
       ],
@@ -18973,15 +18973,15 @@
         "b612916ddd9c",
         "bde7408d2c97",
         "ec2503922428",
-        "0e100ec7aec7",
-        "36ec606b897a",
-        "c96ddda618f9",
-        "fcd93fdac0a5",
-        "64863d20b824",
-        "661e7848f56a",
-        "0f73e938568f",
-        "b8952a7520eb",
-        "64c473fcd880"
+        "3ba2f701f4b7",
+        "23e5d2e759cd",
+        "9a26d5df5a48",
+        "6c3381f039b2",
+        "fb61c16c92b2",
+        "2d184f711ac7",
+        "7901b49ac946",
+        "f07c6da8db73",
+        "647eeeeb780f"
       ],
       "queries": [
         "auth.me",
@@ -48560,9 +48560,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "0e100ec7aec7",
+      "id": "3ba2f701f4b7",
       "file": "client/src/components/merchant/PipelineReport.tsx",
-      "line": 103,
+      "line": 104,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -48581,9 +48581,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "36ec606b897a",
+      "id": "23e5d2e759cd",
       "file": "client/src/components/merchant/PipelineReport.tsx",
-      "line": 120,
+      "line": 121,
       "tag": "select",
       "role": "",
       "kind": "field",
@@ -48611,9 +48611,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "c96ddda618f9",
+      "id": "9a26d5df5a48",
       "file": "client/src/components/merchant/PipelineReport.tsx",
-      "line": 148,
+      "line": 149,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -48634,9 +48634,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "fcd93fdac0a5",
+      "id": "6c3381f039b2",
       "file": "client/src/components/merchant/PipelineReport.tsx",
-      "line": 209,
+      "line": 210,
       "tag": "a",
       "role": "",
       "kind": "action",
@@ -48657,9 +48657,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "64863d20b824",
+      "id": "fb61c16c92b2",
       "file": "client/src/components/merchant/PipelineReport.tsx",
-      "line": 232,
+      "line": 233,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -48678,9 +48678,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "661e7848f56a",
+      "id": "2d184f711ac7",
       "file": "client/src/components/merchant/PipelineReport.tsx",
-      "line": 244,
+      "line": 245,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -48699,9 +48699,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "0f73e938568f",
+      "id": "7901b49ac946",
       "file": "client/src/components/merchant/PipelineReport.tsx",
-      "line": 256,
+      "line": 257,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -48720,9 +48720,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "b8952a7520eb",
+      "id": "f07c6da8db73",
       "file": "client/src/components/merchant/PipelineReport.tsx",
-      "line": 346,
+      "line": 347,
       "tag": "a",
       "role": "",
       "kind": "action",
@@ -48741,9 +48741,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "64c473fcd880",
+      "id": "647eeeeb780f",
       "file": "client/src/components/merchant/PipelineReport.tsx",
-      "line": 351,
+      "line": 352,
       "tag": "a",
       "role": "",
       "kind": "action",

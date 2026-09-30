@@ -1909,15 +1909,15 @@
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 103 | button | تسمية ديناميكية / تحتاج مراجعة | PipelineReport |
-| 120 | select | · | PipelineReport |
-| 148 | button | تسمية ديناميكية / تحتاج مراجعة | PipelineReport |
-| 209 | a | تسمية ديناميكية / تحتاج مراجعة | PipelineReport |
-| 232 | button | تسمية ديناميكية / تحتاج مراجعة | PipelineReport |
-| 244 | button | تسمية ديناميكية / تحتاج مراجعة | PipelineReport |
-| 256 | summary | تسمية ديناميكية / تحتاج مراجعة | PipelineReport |
-| 346 | a | تسمية ديناميكية / تحتاج مراجعة | PipelineReport |
-| 351 | a | تسمية ديناميكية / تحتاج مراجعة | PipelineReport |
+| 104 | button | تسمية ديناميكية / تحتاج مراجعة | PipelineReport |
+| 121 | select | · | PipelineReport |
+| 149 | button | تسمية ديناميكية / تحتاج مراجعة | PipelineReport |
+| 210 | a | تسمية ديناميكية / تحتاج مراجعة | PipelineReport |
+| 233 | button | تسمية ديناميكية / تحتاج مراجعة | PipelineReport |
+| 245 | button | تسمية ديناميكية / تحتاج مراجعة | PipelineReport |
+| 257 | summary | تسمية ديناميكية / تحتاج مراجعة | PipelineReport |
+| 347 | a | تسمية ديناميكية / تحتاج مراجعة | PipelineReport |
+| 352 | a | تسمية ديناميكية / تحتاج مراجعة | PipelineReport |
 
 ## client/src/pages/merchant/QuotationTemplates.tsx
 
