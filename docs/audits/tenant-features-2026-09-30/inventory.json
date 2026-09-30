@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-30T19:07:12.136Z",
+  "generatedAt": "2026-09-30T19:18:43.023Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -2531,7 +2531,7 @@
     },
     {
       "file": "client/src/components/merchant/ProductCatalogWorkspace.tsx",
-      "hash": "3d9888b478e6",
+      "hash": "024f80bf0640",
       "queries": [
         "products.list"
       ],
@@ -2541,17 +2541,17 @@
       "sections": [
         {
           "label": "الفلاتر · {{count}} مفعلة",
-          "line": 295,
+          "line": 297,
           "tag": "summary"
         },
         {
           "label": "ابدأ بأول منتج لا توجد منتجات في هذه النتائج",
-          "line": 464,
+          "line": 466,
           "tag": "h2"
         },
         {
           "label": "",
-          "line": 510,
+          "line": 512,
           "tag": "h2"
         }
       ],
@@ -2561,7 +2561,7 @@
         {
           "query": "products.list",
           "binding": "query",
-          "line": 60,
+          "line": 61,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
@@ -2575,7 +2575,8 @@
         "client/src/components/merchant/ProductDeleteWorkspace.tsx",
         "client/src/components/merchant/ProductCategoriesWorkspace.tsx",
         "client/src/components/merchant/ProductDetailsWorkspace.tsx",
-        "client/src/components/merchant/ProductStockWorkspace.tsx"
+        "client/src/components/merchant/ProductStockWorkspace.tsx",
+        "client/src/components/merchant/ProductSourceNotice.tsx"
       ],
       "controlCount": 21
     },
@@ -2614,7 +2615,7 @@
     },
     {
       "file": "client/src/components/merchant/ProductWorkspaceView.tsx",
-      "hash": "0e88047d0d2d",
+      "hash": "c4d3773b0097",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
@@ -2622,12 +2623,12 @@
       "sections": [
         {
           "label": "",
-          "line": 11,
+          "line": 18,
           "tag": "h1"
         },
         {
           "label": "نحتاج تأكيد نتيجة العملية",
-          "line": 110,
+          "line": 117,
           "tag": "h2"
         }
       ],
@@ -2636,11 +2637,11 @@
       "queryStates": [],
       "conditions": [],
       "imports": [],
-      "controlCount": 2
+      "controlCount": 4
     },
     {
       "file": "client/src/components/merchant/ProductEditorWorkspace.tsx",
-      "hash": "207cc1da2a4b",
+      "hash": "15c0ec1f1f84",
       "queries": [
         "products.editor.read",
         "products.categories.read",
@@ -2654,7 +2655,7 @@
           "procedure": "products.editor.receipt",
           "method": "fetch",
           "expression": "utils.products.editor.receipt.fetch",
-          "line": 303,
+          "line": 306,
           "provenance": "trpc-utility-static"
         }
       ],
@@ -2662,22 +2663,22 @@
       "sections": [
         {
           "label": "تغيّر المنتج منذ فتحه",
-          "line": 531,
+          "line": 534,
           "tag": "h2"
         },
         {
           "label": "المعلومات الأساسية",
-          "line": 582,
+          "line": 585,
           "tag": "h2"
         },
         {
           "label": "التفاصيل والتسعير الإضافي",
-          "line": 691,
+          "line": 694,
           "tag": "summary"
         },
         {
           "label": "المخزون",
-          "line": 728,
+          "line": 731,
           "tag": "summary"
         }
       ],
@@ -2687,7 +2688,7 @@
         {
           "query": "products.editor.read",
           "binding": "query",
-          "line": 76,
+          "line": 79,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": "target !== \"new\""
@@ -2695,7 +2696,7 @@
         {
           "query": "products.categories.read",
           "binding": "categoryQuery",
-          "line": 87,
+          "line": 90,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
@@ -2703,12 +2704,30 @@
       ],
       "conditions": [],
       "imports": [
+        "client/src/components/merchant/ProductSourceNotice.tsx",
         "client/src/lib/knowledge-workspace-cache.ts",
         "client/src/lib/product-workspace-cache.ts",
         "client/src/lib/product-workspace-model.ts",
         "client/src/components/merchant/ProductWorkspaceView.tsx"
       ],
       "controlCount": 15
+    },
+    {
+      "file": "client/src/components/merchant/ProductSourceNotice.tsx",
+      "hash": "35a368066f91",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [
+        "client/src/components/merchant/ProductWorkspaceView.tsx"
+      ],
+      "controlCount": 2
     },
     {
       "file": "client/src/components/merchant/ProductDeleteWorkspace.tsx",
@@ -17632,6 +17651,7 @@
         "client/src/lib/product-workspace-model.ts",
         "client/src/components/merchant/ProductWorkspaceView.tsx",
         "client/src/components/merchant/ProductEditorWorkspace.tsx",
+        "client/src/components/merchant/ProductSourceNotice.tsx",
         "client/src/components/merchant/ProductDeleteWorkspace.tsx",
         "client/src/components/merchant/ProductCategoriesWorkspace.tsx",
         "client/src/lib/product-category-workspace.ts",
@@ -17641,44 +17661,48 @@
       ],
       "controls": [
         "77ce5300e6f7",
-        "bde3afb7b19d",
-        "5d0c3a7884ab",
-        "16c8260b74b0",
-        "59e862054cc0",
-        "c182884bb58e",
-        "498ba5994e2a",
-        "2f68c0bd9b2f",
-        "fe36b688a018",
-        "1e28aed080ab",
-        "5a14e0e093c4",
-        "57575c852dfb",
-        "b9f3d0f2020e",
-        "4ae392476195",
-        "ec8fe3bfa2c6",
-        "8e02ccd9b679",
-        "56d31854875b",
-        "e2fddfcba415",
-        "519f932bab6d",
-        "a4f5ff8b9f10",
-        "1fc833454945",
-        "f0c3e0a0b1aa",
-        "afe9f3e6fee3",
-        "6f5613480002",
-        "8098b5b63950",
-        "b7538e289f78",
-        "dad678e6c00c",
-        "8e46d4325184",
-        "e180064981e3",
-        "68649cd5eb21",
-        "3f04e203b155",
-        "cbef92087cc5",
-        "430b7073faf4",
-        "d3ca98c0cc5e",
-        "3839ff79b02f",
-        "272e9aa6c72d",
-        "8a7b100218d8",
-        "4c560f5c2175",
-        "cbebbaa15922",
+        "c08497e42cab",
+        "8df9839ac5c4",
+        "3a03766b8e51",
+        "4d7408609b00",
+        "cb166a893a44",
+        "610027e486b3",
+        "236ee4fdecbc",
+        "f8e117350fa7",
+        "99f030d85287",
+        "f270d3936283",
+        "13c4d6bde1a0",
+        "0184d2259583",
+        "083fd4121f42",
+        "f82b8be255b2",
+        "c5b2ebefe246",
+        "65529f253ac1",
+        "5af6e2b819ce",
+        "43b661a75a2d",
+        "3088be6dfb77",
+        "b0f7d1355dd8",
+        "a7f2ef23d64f",
+        "30bf40eeaa16",
+        "47dea640f953",
+        "45ac7b058ec3",
+        "4ae87a9d4364",
+        "b060a0eed283",
+        "2e337147b640",
+        "397e90cf0227",
+        "3ad4a0b19044",
+        "d23fb90b5bc3",
+        "d3b0819a8d44",
+        "eefaa9b9815a",
+        "43b7aa6edfee",
+        "63dc98825b88",
+        "9f0fea78cf14",
+        "0c2649d17849",
+        "3d87a9ce936e",
+        "ea32b5f7bd95",
+        "0eaf12a78998",
+        "3cfa1e886fac",
+        "86ca171fcda9",
+        "518610a7826b",
         "21c756d3a0d4",
         "18186036dcd3",
         "21d0a1aa5677",
@@ -17766,7 +17790,7 @@
           "procedure": "products.editor.receipt",
           "method": "fetch",
           "expression": "utils.products.editor.receipt.fetch",
-          "line": 303,
+          "line": 306,
           "provenance": "trpc-utility-static"
         },
         {
@@ -17849,8 +17873,10 @@
         "4bdbde8a295a",
         "23169b2d7438",
         "71d02df4640b",
-        "afe9f3e6fee3",
-        "6f5613480002",
+        "30bf40eeaa16",
+        "47dea640f953",
+        "45ac7b058ec3",
+        "4ae87a9d4364",
         "7ec32dcca131",
         "3a363e06066c",
         "9136194d00a7",
@@ -20947,8 +20973,10 @@
         "81c1dedd8a9f",
         "ee729338b566",
         "12dcbb25c8f1",
-        "afe9f3e6fee3",
-        "6f5613480002"
+        "30bf40eeaa16",
+        "47dea640f953",
+        "45ac7b058ec3",
+        "4ae87a9d4364"
       ],
       "queries": [
         "auth.me",
@@ -21789,8 +21817,10 @@
         "4c983812460e",
         "dfb1b6043583",
         "183fed1fdf17",
-        "afe9f3e6fee3",
-        "6f5613480002"
+        "30bf40eeaa16",
+        "47dea640f953",
+        "45ac7b058ec3",
+        "4ae87a9d4364"
       ],
       "queries": [
         "auth.me",
@@ -21899,8 +21929,10 @@
         "c391d264e88a",
         "cf74a4d86aff",
         "4a73dc6bfe13",
-        "afe9f3e6fee3",
-        "6f5613480002"
+        "30bf40eeaa16",
+        "47dea640f953",
+        "45ac7b058ec3",
+        "4ae87a9d4364"
       ],
       "queries": [
         "auth.me",
@@ -29733,9 +29765,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "bde3afb7b19d",
+      "id": "c08497e42cab",
       "file": "client/src/components/merchant/ProductCatalogWorkspace.tsx",
-      "line": 225,
+      "line": 227,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -29754,9 +29786,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "5d0c3a7884ab",
+      "id": "8df9839ac5c4",
       "file": "client/src/components/merchant/ProductCatalogWorkspace.tsx",
-      "line": 228,
+      "line": 230,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -29775,9 +29807,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "16c8260b74b0",
+      "id": "3a03766b8e51",
       "file": "client/src/components/merchant/ProductCatalogWorkspace.tsx",
-      "line": 235,
+      "line": 237,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -29796,10 +29828,10 @@
       "review": "source-inventoried"
     },
     {
-      "id": "59e862054cc0",
+      "id": "4d7408609b00",
       "file": "client/src/components/merchant/ProductCatalogWorkspace.tsx",
-      "line": 244,
-      "tag": "Link",
+      "line": 246,
+      "tag": "ProductWorkspaceLink",
       "role": "",
       "kind": "action",
       "label": "استيراد المنتجات",
@@ -29819,9 +29851,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "c182884bb58e",
+      "id": "cb166a893a44",
       "file": "client/src/components/merchant/ProductCatalogWorkspace.tsx",
-      "line": 265,
+      "line": 267,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -29842,9 +29874,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "498ba5994e2a",
+      "id": "610027e486b3",
       "file": "client/src/components/merchant/ProductCatalogWorkspace.tsx",
-      "line": 275,
+      "line": 277,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -29865,9 +29897,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "2f68c0bd9b2f",
+      "id": "236ee4fdecbc",
       "file": "client/src/components/merchant/ProductCatalogWorkspace.tsx",
-      "line": 286,
+      "line": 288,
       "tag": "input",
       "role": "",
       "kind": "field",
@@ -29886,9 +29918,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "fe36b688a018",
+      "id": "f8e117350fa7",
       "file": "client/src/components/merchant/ProductCatalogWorkspace.tsx",
-      "line": 295,
+      "line": 297,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -29907,9 +29939,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "1e28aed080ab",
+      "id": "99f030d85287",
       "file": "client/src/components/merchant/ProductCatalogWorkspace.tsx",
-      "line": 307,
+      "line": 309,
       "tag": "select",
       "role": "",
       "kind": "field",
@@ -29937,9 +29969,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "5a14e0e093c4",
+      "id": "f270d3936283",
       "file": "client/src/components/merchant/ProductCatalogWorkspace.tsx",
-      "line": 328,
+      "line": 330,
       "tag": "select",
       "role": "",
       "kind": "field",
@@ -29967,9 +29999,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "57575c852dfb",
+      "id": "13c4d6bde1a0",
       "file": "client/src/components/merchant/ProductCatalogWorkspace.tsx",
-      "line": 351,
+      "line": 353,
       "tag": "select",
       "role": "",
       "kind": "field",
@@ -30001,9 +30033,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "b9f3d0f2020e",
+      "id": "0184d2259583",
       "file": "client/src/components/merchant/ProductCatalogWorkspace.tsx",
-      "line": 371,
+      "line": 373,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -30022,9 +30054,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "4ae392476195",
+      "id": "083fd4121f42",
       "file": "client/src/components/merchant/ProductCatalogWorkspace.tsx",
-      "line": 434,
+      "line": 436,
       "tag": "input",
       "role": "",
       "kind": "field",
@@ -30046,9 +30078,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ec8fe3bfa2c6",
+      "id": "f82b8be255b2",
       "file": "client/src/components/merchant/ProductCatalogWorkspace.tsx",
-      "line": 451,
+      "line": 453,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -30070,9 +30102,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "8e02ccd9b679",
+      "id": "c5b2ebefe246",
       "file": "client/src/components/merchant/ProductCatalogWorkspace.tsx",
-      "line": 474,
+      "line": 476,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -30094,9 +30126,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "56d31854875b",
+      "id": "65529f253ac1",
       "file": "client/src/components/merchant/ProductCatalogWorkspace.tsx",
-      "line": 493,
+      "line": 495,
       "tag": "input",
       "role": "",
       "kind": "field",
@@ -30115,9 +30147,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "e2fddfcba415",
+      "id": "5af6e2b819ce",
       "file": "client/src/components/merchant/ProductCatalogWorkspace.tsx",
-      "line": 551,
+      "line": 553,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -30136,9 +30168,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "519f932bab6d",
+      "id": "43b661a75a2d",
       "file": "client/src/components/merchant/ProductCatalogWorkspace.tsx",
-      "line": 560,
+      "line": 562,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -30157,9 +30189,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "a4f5ff8b9f10",
+      "id": "3088be6dfb77",
       "file": "client/src/components/merchant/ProductCatalogWorkspace.tsx",
-      "line": 568,
+      "line": 570,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -30178,9 +30210,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "1fc833454945",
+      "id": "b0f7d1355dd8",
       "file": "client/src/components/merchant/ProductCatalogWorkspace.tsx",
-      "line": 593,
+      "line": 595,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -30201,9 +30233,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "f0c3e0a0b1aa",
+      "id": "a7f2ef23d64f",
       "file": "client/src/components/merchant/ProductCatalogWorkspace.tsx",
-      "line": 600,
+      "line": 602,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -30224,9 +30256,55 @@
       "review": "source-inventoried"
     },
     {
-      "id": "afe9f3e6fee3",
+      "id": "30bf40eeaa16",
       "file": "client/src/components/merchant/ProductWorkspaceView.tsx",
-      "line": 113,
+      "line": 9,
+      "tag": "a",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ProductWorkspaceView",
+      "binding": "href",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "href.startsWith(\"#/\")"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "47dea640f953",
+      "file": "client/src/components/merchant/ProductWorkspaceView.tsx",
+      "line": 10,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ProductWorkspaceView",
+      "binding": "href",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "href.startsWith(\"#/\")"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "45ac7b058ec3",
+      "file": "client/src/components/merchant/ProductWorkspaceView.tsx",
+      "line": 120,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -30245,9 +30323,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "6f5613480002",
+      "id": "4ae87a9d4364",
       "file": "client/src/components/merchant/ProductWorkspaceView.tsx",
-      "line": 116,
+      "line": 123,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -30266,9 +30344,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "8098b5b63950",
+      "id": "b060a0eed283",
       "file": "client/src/components/merchant/ProductEditorWorkspace.tsx",
-      "line": 424,
+      "line": 427,
       "tag": "select",
       "role": "",
       "kind": "field",
@@ -30298,9 +30376,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "b7538e289f78",
+      "id": "2e337147b640",
       "file": "client/src/components/merchant/ProductEditorWorkspace.tsx",
-      "line": 437,
+      "line": 440,
       "tag": "textarea",
       "role": "",
       "kind": "field",
@@ -30322,9 +30400,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "dad678e6c00c",
+      "id": "397e90cf0227",
       "file": "client/src/components/merchant/ProductEditorWorkspace.tsx",
-      "line": 439,
+      "line": 442,
       "tag": "input",
       "role": "",
       "kind": "field",
@@ -30346,9 +30424,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "8e46d4325184",
+      "id": "3ad4a0b19044",
       "file": "client/src/components/merchant/ProductEditorWorkspace.tsx",
-      "line": 471,
+      "line": 474,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -30367,9 +30445,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "e180064981e3",
+      "id": "d23fb90b5bc3",
       "file": "client/src/components/merchant/ProductEditorWorkspace.tsx",
-      "line": 483,
+      "line": 486,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -30390,9 +30468,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "68649cd5eb21",
+      "id": "d3b0819a8d44",
       "file": "client/src/components/merchant/ProductEditorWorkspace.tsx",
-      "line": 561,
+      "line": 564,
       "tag": "input",
       "role": "",
       "kind": "field",
@@ -30414,9 +30492,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "3f04e203b155",
+      "id": "eefaa9b9815a",
       "file": "client/src/components/merchant/ProductEditorWorkspace.tsx",
-      "line": 568,
+      "line": 571,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -30438,9 +30516,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "cbef92087cc5",
+      "id": "43b7aa6edfee",
       "file": "client/src/components/merchant/ProductEditorWorkspace.tsx",
-      "line": 596,
+      "line": 599,
       "tag": "select",
       "role": "",
       "kind": "field",
@@ -30474,9 +30552,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "430b7073faf4",
+      "id": "63dc98825b88",
       "file": "client/src/components/merchant/ProductEditorWorkspace.tsx",
-      "line": 660,
+      "line": 663,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -30498,9 +30576,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "d3ca98c0cc5e",
+      "id": "9f0fea78cf14",
       "file": "client/src/components/merchant/ProductEditorWorkspace.tsx",
-      "line": 691,
+      "line": 694,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -30521,9 +30599,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "3839ff79b02f",
+      "id": "0c2649d17849",
       "file": "client/src/components/merchant/ProductEditorWorkspace.tsx",
-      "line": 728,
+      "line": 731,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -30544,9 +30622,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "272e9aa6c72d",
+      "id": "3d87a9ce936e",
       "file": "client/src/components/merchant/ProductEditorWorkspace.tsx",
-      "line": 745,
+      "line": 748,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -30567,9 +30645,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "8a7b100218d8",
+      "id": "ea32b5f7bd95",
       "file": "client/src/components/merchant/ProductEditorWorkspace.tsx",
-      "line": 759,
+      "line": 762,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -30590,9 +30668,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "4c560f5c2175",
+      "id": "0eaf12a78998",
       "file": "client/src/components/merchant/ProductEditorWorkspace.tsx",
-      "line": 774,
+      "line": 777,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -30613,9 +30691,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "cbebbaa15922",
+      "id": "3cfa1e886fac",
       "file": "client/src/components/merchant/ProductEditorWorkspace.tsx",
-      "line": 777,
+      "line": 780,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -30632,6 +30710,50 @@
       "conditions": [
         "discard && !pending"
       ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "86ca171fcda9",
+      "file": "client/src/components/merchant/ProductSourceNotice.tsx",
+      "line": 46,
+      "tag": "ProductWorkspaceLink",
+      "role": "",
+      "kind": "action",
+      "label": "فتح كتالوج المصدر",
+      "section": "ProductSourceNotice",
+      "binding": "href(selected.catalog)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "selected?.catalog"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "518610a7826b",
+      "file": "client/src/components/merchant/ProductSourceNotice.tsx",
+      "line": 50,
+      "tag": "ProductWorkspaceLink",
+      "role": "",
+      "kind": "action",
+      "label": "مراجعة إعدادات الربط",
+      "section": "ProductSourceNotice",
+      "binding": "href(selected?.settings ?? \"/merchant/integrations-dashboard\")",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
       "disabled": "",
       "review": "source-inventoried"
     },

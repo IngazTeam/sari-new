@@ -255,7 +255,7 @@ function analyze(file) {
         tag
       )
         ? "field"
-        : /^(Button|button|TabsTrigger|DropdownMenuItem|AlertDialogAction|AlertDialogCancel|ToggleGroupItem|Link|a|summary)$/.test(
+        : /^(Button|button|TabsTrigger|DropdownMenuItem|AlertDialogAction|AlertDialogCancel|ToggleGroupItem|Link|ProductWorkspaceLink|a|summary)$/.test(
               tag
             ) ||
             [

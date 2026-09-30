@@ -266,6 +266,18 @@ describe("built product prototype with actual UI", () => {
     dom.window.close();
   });
   const c = arCopy.categoryUx;
+  it.each(["source", "import"])("actually unmounts the product page when its %s link navigates", async destination => {
+    if (destination === "source") {
+      await mode("source");
+      await choose(".pp-controls label:nth-of-type(6) select", "zid");
+    }
+    const label = destination === "source" ? arCopy.productSourceUx.catalog : arCopy.productWorkspaceUx.import;
+    const link = Array.from(w.document.querySelectorAll(".pw-workspace a")).find((a:any) => a.textContent.trim() === label) as any;
+    expect(link).toBeTruthy(); link.click();
+    await vi.waitFor(() => expect(w.document.querySelector("#product-prototype-root")).toBeNull());
+    if (destination === "import") expect(w.document.querySelector(".pi-workspace")).not.toBeNull();
+    expect(w.location.hash).toBe(destination === "source" ? "#/page/merchant/zid/products" : "#/page/merchant/products/upload");
+  });
   it("opens matching stock UI, filters variants and returns from details with the same filter", async () => {
     await click(arCopy.stockUx.title);
     expect(text()).toContain(arCopy.stockUx.scope);

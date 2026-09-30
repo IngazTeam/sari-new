@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { ProductSourceNotice } from "./ProductSourceNotice";
 import { useTranslation } from "react-i18next";
 import { trpc } from "@/lib/trpc";
 import { knowledgeCacheEpoch } from "@/lib/knowledge-workspace-cache";
@@ -43,6 +44,7 @@ export function ProductEditorWorkspace({
   canManage,
   back,
   backLabel,
+  href,
   completed,
 }: {
   scope: string;
@@ -51,6 +53,7 @@ export function ProductEditorWorkspace({
   canManage: boolean;
   back: () => void;
   backLabel?: string;
+  href?: (path: string) => string;
   completed: () => void;
 }) {
   const { t, i18n } = useTranslation(),
@@ -519,11 +522,11 @@ export function ProductEditorWorkspace({
           onRetry={() => void query.refetch()}
         />
       )}
-      {ready && !permitted && (
+      {ready && !permitted && data?.locked ? (
+        <ProductSourceNotice source={data.integrationSource} href={href} />
+      ) : ready && !permitted && (
         <p className="pw-notice">
-          {data?.locked
-            ? t("productWorkspaceUx.locked")
-            : t("productWorkspaceUx.viewer")}
+          {t("productWorkspaceUx.viewer")}
         </p>
       )}
       {conflict && draft && (

@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-09-30T19:07:12.136Z",
+  "generatedAt": "2026-09-30T19:18:43.023Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 311,
-      "controls": 2100
+      "files": 312,
+      "controls": 2104
     }
   },
   "addedFiles": [
@@ -36,6 +36,7 @@
     "client/src/lib/product-workspace-model.ts",
     "client/src/components/merchant/ProductWorkspaceView.tsx",
     "client/src/components/merchant/ProductEditorWorkspace.tsx",
+    "client/src/components/merchant/ProductSourceNotice.tsx",
     "client/src/components/merchant/ProductDeleteWorkspace.tsx",
     "client/src/components/merchant/ProductCategoriesWorkspace.tsx",
     "client/src/lib/product-category-workspace.ts",
@@ -343,7 +344,7 @@
     {
       "route": "/merchant/products",
       "controlsBefore": 57,
-      "controlsNow": 99,
+      "controlsNow": 103,
       "removedQueries": [],
       "addedQueries": [
         "auth.me",
@@ -373,7 +374,7 @@
     {
       "route": "/merchant/products/upload",
       "controlsBefore": 17,
-      "controlsNow": 73,
+      "controlsNow": 75,
       "removedQueries": [
         "products.getSheetSyncStatus"
       ],
@@ -1122,7 +1123,7 @@
     {
       "route": "/merchant/data-sync",
       "controlsBefore": 3,
-      "controlsNow": 14,
+      "controlsNow": 16,
       "removedQueries": [
         "sheets.getStatus"
       ],
@@ -1319,7 +1320,7 @@
     {
       "route": "/merchant/sheets/settings",
       "controlsBefore": 8,
-      "controlsNow": 28,
+      "controlsNow": 30,
       "removedQueries": [
         "sheets.getReportSettings",
         "sheets.getAuthUrl"
@@ -1360,7 +1361,7 @@
     {
       "route": "/merchant/sheets/inventory",
       "controlsBefore": 2,
-      "controlsNow": 28,
+      "controlsNow": 30,
       "removedQueries": [],
       "addedQueries": [
         "auth.me",

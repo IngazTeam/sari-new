@@ -10,6 +10,7 @@ import { categoryModes, type CategoryMode } from "./product-category-model";
 import { knowledgeCacheEpoch } from "../../../client/src/lib/knowledge-workspace-cache";
 import {
   productModes,
+  productPreviewSources,
   productPreviewScope,
   type ProductMode,
 } from "./product-model";
@@ -116,6 +117,12 @@ function Preview() {
           <button type="button" onClick={products.conflict}>
             محاكاة تعديل زميل للمنتج 27
           </button>
+          {products.mode === "source" && <label>
+            المصدر المرتبط في المثال
+            <select value={products.sourceProvider} onChange={e => products.setSource(e.target.value as keyof typeof productPreviewSources)}>
+              {Object.entries(productPreviewSources).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+            </select>
+          </label>}
           <button type="button" onClick={() => setConfirm(true)}>
             إعادة المثال
           </button>

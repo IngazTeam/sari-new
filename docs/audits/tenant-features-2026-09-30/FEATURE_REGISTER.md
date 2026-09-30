@@ -2,7 +2,7 @@
 
 هذا حصر مصدر قابل لإعادة التوليد، وليس ادعاءً بأن كل مسار عمل اختُبر أو أُعيد تصميمه. يشمل المكونات الفرعية المحلية، الحقول، الأزرار، النوافذ، التبويبات، واجهات القراءة والتعديل. العناصر الديناميكية تحتاج مراجعة إضافية.
 
-- 126 مسارًا مسجلًا، 311 ملف واجهة متصلًا، 2100 عنصر تحكم في المصدر.
+- 126 مسارًا مسجلًا، 312 ملف واجهة متصلًا، 2104 عنصر تحكم في المصدر.
 - 0 رابطًا حرفيًا غير مطابق، و0 ملف صفحة غير متصل بالمسارات المحصورة.
 
 | الصفحة | الملفات | عناصر التحكم | القراءة / التعديل | موك أب للصفحة |
@@ -18,8 +18,8 @@
 | /merchant/campaigns/:id/edit — إنشاء حملة | 2 | 13 | 2 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/campaigns/:id — تفاصيل الحملة | 1 | 4 | 1 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/campaigns/:id/report — تقرير الحملة | 2 | 3 | 1 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/products — المنتجات | 14 | 99 | 12 / 4 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/products/upload — استيراد المنتجات | 11 | 73 | 10 / 7 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/products — المنتجات | 15 | 103 | 12 / 4 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/products/upload — استيراد المنتجات | 11 | 75 | 10 / 7 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/conversations — المحادثات | 17 | 87 | 13 / 10 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/whatsapp — أرقام واتساب | 2 | 23 | 8 / 6 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/salla — ربط سلة | 2 | 22 | 5 / 4 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -70,7 +70,7 @@
 | /merchant/advanced-analytics — تحليلات الرسائل | 6 | 10 | 3 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/analytics-dashboard — تحليلات الرسائل | 6 | 10 | 3 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/performance-metrics — مقاييس الأداء | 7 | 10 | 3 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/data-sync — تصدير المخزون إلى Google Sheets | 6 | 14 | 3 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/data-sync — تصدير المخزون إلى Google Sheets | 6 | 16 | 3 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/reviews — تقييمات المنتجات | 1 | 7 | 3 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/booking-reviews — تقييمات الحجوزات | 3 | 9 | 1 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/order-notifications — إشعارات الطلبات | 2 | 9 | 2 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -89,10 +89,10 @@
 | /merchant/bookings — الحجوزات | 11 | 65 | 11 / 9 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/service-categories — تصنيفات الخدمات | 1 | 16 | 1 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/service-packages — حزم الخدمات | 1 | 16 | 2 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/sheets/settings — ربط Google Sheets | 5 | 28 | 4 / 6 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/sheets/settings — ربط Google Sheets | 5 | 30 | 4 / 6 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/sheets/export — تصدير المحادثات | 1 | 3 | 1 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/sheets/reports — تقارير Google Sheets | 1 | 2 | 0 / 4 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/sheets/inventory — مخزون Google Sheets | 6 | 28 | 6 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/sheets/inventory — مخزون Google Sheets | 6 | 30 | 6 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/payments — المدفوعات | 1 | 7 | 2 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/payments/:id — تفاصيل معاملة | 1 | 10 | 1 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/payment-links — روابط الدفع | 2 | 12 | 1 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -581,54 +581,63 @@
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 225 | button | مراجعة المخزون | ProductCatalogWorkspace |
-| 228 | button | فئات المنتجات | ProductCatalogWorkspace |
-| 235 | button | إضافة منتج | ProductCatalogWorkspace |
-| 244 | Link | استيراد المنتجات | ProductCatalogWorkspace |
-| 265 | button | متابعة نتيجة الطلب متابعة المسودة | ProductCatalogWorkspace |
-| 275 | button | إعادة المحاولة | ProductCatalogWorkspace |
-| 286 | input | البحث في الكتالوج | ProductCatalogWorkspace |
-| 295 | summary | البحث في الكتالوج | الفلاتر · {{count}} مفعلة |
-| 307 | select | الحالة كل الحالات | الفلاتر · {{count}} مفعلة |
-| 328 | select | المخزون كل المخزون available | الفلاتر · {{count}} مفعلة |
-| 351 | select | السعر كل الأسعار سعر موثق الوحدة سعر يحتاج مراجعة | الفلاتر · {{count}} مفعلة |
-| 371 | button | البحث في الكتالوج | الفلاتر · {{count}} مفعلة |
-| 434 | input | تحديد الصفحة الحالية | الفلاتر · {{count}} مفعلة |
-| 451 | button | تحديد الصفحة الحالية | الفلاتر · {{count}} مفعلة |
-| 474 | button | إظهار كل المنتجات | ابدأ بأول منتج لا توجد منتجات في هذه النتائج |
-| 493 | input | t("productWorkspaceUx.selectProduct", {                             name: row.name,                           }) | ابدأ بأول منتج لا توجد منتجات في هذه النتائج |
-| 551 | button | الخيارات والنسخ | ProductCatalogWorkspace |
-| 560 | button | مراجعة وتعديل عرض المنتج | ProductCatalogWorkspace |
-| 568 | button | مراجعة الحذف | ProductCatalogWorkspace |
-| 593 | button | السابق | ProductCatalogWorkspace |
-| 600 | button | التالي | ProductCatalogWorkspace |
+| 227 | button | مراجعة المخزون | ProductCatalogWorkspace |
+| 230 | button | فئات المنتجات | ProductCatalogWorkspace |
+| 237 | button | إضافة منتج | ProductCatalogWorkspace |
+| 246 | ProductWorkspaceLink | استيراد المنتجات | ProductCatalogWorkspace |
+| 267 | button | متابعة نتيجة الطلب متابعة المسودة | ProductCatalogWorkspace |
+| 277 | button | إعادة المحاولة | ProductCatalogWorkspace |
+| 288 | input | البحث في الكتالوج | ProductCatalogWorkspace |
+| 297 | summary | البحث في الكتالوج | الفلاتر · {{count}} مفعلة |
+| 309 | select | الحالة كل الحالات | الفلاتر · {{count}} مفعلة |
+| 330 | select | المخزون كل المخزون available | الفلاتر · {{count}} مفعلة |
+| 353 | select | السعر كل الأسعار سعر موثق الوحدة سعر يحتاج مراجعة | الفلاتر · {{count}} مفعلة |
+| 373 | button | البحث في الكتالوج | الفلاتر · {{count}} مفعلة |
+| 436 | input | تحديد الصفحة الحالية | الفلاتر · {{count}} مفعلة |
+| 453 | button | تحديد الصفحة الحالية | الفلاتر · {{count}} مفعلة |
+| 476 | button | إظهار كل المنتجات | ابدأ بأول منتج لا توجد منتجات في هذه النتائج |
+| 495 | input | t("productWorkspaceUx.selectProduct", {                             name: row.name,                           }) | ابدأ بأول منتج لا توجد منتجات في هذه النتائج |
+| 553 | button | الخيارات والنسخ | ProductCatalogWorkspace |
+| 562 | button | مراجعة وتعديل عرض المنتج | ProductCatalogWorkspace |
+| 570 | button | مراجعة الحذف | ProductCatalogWorkspace |
+| 595 | button | السابق | ProductCatalogWorkspace |
+| 602 | button | التالي | ProductCatalogWorkspace |
 
 ## client/src/components/merchant/ProductWorkspaceView.tsx
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 113 | button | فحص النتيجة | نحتاج تأكيد نتيجة العملية |
-| 116 | button | إعادة الطلب نفسه | نحتاج تأكيد نتيجة العملية |
+| 9 | a | تسمية ديناميكية / تحتاج مراجعة | ProductWorkspaceView |
+| 10 | Link | تسمية ديناميكية / تحتاج مراجعة | ProductWorkspaceView |
+| 120 | button | فحص النتيجة | نحتاج تأكيد نتيجة العملية |
+| 123 | button | إعادة الطلب نفسه | نحتاج تأكيد نتيجة العملية |
 
 ## client/src/components/merchant/ProductEditorWorkspace.tsx
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 424 | select | تسمية ديناميكية / تحتاج مراجعة | ProductEditorWorkspace |
-| 437 | textarea | تسمية ديناميكية / تحتاج مراجعة | ProductEditorWorkspace |
-| 439 | input | تسمية ديناميكية / تحتاج مراجعة | ProductEditorWorkspace |
-| 471 | button | العودة للمنتجات | ProductEditorWorkspace |
-| 483 | button | إعادة المحاولة | ProductEditorWorkspace |
-| 561 | input | راجعت الاختلافات وأريد إبقاء الخانات التي عدّلتها. | تغيّر المنتج منذ فتحه |
-| 568 | button | تطبيق مسودتي على النسخة الحالية | تغيّر المنتج منذ فتحه |
-| 596 | select | labels.categoryId | المعلومات الأساسية |
-| 660 | button | إعادة تحميل الفئات | المعلومات الأساسية |
-| 691 | summary | التفاصيل والتسعير الإضافي | التفاصيل والتسعير الإضافي |
-| 728 | summary | المخزون | المخزون |
-| 745 | button | جارٍ الحفظ… حفظ المنتج | المخزون |
-| 759 | button | التخلص من المسودة | المخزون |
-| 774 | button | نعم، تخلص من المسودة | المخزون |
-| 777 | button | الاحتفاظ بالمسودة | المخزون |
+| 427 | select | تسمية ديناميكية / تحتاج مراجعة | ProductEditorWorkspace |
+| 440 | textarea | تسمية ديناميكية / تحتاج مراجعة | ProductEditorWorkspace |
+| 442 | input | تسمية ديناميكية / تحتاج مراجعة | ProductEditorWorkspace |
+| 474 | button | العودة للمنتجات | ProductEditorWorkspace |
+| 486 | button | إعادة المحاولة | ProductEditorWorkspace |
+| 564 | input | راجعت الاختلافات وأريد إبقاء الخانات التي عدّلتها. | تغيّر المنتج منذ فتحه |
+| 571 | button | تطبيق مسودتي على النسخة الحالية | تغيّر المنتج منذ فتحه |
+| 599 | select | labels.categoryId | المعلومات الأساسية |
+| 663 | button | إعادة تحميل الفئات | المعلومات الأساسية |
+| 694 | summary | التفاصيل والتسعير الإضافي | التفاصيل والتسعير الإضافي |
+| 731 | summary | المخزون | المخزون |
+| 748 | button | جارٍ الحفظ… حفظ المنتج | المخزون |
+| 762 | button | التخلص من المسودة | المخزون |
+| 777 | button | نعم، تخلص من المسودة | المخزون |
+| 780 | button | الاحتفاظ بالمسودة | المخزون |
+
+## client/src/components/merchant/ProductSourceNotice.tsx
+
+| السطر | النوع | التسمية | القسم |
+|---:|---|---|---|
+| 46 | ProductWorkspaceLink | فتح كتالوج المصدر | ProductSourceNotice |
+| 50 | ProductWorkspaceLink | مراجعة إعدادات الربط | ProductSourceNotice |
 
 ## client/src/components/merchant/ProductDeleteWorkspace.tsx
 

@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "wouter";
 import { useTranslation } from "react-i18next";
 import { trpc } from "@/lib/trpc";
 import {
@@ -18,12 +17,14 @@ import {
   productChoices,
   ProductThumbnail,
   ProductHeading,
+  ProductWorkspaceLink,
 } from "./ProductWorkspaceView";
 import { ProductEditorWorkspace } from "./ProductEditorWorkspace";
 import { ProductDeleteWorkspace } from "./ProductDeleteWorkspace";
 import { ProductCategoriesWorkspace } from "./ProductCategoriesWorkspace";
 import { ProductDetailsWorkspace } from "./ProductDetailsWorkspace";
 import { ProductStockWorkspace } from "./ProductStockWorkspace";
+import { ProductSourceNotice } from "./ProductSourceNotice";
 import { productStockInput } from "@shared/product-stock";
 import "@/styles/product-workspace.css";
 type View =
@@ -155,6 +156,7 @@ export function ProductCatalogWorkspace({
         currency={data?.currency ?? "SAR"}
         canManage={canManage && unlocked}
         backLabel={returnView === "stock" ? t("stockUx.back") : undefined}
+        href={href}
         back={back}
         completed={completed}
       />
@@ -241,12 +243,12 @@ export function ProductCatalogWorkspace({
             {t("productWorkspaceUx.add")}
           </button>
           {canManage && unlocked && (
-            <Link
+            <ProductWorkspaceLink
               className="pw-button"
               href={href("/merchant/products/upload")}
             >
               {t("productWorkspaceUx.import")}
-            </Link>
+            </ProductWorkspaceLink>
           )}
         </div>
       </header>
@@ -399,7 +401,7 @@ export function ProductCatalogWorkspace({
             <p className="pw-notice">{t("productWorkspaceUx.viewer")}</p>
           )}
           {!unlocked && (
-            <p className="pw-notice">{t("productWorkspaceUx.locked")}</p>
+            <ProductSourceNotice source={data!.integrationSource} href={href} />
           )}
           <dl className="pw-summary">
             <div>

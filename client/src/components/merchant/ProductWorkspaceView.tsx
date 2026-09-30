@@ -2,6 +2,13 @@ import type { TFunction } from "i18next";
 import type { ProductField } from "@/lib/product-workspace-model";
 import { useTranslation } from "react-i18next";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Link } from "wouter";
+export function ProductWorkspaceLink({ href, children, className }: { href: string; children: ReactNode; className?: string }) {
+  // Native hash navigation notifies the standalone preview's hash router.
+  return href.startsWith("#/")
+    ? <a href={href} className={className}>{children}</a>
+    : <Link href={href} className={className}>{children}</Link>;
+}
 export function ProductHeading({ children }: { children: ReactNode }) {
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => {

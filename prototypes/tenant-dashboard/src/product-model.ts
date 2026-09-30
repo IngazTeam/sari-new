@@ -19,6 +19,7 @@ import {
 } from "../../../shared/product-categories";
 export const productPreviewId = 9000082;
 export const productPreviewScope = "9000082:9000082:products";
+export const productPreviewSources = { salla: "سلة", zid: "زد", woocommerce: "WooCommerce", byaan: "بيان", api: "API" } as const;
 export const productModes = {
   data: "بيانات وتجربة الحفظ",
   empty: "كتالوج فارغ",
@@ -105,6 +106,10 @@ export class ProductPreviewStore {
     return counts;
   };
   mode: ProductMode = "data";
+  sourceProvider: keyof typeof productPreviewSources = "salla";
+  setSource = (source: keyof typeof productPreviewSources) => {
+    if (Object.hasOwn(productPreviewSources, source)) { this.sourceProvider = source; this.changed(); }
+  };
   version = 0;
   private listeners = new Set<() => void>();
   private rows = new Map(
@@ -145,6 +150,7 @@ export class ProductPreviewStore {
     this.changed();
   };
   reset = () => {
+    this.sourceProvider = "salla";
     this.detailRevisions.clear();
     this.rows = new Map(
       Array.from({ length: 27 }, (_, i) => [i + 1, fixture(i + 1)])
@@ -177,7 +183,7 @@ export class ProductPreviewStore {
   }
   stockProducts = () => structuredClone(this.all());
   private source() {
-    return this.mode === "source" ? "salla" : "none";
+    return this.mode === "source" ? this.sourceProvider : "none";
   }
   private identity() {
     return this.mode === "wrongTenant" ? 1 : productPreviewId;

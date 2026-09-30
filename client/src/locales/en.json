@@ -11241,6 +11241,16 @@
     "active": "Available for sale",
     "inactive": "Unavailable for sale"
   },
+  "productSourceUx": {
+    "title":"Catalog source",
+    "salla":"Salla",
+    "zid":"Zid",
+    "byaan":"Byaan",
+    "connected":"{{source}} manages this catalog. Review products and the connection on its source page; local editing is locked to protect synchronization.",
+    "unknown":"A locally manageable source could not be identified for this catalog. Review the connection before editing products.",
+    "catalog":"Open source catalog",
+    "settings":"Review connection settings"
+  },
   "stockUx": {
     "managedVariants":"Stock managed by variants",
     "serviceInventory":"Service · quantity does not apply",
