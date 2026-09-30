@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-30T21:56:29.306Z",
+  "generatedAt": "2026-09-30T22:02:55.037Z",
   "definition": "Every registered route is accounted for; source inventory and design completion are different statuses.",
   "routes": [
     {
@@ -45,12 +45,12 @@
         "d17fda87465e",
         "8d302141337f",
         "9321a75fd1af",
-        "91993c83c052",
-        "0f4cbc1f83bf",
-        "f2bdedd2ef65",
-        "9f53e66dbb31",
-        "5c408f44a286",
-        "df44417d0248",
+        "de596419ef85",
+        "028b57fd34ac",
+        "47b9973f366a",
+        "89701777bc9d",
+        "f0b425c88233",
+        "2d7c442128d1",
         "9701db415e86",
         "71dd8839c2d7",
         "1edf0619da77",
@@ -58,17 +58,17 @@
         "19fe30d480ac",
         "8785ed4b5980",
         "fcd72f676fda",
-        "2b01b3c825bf",
-        "ded747b7ea0c",
-        "77b413437a0e",
-        "5e7019b63722",
-        "c0f86ff6f5b4",
-        "63f0033e065e",
-        "5df669b98f9f",
-        "558cb702d3be",
-        "66d74c3fedfa",
-        "6204ad3c9cdb",
-        "c1b4c678c19f",
+        "b4bd6c705a7e",
+        "96eaf222d4f6",
+        "4ede22a591d1",
+        "1880aeb23490",
+        "546e31495533",
+        "3b478b63307d",
+        "000e7f9d2ff7",
+        "1da37b148e4a",
+        "b7fefbfd6130",
+        "066fc34cab9a",
+        "e68492706565",
         "ca48024bea9b",
         "d9796c90d895",
         "b6de0d7b28c1",
@@ -117,11 +117,11 @@
         "3e388a0c9f3d",
         "0d8e013e851f",
         "e77b70263196",
-        "023a2767ee64",
-        "05829d68f799",
-        "19d3d91562ec",
-        "ccc4b61cc55a",
-        "afb2412d55d2",
+        "b67c92097bba",
+        "e7a06879fb7b",
+        "69c6568bcf53",
+        "a4b4426914cd",
+        "717e781767dc",
         "30b66b12f6c2",
         "9822da281b79",
         "b70fd12b489b",
@@ -388,9 +388,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "91993c83c052",
+          "id": "de596419ef85",
           "file": "client/src/pages/SetupWizard.tsx",
-          "line": 877,
+          "line": 878,
           "tag": "a",
           "role": "",
           "kind": "action",
@@ -409,9 +409,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "0f4cbc1f83bf",
+          "id": "028b57fd34ac",
           "file": "client/src/pages/SetupWizard.tsx",
-          "line": 892,
+          "line": 893,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -430,9 +430,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "f2bdedd2ef65",
+          "id": "47b9973f366a",
           "file": "client/src/pages/SetupWizard.tsx",
-          "line": 935,
+          "line": 936,
           "tag": "button",
           "role": "",
           "kind": "action",
@@ -451,9 +451,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "9f53e66dbb31",
+          "id": "89701777bc9d",
           "file": "client/src/pages/SetupWizard.tsx",
-          "line": 961,
+          "line": 962,
           "tag": "button",
           "role": "",
           "kind": "action",
@@ -472,9 +472,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "5c408f44a286",
+          "id": "f0b425c88233",
           "file": "client/src/pages/SetupWizard.tsx",
-          "line": 1032,
+          "line": 1033,
           "tag": "button",
           "role": "",
           "kind": "action",
@@ -499,9 +499,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "df44417d0248",
+          "id": "2d7c442128d1",
           "file": "client/src/pages/SetupWizard.tsx",
-          "line": 1073,
+          "line": 1074,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -671,9 +671,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "2b01b3c825bf",
+          "id": "b4bd6c705a7e",
           "file": "client/src/pages/setup-wizard/TemplatesStep.tsx",
-          "line": 77,
+          "line": 79,
           "tag": "select",
           "role": "",
           "kind": "field",
@@ -701,9 +701,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "ded747b7ea0c",
+          "id": "96eaf222d4f6",
           "file": "client/src/pages/setup-wizard/TemplatesStep.tsx",
-          "line": 94,
+          "line": 96,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -725,9 +725,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "77b413437a0e",
+          "id": "4ede22a591d1",
           "file": "client/src/pages/setup-wizard/TemplatesStep.tsx",
-          "line": 108,
+          "line": 110,
           "tag": "button",
           "role": "",
           "kind": "action",
@@ -749,9 +749,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "5e7019b63722",
+          "id": "1880aeb23490",
           "file": "client/src/pages/setup-wizard/TemplatesStep.tsx",
-          "line": 136,
+          "line": 155,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -774,9 +774,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "c0f86ff6f5b4",
+          "id": "546e31495533",
           "file": "client/src/pages/setup-wizard/TemplatesStep.tsx",
-          "line": 182,
+          "line": 206,
           "tag": "select",
           "role": "",
           "kind": "field",
@@ -812,9 +812,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "63f0033e065e",
+          "id": "3b478b63307d",
           "file": "client/src/pages/setup-wizard/TemplatesStep.tsx",
-          "line": 209,
+          "line": 233,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -838,9 +838,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "5df669b98f9f",
+          "id": "000e7f9d2ff7",
           "file": "client/src/pages/setup-wizard/TemplatesStep.tsx",
-          "line": 222,
+          "line": 260,
           "tag": "input",
           "role": "",
           "kind": "field",
@@ -863,9 +863,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "558cb702d3be",
+          "id": "1da37b148e4a",
           "file": "client/src/pages/setup-wizard/TemplatesStep.tsx",
-          "line": 238,
+          "line": 276,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -889,9 +889,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "66d74c3fedfa",
+          "id": "b7fefbfd6130",
           "file": "client/src/pages/setup-wizard/TemplatesStep.tsx",
-          "line": 270,
+          "line": 308,
           "tag": "input",
           "role": "",
           "kind": "field",
@@ -914,9 +914,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "6204ad3c9cdb",
+          "id": "066fc34cab9a",
           "file": "client/src/pages/setup-wizard/TemplatesStep.tsx",
-          "line": 295,
+          "line": 333,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -935,9 +935,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "c1b4c678c19f",
+          "id": "e68492706565",
           "file": "client/src/pages/setup-wizard/TemplatesStep.tsx",
-          "line": 298,
+          "line": 336,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -2080,14 +2080,14 @@
           "review": "source-inventoried"
         },
         {
-          "id": "023a2767ee64",
+          "id": "b67c92097bba",
           "file": "client/src/components/PreviewChat.tsx",
-          "line": 186,
+          "line": 198,
           "tag": "Button",
           "role": "",
           "kind": "action",
           "label": "جلسة جديدة",
-          "section": "ساري -",
+          "section": "ساري · {{name}}",
           "binding": "resetChat",
           "type": "text",
           "options": [],
@@ -2101,14 +2101,14 @@
           "review": "source-inventoried"
         },
         {
-          "id": "05829d68f799",
+          "id": "e7a06879fb7b",
           "file": "client/src/components/PreviewChat.tsx",
-          "line": 215,
+          "line": 232,
           "tag": "Button",
           "role": "",
           "kind": "action",
           "label": "إعادة المحاولة",
-          "section": "ساري -",
+          "section": "ساري · {{name}}",
           "binding": "() => void session.retry()",
           "type": "text",
           "options": [],
@@ -2124,14 +2124,14 @@
           "review": "source-inventoried"
         },
         {
-          "id": "19d3d91562ec",
+          "id": "69c6568bcf53",
           "file": "client/src/components/PreviewChat.tsx",
-          "line": 296,
+          "line": 321,
           "tag": "Button",
           "role": "",
           "kind": "action",
           "label": "",
-          "section": "ساري -",
+          "section": "ساري · {{name}}",
           "binding": "() => handleQuickReply(query)",
           "type": "text",
           "options": [],
@@ -2145,14 +2145,14 @@
           "review": "source-inventoried"
         },
         {
-          "id": "ccc4b61cc55a",
+          "id": "a4b4426914cd",
           "file": "client/src/components/PreviewChat.tsx",
-          "line": 313,
+          "line": 338,
           "tag": "Input",
           "role": "",
           "kind": "field",
-          "label": "أهلاً وسهلاً! 😊 أنا ساري، مساعدك الذكي. كيف يمكنني مساعدتك اليوم؟",
-          "section": "ساري -",
+          "label": "اكتب رسالة لتجربة المحادثة",
+          "section": "ساري · {{name}}",
           "binding": "inputValue",
           "type": "text",
           "options": [],
@@ -2166,14 +2166,14 @@
           "review": "source-inventoried"
         },
         {
-          "id": "afb2412d55d2",
+          "id": "717e781767dc",
           "file": "client/src/components/PreviewChat.tsx",
-          "line": 329,
+          "line": 354,
           "tag": "Button",
           "role": "",
           "kind": "action",
           "label": "",
-          "section": "ساري -",
+          "section": "ساري · {{name}}",
           "binding": "handleSendMessage",
           "type": "text",
           "options": [],

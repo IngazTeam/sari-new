@@ -12,12 +12,14 @@ interface TemplatesStepProps {
   updateWizardData: (data: Record<string, any>) => void;
   goToNextStep: () => void;
   skipStep: () => void;
+  currency?: "SAR" | "USD";
 }
 export default function TemplatesStep({
   wizardData,
   updateWizardData,
   goToNextStep,
   skipStep,
+  currency = "SAR",
 }: TemplatesStepProps) {
   const { t, i18n } = useTranslation();
   const [language, setLanguage] = useState<"ar" | "en">(
@@ -113,10 +115,27 @@ export default function TemplatesStep({
                 onClick={() => choose(template.id)}
               >
                 <span>
-                  <strong>{template.icon} {title}</strong>
+                  <strong>
+                    {template.icon} {title}
+                  </strong>
                   <small>{template.description}</small>
-                  {('suitableFor' in template ? template.suitableFor : template.suitable_for) && <small>{t('setupTemplateUx.suitableFor')}: {'suitableFor' in template ? template.suitableFor : template.suitable_for}</small>}
-                  {typeof template.usage_count === 'number' && <small>{t('setupTemplateUx.uses', { count: template.usage_count })}</small>}
+                  {("suitableFor" in template
+                    ? template.suitableFor
+                    : template.suitable_for) && (
+                    <small>
+                      {t("setupTemplateUx.suitableFor")}:{" "}
+                      {"suitableFor" in template
+                        ? template.suitableFor
+                        : template.suitable_for}
+                    </small>
+                  )}
+                  {typeof template.usage_count === "number" && (
+                    <small>
+                      {t("setupTemplateUx.uses", {
+                        count: template.usage_count,
+                      })}
+                    </small>
+                  )}
                 </span>
               </button>
             );
@@ -154,7 +173,7 @@ export default function TemplatesStep({
                     })),
                     ...preview.data.services.map(row => ({
                       ...row,
-                      currency: "SAR",
+                      currency,
                       kind: "service",
                     })),
                   ].map(row => (
@@ -177,6 +196,11 @@ export default function TemplatesStep({
                     </section>
                   ))}
                 </div>
+                {preview.data.services.length > 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    {t("setupPreviewUx.templateCurrency", { currency })}
+                  </p>
+                )}
                 <label className="ms-catalog-field">
                   {t("setupTemplateUx.catalogAction")}
                   <select
@@ -215,7 +239,21 @@ export default function TemplatesStep({
                           : preview.data.assistant.tone === "friendly"
                             ? t("setupWorkspace.toneFriendly")
                             : ""}{" "}
-                      <bdi>{({ ar: 'العربية', en: 'English', both: t('setupTemplateUx.bothLanguages'), fr: 'Français', tr: 'Türkçe', es: 'Español', it: 'Italiano' } as Record<string, string>)[preview.data.assistant.language || '']}</bdi>
+                      <bdi>
+                        {
+                          (
+                            {
+                              ar: "العربية",
+                              en: "English",
+                              both: t("setupTemplateUx.bothLanguages"),
+                              fr: "Français",
+                              tr: "Türkçe",
+                              es: "Español",
+                              it: "Italiano",
+                            } as Record<string, string>
+                          )[preview.data.assistant.language || ""]
+                        }
+                      </bdi>
                     </p>
                     <p>{preview.data.assistant.welcomeMessage}</p>
                     <label className="ms-template-check">

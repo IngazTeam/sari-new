@@ -319,4 +319,59 @@ describe("rendered production test workspace", () => {
     );
     expect(container.querySelectorAll(".whitespace-pre-wrap")).toHaveLength(1);
   });
+  it.each(["friendly", "professional", "casual"] as const)(
+    "previews English %s independently from Arabic UI and never calls the provider",
+    async tone => {
+      await act(async () =>
+        root.render(
+          React.createElement(PreviewChat, {
+            useAI: false,
+            botTone: tone,
+            botLanguage: "en",
+          })
+        )
+      );
+      const first = container.querySelector(".whitespace-pre-wrap")!;
+      expect(first.textContent).toMatch(/Sary/);
+      expect(first.textContent).not.toMatch(/[\u0600-\u06ff]/);
+      expect(container.textContent).toContain(ar.setupPreviewUx.greetingOnly);
+      await click(button("What are the prices?"));
+      expect(container.querySelectorAll(".whitespace-pre-wrap")).toHaveLength(
+        3
+      );
+      expect(mocks.send).not.toHaveBeenCalled();
+      expect(mocks.create).not.toHaveBeenCalled();
+    }
+  );
+  it("resets local messages when the response language changes and preserves a custom welcome", async () => {
+    await act(async () =>
+      root.render(
+        React.createElement(PreviewChat, { useAI: false, botLanguage: "ar" })
+      )
+    );
+    await click(button("وش عندكم؟"));
+    await act(async () =>
+      root.render(
+        React.createElement(PreviewChat, { useAI: false, botLanguage: "both" })
+      )
+    );
+    expect(container.querySelectorAll(".whitespace-pre-wrap")).toHaveLength(1);
+    expect(
+      container.querySelector(".whitespace-pre-wrap")?.textContent
+    ).toMatch(/ساري[\s\S]*Sary/);
+    await act(async () =>
+      root.render(
+        React.createElement(PreviewChat, {
+          useAI: false,
+          botLanguage: "en",
+          welcomeMessage: "مرحبًا / Welcome <script>text</script>",
+        })
+      )
+    );
+    expect(container.querySelector(".whitespace-pre-wrap")?.textContent).toBe(
+      "مرحبًا / Welcome <script>text</script>"
+    );
+    expect(container.querySelector("script")).toBeNull();
+    expect(mocks.create).not.toHaveBeenCalled();
+  });
 });

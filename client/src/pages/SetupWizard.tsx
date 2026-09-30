@@ -822,6 +822,7 @@ export default function SetupWizard() {
             {catalogMode === "templates" && (
               <TemplatesStep
                 {...stepProps}
+                currency={progress?.currency || "SAR"}
                 goToNextStep={() => setCatalogMode("items")}
                 skipStep={() => setCatalogMode("items")}
               />

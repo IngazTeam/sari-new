@@ -27,14 +27,6 @@ interface PreviewChatProps {
   useAI?: boolean;
 }
 
-// Quick reply suggestions
-const SAMPLE_QUERIES = [
-  "السلام عليكم",
-  "وش عندكم؟",
-  "وش الأسعار؟",
-  "أبي أحجز موعد",
-];
-
 export default function PreviewChat({
   businessName = "متجرك",
   botTone = "friendly",
@@ -46,6 +38,20 @@ export default function PreviewChat({
   useAI = true,
 }: PreviewChatProps) {
   const { t } = useTranslation();
+  const english = botLanguage === "en";
+  const samples = english
+    ? [
+        t("setupPreviewUx.queryEnHello"),
+        t("setupPreviewUx.queryEnProducts"),
+        t("setupPreviewUx.queryEnPrices"),
+        t("setupPreviewUx.queryEnBooking"),
+      ]
+    : [
+        t("setupPreviewUx.queryArHello"),
+        t("setupPreviewUx.queryArProducts"),
+        t("setupPreviewUx.queryArPrices"),
+        t("setupPreviewUx.queryArBooking"),
+      ];
   const [localMessages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -75,14 +81,19 @@ export default function PreviewChat({
   // Welcome greeting based on tone
   const getGreeting = () => {
     if (welcomeMessage) return welcomeMessage;
-    switch (botTone) {
-      case "professional":
-        return "مرحباً بك. أنا ساري، المساعد الافتراضي. كيف يمكنني خدمتك؟";
-      case "casual":
-        return "هلا! أنا ساري 👋 شو تحتاج؟";
-      default:
-        return "أهلاً وسهلاً! 😊 أنا ساري، مساعدك الذكي. كيف يمكنني مساعدتك اليوم؟";
-    }
+    const ar =
+      botTone === "professional"
+        ? t("setupPreviewUx.greetingArProfessional")
+        : botTone === "casual"
+          ? t("setupPreviewUx.greetingArCasual")
+          : t("setupPreviewUx.greetingArFriendly");
+    const en =
+      botTone === "professional"
+        ? t("setupPreviewUx.greetingEnProfessional")
+        : botTone === "casual"
+          ? t("setupPreviewUx.greetingEnCasual")
+          : t("setupPreviewUx.greetingEnFriendly");
+    return botLanguage === "both" ? `${ar}\n${en}` : english ? en : ar;
   };
 
   // Initialize with welcome message
@@ -95,7 +106,7 @@ export default function PreviewChat({
         timestamp: new Date(),
       },
     ]);
-  }, [welcomeMessage, botTone]);
+  }, [welcomeMessage, botTone, botLanguage]);
 
   // Auto scroll to bottom
   useEffect(() => {
@@ -167,16 +178,17 @@ export default function PreviewChat({
   return (
     <Card className={`overflow-hidden ${className}`}>
       {/* Header */}
-      <div className="bg-gradient-to-r from-green-600 to-green-500 text-white p-4">
+      <div className="bg-primary text-primary-foreground p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
               <Bot className="h-5 w-5" />
             </div>
             <div>
-              <h3 className="font-semibold">ساري - {businessName}</h3>
-              <p className="text-xs text-green-100 flex items-center gap-1">
-                <span className="w-2 h-2 bg-green-300 rounded-full animate-pulse"></span>
+              <h3 className="font-semibold">
+                {t("setupPreviewUx.title", { name: businessName })}
+              </h3>
+              <p className="text-xs flex items-center gap-1">
                 {useAI
                   ? t("testSariPage.title")
                   : t("previewChat.localPreview")}
@@ -199,6 +211,11 @@ export default function PreviewChat({
       {useAI && (
         <p className="p-3 text-xs text-muted-foreground">
           {t("testSariPage.contextLimit")}
+        </p>
+      )}
+      {!useAI && (
+        <p className="p-3 text-sm text-muted-foreground">
+          {t("setupPreviewUx.greetingOnly")}
         </p>
       )}
       {useAI && state.error && (
@@ -224,7 +241,8 @@ export default function PreviewChat({
       {/* Messages */}
       <div
         ref={messagesContainerRef}
-        className="h-72 overflow-y-auto p-4 bg-gray-50 space-y-4"
+        dir={english ? "ltr" : "rtl"}
+        className="h-72 overflow-y-auto p-4 bg-muted space-y-4"
       >
         {messages.map(message => (
           <div
@@ -234,11 +252,13 @@ export default function PreviewChat({
             <div
               className={`min-w-0 max-w-[85%] break-words [overflow-wrap:anywhere] rounded-2xl px-4 py-2 ${
                 message.sender === "user"
-                  ? "bg-green-600 text-white rounded-br-md"
-                  : "bg-white text-gray-800 shadow-sm rounded-bl-md"
+                  ? "bg-primary text-primary-foreground rounded-br-md"
+                  : "bg-card text-card-foreground shadow-sm rounded-bl-md"
               }`}
             >
-              <p className="text-sm whitespace-pre-wrap">{message.text}</p>
+              <p className="text-sm whitespace-pre-wrap" dir="auto">
+                {message.text}
+              </p>
               {message.source && (
                 <p className="mt-2 text-xs">
                   {t(
@@ -253,13 +273,18 @@ export default function PreviewChat({
               )}
               <p
                 className={`text-xs mt-1 ${
-                  message.sender === "user" ? "text-green-100" : "text-gray-400"
+                  message.sender === "user"
+                    ? "text-primary-foreground"
+                    : "text-muted-foreground"
                 }`}
               >
-                {message.timestamp.toLocaleTimeString("ar-SA", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
+                {message.timestamp.toLocaleTimeString(
+                  english ? "en-US" : "ar-SA",
+                  {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  }
+                )}
               </p>
             </div>
           </div>
@@ -290,9 +315,9 @@ export default function PreviewChat({
       </div>
 
       {/* Quick Replies */}
-      <div className="px-4 py-2 bg-gray-100 border-t overflow-x-auto">
+      <div className="px-4 py-2 bg-muted border-t overflow-x-auto">
         <div className="flex gap-2">
-          {SAMPLE_QUERIES.map((query, idx) => (
+          {samples.map((query, idx) => (
             <Button
               key={idx}
               variant="outline"
@@ -308,10 +333,10 @@ export default function PreviewChat({
       </div>
 
       {/* Input */}
-      <div className="p-4 bg-white border-t">
+      <div className="p-4 bg-card border-t">
         <div className="flex gap-2">
           <Input
-            placeholder={t("compPreviewChatPage.text0")}
+            placeholder={t("setupPreviewUx.messagePlaceholder")}
             value={inputValue}
             onChange={e => setInputValue(e.target.value)}
             onKeyDown={e => {
@@ -321,16 +346,16 @@ export default function PreviewChat({
               }
             }}
             maxLength={2000}
-            aria-label={t("compPreviewChatPage.text0")}
+            aria-label={t("setupPreviewUx.messagePlaceholder")}
             className="min-w-0 flex-1 text-base"
-            dir="rtl"
+            dir="auto"
             disabled={disabled}
           />
           <Button
             onClick={handleSendMessage}
             disabled={!inputValue.trim() || disabled}
             aria-label={t("merchantUx.actions.sendMessage")}
-            className="h-11 min-w-11 shrink-0 bg-green-600 hover:bg-green-700"
+            className="h-11 min-w-11 shrink-0"
           >
             {isTyping ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -342,7 +367,7 @@ export default function PreviewChat({
       </div>
 
       {/* Preview Badge */}
-      <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white text-center py-2 text-xs">
+      <div className="bg-muted text-muted-foreground text-center py-2 text-xs">
         <Sparkles className="h-3 w-3 inline-block ml-1" />
         {useAI ? t("testSariPage.testingScope") : t("previewChat.localPreview")}
       </div>

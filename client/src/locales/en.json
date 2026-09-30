@@ -1,4 +1,24 @@
 {
+  "setupPreviewUx": {
+    "messagePlaceholder": "Write a message to try the conversation",
+    "greetingArProfessional": "مرحباً بك. أنا ساري، المساعد الافتراضي. كيف يمكنني خدمتك؟",
+    "greetingArCasual": "هلا! أنا ساري 👋 شو تحتاج؟",
+    "greetingArFriendly": "أهلاً وسهلاً! 😊 أنا ساري، مساعدك الذكي. كيف يمكنني مساعدتك اليوم؟",
+    "greetingEnProfessional": "Welcome. I am Sary, your virtual assistant. How may I help you?",
+    "greetingEnCasual": "Hi! I’m Sary 👋 What can I help you with?",
+    "greetingEnFriendly": "Welcome! 😊 I’m Sary, your assistant. How can I help you today?",
+    "queryArHello": "السلام عليكم",
+    "queryArProducts": "وش عندكم؟",
+    "queryArPrices": "وش الأسعار؟",
+    "queryArBooking": "أبي أحجز موعد",
+    "queryEnHello": "Hello",
+    "queryEnProducts": "What do you offer?",
+    "queryEnPrices": "What are the prices?",
+    "queryEnBooking": "I would like to book an appointment",
+    "title": "Sary · {{name}}",
+    "greetingOnly": "This previews the greeting and conversation layout only. Replies are fixed, do not use products or knowledge files, and do not measure sales proficiency. Use Test Sary after setup to test actual replies.",
+    "templateCurrency": "Service prices here use your store currency: {{currency}}. Review the suggested amounts; no currency conversion is performed."
+  },
   "setupFieldUx": {
     "businessTypeError": "Choose an available business type.",
     "nameError": "Enter a business name from 2 to 255 characters.",
