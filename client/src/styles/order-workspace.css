@@ -184,6 +184,13 @@
   padding: 16px;
   background: var(--card);
 }
+.ow-platform-tool {
+  min-width: 0;
+  margin-block: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+}
 @media (max-width: 760px) {
   .ow-list .ow-open {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);

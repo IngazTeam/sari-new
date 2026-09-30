@@ -43,6 +43,7 @@ import {
 } from "../prototypes/tenant-dashboard/src/order-preview-state";
 import { orderPreviewScope } from "../prototypes/tenant-dashboard/src/order-model";
 import { readOrderStatusCache } from "../client/src/lib/order-status-cache";
+import { trpc as previewApi } from "../prototypes/tenant-dashboard/src/order-preview-api";
 let host: HTMLDivElement, root: Root;
 beforeEach(() => {
   vi.stubGlobal("React", React);
@@ -122,6 +123,86 @@ const approve = async () => {
   await click(l.save);
 };
 describe("actual order workspace with prototype API adapter", () => {
+  it.each([false, true])(
+    "labels a pending or paused Salla access check (%s)",
+    async paused => {
+      const read = vi
+        .spyOn((previewApi.orders as any).checkoutEvidenceAccess, "useQuery")
+        .mockReturnValue({
+          data: undefined,
+          isFetching: !paused,
+          isPaused: paused,
+          isError: false,
+        });
+      try {
+        await render();
+        expect(
+          host.querySelector("[data-checkout-access-loading]")?.textContent
+        ).toBe(
+          paused
+            ? uxAr.sallaCheckout.accessPaused
+            : uxAr.sallaCheckout.accessLoading
+        );
+        expect(host.querySelector("[data-salla-checkout-review]")).toBeNull();
+      } finally {
+        read.mockRestore();
+      }
+    }
+  );
+  it("keeps platform tools collapsed and preserves a Zid draft when toggled", async () => {
+    await render();
+    const pane = host.querySelector<HTMLDetailsElement>(
+      "[data-zid-checkout-review]"
+    )!;
+    expect(pane.open).toBe(false);
+    expect(
+      host.querySelector<HTMLDetailsElement>("[data-salla-checkout-review]")
+        ?.open
+    ).toBe(false);
+    await expand("[data-zid-checkout-review]");
+    await edit("#zid-order-366", "9900");
+    await act(async () => {
+      pane.open = false;
+      pane.dispatchEvent(new Event("toggle"));
+    });
+    await expand("[data-zid-checkout-review]");
+    expect(host.querySelector<HTMLInputElement>("#zid-order-366")?.value).toBe(
+      "9900"
+    );
+  });
+  it("shows and retries an unavailable Salla access check instead of hiding it", async () => {
+    platforms.setMode("accessError");
+    await render();
+    expect(
+      host.querySelector("[data-checkout-access-error]")?.textContent
+    ).toContain(uxAr.sallaCheckout.accessFailed);
+    expect(host.querySelector("[data-salla-checkout-review]")).toBeNull();
+    const read = vi
+      .spyOn(platforms, "accessInfo")
+      .mockReturnValue({ merchantId: 9000064, canInspect: true });
+    try {
+      await press("[data-checkout-access-error] button");
+      expect(host.querySelector("[data-checkout-access-error]")).toBeNull();
+      expect(host.querySelector("[data-salla-checkout-review]")).toBeTruthy();
+    } finally {
+      read.mockRestore();
+    }
+  });
+  it("withholds the Salla tool for an invalid access payload and a confirmed viewer", async () => {
+    const read = vi
+      .spyOn(platforms, "accessInfo")
+      .mockReturnValue({ merchantId: 9000064, canInspect: "yes" } as any);
+    try {
+      await render();
+      expect(host.querySelector("[data-checkout-access-error]")).toBeTruthy();
+      expect(host.querySelector("[data-salla-checkout-review]")).toBeNull();
+    } finally {
+      read.mockRestore();
+    }
+    await act(async () => orders.setMode("viewer"));
+    expect(host.querySelector("[data-checkout-access-error]")).toBeNull();
+    expect(host.querySelector("[data-salla-checkout-review]")).toBeNull();
+  });
   it("paginates ready carts and restores the latest page", async () => {
     await openSalla();
     expect(host.querySelectorAll("[data-checkout-row]")).toHaveLength(20);

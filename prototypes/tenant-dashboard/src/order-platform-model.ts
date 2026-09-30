@@ -23,6 +23,7 @@ export const platformModes = {
   normal: "أمثلة سلة وزد",
   empty: "قوائم المنصات فارغة",
   listError: "تعذر قراءة قوائم المنصات",
+  accessError: "تعذر التحقق من صلاحية أداة سلة",
   different: "مراجع مختلفة في سلة",
   absent: "مراجع سلة غائبة",
   inspectError: "تعذر فحص سلة",
@@ -172,6 +173,7 @@ export class OrderPlatformModel {
   }
   accessInfo() {
     this.access();
+    if (this.mode === "accessError") fail("INTERNAL_SERVER_ERROR");
     return {
       merchantId: orderPreviewId,
       canInspect: this.orders.mode !== "viewer",

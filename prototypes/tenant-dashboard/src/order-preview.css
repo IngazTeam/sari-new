@@ -22,6 +22,10 @@
 .op-active .ow-operations {
   overflow-wrap: anywhere;
 }
+.op-active .ow-detail pre {
+  background: #edf1e7;
+  color: var(--foreground);
+}
 .op-active .ow-operations section {
   display: grid;
   gap: 14px;

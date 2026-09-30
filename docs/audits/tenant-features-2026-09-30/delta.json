@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-09-30T05:35:56.656Z",
+  "generatedAt": "2026-09-30T06:13:17.035Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -11,7 +11,7 @@
     "after": {
       "routes": 126,
       "files": 281,
-      "controls": 1947
+      "controls": 1949
     }
   },
   "addedFiles": [
@@ -576,7 +576,7 @@
     {
       "route": "/merchant/orders",
       "controlsBefore": 53,
-      "controlsNow": 84,
+      "controlsNow": 86,
       "removedQueries": [
         "orders.getWithFilters",
         "orders.getStats"

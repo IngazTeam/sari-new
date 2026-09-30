@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-30T05:35:56.656Z",
+  "generatedAt": "2026-09-30T06:13:17.035Z",
   "definition": "Every registered route is accounted for; source inventory and design completion are different statuses.",
   "routes": [
     {
@@ -18514,12 +18514,13 @@
         "b2e539411d88",
         "876d4ff27dc9",
         "6eb38ca6a754",
-        "e7050d463d22",
-        "a53c182a9503",
-        "ae8d6cf3722a",
-        "93a791485da0",
-        "d1e7aa12d835",
-        "02c3c213fba4",
+        "9f204dc4168d",
+        "f647153f30a9",
+        "bda00a417592",
+        "81b31d5f7e6a",
+        "dcce423d6467",
+        "d14ee149ec25",
+        "e2c8e2178dd7",
         "1fbf305cd965",
         "208d0ee06da4",
         "b2d5201ec5de",
@@ -18570,7 +18571,8 @@
         "8e725d4568ed",
         "504e1e961e5f",
         "5db86a94e0ce",
-        "7aa7b9bbd1a6",
+        "186dcba53362",
+        "df25fa810f5d",
         "4825354f2b5f",
         "328835087f2f",
         "cca6eceb317d",
@@ -18633,13 +18635,14 @@
         "التفاصيل والبنود والهدايا والنص التاريخي",
         "مراجعة الحالة والسبب والتتبع والإشعار دون دفع يدوي",
         "المسودة والإيصال والتعارض وضياع الاستجابة والسجل",
-        "مكونات التطبيق الفعلية مع11 حالة طلبات و10 مالية و12 للمنصات",
+        "مكونات التطبيق الفعلية مع11 حالة طلبات و10 مالية و13 للمنصات",
         "الفاتورة والهامش واستثناؤه ومحاولات الدفع وتحرير الخصم",
-        "فحص سلة وحفظ المراجعات وسجلها واستعادة السلات ومراجعة زد"
+        "فحص سلة وحفظ المراجعات وسجلها واستعادة السلات ومراجعة زد",
+        "فتح أدوات المنصات عند الحاجة وإظهار فشل التحقق من الوصول لسلة وإعادة المحاولة"
       ],
       "acceptancePlan": "السجل والتفاصيل والحالات؛ المبالغ والضريبة والتكلفة؛ اعتماد الفاتورة والخصم والهامش؛ نتيجة الدفع المؤكدة والمصالحة ومنع الإرسال المتكرر.",
       "gaps": [
-        "راجع tenant-order-workspace-2026-09-30 وtenant-order-prototype-2026-09-30 وtenant-order-finance-prototype-2026-09-30 وtenant-order-platform-prototype-2026-09-30. المكونات الفعلية مستخدمة في أمثلة الأدوات الداخلية؛ المحاكاة في الذاكرة ولا تثبت دوام الإيصال أو تسوية الدفع أو وصول إشعار. تبقى قراءة التقارير والأتمتة، تبسيط التنقل بين أدوات المنصات، وإظهار فشل التحقق من صلاحية سلة، والمزود الفعلي وSafari/iPhone و320/390 مفتوحة."
+        "راجع tenant-order-workspace-2026-09-30 وtenant-order-prototype-2026-09-30 وtenant-order-finance-prototype-2026-09-30 وtenant-order-platform-prototype-2026-09-30 وtenant-order-platform-ux-2026-09-30. المكونات الفعلية مستخدمة في أمثلة الأدوات الداخلية؛ المحاكاة في الذاكرة ولا تثبت دوام الإيصال أو تسوية الدفع أو وصول إشعار. تبقى قراءة التقارير والأتمتة والمزود الفعلي وSafari/iPhone و320/390 مفتوحة."
       ],
       "controlDetails": [
         {
@@ -19072,14 +19075,38 @@
           "review": "source-inventoried"
         },
         {
-          "id": "e7050d463d22",
+          "id": "9f204dc4168d",
           "file": "client/src/components/merchant/OrderWorkspace.tsx",
-          "line": 697,
+          "line": 659,
+          "tag": "summary",
+          "role": "",
+          "kind": "action",
+          "label": "",
+          "section": "OrderWorkspace",
+          "binding": "",
+          "type": "text",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": false,
+          "conditions": [
+            "data",
+            "view === \"list\""
+          ],
+          "disabled": "",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "f647153f30a9",
+          "file": "client/src/components/merchant/OrderWorkspace.tsx",
+          "line": 700,
           "tag": "button",
           "role": "",
           "kind": "action",
           "label": "العودة للتفاصيل",
-          "section": "طلبات سلة وزد التي تحتاج مراجعة",
+          "section": "OrderWorkspace",
           "binding": "() => setView(\"detail\")",
           "type": "button",
           "options": [],
@@ -19096,14 +19123,14 @@
           "review": "source-inventoried"
         },
         {
-          "id": "a53c182a9503",
+          "id": "bda00a417592",
           "file": "client/src/components/merchant/OrderWorkspace.tsx",
-          "line": 704,
+          "line": 707,
           "tag": "button",
           "role": "",
           "kind": "action",
           "label": "استبعاد المسودة",
-          "section": "طلبات سلة وزد التي تحتاج مراجعة",
+          "section": "OrderWorkspace",
           "binding": "() => setDiscard(true)",
           "type": "button",
           "options": [],
@@ -19120,14 +19147,14 @@
           "review": "source-inventoried"
         },
         {
-          "id": "ae8d6cf3722a",
+          "id": "81b31d5f7e6a",
           "file": "client/src/components/merchant/OrderWorkspace.tsx",
-          "line": 741,
+          "line": 744,
           "tag": "button",
           "role": "",
           "kind": "action",
           "label": "تغيير حالة الطلب",
-          "section": "طلبات سلة وزد التي تحتاج مراجعة",
+          "section": "OrderWorkspace",
           "binding": "start",
           "type": "button",
           "options": [],
@@ -19145,9 +19172,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "93a791485da0",
+          "id": "dcce423d6467",
           "file": "client/src/components/merchant/OrderWorkspace.tsx",
-          "line": 773,
+          "line": 776,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -19169,9 +19196,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "d1e7aa12d835",
+          "id": "d14ee149ec25",
           "file": "client/src/components/merchant/OrderWorkspace.tsx",
-          "line": 815,
+          "line": 818,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -19193,9 +19220,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "02c3c213fba4",
+          "id": "e2c8e2178dd7",
           "file": "client/src/components/merchant/OrderWorkspace.tsx",
-          "line": 829,
+          "line": 832,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -20351,9 +20378,30 @@
           "review": "source-inventoried"
         },
         {
-          "id": "7aa7b9bbd1a6",
+          "id": "186dcba53362",
           "file": "client/src/components/SallaCheckoutReview.tsx",
-          "line": 149,
+          "line": 150,
+          "tag": "Button",
+          "role": "",
+          "kind": "action",
+          "label": "",
+          "section": "SallaCheckoutReview",
+          "binding": "()=>void access.refetch()",
+          "type": "button",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": false,
+          "conditions": [],
+          "disabled": "",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "df25fa810f5d",
+          "file": "client/src/components/SallaCheckoutReview.tsx",
+          "line": 154,
           "tag": "summary",
           "role": "",
           "kind": "action",

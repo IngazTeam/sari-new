@@ -144,7 +144,12 @@ function CartBrowser({merchantId}:{merchantId:number}) {
 export function SallaCheckoutReview() {
   const {t}=useTranslation(),[open,setOpen]=useState(false);
   const access=trpc.orders.checkoutEvidenceAccess.useQuery(undefined,{retry:false,staleTime:0,gcTime:0,refetchOnMount:'always'}),parsed=sallaCheckoutEvidenceAccess.safeParse(access.data);
-  if(access.isFetching||access.isPaused||access.isError||!parsed.success||!parsed.data.canInspect)return null;
+  if(access.isFetching||access.isPaused)return <p role="status" data-checkout-access-loading>{t(access.isPaused?'merchantUx.sallaCheckout.accessPaused':'merchantUx.sallaCheckout.accessLoading')}</p>;
+  if(access.isError||!parsed.success)return <div role="alert" data-checkout-access-error className="min-w-0 space-y-3 rounded-xl border p-4">
+    <p>{t('merchantUx.sallaCheckout.accessFailed')}</p>
+    <Button type="button" className={button} variant="outline" onClick={()=>void access.refetch()}>{t('merchantUx.sallaCheckout.refresh')}</Button>
+  </div>;
+  if(!parsed.data.canInspect)return null;
   return <details open={open} data-salla-checkout-review className="min-w-0 rounded-xl border bg-background" onToggle={e=>setOpen(e.currentTarget.open)}>
     <summary className="min-h-11 cursor-pointer p-4 font-semibold">{t('merchantUx.sallaCheckout.title')}</summary>
     {open&&<CartBrowser key={parsed.data.merchantId} merchantId={parsed.data.merchantId}/>}

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-30T05:35:56.656Z",
+  "generatedAt": "2026-09-30T06:13:17.035Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -6166,7 +6166,7 @@
     },
     {
       "file": "client/src/components/merchant/OrderWorkspace.tsx",
-      "hash": "14a2037d904f",
+      "hash": "53c55d1ebc3d",
       "queries": [
         "orders.workspace.list",
         "orders.workspace.detail",
@@ -6215,23 +6215,28 @@
           "tag": "summary"
         },
         {
+          "label": "",
+          "line": 659,
+          "tag": "summary"
+        },
+        {
           "label": "الفاتورة والدفع والخصم",
-          "line": 764,
+          "line": 767,
           "tag": "h2"
         },
         {
           "label": "اعتماد الفاتورة ومراجعة الهامش",
-          "line": 773,
+          "line": 776,
           "tag": "summary"
         },
         {
           "label": "محاولات الدفع والمصالحة",
-          "line": 815,
+          "line": 818,
           "tag": "summary"
         },
         {
           "label": "مراجعة تحرير الخصم",
-          "line": 829,
+          "line": 832,
           "tag": "summary"
         }
       ],
@@ -6270,7 +6275,7 @@
         "client/src/components/ZidCheckoutReconciliation.tsx",
         "client/src/components/SallaCheckoutReview.tsx"
       ],
-      "controlCount": 23
+      "controlCount": 24
     },
     {
       "file": "client/src/lib/order-status-cache.ts",
@@ -6626,7 +6631,7 @@
     },
     {
       "file": "client/src/components/SallaCheckoutReview.tsx",
-      "hash": "756e7ceed73e",
+      "hash": "3b7694e49e0a",
       "queries": [
         "orders.listSallaCheckoutCarts",
         "orders.checkoutEvidenceAccess"
@@ -6642,7 +6647,7 @@
         },
         {
           "label": "",
-          "line": 149,
+          "line": 154,
           "tag": "summary"
         }
       ],
@@ -6707,7 +6712,7 @@
         "client/src/components/SallaCartRecovery.tsx",
         "client/src/lib/salla-checkout-review.ts"
       ],
-      "controlCount": 9
+      "controlCount": 10
     },
     {
       "file": "client/src/components/SallaCheckoutHistory.tsx",
@@ -18063,12 +18068,13 @@
         "b2e539411d88",
         "876d4ff27dc9",
         "6eb38ca6a754",
-        "e7050d463d22",
-        "a53c182a9503",
-        "ae8d6cf3722a",
-        "93a791485da0",
-        "d1e7aa12d835",
-        "02c3c213fba4",
+        "9f204dc4168d",
+        "f647153f30a9",
+        "bda00a417592",
+        "81b31d5f7e6a",
+        "dcce423d6467",
+        "d14ee149ec25",
+        "e2c8e2178dd7",
         "1fbf305cd965",
         "208d0ee06da4",
         "b2d5201ec5de",
@@ -18119,7 +18125,8 @@
         "8e725d4568ed",
         "504e1e961e5f",
         "5db86a94e0ce",
-        "7aa7b9bbd1a6",
+        "186dcba53362",
+        "df25fa810f5d",
         "4825354f2b5f",
         "328835087f2f",
         "cca6eceb317d",
@@ -38220,14 +38227,38 @@
       "review": "source-inventoried"
     },
     {
-      "id": "e7050d463d22",
+      "id": "9f204dc4168d",
       "file": "client/src/components/merchant/OrderWorkspace.tsx",
-      "line": 697,
+      "line": 659,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "OrderWorkspace",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "data",
+        "view === \"list\""
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "f647153f30a9",
+      "file": "client/src/components/merchant/OrderWorkspace.tsx",
+      "line": 700,
       "tag": "button",
       "role": "",
       "kind": "action",
       "label": "العودة للتفاصيل",
-      "section": "طلبات سلة وزد التي تحتاج مراجعة",
+      "section": "OrderWorkspace",
       "binding": "() => setView(\"detail\")",
       "type": "button",
       "options": [],
@@ -38244,14 +38275,14 @@
       "review": "source-inventoried"
     },
     {
-      "id": "a53c182a9503",
+      "id": "bda00a417592",
       "file": "client/src/components/merchant/OrderWorkspace.tsx",
-      "line": 704,
+      "line": 707,
       "tag": "button",
       "role": "",
       "kind": "action",
       "label": "استبعاد المسودة",
-      "section": "طلبات سلة وزد التي تحتاج مراجعة",
+      "section": "OrderWorkspace",
       "binding": "() => setDiscard(true)",
       "type": "button",
       "options": [],
@@ -38268,14 +38299,14 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ae8d6cf3722a",
+      "id": "81b31d5f7e6a",
       "file": "client/src/components/merchant/OrderWorkspace.tsx",
-      "line": 741,
+      "line": 744,
       "tag": "button",
       "role": "",
       "kind": "action",
       "label": "تغيير حالة الطلب",
-      "section": "طلبات سلة وزد التي تحتاج مراجعة",
+      "section": "OrderWorkspace",
       "binding": "start",
       "type": "button",
       "options": [],
@@ -38293,9 +38324,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "93a791485da0",
+      "id": "dcce423d6467",
       "file": "client/src/components/merchant/OrderWorkspace.tsx",
-      "line": 773,
+      "line": 776,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -38317,9 +38348,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "d1e7aa12d835",
+      "id": "d14ee149ec25",
       "file": "client/src/components/merchant/OrderWorkspace.tsx",
-      "line": 815,
+      "line": 818,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -38341,9 +38372,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "02c3c213fba4",
+      "id": "e2c8e2178dd7",
       "file": "client/src/components/merchant/OrderWorkspace.tsx",
-      "line": 829,
+      "line": 832,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -39499,9 +39530,30 @@
       "review": "source-inventoried"
     },
     {
-      "id": "7aa7b9bbd1a6",
+      "id": "186dcba53362",
       "file": "client/src/components/SallaCheckoutReview.tsx",
-      "line": 149,
+      "line": 150,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "SallaCheckoutReview",
+      "binding": "()=>void access.refetch()",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "df25fa810f5d",
+      "file": "client/src/components/SallaCheckoutReview.tsx",
+      "line": 154,
       "tag": "summary",
       "role": "",
       "kind": "action",

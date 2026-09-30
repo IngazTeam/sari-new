@@ -655,7 +655,10 @@ export function OrderWorkspace({
             <section className="ow-operations">
               <details>
                 <summary>{t("orderWorkspace.platforms")}</summary>
-                <ZidCheckoutReconciliation />
+                <details className="ow-platform-tool" data-zid-checkout-review>
+                  <summary>{t("merchantUx.zidReconciliation.title")}</summary>
+                  <ZidCheckoutReconciliation />
+                </details>
                 <SallaCheckoutReview key={scope} />
               </details>
             </section>
