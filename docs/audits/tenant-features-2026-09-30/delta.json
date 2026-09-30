@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-09-30T23:08:57.390Z",
+  "generatedAt": "2026-09-30T23:19:18.495Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 322,
-      "controls": 2163
+      "files": 323,
+      "controls": 2170
     }
   },
   "addedFiles": [
@@ -92,6 +92,7 @@
     "client/src/components/merchant/AssistantOptionReview.tsx",
     "client/src/hooks/useReviewedAssistantOption.ts",
     "client/src/components/merchant/VirtualAgentReview.tsx",
+    "client/src/components/SalesKnowledgeReadout.tsx",
     "client/src/components/BrainQuickPreview.tsx",
     "client/src/components/ReplyQualityReadout.tsx",
     "client/src/components/WebsiteAnalysisDialog.tsx",
@@ -858,21 +859,22 @@
     {
       "route": "/merchant/sari-brain",
       "controlsBefore": 275,
-      "controlsNow": 395,
+      "controlsNow": 402,
       "removedQueries": [
         "sariBrain.getFaqs",
+        "sariBrain.getKnowledgeSections",
         "sariBrain.getPendingReviews",
         "sariBrain.getPageContent"
       ],
       "addedQueries": [
+        "sariBrain.sectionWorkspace",
+        "sariBrain.sectionReview",
         "auth.me",
         "merchants.getCurrent",
         "sariBrain.pageWorkspace",
         "sariBrain.pageIntakeReceipt",
         "sariBrain.pageReview",
         "sariBrain.getSourceInventory",
-        "sariBrain.sectionWorkspace",
-        "sariBrain.sectionReview",
         "sariBrain.sectionCreationReceipt",
         "sariBrain.conflictWorkspace",
         "sariBrain.conflictReview",

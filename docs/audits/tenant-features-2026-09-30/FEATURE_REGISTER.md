@@ -2,7 +2,7 @@
 
 هذا حصر مصدر قابل لإعادة التوليد، وليس ادعاءً بأن كل مسار عمل اختُبر أو أُعيد تصميمه. يشمل المكونات الفرعية المحلية، الحقول، الأزرار، النوافذ، التبويبات، واجهات القراءة والتعديل. العناصر الديناميكية تحتاج مراجعة إضافية.
 
-- 126 مسارًا مسجلًا، 322 ملف واجهة متصلًا، 2163 عنصر تحكم في المصدر.
+- 126 مسارًا مسجلًا، 323 ملف واجهة متصلًا، 2170 عنصر تحكم في المصدر.
 - 0 رابطًا حرفيًا غير مطابق، و0 ملف صفحة غير متصل بالمسارات المحصورة.
 
 | الصفحة | الملفات | عناصر التحكم | القراءة / التعديل | موك أب للصفحة |
@@ -55,7 +55,7 @@
 | /merchant/bot-settings — سلوك المساعد | 8 | 53 | 5 / 6 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/human-takeover — التدخل البشري | 5 | 13 | 4 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/virtual-team — شخصيات المساعد | 6 | 47 | 3 / 7 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/sari-brain — عقل ساري | 56 | 395 | 50 / 37 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/sari-brain — عقل ساري | 57 | 402 | 49 / 37 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/sari-playground — ساحة التجربة | 3 | 11 | 2 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/sari-analytics — تحليلات الرسائل | 6 | 10 | 3 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/sales-hub — عروض الأسعار | 10 | 45 | 8 / 5 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -1795,16 +1795,28 @@
 | 307 | Button | بدء تحليل الموقع | تحليل الموقع |
 | 312 | Button | إدارة products | تحليل الموقع |
 | 316 | Button | الإعدادات | تحليل الموقع |
-| 479 | Button | source.type === 'document' ? t('merchantUx.knowledgeLibrary.deleteGroup') : t('merchantUx.actions.deleteNamed', { name: source.name }) | 📦 مصادر المعرفة |
-| 490 | AlertDialogContent | document إلغاء حذف | 📦 مصادر المعرفة |
-| 498 | AlertDialogCancel | إلغاء | document |
-| 499 | AlertDialogAction | حذف | document |
-| 516 | Button | رفع ملف تعريفي | document |
-| 589 | button | تسمية ديناميكية / تحتاج مراجعة | 📋 مسار ساري |
-| 652 | button | ← السابق | 📋 مسار ساري |
-| 671 | button | تسمية ديناميكية / تحتاج مراجعة | 📋 مسار ساري |
-| 684 | button | التالي → | 📋 مسار ساري |
-| 700 | button | عرض كل الأنشطة | 📋 مسار ساري |
+| 398 | Button | source.type === 'document' ? t('merchantUx.knowledgeLibrary.deleteGroup') : t('merchantUx.actions.deleteNamed', { name: source.name }) | 📦 مصادر المعرفة |
+| 409 | AlertDialogContent | document إلغاء حذف | 📦 مصادر المعرفة |
+| 417 | AlertDialogCancel | إلغاء | document |
+| 418 | AlertDialogAction | حذف | document |
+| 435 | Button | رفع ملف تعريفي | document |
+| 508 | button | تسمية ديناميكية / تحتاج مراجعة | 📋 مسار ساري |
+| 571 | button | ← السابق | 📋 مسار ساري |
+| 590 | button | تسمية ديناميكية / تحتاج مراجعة | 📋 مسار ساري |
+| 603 | button | التالي → | 📋 مسار ساري |
+| 619 | button | عرض كل الأنشطة | 📋 مسار ساري |
+
+## client/src/components/SalesKnowledgeReadout.tsx
+
+| السطر | النوع | التسمية | القسم |
+|---:|---|---|---|
+| 159 | Button | تحديث الأقسام | sales_intel salesKnowledgeUx.salesTitle salesKnowledgeUx.opportunitiesTitle |
+| 238 | Button | salesKnowledgeUx.close salesKnowledgeUx.open | قسم دون عنوان |
+| 263 | Button | إعادة قراءة النص | قسم دون عنوان |
+| 312 | summary | الملخص المحفوظ | الملخص المحفوظ |
+| 337 | Button | السابق | الملخص المحفوظ |
+| 352 | Button | التالي | الملخص المحفوظ |
+| 365 | Button | فتح إدارة أقسام المعرفة | الملخص المحفوظ |
 
 ## client/src/components/BrainQuickPreview.tsx
 

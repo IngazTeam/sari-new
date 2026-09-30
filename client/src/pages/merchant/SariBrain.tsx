@@ -1,3 +1,4 @@
+import { SalesKnowledgeReadout } from "@/components/SalesKnowledgeReadout";
 import { BrainQuickPreview } from "@/components/BrainQuickPreview";
 import { ReplyQualityReadout } from '@/components/ReplyQualityReadout';
 import { WebsiteAnalysisDialog, type WebsiteAnalysisIssue } from '@/components/WebsiteAnalysisDialog';
@@ -90,8 +91,7 @@ export default function SariBrain() {
   const { data: activityLogData } = activityQuery;
 
 
-  // Knowledge Engine v4 hooks
-  const { data: knowledgeSections } = trpc.sariBrain.getKnowledgeSections.useQuery();
+
 
   // Reanalyze progress modal
   const [analysisDialogOpen, setAnalysisDialogOpen] = useState(false);
@@ -347,88 +347,7 @@ export default function SariBrain() {
       </section>
 
       <section hidden={brainView !== 'sales'} className="space-y-6" data-brain-section="sales">
-{/* ═══ 💎 Sales Intelligence Card ═══ */}
-      {(() => {
-        const intelSection = (knowledgeSections as any[] || []).find((s: any) => (s.section_type || s.sectionType) === 'sales_intel');
-        if (!intelSection) return null;
-        const content = intelSection.content || '';
-        const uspsMatch = content.match(/نقاط القوة[:\s]*\n([\s\S]*?)(?=\n(?:إرشادات|$))/i);
-        const tipsMatch = content.match(/إرشادات البيع[:\s]*\n([\s\S]*?)$/i);
-        const usps = (uspsMatch?.[1] || '').split('\n').filter((l: string) => l.trim().startsWith('•')).map((l: string) => l.replace('•', '').trim());
-        const tips = (tipsMatch?.[1] || '').split('\n').filter((l: string) => l.trim().startsWith('•')).map((l: string) => l.replace('•', '').trim());
-        return (
-          <Card className="border-emerald-300 dark:border-emerald-700 overflow-hidden">
-            <CardHeader className="bg-accent pb-3">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Sparkles className="h-5 w-5 text-emerald-500" />
-                💎 ذكاء المبيعات
-              </CardTitle>
-              <CardDescription>يستخدمها ساري تلقائياً في المحادثات لإقناع العملاء</CardDescription>
-            </CardHeader>
-            <CardContent className="pt-4 space-y-4">
-              {usps.length > 0 && (
-                <div>
-                  <h4 className="text-sm font-semibold mb-2 flex items-center gap-1.5">⭐ نقاط القوة الفريدة (USPs)</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    {usps.map((usp: string, i: number) => (
-                      <div key={i} className="flex items-start gap-2 p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800">
-                        <CheckCircle2 className="h-4 w-4 text-emerald-600 mt-0.5 shrink-0" />
-                        <p className="text-sm">{usp}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {tips.length > 0 && (
-                <div>
-                  <h4 className="text-sm font-semibold mb-2 flex items-center gap-1.5">🎯 إرشادات البيع للبوت</h4>
-                  <div className="space-y-1.5">
-                    {tips.map((tip: string, i: number) => (
-                      <div key={i} className="flex items-start gap-2 p-2 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800">
-                        <Zap className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
-                        <p className="text-sm">{tip}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {usps.length === 0 && tips.length === 0 && (
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{content}</p>
-              )}
-            </CardContent>
-          </Card>
-        );
-      })()}
-
-      {/* ═══ 🎯 Opportunities Card ═══ */}
-      {(() => {
-        const oppsSection = (knowledgeSections as any[] || []).find((s: any) => (s.section_type || s.sectionType) === 'opportunities');
-        if (!oppsSection) return null;
-        const opps = (oppsSection.content || '').split('\n').filter((l: string) => l.trim().startsWith('•')).map((l: string) => l.replace('•', '').trim());
-        return (
-          <Card className="border-amber-300 dark:border-amber-700 overflow-hidden">
-            <CardHeader className="bg-accent pb-3">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Target className="h-5 w-5 text-amber-500" />
-                🎯 فرص التطوير
-              </CardTitle>
-              <CardDescription>اقتراحات لتحسين أداء المبيعات — لا تظهر للعميل</CardDescription>
-            </CardHeader>
-            <CardContent className="pt-4">
-              <div className="space-y-2">
-                {opps.length > 0 ? opps.map((opp: string, i: number) => (
-                  <div key={i} className="flex items-start gap-2 p-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
-                    <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
-                    <p className="text-sm">{opp}</p>
-                  </div>
-                )) : (
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">{oppsSection.content}</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        );
-      })()}
+<SalesKnowledgeReadout active={brainView === 'sales'} onManage={() => { setKnowledgePane('sections'); changeBrainView('knowledge'); }} />
 
       </section>
 

@@ -3,6 +3,14 @@
   "scope": "Reviewed API substitutions and moved controls. Evidence of intentional implementation changes, not a claim that every workflow passed runtime testing.",
   "transitions": [
     {
+      "routes": ["/merchant/sari-brain"],
+      "removed": ["sariBrain.getKnowledgeSections"],
+      "required": ["sariBrain.sectionWorkspace", "sariBrain.sectionReview"],
+      "note": "Sales guidance and improvement suggestions now read every saved section through the scoped, paginated section workspace with verified eligibility. Full text is loaded on demand instead of displaying only the first section and parsing away paragraphs. The old API remains registered but has no rendered query consumer.",
+      "evidence": ["client/src/components/SalesKnowledgeReadout.tsx", "server/sales-knowledge-readout.test.ts", "server/knowledge/section-workspace.ts"],
+      "checks": [{"file":"client/src/pages/merchant/SariBrain.tsx","contains":"<SalesKnowledgeReadout active={brainView === 'sales'}"}]
+    },
+    {
       "routes": ["/merchant/setup-wizard"],
       "removed": ["setupWizard.applyTemplate"],
       "required": ["setupWizard.previewTemplate", "setupWizard.completeSetup"],

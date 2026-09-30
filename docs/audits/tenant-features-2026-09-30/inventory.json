@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-30T23:08:57.390Z",
+  "generatedAt": "2026-09-30T23:19:18.495Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -8981,11 +8981,10 @@
     },
     {
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "hash": "40e494392a66",
+      "hash": "cac192476a0b",
       "queries": [
         "sariBrain.getSources",
         "sariBrain.getActivityLog",
-        "sariBrain.getKnowledgeSections",
         "sariBrain.getAnalysisStatus",
         "sariBrain.getWebsiteKnowledge"
       ],
@@ -9038,35 +9037,25 @@
           "tag": "AlertDialogTitle"
         },
         {
-          "label": "💎 ذكاء المبيعات",
-          "line": 362,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "🎯 فرص التطوير",
-          "line": 411,
-          "tag": "CardTitle"
-        },
-        {
           "label": "📦 مصادر المعرفة",
-          "line": 449,
+          "line": 368,
           "tag": "CardTitle"
         },
         {
           "label": "document",
-          "line": 492,
+          "line": 411,
           "tag": "AlertDialogTitle"
         },
         {
           "label": "📋 مسار ساري",
-          "line": 571,
+          "line": 490,
           "tag": "CardTitle"
         }
       ],
       "choices": [
         {
           "name": "brainViews",
-          "line": 66,
+          "line": 67,
           "values": [
             {
               "id": "overview",
@@ -9102,7 +9091,7 @@
         },
         {
           "name": "FILTER_OPTIONS",
-          "line": 557,
+          "line": 476,
           "values": [
             {
               "value": "all",
@@ -9142,7 +9131,7 @@
         {
           "query": "sariBrain.getSources",
           "binding": "sourcesQuery",
-          "line": 85,
+          "line": 86,
           "errorSignal": true,
           "loadingSignal": false,
           "enabled": null
@@ -9150,17 +9139,9 @@
         {
           "query": "sariBrain.getActivityLog",
           "binding": "activityQuery",
-          "line": 89,
+          "line": 90,
           "errorSignal": true,
           "loadingSignal": true,
-          "enabled": null
-        },
-        {
-          "query": "sariBrain.getKnowledgeSections",
-          "binding": "{ data: knowledgeSections }",
-          "line": 94,
-          "errorSignal": false,
-          "loadingSignal": false,
           "enabled": null
         },
         {
@@ -9182,6 +9163,7 @@
       ],
       "conditions": [],
       "imports": [
+        "client/src/components/SalesKnowledgeReadout.tsx",
         "client/src/components/BrainQuickPreview.tsx",
         "client/src/components/ReplyQualityReadout.tsx",
         "client/src/components/WebsiteAnalysisDialog.tsx",
@@ -9206,6 +9188,64 @@
         "client/src/hooks/useIntegration.tsx"
       ],
       "controlCount": 32
+    },
+    {
+      "file": "client/src/components/SalesKnowledgeReadout.tsx",
+      "hash": "c828644cc6a2",
+      "queries": [
+        "sariBrain.sectionWorkspace",
+        "sariBrain.sectionReview"
+      ],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [
+        {
+          "label": "sales_intel salesKnowledgeUx.salesTitle salesKnowledgeUx.opportunitiesTitle",
+          "line": 150,
+          "tag": "CardTitle"
+        },
+        {
+          "label": "sales_intel salesKnowledgeUx.salesTitle salesKnowledgeUx.opportunitiesTitle",
+          "line": 151,
+          "tag": "h2"
+        },
+        {
+          "label": "قسم دون عنوان",
+          "line": 217,
+          "tag": "h3"
+        },
+        {
+          "label": "الملخص المحفوظ",
+          "line": 312,
+          "tag": "summary"
+        }
+      ],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [
+        {
+          "query": "sariBrain.sectionWorkspace",
+          "binding": "list",
+          "line": 63,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": "active"
+        },
+        {
+          "query": "sariBrain.sectionReview",
+          "binding": "detail",
+          "line": 67,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": "active && selected !== null"
+        }
+      ],
+      "conditions": [],
+      "imports": [
+        "client/src/components/KnowledgeWorkspaceScope.tsx"
+      ],
+      "controlCount": 7
     },
     {
       "file": "client/src/components/BrainQuickPreview.tsx",
@@ -20018,9 +20058,10 @@
       ],
       "files": [
         "client/src/pages/merchant/SariBrain.tsx",
-        "client/src/components/BrainQuickPreview.tsx",
-        "client/src/lib/knowledge-workspace-cache.ts",
+        "client/src/components/SalesKnowledgeReadout.tsx",
         "client/src/components/KnowledgeWorkspaceScope.tsx",
+        "client/src/lib/knowledge-workspace-cache.ts",
+        "client/src/components/BrainQuickPreview.tsx",
         "client/src/components/ReplyQualityReadout.tsx",
         "client/src/components/WebsiteAnalysisDialog.tsx",
         "client/src/components/KnowledgeWebsiteIntake.tsx",
@@ -20097,23 +20138,30 @@
         "f19b6f843631",
         "78ada6e441df",
         "1e1d5b99f3a2",
-        "f6662d137f45",
-        "44efc48c3a34",
-        "a5fd12deeb9c",
-        "82205c0ddf70",
-        "85b43f7558a1",
-        "1bf0955175eb",
-        "cd62f0c2fb5b",
-        "472975f00439",
-        "164d3736e251",
-        "4d743af862a2",
+        "27f6ffa71da8",
+        "0d61b10c7285",
+        "21dc4cf17bec",
+        "87b00893dc98",
+        "cc6b188780b0",
+        "ade3b4af0d2b",
+        "f0921e2c9abe",
+        "60c5fce7db91",
+        "0f283c732204",
+        "2e05a69192aa",
+        "aea17166cf10",
+        "ce79642b792c",
+        "61ff4afab788",
+        "62d2631ade75",
+        "942c291b8907",
+        "5936ee53e177",
+        "5e0b4ca9dbe5",
+        "77ce5300e6f7",
         "b0a55e82d7e6",
         "fbf976d76053",
         "4e75f5069f85",
         "29eafe0be8aa",
         "e42755397641",
         "c5be45f3fcec",
-        "77ce5300e6f7",
         "b003072f31b6",
         "1e76f8e6e637",
         "2cbfa6b876e5",
@@ -20474,9 +20522,10 @@
       "queries": [
         "sariBrain.getSources",
         "sariBrain.getActivityLog",
-        "sariBrain.getKnowledgeSections",
         "sariBrain.getAnalysisStatus",
         "sariBrain.getWebsiteKnowledge",
+        "sariBrain.sectionWorkspace",
+        "sariBrain.sectionReview",
         "auth.me",
         "merchants.getCurrent",
         "sariBrain.getQualityDashboard",
@@ -20484,9 +20533,7 @@
         "sariBrain.pageIntakeReceipt",
         "sariBrain.pageReview",
         "sariBrain.getSourceInventory",
-        "sariBrain.sectionWorkspace",
         "sariBrain.getHealthScore",
-        "sariBrain.sectionReview",
         "sariBrain.sectionCreationReceipt",
         "sariBrain.conflictWorkspace",
         "sariBrain.conflictReview",
@@ -49264,9 +49311,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "f6662d137f45",
+      "id": "27f6ffa71da8",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 479,
+      "line": 398,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -49287,9 +49334,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "44efc48c3a34",
+      "id": "0d61b10c7285",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 490,
+      "line": 409,
       "tag": "AlertDialogContent",
       "role": "",
       "kind": "dialog",
@@ -49310,9 +49357,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "a5fd12deeb9c",
+      "id": "21dc4cf17bec",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 498,
+      "line": 417,
       "tag": "AlertDialogCancel",
       "role": "",
       "kind": "action",
@@ -49333,9 +49380,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "82205c0ddf70",
+      "id": "87b00893dc98",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 499,
+      "line": 418,
       "tag": "AlertDialogAction",
       "role": "",
       "kind": "action",
@@ -49356,9 +49403,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "85b43f7558a1",
+      "id": "cc6b188780b0",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 516,
+      "line": 435,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -49381,9 +49428,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "1bf0955175eb",
+      "id": "ade3b4af0d2b",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 589,
+      "line": 508,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -49404,9 +49451,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "cd62f0c2fb5b",
+      "id": "f0921e2c9abe",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 652,
+      "line": 571,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -49428,9 +49475,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "472975f00439",
+      "id": "60c5fce7db91",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 671,
+      "line": 590,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -49451,9 +49498,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "164d3736e251",
+      "id": "0f283c732204",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 684,
+      "line": 603,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -49475,9 +49522,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "4d743af862a2",
+      "id": "2e05a69192aa",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 700,
+      "line": 619,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -49495,6 +49542,173 @@
         "logFilter !== 'all'",
         "logItems.length > 0"
       ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "aea17166cf10",
+      "file": "client/src/components/SalesKnowledgeReadout.tsx",
+      "line": 159,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "تحديث الأقسام",
+      "section": "sales_intel salesKnowledgeUx.salesTitle salesKnowledgeUx.opportunitiesTitle",
+      "binding": "onRefresh",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "loading",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "ce79642b792c",
+      "file": "client/src/components/SalesKnowledgeReadout.tsx",
+      "line": 238,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "salesKnowledgeUx.close salesKnowledgeUx.open",
+      "section": "قسم دون عنوان",
+      "binding": "() => onOpen(open ? null : row.id)",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!data.items.length"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "61ff4afab788",
+      "file": "client/src/components/SalesKnowledgeReadout.tsx",
+      "line": 263,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "إعادة قراءة النص",
+      "section": "قسم دون عنوان",
+      "binding": "onRefreshDetail",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "detailError || !confirmed",
+        "detailLoading",
+        "open"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "62d2631ade75",
+      "file": "client/src/components/SalesKnowledgeReadout.tsx",
+      "line": 312,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "الملخص المحفوظ",
+      "section": "الملخص المحفوظ",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "detail!.section.summary",
+        "detailError || !confirmed",
+        "detailLoading"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "942c291b8907",
+      "file": "client/src/components/SalesKnowledgeReadout.tsx",
+      "line": 337,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "السابق",
+      "section": "الملخص المحفوظ",
+      "binding": "() => onPage(data.page - 1)",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "data.totalPages > 1",
+        "!data",
+        "loading",
+        "error"
+      ],
+      "disabled": "data.page <= 1",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "5936ee53e177",
+      "file": "client/src/components/SalesKnowledgeReadout.tsx",
+      "line": 352,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "التالي",
+      "section": "الملخص المحفوظ",
+      "binding": "() => onPage(data.page + 1)",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "data.totalPages > 1",
+        "!data",
+        "loading",
+        "error"
+      ],
+      "disabled": "data.page >= data.totalPages",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "5e0b4ca9dbe5",
+      "file": "client/src/components/SalesKnowledgeReadout.tsx",
+      "line": 365,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "فتح إدارة أقسام المعرفة",
+      "section": "الملخص المحفوظ",
+      "binding": "onManage",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
       "disabled": "",
       "review": "source-inventoried"
     },
