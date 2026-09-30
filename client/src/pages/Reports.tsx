@@ -40,22 +40,43 @@ export default function Reports() {
     { id: "conversations", label: t("reportWorkspaceUx.conversations") },
   ];
   const money = (n: unknown) =>
-    new Intl.NumberFormat(i18n.language, {
-      style: "currency",
-      currency,
-    }).format(finite(n) / 100);
+    n == null
+      ? t("reportWorkspaceUx.unmeasured")
+      : new Intl.NumberFormat(i18n.language, {
+          style: "currency",
+          currency,
+        }).format(finite(n) / 100);
   const number = (n: unknown) =>
     new Intl.NumberFormat(i18n.language).format(finite(n));
-  const percent = (n: unknown) => `${number(n)}%`;
+  const percent = (n: unknown) =>
+    n == null ? t("reportWorkspaceUx.unmeasured") : `${number(n)}%`;
+  const evidence =
+    kind === "sales" && sales.data
+      ? t("reportWorkspaceUx.salesEvidence", {
+          ...sales.data.productSample,
+          excludedAmounts: sales.data.excludedAmounts,
+          previousExcludedAmounts: sales.data.previousExcludedAmounts,
+        })
+      : kind === "customers" && customers.data
+        ? t("reportWorkspaceUx.customerEvidence", {
+            count: customers.data.unknownPhoneConversations,
+          })
+        : kind === "conversations" && conversations.data
+          ? t("reportWorkspaceUx.conversationEvidence", {
+              count: conversations.data.invalidPurchaseCounters,
+            })
+          : "";
   const report: ReportDocument = {
     title: kinds.find(k => k.id === kind)!.label,
-    period: periods.find(p => p.id === period)!.label,
+    period: `${periods.find(p => p.id === period)!.label} · ${query.data?.from || ""} — ${query.data?.through || ""} (UTC)`,
     note:
-      kind === "sales"
+      (kind === "sales"
         ? t("reportWorkspaceUx.salesNote", { currency })
         : kind === "customers"
           ? t("reportWorkspaceUx.customersNote")
-          : t("reportWorkspaceUx.conversationsNote"),
+          : t("reportWorkspaceUx.conversationsNote")) +
+      " " +
+      evidence,
     metrics:
       kind === "sales"
         ? [
@@ -70,6 +91,18 @@ export default function Reports() {
             {
               label: t("reportWorkspaceUx.average"),
               value: money(sales.data?.averageOrderValue),
+            },
+            {
+              label: t("reportWorkspaceUx.markedPaid"),
+              value: money(sales.data?.markedPaidMinor),
+            },
+            {
+              label: t("reportWorkspaceUx.amountSample"),
+              value: `${sales.data?.validAmountOrders ?? 0} / ${sales.data?.totalOrders ?? 0}`,
+            },
+            {
+              label: t("reportWorkspaceUx.totalConversations"),
+              value: sales.data?.totalConversations ?? 0,
             },
             {
               label: t("reportWorkspaceUx.orderRatio"),
@@ -152,7 +185,9 @@ export default function Reports() {
               c.customerName || t("reportWorkspaceUx.unnamed"),
               c.customerPhone,
               c.purchaseCount,
-              finite(c.totalSpent),
+              c.totalSpent == null
+                ? t("reportWorkspaceUx.unmeasured")
+                : number(c.totalSpent),
             ])
           : [],
   };
