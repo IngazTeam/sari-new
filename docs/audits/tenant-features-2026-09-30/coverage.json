@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-30T19:39:35.155Z",
+  "generatedAt": "2026-09-30T19:46:37.617Z",
   "definition": "Every registered route is accounted for; source inventory and design completion are different statuses.",
   "routes": [
     {
@@ -19,6 +19,7 @@
         "client/src/pages/setup-wizard/TemplatesStep.tsx",
         "client/src/pages/setup-wizard/BasicInfoStep.tsx",
         "client/src/pages/setup-wizard/WebsiteStep.tsx",
+        "client/src/lib/setup-website-product.ts",
         "client/src/pages/setup-wizard/ProductsServicesStep.tsx",
         "client/src/pages/setup-wizard/PersonalityStep.tsx",
         "client/src/components/PreviewChat.tsx",
@@ -57,25 +58,25 @@
         "07f3c3ff7912",
         "76989e385d2f",
         "79534b5268b2",
-        "60877ad71f62",
-        "90fa7de63fbb",
-        "1f63586f50c6",
-        "138314076ae8",
-        "3c339c0903cb",
-        "d1af2f5f17d3",
-        "87f9eb43d83c",
+        "9fa7d9bda229",
+        "2d76b4f08c66",
+        "7e19b4260cdc",
+        "20296b255168",
+        "8adff5f1d876",
+        "9dc16491af5f",
+        "297333db9a78",
         "e28407fb6260",
         "8e694598c87f",
         "e59c5f2836ad",
         "7a39a757131e",
         "15a562170111",
         "8f9549a9062c",
-        "c0e5264293be",
-        "5ab59bcbece8",
-        "42088552b217",
-        "4dbc5aa10485",
-        "c863875146fe",
-        "493899c87bb7",
+        "8322c41f0c74",
+        "3318e317c35a",
+        "7b2dc52f8f7d",
+        "fa99fb765498",
+        "1704cad65983",
+        "d0391cc1fdd7",
         "6712705ff64c",
         "61df4f2ad053",
         "f1e21de09880",
@@ -756,9 +757,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "60877ad71f62",
+          "id": "9fa7d9bda229",
           "file": "client/src/pages/setup-wizard/WebsiteStep.tsx",
-          "line": 254,
+          "line": 238,
           "tag": "Input",
           "role": "",
           "kind": "field",
@@ -779,9 +780,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "90fa7de63fbb",
+          "id": "2d76b4f08c66",
           "file": "client/src/pages/setup-wizard/WebsiteStep.tsx",
-          "line": 268,
+          "line": 252,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -802,15 +803,15 @@
           "review": "source-inventoried"
         },
         {
-          "id": "1f63586f50c6",
+          "id": "7e19b4260cdc",
           "file": "client/src/pages/setup-wizard/WebsiteStep.tsx",
-          "line": 317,
+          "line": 301,
           "tag": "a",
           "role": "",
           "kind": "action",
           "label": "",
           "section": "هل عندك موقع أو متجر إلكتروني؟",
-          "binding": "url",
+          "binding": "safeWebUrl(url) || undefined",
           "type": "text",
           "options": [],
           "min": "",
@@ -825,9 +826,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "138314076ae8",
+          "id": "20296b255168",
           "file": "client/src/pages/setup-wizard/WebsiteStep.tsx",
-          "line": 328,
+          "line": 312,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -848,9 +849,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "3c339c0903cb",
+          "id": "8adff5f1d876",
           "file": "client/src/pages/setup-wizard/WebsiteStep.tsx",
-          "line": 363,
+          "line": 347,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -872,9 +873,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "d1af2f5f17d3",
+          "id": "9dc16491af5f",
           "file": "client/src/pages/setup-wizard/WebsiteStep.tsx",
-          "line": 511,
+          "line": 496,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -895,9 +896,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "87f9eb43d83c",
+          "id": "297333db9a78",
           "file": "client/src/pages/setup-wizard/WebsiteStep.tsx",
-          "line": 520,
+          "line": 505,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -1066,9 +1067,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "c0e5264293be",
+          "id": "8322c41f0c74",
           "file": "client/src/pages/setup-wizard/ProductsServicesStep.tsx",
-          "line": 282,
+          "line": 283,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -1087,9 +1088,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "5ab59bcbece8",
+          "id": "3318e317c35a",
           "file": "client/src/pages/setup-wizard/ProductsServicesStep.tsx",
-          "line": 325,
+          "line": 326,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -1110,9 +1111,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "42088552b217",
+          "id": "7b2dc52f8f7d",
           "file": "client/src/pages/setup-wizard/ProductsServicesStep.tsx",
-          "line": 365,
+          "line": 366,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -1131,9 +1132,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "4dbc5aa10485",
+          "id": "fa99fb765498",
           "file": "client/src/pages/setup-wizard/ProductsServicesStep.tsx",
-          "line": 390,
+          "line": 391,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -1154,9 +1155,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "c863875146fe",
+          "id": "1704cad65983",
           "file": "client/src/pages/setup-wizard/ProductsServicesStep.tsx",
-          "line": 393,
+          "line": 394,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -1177,9 +1178,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "493899c87bb7",
+          "id": "d0391cc1fdd7",
           "file": "client/src/pages/setup-wizard/ProductsServicesStep.tsx",
-          "line": 411,
+          "line": 412,
           "tag": "Button",
           "role": "",
           "kind": "action",

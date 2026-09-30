@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-09-30T19:39:35.155Z",
+  "generatedAt": "2026-09-30T19:46:37.617Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,7 +10,7 @@
     },
     "after": {
       "routes": 126,
-      "files": 312,
+      "files": 313,
       "controls": 2106
     }
   },
@@ -18,6 +18,7 @@
     "client/src/lib/merchant-viewport.ts",
     "client/src/lib/utils.ts",
     "client/src/lib/i18n.ts",
+    "client/src/lib/setup-website-product.ts",
     "client/src/lib/test-sari-session.ts",
     "client/src/lib/merchant-setup-navigation.ts",
     "client/src/lib/learning-policy-review-version.ts",
@@ -151,6 +152,7 @@
   ],
   "changedFiles": [
     "client/src/pages/SetupWizard.tsx",
+    "client/src/pages/setup-wizard/WebsiteStep.tsx",
     "client/src/pages/setup-wizard/ProductsServicesStep.tsx",
     "client/src/components/PreviewChat.tsx",
     "client/src/pages/setup-wizard/CompleteStep.tsx",

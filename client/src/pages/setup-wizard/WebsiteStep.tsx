@@ -25,6 +25,8 @@ import {
     LayoutGrid,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { setupWebsiteProduct } from '@/lib/setup-website-product';
+import { setupCatalogDraft, setupWebUrl } from '@shared/setup-catalog';
 
 interface WebsiteStepProps {
     wizardData: Record<string, any>;
@@ -40,14 +42,8 @@ function safeText(value: unknown, maxLength: number): string {
 }
 
 function safeWebUrl(value: unknown): string {
-    const candidate = safeText(value, 500);
-    if (!candidate) return '';
-    try {
-        const parsed = new URL(candidate);
-        return parsed.protocol === 'https:' || parsed.protocol === 'http:' ? candidate : '';
-    } catch {
-        return '';
-    }
+    const parsed = setupWebUrl.safeParse(value);
+    return parsed.success ? parsed.data : '';
 }
 
 function normalizePlatform(value: unknown): WebsitePlatform {
@@ -57,19 +53,7 @@ function normalizePlatform(value: unknown): WebsitePlatform {
 }
 
 function toWizardProduct(product: any) {
-    const numericPrice = Number(product?.price || 0);
-    return {
-        id: crypto.randomUUID(),
-        name: safeText(product?.name, 255),
-        description: safeText(product?.description, 5000),
-        price: Number.isFinite(numericPrice) && numericPrice >= 0
-            ? String(Math.min(numericPrice, 1_000_000))
-            : '0',
-        currency: product?.currency === 'USD' ? 'USD' : 'SAR',
-        imageUrl: safeWebUrl(product?.imageUrl),
-        productUrl: safeWebUrl(product?.productUrl),
-        category: safeText(product?.category, 100),
-    };
+    return setupWebsiteProduct(product, crypto.randomUUID());
 }
 
 function buildProfileSuggestion(result: any, sourceUrl: string) {
@@ -132,7 +116,7 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
     const [url, setUrl] = useState(wizardData.websiteUrl || '');
     const [analysisResult, setAnalysisResult] = useState<any>(wizardData.websiteAnalysis || null);
     const [extractedProducts, setExtractedProducts] = useState<any[]>(
-        wizardData.websiteAnalysis?.source === 'website' ? wizardData.products || [] : []
+        wizardData.websiteAnalysis?.source === 'website' && Array.isArray(wizardData.products) ? wizardData.products : []
     );
     const [profileSuggestion, setProfileSuggestion] = useState<any>(wizardData.websiteProfileSuggestion || null);
     const [error, setError] = useState('');
@@ -157,7 +141,7 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
         try {
             const result = await previewMutation.mutateAsync({ websiteUrl: finalUrl });
             const products = Array.isArray(result.products)
-                ? result.products.slice(0, 100).map(toWizardProduct).filter(product => product.name)
+                ? result.products.slice(0, 100).map(toWizardProduct)
                 : [];
             const suggestion = buildProfileSuggestion(result, finalUrl);
             const summary = buildAnalysisSummary(result, finalUrl, products.length);
@@ -314,7 +298,7 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
                                     {analysisResult.siteType && getSiteTypeBadge(analysisResult.siteType)}
                                 </div>
                                 <div className="flex items-center gap-3 mt-1 text-sm text-primary">
-                                    <a href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:underline">
+                                    <a href={safeWebUrl(url) || undefined} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:underline break-all">
                                         <ExternalLink className="w-3 h-3" />
                                         {url}
                                     </a>
@@ -397,9 +381,10 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
                                     >
                                         {/* Product Image */}
                                         <div className="aspect-square bg-muted relative overflow-hidden">
-                                            {product.imageUrl && typeof product.imageUrl === 'string' && product.imageUrl.trim() ? (
+                                            {safeWebUrl(product.imageUrl) ? (
                                                 <img
-                                                    src={product.imageUrl}
+                                                    src={safeWebUrl(product.imageUrl)}
+                                                    referrerPolicy="no-referrer"
                                                     alt={product.name}
                                                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                                     onError={(e) => {
@@ -414,11 +399,11 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
                                             >
                                                 <Package className="w-10 h-10 text-primary/30" />
                                             </div>
-                                            {product.price > 0 && (
+                                            {setupCatalogDraft.safeParse({ products: [product] }).success && product.price !== '' ? (
                                                 <div className="absolute bottom-2 left-2 bg-white/95 backdrop-blur-sm rounded-full px-2.5 py-0.5 text-xs font-bold text-primary shadow-sm">
                                                     {product.price} {product.currency === 'SAR' ? 'ر.س' : product.currency || 'ر.س'}
                                                 </div>
-                                            )}
+                                            ) : <p className="absolute bottom-2 inset-x-2 rounded-lg bg-card p-2 text-xs text-foreground">{t('setupCatalogUx.extractedPriceReview')}</p>}
                                         </div>
                                         {/* Product Info */}
                                         <div className="p-2.5">

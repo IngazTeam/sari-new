@@ -11242,6 +11242,8 @@
     "inactive": "Unavailable for sale"
   },
   "setupCatalogUx": {
+    "extractedPriceReview": "Review this price or currency",
+    "sourcePrice": "Website price suggestion: {{value}}. Review it and its currency before continuing; an extracted zero may mean the price is unknown.",
     "reviewInvalid":"Review product and service details before confirming. Each item needs a name and a valid price; enter 0 only for a free item. Blank or invalid prices will not be accepted automatically.",
     "intro": "Add the items you want to offer customers. You can edit website suggestions and add more later.",
     "priceHint": "Each item needs a name and price. Use at most two decimal places; enter 0 only for a free item.",

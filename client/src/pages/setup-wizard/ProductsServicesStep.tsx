@@ -269,7 +269,8 @@ export default function ProductsServicesStep({
             <Trash2 aria-hidden="true" />
           </Button>
         </header>
-        {fields("name")}
+      {fields("name")}
+      {typeof raw.websiteOriginalPrice === "string" && <p className="text-xs text-muted-foreground">{t('setupCatalogUx.sourcePrice', { value: raw.websiteOriginalPrice || t('setupWorkspace.notProvided') })}</p>}
         <div className="ms-catalog-price">
           {fields("price")}
           {kind === "products" ? (
