@@ -366,6 +366,28 @@ describe("import reference storage and file contracts", () => {
   });
 });
 describe("reviewed product import screen", () => {
+  it("does not accept a foreign receipt nested inside a valid review", async () => {
+    saveImportAttempt(scope, cached(), knowledgeCacheEpoch());
+    m.data.read.receipt = { ...receipt(), merchantId: 99 };
+    await render();
+    expect(host.textContent).not.toContain("1 items were created");
+    expect(host.querySelector("[data-state=error]")).not.toBeNull();
+  });
+  it("keeps an unresolved request when the review contains a different operation receipt", async () => {
+    saveImportAttempt(
+      scope,
+      { ...cached(), attempt: write() },
+      knowledgeCacheEpoch()
+    );
+    m.data.read.receipt = {
+      ...receipt(),
+      requestId: "11111111-1111-4111-8111-111111111187",
+    };
+    m.data.read.canCommit = false;
+    await render();
+    expect(host.textContent).toContain("Confirm the operation result");
+    expect(readImportAttempt(scope)?.attempt?.requestId).toBe(requestId);
+  });
   it("restores the original options for an unconfirmed preview without storing the file", async () => {
     saveImportAttempt(
       scope,

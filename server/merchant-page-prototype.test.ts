@@ -22,7 +22,7 @@ beforeEach(() => {
   w.HTMLDialogElement.prototype.close = function () { this.removeAttribute('open'); };
   for (const script of [...w.document.querySelectorAll('script[src]')] as any[]) runInContext(readFileSync(base + script.getAttribute('src'), 'utf8'), dom.getInternalVMContext());
 });
-afterEach(() => { w.ProductPreview?.unmount(); w.CustomerPreview?.unmount(); w.ReportPreview?.unmount(); w.OrderPreview?.unmount(); w.QuotationPreview?.unmount(); dom.window.close(); });
+afterEach(() => { w.ImportPreview?.unmount(); w.ProductPreview?.unmount(); w.CustomerPreview?.unmount(); w.ReportPreview?.unmount(); w.OrderPreview?.unmount(); w.QuotationPreview?.unmount(); dom.window.close(); });
 function route(path: string) { w.history.replaceState(null, '', w.TenantPages.href(path)); w.dispatchEvent(new w.HashChangeEvent('hashchange')); }
 function click(action: string) { const node = w.document.querySelector(`[data-page-action="${action}"]`); expect(node, action).toBeTruthy(); node.click(); }
 function input(selector: string, value: string) { const node = w.document.querySelector(selector); node.value = value; node.dispatchEvent(new w.Event('input', { bubbles: true })); }
@@ -92,11 +92,14 @@ describe('complete tenant page prototype', () => {
     expect(text()).toContain('تم حفظ التغييرات');
   });
 
-  it('keeps import errors visible and requires a separate approval to accept valid rows', () => {
-    route('/merchant/products/upload'); click('preview-import');
-    expect(text()).toContain('السعر مطلوب');
-    expect(text()).not.toContain('تم اعتماد سجلين');
-    click('confirm-import'); expect(text()).toContain('تم اعتماد سجلين');
+  it('uses the real import workspace and blocks approval when a row is invalid', async () => {
+    route('/merchant/products/upload');
+    await vi.waitFor(() => expect(w.document.querySelector('.pi-approval')).not.toBeNull());
+    const mode = w.document.querySelector('.pp-controls select');
+    mode.value = 'errors'; mode.dispatchEvent(new w.Event('change', { bubbles: true }));
+    await vi.waitFor(() => expect(w.document.querySelector('.pi-errors')).not.toBeNull());
+    expect(w.document.querySelector('.pi-approval button').disabled).toBe(true);
+    expect(w.document.querySelector('[data-page-action="confirm-import"]')).toBeNull();
   });
 
   it('carries the selected plan into checkout instead of always showing the middle plan', () => {

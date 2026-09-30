@@ -1,0 +1,177 @@
+import { useState } from "react";
+import { createRoot, type Root } from "react-dom/client";
+import { ProductImportWorkspace } from "../../../client/src/components/merchant/ProductImportWorkspace";
+import {
+  readImportAttempt,
+  saveImportAttempt,
+  clearImportAttempt,
+  downloadImportText,
+} from "../../../client/src/lib/product-import-workspace";
+import { knowledgeCacheEpoch } from "../../../client/src/lib/knowledge-workspace-cache";
+import {
+  importModes,
+  importPreviewScope,
+  importSampleCsv,
+  type ImportMode,
+} from "./import-model";
+import {
+  imports,
+  importLanguage,
+  importHint,
+  useImportVersion,
+  setImportLanguage,
+  importPublicAction,
+} from "./import-preview-state";
+import "./product-preview.css";
+let root: Root | null = null;
+export const handles = (page: { route: string }) =>
+  page?.route === "/merchant/products/upload";
+export const render = () => '<div id="import-prototype-root"></div>';
+function Preview() {
+  useImportVersion();
+  const [generation, setGeneration] = useState(0),
+    [confirm, setConfirm] = useState<"data" | "empty" | null>(null),
+    [storageError, setStorageError] = useState(false);
+  return (
+    <div dir={importLanguage === "ar" ? "rtl" : "ltr"}>
+      <aside className="pp-controls" aria-label="محاكاة الاستيراد">
+        <p>
+          موك أب بشاشة الاستيراد الفعلية. الملف يُقرأ داخل هذا المتصفح ولا يُرفع
+          لأي خادم. المنتجات والإيصالات محاكاة في الذاكرة مستقلة عن مثال
+          الكتالوج؛ إعادة تحميل الصفحة تعيد بيانات المحاكاة. البصمات تجريبية ولا
+          تثبت حماية قاعدة بيانات.
+        </p>
+        <div>
+          <label>
+            حالة المثال
+            <select
+              value={imports.mode}
+              onChange={event =>
+                event.target.value === "empty"
+                  ? setConfirm("empty")
+                  : imports.setMode(event.target.value as ImportMode)
+              }
+            >
+              {Object.entries(importModes).map(([key, label]) => (
+                <option key={key} value={key}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            اللغة / Language
+            <select
+              value={importLanguage}
+              onChange={event => setImportLanguage(event.target.value)}
+            >
+              <option value="ar">العربية</option>
+              <option value="en">English</option>
+            </select>
+          </label>
+          <button
+            type="button"
+            onClick={() =>
+              downloadImportText(importSampleCsv(), "sary-import-demo.csv")
+            }
+          >
+            تنزيل ملف المثال ·25 صفًا
+          </button>
+          <button type="button" onClick={() => setConfirm("data")}>
+            إعادة المثال
+          </button>
+          <span>عدد العناصر المنشأة في المحاكاة: {imports.createdCount}</span>
+        </div>
+        {confirm && (
+          <div role="alert">
+            <p>إعادة مراجعة المثال وطلبه ومسودته المحلية فقط؟</p>
+            <button
+              type="button"
+              onClick={() => {
+                try {
+                  clearImportAttempt(importPreviewScope, knowledgeCacheEpoch());
+                  imports.reset();
+                  if (confirm === "data")
+                    saveImportAttempt(
+                      importPreviewScope,
+                      imports.sample(),
+                      knowledgeCacheEpoch()
+                    );
+                  else imports.setMode("empty");
+                  setGeneration(value => value + 1);
+                  setConfirm(null);
+                  setStorageError(false);
+                } catch {
+                  setStorageError(true);
+                }
+              }}
+            >
+              نعم، إعادة المثال
+            </button>
+            <button type="button" onClick={() => setConfirm(null)}>
+              إلغاء
+            </button>
+          </div>
+        )}
+        {storageError && <p role="alert">تعذر حفظ مرجع المثال.</p>}
+      </aside>
+      {importHint && (
+        <p className="pp-controls" role="status">
+          {importHint}
+        </p>
+      )}
+      <ProductImportWorkspace
+        key={generation}
+        scope={importPreviewScope}
+        href={path => "#/page" + path}
+      />
+      <aside className="pp-controls">
+        <p>
+          أدوات الاستيراد الذكي وGoogle Sheets ما زالت ضمن مرحلة تحويل مستقلة.
+          هذا المثال يغطي مراجعة CSV/Excel فقط ولا يدّعي تنفيذ الذكاء الاصطناعي
+          أو المزامنة.
+        </p>
+        <a href="#/page/merchant/sheets/settings">عرض إعدادات Google Sheets</a>
+      </aside>
+    </div>
+  );
+}
+export function mount() {
+  const node = document.getElementById("import-prototype-root");
+  if (!node) return;
+  document.body.classList.add("pp-active", "pi-active");
+  try {
+    if (imports.mode !== "empty" && !readImportAttempt(importPreviewScope))
+      saveImportAttempt(
+        importPreviewScope,
+        imports.sample(),
+        knowledgeCacheEpoch()
+      );
+  } catch {
+    /* Actual workspace shows storage failure. */
+  }
+  root = createRoot(node);
+  root.render(<Preview />);
+}
+export function unmount() {
+  root?.unmount();
+  root = null;
+  document.body.classList.remove("pi-active");
+  if (!document.getElementById("product-prototype-root"))
+    document.body.classList.remove("pp-active");
+}
+document.addEventListener(
+  "click",
+  event => {
+    if (!document.body.classList.contains("pi-active")) return;
+    const anchor = (event.target as Element)?.closest<HTMLAnchorElement>(
+      'a[href^="/merchant/"],a[href="/login"],a[href="/support"]'
+    );
+    if (!anchor) return;
+    event.preventDefault();
+    const href = anchor.getAttribute("href")!;
+    if (href === "/login" || href === "/support") importPublicAction();
+    else location.hash = "#/page" + href;
+  },
+  true
+);

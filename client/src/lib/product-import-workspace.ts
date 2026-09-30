@@ -108,6 +108,15 @@ export function checkedImportReview(
     JSON.stringify(data.selection) !== JSON.stringify(selection)
   )
     throw Error("Import review scope mismatch");
+  if (
+    data.receipt &&
+    (data.receipt.actorId !== actorId ||
+      data.receipt.merchantId !== merchantId ||
+      data.receipt.reviewId !== selection.reviewId ||
+      data.receipt.digest !== data.preview.digest ||
+      data.receipt.count !== data.preview.total)
+  )
+    throw Error("Import review receipt mismatch");
   return data;
 }
 export function checkedImportReceipt(

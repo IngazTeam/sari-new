@@ -124,7 +124,12 @@ export function ProductImportWorkspace({
       : catalogReady && catalogParsed.success
         ? catalogParsed.data.integrationSource
         : null;
-  const receipt = cached?.receipt ?? (ready ? data?.receipt : null),
+  const reviewReceipt = ready ? data?.receipt : null;
+  const receipt =
+      cached?.receipt ??
+      (cached?.attempt && reviewReceipt?.requestId !== cached.attempt.requestId
+        ? null
+        : reviewReceipt),
     pending = !!cached?.attempt && !receipt,
     canPrepare =
       loaded &&

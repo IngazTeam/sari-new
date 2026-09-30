@@ -122,7 +122,7 @@ export function unmount() {
 document.addEventListener(
   "click",
   event => {
-    if (!document.body.classList.contains("pp-active")) return;
+    if (!document.body.classList.contains("pp-active") || document.body.classList.contains("pi-active")) return;
     const anchor = (event.target as Element)?.closest<HTMLAnchorElement>(
       'a[href^="/merchant/"],a[href="/login"],a[href="/support"]'
     );
