@@ -13,7 +13,7 @@ import {
   assertOfficeOpenXml,
   decodeCanonicalBase64Upload,
 } from "./security/upload-validation";
-import type { z } from "zod";
+import { z } from "zod";
 
 export class ProductImportFileError extends Error {
   constructor(
@@ -280,6 +280,49 @@ export async function previewProductImport(
           sheets: [] as Sheet[],
         }
       : await parseXlsx(input);
+  return buildProductImportPreview(input, parsed);
+}
+/** Trusted provider adapters still validate their matrix before sharing file field rules. */
+export function previewProductImportRows(
+  raw: unknown,
+  matrix: unknown
+): ProductImportPreview {
+  const input = productImportInput.options[0].parse(raw);
+  const rows = z
+    .array(
+      z
+        .object({
+          number: z.number().int().min(1).max(5001),
+          cells: z
+            .array(
+              z
+                .object({
+                  text: z.string().max(16000),
+                  issue: z.enum(["formula", "unsupported_cell"]).optional(),
+                })
+                .strict()
+            )
+            .max(60),
+        })
+        .strict()
+    )
+    .min(1)
+    .max(5001)
+    .parse(matrix);
+  if (
+    rows[0].number !== 1 ||
+    rows.some((r, i) => i > 0 && r.number <= rows[i - 1].number)
+  )
+    throw new ProductImportFileError("csv_syntax");
+  return buildProductImportPreview(input, {
+    rows: rows.filter((r, i) => i === 0 || nonempty(r)),
+    sheets: [],
+  });
+}
+function buildProductImportPreview(
+  input: ProductImportInput,
+  parsed: { rows: Row[]; sheets: Sheet[] }
+): ProductImportPreview {
   if (parsed.rows.length < 2) throw new ProductImportFileError("empty_file");
   const [header, ...body] = parsed.rows,
     width = Math.max(header.cells.length, ...body.map(row => row.cells.length));
