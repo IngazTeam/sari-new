@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-30T07:11:20.254Z",
+  "generatedAt": "2026-09-30T08:10:14.667Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -5305,7 +5305,7 @@
     },
     {
       "file": "client/src/lib/knowledge-workspace-cache.ts",
-      "hash": "c9d28a694a5a",
+      "hash": "3421520305ef",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
@@ -15426,156 +15426,95 @@
     },
     {
       "file": "client/src/pages/Customers.tsx",
-      "hash": "30ec197e8ab9",
-      "queries": [
-        "customers.list",
-        "customers.getStats",
-        "customers.exportCsv"
-      ],
-      "mutations": [
-        "customers.addNote",
-        "customers.addTag",
-        "customers.removeTag"
-      ],
+      "hash": "7af5125880e6",
+      "queries": [],
+      "mutations": [],
       "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [
+        "client/src/components/KnowledgeWorkspaceScope.tsx",
+        "client/src/components/merchant/CustomerListWorkspace.tsx"
+      ],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/components/merchant/CustomerListWorkspace.tsx",
+      "hash": "a3d6000580e7",
+      "queries": [
+        "customers.workspace.list",
+        "customers.workspace.export"
+      ],
+      "mutations": [],
+      "imperativeReads": [
+        {
+          "procedure": "customers.workspace.export",
+          "method": "fetch",
+          "expression": "utils.customers.workspace.export.fetch",
+          "line": 84,
+          "provenance": "trpc-utility-static"
+        }
+      ],
       "browserRequests": [],
       "sections": [
         {
-          "label": "إدارة العملاء",
-          "line": 185,
+          "label": "العملاء",
+          "line": 134,
           "tag": "h1"
         },
         {
-          "label": "إجمالي العملاء",
-          "line": 196,
-          "tag": "CardTitle"
+          "label": "المصدر وطريقة الحساب",
+          "line": 251,
+          "tag": "summary"
         },
         {
-          "label": "العملاء النشطين",
-          "line": 207,
-          "tag": "CardTitle"
+          "label": "لا توجد نتائج لهذا البحث",
+          "line": 269,
+          "tag": "h2"
         },
         {
-          "label": "عملاء جدد",
-          "line": 218,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "قائمة العملاء",
-          "line": 231,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "تفاصيل العميل",
-          "line": 331,
-          "tag": "DialogTitle"
-        },
-        {
-          "label": "المعلومات",
-          "line": 338,
-          "tag": "TabsTrigger"
-        },
-        {
-          "label": "المحادثات",
-          "line": 339,
-          "tag": "TabsTrigger"
-        },
-        {
-          "label": "الطلبات",
-          "line": 340,
-          "tag": "TabsTrigger"
-        },
-        {
-          "label": "الملاحظات",
-          "line": 341,
-          "tag": "TabsTrigger"
-        },
-        {
-          "label": "المعلومات الأساسية",
-          "line": 347,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "سجل المحادثات",
-          "line": 411,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "سجل الطلبات",
-          "line": 422,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "الملاحظات",
-          "line": 433,
-          "tag": "CardTitle"
+          "label": "عميل دون اسم مسجل",
+          "line": 277,
+          "tag": "h2"
         }
       ],
       "choices": [],
-      "handlers": [
-        {
-          "name": "handleViewDetails",
-          "line": 115,
-          "calls": []
-        },
-        {
-          "name": "handleAddNote",
-          "line": 125,
-          "calls": [
-            "addNoteMutation"
-          ]
-        },
-        {
-          "name": "handleAddTag",
-          "line": 133,
-          "calls": [
-            "addTagMutation"
-          ]
-        },
-        {
-          "name": "handleRemoveTag",
-          "line": 141,
-          "calls": [
-            "removeTagMutation"
-          ]
-        },
-        {
-          "name": "handleExport",
-          "line": 149,
-          "calls": []
-        }
-      ],
+      "handlers": [],
       "queryStates": [
         {
-          "query": "customers.list",
-          "binding": "{ data: customers = [], isLoading }",
-          "line": 58,
-          "errorSignal": false,
+          "query": "customers.workspace.list",
+          "binding": "query",
+          "line": 40,
+          "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
-        },
-        {
-          "query": "customers.getStats",
-          "binding": "{ data: stats }",
-          "line": 63,
-          "errorSignal": false,
-          "loadingSignal": false,
-          "enabled": null
-        },
-        {
-          "query": "customers.exportCsv",
-          "binding": "customerExport",
-          "line": 65,
-          "errorSignal": false,
-          "loadingSignal": false,
-          "enabled": "false"
         }
       ],
       "conditions": [],
       "imports": [
-        "client/src/hooks/use-toast.ts"
+        "client/src/lib/knowledge-workspace-cache.ts",
+        "client/src/components/merchant/CustomerWorkspaceView.tsx"
       ],
-      "controlCount": 13
+      "controlCount": 9
+    },
+    {
+      "file": "client/src/components/merchant/CustomerWorkspaceView.tsx",
+      "hash": "d5011bd53b73",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 2
     },
     {
       "file": "client/src/pages/SmartAnalysis.tsx",
@@ -15928,80 +15867,182 @@
     },
     {
       "file": "client/src/pages/CustomerDetails.tsx",
-      "hash": "ac5fc72f82dd",
+      "hash": "3656d882d370",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [
+        "client/src/components/KnowledgeWorkspaceScope.tsx",
+        "client/src/components/merchant/CustomerDetailWorkspace.tsx",
+        "client/src/lib/customer-workspace-cache.ts"
+      ],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/components/merchant/CustomerDetailWorkspace.tsx",
+      "hash": "74c422aa9acc",
       "queries": [
-        "customers.getByPhone"
+        "customers.workspace.detail"
       ],
       "mutations": [],
       "imperativeReads": [],
       "browserRequests": [],
       "sections": [
         {
-          "label": "عميل غير معروف",
-          "line": 81,
+          "label": "ملف العميل",
+          "line": 90,
           "tag": "h1"
         },
         {
-          "label": "قيد الانتظار",
-          "line": 94,
-          "tag": "CardTitle"
+          "label": "عميل دون اسم مسجل",
+          "line": 127,
+          "tag": "h2"
         },
         {
-          "label": "مؤكد",
-          "line": 104,
-          "tag": "CardTitle"
+          "label": "نظرة على العميل",
+          "line": 160,
+          "tag": "h2"
         },
         {
-          "label": "تم الشحن",
-          "line": 115,
-          "tag": "CardTitle"
+          "label": "قيمة الطلبات حسب العملة",
+          "line": 193,
+          "tag": "h2"
         },
         {
-          "label": "ملغي",
-          "line": 128,
-          "tag": "CardTitle"
+          "label": "",
+          "line": 201,
+          "tag": "h3"
         },
         {
-          "label": "عدد الطلبات",
-          "line": 143,
-          "tag": "CardTitle"
+          "label": "رصيد الولاء",
+          "line": 234,
+          "tag": "h2"
         },
         {
-          "label": "الطلبات ( )",
-          "line": 180,
-          "tag": "TabsTrigger"
+          "label": "المصدر وطريقة الحساب",
+          "line": 248,
+          "tag": "summary"
         },
         {
-          "label": "المحادثات ( )",
-          "line": 184,
-          "tag": "TabsTrigger"
+          "label": "الطلبات",
+          "line": 261,
+          "tag": "h2"
         },
         {
-          "label": "القيمة الإجمالية",
-          "line": 194,
-          "tag": "CardTitle"
+          "label": "المحادثات",
+          "line": 333,
+          "tag": "h2"
         },
         {
-          "label": "التاريخ",
-          "line": 252,
-          "tag": "CardTitle"
+          "label": "# · عميل دون اسم مسجل",
+          "line": 341,
+          "tag": "h3"
         }
       ],
       "choices": [],
       "handlers": [],
       "queryStates": [
         {
-          "query": "customers.getByPhone",
-          "binding": "{ data: customer, isLoading, isError, error, refetch }",
-          "line": 29,
+          "query": "customers.workspace.detail",
+          "binding": "query",
+          "line": 38,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
         }
       ],
       "conditions": [],
-      "imports": [],
-      "controlCount": 11
+      "imports": [
+        "client/src/components/merchant/CustomerAnnotations.tsx",
+        "client/src/components/merchant/CustomerWorkspaceView.tsx"
+      ],
+      "controlCount": 7
+    },
+    {
+      "file": "client/src/components/merchant/CustomerAnnotations.tsx",
+      "hash": "38b78e7764a6",
+      "queries": [
+        "customers.annotations.read",
+        "customers.annotations.receipt"
+      ],
+      "mutations": [
+        "customers.annotations.write"
+      ],
+      "imperativeReads": [
+        {
+          "procedure": "customers.annotations.receipt",
+          "method": "fetch",
+          "expression": "utils.customers.annotations.receipt.fetch",
+          "line": 220,
+          "provenance": "trpc-utility-static"
+        }
+      ],
+      "browserRequests": [],
+      "sections": [
+        {
+          "label": "ملاحظات داخلية",
+          "line": 344,
+          "tag": "h2"
+        },
+        {
+          "label": "وسوم العميل",
+          "line": 376,
+          "tag": "h2"
+        },
+        {
+          "label": "ملاحظات داخلية",
+          "line": 498,
+          "tag": "h2"
+        }
+      ],
+      "choices": [],
+      "handlers": [
+        {
+          "name": "edit",
+          "line": 113,
+          "calls": []
+        }
+      ],
+      "queryStates": [
+        {
+          "query": "customers.annotations.read",
+          "binding": "query",
+          "line": 43,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        }
+      ],
+      "conditions": [],
+      "imports": [
+        "client/src/lib/knowledge-workspace-cache.ts",
+        "client/src/lib/customer-workspace-cache.ts",
+        "client/src/components/merchant/CustomerWorkspaceView.tsx"
+      ],
+      "controlCount": 13
+    },
+    {
+      "file": "client/src/lib/customer-workspace-cache.ts",
+      "hash": "f058547ab971",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [
+        "client/src/lib/knowledge-workspace-cache.ts"
+      ],
+      "controlCount": 0
     },
     {
       "file": "client/src/components/merchant/MerchantShell.tsx",
@@ -21775,34 +21816,42 @@
       ],
       "files": [
         "client/src/pages/Customers.tsx",
-        "client/src/hooks/use-toast.ts"
+        "client/src/components/KnowledgeWorkspaceScope.tsx",
+        "client/src/lib/knowledge-workspace-cache.ts",
+        "client/src/components/merchant/CustomerListWorkspace.tsx",
+        "client/src/components/merchant/CustomerWorkspaceView.tsx"
       ],
       "controls": [
-        "2017f022c157",
-        "ae04a7e8acbd",
-        "49d97c4cb27d",
-        "7ac2c80b0d96",
-        "9e79d976d7af",
-        "ea8c245b07f9",
-        "4080f483da22",
-        "5a835f8a0e93",
-        "3a7b4d0c8964",
-        "8bf4177708a5",
-        "1d7d6b1234ce",
-        "9bbc4939acf7",
-        "87c934239bcf"
+        "77ce5300e6f7",
+        "68224d5fc509",
+        "6db05e075baa",
+        "c8b1db515ee6",
+        "24e4d4e43307",
+        "443379e731db",
+        "96370e3d3602",
+        "0e00fd67526c",
+        "ee3e058261ee",
+        "54cb095fd436",
+        "2c5fcad5c325",
+        "bc4932078216"
       ],
       "queries": [
-        "customers.list",
-        "customers.getStats",
-        "customers.exportCsv"
+        "auth.me",
+        "merchants.getCurrent",
+        "customers.workspace.list",
+        "customers.workspace.export"
       ],
-      "mutations": [
-        "customers.addNote",
-        "customers.addTag",
-        "customers.removeTag"
+      "mutations": [],
+      "imperativeReads": [
+        {
+          "file": "client/src/components/merchant/CustomerListWorkspace.tsx",
+          "procedure": "customers.workspace.export",
+          "method": "fetch",
+          "expression": "utils.customers.workspace.export.fetch",
+          "line": 84,
+          "provenance": "trpc-utility-static"
+        }
       ],
-      "imperativeReads": [],
       "browserRequests": []
     },
     {
@@ -22006,26 +22055,59 @@
         "CustomerDetails"
       ],
       "files": [
-        "client/src/pages/CustomerDetails.tsx"
+        "client/src/pages/CustomerDetails.tsx",
+        "client/src/components/KnowledgeWorkspaceScope.tsx",
+        "client/src/lib/knowledge-workspace-cache.ts",
+        "client/src/components/merchant/CustomerDetailWorkspace.tsx",
+        "client/src/components/merchant/CustomerAnnotations.tsx",
+        "client/src/lib/customer-workspace-cache.ts",
+        "client/src/components/merchant/CustomerWorkspaceView.tsx"
       ],
       "controls": [
-        "8352c70a794a",
-        "b88170f1efc2",
-        "354793603272",
-        "c684ce8b8060",
-        "f0e315a2fd41",
-        "c2cd778378a6",
-        "02c963cbb836",
-        "162d67a48646",
-        "d26d9ab45ffa",
-        "ba91d41ef0f2",
-        "8ca79265d3a0"
+        "77ce5300e6f7",
+        "544e42554e2a",
+        "5db9056838b6",
+        "8551f83fcf54",
+        "3a51dfa5583c",
+        "668daa6f6fd8",
+        "f564b657c8f9",
+        "18cba9cd8701",
+        "55bc4610ac0b",
+        "3f87bcafc915",
+        "6588f364ec33",
+        "8651b2c41034",
+        "e0a45dacaa0c",
+        "0d649a8fcba7",
+        "0c6a96d341fa",
+        "15c7830ac341",
+        "e32aa03a53b8",
+        "cba81e2ec215",
+        "23dbd7141ac3",
+        "ee24bcf18467",
+        "7561f9e44662",
+        "2c5fcad5c325",
+        "bc4932078216"
       ],
       "queries": [
-        "customers.getByPhone"
+        "auth.me",
+        "merchants.getCurrent",
+        "customers.workspace.detail",
+        "customers.annotations.read",
+        "customers.annotations.receipt"
       ],
-      "mutations": [],
-      "imperativeReads": [],
+      "mutations": [
+        "customers.annotations.write"
+      ],
+      "imperativeReads": [
+        {
+          "file": "client/src/components/merchant/CustomerAnnotations.tsx",
+          "procedure": "customers.annotations.receipt",
+          "method": "fetch",
+          "expression": "utils.customers.annotations.receipt.fetch",
+          "line": 220,
+          "provenance": "trpc-utility-static"
+        }
+      ],
       "browserRequests": []
     },
     {
@@ -64279,41 +64361,62 @@
       "review": "source-inventoried"
     },
     {
-      "id": "2017f022c157",
-      "file": "client/src/pages/Customers.tsx",
-      "line": 188,
-      "tag": "Button",
+      "id": "68224d5fc509",
+      "file": "client/src/components/merchant/CustomerListWorkspace.tsx",
+      "line": 138,
+      "tag": "button",
       "role": "",
       "kind": "action",
-      "label": "تصدير CSV",
-      "section": "إدارة العملاء",
-      "binding": "handleExport",
-      "type": "text",
+      "label": "تحديث",
+      "section": "العملاء",
+      "binding": "() => void query.refetch()",
+      "type": "button",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": false,
+      "conditional": true,
       "conditions": [],
-      "disabled": "customerExport.isFetching",
+      "disabled": "query.isFetching",
       "review": "source-inventoried"
     },
     {
-      "id": "ae04a7e8acbd",
-      "file": "client/src/pages/Customers.tsx",
-      "line": 238,
-      "tag": "Input",
+      "id": "6db05e075baa",
+      "file": "client/src/components/merchant/CustomerListWorkspace.tsx",
+      "line": 145,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "customerWorkspaceUx.exporting customerWorkspaceUx.export",
+      "section": "العملاء",
+      "binding": "() => void download()",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "!ready || !data?.canManage || exporting",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "c8b1db515ee6",
+      "file": "client/src/components/merchant/CustomerListWorkspace.tsx",
+      "line": 168,
+      "tag": "input",
       "role": "",
       "kind": "field",
-      "label": "ابحث بالاسم أو رقم الهاتف...",
-      "section": "قائمة العملاء",
-      "binding": "searchQuery",
-      "type": "text",
+      "label": "ابحث بالاسم أو رقم التواصل",
+      "section": "العملاء",
+      "binding": "search",
+      "type": "search",
       "options": [],
       "min": "",
       "max": "",
-      "maxLength": "",
+      "maxLength": "120",
       "required": false,
       "conditional": false,
       "conditions": [],
@@ -64321,37 +64424,46 @@
       "review": "source-inventoried"
     },
     {
-      "id": "49d97c4cb27d",
-      "file": "client/src/pages/Customers.tsx",
-      "line": 310,
-      "tag": "Button",
+      "id": "24e4d4e43307",
+      "file": "client/src/components/merchant/CustomerListWorkspace.tsx",
+      "line": 177,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "آخر نشاط مسجل كل الأنشطة",
+      "section": "العملاء",
+      "binding": "selection.activity",
+      "type": "text",
+      "options": [
+        {
+          "value": "all",
+          "label": "كل الأنشطة"
+        },
+        {
+          "value": "key",
+          "label": ""
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "443379e731db",
+      "file": "client/src/components/merchant/CustomerListWorkspace.tsx",
+      "line": 195,
+      "tag": "button",
       "role": "",
       "kind": "action",
-      "label": "عرض التفاصيل",
-      "section": "قائمة العملاء",
-      "binding": "() => handleViewDetails(customer)",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "7ac2c80b0d96",
-      "file": "client/src/pages/Customers.tsx",
-      "line": 329,
-      "tag": "DialogContent",
-      "role": "",
-      "kind": "dialog",
-      "label": "تفاصيل العميل معلومات شاملة عن العميل وتفاعلاته المعلومات المحادثات الطلبات الملاحظات المعلومات الأساسية الاسم غير محدد رقم الهاتف البريد الإلكتروني غير محدد تاريخ التسجيل ar-SA التصنيفات × إضافة سجل المحادثات سيتم عرض س",
-      "section": "قائمة العملاء",
+      "label": "ابحث بالاسم أو رقم التواصل",
+      "section": "العملاء",
       "binding": "",
-      "type": "text",
+      "type": "submit",
       "options": [],
       "min": "",
       "max": "",
@@ -64363,108 +64475,106 @@
       "review": "source-inventoried"
     },
     {
-      "id": "9e79d976d7af",
-      "file": "client/src/pages/Customers.tsx",
-      "line": 338,
-      "tag": "TabsTrigger",
-      "role": "",
-      "kind": "action",
-      "label": "المعلومات",
-      "section": "المعلومات",
-      "binding": "info",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [
-        "selectedCustomer"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "ea8c245b07f9",
-      "file": "client/src/pages/Customers.tsx",
-      "line": 339,
-      "tag": "TabsTrigger",
-      "role": "",
-      "kind": "action",
-      "label": "المحادثات",
-      "section": "المحادثات",
-      "binding": "conversations",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [
-        "selectedCustomer"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "4080f483da22",
-      "file": "client/src/pages/Customers.tsx",
-      "line": 340,
-      "tag": "TabsTrigger",
-      "role": "",
-      "kind": "action",
-      "label": "الطلبات",
-      "section": "الطلبات",
-      "binding": "orders",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [
-        "selectedCustomer"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "5a835f8a0e93",
-      "file": "client/src/pages/Customers.tsx",
-      "line": 341,
-      "tag": "TabsTrigger",
-      "role": "",
-      "kind": "action",
-      "label": "الملاحظات",
-      "section": "الملاحظات",
-      "binding": "notes",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [
-        "selectedCustomer"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "3a7b4d0c8964",
-      "file": "client/src/pages/Customers.tsx",
-      "line": 386,
+      "id": "96370e3d3602",
+      "file": "client/src/components/merchant/CustomerListWorkspace.tsx",
+      "line": 196,
       "tag": "button",
       "role": "",
       "kind": "action",
-      "label": "×",
-      "section": "المعلومات الأساسية",
-      "binding": "() => handleRemoveTag(tag)",
+      "label": "ابحث بالاسم أو رقم التواصل",
+      "section": "العملاء",
+      "binding": "() => {\n            setSearch(\"\");\n            setSelection(customerListInput.parse({}));\n          }",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "0e00fd67526c",
+      "file": "client/src/components/merchant/CustomerListWorkspace.tsx",
+      "line": 251,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "المصدر وطريقة الحساب",
+      "section": "المصدر وطريقة الحساب",
+      "binding": "",
       "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "!ready"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "ee3e058261ee",
+      "file": "client/src/components/merchant/CustomerListWorkspace.tsx",
+      "line": 278,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "عميل دون اسم مسجل",
+      "section": "عميل دون اسم مسجل",
+      "binding": "href(\n                          \"/merchant/customers/\" + encodeURIComponent(row.key)\n                        )",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "!data!.rows.length"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "54cb095fd436",
+      "file": "client/src/components/merchant/CustomerListWorkspace.tsx",
+      "line": 306,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "فتح ملف العميل",
+      "section": "عميل دون اسم مسجل",
+      "binding": "href(\n                      \"/merchant/customers/\" + encodeURIComponent(row.key)\n                    )",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "!data!.rows.length"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "2c5fcad5c325",
+      "file": "client/src/components/merchant/CustomerWorkspaceView.tsx",
+      "line": 80,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "السابق",
+      "section": "CustomerWorkspaceView",
+      "binding": "() => onPage(value.page - 1)",
+      "type": "button",
       "options": [],
       "min": "",
       "max": "",
@@ -64472,99 +64582,28 @@
       "required": false,
       "conditional": false,
       "conditions": [],
-      "disabled": "",
+      "disabled": "disabled || value.page <= 1",
       "review": "source-inventoried"
     },
     {
-      "id": "8bf4177708a5",
-      "file": "client/src/pages/Customers.tsx",
-      "line": 396,
-      "tag": "Input",
-      "role": "",
-      "kind": "field",
-      "label": "التصنيفات",
-      "section": "المعلومات الأساسية",
-      "binding": "newTag",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [
-        "selectedCustomer"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "1d7d6b1234ce",
-      "file": "client/src/pages/Customers.tsx",
-      "line": 401,
-      "tag": "Button",
+      "id": "bc4932078216",
+      "file": "client/src/components/merchant/CustomerWorkspaceView.tsx",
+      "line": 87,
+      "tag": "button",
       "role": "",
       "kind": "action",
-      "label": "التصنيفات",
-      "section": "المعلومات الأساسية",
-      "binding": "handleAddTag",
-      "type": "text",
+      "label": "التالي",
+      "section": "CustomerWorkspaceView",
+      "binding": "() => onPage(value.page + 1)",
+      "type": "button",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
       "conditional": false,
-      "conditions": [
-        "selectedCustomer"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "9bbc4939acf7",
-      "file": "client/src/pages/Customers.tsx",
-      "line": 438,
-      "tag": "Textarea",
-      "role": "",
-      "kind": "field",
-      "label": "إضافة ملاحظة جديدة",
-      "section": "الملاحظات",
-      "binding": "newNote",
-      "type": "textarea",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [
-        "selectedCustomer"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "87c934239bcf",
-      "file": "client/src/pages/Customers.tsx",
-      "line": 443,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "إضافة ملاحظة جديدة",
-      "section": "الملاحظات",
-      "binding": "handleAddNote",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [
-        "selectedCustomer"
-      ],
-      "disabled": "",
+      "conditions": [],
+      "disabled": "disabled || value.page >= value.pages",
       "review": "source-inventoried"
     },
     {
@@ -65869,36 +65908,15 @@
       "review": "source-inventoried"
     },
     {
-      "id": "8352c70a794a",
-      "file": "client/src/pages/CustomerDetails.tsx",
-      "line": 42,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "العودة للقائمة",
-      "section": "CustomerDetails",
-      "binding": "",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "b88170f1efc2",
-      "file": "client/src/pages/CustomerDetails.tsx",
-      "line": 42,
+      "id": "544e42554e2a",
+      "file": "client/src/components/merchant/CustomerDetailWorkspace.tsx",
+      "line": 87,
       "tag": "Link",
       "role": "",
       "kind": "action",
-      "label": "العودة للقائمة",
-      "section": "CustomerDetails",
-      "binding": "/merchant/customers",
+      "label": "قائمة العملاء",
+      "section": "CustomerDetailWorkspace",
+      "binding": "href(\"/merchant/customers\")",
       "type": "text",
       "options": [],
       "min": "",
@@ -65911,162 +65929,36 @@
       "review": "source-inventoried"
     },
     {
-      "id": "354793603272",
-      "file": "client/src/pages/CustomerDetails.tsx",
-      "line": 75,
+      "id": "5db9056838b6",
+      "file": "client/src/components/merchant/CustomerDetailWorkspace.tsx",
+      "line": 92,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "تحديث",
+      "section": "ملف العميل",
+      "binding": "() => void query.refetch()",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "query.isFetching",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "8551f83fcf54",
+      "file": "client/src/components/merchant/CustomerDetailWorkspace.tsx",
+      "line": 117,
       "tag": "Link",
       "role": "",
       "kind": "action",
-      "label": "",
-      "section": "CustomerDetails",
-      "binding": "/merchant/customers",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "c684ce8b8060",
-      "file": "client/src/pages/CustomerDetails.tsx",
-      "line": 76,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "",
-      "section": "CustomerDetails",
-      "binding": "",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "f0e315a2fd41",
-      "file": "client/src/pages/CustomerDetails.tsx",
-      "line": 148,
-      "tag": "Calendar",
-      "role": "",
-      "kind": "field",
-      "label": "",
-      "section": "عدد الطلبات",
-      "binding": "",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "c2cd778378a6",
-      "file": "client/src/pages/CustomerDetails.tsx",
-      "line": 180,
-      "tag": "TabsTrigger",
-      "role": "",
-      "kind": "action",
-      "label": "الطلبات ( )",
-      "section": "الطلبات ( )",
-      "binding": "orders",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "02c963cbb836",
-      "file": "client/src/pages/CustomerDetails.tsx",
-      "line": 184,
-      "tag": "TabsTrigger",
-      "role": "",
-      "kind": "action",
-      "label": "المحادثات ( )",
-      "section": "المحادثات ( )",
-      "binding": "conversations",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "162d67a48646",
-      "file": "client/src/pages/CustomerDetails.tsx",
-      "line": 229,
-      "tag": "Link",
-      "role": "",
-      "kind": "action",
-      "label": "عرض",
-      "section": "القيمة الإجمالية",
-      "binding": "`/merchant/orders`",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "d26d9ab45ffa",
-      "file": "client/src/pages/CustomerDetails.tsx",
-      "line": 230,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "عرض",
-      "section": "القيمة الإجمالية",
-      "binding": "",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "ba91d41ef0f2",
-      "file": "client/src/pages/CustomerDetails.tsx",
-      "line": 277,
-      "tag": "Link",
-      "role": "",
-      "kind": "action",
-      "label": "عرض المحادثة",
-      "section": "التاريخ",
-      "binding": "`/merchant/conversations`",
+      "label": "قائمة العملاء",
+      "section": "ملف العميل",
+      "binding": "href(\"/merchant/customers\")",
       "type": "text",
       "options": [],
       "min": "",
@@ -66075,20 +65967,45 @@
       "required": false,
       "conditional": false,
       "conditions": [
-        "customer.conversations && customer.conversations.length > 0"
+        "!row",
+        "!ready"
       ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "8ca79265d3a0",
-      "file": "client/src/pages/CustomerDetails.tsx",
-      "line": 278,
-      "tag": "Button",
+      "id": "3a51dfa5583c",
+      "file": "client/src/components/merchant/CustomerDetailWorkspace.tsx",
+      "line": 147,
+      "tag": "button",
       "role": "",
       "kind": "action",
-      "label": "عرض المحادثة",
-      "section": "التاريخ",
+      "label": "",
+      "section": "عميل دون اسم مسجل",
+      "binding": "() => setTab(value)",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "!row",
+        "!ready"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "668daa6f6fd8",
+      "file": "client/src/components/merchant/CustomerDetailWorkspace.tsx",
+      "line": 248,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "المصدر وطريقة الحساب",
+      "section": "المصدر وطريقة الحساب",
       "binding": "",
       "type": "text",
       "options": [],
@@ -66097,7 +66014,357 @@
       "maxLength": "",
       "required": false,
       "conditional": false,
+      "conditions": [
+        "tab === \"overview\"",
+        "!row",
+        "!ready"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "f564b657c8f9",
+      "file": "client/src/components/merchant/CustomerDetailWorkspace.tsx",
+      "line": 262,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "فتح مساحة الطلبات",
+      "section": "الطلبات",
+      "binding": "href(\"/merchant/orders\")",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "tab === \"orders\"",
+        "!row",
+        "!ready"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "18cba9cd8701",
+      "file": "client/src/components/merchant/CustomerDetailWorkspace.tsx",
+      "line": 357,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "عرض محادثات هذا الرقم",
+      "section": "# · عميل دون اسم مسجل",
+      "binding": "href(\n                          \"/merchant/conversations?phone=\" +\n                            encodeURIComponent(conversation.customerPhone)\n                        )",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!data!.conversations.rows.length"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "55bc4610ac0b",
+      "file": "client/src/components/merchant/CustomerAnnotations.tsx",
+      "line": 281,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "أعد محاولة التخزين",
+      "section": "CustomerAnnotations",
+      "binding": "() => {\n              if (!loaded) load();\n              else\n                try {\n                  persist(cacheRef.current);\n                } catch {\n                  setStorageError(true);\n                }\n            }",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "storageError"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "3f87bcafc915",
+      "file": "client/src/components/merchant/CustomerAnnotations.tsx",
+      "line": 302,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "تحقق من نتيجة الحفظ",
+      "section": "CustomerAnnotations",
+      "binding": "() => void recover()",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "pending"
+      ],
+      "disabled": "busy || !ready || !data?.canManage || storageError",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "6588f364ec33",
+      "file": "client/src/components/merchant/CustomerAnnotations.tsx",
+      "line": 309,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "أعد المحاولة بالرقم نفسه",
+      "section": "CustomerAnnotations",
+      "binding": "() => void send(pending)",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "pending"
+      ],
+      "disabled": "busy || !ready || !data?.canManage || storageError",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "8651b2c41034",
+      "file": "client/src/components/merchant/CustomerAnnotations.tsx",
+      "line": 356,
+      "tag": "textarea",
+      "role": "",
+      "kind": "field",
+      "label": "ملاحظة جديدة",
+      "section": "ملاحظات داخلية",
+      "binding": "cache.draft.note",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "2000",
+      "required": false,
+      "conditional": true,
       "conditions": [],
+      "disabled": "!editable",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "e0a45dacaa0c",
+      "file": "client/src/components/merchant/CustomerAnnotations.tsx",
+      "line": 366,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "ملاحظة جديدة",
+      "section": "ملاحظات داخلية",
+      "binding": "",
+      "type": "submit",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "!editable",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "0d649a8fcba7",
+      "file": "client/src/components/merchant/CustomerAnnotations.tsx",
+      "line": 386,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "إزالة الوسم {{tag}} من المسودة",
+      "section": "وسوم العميل",
+      "binding": "() =>\n                          edit({\n                            ...cache.draft,\n                            tags: {\n                              ...tags,\n                              values: tags.values.filter(\n                                value => value !== tag\n                              ),\n                            },\n                          })",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "data?.canManage"
+      ],
+      "disabled": "!editable",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "0c6a96d341fa",
+      "file": "client/src/components/merchant/CustomerAnnotations.tsx",
+      "line": 417,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "وسم جديد",
+      "section": "وسوم العميل",
+      "binding": "cache.draft.newTag || \"\"",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "40",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "tags"
+      ],
+      "disabled": "!editable",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "15c7830ac341",
+      "file": "client/src/components/merchant/CustomerAnnotations.tsx",
+      "line": 426,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "وسم جديد",
+      "section": "وسوم العميل",
+      "binding": "",
+      "type": "submit",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "tags"
+      ],
+      "disabled": "!editable",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "e32aa03a53b8",
+      "file": "client/src/components/merchant/CustomerAnnotations.tsx",
+      "line": 430,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "حفظ الوسوم",
+      "section": "وسوم العميل",
+      "binding": "saveTags",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "tags"
+      ],
+      "disabled": "!editable || !tagChanged || !!cache.draft.newTag || conflict",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "cba81e2ec215",
+      "file": "client/src/components/merchant/CustomerAnnotations.tsx",
+      "line": 447,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "استخدم الوسوم الحالية بدل المسودة",
+      "section": "وسوم العميل",
+      "binding": "() => edit({ ...cache.draft, tags: undefined })",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "conflict"
+      ],
+      "disabled": "!editable",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "23dbd7141ac3",
+      "file": "client/src/components/merchant/CustomerAnnotations.tsx",
+      "line": 462,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "مسح المسودة",
+      "section": "وسوم العميل",
+      "binding": "() => setDiscard(true)",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "!discard",
+        "(cache.draft.note || tagChanged || cache.draft.newTag) && !pending"
+      ],
+      "disabled": "busy || !loaded",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "ee24bcf18467",
+      "file": "client/src/components/merchant/CustomerAnnotations.tsx",
+      "line": 472,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "نعم، امسح المسودة",
+      "section": "وسوم العميل",
+      "binding": "() => {\n                  try {\n                    clearCustomerCache(scope, customerKey, epoch.current);\n                    cacheRef.current = { draft: { note: \"\" } };\n                    setCache(cacheRef.current);\n                    setStorageError(false);\n                    setDiscard(false);\n                  } catch {\n                    setStorageError(true);\n                  }\n                }",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "!discard",
+        "(cache.draft.note || tagChanged || cache.draft.newTag) && !pending"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "7561f9e44662",
+      "file": "client/src/components/merchant/CustomerAnnotations.tsx",
+      "line": 489,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "إلغاء",
+      "section": "وسوم العميل",
+      "binding": "() => setDiscard(false)",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "!discard",
+        "(cache.draft.note || tagChanged || cache.draft.newTag) && !pending"
+      ],
       "disabled": "",
       "review": "source-inventoried"
     },

@@ -31,6 +31,11 @@ export const customerListInput = z
 export const customerDetailInput = z
   .object({ key: customerKeyInput, ordersPage: page, conversationsPage: page })
   .strict();
+export const customerExportInput = customerListInput
+  .omit({ page: true })
+  .extend({ language: z.enum(["ar", "en"]).default("ar") })
+  .strict();
+export const customerExportLimit = 5000;
 const count = z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER);
 const date = z.string().datetime().nullable();
 export const customerRowSchema = z
@@ -54,6 +59,7 @@ const paging = z
 export const customerListSchema = z
   .object({
     merchantId: count,
+    canManage: z.boolean(),
     through: z.string().datetime(),
     selection: customerListInput,
     totals: z

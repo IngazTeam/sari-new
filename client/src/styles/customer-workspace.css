@@ -1,0 +1,339 @@
+.cw-workspace {
+  display: grid;
+  gap: 1.25rem;
+  min-width: 0;
+  color: var(--foreground);
+}
+.cw-workspace h1 {
+  font-size: clamp(1.6rem, 3vw, 2.1rem);
+  font-weight: 750;
+  line-height: 1.4;
+}
+.cw-workspace h2 {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+.cw-workspace p {
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+.cw-header,
+.cw-actions,
+.cw-filters,
+.cw-pagination {
+  display: flex;
+  gap: 0.7rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.cw-header {
+  justify-content: space-between;
+}
+.cw-header p {
+  color: var(--muted-foreground);
+}
+.cw-workspace button,
+.cw-button,
+.cw-workspace input,
+.cw-workspace select,
+.cw-workspace textarea {
+  min-height: 46px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font: inherit;
+  padding: 0.6rem 0.9rem;
+  background: var(--card);
+  color: inherit;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.cw-workspace button,
+.cw-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  font-weight: 650;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  white-space: normal;
+}
+.cw-workspace button:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+.cw-workspace button.cw-primary {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border-color: var(--primary);
+}
+.cw-workspace :is(button, input, select, textarea, a, summary):focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 3px;
+}
+.cw-workspace :is(input, select, textarea) {
+  font-size: 16px;
+  width: 100%;
+}
+.cw-workspace textarea {
+  min-height: 130px;
+  resize: vertical;
+}
+.cw-workspace label {
+  display: grid;
+  gap: 0.4rem;
+  min-width: 0;
+  font-weight: 600;
+}
+.cw-filters,
+.cw-panel,
+.cw-summary > div,
+.cw-list > li {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 1.1rem;
+}
+.cw-filters {
+  align-items: end;
+}
+.cw-search {
+  flex: 1;
+  min-width: 180px !important;
+}
+.cw-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+.cw-summary dd {
+  font-size: 1.6rem;
+  font-weight: 750;
+  margin-top: 0.5rem;
+}
+.cw-workspace dt {
+  color: var(--muted-foreground);
+  font-size: 0.9rem;
+}
+.cw-workspace dd {
+  overflow-wrap: anywhere;
+}
+.cw-panel {
+  display: grid;
+  gap: 0.7rem;
+  min-width: 0;
+}
+.cw-panel > summary {
+  cursor: pointer;
+  min-height: 44px;
+  align-content: center;
+  font-weight: 700;
+}
+.cw-panel > summary ~ * {
+  margin-top: 0.7rem;
+}
+.cw-panel:not([open]) > summary ~ * {
+  display: none;
+}
+.cw-list {
+  display: grid;
+  gap: 0.75rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.cw-list > li {
+  display: grid;
+  grid-template-columns: minmax(160px, 1.1fr) minmax(240px, 1.5fr) auto;
+  gap: 1rem;
+  align-items: center;
+  min-width: 0;
+}
+.cw-list h2 {
+  overflow-wrap: anywhere;
+}
+.cw-list dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) minmax(140px, 2fr);
+  gap: 1rem;
+}
+.cw-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0 0;
+}
+.cw-tags li {
+  background: var(--muted);
+  padding: 0.3rem 0.55rem;
+  border-radius: 8px;
+  overflow-wrap: anywhere;
+}
+.cw-tags li {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.cw-tags button {
+  padding: 0;
+  min-width: 44px;
+  min-height: 44px;
+  background: transparent;
+  border: 0;
+}
+.cw-pagination p {
+  margin-inline-end: auto;
+}
+.cw-notice {
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--border);
+  background: var(--muted);
+  border-radius: 12px;
+  white-space: pre-wrap;
+}
+.cw-tabs {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.cw-tabs [aria-pressed="true"] {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+.cw-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+.cw-facts > div {
+  display: grid;
+  gap: 0.3rem;
+}
+.cw-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+.cw-scroll {
+  max-width: 100%;
+  overflow: auto;
+  overscroll-behavior-inline: contain;
+  border-radius: 12px;
+}
+.cw-scroll table {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+.cw-scroll th,
+.cw-scroll td {
+  padding: 0.8rem;
+  text-align: start;
+  border-block-end: 1px solid var(--border);
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.cw-scroll th {
+  background: var(--muted);
+}
+.cw-notes {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 0.7rem;
+}
+.cw-notes li {
+  border-block-start: 1px solid var(--border);
+  padding-top: 0.8rem;
+}
+.cw-note-content {
+  white-space: pre-wrap;
+}
+.cw-muted {
+  color: var(--muted-foreground);
+  font-size: 0.9rem;
+}
+.cw-workspace bdi {
+  overflow-wrap: anywhere;
+}
+.cw-form {
+  display: grid;
+  gap: 0.8rem;
+}
+.cw-panel[role="alert"] {
+  border-color: var(--destructive);
+}
+@media (max-width: 1100px) {
+  .cw-list > li {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .cw-list dl {
+    grid-column: 1/-1;
+    grid-row: 2;
+  }
+  .cw-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 600px) {
+  .cw-header,
+  .cw-header > div {
+    width: 100%;
+  }
+  .cw-actions > * {
+    flex: 1;
+  }
+  .cw-summary {
+    grid-template-columns: 1fr;
+  }
+  .cw-filters {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .cw-filters > label {
+    grid-column: 1/-1;
+  }
+  .cw-list > li {
+    grid-template-columns: 1fr;
+  }
+  .cw-list dl {
+    grid-template-columns: 1fr 1fr;
+    grid-row: auto;
+  }
+  .cw-list dl > div:last-child {
+    grid-column: 1/-1;
+  }
+  .cw-list .cw-button {
+    width: 100%;
+  }
+  .cw-tabs > button {
+    flex: 1 1 calc(50% - 0.5rem);
+  }
+  .cw-facts {
+    grid-template-columns: 1fr;
+  }
+  .cw-pagination {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .cw-pagination p {
+    grid-column: 1/-1;
+  }
+  .cw-panel,
+  .cw-filters,
+  .cw-list > li {
+    padding: 0.9rem;
+  }
+  .cw-actions {
+    align-items: stretch;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cw-workspace * {
+    scroll-behavior: auto !important;
+  }
+}

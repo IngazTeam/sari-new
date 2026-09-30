@@ -568,6 +568,67 @@
           "file": "client/src/components/merchant/ReportsWorkspace.tsx"
         }
       ]
+    },
+    {
+      "routes": [
+        "/merchant/customers"
+      ],
+      "removed": [
+        "customers.list",
+        "customers.getStats",
+        "customers.exportCsv",
+        "customers.addNote",
+        "customers.addTag",
+        "customers.removeTag"
+      ],
+      "required": [
+        "customers.workspace.list",
+        "customers.workspace.export"
+      ],
+      "note": "Scoped paged customer identities and literal filters replace the unbounded list and misleading new/activity totals. Detail modal moves to the dedicated customer record. Previously missing note/tag mutations are now implemented through versioned writes and durable receipts.",
+      "evidence": [
+        "docs/audits/tenant-customer-data-2026-09-30/REPORT.md",
+        "docs/audits/tenant-customer-annotations-2026-09-30/REPORT.md",
+        "docs/audits/tenant-customer-workspace-2026-09-30/REPORT.md"
+      ],
+      "checks": [
+        {
+          "route": "/merchant/customers/:phone",
+          "api": "customers.annotations.write"
+        },
+        {
+          "route": "/merchant/customers/:phone",
+          "api": "customers.annotations.receipt"
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/customers/:phone"
+      ],
+      "removed": [
+        "customers.getByPhone"
+      ],
+      "required": [
+        "customers.workspace.detail",
+        "customers.annotations.read",
+        "customers.annotations.write",
+        "customers.annotations.receipt"
+      ],
+      "note": "Customer detail preserves order values by currency, loyalty ambiguity, paged source conversations and orders. Placeholder tabs become source-backed records. Account/store/customer scoped drafts, optimistic tag revisions and recoverable receipts protect edits.",
+      "evidence": [
+        "docs/audits/tenant-customer-workspace-2026-09-30/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "client/src/components/merchant/CustomerDetailWorkspace.tsx",
+          "contains": "customerPhone"
+        },
+        {
+          "file": "client/src/components/merchant/CustomerAnnotations.tsx",
+          "contains": "expectedRevision: tags.revision"
+        }
+      ]
     }
   ]
 }

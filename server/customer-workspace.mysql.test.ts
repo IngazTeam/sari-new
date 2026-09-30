@@ -12,7 +12,11 @@ import {
   createDisposableMerchant,
   cleanupDisposableMerchants,
 } from "./tests/helpers/disposable-merchant";
-import { readCustomerList, readCustomerDetail } from "./customer-workspace";
+import {
+  readCustomerList,
+  readCustomerDetail,
+  exportCustomerWorkspace,
+} from "./customer-workspace";
 
 const now = new Date("2026-09-30T12:00:00.000Z");
 describe.skipIf(!process.env.DATABASE_URL)("customer workspace MySQL", () => {
@@ -97,6 +101,30 @@ describe.skipIf(!process.env.DATABASE_URL)("customer workspace MySQL", () => {
     cleanupDisposableMerchants([owner?.userId, other?.userId].filter(Boolean))
   );
   afterAll(closeDb);
+  it("exports all matched rows in one scope with currency values and literal search", async () => {
+    await insert("conversations", { customerName: "=50%_off" });
+    await insert("orders");
+    await insert("orders", { currency: "USD", totalAmount: 225 });
+    await insert("orders", { status: "cancelled", totalAmount: 9999 });
+    await insert("conversations", {
+      customerPhone: "other-contact",
+      customerName: "Different",
+    });
+    await insert("orders", {
+      merchantId: other.merchantId,
+      totalAmount: 88888,
+    });
+    const result = await exportCustomerWorkspace(
+      owner.merchantId,
+      { search: "%_", language: "en" },
+      now
+    );
+    expect(result.count).toBe(1);
+    expect(result.data).toContain('"\'=50%_off"');
+    expect(result.data).toContain('"1.25","2.25"');
+    expect(result.data).not.toContain("Different");
+    expect(result.data).not.toContain("888.88");
+  });
   it("unifies safe phone spellings across all five sources without writing stored identities", async () => {
     for (const table of [
       "conversations",

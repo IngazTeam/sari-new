@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-09-30T07:11:20.254Z",
+  "generatedAt": "2026-09-30T08:10:14.667Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 284,
-      "controls": 1951
+      "files": 289,
+      "controls": 1958
     }
   },
   "addedFiles": [
@@ -115,10 +115,15 @@
     "client/src/components/merchant/MerchantReportView.tsx",
     "client/src/components/merchant/navigation.ts",
     "client/src/components/merchant/tools.ts",
+    "client/src/components/merchant/CustomerListWorkspace.tsx",
+    "client/src/components/merchant/CustomerWorkspaceView.tsx",
     "client/src/components/WebsiteImportWorkspace.tsx",
     "client/src/hooks/useWebsiteImportCopy.ts",
     "client/src/components/WebsiteReportsWorkspace.tsx",
-    "client/src/hooks/useWebsiteReportsCopy.ts"
+    "client/src/hooks/useWebsiteReportsCopy.ts",
+    "client/src/components/merchant/CustomerDetailWorkspace.tsx",
+    "client/src/components/merchant/CustomerAnnotations.tsx",
+    "client/src/lib/customer-workspace-cache.ts"
   ],
   "changedFiles": [
     "client/src/components/PreviewChat.tsx",
@@ -150,7 +155,9 @@
     "client/src/pages/Reports.tsx",
     "client/src/pages/merchant/MySubscription.tsx",
     "client/src/pages/merchant/SubscriptionPlans.tsx",
+    "client/src/pages/Customers.tsx",
     "client/src/pages/SmartAnalysis.tsx",
+    "client/src/pages/CustomerDetails.tsx",
     "client/src/components/merchant/MerchantShell.tsx",
     "client/src/components/MerchantSelector.tsx"
   ],
@@ -1511,10 +1518,23 @@
     {
       "route": "/merchant/customers",
       "controlsBefore": 13,
-      "controlsNow": 13,
-      "removedQueries": [],
-      "addedQueries": [],
-      "removedMutations": [],
+      "controlsNow": 12,
+      "removedQueries": [
+        "customers.list",
+        "customers.getStats",
+        "customers.exportCsv"
+      ],
+      "addedQueries": [
+        "auth.me",
+        "merchants.getCurrent",
+        "customers.workspace.list",
+        "customers.workspace.export"
+      ],
+      "removedMutations": [
+        "customers.addNote",
+        "customers.addTag",
+        "customers.removeTag"
+      ],
       "addedMutations": []
     },
     {
@@ -1581,11 +1601,21 @@
     {
       "route": "/merchant/customers/:phone",
       "controlsBefore": 11,
-      "controlsNow": 11,
-      "removedQueries": [],
-      "addedQueries": [],
+      "controlsNow": 23,
+      "removedQueries": [
+        "customers.getByPhone"
+      ],
+      "addedQueries": [
+        "auth.me",
+        "merchants.getCurrent",
+        "customers.workspace.detail",
+        "customers.annotations.read",
+        "customers.annotations.receipt"
+      ],
       "removedMutations": [],
-      "addedMutations": []
+      "addedMutations": [
+        "customers.annotations.write"
+      ]
     },
     {
       "route": "/merchant/ai-suggestions",

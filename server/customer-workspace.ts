@@ -8,8 +8,14 @@ import {
   customerDetailSchema,
   customerRowSchema,
   customerPageSize,
+  customerExportInput,
+  customerExportLimit,
+  type CustomerListSelection,
   type CustomerRow,
 } from "../shared/customer-workspace";
+import { buildCsv } from "./utils/csv";
+
+export class CustomerExportLimit extends Error {}
 
 const integer = (value: unknown) => {
   const result = orderMinor(value);
@@ -148,6 +154,14 @@ const one = (rows: Record<string, any>[]) => {
   if (rows.length !== 1) throw Error("Customer aggregate unavailable");
   return rows[0];
 };
+function customerFilter(
+  selection: Pick<CustomerListSelection, "search" | "activity">
+) {
+  return sql`(${selection.activity}='all' OR activity=${selection.activity})
+      AND (${selection.search}='' OR LOCATE(LOWER(${selection.search}),LOWER(COALESCE(name,'')))>0
+        OR LOCATE(${selection.search},CONVERT(customerKey USING utf8mb4))>0
+        OR EXISTS(SELECT 1 FROM identities i WHERE i.customerKey=customers.customerKey AND LOCATE(${selection.search},i.rawPhone)>0))`;
+}
 export async function readCustomerList(
   merchantId: number,
   raw: unknown,
@@ -164,10 +178,7 @@ export async function readCustomerList(
       (SELECT COUNT(*) FROM raw WHERE phone IS NULL OR TRIM(phone)='') AS excludedEmptyIdentifiers,
       (SELECT COUNT(*) FROM raw WHERE TRIM(phone)<>'' AND TRIM(phone) REGEXP '[[:cntrl:]]') AS excludedInvalidIdentifiers FROM customers`)
     );
-    const where = sql`(${selection.activity}='all' OR activity=${selection.activity})
-      AND (${selection.search}='' OR LOCATE(LOWER(${selection.search}),LOWER(COALESCE(name,'')))>0
-        OR LOCATE(${selection.search},CONVERT(customerKey USING utf8mb4))>0
-        OR EXISTS(SELECT 1 FROM identities i WHERE i.customerKey=customers.customerKey AND LOCATE(${selection.search},i.rawPhone)>0))`;
+    const where = customerFilter(selection);
     const filtered = integer(
       one(
         await rows(
@@ -179,6 +190,7 @@ export async function readCustomerList(
       ORDER BY lastInteractionAt DESC, customerKey ASC LIMIT ${customerPageSize} OFFSET ${(selection.page - 1) * customerPageSize}`);
     return customerListSchema.parse({
       merchantId,
+      canManage: false,
       through,
       selection,
       totals: {
@@ -194,6 +206,138 @@ export async function readCustomerList(
       pagination: paging(filtered, selection.page),
       rows: records.map(customer),
     });
+  });
+}
+export async function exportCustomerWorkspace(
+  merchantId: number,
+  raw: unknown,
+  now = new Date()
+) {
+  const selection = customerExportInput.parse(raw);
+  return snapshot(merchantId, now, async (rows, cte, through) => {
+    const where = customerFilter(selection),
+      total = integer(
+        one(
+          await rows(
+            sql`${cte} SELECT COUNT(*) AS total FROM customers WHERE ${where}`
+          )
+        ).total
+      );
+    if (total > customerExportLimit) throw new CustomerExportLimit();
+    const records = await rows(
+      sql`${cte} SELECT * FROM customers WHERE ${where} ORDER BY lastInteractionAt DESC,customerKey ASC LIMIT ${customerExportLimit}`
+    );
+    if (records.length !== total)
+      throw Error("Customer export snapshot mismatch");
+    const amounts =
+      await rows(sql`${cte} SELECT i.customerKey,o.currency,COUNT(*) AS eligibleOrders,
+      SUM(o.totalAmount<0) AS excludedAmounts,COALESCE(SUM(CASE WHEN o.totalAmount>=0 THEN o.totalAmount ELSE 0 END),0) AS totalMinor
+      FROM orders o JOIN identities i ON i.source='order' AND i.id=o.id
+      WHERE o.merchantId=${merchantId} AND i.customerKey IN (SELECT customerKey FROM customers WHERE ${where})
+      AND BINARY o.status IN ('paid','processing','shipped','delivered') GROUP BY i.customerKey,o.currency`);
+    const loyalty =
+      await rows(sql`${cte} SELECT i.customerKey,COUNT(*) AS records,MAX(l.total_points) AS points
+      FROM loyalty_points l JOIN identities i ON i.source='loyalty' AND i.id=l.id
+      WHERE l.merchant_id=${merchantId} AND i.customerKey IN (SELECT customerKey FROM customers WHERE ${where}) GROUP BY i.customerKey`);
+    const money = new Map<
+      string,
+      { SAR: number; USD: number; excluded: number }
+    >();
+    for (const row of amounts) {
+      const currency: unknown = row.currency;
+      if (currency !== "SAR" && currency !== "USD")
+        throw Error("Invalid customer currency");
+      const key = String(row.customerKey),
+        value = money.get(key) ?? { SAR: 0, USD: 0, excluded: 0 };
+      value[currency] = integer(row.totalMinor);
+      value.excluded = integer(value.excluded + integer(row.excludedAmounts));
+      money.set(key, value);
+    }
+    const points = new Map(
+      loyalty.map(row => [
+        String(row.customerKey),
+        {
+          records: integer(row.records),
+          points: integer(row.records) === 1 ? orderMinor(row.points) : null,
+        },
+      ])
+    );
+    const decimal = (value: number) =>
+      `${Math.floor(value / 100)}.${String(value % 100).padStart(2, "0")}`;
+    const ar = selection.language === "ar",
+      headers = ar
+        ? [
+            "المعرّف",
+            "الاسم",
+            "النشاط المسجل",
+            "أول تسجيل UTC",
+            "آخر نشاط UTC",
+            "المحادثات",
+            "كل الطلبات",
+            "قيمة الطلبات المؤهلة SAR",
+            "قيمة الطلبات المؤهلة USD",
+            "مبالغ غير صالحة مستبعدة",
+            "سجلات الولاء",
+            "النقاط عند وجود سجل واحد",
+            "المصادر",
+            "نهاية اللقطة UTC",
+          ]
+        : [
+            "Identifier",
+            "Name",
+            "Recorded activity",
+            "First recorded UTC",
+            "Last activity UTC",
+            "Conversations",
+            "All orders",
+            "Eligible order value SAR",
+            "Eligible order value USD",
+            "Excluded invalid amounts",
+            "Loyalty records",
+            "Points for one record only",
+            "Sources",
+            "Snapshot through UTC",
+          ];
+    const activityAr = {
+      active: "خلال 7 أيام",
+      recent: "من 7 إلى 30 يومًا",
+      inactive: "أقدم من 30 يومًا",
+      unknown: "غير معروف",
+    };
+    const data = buildCsv(
+      headers,
+      records.map(rawRow => {
+        const row = customer(rawRow),
+          value = money.get(row.key) ?? { SAR: 0, USD: 0, excluded: 0 },
+          balance = points.get(row.key);
+        return [
+          /^\d+$/.test(row.key) ? "'" + row.key : row.key,
+          row.name,
+          ar ? activityAr[row.activity] : row.activity,
+          row.firstRecordedAt,
+          row.lastInteractionAt,
+          row.conversationCount,
+          row.orderCount,
+          decimal(value.SAR),
+          decimal(value.USD),
+          value.excluded,
+          balance?.records ?? 0,
+          balance?.points ?? "",
+          row.sources.join(" | "),
+          through,
+        ];
+      })
+    );
+    return {
+      merchantId,
+      selection,
+      through,
+      count: total,
+      limit: customerExportLimit,
+      filename: `customers-${merchantId}-${through.slice(0, 10)}.csv`,
+      mimeType: "text/csv;charset=utf-8",
+      data,
+    };
   });
 }
 export async function readCustomerDetail(
