@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-09-29T23:58:42.038Z",
+  "generatedAt": "2026-09-30T00:21:01.921Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 259,
-      "controls": 1876
+      "files": 263,
+      "controls": 1883
     }
   },
   "addedFiles": [
@@ -87,6 +87,10 @@
     "client/src/components/merchant/InsightsWorkspace.tsx",
     "client/src/components/merchant/KeywordReviewDialog.tsx",
     "client/src/components/merchant/InsightReportDetails.tsx",
+    "client/src/components/merchant/PerformanceWorkspace.tsx",
+    "client/src/lib/performance-labels.ts",
+    "client/src/lib/performance-report.ts",
+    "client/src/components/merchant/PerformanceReport.tsx",
     "client/src/lib/report-export.ts",
     "client/src/components/merchant/navigation.ts",
     "client/src/components/merchant/tools.ts",
@@ -113,6 +117,7 @@
     "client/src/pages/merchant/SalesPipeline.tsx",
     "client/src/pages/merchant/QuickResponses.tsx",
     "client/src/pages/merchant/InsightsDashboard.tsx",
+    "client/src/pages/merchant/PerformanceMetrics.tsx",
     "client/src/pages/merchant/Settings.tsx",
     "client/src/pages/merchant/LanguageSettings.tsx",
     "client/src/pages/merchant/MySubscription.tsx",
@@ -930,9 +935,15 @@
     {
       "route": "/merchant/performance-metrics",
       "controlsBefore": 2,
-      "controlsNow": 2,
-      "removedQueries": [],
-      "addedQueries": [],
+      "controlsNow": 10,
+      "removedQueries": [
+        "performance.getPerformanceMetrics"
+      ],
+      "addedQueries": [
+        "auth.me",
+        "merchants.getCurrent",
+        "performance.workspace"
+      ],
       "removedMutations": [],
       "addedMutations": []
     },

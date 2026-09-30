@@ -345,6 +345,28 @@
         "docs/audits/tenant-website-reports-2026-09-29/REPORT.md"
       ],
       "checks": []
+    },
+    {
+      "routes": [
+        "/merchant/performance-metrics"
+      ],
+      "removed": [
+        "performance.getPerformanceMetrics"
+      ],
+      "required": [
+        "performance.workspace"
+      ],
+      "note": "Replace invalid route tenant id and fabricated metrics with bounded scoped evidence, two periods, currency separation and complete CSV.",
+      "evidence": [
+        "docs/audits/tenant-performance-data-2026-09-30/REPORT.md",
+        "docs/audits/tenant-performance-workspace-2026-09-30/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "client/src/lib/performance-report.ts",
+          "contains": "performanceCsv"
+        }
+      ]
     }
   ]
 }

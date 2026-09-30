@@ -370,6 +370,7 @@ for (const route of [
       "طابق التطبيق والموك أب التقرير والتنسيق والتصدير المشترك؛ راجع tenant-test-metrics-workspace-2026-09-30 وtenant-test-metrics-prototype-2026-09-30. المصدر في tenant-test-metrics-data-2026-09-30. وُحد العقد القديم وأهلية التقييمات في tenant-test-metrics-compatibility-2026-09-30 وtenant-test-feedback-eligibility-2026-09-30. تبقى نتائج العملاء الحقيقية وتأكيد حفظ التنزيل و320/390 وSafari/iPhone.",
     ],
   };
+specifics['/merchant/performance-metrics']={level:'موك أب عام',implemented:true,sections:['فترة UTC مخصصة 1–90 يومًا مع اعتماد المسودة والتحقق','مقارنة متساوية المدة دون تداخل وعينة صريحة','الرسائل والطلبات والأرقام المتكررة والتقييمات الصحيحة','SAR وUSD دون جمع العملات أو ادعاء الربح','تصدير الفترتين كاملتين وحالات الخطأ والعزل'],gaps:['أُعيدت الواجهة الفعلية بالمصدر المعزول؛ راجع tenant-performance-workspace-2026-09-30 وtenant-performance-data-2026-09-30. الموك أب لا يزال عامًا وAPI الحساب القديم ينتظر التوحيد. فُحص العرض المكتبي و480، والتنزيل الحي وSafari/iPhone و320/390 غير مثبتة.']};
 const groups = [
   [
     /campaign|occasion/,
