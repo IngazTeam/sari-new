@@ -8509,7 +8509,7 @@
     "questionNumber": "Question {{count}}",
     "noReply": "No confirmed reply",
     "clearTitle": "Clear this preview?",
-    "clearHint": "Questions, replies and your draft will disappear from this page. This preview is not saved when you leave.",
+    "clearHint": "Clears the draft, questions and displayed replies without changing your store data.",
     "auto_0": "ساري AI - ملعب التجربة",
     "auto_1": "جرّب محادثة ساري الذكي واختبر قدراته في فهم العملاء واقتراح المنتجات",
     "auto_2": "نشط ومتصل",
@@ -11713,5 +11713,13 @@
   "model": "Generated reply for review",
   "evidence": "Check the answer against your sources. This preview does not cite the sources used or measure answer accuracy or sales success.",
   "openSession": "Open a test session and save reply ratings"
+},
+  "playgroundRepairUx": {
+  "tooLong": "The question exceeds 2000 characters. Your full text is retained; shorten it before sending.",
+  "retention": "Question drafts are kept in this session’s memory for each account and store while navigating. Reloading loses them. Displayed results are lost when you leave this page.",
+  "evidence": "This preview does not cite the sources used or measure sales proficiency. Check the answer against your store knowledge.",
+  "uncertain": "No reply was confirmed. Your question was retained and was not resent. The attempt may have used credits; generating again starts a new attempt.",
+  "rate": "The attempt limit was reached. Wait a little before starting a new attempt.",
+  "newAttempt": "Generate a new attempt"
 }
 }

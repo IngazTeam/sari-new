@@ -3,7 +3,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import ar from "../client/src/locales/ar.json";
-const mocks = vi.hoisted(() => ({ send: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  send: vi.fn(),
+  scope: "7:20:quick-preview",
+}));
+vi.mock("../client/src/components/KnowledgeWorkspaceScope", () => ({
+  KnowledgeWorkspaceScope: ({ children }: any) => children(mocks.scope),
+}));
 vi.mock("../client/src/lib/trpc", () => ({
   trpc: { ai: { chat: { useMutation: () => ({ mutateAsync: mocks.send }) } } },
 }));
@@ -18,6 +24,7 @@ vi.mock("react-i18next", () => ({
   }),
 }));
 import SariPlayground from "../client/src/pages/SariPlayground";
+import { clearKnowledgeWorkspace } from "../client/src/lib/knowledge-workspace-cache";
 let root: Root, container: HTMLDivElement;
 const reply = {
   response: "<script>alert(1)</script> جواب",
@@ -47,6 +54,8 @@ async function fill(text: string) {
 }
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.scope = "7:20:quick-preview";
+  clearKnowledgeWorkspace();
   vi.stubGlobal("React", React);
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   mocks.send.mockResolvedValue(reply);
@@ -57,6 +66,7 @@ beforeEach(() => {
 afterEach(async () => {
   await act(async () => root.unmount());
   container.remove();
+  clearKnowledgeWorkspace();
   vi.unstubAllGlobals();
 });
 describe("rendered quick assistant preview", () => {
@@ -65,7 +75,9 @@ describe("rendered quick assistant preview", () => {
     expect(container.querySelector("label")?.htmlFor).toBe(
       container.querySelector("textarea")!.id
     );
-    expect(container.querySelector("textarea")!.maxLength).toBe(2000);
+    expect(container.querySelector("textarea")!.hasAttribute("maxlength")).toBe(
+      false
+    );
     expect(container.textContent).toContain(ar.sariPlayground.independent);
     await fill("سؤال");
     await click(ar.sariPlayground.ask);
@@ -109,7 +121,9 @@ describe("rendered quick assistant preview", () => {
     expect(container.querySelector('[role="alert"]')).not.toBeNull();
     expect(container.textContent).not.toContain("secret vendor failure");
     expect(container.querySelector("textarea")!.disabled).toBe(true);
-    await click(ar.testSariPage.retry);
+    expect(container.querySelector("textarea")!.value).toBe("saved question");
+    expect(container.textContent).toContain(ar.playgroundRepairUx.uncertain);
+    await click(ar.playgroundRepairUx.newAttempt);
     expect(mocks.send.mock.calls.map(c => c[0])).toEqual([
       { message: "saved question" },
       { message: "saved question" },
@@ -142,6 +156,7 @@ describe("rendered quick assistant preview", () => {
       { key: "Enter", isComposing: true },
       { key: "Enter", shiftKey: true },
       { key: "Enter", keyCode: 229 },
+      { key: "Enter", repeat: true },
     ])
       await act(async () => {
         editor.dispatchEvent(
@@ -177,5 +192,71 @@ describe("rendered quick assistant preview", () => {
       ar.testSariPage.accessDenied
     );
     expect(container.querySelector('[role="alert"] button')).toBeNull();
+  });
+  it("retains oversized pasted text and presents an inline error without submitting", async () => {
+    await render();
+    await fill("x".repeat(2001));
+    expect(container.querySelector("textarea")!.value.length).toBe(2001);
+    expect(
+      container.querySelector("textarea")!.getAttribute("aria-invalid")
+    ).toBe("true");
+    expect(container.textContent).toContain(ar.playgroundRepairUx.tooLong);
+    await act(async () =>
+      container
+        .querySelector("form")!
+        .dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }))
+    );
+    expect(mocks.send).not.toHaveBeenCalled();
+  });
+  it("does not overwrite a typed question with an example", async () => {
+    await render();
+    await fill("draft");
+    await click(ar.sariPlayground.productsExample);
+    expect(container.querySelector("textarea")!.value).toBe("draft");
+  });
+  it("restores drafts by verified scope and ignores the late reply from a different store", async () => {
+    let resolve!: (value: typeof reply) => void;
+    mocks.send.mockReturnValue(
+      new Promise(done => {
+        resolve = done;
+      })
+    );
+    await render();
+    await fill("Store A question");
+    await click(ar.sariPlayground.ask);
+    mocks.scope = "7:21:quick-preview";
+    await render();
+    await act(async () => resolve(reply));
+    expect(container.textContent).not.toContain(reply.response);
+    expect(container.querySelector("textarea")!.value).toBe("");
+    mocks.scope = "7:20:quick-preview";
+    await render();
+    expect(container.querySelector("textarea")!.value).toBe("Store A question");
+    mocks.scope = "8:20:quick-preview";
+    await render();
+    expect(container.querySelector("textarea")!.value).toBe("");
+    clearKnowledgeWorkspace();
+    mocks.scope = "7:20:quick-preview";
+    await render();
+    expect(container.querySelector("textarea")!.value).toBe("");
+  });
+  it("validates provider result shape and retains the original question", async () => {
+    mocks.send.mockResolvedValue({ response: "fake", source: "unrecognized" });
+    await render();
+    await fill("Original");
+    await click(ar.sariPlayground.ask);
+    expect(container.textContent).toContain(ar.playgroundRepairUx.uncertain);
+    expect(container.textContent).not.toContain("fake");
+    expect(container.querySelector("textarea")!.value).toBe("Original");
+  });
+  it("distinguishes rate limits and only retries on an explicit new attempt", async () => {
+    mocks.send.mockRejectedValueOnce({ data: { code: "TOO_MANY_REQUESTS" } });
+    await render();
+    await fill("Question");
+    await click(ar.sariPlayground.ask);
+    expect(container.textContent).toContain(ar.playgroundRepairUx.rate);
+    expect(mocks.send).toHaveBeenCalledOnce();
+    await click(ar.playgroundRepairUx.newAttempt);
+    expect(mocks.send).toHaveBeenCalledTimes(2);
   });
 });

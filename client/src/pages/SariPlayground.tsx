@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
@@ -15,48 +15,111 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Bot, Loader2, Send, RotateCcw } from "lucide-react";
-import type { PreviewReply } from "@shared/test-sari-workspace";
+import {
+  previewReplyResult,
+  type PreviewReply,
+} from "@shared/test-sari-workspace";
+import { KnowledgeWorkspaceScope } from "@/components/KnowledgeWorkspaceScope";
+import {
+  cacheKnowledgeDraft,
+  discardKnowledgeDraft,
+  knowledgeCacheEpoch,
+  readKnowledgeDraft,
+} from "@/lib/knowledge-workspace-cache";
 
 interface Turn {
   question: string;
   result?: PreviewReply;
 }
 export default function SariPlayground() {
+  const chat = trpc.ai.chat.useMutation({ retry: false });
+  return (
+    <KnowledgeWorkspaceScope slot="quick-preview">
+      {scopeKey => (
+        <SariPlaygroundWorkspace
+          key={scopeKey}
+          scopeKey={scopeKey}
+          send={chat.mutateAsync}
+        />
+      )}
+    </KnowledgeWorkspaceScope>
+  );
+}
+export function SariPlaygroundWorkspace({
+  scopeKey,
+  send,
+}: {
+  scopeKey: string;
+  send: (input: { message: string }) => Promise<unknown>;
+}) {
   const { t, i18n } = useTranslation();
   const [turns, setTurns] = useState<Turn[]>([]);
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState(
+    () => readKnowledgeDraft(scopeKey)?.content ?? ""
+  );
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<"failed" | "forbidden" | null>(null);
+  const [error, setError] = useState<"failed" | "forbidden" | "rate" | null>(
+    null
+  );
   const [confirmReset, setConfirmReset] = useState(false);
   const locked = useRef(false);
+  const mounted = useRef(true),
+    epoch = useRef(knowledgeCacheEpoch());
   const editor = useRef<HTMLTextAreaElement>(null);
-  const chat = trpc.ai.chat.useMutation();
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+  useEffect(() => {
+    if (input)
+      cacheKnowledgeDraft(
+        scopeKey,
+        { name: "", content: input, type: "custom" },
+        epoch.current
+      );
+    else discardKnowledgeDraft(scopeKey);
+  }, [input, scopeKey]);
+  const tooLong = input.trim().length > 2000;
   const execute = async (question: string, retry = false) => {
-    if (locked.current || !question.trim() || question.trim().length > 2000)
+    if (
+      locked.current ||
+      epoch.current !== knowledgeCacheEpoch() ||
+      !question.trim() ||
+      question.trim().length > 2000
+    )
       return;
     locked.current = true;
     setBusy(true);
     setError(null);
     if (!retry) {
       setTurns(previous => [...previous, { question: question.trim() }]);
-      setInput("");
     }
     try {
-      const result = await chat.mutateAsync({ message: question.trim() });
+      const result = previewReplyResult.parse(
+        await send({ message: question.trim() })
+      );
+      if (!mounted.current || epoch.current !== knowledgeCacheEpoch()) return;
+      setInput("");
       setTurns(previous =>
         previous.map((turn, index) =>
           index === previous.length - 1 ? { ...turn, result } : turn
         )
       );
     } catch (failure) {
+      if (!mounted.current || epoch.current !== knowledgeCacheEpoch()) return;
+      const code = (failure as { data?: { code?: string } })?.data?.code;
       setError(
-        (failure as { data?: { code?: string } })?.data?.code === "FORBIDDEN"
+        code === "FORBIDDEN" || code === "UNAUTHORIZED"
           ? "forbidden"
-          : "failed"
+          : code === "TOO_MANY_REQUESTS"
+            ? "rate"
+            : "failed"
       );
     } finally {
       locked.current = false;
-      setBusy(false);
+      if (mounted.current) setBusy(false);
     }
   };
   const examples = [
@@ -84,7 +147,13 @@ export default function SariPlayground() {
           variant="outline"
           className="min-h-11 whitespace-normal"
         >
-          <Link href="/merchant/test-sari">
+          <Link
+            href="/merchant/test-sari"
+            aria-disabled={busy}
+            onClick={event => {
+              if (locked.current) event.preventDefault();
+            }}
+          >
             {t("sariPlayground.openSession")}
           </Link>
         </Button>
@@ -100,7 +169,7 @@ export default function SariPlayground() {
               key={query}
               variant="outline"
               className="h-auto min-h-11 whitespace-normal text-start"
-              disabled={busy || !!error}
+              disabled={busy || !!error || !!input.trim()}
               onClick={() => {
                 setInput(query);
                 editor.current?.focus();
@@ -126,8 +195,9 @@ export default function SariPlayground() {
             value={input}
             onChange={event => setInput(event.target.value)}
             disabled={busy || !!error}
-            maxLength={2000}
-            aria-describedby="quick-preview-hint"
+            dir="auto"
+            aria-invalid={tooLong}
+            aria-describedby={`quick-preview-hint${tooLong ? " quick-preview-error" : ""}`}
             className="min-h-28 text-base [overflow-wrap:anywhere] md:text-base"
             onKeyDown={event => {
               if (
@@ -137,16 +207,25 @@ export default function SariPlayground() {
                 event.keyCode !== 229
               ) {
                 event.preventDefault();
-                if (!error) void execute(input);
+                if (!error && !event.repeat) void execute(input);
               }
             }}
           />
+          {tooLong && (
+            <p
+              id="quick-preview-error"
+              role="alert"
+              className="text-sm text-destructive"
+            >
+              {t("playgroundRepairUx.tooLong")}
+            </p>
+          )}
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p
               id="quick-preview-hint"
               className="text-xs text-muted-foreground"
             >
-              {t("sariPlayground.inputHint", { count: input.length })}
+              {t("sariPlayground.inputHint", { count: input.trim().length })}
             </p>
             <div className="flex flex-wrap gap-2">
               <Button
@@ -162,7 +241,7 @@ export default function SariPlayground() {
               <Button
                 type="submit"
                 className="min-h-11"
-                disabled={busy || !!error || !input.trim()}
+                disabled={busy || !!error || !input.trim() || tooLong}
               >
                 {busy ? (
                   <Loader2
@@ -178,6 +257,12 @@ export default function SariPlayground() {
           </div>
         </form>
       </Card>
+      <p className="text-xs leading-6 text-muted-foreground">
+        {t("playgroundRepairUx.retention")}
+      </p>
+      <p className="text-xs leading-6 text-muted-foreground">
+        {t("playgroundRepairUx.evidence")}
+      </p>
       <div role="status" className="text-sm text-muted-foreground">
         {busy
           ? t("sariPlayground.preparing")
@@ -191,7 +276,9 @@ export default function SariPlayground() {
             {t(
               error === "forbidden"
                 ? "testSariPage.accessDenied"
-                : "testSariPage.replyFailed"
+                : error === "rate"
+                  ? "playgroundRepairUx.rate"
+                  : "playgroundRepairUx.uncertain"
             )}
           </p>
           {error !== "forbidden" && (
@@ -204,7 +291,7 @@ export default function SariPlayground() {
                 void execute(turns[turns.length - 1].question, true)
               }
             >
-              {t("testSariPage.retry")}
+              {t("playgroundRepairUx.newAttempt")}
             </Button>
           )}
         </Card>

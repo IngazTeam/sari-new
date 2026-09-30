@@ -32,6 +32,12 @@ export interface PreviewReply {
   historyMessageCount: number;
   historyTruncated: boolean;
 }
+export const previewReplyResult = z.object({
+  response: z.string().trim().min(1).max(5000),
+  source: z.enum(["model", "guardrail"]),
+  historyMessageCount: z.number().int().min(0),
+  historyTruncated: z.boolean(),
+});
 export const testDealValue = z
   .number()
   .finite()

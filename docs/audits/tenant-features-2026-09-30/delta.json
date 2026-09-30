@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-09-30T22:59:47.655Z",
+  "generatedAt": "2026-09-30T23:08:57.390Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -906,9 +906,12 @@
     {
       "route": "/merchant/sari-playground",
       "controlsBefore": 4,
-      "controlsNow": 10,
+      "controlsNow": 11,
       "removedQueries": [],
-      "addedQueries": [],
+      "addedQueries": [
+        "auth.me",
+        "merchants.getCurrent"
+      ],
       "removedMutations": [],
       "addedMutations": []
     },

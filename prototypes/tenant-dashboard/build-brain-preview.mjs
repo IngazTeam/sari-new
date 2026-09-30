@@ -3,11 +3,22 @@ import { readFileSync, writeFileSync, readdirSync } from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
 const copy = Object.fromEntries(
-  ["ar", "en"].map(lang => [
-    lang,
-    JSON.parse(readFileSync(`client/src/locales/${lang}.json`, "utf8"))
-      .brainPreviewUx,
-  ])
+  ["ar", "en"].map(lang => {
+    const all = JSON.parse(
+      readFileSync(`client/src/locales/${lang}.json`, "utf8")
+    );
+    return [
+      lang,
+      Object.fromEntries(
+        [
+          "brainPreviewUx",
+          "sariPlayground",
+          "testSariPage",
+          "playgroundRepairUx",
+        ].map(key => [key, all[key]])
+      ),
+    ];
+  })
 );
 await build({
   entryPoints: ["prototypes/tenant-dashboard/src/brain-preview.tsx"],
@@ -49,6 +60,7 @@ const compiler = await compile(
 const candidates = new Set();
 for (const file of [
   "client/src/components/BrainQuickPreview.tsx",
+  "client/src/pages/SariPlayground.tsx",
   "prototypes/tenant-dashboard/src/brain-preview.tsx",
   ...readdirSync("client/src/components/ui")
     .filter(f => f.endsWith(".tsx"))

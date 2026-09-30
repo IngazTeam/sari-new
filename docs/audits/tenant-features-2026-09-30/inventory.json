@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-30T22:59:47.655Z",
+  "generatedAt": "2026-09-30T23:08:57.390Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -10595,7 +10595,7 @@
     },
     {
       "file": "client/src/pages/SariPlayground.tsx",
-      "hash": "2611ecc10b4c",
+      "hash": "2d83df48bf6d",
       "queries": [],
       "mutations": [
         "ai.chat"
@@ -10605,19 +10605,19 @@
       "sections": [
         {
           "label": "تجربة سريعة للمساعد",
-          "line": 76,
+          "line": 139,
           "tag": "h1"
         },
         {
           "label": "مسح هذه التجربة؟",
-          "line": 282,
+          "line": 369,
           "tag": "DialogTitle"
         }
       ],
       "choices": [
         {
           "name": "examples",
-          "line": 62,
+          "line": 125,
           "values": [
             "السلام عليكم",
             "ما المنتجات المتوفرة؟",
@@ -10628,7 +10628,10 @@
       "handlers": [],
       "queryStates": [],
       "conditions": [],
-      "imports": [],
+      "imports": [
+        "client/src/components/KnowledgeWorkspaceScope.tsx",
+        "client/src/lib/knowledge-workspace-cache.ts"
+      ],
       "controlCount": 10
     },
     {
@@ -20644,21 +20647,27 @@
         "SariPlayground"
       ],
       "files": [
-        "client/src/pages/SariPlayground.tsx"
+        "client/src/pages/SariPlayground.tsx",
+        "client/src/components/KnowledgeWorkspaceScope.tsx",
+        "client/src/lib/knowledge-workspace-cache.ts"
       ],
       "controls": [
-        "8b2e8df94c8d",
-        "e7c5f4b7b5b3",
-        "ef3c780aa089",
-        "018e2ce1fe40",
-        "97b851594da1",
-        "aa25d3a597c4",
-        "33bd07e85ce4",
-        "a28c5370f442",
-        "46af09d2eedd",
-        "58173f58332c"
+        "0661c31defc7",
+        "75925fb5ce9b",
+        "94396e59204d",
+        "c2e6db8300dd",
+        "8d688d2330a9",
+        "90d08f4fb240",
+        "34deb85503f6",
+        "63c223a27970",
+        "5021d8228cc6",
+        "e449be464b67",
+        "77ce5300e6f7"
       ],
-      "queries": [],
+      "queries": [
+        "auth.me",
+        "merchants.getCurrent"
+      ],
       "mutations": [
         "ai.chat"
       ],
@@ -54364,9 +54373,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "8b2e8df94c8d",
+      "id": "0661c31defc7",
       "file": "client/src/pages/SariPlayground.tsx",
-      "line": 82,
+      "line": 145,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -54385,15 +54394,15 @@
       "review": "source-inventoried"
     },
     {
-      "id": "e7c5f4b7b5b3",
+      "id": "75925fb5ce9b",
       "file": "client/src/pages/SariPlayground.tsx",
-      "line": 87,
+      "line": 150,
       "tag": "Link",
       "role": "",
       "kind": "action",
       "label": "اختبار محادثة متكاملة",
       "section": "تجربة سريعة للمساعد",
-      "binding": "/merchant/test-sari",
+      "binding": "event => {\n              if (locked.current) event.preventDefault();\n            }",
       "type": "text",
       "options": [],
       "min": "",
@@ -54406,9 +54415,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ef3c780aa089",
+      "id": "94396e59204d",
       "file": "client/src/pages/SariPlayground.tsx",
-      "line": 98,
+      "line": 167,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -54423,13 +54432,13 @@
       "required": false,
       "conditional": true,
       "conditions": [],
-      "disabled": "busy || !!error",
+      "disabled": "busy || !!error || !!input.trim()",
       "review": "source-inventoried"
     },
     {
-      "id": "018e2ce1fe40",
+      "id": "c2e6db8300dd",
       "file": "client/src/pages/SariPlayground.tsx",
-      "line": 123,
+      "line": 192,
       "tag": "Textarea",
       "role": "",
       "kind": "field",
@@ -54440,7 +54449,7 @@
       "options": [],
       "min": "",
       "max": "",
-      "maxLength": "2000",
+      "maxLength": "",
       "required": false,
       "conditional": true,
       "conditions": [],
@@ -54448,9 +54457,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "97b851594da1",
+      "id": "8d688d2330a9",
       "file": "client/src/pages/SariPlayground.tsx",
-      "line": 152,
+      "line": 231,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -54469,9 +54478,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "aa25d3a597c4",
+      "id": "90d08f4fb240",
       "file": "client/src/pages/SariPlayground.tsx",
-      "line": 162,
+      "line": 241,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -54486,17 +54495,17 @@
       "required": false,
       "conditional": true,
       "conditions": [],
-      "disabled": "busy || !!error || !input.trim()",
+      "disabled": "busy || !!error || !input.trim() || tooLong",
       "review": "source-inventoried"
     },
     {
-      "id": "33bd07e85ce4",
+      "id": "34deb85503f6",
       "file": "client/src/pages/SariPlayground.tsx",
-      "line": 198,
+      "line": 285,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "إعادة المحاولة",
+      "label": "توليد محاولة جديدة",
       "section": "تجربة سريعة للمساعد",
       "binding": "() =>\n                void execute(turns[turns.length - 1].question, true)",
       "type": "button",
@@ -54514,13 +54523,13 @@
       "review": "source-inventoried"
     },
     {
-      "id": "a28c5370f442",
+      "id": "63c223a27970",
       "file": "client/src/pages/SariPlayground.tsx",
-      "line": 277,
+      "line": 364,
       "tag": "DialogContent",
       "role": "",
       "kind": "dialog",
-      "label": "مسح هذه التجربة؟ ستختفي الأسئلة والردود والمسودة من هذه الصفحة. لا تُحفظ هذه التجربة بعد مغادرة الصفحة. إلغاء مسح التجربة",
+      "label": "مسح هذه التجربة؟ ستُمسح المسودة والأسئلة والردود المعروضة دون تغيير بيانات متجرك. إلغاء مسح التجربة",
       "section": "تجربة سريعة للمساعد",
       "binding": "",
       "type": "text",
@@ -54535,9 +54544,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "46af09d2eedd",
+      "id": "5021d8228cc6",
       "file": "client/src/pages/SariPlayground.tsx",
-      "line": 288,
+      "line": 375,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -54556,9 +54565,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "58173f58332c",
+      "id": "e449be464b67",
       "file": "client/src/pages/SariPlayground.tsx",
-      "line": 296,
+      "line": 383,
       "tag": "Button",
       "role": "",
       "kind": "action",

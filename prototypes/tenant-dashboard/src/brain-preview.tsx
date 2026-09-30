@@ -1,12 +1,18 @@
 import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { BrainQuickPreviewView } from "../../../client/src/components/BrainQuickPreview";
+import { SariPlaygroundWorkspace } from "../../../client/src/pages/SariPlayground";
 import { useMerchantViewport } from "../../../client/src/lib/merchant-viewport";
 import { PreviewLanguage } from "./brain-preview-i18n";
 function Preview() {
   useMerchantViewport();
   const [language, setLanguage] = useState<"ar" | "en">("ar"),
     [mode, setMode] = useState("model"),
+    [view, setView] = useState(() =>
+      new URLSearchParams(window.location.search).get("screen") === "playground"
+        ? "playground"
+        : "brain"
+    ),
     [pending, setPending] = useState(false),
     [calls, setCalls] = useState(0);
   const finish = useRef<() => void>(() => {});
@@ -64,6 +70,22 @@ function Preview() {
           </p>
           <div className="flex flex-wrap gap-3">
             <label className="grid gap-2">
+              {ar ? "الشاشة" : "Screen"}
+              <select
+                className="rounded-lg border p-2 bg-background"
+                disabled={pending}
+                value={view}
+                onChange={e => setView(e.target.value)}
+              >
+                <option value="brain">
+                  {ar ? "اختبار داخل العقل" : "Test inside Brain"}
+                </option>
+                <option value="playground">
+                  {ar ? "صفحة المعاينة المستقلة" : "Standalone preview page"}
+                </option>
+              </select>
+            </label>
+            <label className="grid gap-2">
               {ar ? "اللغة" : "Language"}
               <select
                 className="rounded-lg border p-2 bg-background"
@@ -114,11 +136,27 @@ function Preview() {
             </button>
           )}
         </aside>
-        <BrainQuickPreviewView
-          key={mode}
-          scopeKey={`preview:153:${mode}`}
-          send={send}
-        />
+        {view === "brain" ? (
+          <BrainQuickPreviewView
+            key={mode}
+            scopeKey={`preview:153:${mode}`}
+            send={send}
+          />
+        ) : (
+          <SariPlaygroundWorkspace
+            key={mode}
+            scopeKey={`preview:154:${mode}`}
+            send={async ({ message }) => {
+              const result = await send({ question: message });
+              return {
+                response: result.answer,
+                source: result.source,
+                historyMessageCount: 0,
+                historyTruncated: false,
+              };
+            }}
+          />
+        )}
       </main>
     </PreviewLanguage.Provider>
   );

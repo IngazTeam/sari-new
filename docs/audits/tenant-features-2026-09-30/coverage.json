@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-30T22:59:47.655Z",
+  "generatedAt": "2026-09-30T23:08:57.390Z",
   "definition": "Every registered route is accounted for; source inventory and design completion are different statuses.",
   "routes": [
     {
@@ -39870,28 +39870,34 @@
         "SariPlayground"
       ],
       "files": [
-        "client/src/pages/SariPlayground.tsx"
+        "client/src/pages/SariPlayground.tsx",
+        "client/src/components/KnowledgeWorkspaceScope.tsx",
+        "client/src/lib/knowledge-workspace-cache.ts"
       ],
       "controls": [
-        "8b2e8df94c8d",
-        "e7c5f4b7b5b3",
-        "ef3c780aa089",
-        "018e2ce1fe40",
-        "97b851594da1",
-        "aa25d3a597c4",
-        "33bd07e85ce4",
-        "a28c5370f442",
-        "46af09d2eedd",
-        "58173f58332c"
+        "0661c31defc7",
+        "75925fb5ce9b",
+        "94396e59204d",
+        "c2e6db8300dd",
+        "8d688d2330a9",
+        "90d08f4fb240",
+        "34deb85503f6",
+        "63c223a27970",
+        "5021d8228cc6",
+        "e449be464b67",
+        "77ce5300e6f7"
       ],
-      "queries": [],
+      "queries": [
+        "auth.me",
+        "merchants.getCurrent"
+      ],
       "mutations": [
         "ai.chat"
       ],
       "imperativeReads": [],
       "browserRequests": [],
       "design": "تفصيلي",
-      "productionChanged": false,
+      "productionChanged": true,
       "designSections": [
         "خمسة أسئلة سريعة ومسودة محفوظة مستقلة عن صفحة المحادثة",
         "سؤال بحد 2000 حرف وأخطاء بجانب الحقل، Enter وShift+Enter وIME",
@@ -39901,14 +39907,14 @@
       ],
       "acceptancePlan": "الدخول والإعداد والتنقل والبحث والحفظ والتحقق من الحالة.",
       "gaps": [
-        "هذه محاكاة محلية بأسئلة وردود ثابتة؛ لا تثبت استدعاء ai.chat أو ذاكرة المحادثة أو مصادر الإجابات الحقيقية.",
-        "Safari وiPhone الفعلي غير مختبرين. راجع tenant-testing-workspace-2026-09-28 للمطابقة والفجوات."
+        "المعاينة المطابقة لمكوّن التطبيق مرتبطة من صفحة التجربة وتغطي6 حالات بالعربية والإنجليزية، مع السؤال المحفوظ وعزل النطاق والخطأ دون قص النص. الأداة القديمة تبقى مثالًا لجلسات محلية؛ راجع tenant-playground-recovery-2026-10-01.",
+        "الردود ثابتة في الموك أب ولا تثبت استخدام مصدر معرفة أو جودة مبيعات. السؤال في التطبيق محفوظ في ذاكرة الجلسة، والنتائج لا تستعاد بعد مغادرة الصفحة. Safari وiPhone الفعلي غير مختبرين."
       ],
       "controlDetails": [
         {
-          "id": "8b2e8df94c8d",
+          "id": "0661c31defc7",
           "file": "client/src/pages/SariPlayground.tsx",
-          "line": 82,
+          "line": 145,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -39927,15 +39933,15 @@
           "review": "source-inventoried"
         },
         {
-          "id": "e7c5f4b7b5b3",
+          "id": "75925fb5ce9b",
           "file": "client/src/pages/SariPlayground.tsx",
-          "line": 87,
+          "line": 150,
           "tag": "Link",
           "role": "",
           "kind": "action",
           "label": "اختبار محادثة متكاملة",
           "section": "تجربة سريعة للمساعد",
-          "binding": "/merchant/test-sari",
+          "binding": "event => {\n              if (locked.current) event.preventDefault();\n            }",
           "type": "text",
           "options": [],
           "min": "",
@@ -39948,9 +39954,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "ef3c780aa089",
+          "id": "94396e59204d",
           "file": "client/src/pages/SariPlayground.tsx",
-          "line": 98,
+          "line": 167,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -39965,13 +39971,13 @@
           "required": false,
           "conditional": true,
           "conditions": [],
-          "disabled": "busy || !!error",
+          "disabled": "busy || !!error || !!input.trim()",
           "review": "source-inventoried"
         },
         {
-          "id": "018e2ce1fe40",
+          "id": "c2e6db8300dd",
           "file": "client/src/pages/SariPlayground.tsx",
-          "line": 123,
+          "line": 192,
           "tag": "Textarea",
           "role": "",
           "kind": "field",
@@ -39982,7 +39988,7 @@
           "options": [],
           "min": "",
           "max": "",
-          "maxLength": "2000",
+          "maxLength": "",
           "required": false,
           "conditional": true,
           "conditions": [],
@@ -39990,9 +39996,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "97b851594da1",
+          "id": "8d688d2330a9",
           "file": "client/src/pages/SariPlayground.tsx",
-          "line": 152,
+          "line": 231,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -40011,9 +40017,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "aa25d3a597c4",
+          "id": "90d08f4fb240",
           "file": "client/src/pages/SariPlayground.tsx",
-          "line": 162,
+          "line": 241,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -40028,17 +40034,17 @@
           "required": false,
           "conditional": true,
           "conditions": [],
-          "disabled": "busy || !!error || !input.trim()",
+          "disabled": "busy || !!error || !input.trim() || tooLong",
           "review": "source-inventoried"
         },
         {
-          "id": "33bd07e85ce4",
+          "id": "34deb85503f6",
           "file": "client/src/pages/SariPlayground.tsx",
-          "line": 198,
+          "line": 285,
           "tag": "Button",
           "role": "",
           "kind": "action",
-          "label": "إعادة المحاولة",
+          "label": "توليد محاولة جديدة",
           "section": "تجربة سريعة للمساعد",
           "binding": "() =>\n                void execute(turns[turns.length - 1].question, true)",
           "type": "button",
@@ -40056,13 +40062,13 @@
           "review": "source-inventoried"
         },
         {
-          "id": "a28c5370f442",
+          "id": "63c223a27970",
           "file": "client/src/pages/SariPlayground.tsx",
-          "line": 277,
+          "line": 364,
           "tag": "DialogContent",
           "role": "",
           "kind": "dialog",
-          "label": "مسح هذه التجربة؟ ستختفي الأسئلة والردود والمسودة من هذه الصفحة. لا تُحفظ هذه التجربة بعد مغادرة الصفحة. إلغاء مسح التجربة",
+          "label": "مسح هذه التجربة؟ ستُمسح المسودة والأسئلة والردود المعروضة دون تغيير بيانات متجرك. إلغاء مسح التجربة",
           "section": "تجربة سريعة للمساعد",
           "binding": "",
           "type": "text",
@@ -40077,9 +40083,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "46af09d2eedd",
+          "id": "5021d8228cc6",
           "file": "client/src/pages/SariPlayground.tsx",
-          "line": 288,
+          "line": 375,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -40098,9 +40104,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "58173f58332c",
+          "id": "e449be464b67",
           "file": "client/src/pages/SariPlayground.tsx",
-          "line": 296,
+          "line": 383,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -40116,6 +40122,27 @@
           "conditional": false,
           "conditions": [],
           "disabled": "busy",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "77ce5300e6f7",
+          "file": "client/src/components/KnowledgeWorkspaceScope.tsx",
+          "line": 13,
+          "tag": "Button",
+          "role": "",
+          "kind": "action",
+          "label": "",
+          "section": "KnowledgeWorkspaceScope",
+          "binding": "() => { void user.refetch(); void merchant.refetch(); }",
+          "type": "text",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": false,
+          "conditions": [],
+          "disabled": "",
           "review": "source-inventoried"
         }
       ]
