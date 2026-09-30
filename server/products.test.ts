@@ -20,7 +20,7 @@ beforeEach(() => {
   });
 });
 describe("retired product writes", () => {
-  it.each(["create", "update", "delete", "bulkDelete", "uploadCSV", "uploadExcel"])(
+  it.each(["create", "update", "delete", "bulkDelete", "uploadCSV", "uploadExcel", "smartImport"])(
     "does not register %s or reach a data writer",
     async operation => {
       const caller: any = productsRouter.createCaller({
@@ -55,7 +55,6 @@ describe("retired product writes", () => {
       "importReview.commit",
       "importReview.receipt",
       "importReview.discard",
-      "smartImport",
       "syncFromGoogleSheets",
       "getSheetSyncStatus",
       "fileAdvice.start",
@@ -81,7 +80,7 @@ describe("retired product writes", () => {
       );
     for (const file of walk("client/src"))
       expect(readFileSync(file, "utf8"), file).not.toMatch(
-        /\bproducts\.(?:create|update|delete|bulkDelete|uploadCSV|uploadExcel)\b/
+        /\bproducts\.(?:create|update|delete|bulkDelete|uploadCSV|uploadExcel|smartImport)\b/
       );
     for (const file of ["server/db.ts", "server/db/products.ts"])
       expect(readFileSync(file, "utf8"), file).not.toContain(
