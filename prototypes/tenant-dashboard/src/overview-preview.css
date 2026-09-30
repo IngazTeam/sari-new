@@ -18,3 +18,9 @@
 .ov-preview table td {
   white-space: normal;
 }
+.ov-preview table th {
+  color: var(--foreground);
+}
+.ov-preview table thead th {
+  color: var(--muted-foreground);
+}
