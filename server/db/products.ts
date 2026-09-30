@@ -10,12 +10,8 @@ import {
     products,
     Product,
     InsertProduct,
-    productOptions,
-    ProductOption,
-    InsertProductOption,
     productVariants,
     ProductVariant,
-    InsertProductVariant,
 } from "../../drizzle/schema";
 
 // Import getDb directly from main db file
@@ -83,85 +79,6 @@ export async function deleteAllProductsByMerchantId(merchantId: number): Promise
     if (!db) return;
 
     await db.delete(products).where(and(eq(products.merchantId, merchantId),sql.raw(zidCatalogVisibleSql())));
-}
-
-// ============================================
-// Product Options (e.g. Color, Size)
-// ============================================
-
-export async function getOptionsByProductId(productId: number): Promise<ProductOption[]> {
-    const db = await getDb();
-    if (!db) return [];
-    return db.select().from(productOptions)
-        .where(eq(productOptions.productId, productId))
-        .orderBy(productOptions.sortOrder);
-}
-
-export async function createOption(data: InsertProductOption): Promise<ProductOption | undefined> {
-    const db = await getDb();
-    if (!db) return undefined;
-    const result = await db.insert(productOptions).values(data);
-    const id = Number(result[0].insertId);
-    const rows = await db.select().from(productOptions).where(eq(productOptions.id, id)).limit(1);
-    return rows[0];
-}
-
-export async function updateOption(id: number, data: Partial<InsertProductOption>): Promise<void> {
-    const db = await getDb();
-    if (!db) return;
-    await db.update(productOptions).set(data).where(eq(productOptions.id, id));
-}
-
-export async function deleteOption(id: number): Promise<void> {
-    const db = await getDb();
-    if (!db) return;
-    await db.delete(productOptions).where(eq(productOptions.id, id));
-}
-
-// ============================================
-// Product Variants
-// ============================================
-
-export async function getVariantsByProductId(productId: number): Promise<ProductVariant[]> {
-    const db = await getDb();
-    if (!db) return [];
-    return db.select().from(productVariants)
-        .where(eq(productVariants.productId, productId))
-        .orderBy(productVariants.sortOrder);
-}
-
-export async function createVariant(data: InsertProductVariant, inputUnit: 'major' | 'minor' = 'minor'): Promise<ProductVariant | undefined> {
-    const db = await getDb();
-    if (!db) return undefined;
-    const result = await db.insert(productVariants).values(normalizeProductMoneyWrite(data, inputUnit));
-    const id = Number(result[0].insertId);
-    const rows = await db.select().from(productVariants).where(eq(productVariants.id, id)).limit(1);
-    return rows[0];
-}
-
-export async function updateVariant(id: number, data: Partial<InsertProductVariant>, inputUnit: 'major' | 'minor' = 'minor'): Promise<void> {
-    const db = await getDb();
-    if (!db) return;
-    await db.update(productVariants).set(normalizeProductMoneyWrite(data, inputUnit)).where(eq(productVariants.id, id));
-}
-
-export async function deleteVariant(id: number): Promise<void> {
-    const db = await getDb();
-    if (!db) return;
-    await db.delete(productVariants).where(eq(productVariants.id, id));
-}
-
-export async function bulkCreateVariants(variantList: InsertProductVariant[]): Promise<void> {
-    const db = await getDb();
-    if (!db) return;
-    if (variantList.length === 0) return;
-    await db.insert(productVariants).values(variantList.map(variant => normalizeProductMoneyWrite(variant)));
-}
-
-export async function deleteVariantsByProductId(productId: number): Promise<void> {
-    const db = await getDb();
-    if (!db) return;
-    await db.delete(productVariants).where(eq(productVariants.productId, productId));
 }
 
 // ============================================

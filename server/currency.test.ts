@@ -59,6 +59,34 @@ describe.skipIf(!process.env.DATABASE_URL)(
         fields,
       });
     };
+    const addVariant = async (
+      productId: number,
+      name: string,
+      price: string | null
+    ) => {
+      const snapshot = await caller().products.details.read({ productId });
+      return caller().products.details.write({
+        productId,
+        kind: "variant_create",
+        requestId: randomUUID(),
+        expectedDigest: snapshot.digest,
+        reviewed: true,
+        fields: {
+          name,
+          price,
+          sku: null,
+          compareAtPrice: null,
+          costPrice: null,
+          stock: null,
+          barcode: null,
+          weight: null,
+          imageUrl: null,
+          selections: [],
+          isActive: 1,
+          sortOrder: 0,
+        },
+      });
+    };
     beforeEach(async () => {
       fixture = await createDisposableMerchant("currency");
     });
@@ -131,25 +159,34 @@ describe.skipIf(!process.env.DATABASE_URL)(
         create({ name: "Bad major", price: "1.005" })
       ).rejects.toMatchObject({ code: "BAD_REQUEST" });
       await expect(
-        caller().products.addVariant({
+        caller().products.details.write({
+          kind: "variant_create",
           productId: 1,
-          name: "Over precise",
-          price: 1.005,
+          requestId: randomUUID(),
+          expectedDigest: "a".repeat(64),
+          reviewed: true,
+          fields: {
+            name: "Over precise",
+            price: "1.005",
+            sku: null,
+            compareAtPrice: null,
+            costPrice: null,
+            stock: null,
+            barcode: null,
+            weight: null,
+            imageUrl: null,
+            selections: [],
+            isActive: 1,
+            sortOrder: 0,
+          },
         })
       ).rejects.toMatchObject({ code: "BAD_REQUEST" });
       expect((await caller().products.list()).items).toHaveLength(0);
     });
     it("stores variant prices in minor units and keeps inherited prices null", async () => {
       const result = await create({ name: "Variant base", price: "99.99" });
-      await caller().products.addVariant({
-        productId: result.productId,
-        name: "Paid",
-        price: 10.01,
-      });
-      await caller().products.addVariant({
-        productId: result.productId,
-        name: "Inherit",
-      });
+      await addVariant(result.productId, "Paid", "10.01");
+      await addVariant(result.productId, "Inherit", null);
       const [rows] = await (await getPool())!.execute<any[]>(
         "SELECT price, price_unit FROM product_variants WHERE product_id = ? ORDER BY id",
         [result.productId]

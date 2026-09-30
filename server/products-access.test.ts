@@ -119,11 +119,12 @@ describe("product reads and team permissions", () => {
     });
     expect(mocks.reviewedDelete).toHaveBeenCalledWith(20, 7, input);
   });
-  it("blocks cross-tenant compatibility reads before side effects", async () => {
+  it("rejects retired compatibility reads before accessing any product", async () => {
     mocks.getProduct.mockResolvedValue({ id: 1, merchantId: 30 });
-    for (const request of [caller().getById({ productId: 1 })]) {
-      await expect(request).rejects.toMatchObject({ code: "FORBIDDEN" });
+    for (const request of [(caller() as any).getById({ productId: 1 })]) {
+      await expect(request).rejects.toMatchObject({ code: "NOT_FOUND" });
     }
+    expect(mocks.getProduct).not.toHaveBeenCalled();
     expect(mocks.remove).not.toHaveBeenCalled();
     expect(mocks.update).not.toHaveBeenCalled();
   });

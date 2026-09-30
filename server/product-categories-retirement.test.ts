@@ -12,8 +12,8 @@ describe('retired category mutation surface',()=>{
       expect(db.read).not.toHaveBeenCalled();expect(db.pool).not.toHaveBeenCalled();
     });
   it('retains reviewed category operations and independent options/variants',()=>{
-    for(const route of ['categories.read','categories.write','categories.receipt','list','editor.write','addVariant','updateVariant','deleteVariant'])expect(Object.keys(productsRouter._def.procedures)).toContain(route);
+    for(const route of ['categories.read','categories.write','categories.receipt','list','editor.write','details.read','details.write','details.receipt'])expect(Object.keys(productsRouter._def.procedures)).toContain(route);
     for(const name of ['getCategoriesByMerchantId','createCategory','updateCategory','deleteCategory'])expect(name in productDb).toBe(false);
-    expect(typeof productDb.getOptionsByProductId).toBe('function');expect(typeof productDb.getVariantsByProductId).toBe('function');
+    for(const name of ['getOptionsByProductId','createOption','updateOption','deleteOption','getVariantsByProductId','createVariant','updateVariant','deleteVariant','bulkCreateVariants','deleteVariantsByProductId'])expect(name in productDb).toBe(false);
   });
 });

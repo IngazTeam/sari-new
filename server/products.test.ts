@@ -20,6 +20,22 @@ beforeEach(() => {
   });
 });
 describe("retired product writes", () => {
+  it.each(["getById", "addVariant", "updateVariant", "deleteVariant"])(
+    "rejects anonymous legacy detail procedure %s without resolving a tenant",
+    async operation => {
+      const caller: any = productsRouter.createCaller({
+        user: null,
+        req: {},
+        res: {},
+      } as any);
+      await expect(
+        caller[operation]({ productId: 1, variantId: 1 })
+      ).rejects.toMatchObject({ code: "NOT_FOUND" });
+      expect(mocks.access).not.toHaveBeenCalled();
+      expect(mocks.pool).not.toHaveBeenCalled();
+      expect(mocks.getDb).not.toHaveBeenCalled();
+    }
+  );
   it.each([
     "create",
     "update",
@@ -30,6 +46,10 @@ describe("retired product writes", () => {
     "smartImport",
     "syncFromGoogleSheets",
     "getSheetSyncStatus",
+    "getById",
+    "addVariant",
+    "updateVariant",
+    "deleteVariant",
   ])("does not register %s or reach a data writer", async operation => {
     const caller: any = productsRouter.createCaller({
       user: { id: 7 },
@@ -54,10 +74,9 @@ describe("retired product writes", () => {
     const procedures = productsRouter._def.procedures;
     for (const name of [
       "list",
-      "getById",
-      "addVariant",
-      "updateVariant",
-      "deleteVariant",
+      "details.read",
+      "details.write",
+      "details.receipt",
       "importReview.prepare",
       "importReview.read",
       "importReview.commit",
@@ -102,7 +121,7 @@ describe("retired product writes", () => {
       );
     for (const file of walk("client/src"))
       expect(readFileSync(file, "utf8"), file).not.toMatch(
-        /\bproducts\.(?:create|update|delete|bulkDelete|uploadCSV|uploadExcel|smartImport|syncFromGoogleSheets|getSheetSyncStatus)\b/
+        /\bproducts\.(?:create|update|delete|bulkDelete|uploadCSV|uploadExcel|smartImport|syncFromGoogleSheets|getSheetSyncStatus|getById|addVariant|updateVariant|deleteVariant)\b/
       );
     for (const file of ["server/db.ts", "server/db/products.ts"])
       expect(readFileSync(file, "utf8"), file).not.toContain(
