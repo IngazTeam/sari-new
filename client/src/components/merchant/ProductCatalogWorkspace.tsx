@@ -21,9 +21,11 @@ import {
 } from "./ProductWorkspaceView";
 import { ProductEditorWorkspace } from "./ProductEditorWorkspace";
 import { ProductDeleteWorkspace } from "./ProductDeleteWorkspace";
+import { ProductCategoriesWorkspace } from "./ProductCategoriesWorkspace";
 import "@/styles/product-workspace.css";
 type View =
   | { kind: "list" }
+  | { kind: "categories" }
   | { kind: "editor"; target: number | "new" }
   | { kind: "delete"; ids: number[] };
 export function ProductCatalogWorkspace({
@@ -109,6 +111,7 @@ export function ProductCatalogWorkspace({
       const saved = readProductWorkspaceCache(scope);
       setCached(saved);
       if (
+        next.kind !== "categories" &&
         saved &&
         (next.kind !== "editor" ||
           saved.kind !== "editor" ||
@@ -154,6 +157,8 @@ export function ProductCatalogWorkspace({
         completed={completed}
       />
     );
+  if (view.kind === "categories")
+    return <ProductCategoriesWorkspace key={scope} scope={scope} back={back} />;
   return (
     <section
       className="pw-workspace"
@@ -166,6 +171,13 @@ export function ProductCatalogWorkspace({
           <p>{t("productWorkspaceUx.subtitle")}</p>
         </div>
         <div className="pw-actions">
+          <button
+            type="button"
+            disabled={!ready || storageError}
+            onClick={() => open({ kind: "categories" })}
+          >
+            {t("categoryUx.title")}
+          </button>
           <button
             type="button"
             className="pw-primary"

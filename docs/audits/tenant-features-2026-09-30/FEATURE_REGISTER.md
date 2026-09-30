@@ -2,7 +2,7 @@
 
 هذا حصر مصدر قابل لإعادة التوليد، وليس ادعاءً بأن كل مسار عمل اختُبر أو أُعيد تصميمه. يشمل المكونات الفرعية المحلية، الحقول، الأزرار، النوافذ، التبويبات، واجهات القراءة والتعديل. العناصر الديناميكية تحتاج مراجعة إضافية.
 
-- 126 مسارًا مسجلًا، 306 ملف واجهة متصلًا، 2039 عنصر تحكم في المصدر.
+- 126 مسارًا مسجلًا، 308 ملف واجهة متصلًا، 2061 عنصر تحكم في المصدر.
 - 0 رابطًا حرفيًا غير مطابق، و0 ملف صفحة غير متصل بالمسارات المحصورة.
 
 | الصفحة | الملفات | عناصر التحكم | القراءة / التعديل | موك أب للصفحة |
@@ -18,7 +18,7 @@
 | /merchant/campaigns/:id/edit — إنشاء حملة | 2 | 13 | 2 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/campaigns/:id — تفاصيل الحملة | 1 | 4 | 1 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/campaigns/:id/report — تقرير الحملة | 2 | 3 | 1 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/products — المنتجات | 9 | 38 | 7 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/products — المنتجات | 11 | 60 | 9 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/products/upload — استيراد المنتجات | 11 | 73 | 10 / 7 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/conversations — المحادثات | 17 | 87 | 13 / 10 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/whatsapp — أرقام واتساب | 2 | 23 | 8 / 6 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -581,24 +581,25 @@
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 169 | button | إضافة منتج | ProductCatalogWorkspace |
-| 178 | Link | استيراد المنتجات | ProductCatalogWorkspace |
-| 199 | button | متابعة نتيجة الطلب متابعة المسودة | ProductCatalogWorkspace |
-| 209 | button | إعادة المحاولة | ProductCatalogWorkspace |
-| 220 | input | البحث في الكتالوج | ProductCatalogWorkspace |
-| 229 | summary | البحث في الكتالوج | الفلاتر · {{count}} مفعلة |
-| 241 | select | الحالة كل الحالات | الفلاتر · {{count}} مفعلة |
-| 262 | select | المخزون كل المخزون available | الفلاتر · {{count}} مفعلة |
-| 285 | select | السعر كل الأسعار سعر موثق الوحدة سعر يحتاج مراجعة | الفلاتر · {{count}} مفعلة |
-| 305 | button | البحث في الكتالوج | الفلاتر · {{count}} مفعلة |
-| 365 | input | تحديد الصفحة الحالية | الفلاتر · {{count}} مفعلة |
-| 382 | button | تحديد الصفحة الحالية | الفلاتر · {{count}} مفعلة |
-| 405 | button | إظهار كل المنتجات | ابدأ بأول منتج لا توجد منتجات في هذه النتائج |
-| 424 | input | t("productWorkspaceUx.selectProduct", {                             name: row.name,                           }) | ابدأ بأول منتج لا توجد منتجات في هذه النتائج |
-| 482 | button | مراجعة وتعديل عرض المنتج | ProductCatalogWorkspace |
-| 490 | button | مراجعة الحذف | ProductCatalogWorkspace |
-| 515 | button | السابق | ProductCatalogWorkspace |
-| 522 | button | التالي | ProductCatalogWorkspace |
+| 174 | button | فئات المنتجات | ProductCatalogWorkspace |
+| 181 | button | إضافة منتج | ProductCatalogWorkspace |
+| 190 | Link | استيراد المنتجات | ProductCatalogWorkspace |
+| 211 | button | متابعة نتيجة الطلب متابعة المسودة | ProductCatalogWorkspace |
+| 221 | button | إعادة المحاولة | ProductCatalogWorkspace |
+| 232 | input | البحث في الكتالوج | ProductCatalogWorkspace |
+| 241 | summary | البحث في الكتالوج | الفلاتر · {{count}} مفعلة |
+| 253 | select | الحالة كل الحالات | الفلاتر · {{count}} مفعلة |
+| 274 | select | المخزون كل المخزون available | الفلاتر · {{count}} مفعلة |
+| 297 | select | السعر كل الأسعار سعر موثق الوحدة سعر يحتاج مراجعة | الفلاتر · {{count}} مفعلة |
+| 317 | button | البحث في الكتالوج | الفلاتر · {{count}} مفعلة |
+| 377 | input | تحديد الصفحة الحالية | الفلاتر · {{count}} مفعلة |
+| 394 | button | تحديد الصفحة الحالية | الفلاتر · {{count}} مفعلة |
+| 417 | button | إظهار كل المنتجات | ابدأ بأول منتج لا توجد منتجات في هذه النتائج |
+| 436 | input | t("productWorkspaceUx.selectProduct", {                             name: row.name,                           }) | ابدأ بأول منتج لا توجد منتجات في هذه النتائج |
+| 494 | button | مراجعة وتعديل عرض المنتج | ProductCatalogWorkspace |
+| 502 | button | مراجعة الحذف | ProductCatalogWorkspace |
+| 527 | button | السابق | ProductCatalogWorkspace |
+| 534 | button | التالي | ProductCatalogWorkspace |
 
 ## client/src/components/merchant/ProductWorkspaceView.tsx
 
@@ -633,6 +634,32 @@
 | 216 | button | إعادة المحاولة | ProductDeleteWorkspace |
 | 326 | input | راجعت المجموعة وأوافق على حذف المنتجات وخياراتها ومتغيراتها نهائيًا. | ProductDeleteWorkspace |
 | 335 | button | جارٍ الحذف… تأكيد الحذف النهائي | ProductDeleteWorkspace |
+
+## client/src/components/merchant/ProductCategoriesWorkspace.tsx
+
+| السطر | النوع | التسمية | القسم |
+|---:|---|---|---|
+| 277 | button | العودة للمنتجات | ProductCategoriesWorkspace |
+| 280 | button | تحديث القائمة | ProductCategoriesWorkspace |
+| 291 | button | فحص حفظ المسودة | ProductCategoriesWorkspace |
+| 356 | button | التحقق من نتيجة الحفظ | create إضافة فئة delete حذف الفئة تعديل الفئة |
+| 359 | button | إعادة الطلب نفسه | create إضافة فئة delete حذف الفئة تعديل الفئة |
+| 372 | button | تحميل النسخة الحالية بدل المسودة | create إضافة فئة delete حذف الفئة تعديل الفئة |
+| 401 | input | sortOrder راجع قيمة الحقل وطوله. | create إضافة فئة delete حذف الفئة تعديل الفئة |
+| 423 | select | فئة رئيسية الأب غير موجود ضمن فئات المتجر. / | create إضافة فئة delete حذف الفئة تعديل الفئة |
+| 449 | input | فئة رئيسية الأب غير موجود ضمن فئات المتجر. / | create إضافة فئة delete حذف الفئة تعديل الفئة |
+| 485 | input | راجعت التغيير وأوافق على اعتماده. | create إضافة فئة delete حذف الفئة تعديل الفئة |
+| 496 | button | delete تأكيد حذف الفئة حفظ الفئة | create إضافة فئة delete حذف الفئة تعديل الفئة |
+| 514 | button | إلغاء المسودة | create إضافة فئة delete حذف الفئة تعديل الفئة |
+| 521 | button | نعم، تجاهل المسودة | create إضافة فئة delete حذف الفئة تعديل الفئة |
+| 535 | button | رجوع | create إضافة فئة delete حذف الفئة تعديل الفئة |
+| 544 | button | إضافة فئة | create إضافة فئة delete حذف الفئة تعديل الفئة |
+| 556 | input | البحث في الفئات | create إضافة فئة delete حذف الفئة تعديل الفئة |
+| 567 | select | حالة الفئة كل الحالات نشطة غير نشطة | create إضافة فئة delete حذف الفئة تعديل الفئة |
+| 609 | button | تعديل الفئة | فئة تحتاج تصحيح الاسم |
+| 615 | button | حذف الفئة | فئة تحتاج تصحيح الاسم |
+| 634 | button | السابق | فئة تحتاج تصحيح الاسم |
+| 643 | button | التالي | فئة تحتاج تصحيح الاسم |
 
 ## client/src/pages/merchant/UploadProducts.tsx
 
