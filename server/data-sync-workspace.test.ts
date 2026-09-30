@@ -61,6 +61,14 @@ vi.mock("../client/src/components/merchant/WorkspaceState", () => ({
         : "error",
 }));
 import { DataSyncWorkspace } from "../client/src/components/merchant/DataSyncWorkspace";
+import {
+  readInventoryExportAttempt,
+  rememberInventoryExportAttempt,
+} from "../client/src/lib/inventory-export-attempt";
+import {
+  knowledgeCacheEpoch,
+  clearKnowledgeWorkspace,
+} from "../client/src/lib/knowledge-workspace-cache";
 let host: HTMLDivElement, root: Root;
 const render = async () =>
   act(async () =>
@@ -76,6 +84,7 @@ const text = () => host.textContent!;
 const click = async (el: HTMLElement) => act(async () => el.click());
 const consent = () => host.querySelector("input")!;
 beforeEach(async () => {
+  sessionStorage.clear();
   vi.stubGlobal("React", React);
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   vi.clearAllMocks();
@@ -114,8 +123,121 @@ afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
 describe("inventory export feedback and interaction", () => {
+  it("hides a pending destination after access is revoked while retaining the local warning", async () => {
+    m.send.mockRejectedValue(Error("lost"));
+    await click(consent());
+    await click(button("Export inventory"));
+    m.error = { data: { code: "FORBIDDEN" } };
+    await render();
+    expect(host.querySelector("a[target]")).toBeNull();
+    expect(readInventoryExportAttempt("7:20:data-sync")).not.toBeNull();
+  });
+  it("restores an uncertain attempt on remount without sending it", async () => {
+    m.send.mockRejectedValue(Error("lost"));
+    await click(consent());
+    await click(button("Export inventory"));
+    const saved = readInventoryExportAttempt("7:20:data-sync");
+    expect(saved?.spreadsheetId).toBe("local-export-109");
+    await act(async () => root.unmount());
+    root = createRoot(host);
+    await render();
+    expect(text()).toContain("attempt needs your review");
+    expect(button("Export inventory").disabled).toBe(true);
+    expect(m.send).toHaveBeenCalledOnce();
+    await click(button("I checked the spreadsheet"));
+    expect(readInventoryExportAttempt("7:20:data-sync")).toBeNull();
+    expect(consent().checked).toBe(false);
+  });
+  it("preserves the old destination for checking after reconnection", async () => {
+    m.send.mockRejectedValue(Error("lost"));
+    await click(consent());
+    await click(button("Export inventory"));
+    m.data = {
+      ...m.data,
+      spreadsheetId: "new-destination",
+      sourceDigest: "b".repeat(64),
+    };
+    await render();
+    expect(text()).toContain("attempt needs your review");
+    expect(
+      host.querySelector(
+        'a[href="https://docs.google.com/spreadsheets/d/local-export-109/edit"]'
+      )
+    ).not.toBeNull();
+    expect(button("Export inventory").disabled).toBe(true);
+  });
+  it("writes a recovery reference before transport and removes it only after valid acknowledgement", async () => {
+    const answer = await m.send();
+    m.send.mockClear();
+    m.send.mockImplementation(async () => {
+      expect(readInventoryExportAttempt("7:20:data-sync")).not.toBeNull();
+      return answer;
+    });
+    await click(consent());
+    await click(button("Export inventory"));
+    expect(readInventoryExportAttempt("7:20:data-sync")).toBeNull();
+    expect(text()).toContain("confirmed replacing");
+  });
+  it("does not send when saving the pending reference fails", async () => {
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw Error("quota");
+    });
+    await click(consent());
+    await click(button("Export inventory"));
+    expect(m.send).not.toHaveBeenCalled();
+    expect(text()).toContain("could not save or read");
+    expect(consent().disabled).toBe(true);
+  });
+  it("keeps a pending attempt when cleanup fails after Google acknowledgement", async () => {
+    vi.spyOn(Storage.prototype, "removeItem").mockImplementation(() => {
+      throw Error("blocked");
+    });
+    await click(consent());
+    await click(button("Export inventory"));
+    expect(readInventoryExportAttempt("7:20:data-sync")).not.toBeNull();
+    expect(text()).not.toContain("confirmed replacing");
+    expect(text()).toContain("could not save or read");
+  });
+  it("does not revive cleared session references from a late response", async () => {
+    let resolve!: (v: any) => void;
+    const answer = await m.send();
+    m.send.mockClear();
+    m.send.mockImplementation(
+      () =>
+        new Promise(r => {
+          resolve = r;
+        })
+    );
+    await click(consent());
+    await click(button("Export inventory"));
+    clearKnowledgeWorkspace();
+    await act(async () => resolve(answer));
+    expect(readInventoryExportAttempt("7:20:data-sync")).toBeNull();
+    expect(text()).not.toContain("confirmed replacing");
+    expect(button("Export inventory").disabled).toBe(true);
+  });
+  it("does not overwrite a pending reference created by another mounted view", async () => {
+    rememberInventoryExportAttempt(
+      "7:20:data-sync",
+      {
+        scope: "7:20:data-sync",
+        attemptId: "11111111-1111-4111-8111-111111111112",
+        spreadsheetId: "previous",
+        sourceDigest: "b".repeat(64),
+        startedAt: new Date().toISOString(),
+      },
+      knowledgeCacheEpoch()
+    );
+    await click(consent());
+    await click(button("Export inventory"));
+    expect(m.send).not.toHaveBeenCalled();
+    expect(readInventoryExportAttempt("7:20:data-sync")?.spreadsheetId).toBe(
+      "previous"
+    );
+  });
   it.each(["merchant", "actor", "source"])(
     "rejects stale identity or source in %s receipt",
     async kind => {

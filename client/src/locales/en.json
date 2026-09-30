@@ -11187,6 +11187,12 @@
     "limit": "The catalog exceeds this export limit: 5,000 products and 2 MiB of row data. The write did not start.",
     "destination": "No visible tab named “المخزون” was found. Check the spreadsheet settings.",
     "rateLimit": "This hour’s export attempt limit was reached. Try again later.",
-    "refreshRequired": "The write did not start because the connection or access could not be confirmed. Refresh the connection and review the destination."
+    "refreshRequired": "The write did not start because the connection or access could not be confirmed. Refresh the connection and review the destination.",
+    "storageError": "This browser could not save or read the export warning. No new export will be sent. Read it again, or check the spreadsheet before clearing the local warning.",
+    "retryStorage": "Read warning again",
+    "clearChecked": "I checked the sheet; clear local warning",
+    "pendingTitle": "An export attempt needs your review",
+    "pendingHint": "This tab has a saved warning for an attempt whose outcome was not confirmed. Open its original destination and check it before another export. It is never resent automatically.",
+    "openAttempt": "Open previous attempt’s destination ↗"
   }
 }

@@ -2,6 +2,14 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { trpc } from "@/lib/trpc";
 import { inventoryExportReceipt } from "@shared/inventory-sheet-export";
+import {
+  readInventoryExportAttempt,
+  rememberInventoryExportAttempt,
+  forgetInventoryExportAttempt,
+  acknowledgeInventoryExportAttempt,
+  type InventoryExportAttempt,
+} from "@/lib/inventory-export-attempt";
+import { knowledgeCacheEpoch } from "@/lib/knowledge-workspace-cache";
 import { ProductHeading } from "./ProductWorkspaceView";
 import { WorkspaceState, workspaceFailureKind } from "./WorkspaceState";
 import "@/styles/product-workspace.css";
@@ -21,6 +29,10 @@ export function DataSyncWorkspace({
     refetchOnWindowFocus: true,
   });
   const mutation = trpc.sheets.syncInventory.useMutation({ retry: false });
+  const [attempt, setAttempt] = useState<InventoryExportAttempt | null>(null),
+    [loaded, setLoaded] = useState(false),
+    [storageError, setStorageError] = useState(false);
+  const epoch = useRef(knowledgeCacheEpoch());
   const [reviewed, setReviewed] = useState(false),
     [busy, setBusy] = useState(false),
     [result, setResult] = useState<
@@ -52,6 +64,9 @@ export function DataSyncWorkspace({
     typeof spreadsheetId === "string" &&
     /^[A-Za-z0-9_-]{1,255}$/.test(spreadsheetId);
   const ready =
+    loaded &&
+    !storageError &&
+    epoch.current === knowledgeCacheEpoch() &&
     !status.error &&
     sameScope &&
     !status.isLoading &&
@@ -63,10 +78,29 @@ export function DataSyncWorkspace({
     validSheet;
   useEffect(() => {
     alive.current = true;
+    restoreAttempt();
     return () => {
       alive.current = false;
     };
   }, []);
+  function restoreAttempt() {
+    try {
+      setAttempt(readInventoryExportAttempt(scope));
+      setStorageError(false);
+      setLoaded(true);
+    } catch {
+      setStorageError(true);
+    }
+  }
+  useEffect(() => {
+    if (!attempt && !busy) return;
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [attempt, busy]);
   useEffect(() => {
     generation.current++;
     setReviewed(false);
@@ -78,7 +112,29 @@ export function DataSyncWorkspace({
     status.data?.sourceDigest,
     sameScope,
   ]);
-  const needsCheck = result === "uncertain" || result === "failed";
+  const needsCheck = !!attempt || result === "uncertain" || result === "failed";
+  const canShowResult =
+    sameScope && !status.error && epoch.current === knowledgeCacheEpoch();
+  const displayResult =
+    busy || !canShowResult
+      ? null
+      : attempt && result !== "failed"
+        ? "uncertain"
+        : result;
+  function acknowledge() {
+    if (busy || lock.current) return;
+    try {
+      acknowledgeInventoryExportAttempt(scope, epoch.current);
+      setAttempt(null);
+      setResult(null);
+      setStorageError(false);
+      setLoaded(true);
+      setReviewed(false);
+      void status.refetch();
+    } catch {
+      setStorageError(true);
+    }
+  }
   const date = status.data?.lastSync ? new Date(status.data.lastSync) : null;
   const lastActivity =
     date && Number.isFinite(date.getTime())
@@ -94,12 +150,36 @@ export function DataSyncWorkspace({
     setBusy(true);
     setResult(null);
     setReviewed(false);
+    let saved: InventoryExportAttempt;
+    try {
+      saved = rememberInventoryExportAttempt(
+        scope,
+        {
+          scope,
+          attemptId: crypto.randomUUID(),
+          spreadsheetId: spreadsheetId!,
+          sourceDigest: status.data!.sourceDigest!,
+          startedAt: new Date().toISOString(),
+        },
+        epoch.current
+      );
+      setAttempt(saved);
+    } catch {
+      setStorageError(true);
+      lock.current = false;
+      setBusy(false);
+      return;
+    }
     try {
       const response = await mutation.mutateAsync({
         expectedSourceDigest: status.data!.sourceDigest!,
         reviewed: true,
       });
-      if (alive.current && generation.current === started) {
+      if (
+        alive.current &&
+        generation.current === started &&
+        epoch.current === knowledgeCacheEpoch()
+      ) {
         const checked = inventoryExportReceipt.safeParse(response);
         if (
           checked.success &&
@@ -108,6 +188,13 @@ export function DataSyncWorkspace({
           checked.data.spreadsheetId === spreadsheetId &&
           checked.data.sourceDigest === status.data?.sourceDigest
         ) {
+          try {
+            forgetInventoryExportAttempt(scope, saved.attemptId, epoch.current);
+            setAttempt(null);
+          } catch {
+            setStorageError(true);
+            return;
+          }
           setResult("success");
           setReceipt(checked.data);
         } else setResult(response.success === true ? "uncertain" : "failed");
@@ -115,7 +202,11 @@ export function DataSyncWorkspace({
       }
     } catch (error) {
       // A transport error is not proof that Google rejected the write.
-      if (alive.current && generation.current === started) {
+      if (
+        alive.current &&
+        generation.current === started &&
+        epoch.current === knowledgeCacheEpoch()
+      ) {
         const e = error as { data?: { code?: string }; message?: string },
           code = e?.data?.code;
         const reason = e?.message?.replace(/^inventory_export:/, "");
@@ -133,6 +224,13 @@ export function DataSyncWorkspace({
               reason || ""
             ))
         ) {
+          try {
+            forgetInventoryExportAttempt(scope, saved.attemptId, epoch.current);
+            setAttempt(null);
+          } catch {
+            setStorageError(true);
+            return;
+          }
           setResult("blocked");
           setReason(
             reason === "empty"
@@ -165,6 +263,33 @@ export function DataSyncWorkspace({
           {t("dataSyncUx.settings")}
         </a>
       </header>
+      {storageError && (
+        <section className="pw-panel" role="alert">
+          <p>{t("dataSyncUx.storageError")}</p>
+          <div className="pw-actions">
+            <button disabled={busy} onClick={restoreAttempt}>
+              {t("dataSyncUx.retryStorage")}
+            </button>
+            <button disabled={busy} onClick={acknowledge}>
+              {t("dataSyncUx.clearChecked")}
+            </button>
+          </div>
+        </section>
+      )}
+      {attempt && !busy && canShowResult && (
+        <section className="pw-panel" aria-label={t("dataSyncUx.pendingTitle")}>
+          <h2>{t("dataSyncUx.pendingTitle")}</h2>
+          <p>{t("dataSyncUx.pendingHint")}</p>
+          <a
+            className="pw-button"
+            href={`https://docs.google.com/spreadsheets/d/${attempt.spreadsheetId}/edit`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {t("dataSyncUx.openAttempt")}
+          </a>
+        </section>
+      )}
       {status.error || (status.data && !sameScope) ? (
         <WorkspaceState
           kind={status.error ? workspaceFailureKind(status.error) : "error"}
@@ -225,9 +350,9 @@ export function DataSyncWorkspace({
         <h2 id="sheet-export-title">{t("dataSyncUx.exportTitle")}</h2>
         <p>{t("dataSyncUx.exportHint")}</p>
         <p className="pw-muted">{t("dataSyncUx.destinationHint")}</p>
-        {result && (
-          <div role={result === "success" ? "status" : "alert"}>
-            {result === "success" && receipt && (
+        {displayResult && (
+          <div role={displayResult === "success" ? "status" : "alert"}>
+            {displayResult === "success" && receipt && (
               <p>
                 {t("dataSyncUx.summary", {
                   count: receipt.rows,
@@ -237,23 +362,16 @@ export function DataSyncWorkspace({
               </p>
             )}
             <p>
-              {result === "success"
+              {displayResult === "success"
                 ? t("dataSyncUx.success")
-                : result === "failed"
+                : displayResult === "failed"
                   ? t("dataSyncUx.failed")
-                  : result === "blocked"
+                  : displayResult === "blocked"
                     ? explanations[reason]
                     : t("dataSyncUx.uncertain")}
             </p>
             {needsCheck && (
-              <button
-                type="button"
-                onClick={() => {
-                  setResult(null);
-                  setReviewed(false);
-                  void status.refetch();
-                }}
-              >
+              <button type="button" disabled={busy} onClick={acknowledge}>
                 {t("dataSyncUx.checkedSheet")}
               </button>
             )}

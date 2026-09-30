@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-30T15:01:30.122Z",
+  "generatedAt": "2026-09-30T15:12:13.004Z",
   "definition": "Every registered route is accounted for; source inventory and design completion are different statuses.",
   "routes": [
     {
@@ -43097,18 +43097,22 @@
         "client/src/components/KnowledgeWorkspaceScope.tsx",
         "client/src/lib/knowledge-workspace-cache.ts",
         "client/src/components/merchant/DataSyncWorkspace.tsx",
+        "client/src/lib/inventory-export-attempt.ts",
         "client/src/components/merchant/ProductWorkspaceView.tsx"
       ],
       "controls": [
         "77ce5300e6f7",
-        "c23b4cc39fb4",
-        "375596112860",
-        "a0a339d73090",
-        "b0ddefa904dd",
-        "6bc0100eff6a",
-        "f5ae411ddb25",
-        "9c4c1d528ccf",
-        "41e9e576c470",
+        "58e823bb83ed",
+        "68f5ab2227f3",
+        "e12ba1fd7d7a",
+        "7ea46ac0a835",
+        "64a1a74aeb86",
+        "d58b69287d1d",
+        "fdef7636444a",
+        "3127f516940e",
+        "986fdf895ce4",
+        "9e554a5c9b27",
+        "56ab58d9849c",
         "8781b3ad3758",
         "ab0c78e94084"
       ],
@@ -43133,7 +43137,7 @@
       "gaps": [
         "راجع tenant-data-sync-feedback-2026-09-30؛ الموك أب التفصيلي المطابق تالٍ لتصحيح مصدر التصدير.",
         "صُحح مصدر التصدير وصلاحيته والكتابة الحرفية وحماية الكمية المجهولة ومسح الصفوف الزائدة؛ راجع tenant-inventory-export-2026-09-30. بقي getStatus القديم لشاشات الربط الأخرى حتى مراجعتها.",
-        "حالة الرد غير المؤكد محلية لهذه الزيارة؛ الاستعادة الدائمة ومطابقة نسخة البيانات لم تنفذا بعد. لم يحدث اتصال Google حقيقي ولا اختبار Safari/iPhone."
+        "حالة الرد غير المؤكد محفوظة في علامة التبويب عبر التنقل وإعادة التحميل مع الوجهة الأصلية؛ راجع tenant-inventory-export-recovery-2026-09-30. الإيصال الدائم في الخادم ومطابقة نسخة الكتالوج لم ينفذا بعد. لم يحدث اتصال Google حقيقي ولا اختبار Safari/iPhone."
       ],
       "controlDetails": [
         {
@@ -43158,9 +43162,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "c23b4cc39fb4",
+          "id": "58e823bb83ed",
           "file": "client/src/components/merchant/DataSyncWorkspace.tsx",
-          "line": 164,
+          "line": 262,
           "tag": "a",
           "role": "",
           "kind": "action",
@@ -43179,9 +43183,78 @@
           "review": "source-inventoried"
         },
         {
-          "id": "375596112860",
+          "id": "68f5ab2227f3",
           "file": "client/src/components/merchant/DataSyncWorkspace.tsx",
-          "line": 200,
+          "line": 270,
+          "tag": "button",
+          "role": "",
+          "kind": "action",
+          "label": "إعادة قراءة التنبيه",
+          "section": "DataSyncWorkspace",
+          "binding": "restoreAttempt",
+          "type": "text",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": false,
+          "conditions": [
+            "storageError"
+          ],
+          "disabled": "busy",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "e12ba1fd7d7a",
+          "file": "client/src/components/merchant/DataSyncWorkspace.tsx",
+          "line": 273,
+          "tag": "button",
+          "role": "",
+          "kind": "action",
+          "label": "راجعت الجدول، امسح التنبيه المحلي",
+          "section": "DataSyncWorkspace",
+          "binding": "acknowledge",
+          "type": "text",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": false,
+          "conditions": [
+            "storageError"
+          ],
+          "disabled": "busy",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "7ea46ac0a835",
+          "file": "client/src/components/merchant/DataSyncWorkspace.tsx",
+          "line": 283,
+          "tag": "a",
+          "role": "",
+          "kind": "action",
+          "label": "فتح وجهة المحاولة السابقة ↗",
+          "section": "محاولة تصدير تحتاج مراجعتك",
+          "binding": "`https://docs.google.com/spreadsheets/d/${attempt.spreadsheetId}/edit`",
+          "type": "text",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": false,
+          "conditions": [
+            "attempt && !busy && canShowResult"
+          ],
+          "disabled": "",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "64a1a74aeb86",
+          "file": "client/src/components/merchant/DataSyncWorkspace.tsx",
+          "line": 325,
           "tag": "a",
           "role": "",
           "kind": "action",
@@ -43205,9 +43278,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "a0a339d73090",
+          "id": "d58b69287d1d",
           "file": "client/src/components/merchant/DataSyncWorkspace.tsx",
-          "line": 211,
+          "line": 336,
           "tag": "button",
           "role": "",
           "kind": "action",
@@ -43230,15 +43303,15 @@
           "review": "source-inventoried"
         },
         {
-          "id": "b0ddefa904dd",
+          "id": "fdef7636444a",
           "file": "client/src/components/merchant/DataSyncWorkspace.tsx",
-          "line": 249,
+          "line": 374,
           "tag": "button",
           "role": "",
           "kind": "action",
           "label": "راجعت الجدول",
           "section": "من ساري إلى Google Sheets",
-          "binding": "() => {\n                  setResult(null);\n                  setReviewed(false);\n                  void status.refetch();\n                }",
+          "binding": "acknowledge",
           "type": "button",
           "options": [],
           "min": "",
@@ -43248,15 +43321,15 @@
           "conditional": false,
           "conditions": [
             "needsCheck",
-            "result"
+            "displayResult"
           ],
-          "disabled": "",
+          "disabled": "busy",
           "review": "source-inventoried"
         },
         {
-          "id": "6bc0100eff6a",
+          "id": "3127f516940e",
           "file": "client/src/components/merchant/DataSyncWorkspace.tsx",
-          "line": 263,
+          "line": 381,
           "tag": "input",
           "role": "",
           "kind": "field",
@@ -43275,9 +43348,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "f5ae411ddb25",
+          "id": "986fdf895ce4",
           "file": "client/src/components/merchant/DataSyncWorkspace.tsx",
-          "line": 272,
+          "line": 390,
           "tag": "button",
           "role": "",
           "kind": "action",
@@ -43296,9 +43369,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "9c4c1d528ccf",
+          "id": "9e554a5c9b27",
           "file": "client/src/components/merchant/DataSyncWorkspace.tsx",
-          "line": 288,
+          "line": 406,
           "tag": "a",
           "role": "",
           "kind": "action",
@@ -43317,9 +43390,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "41e9e576c470",
+          "id": "56ab58d9849c",
           "file": "client/src/components/merchant/DataSyncWorkspace.tsx",
-          "line": 291,
+          "line": 409,
           "tag": "a",
           "role": "",
           "kind": "action",
