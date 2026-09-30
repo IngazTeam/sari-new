@@ -5,6 +5,7 @@ import {
   cleanupDisposableMerchants,
 } from "./tests/helpers/disposable-merchant";
 import { readPerformanceWorkspace } from "./performance-workspace";
+import { legacyPerformanceResult } from "./performance-legacy";
 describe.skipIf(!process.env.DATABASE_URL)(
   "performance period evidence in MySQL",
   () => {
@@ -139,12 +140,12 @@ describe.skipIf(!process.env.DATABASE_URL)(
       await order({ phone: "" });
       await order({ phone: "+123", date: "2026-09-28 12:00:00" });
       const r = await read();
-    expect(r.current.orderPhones).toMatchObject({
+      expect(r.current.orderPhones).toMatchObject({
         known: 3,
         repeated: 1,
         unknownPhoneOrders: 2,
-    });
-    expect(r.current.orderPhones.repeatShare).toBeCloseTo(100 / 3, 10);
+      });
+      expect(r.current.orderPhones.repeatShare).toBeCloseTo(100 / 3, 10);
       expect(r.unmeasured.customerSatisfaction).toBeNull();
       expect(r.current.messages.contactPhones).toBe(0);
     });
@@ -190,6 +191,25 @@ describe.skipIf(!process.env.DATABASE_URL)(
           now
         )
       ).rejects.toThrow("Future");
+    });
+    it("maps the same bounded database evidence to the legacy response without summing currencies", async () => {
+      await order({ currency: "SAR", status: "delivered", amount: 12000 });
+      await order({ currency: "USD", amount: 4000 });
+      await order({ date: "2026-09-28 12:00:00", status: "delivered" });
+      await order({ date: "2026-01-01 12:00:00", amount: 999999 });
+      await order({ merchant: other.merchantId, amount: 999999 });
+      const snapshot = await read(),
+        result = legacyPerformanceResult(snapshot);
+      expect(result.totalOrders).toBe(2);
+      expect(result.completedOrders).toBe(1);
+      expect(result.orderFulfillmentRate).toBe(50);
+      expect(result.orderFulfillmentRateChange).toBe(-50);
+      expect(result.totalRevenue).toBeNull();
+      expect(result.uniqueCustomers).toBeNull();
+      expect(
+        result.evidence.current.orders.values.map(v => v.totalMinor)
+      ).toEqual([12000, 4000]);
+      expect(result.evidence.previous.orders.total).toBe(1);
     });
   }
 );
