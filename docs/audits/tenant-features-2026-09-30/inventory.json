@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-30T05:17:33.206Z",
+  "generatedAt": "2026-09-30T05:35:56.656Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -6347,7 +6347,7 @@
     },
     {
       "file": "client/src/components/merchant/OrderStatusForm.tsx",
-      "hash": "048f05e1d6a6",
+      "hash": "f9b6e0828ae9",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
@@ -6360,7 +6360,7 @@
         },
         {
           "label": "راجع قبل الحفظ",
-          "line": 149,
+          "line": 154,
           "tag": "h3"
         }
       ],
@@ -18074,12 +18074,12 @@
         "b2d5201ec5de",
         "63c1cf81e94b",
         "4cc3b678f63b",
-        "479e26c94308",
-        "9e7f72a73d06",
-        "7a5434898f42",
-        "7673c4e069e1",
-        "d572df51e86e",
-        "e5a79c049861",
+        "ac6ff9d9486a",
+        "c5196db22ccb",
+        "c5b840026de0",
+        "fcbf55e3f7fd",
+        "ca698d67395e",
+        "65c993ea26a2",
         "751c22fa8e4e",
         "9ce52fb1d786",
         "7e3a03f33392",
@@ -38463,6 +38463,10 @@
       "type": "text",
       "options": [
         {
+          "value": "draft.status",
+          "label": ""
+        },
+        {
           "value": "status",
           "label": ""
         }
@@ -38477,9 +38481,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "479e26c94308",
+      "id": "ac6ff9d9486a",
       "file": "client/src/components/merchant/OrderStatusForm.tsx",
-      "line": 101,
+      "line": 106,
       "tag": "input",
       "role": "",
       "kind": "field",
@@ -38500,9 +38504,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "9e7f72a73d06",
+      "id": "c5196db22ccb",
       "file": "client/src/components/merchant/OrderStatusForm.tsx",
-      "line": 116,
+      "line": 121,
       "tag": "textarea",
       "role": "",
       "kind": "field",
@@ -38523,9 +38527,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "7a5434898f42",
+      "id": "c5b840026de0",
       "file": "client/src/components/merchant/OrderStatusForm.tsx",
-      "line": 128,
+      "line": 133,
       "tag": "input",
       "role": "",
       "kind": "field",
@@ -38544,9 +38548,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "7673c4e069e1",
+      "id": "fcbf55e3f7fd",
       "file": "client/src/components/merchant/OrderStatusForm.tsx",
-      "line": 141,
+      "line": 146,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -38565,9 +38569,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "d572df51e86e",
+      "id": "ca698d67395e",
       "file": "client/src/components/merchant/OrderStatusForm.tsx",
-      "line": 192,
+      "line": 197,
       "tag": "input",
       "role": "",
       "kind": "field",
@@ -38588,9 +38592,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "e5a79c049861",
+      "id": "65c993ea26a2",
       "file": "client/src/components/merchant/OrderStatusForm.tsx",
-      "line": 200,
+      "line": 205,
       "tag": "button",
       "role": "",
       "kind": "action",

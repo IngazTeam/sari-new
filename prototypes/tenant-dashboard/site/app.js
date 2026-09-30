@@ -172,11 +172,13 @@ function demoState(){
 }
 const renderers={overview,inbox,sales,catalog,customers,ai,marketing,analytics,settings,tools:toolsPage};
 function render(keepFocus=false){
+  window.OrderPreview?.unmount();
   window.QuotationPreview?.unmount();
   const focus=keepFocus?document.activeElement:null,id=focus?.id,start=focus?.selectionStart,end=focus?.selectionEnd;
   shell(); $('#main').innerHTML=ui.page?TenantPages.render(ui.page):(ui.demo==='normal'?renderers[ui.section]():demoState());
   $('#main').dataset.pageRoute=ui.page?.route || '';
   window.QuotationPreview?.mount();
+  window.OrderPreview?.mount();
   for(const anchor of document.querySelectorAll('a[href^="#/"]')){
     const legacy=anchor.getAttribute('href').match(/^#\/(?!page\/)([^/]+)(?:\/([^/]+))?$/);
     if(legacy)anchor.setAttribute('href',route(legacy[1],legacy[2]||''));

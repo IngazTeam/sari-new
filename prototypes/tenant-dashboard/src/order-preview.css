@@ -1,0 +1,31 @@
+.op-active {
+  --border: #d9dfd5;
+  --card: #fffef9;
+  --background: #fffef9;
+  --foreground: #263e35;
+  --muted-foreground: #5d6b60;
+  --muted: #edf1e7;
+  --primary: #29483a;
+  --primary-foreground: #fff;
+  --mw-surface: #fffef9;
+  --mw-text: #263e35;
+  --destructive: #9c3535;
+}
+.op-active .ow-operations [data-slot="button"] {
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 14px;
+  background: var(--card);
+  color: var(--foreground);
+}
+.op-active .ow-operations {
+  overflow-wrap: anywhere;
+}
+.op-active .ow-operations section {
+  display: grid;
+  gap: 14px;
+}
+.op-active .ow-operations button:disabled {
+  opacity: 0.5;
+}

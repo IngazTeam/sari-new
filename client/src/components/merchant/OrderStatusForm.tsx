@@ -87,6 +87,11 @@ export function OrderStatusForm({
             })
           }
         >
+          {!options.includes(draft.status) && (
+            <option value={draft.status} disabled>
+              {orderStatusLabels(t)[draft.status]}
+            </option>
+          )}
           {options.map(status => (
             <option key={status} value={status}>
               {orderStatusLabels(t)[status]}

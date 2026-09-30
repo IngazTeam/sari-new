@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-30T05:17:33.206Z",
+  "generatedAt": "2026-09-30T05:35:56.656Z",
   "definition": "Every registered route is accounted for; source inventory and design completion are different statuses.",
   "routes": [
     {
@@ -18525,12 +18525,12 @@
         "b2d5201ec5de",
         "63c1cf81e94b",
         "4cc3b678f63b",
-        "479e26c94308",
-        "9e7f72a73d06",
-        "7a5434898f42",
-        "7673c4e069e1",
-        "d572df51e86e",
-        "e5a79c049861",
+        "ac6ff9d9486a",
+        "c5196db22ccb",
+        "c5b840026de0",
+        "fcbf55e3f7fd",
+        "ca698d67395e",
+        "65c993ea26a2",
         "751c22fa8e4e",
         "9ce52fb1d786",
         "7e3a03f33392",
@@ -18626,12 +18626,18 @@
         }
       ],
       "browserRequests": [],
-      "design": "موك أب عام",
-      "productionChanged": false,
-      "designSections": [],
+      "design": "تفصيلي جزئي",
+      "productionChanged": true,
+      "designSections": [
+        "القائمة والترقيم والفلاتر والعملات وحالة الدفع المستقلة",
+        "التفاصيل والبنود والهدايا والنص التاريخي",
+        "مراجعة الحالة والسبب والتتبع والإشعار دون دفع يدوي",
+        "المسودة والإيصال والتعارض وضياع الاستجابة والسجل",
+        "مكونات التطبيق الفعلية في الموك أب مع11 حالة توضيحية"
+      ],
       "acceptancePlan": "السجل والتفاصيل والحالات؛ المبالغ والضريبة والتكلفة؛ اعتماد الفاتورة والخصم والهامش؛ نتيجة الدفع المؤكدة والمصالحة ومنع الإرسال المتكرر.",
       "gaps": [
-        "التصميم العام موجود. لا يوجد إثبات تطابق جميع الحقول والأزرار والنوافذ أدناه مع الموك أب."
+        "راجع tenant-order-workspace-2026-09-30 وtenant-order-read-retirement-2026-09-30 وtenant-order-prototype-2026-09-30. أدوات الفاتورة والهامش ومحاولات الدفع وتحرير الخصم وسلة وزد محفوظة في التطبيق؛ أمثلتها التفصيلية في الموك أب هي المرحلة التالية. المحاكاة في الذاكرة ولا تثبت دوام الإيصال أو وصول إشعار. تبقى القراءات الداخلية للتقارير والأتمتة وSafari/iPhone و320/390 مفتوحة."
       ],
       "controlDetails": [
         {
@@ -19307,6 +19313,10 @@
           "type": "text",
           "options": [
             {
+              "value": "draft.status",
+              "label": ""
+            },
+            {
               "value": "status",
               "label": ""
             }
@@ -19321,9 +19331,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "479e26c94308",
+          "id": "ac6ff9d9486a",
           "file": "client/src/components/merchant/OrderStatusForm.tsx",
-          "line": 101,
+          "line": 106,
           "tag": "input",
           "role": "",
           "kind": "field",
@@ -19344,9 +19354,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "9e7f72a73d06",
+          "id": "c5196db22ccb",
           "file": "client/src/components/merchant/OrderStatusForm.tsx",
-          "line": 116,
+          "line": 121,
           "tag": "textarea",
           "role": "",
           "kind": "field",
@@ -19367,9 +19377,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "7a5434898f42",
+          "id": "c5b840026de0",
           "file": "client/src/components/merchant/OrderStatusForm.tsx",
-          "line": 128,
+          "line": 133,
           "tag": "input",
           "role": "",
           "kind": "field",
@@ -19388,9 +19398,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "7673c4e069e1",
+          "id": "fcbf55e3f7fd",
           "file": "client/src/components/merchant/OrderStatusForm.tsx",
-          "line": 141,
+          "line": 146,
           "tag": "button",
           "role": "",
           "kind": "action",
@@ -19409,9 +19419,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "d572df51e86e",
+          "id": "ca698d67395e",
           "file": "client/src/components/merchant/OrderStatusForm.tsx",
-          "line": 192,
+          "line": 197,
           "tag": "input",
           "role": "",
           "kind": "field",
@@ -19432,9 +19442,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "e5a79c049861",
+          "id": "65c993ea26a2",
           "file": "client/src/components/merchant/OrderStatusForm.tsx",
-          "line": 200,
+          "line": 205,
           "tag": "button",
           "role": "",
           "kind": "action",
