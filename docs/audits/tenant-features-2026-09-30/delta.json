@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-09-30T18:15:10.136Z",
+  "generatedAt": "2026-09-30T18:52:26.176Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 310,
-      "controls": 2090
+      "files": 311,
+      "controls": 2100
     }
   },
   "addedFiles": [
@@ -41,6 +41,7 @@
     "client/src/lib/product-category-workspace.ts",
     "client/src/components/merchant/ProductDetailsWorkspace.tsx",
     "client/src/lib/product-details-workspace.ts",
+    "client/src/components/merchant/ProductStockWorkspace.tsx",
     "client/src/components/merchant/ProductImportWorkspace.tsx",
     "client/src/lib/product-import-workspace.ts",
     "client/src/components/merchant/ProductImportProviderTools.tsx",
@@ -342,7 +343,7 @@
     {
       "route": "/merchant/products",
       "controlsBefore": 57,
-      "controlsNow": 89,
+      "controlsNow": 99,
       "removedQueries": [],
       "addedQueries": [
         "auth.me",
@@ -353,7 +354,8 @@
         "products.editor.deleteReceipt",
         "products.categories.receipt",
         "products.details.read",
-        "products.details.receipt"
+        "products.details.receipt",
+        "products.getLowStock"
       ],
       "removedMutations": [
         "products.create",

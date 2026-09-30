@@ -37,10 +37,12 @@ export function ProductDetailsWorkspace({
   scope,
   productId,
   back,
+  backLabel,
 }: {
   scope: string;
   productId: number;
   back: () => void;
+  backLabel?: string;
 }) {
   const { t, i18n } = useTranslation(),
     utils = trpc.useUtils();
@@ -463,7 +465,7 @@ export function ProductDetailsWorkspace({
         </div>
         <div className="pw-actions">
           <button disabled={busy} onClick={back}>
-            {t("productWorkspaceUx.back")}
+            {backLabel ?? t("productWorkspaceUx.back")}
           </button>
           <button
             disabled={busy || query.isFetching}

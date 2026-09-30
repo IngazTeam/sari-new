@@ -45,6 +45,7 @@ vi.mock("../client/src/lib/trpc", () => {
       }),
       products: {
         list: query("list"),
+        getLowStock: query("stock"),
         categories: { read: query("categories") },
         editor: {
           read: query("read"),
@@ -82,6 +83,8 @@ vi.mock("../client/src/components/merchant/WorkspaceState", () => ({
         : "error",
 }));
 import { ProductCatalogWorkspace } from "../client/src/components/merchant/ProductCatalogWorkspace";
+import { ProductStockWorkspace } from "../client/src/components/merchant/ProductStockWorkspace";
+import { productStockInput } from "../shared/product-stock";
 import { ProductEditorWorkspace } from "../client/src/components/merchant/ProductEditorWorkspace";
 import { ProductDeleteWorkspace } from "../client/src/components/merchant/ProductDeleteWorkspace";
 import { productCatalogInput } from "../shared/product-catalog";
@@ -130,6 +133,14 @@ const row = {
 let host: HTMLDivElement, root: Root, completed: ReturnType<typeof vi.fn>;
 function fixtures() {
   return {
+    stock: {
+      merchantId: 20, readAt, selection: productStockInput.parse({}),
+      items: [
+        { merchantId: 20, productId: 81, variantId: null, kind: "product", productName: row.name, name: row.name, sku: "SKU", stock: 0, threshold: 5, state: "out", issue: null },
+        { merchantId: 20, productId: 82, variantId: 3, kind: "variant", productName: "Coffee", name: "Large", sku: "LARGE", stock: 2, threshold: 5, state: "low", issue: null },
+        { merchantId: 20, productId: 83, variantId: null, kind: "product", productName: "Missing variants", name: "Missing variants", sku: null, stock: null, threshold: null, state: "unknown", issue: "no_available_variants" },
+      ], total: 3, totalPages: 1, summary: { out: 1, low: 1, unknown: 1, total: 3 },
+    },
     categories: { merchantId: 20, actorId: 7, canManage: true, locked: false, digest, rows: [
       { id: 1, merchantId: 20, name: "Coffee", nameEn: null, parentId: null, sortOrder: 0, isActive: 1, productCount: 0 },
       { id: 2, merchantId: 20, name: "Inactive", nameEn: null, parentId: null, sortOrder: 0, isActive: 0, productCount: 0 },
@@ -253,6 +264,94 @@ const deletion = () =>
     back: vi.fn(),
     completed,
   });
+describe("stock attention workspace", () => {
+  const selection = productStockInput.parse({});
+  const selected = vi.fn(), opened = vi.fn(), back = vi.fn();
+  const screen = (input = selection) => React.createElement(ProductStockWorkspace, {
+    scope, selection: input, onSelection: selected, open: opened, back,
+  });
+  async function select(index: number, value: string) {
+    const node = host.querySelectorAll("select")[index];
+    await act(async () => { node.value = value; node.dispatchEvent(new Event("change", { bubbles: true })); });
+  }
+  it("separates variants from parents, explains setup gaps and navigates to the appropriate editor", async () => {
+    await render(screen());
+    expect(host.querySelectorAll(".pw-catalog-list > li")).toHaveLength(3);
+    expect(host.textContent).toContain(en.stockUx.noVariants);
+    expect(host.textContent).toContain(en.stockUx.scope);
+    expect(host.textContent).toContain(en.stockUx.summaryHint);
+    expect(host.querySelector("script")).toBeNull();
+    await click(button(en.stockUx.openProduct));
+    expect(opened).toHaveBeenLastCalledWith(81, false);
+    const actions = [...host.querySelectorAll("button")].filter(node => node.textContent === en.stockUx.openVariants);
+    await click(actions[0]); expect(opened).toHaveBeenLastCalledWith(82, true);
+    await click(actions[1]); expect(opened).toHaveBeenLastCalledWith(83, true);
+    expect(m.write).not.toHaveBeenCalled();
+  });
+  it.each(["foreign", "selection", "malformed", "error", "offline", "loading"])("hides both rows and counts for %s data", async mode => {
+    if (mode === "foreign") m.data.stock.merchantId = 99;
+    if (mode === "selection") m.data.stock.selection.search = "old";
+    if (mode === "malformed") m.data.stock.summary.total = 40;
+    if (mode === "error") m.error = Error("network");
+    if (mode === "offline") m.paused = true;
+    if (mode === "loading") m.fetching = true;
+    await render(screen());
+    expect(host.querySelector(".pw-catalog-list")).toBeNull();
+    expect(host.querySelector(".pw-summary")).toBeNull();
+    expect(host.querySelector("[data-state]")).not.toBeNull();
+  });
+  it.each(["FORBIDDEN", "UNAUTHORIZED"])("shows %s recovery instead of a healthy empty state", async code => {
+    m.error = { data: { code } }; await render(screen());
+    expect(host.querySelector("[data-state]")?.getAttribute("data-state")).toBe(code === "FORBIDDEN" ? "forbidden" : "session");
+    expect(host.textContent).not.toContain(en.stockUx.empty);
+  });
+  it("keeps unknown quantities distinct from zero", async () => {
+    m.data.stock.items[0] = { ...m.data.stock.items[0], stock: -1, state: "unknown", issue: "stock_unknown" };
+    m.data.stock.summary = { out: 0, low: 1, unknown: 2, total: 3 };
+    await render(screen());
+    expect(host.querySelector(".pw-catalog-list li")!.textContent).toContain("—");
+    expect(host.querySelector(".pw-catalog-list li")!.textContent).toContain(en.stockUx.unknownHint);
+  });
+  it("resets pagination on filters and debounces literal search", async () => {
+    vi.useFakeTimers();
+    try {
+      await render(screen()); await select(0, "variant");
+      expect(selected).toHaveBeenLastCalledWith({ ...selection, kind: "variant", page: 1 });
+      await select(1, "unknown"); expect(selected).toHaveBeenLastCalledWith({ ...selection, state: "unknown", page: 1 });
+      await change('input[type="search"]', "  100%_  ");
+      await act(async () => { vi.advanceTimersByTime(300); });
+      expect(selected).toHaveBeenLastCalledWith({ ...selection, search: "100%_", page: 1 });
+    } finally { vi.useRealTimers(); }
+  });
+  it("distinguishes no matching rows from a scoped empty snapshot and resets filters", async () => {
+    m.data.stock.items = []; m.data.stock.total = 0; m.data.stock.totalPages = 0;
+    const filtered = { ...selection, search: "absent" };
+    m.data.stock.selection = filtered; await render(screen(filtered));
+    expect(host.textContent).toContain(en.productWorkspaceUx.noMatches);
+    expect(host.textContent).not.toContain(en.stockUx.emptyHint);
+    await click(button(en.productWorkspaceUx.resetFilters));
+    expect(selected).toHaveBeenLastCalledWith(selection);
+    m.data.stock.summary = { out: 0, low: 0, unknown: 0, total: 0 };
+    await render(screen(filtered)); expect(host.textContent).toContain(en.stockUx.emptyHint);
+  });
+  it("preserves stock filters when opening a product and returning to stock", async () => {
+    await render(React.createElement(ProductCatalogWorkspace, { scope }));
+    await click(button(en.stockUx.title));
+    m.data.stock.selection.state = "out";
+    m.data.stock.items = [m.data.stock.items[0]]; m.data.stock.total = 1;
+    await select(1, "out"); await click(button(en.stockUx.openProduct));
+    expect(host.querySelector("#product-name")).not.toBeNull();
+    await click(button(en.stockUx.back));
+    expect(host.querySelectorAll("select")[1].value).toBe("out");
+    expect(m.inputs.stock.state).toBe("out");
+  });
+  it("renders the Arabic stock screen without raw translation keys", async () => {
+    m.language = "ar"; await render(screen());
+    expect(host.querySelector("section")?.getAttribute("dir")).toBe("rtl");
+    expect(host.textContent).toContain(ar.stockUx.title);
+    expect(host.textContent).not.toMatch(/(?:stockUx|detailUx|categoryUx|productWorkspaceUx)\./);
+  });
+});
 describe("product workspace UI", () => {
   async function selectCategory(value: string) {
     const select = host.querySelector<HTMLSelectElement>("#product-categoryId")!;

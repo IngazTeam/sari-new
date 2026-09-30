@@ -2,7 +2,7 @@
 
 هذا حصر مصدر قابل لإعادة التوليد، وليس ادعاءً بأن كل مسار عمل اختُبر أو أُعيد تصميمه. يشمل المكونات الفرعية المحلية، الحقول، الأزرار، النوافذ، التبويبات، واجهات القراءة والتعديل. العناصر الديناميكية تحتاج مراجعة إضافية.
 
-- 126 مسارًا مسجلًا، 310 ملف واجهة متصلًا، 2090 عنصر تحكم في المصدر.
+- 126 مسارًا مسجلًا، 311 ملف واجهة متصلًا، 2100 عنصر تحكم في المصدر.
 - 0 رابطًا حرفيًا غير مطابق، و0 ملف صفحة غير متصل بالمسارات المحصورة.
 
 | الصفحة | الملفات | عناصر التحكم | القراءة / التعديل | موك أب للصفحة |
@@ -18,7 +18,7 @@
 | /merchant/campaigns/:id/edit — إنشاء حملة | 2 | 13 | 2 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/campaigns/:id — تفاصيل الحملة | 1 | 4 | 1 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/campaigns/:id/report — تقرير الحملة | 2 | 3 | 1 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/products — المنتجات | 13 | 89 | 11 / 4 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/products — المنتجات | 14 | 99 | 12 / 4 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/products/upload — استيراد المنتجات | 11 | 73 | 10 / 7 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/conversations — المحادثات | 17 | 87 | 13 / 10 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/whatsapp — أرقام واتساب | 2 | 23 | 8 / 6 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -581,26 +581,27 @@
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 188 | button | فئات المنتجات | ProductCatalogWorkspace |
-| 195 | button | إضافة منتج | ProductCatalogWorkspace |
-| 204 | Link | استيراد المنتجات | ProductCatalogWorkspace |
-| 225 | button | متابعة نتيجة الطلب متابعة المسودة | ProductCatalogWorkspace |
-| 235 | button | إعادة المحاولة | ProductCatalogWorkspace |
-| 246 | input | البحث في الكتالوج | ProductCatalogWorkspace |
-| 255 | summary | البحث في الكتالوج | الفلاتر · {{count}} مفعلة |
-| 267 | select | الحالة كل الحالات | الفلاتر · {{count}} مفعلة |
-| 288 | select | المخزون كل المخزون available | الفلاتر · {{count}} مفعلة |
-| 311 | select | السعر كل الأسعار سعر موثق الوحدة سعر يحتاج مراجعة | الفلاتر · {{count}} مفعلة |
-| 331 | button | البحث في الكتالوج | الفلاتر · {{count}} مفعلة |
-| 391 | input | تحديد الصفحة الحالية | الفلاتر · {{count}} مفعلة |
-| 408 | button | تحديد الصفحة الحالية | الفلاتر · {{count}} مفعلة |
-| 431 | button | إظهار كل المنتجات | ابدأ بأول منتج لا توجد منتجات في هذه النتائج |
-| 450 | input | t("productWorkspaceUx.selectProduct", {                             name: row.name,                           }) | ابدأ بأول منتج لا توجد منتجات في هذه النتائج |
-| 508 | button | الخيارات والنسخ | ProductCatalogWorkspace |
-| 517 | button | مراجعة وتعديل عرض المنتج | ProductCatalogWorkspace |
-| 525 | button | مراجعة الحذف | ProductCatalogWorkspace |
-| 550 | button | السابق | ProductCatalogWorkspace |
-| 557 | button | التالي | ProductCatalogWorkspace |
+| 225 | button | مراجعة المخزون | ProductCatalogWorkspace |
+| 228 | button | فئات المنتجات | ProductCatalogWorkspace |
+| 235 | button | إضافة منتج | ProductCatalogWorkspace |
+| 244 | Link | استيراد المنتجات | ProductCatalogWorkspace |
+| 265 | button | متابعة نتيجة الطلب متابعة المسودة | ProductCatalogWorkspace |
+| 275 | button | إعادة المحاولة | ProductCatalogWorkspace |
+| 286 | input | البحث في الكتالوج | ProductCatalogWorkspace |
+| 295 | summary | البحث في الكتالوج | الفلاتر · {{count}} مفعلة |
+| 307 | select | الحالة كل الحالات | الفلاتر · {{count}} مفعلة |
+| 328 | select | المخزون كل المخزون available | الفلاتر · {{count}} مفعلة |
+| 351 | select | السعر كل الأسعار سعر موثق الوحدة سعر يحتاج مراجعة | الفلاتر · {{count}} مفعلة |
+| 371 | button | البحث في الكتالوج | الفلاتر · {{count}} مفعلة |
+| 431 | input | تحديد الصفحة الحالية | الفلاتر · {{count}} مفعلة |
+| 448 | button | تحديد الصفحة الحالية | الفلاتر · {{count}} مفعلة |
+| 471 | button | إظهار كل المنتجات | ابدأ بأول منتج لا توجد منتجات في هذه النتائج |
+| 490 | input | t("productWorkspaceUx.selectProduct", {                             name: row.name,                           }) | ابدأ بأول منتج لا توجد منتجات في هذه النتائج |
+| 548 | button | الخيارات والنسخ | ProductCatalogWorkspace |
+| 557 | button | مراجعة وتعديل عرض المنتج | ProductCatalogWorkspace |
+| 565 | button | مراجعة الحذف | ProductCatalogWorkspace |
+| 590 | button | السابق | ProductCatalogWorkspace |
+| 597 | button | التالي | ProductCatalogWorkspace |
 
 ## client/src/components/merchant/ProductWorkspaceView.tsx
 
@@ -613,21 +614,21 @@
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 422 | select | تسمية ديناميكية / تحتاج مراجعة | ProductEditorWorkspace |
-| 435 | textarea | تسمية ديناميكية / تحتاج مراجعة | ProductEditorWorkspace |
-| 437 | input | تسمية ديناميكية / تحتاج مراجعة | ProductEditorWorkspace |
-| 469 | button | العودة للمنتجات | ProductEditorWorkspace |
-| 481 | button | إعادة المحاولة | ProductEditorWorkspace |
-| 559 | input | راجعت الاختلافات وأريد إبقاء الخانات التي عدّلتها. | تغيّر المنتج منذ فتحه |
-| 566 | button | تطبيق مسودتي على النسخة الحالية | تغيّر المنتج منذ فتحه |
-| 594 | select | labels.categoryId | المعلومات الأساسية |
-| 658 | button | إعادة تحميل الفئات | المعلومات الأساسية |
-| 689 | summary | التفاصيل والتسعير الإضافي | التفاصيل والتسعير الإضافي |
-| 726 | summary | المخزون | المخزون |
-| 740 | button | جارٍ الحفظ… حفظ المنتج | المخزون |
-| 754 | button | التخلص من المسودة | المخزون |
-| 769 | button | نعم، تخلص من المسودة | المخزون |
-| 772 | button | الاحتفاظ بالمسودة | المخزون |
+| 424 | select | تسمية ديناميكية / تحتاج مراجعة | ProductEditorWorkspace |
+| 437 | textarea | تسمية ديناميكية / تحتاج مراجعة | ProductEditorWorkspace |
+| 439 | input | تسمية ديناميكية / تحتاج مراجعة | ProductEditorWorkspace |
+| 471 | button | العودة للمنتجات | ProductEditorWorkspace |
+| 483 | button | إعادة المحاولة | ProductEditorWorkspace |
+| 561 | input | راجعت الاختلافات وأريد إبقاء الخانات التي عدّلتها. | تغيّر المنتج منذ فتحه |
+| 568 | button | تطبيق مسودتي على النسخة الحالية | تغيّر المنتج منذ فتحه |
+| 596 | select | labels.categoryId | المعلومات الأساسية |
+| 660 | button | إعادة تحميل الفئات | المعلومات الأساسية |
+| 691 | summary | التفاصيل والتسعير الإضافي | التفاصيل والتسعير الإضافي |
+| 728 | summary | المخزون | المخزون |
+| 742 | button | جارٍ الحفظ… حفظ المنتج | المخزون |
+| 756 | button | التخلص من المسودة | المخزون |
+| 771 | button | نعم، تخلص من المسودة | المخزون |
+| 774 | button | الاحتفاظ بالمسودة | المخزون |
 
 ## client/src/components/merchant/ProductDeleteWorkspace.tsx
 
@@ -668,32 +669,46 @@
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 346 | select | تسمية ديناميكية / تحتاج مراجعة | ProductDetailsWorkspace |
-| 354 | textarea | تسمية ديناميكية / تحتاج مراجعة | ProductDetailsWorkspace |
-| 356 | input | تسمية ديناميكية / تحتاج مراجعة | ProductDetailsWorkspace |
-| 465 | button | العودة للمنتجات | ProductDetailsWorkspace |
-| 468 | button | تحديث | ProductDetailsWorkspace |
-| 484 | button | إعادة المحاولة | ProductDetailsWorkspace |
-| 534 | button | التحقق من نتيجة الحفظ | delete مراجعة الحذف create إضافة تعديل · option خيار نسخة منتج |
-| 537 | button | إعادة الطلب نفسه | delete مراجعة الحذف create إضافة تعديل · option خيار نسخة منتج |
-| 550 | button | create تحديث المرجع مع الاحتفاظ بالمسودة تجاهل تعديلاتي وتحميل النسخة الحالية | delete مراجعة الحذف create إضافة تعديل · option خيار نسخة منتج |
-| 592 | input | متاحة للبيع | delete مراجعة الحذف create إضافة تعديل · option خيار نسخة منتج |
-| 642 | summary | التكلفة والتفاصيل الإضافية | التكلفة والتفاصيل الإضافية |
-| 669 | button | مسح الاختيارات غير المقروءة في المسودة | اختيارات هذه النسخة |
-| 689 | select | دون اختيار اختيارات محفوظة تحتاج إصلاحًا؛ لم نغيّرها. يمكنك تعديل البيانات الأخرى، أو مسح هذه الاختيارات صراحةً وإعادة تحديدها. | اختيارات هذه النسخة |
-| 799 | input | راجعت التغيير وأوافق على اعتماده. | اختيارات هذه النسخة |
-| 808 | button | delete تأكيد الحذف النهائي اعتماد التغيير | اختيارات هذه النسخة |
-| 819 | button | إلغاء المسودة | اختيارات هذه النسخة |
-| 826 | button | نعم، تجاهل المسودة | اختيارات هذه النسخة |
-| 841 | button | الاحتفاظ بالمسودة | اختيارات هذه النسخة |
-| 852 | button | بحث بالاسم أو رمز SKU | اختيارات هذه النسخة |
-| 861 | button | بحث بالاسم أو رمز SKU | اختيارات هذه النسخة |
-| 870 | button | بحث بالاسم أو رمز SKU | اختيارات هذه النسخة |
-| 881 | input | بحث بالاسم أو رمز SKU | اختيارات هذه النسخة |
-| 944 | button | تعديل | ProductDetailsWorkspace |
-| 950 | button | مراجعة الحذف | ProductDetailsWorkspace |
-| 961 | button | بحث بالاسم أو رمز SKU | ProductDetailsWorkspace |
-| 970 | button | بحث بالاسم أو رمز SKU | ProductDetailsWorkspace |
+| 348 | select | تسمية ديناميكية / تحتاج مراجعة | ProductDetailsWorkspace |
+| 356 | textarea | تسمية ديناميكية / تحتاج مراجعة | ProductDetailsWorkspace |
+| 358 | input | تسمية ديناميكية / تحتاج مراجعة | ProductDetailsWorkspace |
+| 467 | button | العودة للمنتجات | ProductDetailsWorkspace |
+| 470 | button | تحديث | ProductDetailsWorkspace |
+| 486 | button | إعادة المحاولة | ProductDetailsWorkspace |
+| 536 | button | التحقق من نتيجة الحفظ | delete مراجعة الحذف create إضافة تعديل · option خيار نسخة منتج |
+| 539 | button | إعادة الطلب نفسه | delete مراجعة الحذف create إضافة تعديل · option خيار نسخة منتج |
+| 552 | button | create تحديث المرجع مع الاحتفاظ بالمسودة تجاهل تعديلاتي وتحميل النسخة الحالية | delete مراجعة الحذف create إضافة تعديل · option خيار نسخة منتج |
+| 594 | input | متاحة للبيع | delete مراجعة الحذف create إضافة تعديل · option خيار نسخة منتج |
+| 644 | summary | التكلفة والتفاصيل الإضافية | التكلفة والتفاصيل الإضافية |
+| 671 | button | مسح الاختيارات غير المقروءة في المسودة | اختيارات هذه النسخة |
+| 691 | select | دون اختيار اختيارات محفوظة تحتاج إصلاحًا؛ لم نغيّرها. يمكنك تعديل البيانات الأخرى، أو مسح هذه الاختيارات صراحةً وإعادة تحديدها. | اختيارات هذه النسخة |
+| 801 | input | راجعت التغيير وأوافق على اعتماده. | اختيارات هذه النسخة |
+| 810 | button | delete تأكيد الحذف النهائي اعتماد التغيير | اختيارات هذه النسخة |
+| 821 | button | إلغاء المسودة | اختيارات هذه النسخة |
+| 828 | button | نعم، تجاهل المسودة | اختيارات هذه النسخة |
+| 843 | button | الاحتفاظ بالمسودة | اختيارات هذه النسخة |
+| 854 | button | بحث بالاسم أو رمز SKU | اختيارات هذه النسخة |
+| 863 | button | بحث بالاسم أو رمز SKU | اختيارات هذه النسخة |
+| 872 | button | بحث بالاسم أو رمز SKU | اختيارات هذه النسخة |
+| 883 | input | بحث بالاسم أو رمز SKU | اختيارات هذه النسخة |
+| 946 | button | تعديل | ProductDetailsWorkspace |
+| 952 | button | مراجعة الحذف | ProductDetailsWorkspace |
+| 963 | button | بحث بالاسم أو رمز SKU | ProductDetailsWorkspace |
+| 972 | button | بحث بالاسم أو رمز SKU | ProductDetailsWorkspace |
+
+## client/src/components/merchant/ProductStockWorkspace.tsx
+
+| السطر | النوع | التسمية | القسم |
+|---:|---|---|---|
+| 75 | button | العودة للمنتجات | ProductStockWorkspace |
+| 76 | button | تحديث | ProductStockWorkspace |
+| 91 | input | بحث باسم المنتج أو النسخة أو SKU | ProductStockWorkspace |
+| 100 | select | نوع العنصر المنتجات والنسخ المنتجات نسخ المنتجات | ProductStockWorkspace |
+| 113 | select | حالة المخزون كل ما يحتاج متابعة | ProductStockWorkspace |
+| 180 | button | إظهار كل المنتجات | لا توجد عناصر تحتاج متابعة ضمن هذا النطاق لا توجد منتجات في هذه النتائج |
+| 237 | button | variant no_available_variants invalid_variant_setup مراجعة نسخ المنتج فتح المنتج | ProductStockWorkspace |
+| 270 | button | السابق | ProductStockWorkspace |
+| 276 | button | التالي | ProductStockWorkspace |
 
 ## client/src/pages/merchant/UploadProducts.tsx
 

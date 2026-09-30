@@ -42,6 +42,7 @@ export function ProductEditorWorkspace({
   currency,
   canManage,
   back,
+  backLabel,
   completed,
 }: {
   scope: string;
@@ -49,6 +50,7 @@ export function ProductEditorWorkspace({
   currency: "SAR" | "USD";
   canManage: boolean;
   back: () => void;
+  backLabel?: string;
   completed: () => void;
 }) {
   const { t, i18n } = useTranslation(),
@@ -467,7 +469,7 @@ export function ProductEditorWorkspace({
           <p>{t("productWorkspaceUx.editorHint")}</p>
         </div>
         <button type="button" onClick={back} disabled={busy}>
-          {t("productWorkspaceUx.back")}
+          {backLabel ?? t("productWorkspaceUx.back")}
         </button>
       </header>
       {notice && (

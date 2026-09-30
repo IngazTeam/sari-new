@@ -23,9 +23,12 @@ import { ProductEditorWorkspace } from "./ProductEditorWorkspace";
 import { ProductDeleteWorkspace } from "./ProductDeleteWorkspace";
 import { ProductCategoriesWorkspace } from "./ProductCategoriesWorkspace";
 import { ProductDetailsWorkspace } from "./ProductDetailsWorkspace";
+import { ProductStockWorkspace } from "./ProductStockWorkspace";
+import { productStockInput } from "@shared/product-stock";
 import "@/styles/product-workspace.css";
 type View =
   | { kind: "list" }
+  | { kind: "stock" }
   | { kind: "categories" }
   | { kind: "details"; productId: number }
   | { kind: "editor"; target: number | "new" }
@@ -46,6 +49,10 @@ export function ProductCatalogWorkspace({
     [search, setSearch] = useState(""),
     [selected, setSelected] = useState<number[]>([]),
     [view, setView] = useState<View>({ kind: "list" }),
+    [returnView, setReturnView] = useState<"list" | "stock">("list"),
+    [stockSelection, setStockSelection] = useState(() =>
+      productStockInput.parse({})
+    ),
     [cached, setCached] = useState<ProductWorkspaceDraft | null>(null),
     [storageError, setStorageError] = useState(false),
     [notice, setNotice] = useState("");
@@ -99,7 +106,7 @@ export function ProductCatalogWorkspace({
     setSelected([]);
   }
   function back() {
-    setView({ kind: "list" });
+    setView({ kind: returnView });
     loadCache();
     void query.refetch();
   }
@@ -115,6 +122,7 @@ export function ProductCatalogWorkspace({
       if (
         next.kind !== "categories" &&
         next.kind !== "details" &&
+        next.kind !== "stock" &&
         saved &&
         (next.kind !== "editor" ||
           saved.kind !== "editor" ||
@@ -124,6 +132,7 @@ export function ProductCatalogWorkspace({
         return;
       }
       setNotice("");
+      setReturnView(view.kind === "stock" ? "stock" : "list");
       setView(next);
     } catch {
       setStorageError(true);
@@ -145,6 +154,7 @@ export function ProductCatalogWorkspace({
         target={view.target}
         currency={data?.currency ?? "SAR"}
         canManage={canManage && unlocked}
+        backLabel={returnView === "stock" ? t("stockUx.back") : undefined}
         back={back}
         completed={completed}
       />
@@ -162,6 +172,32 @@ export function ProductCatalogWorkspace({
     );
   if (view.kind === "categories")
     return <ProductCategoriesWorkspace key={scope} scope={scope} back={back} />;
+  if (view.kind === "stock")
+    return (
+      <>
+        {notice && (
+          <p className="pw-notice" role="status">
+            {notice}
+          </p>
+        )}
+        <ProductStockWorkspace
+          scope={scope}
+          selection={stockSelection}
+          onSelection={setStockSelection}
+          open={(productId, details) =>
+            open(
+              details
+                ? { kind: "details", productId }
+                : { kind: "editor", target: productId }
+            )
+          }
+          back={() => {
+            setView({ kind: "list" });
+            setReturnView("list");
+          }}
+        />
+      </>
+    );
   if (view.kind === "details") {
     const detailScope = `${scope.split(":").slice(0, 2).join(":")}:product-details:${view.productId}`;
     return (
@@ -169,6 +205,7 @@ export function ProductCatalogWorkspace({
         key={detailScope}
         scope={detailScope}
         productId={view.productId}
+        backLabel={returnView === "stock" ? t("stockUx.back") : undefined}
         back={back}
       />
     );
@@ -185,6 +222,9 @@ export function ProductCatalogWorkspace({
           <p>{t("productWorkspaceUx.subtitle")}</p>
         </div>
         <div className="pw-actions">
+          <button type="button" onClick={() => open({ kind: "stock" })}>
+            {t("stockUx.title")}
+          </button>
           <button
             type="button"
             disabled={!ready || storageError}
