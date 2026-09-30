@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-09-30T00:21:01.921Z",
+  "generatedAt": "2026-09-30T00:55:01.672Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,7 +10,7 @@
     },
     "after": {
       "routes": 126,
-      "files": 263,
+      "files": 266,
       "controls": 1883
     }
   },
@@ -83,6 +83,9 @@
     "client/src/components/KnowledgeDocumentCopies.tsx",
     "client/src/lib/sales-reply-send-state.ts",
     "client/src/lib/sales-reply-review-state.ts",
+    "client/src/components/merchant/PipelineWorkspace.tsx",
+    "client/src/lib/pipeline-labels.ts",
+    "client/src/components/merchant/PipelineReport.tsx",
     "client/src/components/merchant/QuickResponseWorkspace.tsx",
     "client/src/components/merchant/InsightsWorkspace.tsx",
     "client/src/components/merchant/KeywordReviewDialog.tsx",
@@ -796,9 +799,18 @@
     {
       "route": "/merchant/sales-pipeline",
       "controlsBefore": 3,
-      "controlsNow": 12,
-      "removedQueries": [],
-      "addedQueries": [],
+      "controlsNow": 13,
+      "removedQueries": [
+        "salesPipeline.getActionCounts",
+        "salesPipeline.getKPIs",
+        "salesPipeline.getPipeline",
+        "salesPipeline.getLossBreakdown"
+      ],
+      "addedQueries": [
+        "auth.me",
+        "merchants.getCurrent",
+        "salesPipeline.workspace"
+      ],
       "removedMutations": [],
       "addedMutations": []
     },

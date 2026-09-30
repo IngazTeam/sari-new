@@ -103,10 +103,11 @@ describe("tenant feature inventory completeness boundaries", () => {
     expect(
       inventory.controls.filter(
         (c: any) =>
-          c.file === "client/src/pages/merchant/SalesPipeline.tsx" &&
-          c.role === "button"
+          c.file === "client/src/components/merchant/PipelineReport.tsx" &&
+          c.tag === "button"
       ).length
     ).toBeGreaterThanOrEqual(4);
+    expect(inventory.routes.find((r: any) => r.route === "/merchant/sales-pipeline").queries).toContain("salesPipeline.workspace");
   });
   it("does not equate route coverage with completed feature designs or successful backend tests", () => {
     expect(

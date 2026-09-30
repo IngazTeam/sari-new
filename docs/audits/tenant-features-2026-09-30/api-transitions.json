@@ -367,6 +367,39 @@
           "contains": "performanceCsv"
         }
       ]
+    },
+    {
+      "routes": [
+        "/merchant/sales-pipeline"
+      ],
+      "removed": [
+        "salesPipeline.getPipeline",
+        "salesPipeline.getActionCounts",
+        "salesPipeline.getKPIs",
+        "salesPipeline.getLossBreakdown"
+      ],
+      "required": [
+        "salesPipeline.workspace"
+      ],
+      "note": "One scoped snapshot preserves all queues, stages, losses, currency values and conversation navigation, adds paging and distinguishes stored labels from verified outcomes.",
+      "evidence": [
+        "docs/audits/tenant-pipeline-data-2026-09-30/REPORT.md",
+        "docs/audits/tenant-pipeline-workspace-2026-09-30/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "client/src/components/merchant/PipelineReport.tsx",
+          "contains": "data-pipeline-queue"
+        },
+        {
+          "file": "client/src/components/merchant/PipelineReport.tsx",
+          "contains": "/merchant/conversations?"
+        },
+        {
+          "route": "/merchant/sales-hub",
+          "api": "sariBrain.createQuotation"
+        }
+      ]
     }
   ]
 }

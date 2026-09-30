@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-30T00:21:01.921Z",
+  "generatedAt": "2026-09-30T00:55:01.672Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -9766,92 +9766,144 @@
     },
     {
       "file": "client/src/pages/merchant/SalesPipeline.tsx",
-      "hash": "298ff98a6ae8",
+      "hash": "9edf56629a68",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [
+        "client/src/components/KnowledgeWorkspaceScope.tsx",
+        "client/src/components/merchant/PipelineWorkspace.tsx"
+      ],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/components/merchant/PipelineWorkspace.tsx",
+      "hash": "2c8d920b8164",
       "queries": [
-        "salesPipeline.getActionCounts",
-        "salesPipeline.getKPIs",
-        "salesPipeline.getPipeline",
-        "salesPipeline.getLossBreakdown"
+        "merchants.getCurrent",
+        "salesPipeline.workspace"
       ],
       "mutations": [],
       "imperativeReads": [],
       "browserRequests": [],
       "sections": [
         {
-          "label": "غرفة قيادة المبيعات",
-          "line": 91,
+          "label": "",
+          "line": 83,
           "tag": "h1"
-        },
-        {
-          "label": "خط سير الصفقات",
-          "line": 239,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "🔥 عملاء جاهزون للدفع",
-          "line": 278,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "💳 دفع لم يكتمل",
-          "line": 320,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "✅ صفقات مدفوعة (آخر 7 أيام)",
-          "line": 365,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "❌ صفقات خاسرة (آخر 7 أيام)",
-          "line": 401,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "📊 تحليل أسباب الخسارة (آخر 30 يوم)",
-          "line": 449,
-          "tag": "CardTitle"
         }
       ],
       "choices": [],
       "handlers": [],
       "queryStates": [
         {
-          "query": "salesPipeline.getActionCounts",
-          "binding": "{ data: actions }",
-          "line": 74,
-          "errorSignal": false,
+          "query": "merchants.getCurrent",
+          "binding": "merchant",
+          "line": 20,
+          "errorSignal": true,
           "loadingSignal": false,
           "enabled": null
         },
         {
-          "query": "salesPipeline.getKPIs",
-          "binding": "{ data: kpis }",
-          "line": 75,
-          "errorSignal": false,
-          "loadingSignal": false,
-          "enabled": null
-        },
-        {
-          "query": "salesPipeline.getPipeline",
-          "binding": "{ data: pipeline }",
-          "line": 76,
-          "errorSignal": false,
-          "loadingSignal": false,
-          "enabled": null
-        },
-        {
-          "query": "salesPipeline.getLossBreakdown",
-          "binding": "{ data: lossBreakdown }",
-          "line": 77,
-          "errorSignal": false,
+          "query": "salesPipeline.workspace",
+          "binding": "query",
+          "line": 21,
+          "errorSignal": true,
           "loadingSignal": false,
           "enabled": null
         }
       ],
       "conditions": [],
+      "imports": [
+        "client/src/lib/pipeline-labels.ts",
+        "client/src/components/merchant/PipelineReport.tsx"
+      ],
+      "controlCount": 3
+    },
+    {
+      "file": "client/src/lib/pipeline-labels.ts",
+      "hash": "cd58dff3e041",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
       "imports": [],
-      "controlCount": 12
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/components/merchant/PipelineReport.tsx",
+      "hash": "4fabd76d9f5e",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [
+        {
+          "label": "",
+          "line": 117,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 146,
+          "tag": "h3"
+        },
+        {
+          "label": "",
+          "line": 163,
+          "tag": "h3"
+        },
+        {
+          "label": "",
+          "line": 256,
+          "tag": "summary"
+        },
+        {
+          "label": "",
+          "line": 294,
+          "tag": "h3"
+        },
+        {
+          "label": "",
+          "line": 319,
+          "tag": "h3"
+        },
+        {
+          "label": "",
+          "line": 349,
+          "tag": "h3"
+        }
+      ],
+      "choices": [],
+      "handlers": [
+        {
+          "name": "pipelineSelectionKey",
+          "line": 9,
+          "calls": []
+        },
+        {
+          "name": "select",
+          "line": 84,
+          "calls": []
+        }
+      ],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [
+        "client/src/lib/pipeline-labels.ts"
+      ],
+      "controlCount": 9
     },
     {
       "file": "client/src/pages/merchant/AcquisitionReport.tsx",
@@ -18909,27 +18961,32 @@
         "SalesPipeline"
       ],
       "files": [
-        "client/src/pages/merchant/SalesPipeline.tsx"
+        "client/src/pages/merchant/SalesPipeline.tsx",
+        "client/src/components/KnowledgeWorkspaceScope.tsx",
+        "client/src/lib/knowledge-workspace-cache.ts",
+        "client/src/components/merchant/PipelineWorkspace.tsx",
+        "client/src/lib/pipeline-labels.ts",
+        "client/src/components/merchant/PipelineReport.tsx"
       ],
       "controls": [
-        "74a2da6508f3",
-        "0780119d0ae0",
-        "8f7193af5fde",
-        "0f0e8ea99e39",
-        "4a275d6bd799",
-        "d2e18b12318f",
-        "c9385d44956b",
-        "9109a16d5541",
-        "d2073b26a406",
-        "8bd67b62a3a3",
-        "cae02a00aebb",
-        "4ca0f656bd5e"
+        "77ce5300e6f7",
+        "b612916ddd9c",
+        "bde7408d2c97",
+        "ec2503922428",
+        "0e100ec7aec7",
+        "36ec606b897a",
+        "c96ddda618f9",
+        "fcd93fdac0a5",
+        "64863d20b824",
+        "661e7848f56a",
+        "0f73e938568f",
+        "b8952a7520eb",
+        "64c473fcd880"
       ],
       "queries": [
-        "salesPipeline.getActionCounts",
-        "salesPipeline.getKPIs",
-        "salesPipeline.getPipeline",
-        "salesPipeline.getLossBreakdown"
+        "auth.me",
+        "merchants.getCurrent",
+        "salesPipeline.workspace"
       ],
       "mutations": [],
       "imperativeReads": [],
@@ -48440,99 +48497,217 @@
       "review": "source-inventoried"
     },
     {
-      "id": "74a2da6508f3",
-      "file": "client/src/pages/merchant/SalesPipeline.tsx",
-      "line": 102,
-      "tag": "Card",
-      "role": "button",
-      "kind": "action",
-      "label": "🔥 جاهزون للدفع انقر لفتح المحادثات",
-      "section": "غرفة قيادة المبيعات",
-      "binding": "() => navigate('/merchant/conversations?stage=ready')",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "0780119d0ae0",
-      "file": "client/src/pages/merchant/SalesPipeline.tsx",
-      "line": 124,
-      "tag": "Card",
-      "role": "button",
-      "kind": "action",
-      "label": "⚠️ تحتاج تدخلك انقر للمراجعة",
-      "section": "غرفة قيادة المبيعات",
-      "binding": "() => navigate('/merchant/conversations?needs_human=1')",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "8f7193af5fde",
-      "file": "client/src/pages/merchant/SalesPipeline.tsx",
-      "line": 146,
-      "tag": "Card",
-      "role": "button",
-      "kind": "action",
-      "label": "💳 دفع لم يكتمل انقر للمتابعة",
-      "section": "غرفة قيادة المبيعات",
-      "binding": "() => navigate('/merchant/conversations?stage=payment_link_sent')",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "0f0e8ea99e39",
-      "file": "client/src/pages/merchant/SalesPipeline.tsx",
-      "line": 168,
-      "tag": "Card",
-      "role": "button",
-      "kind": "action",
-      "label": "⏸️ متوقفة انقر لإعادة التواصل",
-      "section": "غرفة قيادة المبيعات",
-      "binding": "() => navigate('/merchant/conversations?stage=stalled')",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "4a275d6bd799",
-      "file": "client/src/pages/merchant/SalesPipeline.tsx",
-      "line": 252,
-      "tag": "div",
-      "role": "button",
+      "id": "b612916ddd9c",
+      "file": "client/src/components/merchant/PipelineWorkspace.tsx",
+      "line": 87,
+      "tag": "Button",
+      "role": "",
       "kind": "action",
       "label": "",
-      "section": "خط سير الصفقات",
-      "binding": "() => navigate(`/merchant/conversations?stage=${stage}`)",
+      "section": "PipelineWorkspace",
+      "binding": "() => void refresh()",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "query.isFetching || merchant.isFetching || refreshing",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "bde7408d2c97",
+      "file": "client/src/components/merchant/PipelineWorkspace.tsx",
+      "line": 94,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "PipelineWorkspace",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "ec2503922428",
+      "file": "client/src/components/merchant/PipelineWorkspace.tsx",
+      "line": 95,
+      "tag": "a",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "PipelineWorkspace",
+      "binding": "/merchant/sales-hub",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "0e100ec7aec7",
+      "file": "client/src/components/merchant/PipelineReport.tsx",
+      "line": 103,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "PipelineReport",
+      "binding": "() => select(q)",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "36ec606b897a",
+      "file": "client/src/components/merchant/PipelineReport.tsx",
+      "line": 120,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "·",
+      "section": "PipelineReport",
+      "binding": "selected",
+      "type": "text",
+      "options": [
+        {
+          "value": "q",
+          "label": "·"
+        },
+        {
+          "value": "\"stage:\" + s.stage",
+          "label": "·"
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "c96ddda618f9",
+      "file": "client/src/components/merchant/PipelineReport.tsx",
+      "line": 148,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "PipelineReport",
+      "binding": "() => select(\"all\")",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "!d.list.items.length"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "fcd93fdac0a5",
+      "file": "client/src/components/merchant/PipelineReport.tsx",
+      "line": 209,
+      "tag": "a",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "PipelineReport",
+      "binding": "href(\n                      \"/merchant/conversations?\" +\n                        new URLSearchParams({\n                          phone: item.customerPhone,\n                          ...(item.customerName\n                            ? { name: item.customerName }\n                            : {}),\n                        })\n                    )",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "item.customerPhone.trim()"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "64863d20b824",
+      "file": "client/src/components/merchant/PipelineReport.tsx",
+      "line": 232,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "PipelineReport",
+      "binding": "() => onPage?.(d.list.page - 1)",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "d.list.page <= 1",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "661e7848f56a",
+      "file": "client/src/components/merchant/PipelineReport.tsx",
+      "line": 244,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "PipelineReport",
+      "binding": "() => onPage?.(d.list.page + 1)",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "d.list.page >= d.list.totalPages",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "0f73e938568f",
+      "file": "client/src/components/merchant/PipelineReport.tsx",
+      "line": 256,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "PipelineReport",
+      "binding": "",
       "type": "text",
       "options": [],
       "min": "",
@@ -48545,61 +48720,15 @@
       "review": "source-inventoried"
     },
     {
-      "id": "d2e18b12318f",
-      "file": "client/src/pages/merchant/SalesPipeline.tsx",
-      "line": 286,
-      "tag": "div",
-      "role": "button",
-      "kind": "action",
-      "label": "فتح المحادثة",
-      "section": "🔥 عملاء جاهزون للدفع",
-      "binding": "() => openConversation(lead.customerPhone, lead.customerName)",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [
-        "pipeline?.hotLeads && pipeline.hotLeads.length > 0"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "c9385d44956b",
-      "file": "client/src/pages/merchant/SalesPipeline.tsx",
-      "line": 299,
-      "tag": "Button",
+      "id": "b8952a7520eb",
+      "file": "client/src/components/merchant/PipelineReport.tsx",
+      "line": 346,
+      "tag": "a",
       "role": "",
       "kind": "action",
-      "label": "فتح المحادثة",
-      "section": "🔥 عملاء جاهزون للدفع",
-      "binding": "(e) => { e.stopPropagation(); openConversation(lead.customerPhone, lead.customerName); }",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [
-        "pipeline?.hotLeads && pipeline.hotLeads.length > 0"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "9109a16d5541",
-      "file": "client/src/pages/merchant/SalesPipeline.tsx",
-      "line": 328,
-      "tag": "div",
-      "role": "button",
-      "kind": "action",
-      "label": "ar-SA تذكير",
-      "section": "💳 دفع لم يكتمل",
-      "binding": "() => openConversation(item.customerPhone, item.customerName)",
+      "label": "",
+      "section": "PipelineReport",
+      "binding": "href(\"/merchant/orders\")",
       "type": "text",
       "options": [],
       "min": "",
@@ -48607,68 +48736,20 @@
       "maxLength": "",
       "required": false,
       "conditional": true,
-      "conditions": [
-        "pipeline?.paymentPending && pipeline.paymentPending.length > 0"
-      ],
+      "conditions": [],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "d2073b26a406",
-      "file": "client/src/pages/merchant/SalesPipeline.tsx",
-      "line": 344,
-      "tag": "Button",
+      "id": "64c473fcd880",
+      "file": "client/src/components/merchant/PipelineReport.tsx",
+      "line": 351,
+      "tag": "a",
       "role": "",
       "kind": "action",
-      "label": "تذكير",
-      "section": "💳 دفع لم يكتمل",
-      "binding": "(e) => { e.stopPropagation(); openConversation(item.customerPhone, item.customerName); }",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [
-        "pipeline?.paymentPending && pipeline.paymentPending.length > 0"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "8bd67b62a3a3",
-      "file": "client/src/pages/merchant/SalesPipeline.tsx",
-      "line": 373,
-      "tag": "div",
-      "role": "button",
-      "kind": "action",
-      "label": "ar-SA",
-      "section": "✅ صفقات مدفوعة (آخر 7 أيام)",
-      "binding": "() => openConversation(win.customerPhone, win.customerName)",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [
-        "pipeline?.recentWins && pipeline.recentWins.length > 0"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "cae02a00aebb",
-      "file": "client/src/pages/merchant/SalesPipeline.tsx",
-      "line": 411,
-      "tag": "div",
-      "role": "button",
-      "kind": "action",
-      "label": "محاولة استرداد",
-      "section": "❌ صفقات خاسرة (آخر 7 أيام)",
-      "binding": "() => openConversation(loss.customerPhone, loss.customerName)",
+      "label": "",
+      "section": "PipelineReport",
+      "binding": "href(\"/merchant/sari-brain\")",
       "type": "text",
       "options": [],
       "min": "",
@@ -48676,32 +48757,7 @@
       "maxLength": "",
       "required": false,
       "conditional": false,
-      "conditions": [
-        "pipeline?.recentLosses && pipeline.recentLosses.length > 0"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "4ca0f656bd5e",
-      "file": "client/src/pages/merchant/SalesPipeline.tsx",
-      "line": 425,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "محاولة استرداد",
-      "section": "❌ صفقات خاسرة (آخر 7 أيام)",
-      "binding": "(e) => { e.stopPropagation(); openConversation(loss.customerPhone, loss.customerName); }",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [
-        "pipeline?.recentLosses && pipeline.recentLosses.length > 0"
-      ],
+      "conditions": [],
       "disabled": "",
       "review": "source-inventoried"
     },
