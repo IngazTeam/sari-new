@@ -1,3 +1,5 @@
+import { brainPreviewInput } from "../shared/brain-preview";
+import { previewRateLimit } from "./routers-test-workspace";
 import { qualityReadoutInput } from '../shared/quality-readout';
 import { pageUrlInput, pagePreviewReadInput, pagePreviewSaveInput } from '../shared/knowledge-page-intake';
 import { quotationWorkspaceRouter, quotationGuard } from './routers-quotations';
@@ -834,34 +836,21 @@ export const sariBrainRouter = router({
   // Test Sari — Let merchant ask a test question and see the response
   // ════════════════════════════════════════════════════════════════
   testSari: permissionProcedure('bot_settings.manage')
-    .input(z.object({
-      question: z.string().min(1).max(500, 'السؤال طويل جداً'),
-    }))
+    .input(brainPreviewInput)
     .mutation(async ({ ctx, input }) => {
       const merchant = await getMerchantById(ctx.merchantId);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-
-      // PEN-BRAIN-08 FIX: Separate rate limiter for test endpoint (5s cooldown)
       checkTestRateLimit(merchant.id, 5_000);
-
+      previewRateLimit(ctx.merchantId, ctx.user.id);
       try {
-        const { chatWithSari } = await import('./ai/sari-personality');
-        const response = await chatWithSari({
-          merchantId: merchant.id,
-          customerPhone: 'test-brain-preview',
-          customerName: 'عميل تجريبي',
-          message: input.question,
+        const { previewSari } = await import('./ai/sari-preview');
+        const response = await previewSari({
+          merchantId: ctx.merchantId, userId: ctx.user.id,
+          message: input.question, history: [], historyTruncated: false,
         });
-
-        return {
-          success: true,
-          question: input.question,
-          answer: response,
-        };
-      } catch (error: any) {
-        if (error?.code === 'TOO_MANY_REQUESTS') throw error;
-        console.error('[SariBrain] Test failed:', error);
-        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'فشل الاختبار. حاول مرة أخرى.' });
+        return { success: true as const, question: input.question, answer: response.response, source: response.source };
+      } catch {
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Preview result unavailable' });
       }
     }),
 

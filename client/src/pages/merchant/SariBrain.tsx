@@ -1,3 +1,4 @@
+import { BrainQuickPreview } from "@/components/BrainQuickPreview";
 import { ReplyQualityReadout } from '@/components/ReplyQualityReadout';
 import { WebsiteAnalysisDialog, type WebsiteAnalysisIssue } from '@/components/WebsiteAnalysisDialog';
 import { KnowledgeWebsiteIntake } from '@/components/KnowledgeWebsiteIntake';
@@ -92,9 +93,6 @@ export default function SariBrain() {
   // Knowledge Engine v4 hooks
   const { data: knowledgeSections } = trpc.sariBrain.getKnowledgeSections.useQuery();
 
-  const [testQuestion, setTestQuestion] = useState('');
-  const [testResult, setTestResult] = useState<{ question: string; answer: string } | null>(null);
-
   // Reanalyze progress modal
   const [analysisDialogOpen, setAnalysisDialogOpen] = useState(false);
   const [analysisStep, setAnalysisStep] = useState('');
@@ -177,21 +175,6 @@ export default function SariBrain() {
     reanalyzeMutation.mutate();
   };
 
-
-  const testSariMutation = trpc.sariBrain.testSari.useMutation({
-    onSuccess: (data: any) => {
-      setTestResult({ question: data.question, answer: data.answer });
-    },
-    onError: (error: any) => toast.error('فشل الاختبار: ' + error.message),
-  });
-
-  const handleTest = () => {
-    if (!testQuestion.trim()) {
-      toast.error('اكتب سؤال أولاً');
-      return;
-    }
-    testSariMutation.mutate({ question: testQuestion });
-  };
 
   const totalSources = sourcesQuery.isError || isLoading ? '—' : sources?.filter((s: any) => s.hasContent && s.type !== 'settings').length || 0;
 
@@ -455,59 +438,7 @@ export default function SariBrain() {
       </section>
 
       <section hidden={brainView !== 'testing'} className="space-y-6" data-brain-section="testing">
-{/* ═══ Test Sari — Ask a test question ═══ */}
-      <Card className="border-primary/20 bg-accent">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <MessageSquare className="h-5 w-5 text-primary" />
-            🧪 اختبر ساري
-          </CardTitle>
-          <CardDescription>
-            اسأل سؤال تجريبي وشاهد كيف يرد ساري بناءً على مصادر المعرفة الحالية
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex gap-2">
-            <Textarea
-              value={testQuestion}
-              onChange={(e) => setTestQuestion(e.target.value)}
-              placeholder="اكتب سؤال مثل: كم سعر الدورة؟ وش الخدمات المتاحة؟ فين موقعكم؟"
-              className="min-h-[60px] text-sm flex-1"
-              dir="auto"
-              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleTest(); } }}
-            />
-            <Button onClick={handleTest} disabled={!testQuestion.trim() || testSariMutation.isPending} className="self-end">
-              {testSariMutation.isPending ? '...' : '🤖 اسأل'}
-            </Button>
-          </div>
-
-          {testResult && (
-            <div className="space-y-3 mt-2">
-              {/* Customer bubble */}
-              <div className="flex justify-end">
-                <div className="bg-primary text-primary-foreground px-4 py-2 rounded-2xl rounded-tr-sm max-w-[80%]">
-                  <p className="text-sm">{testResult.question}</p>
-                </div>
-              </div>
-              {/* Sari bubble */}
-              <div className="flex justify-start">
-                <div className="bg-muted px-4 py-2 rounded-2xl rounded-tl-sm max-w-[80%]">
-                  <p className="text-sm whitespace-pre-wrap">{testResult.answer}</p>
-                  <p className="text-[10px] text-muted-foreground mt-1">🤖 رد ساري بناءً على المعرفة الحالية</p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className="flex flex-wrap gap-1">
-            {['كم الأسعار؟', 'وش الخدمات المتاحة؟', 'فين موقعكم؟', 'كيف أطلب؟'].map((q) => (
-              <Button key={q} variant="outline" size="sm" className="text-xs h-7" onClick={() => { setTestQuestion(q); setTestResult(null); }}>
-                {q}
-              </Button>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+<BrainQuickPreview />
 
       </section>
 
