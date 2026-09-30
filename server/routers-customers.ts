@@ -8,6 +8,8 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { permissionProcedure, router } from "./_core/trpc";
+import { customerListInput, customerDetailInput } from "../shared/customer-workspace";
+import { readCustomerList, readCustomerDetail } from "./customer-workspace";
 import {
   getCustomerByPhone,
   getCustomerStats,
@@ -17,6 +19,16 @@ import {
 } from './db';
 
 export const customersRouter = router({
+    workspace: router({
+        list: permissionProcedure('conversations.read').input(customerListInput).query(async ({ctx,input}) => {
+            try { return await readCustomerList(ctx.merchantId,input); }
+            catch { throw new TRPCError({code:'INTERNAL_SERVER_ERROR',message:'Customers unavailable'}); }
+        }),
+        detail: permissionProcedure('conversations.read').input(customerDetailInput).query(async ({ctx,input}) => {
+            try { return await readCustomerDetail(ctx.merchantId,input); }
+            catch { throw new TRPCError({code:'INTERNAL_SERVER_ERROR',message:'Customer unavailable'}); }
+        }),
+    }),
     // Get all customers with stats
     list: permissionProcedure('conversations.read')
         .input(z.object({
