@@ -67,59 +67,6 @@ async function getAuthenticatedClient(merchantId: number, redactErrors=false) {
 }
 
 /**
- * إنشاء Spreadsheet جديد
- */
-export async function createSpreadsheet(
-  merchantId: number,
-  title: string
-): Promise<{ success: boolean; spreadsheetId?: string; message: string }> {
-  try {
-    const auth = await getAuthenticatedClient(merchantId);
-    if (!auth) {
-      return { success: false, message: 'Google Sheets غير مربوط' };
-    }
-
-    const sheets = google.sheets({ version: 'v4', auth });
-    
-    const response = await sheets.spreadsheets.create({
-      requestBody: {
-        properties: {
-          title,
-        },
-      },
-    });
-
-    const spreadsheetId = response.data.spreadsheetId;
-    
-    if (!spreadsheetId) {
-      return { success: false, message: 'فشل إنشاء Spreadsheet' };
-    }
-
-    // حفظ spreadsheet ID
-    const integration = await getGoogleIntegration(merchantId, 'sheets');
-    if (integration) {
-      await updateGoogleIntegration(integration.id, {
-        sheetId: spreadsheetId,
-      });
-    }
-
-    console.log('[Google Sheets] Created spreadsheet:', spreadsheetId);
-
-    return {
-      success: true,
-      spreadsheetId,
-      message: 'تم إنشاء Spreadsheet بنجاح',
-    };
-  } catch (error: any) {
-    console.error('[Google Sheets] Error creating spreadsheet:', error);
-    return {
-      success: false,
-      message: error.message || 'فشل إنشاء Spreadsheet',
-    };
-  }
-}
-
-/**
  * إضافة صفحة جديدة (Sheet) إلى Spreadsheet
  */
 export async function addSheet(
@@ -351,62 +298,5 @@ export async function deleteRows(
       success: false,
       message: error.message || 'فشل حذف الصفوف',
     };
-  }
-}
-
-/**
- * فصل الاتصال بـ Google Sheets
- */
-export async function disconnect(merchantId: number): Promise<{ success: boolean; message: string }> {
-  try {
-    const integration = await getGoogleIntegration(merchantId, 'sheets');
-    
-    if (!integration) {
-      return { success: false, message: 'لا يوجد اتصال بـ Google Sheets' };
-    }
-
-    await updateGoogleIntegration(integration.id, {
-      isActive: 0,
-      credentials: null,
-    });
-
-    console.log('[Google Sheets] Disconnected for merchant:', merchantId);
-
-    return {
-      success: true,
-      message: 'تم فصل الاتصال بنجاح',
-    };
-  } catch (error: any) {
-    console.error('[Google Sheets] Error disconnecting:', error);
-    return {
-      success: false,
-      message: error.message || 'فشل فصل الاتصال',
-    };
-  }
-}
-
-/**
- * الحصول على حالة الاتصال
- */
-export async function getConnectionStatus(merchantId: number): Promise<{
-  isConnected: boolean;
-  spreadsheetId?: string;
-  lastSync?: Date;
-}> {
-  try {
-    const integration = await getGoogleIntegration(merchantId, 'sheets');
-    
-    if (!integration || !integration.isActive) {
-      return { isConnected: false };
-    }
-
-    return {
-      isConnected: true,
-      spreadsheetId: integration.sheetId || undefined,
-      lastSync: integration.lastSync ? new Date(integration.lastSync) : undefined,
-    };
-  } catch (error) {
-    console.error('[Google Sheets] Error getting connection status:', error);
-    return { isConnected: false };
   }
 }

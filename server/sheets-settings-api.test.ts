@@ -32,9 +32,7 @@ const run = (name: string, c = caller()) =>
     ? c.updateReportSettings(input as any)
     : name === "disconnect"
       ? c.disconnect({ expectedDigest: input.expectedDigest, reviewed: true })
-      : name === "getStatus"
-        ? c.getStatus()
-        : c.getReportSettings();
+      : c.getStatus();
 beforeEach(() => {
   vi.resetAllMocks();
   m.access.mockResolvedValue({ merchantId: 7, role: "manager" });
@@ -43,7 +41,6 @@ beforeEach(() => {
 describe("Sheets settings permissions", () => {
   it.each([
     "getStatus",
-    "getReportSettings",
     "updateReportSettings",
     "disconnect",
   ])("scopes %s to the selected tenant and session", async name => {
@@ -58,7 +55,6 @@ describe("Sheets settings permissions", () => {
   });
   it.each([
     "getStatus",
-    "getReportSettings",
     "updateReportSettings",
     "disconnect",
   ])("blocks viewer access to %s", async name => {
@@ -70,7 +66,6 @@ describe("Sheets settings permissions", () => {
   });
   it.each([
     "getStatus",
-    "getReportSettings",
     "updateReportSettings",
     "disconnect",
   ])("blocks missing session in %s", async name => {

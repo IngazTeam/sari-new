@@ -55,13 +55,6 @@ export const sheetsRouter = router({
     return guardSheetsOAuth(() => readSheetsSettings({merchantId:ctx.merchantId,userId:ctx.user.id,sessionId:ctx.session!.sessionId}));
   }),
 
-  // إعداد Spreadsheet الرئيسي
-  setupSpreadsheet: protectedProcedure.mutation(async ({ ctx }) => {
-    const merchant = await getMerchantByUserId(ctx.user.id);
-    if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-    return await sheetsSync.setupMerchantSpreadsheet(merchant.id);
-  }),
-
   // مزامنة طلب محدد
   syncOrder: protectedProcedure
     .input(z.object({
@@ -197,12 +190,6 @@ export const sheetsRouter = router({
   updateReportSettings: permissionProcedure('integrations.manage').input(sheetsSettingsChange).mutation(({ctx,input}) => {
     if (!ctx.session?.sessionId) throw new TRPCError({code:'UNAUTHORIZED',message:'sheets_oauth:session'});
     return guardSheetsOAuth(() => writeSheetsReportSettings({merchantId:ctx.merchantId,userId:ctx.user.id,sessionId:ctx.session!.sessionId},input));
-  }),
-
-  // الحصول على إعدادات التقارير
-  getReportSettings: permissionProcedure('integrations.manage').query(({ctx}) => {
-    if (!ctx.session?.sessionId) throw new TRPCError({code:'UNAUTHORIZED',message:'sheets_oauth:session'});
-    return guardSheetsOAuth(async () => (await readSheetsSettings({merchantId:ctx.merchantId,userId:ctx.user.id,sessionId:ctx.session!.sessionId})).reports);
   }),
 
   // فصل الاتصال

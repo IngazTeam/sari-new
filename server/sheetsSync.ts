@@ -6,7 +6,6 @@
 import {
   getConversationById,
   getGoogleIntegration,
-  getMerchantById,
   getMessagesByConversationId,
   getOrderById,
   updateGoogleIntegration,
@@ -14,98 +13,6 @@ import {
 import * as sheets from './_core/googleSheets';
 import { formatMinorMoney } from '../shared/product-money';
 import type { SheetEvidenceHooks } from './integrations/salla-sheet-evidence';
-
-/**
- * إعداد Spreadsheet الرئيسي للتاجر
- */
-export async function setupMerchantSpreadsheet(merchantId: number): Promise<{
-  success: boolean;
-  spreadsheetId?: string;
-  message: string;
-}> {
-  try {
-    const merchant = await getMerchantById(merchantId);
-    if (!merchant) {
-      return { success: false, message: 'التاجر غير موجود' };
-    }
-
-    // إنشاء Spreadsheet جديد
-    const title = `ساري - ${merchant.businessName || 'بيانات المتجر'}`;
-    const result = await sheets.createSpreadsheet(merchantId, title);
-
-    if (!result.success || !result.spreadsheetId) {
-      return result;
-    }
-
-    const spreadsheetId = result.spreadsheetId;
-
-    // إنشاء الصفحات المطلوبة
-    await sheets.addSheet(merchantId, spreadsheetId, 'الطلبات');
-    await sheets.addSheet(merchantId, spreadsheetId, 'العملاء المحتملين');
-    await sheets.addSheet(merchantId, spreadsheetId, 'المحادثات');
-    await sheets.addSheet(merchantId, spreadsheetId, 'المخزون');
-
-    // إضافة Headers للطلبات
-    await sheets.writeToSheet(merchantId, spreadsheetId, 'الطلبات!A1:J1', [[
-      'رقم الطلب',
-      'التاريخ',
-      'الوقت',
-      'اسم العميل',
-      'رقم الجوال',
-      'المنتجات',
-      'الإجمالي',
-      'الحالة',
-      'رقم التتبع',
-      'ملاحظات'
-    ]]);
-
-    // إضافة Headers للعملاء المحتملين
-    await sheets.writeToSheet(merchantId, spreadsheetId, 'العملاء المحتملين!A1:H1', [[
-      'التاريخ',
-      'اسم العميل',
-      'رقم الجوال',
-      'المصدر',
-      'الحالة',
-      'آخر تفاعل',
-      'عدد الرسائل',
-      'ملاحظات'
-    ]]);
-
-    // إضافة Headers للمحادثات
-    await sheets.writeToSheet(merchantId, spreadsheetId, 'المحادثات!A1:F1', [[
-      'التاريخ',
-      'الوقت',
-      'اسم العميل',
-      'رقم الجوال',
-      'الاتجاه',
-      'الرسالة'
-    ]]);
-
-    // إضافة Headers للمخزون
-    await sheets.writeToSheet(merchantId, spreadsheetId, 'المخزون!A1:F1', [[
-      'رقم المنتج',
-      'اسم المنتج',
-      'الفئة',
-      'السعر',
-      'الكمية المتاحة',
-      'آخر تحديث'
-    ]]);
-
-    console.log('[Sheets Sync] Setup completed for merchant:', merchantId);
-
-    return {
-      success: true,
-      spreadsheetId,
-      message: 'تم إعداد Spreadsheet بنجاح',
-    };
-  } catch (error: any) {
-    console.error('[Sheets Sync] Setup error:', error);
-    return {
-      success: false,
-      message: error.message || 'فشل إعداد Spreadsheet',
-    };
-  }
-}
 
 /**
  * مزامنة طلب جديد إلى Google Sheets
