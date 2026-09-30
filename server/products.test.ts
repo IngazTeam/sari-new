@@ -59,6 +59,8 @@ describe("retired product writes", () => {
       "getSheetSyncStatus",
       "fileAdvice.start",
       "fileAdvice.read",
+      "sheetImport.connection",
+      "sheetImport.list",
       "editor.read",
       "editor.write",
       "editor.receipt",

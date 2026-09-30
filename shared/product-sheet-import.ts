@@ -49,3 +49,29 @@ export const productSheetSnapshot = z
         (v.sheet.rows > v.coveredRows || v.sheet.columns > v.coveredColumns)
   );
 export type ProductSheetSnapshot = z.infer<typeof productSheetSnapshot>;
+export const productSheetSourceIdentity = z
+  .object({
+    integrationId: z.number().int().positive(),
+    spreadsheetId: productSpreadsheetId,
+    digest: z.string().regex(/^[a-f0-9]{64}$/),
+  })
+  .strict();
+export const productSheetListInput = z
+  .object({ expectedSourceDigest: z.string().regex(/^[a-f0-9]{64}$/) })
+  .strict();
+export const productSheetSelection = productSheetListInput
+  .extend({ sheet: productSheet, options: productSheetOptions })
+  .strict()
+  .refine(v => v.sheet.id === v.options.sheetId);
+export const productSheetConnection = z
+  .object({
+    merchantId: z.number().int().positive(),
+    actorId: z.number().int().positive(),
+    integrationSource: z.string().nullable(),
+    source: productSheetSourceIdentity.nullable(),
+    reason: z
+      .enum(["unlinked", "credentials_missing", "oauth_disabled"])
+      .nullable(),
+  })
+  .strict()
+  .refine(v => (v.source !== null) === (v.reason === null));
