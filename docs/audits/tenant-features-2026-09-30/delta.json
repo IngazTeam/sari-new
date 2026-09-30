@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-09-30T19:29:52.008Z",
+  "generatedAt": "2026-09-30T19:39:35.155Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -11,7 +11,7 @@
     "after": {
       "routes": 126,
       "files": 312,
-      "controls": 2104
+      "controls": 2106
     }
   },
   "addedFiles": [
@@ -151,6 +151,7 @@
   ],
   "changedFiles": [
     "client/src/pages/SetupWizard.tsx",
+    "client/src/pages/setup-wizard/ProductsServicesStep.tsx",
     "client/src/components/PreviewChat.tsx",
     "client/src/pages/setup-wizard/CompleteStep.tsx",
     "client/src/pages/merchant/Campaigns.tsx",
@@ -240,7 +241,7 @@
     {
       "route": "/merchant/setup-wizard",
       "controlsBefore": 59,
-      "controlsNow": 61,
+      "controlsNow": 63,
       "removedQueries": [],
       "addedQueries": [],
       "removedMutations": [],

@@ -342,6 +342,27 @@
   gap: 8px;
   flex-wrap: wrap;
 }
+.ms-catalog-entry, .ms-catalog-group, .ms-catalog-item { display: grid; gap: 16px; min-width: 0; }
+.ms-catalog-group { margin-top: 12px; }
+.ms-catalog-group > header, .ms-catalog-item > header, .ms-catalog-undo { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.ms-catalog-group h2 { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 600; }
+.ms-catalog-group h2 svg { width: 20px; color: var(--primary); }
+.ms-catalog-group small { color: var(--muted-foreground); font-size: 12px; font-weight: 400; }
+.ms-catalog-item { border: 1px solid var(--border); border-radius: 12px; padding: 16px; background: var(--card); }
+.ms-catalog-item h3 { font-size: 13px; font-weight: 600; }
+.ms-catalog-field { display: grid; gap: 8px; min-width: 0; margin-bottom: 12px; }
+.ms-catalog-field:last-child { margin-bottom: 0; }
+.ms-catalog-field select { width: 100%; border: 1px solid var(--input); padding: 8px 12px; }
+.ms-catalog-price { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: start; }
+.ms-catalog-price .ms-catalog-field { margin: 0; }
+.ms-catalog-price > p { padding-top: 34px; font-size: 13px; }
+.ms-field-error { color: var(--destructive); font-size: 12px; line-height: 1.8; overflow-wrap: anywhere; }
+.ms-catalog-error { padding: 14px; border: 1px solid var(--destructive); background: var(--card); border-radius: 10px; font-size: 13px; line-height: 1.9; }
+.ms-catalog-error:focus { outline: 2px solid var(--primary); outline-offset: 3px; }
+.ms-catalog-empty { padding: 24px 16px; border: 1px dashed var(--border); border-radius: 12px; text-align: center; color: var(--muted-foreground); font-size: 13px; }
+.ms-catalog-entry pre { white-space: pre-wrap; overflow-wrap: anywhere; direction: ltr; text-align: left; font-size: 12px; }
+.ms-catalog-image { object-fit: contain; border-radius: 8px; background: var(--muted); }
+@media (max-width: 480px) { .ms-catalog-price { grid-template-columns: minmax(0, 1fr); } }
 .ms-catalog-modes button {
   flex: 1;
   min-width: 120px;
