@@ -44,6 +44,15 @@ import {
 import { knowledgeCacheEpoch } from "@/lib/knowledge-workspace-cache";
 import type { SetupCompletionReceipt } from "@shared/setup-completion";
 import type { reviewSetupCompletion } from "../../../server/setup-completion";
+import type { readSetupProgress } from "../../../server/setup-progress";
+import {
+  readSetupDraft,
+  rememberSetupDraft,
+  forgetSetupDraft,
+  sameSetupDraft,
+  type SetupDraftPayload,
+} from "@/lib/setup-draft-cache";
+import SetupDraftRecovery from "./setup-wizard/SetupDraftRecovery";
 
 import {
   SETUP_STAGE_ENDS,
@@ -123,6 +132,20 @@ export default function SetupWizard() {
   const dirtyRef = useRef(false);
   const saveQueueRef = useRef<Promise<boolean>>(Promise.resolve(true));
   const pendingSavesRef = useRef(0);
+  const latestDraftRef = useRef<SetupDraftPayload>({
+    currentStep: 1,
+    completedSteps: [],
+    wizardData: {},
+  });
+  const saveGenerationRef = useRef(0);
+  const frozenDraftRef = useRef(false);
+  const [draftRecovery, setDraftRecovery] = useState(false);
+  const [remoteDraft, setRemoteDraft] =
+    useState<Awaited<ReturnType<typeof readSetupProgress>>>();
+  const [draftError, setDraftError] = useState("");
+  const [draftBusy, setDraftBusy] = useState(false);
+  const draftBusyRef = useRef(false);
+  const [localWarning, setLocalWarning] = useState(false);
 
   // Load progress
   const {
@@ -139,14 +162,53 @@ export default function SetupWizard() {
   const completeSetupMutation = trpc.setupWizard.completeSetup.useMutation();
   const reviewSetupMutation = trpc.setupWizard.reviewSetup.useMutation();
 
+  const progressPayload = (
+    value: NonNullable<typeof progress>
+  ): SetupDraftPayload => ({
+    currentStep: Math.min(TOTAL_STEPS, Math.max(1, value.currentStep || 1)),
+    completedSteps: parseJsonArray(value.completedSteps),
+    wizardData: parseWizardData(value.wizardData),
+  });
+  const restoreDraft = (payload: SetupDraftPayload) => {
+    latestDraftRef.current = payload;
+    wizardDataRef.current = payload.wizardData;
+    setWizardData(payload.wizardData);
+    setCurrentStep(payload.currentStep);
+    setCompletedSteps(payload.completedSteps);
+    setCatalogMode("items");
+    setReview(null);
+    setLastSaved(null);
+  };
+  const cacheDraft = (payload: SetupDraftPayload) => {
+    if (!progress || epochRef.current !== knowledgeCacheEpoch()) return;
+    try {
+      rememberSetupDraft(
+        {
+          actorId: progress.actorId,
+          merchantId: progress.merchantId,
+          baseDigest: digestRef.current,
+          savedAt: Date.now(),
+          payload,
+        },
+        epochRef.current
+      );
+      setLocalWarning(false);
+    } catch {
+      setLocalWarning(true);
+    }
+  };
+
   const recoverCompletion = async (pending: SetupAttempt) => {
     setIsLoading(true);
     setReceiptChecked(false);
     setCompletionError("");
     try {
-      const found = await utils.setupWizard.completionReceipt.fetch({
-        requestId: pending.input.requestId,
-      });
+      const found = await utils.setupWizard.completionReceipt.fetch(
+        {
+          requestId: pending.input.requestId,
+        },
+        { staleTime: 0 }
+      );
       if (epochRef.current !== knowledgeCacheEpoch()) return;
       if (found) setReceipt(checkedSetupReceipt(found, pending));
       else setReceiptChecked(true);
@@ -165,31 +227,53 @@ export default function SetupWizard() {
       digestRef.current = progress.digest;
       scopeRef.current = `${progress.actorId}:${progress.merchantId}`;
       let pending: SetupAttempt | null = null;
+      let local: ReturnType<typeof readSetupDraft> = null;
+      let unreadableLocal = false;
       try {
         pending = readSetupAttempt(progress.actorId, progress.merchantId);
+        if (!pending)
+          local = readSetupDraft(progress.actorId, progress.merchantId);
       } catch {
+        unreadableLocal = true;
+        frozenDraftRef.current = true;
         setStorageError(true);
       }
+      const saved = progressPayload(progress);
+      restoreDraft(saved);
       if (pending) {
         setAttempt(pending);
         setCurrentStep(10);
         void recoverCompletion(pending);
-      } else if (progress.isCompleted) {
+      } else if (
+        local &&
+        (progress.draftUnreadable || !sameSetupDraft(local.payload, saved))
+      ) {
+        restoreDraft(local.payload);
+        dirtyRef.current = true;
+        frozenDraftRef.current = true;
+        setRemoteDraft(progress);
+        setDraftRecovery(true);
+      } else if (progress.isCompleted && !unreadableLocal) {
         setLocation("/merchant/dashboard");
         return;
+      } else if (local) {
+        try {
+          forgetSetupDraft(
+            progress.actorId,
+            progress.merchantId,
+            local.payload,
+            epochRef.current
+          );
+        } catch {
+          setLocalWarning(true);
+        }
       }
-      const restoredData = parseWizardData(progress.wizardData);
-      if (!pending)
-        setCurrentStep(
-          Math.min(TOTAL_STEPS, Math.max(1, progress.currentStep || 1))
-        );
-      setCompletedSteps(parseJsonArray(progress.completedSteps));
-      setWizardData(restoredData);
-      wizardDataRef.current = restoredData;
     } else if (
       progress &&
       scopeRef.current !== `${progress.actorId}:${progress.merchantId}`
     ) {
+      frozenDraftRef.current = true;
+      saveGenerationRef.current++;
       setStorageError(true);
     }
   }, [progress, fetchingProgress]);
@@ -201,32 +285,71 @@ export default function SetupWizard() {
       completed?: number[];
       wData?: Record<string, any>;
     }) => {
+      if (frozenDraftRef.current || epochRef.current !== knowledgeCacheEpoch())
+        return Promise.resolve(false);
       const snapshot = {
-        currentStep: data?.step ?? currentStep,
-        completedSteps: data?.completed ?? completedSteps,
+        currentStep: data?.step ?? latestDraftRef.current.currentStep,
+        completedSteps:
+          data?.completed ?? latestDraftRef.current.completedSteps,
         wizardData: data?.wData ?? wizardDataRef.current,
       };
+      latestDraftRef.current = snapshot;
+      dirtyRef.current = true;
+      cacheDraft(snapshot);
+      const generation = saveGenerationRef.current;
       pendingSavesRef.current += 1;
       setIsSaving(true);
       const save = saveQueueRef.current.then(async () => {
         try {
+          if (
+            generation !== saveGenerationRef.current ||
+            frozenDraftRef.current ||
+            epochRef.current !== knowledgeCacheEpoch()
+          )
+            return false;
           const saved = await saveProgressMutation.mutateAsync({
             ...snapshot,
             expectedDigest: digestRef.current,
           });
-          if (epochRef.current !== knowledgeCacheEpoch()) return false;
+          if (
+            epochRef.current !== knowledgeCacheEpoch() ||
+            generation !== saveGenerationRef.current
+          )
+            return false;
           digestRef.current = saved.digest;
-          if (snapshot.wizardData === wizardDataRef.current) {
+          if (sameSetupDraft(snapshot, latestDraftRef.current)) {
             setLastSaved(new Date());
             dirtyRef.current = false;
-          }
+            try {
+              if (progress)
+                forgetSetupDraft(
+                  progress.actorId,
+                  progress.merchantId,
+                  snapshot,
+                  epochRef.current
+                );
+            } catch {
+              setLocalWarning(true);
+            }
+          } else cacheDraft(latestDraftRef.current);
           setSaveError(false);
           setSaveConflict(false);
           return true;
         } catch (error) {
-          console.error("Failed to save progress:", error);
+          if (
+            epochRef.current !== knowledgeCacheEpoch() ||
+            generation !== saveGenerationRef.current
+          )
+            return false;
           setSaveError(true);
-          setSaveConflict((error as any)?.data?.code === "CONFLICT");
+          if ((error as any)?.data?.code === "CONFLICT") {
+            frozenDraftRef.current = true;
+            saveGenerationRef.current++;
+            setSaveConflict(true);
+            setReview(null);
+            setRemoteDraft(undefined);
+            setDraftRecovery(true);
+          }
           return false;
         } finally {
           pendingSavesRef.current -= 1;
@@ -236,8 +359,107 @@ export default function SetupWizard() {
       saveQueueRef.current = save;
       return save;
     },
-    [currentStep, completedSteps, saveProgressMutation]
+    [progress, saveProgressMutation]
   );
+
+  const refreshDraft = async () => {
+    if (draftBusyRef.current) return;
+    draftBusyRef.current = true;
+    setDraftBusy(true);
+    setDraftError("");
+    try {
+      await saveQueueRef.current;
+      const result = await utils.setupWizard.getProgress.fetch(undefined, {
+        staleTime: 0,
+      });
+      if (epochRef.current !== knowledgeCacheEpoch()) return;
+      if (`${result.actorId}:${result.merchantId}` !== scopeRef.current)
+        throw Error("Scope changed");
+      setRemoteDraft(result);
+    } catch {
+      setDraftError(t("setupDraftUx.refreshFailed"));
+    } finally {
+      draftBusyRef.current = false;
+      setDraftBusy(false);
+    }
+  };
+  useEffect(() => {
+    if (draftRecovery && !remoteDraft && !draftBusy && !draftError)
+      void refreshDraft();
+  }, [draftRecovery, remoteDraft, draftBusy, draftError]);
+  const chooseDraft = async (useLocal: boolean) => {
+    if (
+      draftBusyRef.current ||
+      !remoteDraft ||
+      remoteDraft.draftUnreadable ||
+      remoteDraft.isCompleted ||
+      !progress ||
+      epochRef.current !== knowledgeCacheEpoch()
+    )
+      return;
+    draftBusyRef.current = true;
+    setDraftBusy(true);
+    setDraftError("");
+    const original = latestDraftRef.current;
+    try {
+      await saveQueueRef.current;
+      digestRef.current = remoteDraft.digest;
+      saveGenerationRef.current++;
+      if (useLocal) {
+        frozenDraftRef.current = false;
+        if (
+          !(await saveProgress({
+            step: original.currentStep,
+            completed: original.completedSteps,
+            wData: original.wizardData,
+          }))
+        ) {
+          frozenDraftRef.current = true;
+          setDraftError(t("setupDraftUx.saveFailed"));
+          return;
+        }
+        restoreDraft(original);
+      } else {
+        forgetSetupDraft(
+          progress.actorId,
+          progress.merchantId,
+          original,
+          epochRef.current
+        );
+        restoreDraft(progressPayload(remoteDraft));
+      }
+      dirtyRef.current = false;
+      frozenDraftRef.current = false;
+      setSaveConflict(false);
+      setSaveError(false);
+      setDraftRecovery(false);
+      setLastSaved(new Date());
+      setCompletionError("");
+    } catch {
+      frozenDraftRef.current = true;
+      setDraftError(t("setupDraftUx.saveFailed"));
+    } finally {
+      draftBusyRef.current = false;
+      setDraftBusy(false);
+    }
+  };
+
+  useEffect(() => {
+    const warn = (event: BeforeUnloadEvent) => {
+      if (
+        dirtyRef.current ||
+        pendingSavesRef.current > 0 ||
+        (attempt && !receipt)
+      ) {
+        event.preventDefault();
+        event.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => {
+      window.removeEventListener("beforeunload", warn);
+    };
+  }, [attempt, receipt]);
 
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
@@ -247,7 +469,9 @@ export default function SetupWizard() {
       isLoading ||
       attempt ||
       receipt ||
-      saveConflict
+      saveConflict ||
+      draftRecovery ||
+      storageError
     )
       return;
     saveTimerRef.current = setTimeout(() => {
@@ -256,15 +480,28 @@ export default function SetupWizard() {
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     };
-  }, [wizardData, currentStep, isLoading, attempt, receipt, saveConflict]);
+  }, [
+    wizardData,
+    currentStep,
+    isLoading,
+    attempt,
+    receipt,
+    saveConflict,
+    draftRecovery,
+    storageError,
+  ]);
 
   // Update wizard data
   const updateWizardData = (stepData: Record<string, any>) => {
+    if (frozenDraftRef.current || epochRef.current !== knowledgeCacheEpoch())
+      return;
     // Keep the ref synchronous so an immediate "next" click persists the
     // exact reviewed values even when React batches the state render.
     const next = { ...wizardDataRef.current, ...stepData };
     wizardDataRef.current = next;
     dirtyRef.current = true;
+    latestDraftRef.current = { ...latestDraftRef.current, wizardData: next };
+    cacheDraft(latestDraftRef.current);
     setWizardData(next);
     setLastSaved(null);
     setReview(null);
@@ -278,7 +515,7 @@ export default function SetupWizard() {
 
   // Keep saved progress compatible with existing ten-step drafts.
   const goToNextStep = () => {
-    if (stage >= SETUP_STAGE_ENDS.length - 1) return;
+    if (frozenDraftRef.current || stage >= SETUP_STAGE_ENDS.length - 1) return;
     setReview(null);
     const completed = completedSetupStage(stage, completedSteps);
     const nextStep = SETUP_STAGE_ENDS[stage + 1];
@@ -294,7 +531,8 @@ export default function SetupWizard() {
       !setupStageAvailable(targetStage, completedSteps) ||
       isLoading ||
       attempt ||
-      receipt
+      receipt ||
+      frozenDraftRef.current
     )
       return;
     const step = SETUP_STAGE_ENDS[targetStage];
@@ -312,7 +550,13 @@ export default function SetupWizard() {
 
   // Complete setup
   const completeSetup = async () => {
-    if (completionBusyRef.current || !progress || storageError || saveConflict)
+    if (
+      completionBusyRef.current ||
+      !progress ||
+      storageError ||
+      saveConflict ||
+      draftRecovery
+    )
       return;
     completionBusyRef.current = true;
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
@@ -414,7 +658,7 @@ export default function SetupWizard() {
 
   // Render current step component
   const renderStep = () => {
-    if (storageError || progress?.draftUnreadable)
+    if (storageError || (progress?.draftUnreadable && !draftRecovery))
       return (
         <div role="alert" className="space-y-3">
           <p>{t("setupApprovalUx.unreadable")}</p>
@@ -477,7 +721,12 @@ export default function SetupWizard() {
             <Button
               variant="ghost"
               onClick={() => {
-                forgetSetupAttempt(attempt);
+                try {
+                  forgetSetupAttempt(attempt);
+                } catch {
+                  setCompletionError(t("setupDraftUx.storageFailed"));
+                  return;
+                }
                 setAttempt(null);
                 setReview(null);
                 setReceiptChecked(false);
@@ -488,6 +737,19 @@ export default function SetupWizard() {
             </Button>
           )}
         </div>
+      );
+    if (draftRecovery)
+      return (
+        <SetupDraftRecovery
+          local={latestDraftRef.current}
+          remote={remoteDraft}
+          error={draftError}
+          busy={draftBusy}
+          onRefresh={refreshDraft}
+          onLocal={() => chooseDraft(true)}
+          onRemote={() => chooseDraft(false)}
+          onExit={() => setLocation("/merchant/dashboard")}
+        />
       );
     const stepProps = {
       wizardData,
@@ -590,7 +852,7 @@ export default function SetupWizard() {
   ];
 
   const leaveSetup = async () => {
-    if (attempt || receipt) return;
+    if (attempt || receipt || frozenDraftRef.current) return;
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     if (await saveProgress()) setLocation("/merchant/dashboard");
   };
@@ -616,7 +878,12 @@ export default function SetupWizard() {
             variant="outline"
             onClick={leaveSetup}
             disabled={
-              isSaving || isLoading || Boolean(attempt) || Boolean(receipt)
+              isSaving ||
+              isLoading ||
+              Boolean(attempt) ||
+              Boolean(receipt) ||
+              draftRecovery ||
+              storageError
             }
           >
             <LayoutDashboard aria-hidden="true" />
@@ -683,7 +950,9 @@ export default function SetupWizard() {
                         !available ||
                         isLoading ||
                         Boolean(attempt) ||
-                        Boolean(receipt)
+                        Boolean(receipt) ||
+                        draftRecovery ||
+                        storageError
                       }
                       aria-current={index === stage ? "step" : undefined}
                     >
@@ -727,6 +996,8 @@ export default function SetupWizard() {
                   <Check aria-hidden="true" />
                   {t("setupWizardPage.text14")}
                 </>
+              ) : draftRecovery ? (
+                <span>{t("setupApprovalUx.draftConflict")}</span>
               ) : isSaving ? (
                 <>
                   <Loader2 className="animate-spin" aria-hidden="true" />
@@ -760,10 +1031,19 @@ export default function SetupWizard() {
           </div>
           <div className="ms-heading">
             <h1 ref={stepHeadingRef} tabIndex={-1}>
-              {receipt ? t("setupApprovalUx.saved") : titles[stage]}
+              {receipt
+                ? t("setupApprovalUx.saved")
+                : draftRecovery
+                  ? t("setupDraftUx.title")
+                  : titles[stage]}
             </h1>
-            {!receipt && <p>{descriptions[stage]}</p>}
+            {!receipt && !draftRecovery && <p>{descriptions[stage]}</p>}
           </div>
+          {localWarning && (
+            <p role="alert" className="ms-storage-warning">
+              {t("setupDraftUx.storageFailed")}
+            </p>
+          )}
           <section
             className="ms-panel"
             aria-label={titles[stage]}
@@ -774,7 +1054,7 @@ export default function SetupWizard() {
             </fieldset>
           </section>
           <footer className="ms-footer">
-            {stage > 0 && !attempt && !receipt && (
+            {stage > 0 && !attempt && !receipt && !draftRecovery && (
               <Button
                 variant="ghost"
                 onClick={goToPreviousStep}

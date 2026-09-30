@@ -546,3 +546,18 @@
     animation-iteration-count: 1 !important;
   }
 }
+
+.merchant-setup .ms-draft-compare { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.merchant-setup .ms-draft-compare > section { min-width: 0; padding: 16px; border: 1px solid var(--border); border-radius: 14px; }
+.merchant-setup .ms-draft-compare h2 { margin-bottom: 16px; font-weight: 700; font-size: 16px; }
+.merchant-setup .ms-draft-preview { display: grid; gap: 16px; overflow-wrap: anywhere; }
+.merchant-setup .ms-draft-preview dl { display: grid; gap: 10px; }
+.merchant-setup .ms-draft-preview dt { color: var(--muted-foreground); font-size: 12px; }
+.merchant-setup .ms-draft-preview dd { white-space: pre-wrap; }
+.merchant-setup .ms-draft-preview ol { display: grid; gap: 12px; margin-block: 12px; }
+.merchant-setup .ms-draft-preview li { padding-block: 8px; border-bottom: 1px solid var(--border); }
+.merchant-setup .ms-draft-preview pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; margin-block: 12px; }
+.merchant-setup .ms-draft-preview summary { cursor: pointer; min-height: 44px; padding-block: 12px; }
+.merchant-setup .ms-draft-choices { padding: 16px; border-radius: 12px; background: var(--muted); display: grid; gap: 12px; }
+.merchant-setup .ms-storage-warning { padding: 12px; margin-block: 12px; border: 1px solid var(--border); border-radius: 12px; }
+@media (max-width: 800px) { .merchant-setup .ms-draft-compare { grid-template-columns: minmax(0, 1fr); } }

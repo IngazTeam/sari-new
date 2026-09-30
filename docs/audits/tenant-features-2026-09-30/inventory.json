@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-30T20:44:49.430Z",
+  "generatedAt": "2026-09-30T21:05:28.938Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -8,7 +8,7 @@
   "files": [
     {
       "file": "client/src/pages/SetupWizard.tsx",
-      "hash": "20b13553eda1",
+      "hash": "46d6df3be3bd",
       "queries": [
         "setupWizard.getProgress",
         "setupWizard.completionReceipt"
@@ -23,7 +23,14 @@
           "procedure": "setupWizard.completionReceipt",
           "method": "fetch",
           "expression": "utils.setupWizard.completionReceipt.fetch",
-          "line": 147,
+          "line": 206,
+          "provenance": "trpc-utility-static"
+        },
+        {
+          "procedure": "setupWizard.getProgress",
+          "method": "fetch",
+          "expression": "utils.setupWizard.getProgress.fetch",
+          "line": 372,
           "provenance": "trpc-utility-static"
         }
       ],
@@ -31,41 +38,41 @@
       "sections": [
         {
           "label": "setupWorkspace.loadFailed setupWorkspace.loading",
-          "line": 389,
+          "line": 633,
           "tag": "h1"
         },
         {
           "label": "",
-          "line": 430,
+          "line": 674,
           "tag": "h2"
         },
         {
           "label": "التحقق من نتيجة الاعتماد",
-          "line": 457,
+          "line": 701,
           "tag": "h2"
         },
         {
           "label": "أربع خطوات، وبدايتك جاهزة",
-          "line": 632,
+          "line": 899,
           "tag": "h2"
         },
         {
-          "label": "حُفظ الإعداد بنجاح",
-          "line": 762,
+          "label": "حُفظ الإعداد بنجاح استعادة تعديلات الإعداد",
+          "line": 1033,
           "tag": "h1"
         }
       ],
       "choices": [
         {
           "name": "OPTIONAL_STAGES",
-          "line": 86,
+          "line": 95,
           "values": [
             "1"
           ]
         },
         {
           "name": "titles",
-          "line": 579,
+          "line": 841,
           "values": [
             "عرّفنا بنشاطك",
             "ماذا تقدّم لعملائك؟",
@@ -75,7 +82,7 @@
         },
         {
           "name": "descriptions",
-          "line": 585,
+          "line": 847,
           "values": [
             "اختر نوع نشاطك وأضف الاسم ورقم التواصل. هذا كل ما نحتاجه للبدء.",
             "أضف منتجًا أو خدمة، أو استورد من موقعك. يمكنك إكمال ذلك لاحقًا.",
@@ -87,7 +94,7 @@
       "handlers": [
         {
           "name": "updateWizardData",
-          "line": 262,
+          "line": 495,
           "calls": []
         }
       ],
@@ -95,7 +102,7 @@
         {
           "query": "setupWizard.getProgress",
           "binding": "{\n    data: progress,\n    isLoading: loadingProgress,\n    isFetching: fetchingProgress,\n    isError: progressError,\n    refetch,\n  }",
-          "line": 134,
+          "line": 157,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
@@ -115,6 +122,8 @@
         "client/src/pages/setup-wizard/CompleteStep.tsx",
         "client/src/lib/setup-completion-workspace.ts",
         "client/src/lib/knowledge-workspace-cache.ts",
+        "client/src/lib/setup-draft-cache.ts",
+        "client/src/pages/setup-wizard/SetupDraftRecovery.tsx",
         "client/src/lib/merchant-setup-navigation.ts"
       ],
       "controlCount": 15
@@ -770,7 +779,7 @@
     },
     {
       "file": "client/src/lib/knowledge-workspace-cache.ts",
-      "hash": "58a3de4f7956",
+      "hash": "49fa3c7412af",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
@@ -782,6 +791,114 @@
       "conditions": [],
       "imports": [],
       "controlCount": 0
+    },
+    {
+      "file": "client/src/lib/setup-draft-cache.ts",
+      "hash": "4d847c1dd79c",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [
+        "client/src/lib/knowledge-workspace-cache.ts"
+      ],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/pages/setup-wizard/SetupDraftRecovery.tsx",
+      "hash": "6edc2754d80f",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [
+        {
+          "label": "products setupDraftUx.products setupDraftUx.services · —",
+          "line": 108,
+          "tag": "summary"
+        },
+        {
+          "label": "عرض البيانات الأصلية",
+          "line": 165,
+          "tag": "summary"
+        },
+        {
+          "label": "تعديلاتي في هذا التبويب",
+          "line": 221,
+          "tag": "h2"
+        },
+        {
+          "label": "المسودة المحفوظة في المتجر",
+          "line": 225,
+          "tag": "h2"
+        }
+      ],
+      "choices": [
+        {
+          "name": "fields",
+          "line": 16,
+          "values": [
+            [
+              "businessName",
+              "النشاط"
+            ],
+            [
+              "phone",
+              "التواصل"
+            ],
+            [
+              "address",
+              "العنوان"
+            ],
+            [
+              "description",
+              "الوصف"
+            ],
+            [
+              "welcomeMessage",
+              "الترحيب"
+            ],
+            [
+              "websiteUrl",
+              "الموقع"
+            ]
+          ]
+        },
+        {
+          "name": "choices",
+          "line": 41,
+          "values": [
+            [
+              "businessType",
+              "نوع النشاط"
+            ],
+            [
+              "botTone",
+              "الأسلوب"
+            ],
+            [
+              "botLanguage",
+              "اللغة"
+            ],
+            [
+              "workingHoursType",
+              "الأوقات"
+            ]
+          ]
+        }
+      ],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [
+        "client/src/lib/merchant-setup-navigation.ts"
+      ],
+      "controlCount": 7
     },
     {
       "file": "client/src/lib/merchant-setup-navigation.ts",
@@ -17164,24 +17281,26 @@
         "client/src/pages/setup-wizard/CompleteStep.tsx",
         "client/src/lib/setup-completion-workspace.ts",
         "client/src/lib/knowledge-workspace-cache.ts",
+        "client/src/lib/setup-draft-cache.ts",
+        "client/src/pages/setup-wizard/SetupDraftRecovery.tsx",
         "client/src/lib/merchant-setup-navigation.ts"
       ],
       "controls": [
-        "da82c90a3b1e",
-        "1b7fb8747325",
-        "5d1d9f5a34c5",
-        "63f435b88cb0",
-        "ef295cb2ebd5",
-        "4dcf7dff09a3",
-        "367bb5876fda",
-        "0dbc1af8ec14",
-        "0546f7326eac",
-        "6300a4fa8f92",
-        "fe4b8303772f",
-        "73bac11b912c",
-        "cc60dfed5f09",
-        "df6e738d7c3c",
-        "248d3a023e62",
+        "69230640eb55",
+        "4b942ace40b0",
+        "c5907434e314",
+        "e93b6adf17ef",
+        "8ebbf66f422a",
+        "d179450e5fae",
+        "246502421ae0",
+        "9e0fb08798bd",
+        "3d11d54d6725",
+        "30cdab581ddc",
+        "1b792efc4689",
+        "ff619c0570cd",
+        "b2a060d9fa06",
+        "c6dee3538b2b",
+        "aff92eedf3e4",
         "9701db415e86",
         "71dd8839c2d7",
         "1edf0619da77",
@@ -17242,7 +17361,14 @@
         "c527a7cce825",
         "3317af45fdbd",
         "da2c9f5546e8",
-        "c2c302cc5bdb"
+        "c2c302cc5bdb",
+        "78ca2a1d6641",
+        "7e36ce351e17",
+        "c1371807b59b",
+        "b258a1afba5d",
+        "52110a52fd8f",
+        "21bed867a053",
+        "2d47ca14a89c"
       ],
       "queries": [
         "setupWizard.getProgress",
@@ -17266,7 +17392,15 @@
           "procedure": "setupWizard.completionReceipt",
           "method": "fetch",
           "expression": "utils.setupWizard.completionReceipt.fetch",
-          "line": 147,
+          "line": 206,
+          "provenance": "trpc-utility-static"
+        },
+        {
+          "file": "client/src/pages/SetupWizard.tsx",
+          "procedure": "setupWizard.getProgress",
+          "method": "fetch",
+          "expression": "utils.setupWizard.getProgress.fetch",
+          "line": 372,
           "provenance": "trpc-utility-static"
         }
       ],
@@ -23580,9 +23714,9 @@
   ],
   "controls": [
     {
-      "id": "da82c90a3b1e",
+      "id": "69230640eb55",
       "file": "client/src/pages/SetupWizard.tsx",
-      "line": 397,
+      "line": 641,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -23603,9 +23737,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "1b7fb8747325",
+      "id": "4b942ace40b0",
       "file": "client/src/pages/SetupWizard.tsx",
-      "line": 421,
+      "line": 665,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -23624,9 +23758,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "5d1d9f5a34c5",
+      "id": "c5907434e314",
       "file": "client/src/pages/SetupWizard.tsx",
-      "line": 440,
+      "line": 684,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -23645,9 +23779,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "63f435b88cb0",
+      "id": "e93b6adf17ef",
       "file": "client/src/pages/SetupWizard.tsx",
-      "line": 464,
+      "line": 708,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -23666,9 +23800,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ef295cb2ebd5",
+      "id": "8ebbf66f422a",
       "file": "client/src/pages/SetupWizard.tsx",
-      "line": 471,
+      "line": 715,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -23689,15 +23823,15 @@
       "review": "source-inventoried"
     },
     {
-      "id": "4dcf7dff09a3",
+      "id": "d179450e5fae",
       "file": "client/src/pages/SetupWizard.tsx",
-      "line": 477,
+      "line": 721,
       "tag": "Button",
       "role": "",
       "kind": "action",
       "label": "العودة إلى المراجعة",
       "section": "التحقق من نتيجة الاعتماد",
-      "binding": "() => {\n                forgetSetupAttempt(attempt);\n                setAttempt(null);\n                setReview(null);\n                setReceiptChecked(false);\n                setCompletionError(\"\");\n              }",
+      "binding": "() => {\n                try {\n                  forgetSetupAttempt(attempt);\n                } catch {\n                  setCompletionError(t(\"setupDraftUx.storageFailed\"));\n                  return;\n                }\n                setAttempt(null);\n                setReview(null);\n                setReceiptChecked(false);\n                setCompletionError(\"\");\n              }",
       "type": "text",
       "options": [],
       "min": "",
@@ -23712,9 +23846,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "367bb5876fda",
+      "id": "246502421ae0",
       "file": "client/src/pages/SetupWizard.tsx",
-      "line": 515,
+      "line": 777,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -23733,9 +23867,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "0dbc1af8ec14",
+      "id": "9e0fb08798bd",
       "file": "client/src/pages/SetupWizard.tsx",
-      "line": 522,
+      "line": 784,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -23754,9 +23888,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "0546f7326eac",
+      "id": "3d11d54d6725",
       "file": "client/src/pages/SetupWizard.tsx",
-      "line": 529,
+      "line": 791,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -23775,9 +23909,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "6300a4fa8f92",
+      "id": "30cdab581ddc",
       "file": "client/src/pages/SetupWizard.tsx",
-      "line": 600,
+      "line": 862,
       "tag": "a",
       "role": "",
       "kind": "action",
@@ -23796,9 +23930,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "fe4b8303772f",
+      "id": "1b792efc4689",
       "file": "client/src/pages/SetupWizard.tsx",
-      "line": 615,
+      "line": 877,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -23813,13 +23947,13 @@
       "required": false,
       "conditional": false,
       "conditions": [],
-      "disabled": "isSaving || isLoading || Boolean(attempt) || Boolean(receipt)",
+      "disabled": "isSaving ||\n              isLoading ||\n              Boolean(attempt) ||\n              Boolean(receipt) ||\n              draftRecovery ||\n              storageError",
       "review": "source-inventoried"
     },
     {
-      "id": "73bac11b912c",
+      "id": "ff619c0570cd",
       "file": "client/src/pages/SetupWizard.tsx",
-      "line": 653,
+      "line": 920,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -23838,9 +23972,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "cc60dfed5f09",
+      "id": "b2a060d9fa06",
       "file": "client/src/pages/SetupWizard.tsx",
-      "line": 679,
+      "line": 946,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -23855,13 +23989,13 @@
       "required": false,
       "conditional": true,
       "conditions": [],
-      "disabled": "!available ||\n                        isLoading ||\n                        Boolean(attempt) ||\n                        Boolean(receipt)",
+      "disabled": "!available ||\n                        isLoading ||\n                        Boolean(attempt) ||\n                        Boolean(receipt) ||\n                        draftRecovery ||\n                        storageError",
       "review": "source-inventoried"
     },
     {
-      "id": "df6e738d7c3c",
+      "id": "c6dee3538b2b",
       "file": "client/src/pages/SetupWizard.tsx",
-      "line": 746,
+      "line": 1017,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -23879,20 +24013,21 @@
         "!saveConflict",
         "saveError",
         "isSaving",
+        "draftRecovery",
         "receipt"
       ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "248d3a023e62",
+      "id": "aff92eedf3e4",
       "file": "client/src/pages/SetupWizard.tsx",
-      "line": 778,
+      "line": 1058,
       "tag": "Button",
       "role": "",
       "kind": "action",
       "label": "السابق",
-      "section": "حُفظ الإعداد بنجاح",
+      "section": "حُفظ الإعداد بنجاح استعادة تعديلات الإعداد",
       "binding": "goToPreviousStep",
       "type": "text",
       "options": [],
@@ -23902,7 +24037,7 @@
       "required": false,
       "conditional": false,
       "conditions": [
-        "stage > 0 && !attempt && !receipt"
+        "stage > 0 && !attempt && !receipt && !draftRecovery"
       ],
       "disabled": "isLoading",
       "review": "source-inventoried"
@@ -25311,6 +25446,159 @@
       "conditional": true,
       "conditions": [],
       "disabled": "isLoading ||\n            !hasValidProfile ||\n            !catalog.success ||\n            !fields ||\n            blocked ||\n            Boolean(review && !review.canComplete)",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "78ca2a1d6641",
+      "file": "client/src/pages/setup-wizard/SetupDraftRecovery.tsx",
+      "line": 108,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "products setupDraftUx.products setupDraftUx.services · —",
+      "section": "products setupDraftUx.products setupDraftUx.services · —",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "7e36ce351e17",
+      "file": "client/src/pages/setup-wizard/SetupDraftRecovery.tsx",
+      "line": 165,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "عرض البيانات الأصلية",
+      "section": "عرض البيانات الأصلية",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "c1371807b59b",
+      "file": "client/src/pages/setup-wizard/SetupDraftRecovery.tsx",
+      "line": 240,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "تحديث النسخة المحفوظة",
+      "section": "المسودة المحفوظة في المتجر",
+      "binding": "onRefresh",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "b258a1afba5d",
+      "file": "client/src/pages/setup-wizard/SetupDraftRecovery.tsx",
+      "line": 243,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "تنزيل نسخة من تعديلاتي",
+      "section": "المسودة المحفوظة في المتجر",
+      "binding": "download",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "52110a52fd8f",
+      "file": "client/src/pages/setup-wizard/SetupDraftRecovery.tsx",
+      "line": 251,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "حفظ تعديلاتي والمتابعة",
+      "section": "المسودة المحفوظة في المتجر",
+      "binding": "onLocal",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "saved && !remote?.isCompleted"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "21bed867a053",
+      "file": "client/src/pages/setup-wizard/SetupDraftRecovery.tsx",
+      "line": 254,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "ترك تعديلاتي واستخدام المحفوظة",
+      "section": "المسودة المحفوظة في المتجر",
+      "binding": "onRemote",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "saved && !remote?.isCompleted"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "2d47ca14a89c",
+      "file": "client/src/pages/setup-wizard/SetupDraftRecovery.tsx",
+      "line": 261,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "فتح لوحة التحكم",
+      "section": "المسودة المحفوظة في المتجر",
+      "binding": "onExit",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "remote?.isCompleted === 1"
+      ],
+      "disabled": "",
       "review": "source-inventoried"
     },
     {

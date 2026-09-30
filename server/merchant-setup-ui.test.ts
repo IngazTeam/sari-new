@@ -11,6 +11,7 @@ const api = vi.hoisted(() => ({
   complete: vi.fn(async () => ({ success: true })),
   review: vi.fn(),
   receipt: vi.fn(),
+  readProgress: vi.fn(),
   navigate: vi.fn(),
   invalidate: vi.fn(async () => undefined),
 }));
@@ -20,7 +21,10 @@ vi.mock("wouter", () => ({
 vi.mock("@/lib/trpc", () => ({
   trpc: {
     useUtils: () => ({
-      setupWizard: { completionReceipt: { fetch: api.receipt } },
+      setupWizard: {
+        completionReceipt: { fetch: api.receipt },
+        getProgress: { fetch: api.readProgress },
+      },
       merchants: {
         getCurrent: { invalidate: api.invalidate },
         getOnboardingStatus: { invalidate: api.invalidate },
@@ -54,6 +58,14 @@ vi.mock("react-i18next", () => ({
   }),
 }));
 import SetupWizard from "../client/src/pages/SetupWizard";
+import {
+  rememberSetupDraft,
+  readSetupDraft,
+} from "../client/src/lib/setup-draft-cache";
+import {
+  knowledgeCacheEpoch,
+  clearKnowledgeWorkspace,
+} from "../client/src/lib/knowledge-workspace-cache";
 
 let root: Root;
 let container: HTMLDivElement;
@@ -128,6 +140,7 @@ beforeEach(() => {
     fields,
   }));
   api.receipt.mockResolvedValue(null);
+  api.readProgress.mockImplementation(async () => api.query.data);
   api.invalidate.mockResolvedValue(undefined);
   api.query = {
     data: draft(1),
@@ -355,7 +368,10 @@ describe("merchant setup resume and confirmation", () => {
     api.query.data.isCompleted = 1;
     api.receipt.mockResolvedValue(successfulReceipt(input));
     await render();
-    expect(api.receipt).toHaveBeenCalledWith({ requestId: input.requestId });
+    expect(api.receipt).toHaveBeenCalledWith(
+      { requestId: input.requestId },
+      { staleTime: 0 }
+    );
     expect(api.complete).toHaveBeenCalledOnce();
     expect(container.textContent).toContain(ar.setupApprovalUx.saved);
     expect(api.navigate).not.toHaveBeenCalled();
@@ -407,6 +423,165 @@ describe("merchant setup resume and confirmation", () => {
     expect(container.textContent).toContain(ar.setupApprovalUx.draftConflict);
     expect(container.textContent).toContain("متجر الاختبار");
     expect(api.review).not.toHaveBeenCalled();
-    expect(button(ar.setupApprovalUx.check).disabled).toBe(true);
+    expect(button(ar.setupApprovalUx.check)).toBeUndefined();
+    expect(
+      container.querySelector("[data-setup-draft-recovery]")
+    ).not.toBeNull();
+  });
+});
+
+const payloadFor = (name = "تعديل محلي") => ({
+  currentStep: 10,
+  completedSteps: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+  wizardData: JSON.parse(draft(10, name).wizardData),
+});
+function storeDraft(name?: string) {
+  rememberSetupDraft(
+    {
+      actorId: 4,
+      merchantId: 21,
+      baseDigest: "a".repeat(64),
+      savedAt: Date.now(),
+      payload: payloadFor(name),
+    },
+    knowledgeCacheEpoch()
+  );
+}
+describe("setup local draft recovery and concurrency", () => {
+  it("restores edits only after a choice, then saves against the compared remote digest", async () => {
+    storeDraft();
+    api.query.data = { ...draft(10, "نسخة الخادم"), digest: "d".repeat(64) };
+    await render();
+    expect(container.textContent).toContain("تعديل محلي");
+    expect(container.textContent).toContain("نسخة الخادم");
+    expect(api.save).not.toHaveBeenCalled();
+    expect(api.complete).not.toHaveBeenCalled();
+    await act(async () => button(ar.setupDraftUx.useLocal).click());
+    expect(api.save).toHaveBeenCalledWith({
+      ...payloadFor(),
+      expectedDigest: "d".repeat(64),
+    });
+    expect(readSetupDraft(4, 21)).toBeNull();
+    expect(container.querySelector("[data-setup-draft-recovery]")).toBeNull();
+    expect(container.textContent).toContain("تعديل محلي");
+  });
+  it("uses the compared server draft without writing or confirming when local edits are discarded", async () => {
+    storeDraft();
+    api.query.data = draft(3, "نسخة الخادم");
+    await render();
+    await act(async () => button(ar.setupDraftUx.useRemote).click());
+    expect(
+      (container.querySelector("#businessName") as HTMLInputElement).value
+    ).toBe("نسخة الخادم");
+    expect(api.save).not.toHaveBeenCalled();
+    expect(api.complete).not.toHaveBeenCalled();
+    expect(readSetupDraft(4, 21)).toBeNull();
+  });
+  it("does not force an identical acknowledged backup through recovery", async () => {
+    storeDraft("متجر الاختبار");
+    api.query.data = draft(10);
+    await render();
+    expect(readSetupDraft(4, 21)).toBeNull();
+    expect(container.querySelector("[data-setup-draft-recovery]")).toBeNull();
+    expect(api.save).not.toHaveBeenCalled();
+  });
+  it("keeps a stale local draft after completion elsewhere, offering backup and dashboard", async () => {
+    storeDraft();
+    api.query.data = { ...draft(10), isCompleted: 1 };
+    await render();
+    expect(api.navigate).not.toHaveBeenCalled();
+    expect(button(ar.setupDraftUx.useLocal)).toBeUndefined();
+    expect(button(ar.setupDraftUx.download)).toBeDefined();
+    expect(container.textContent).toContain(ar.setupDraftUx.completedElsewhere);
+    expect(readSetupDraft(4, 21)).not.toBeNull();
+    expect(api.save).not.toHaveBeenCalled();
+  });
+  it("retains corrupt local data and does not automatically navigate or save", async () => {
+    sessionStorage.setItem("sary:setup-draft:v1:4:21", "{broken");
+    api.query.data = { ...draft(10), isCompleted: 1 };
+    await render();
+    expect(container.textContent).toContain(ar.setupApprovalUx.unreadable);
+    expect(api.navigate).not.toHaveBeenCalled();
+    expect(api.save).not.toHaveBeenCalled();
+    expect(sessionStorage.getItem("sary:setup-draft:v1:4:21")).toBe("{broken");
+  });
+  it("cancels queued writes after conflict and preserves the latest navigation snapshot", async () => {
+    let reject!: (reason: any) => void;
+    api.save.mockImplementationOnce(
+      () =>
+        new Promise((_, r) => {
+          reject = r;
+        })
+    );
+    api.query.data = draft(3);
+    await render();
+    await act(async () => button(ar.basicInfoStep.auto_3).click());
+    await act(async () => button(ar.setupWizard.auto_0).click());
+    expect(readSetupDraft(4, 21)?.payload.currentStep).toBe(3);
+    await act(async () => reject({ data: { code: "CONFLICT" } }));
+    expect(api.save).toHaveBeenCalledOnce();
+    expect(api.readProgress).toHaveBeenCalledOnce();
+    expect(api.readProgress).toHaveBeenCalledWith(undefined, { staleTime: 0 });
+    expect(readSetupDraft(4, 21)?.payload.currentStep).toBe(3);
+    expect(
+      container.querySelector("[data-setup-draft-recovery]")
+    ).not.toBeNull();
+  });
+  it("does not offer a choice for a response from another store", async () => {
+    api.query.data = draft(10);
+    api.save.mockRejectedValueOnce({ data: { code: "CONFLICT" } });
+    api.readProgress.mockResolvedValue({ ...draft(10), merchantId: 22 });
+    await render();
+    await act(async () => button(ar.setupApprovalUx.check).click());
+    expect(button(ar.setupDraftUx.useLocal)).toBeUndefined();
+    expect(container.textContent).toContain(ar.setupDraftUx.refreshFailed);
+  });
+  it("preserves local edits if they conflict again while choosing them", async () => {
+    storeDraft();
+    api.query.data = draft(10);
+    api.save.mockRejectedValue({ data: { code: "CONFLICT" } });
+    await render();
+    await act(async () => button(ar.setupDraftUx.useLocal).click());
+    expect(readSetupDraft(4, 21)?.payload).toEqual(payloadFor());
+    expect(
+      container.querySelector("[data-setup-draft-recovery]")
+    ).not.toBeNull();
+    expect(api.complete).not.toHaveBeenCalled();
+  });
+  it("ignores a late queued write after logout", async () => {
+    let finish!: (v: any) => void;
+    api.save.mockImplementationOnce(
+      () =>
+        new Promise(r => {
+          finish = r;
+        })
+    );
+    api.query.data = draft(3);
+    await render();
+    await act(async () => button(ar.basicInfoStep.auto_3).click());
+    await act(async () => button(ar.setupWizard.auto_0).click());
+    clearKnowledgeWorkspace();
+    await act(async () => finish({ digest: "b".repeat(64) }));
+    expect(api.save).toHaveBeenCalledOnce();
+    expect(readSetupDraft(4, 21)).toBeNull();
+  });
+  it("warns before unloading unsaved edits and clears the warning after acknowledgement", async () => {
+    let finish!: (v: any) => void;
+    api.save.mockImplementationOnce(
+      () =>
+        new Promise(r => {
+          finish = r;
+        })
+    );
+    api.query.data = draft(3);
+    await render();
+    await act(async () => button(ar.basicInfoStep.auto_3).click());
+    const event = new Event("beforeunload", { cancelable: true });
+    window.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(true);
+    await act(async () => finish({ digest: "b".repeat(64) }));
+    const saved = new Event("beforeunload", { cancelable: true });
+    window.dispatchEvent(saved);
+    expect(saved.defaultPrevented).toBe(false);
   });
 });

@@ -1,4 +1,28 @@
 {
+  "setupDraftUx": {
+    "title": "Recover setup edits",
+    "help": "Edits for this account and store need your review. Compare both versions and choose which to continue with. Live products and settings only change after final confirmation.",
+    "products": "Products",
+    "services": "Services",
+    "unnamed": "Unnamed item",
+    "unreadableItem": "This data needs repair. Review the original data below.",
+    "local": "My edits in this tab",
+    "remote": "Draft saved in the store",
+    "completedElsewhere": "Store setup was completed elsewhere. Download your edits and return to the dashboard; these edits will not be confirmed automatically.",
+    "remoteUnreadable": "The saved draft cannot be read. Keep your copy and review restarting from settings.",
+    "loadRemote": "Loading the saved draft for comparison.",
+    "refresh": "Refresh saved version",
+    "download": "Download my edits",
+    "choiceHelp": "Your choice replaces the entire setup draft; fields are not merged automatically. Download a copy of your edits first if you want to keep them.",
+    "useLocal": "Save my edits and continue",
+    "useRemote": "Discard my edits and use saved version",
+    "refreshFailed": "Could not load the saved draft. Retry when connected.",
+    "saveFailed": "Could not finish this choice. Your edits are retained. Refresh the saved version and review your choice.",
+    "storageFailed": "This browser could not retain a local copy. Keep this page open until saving succeeds, or download your edits from the recovery screen.",
+    "stage": "Saved stage number",
+    "template": "Selected template reference",
+    "currencyHelp": "A blank price is unknown. Service prices use the store currency. All prices are reviewed before confirmation."
+  },
   "setupApprovalUx": {
     "bothLanguages": "Arabic and English",
     "address": "Address",
