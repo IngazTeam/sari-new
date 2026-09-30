@@ -211,6 +211,7 @@ export default function CompleteStep({
             ) : (
               <p>{t("setupApprovalUx.hoursLater")}</p>
             ))}
+          <small>{t("setupHoursUx.businessScope")}</small>
         </section>
         <section>
           <header>

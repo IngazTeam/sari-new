@@ -206,6 +206,9 @@ export default function BasicInfoStep({
             </select>
           </label>
           {message("workingHoursType")}
+          <p className="text-sm text-muted-foreground">
+            {t("setupHoursUx.businessScope")}
+          </p>
           {(data.workingHoursType === "custom" ||
             issues.includes("workingHours")) && (
             <WorkingHoursFields

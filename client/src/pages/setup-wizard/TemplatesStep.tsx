@@ -274,6 +274,9 @@ export default function TemplatesStep({
                 {Object.keys(preview.data.workingHours).length > 0 && (
                   <details className="ms-details">
                     <summary>{t("setupTemplateUx.hours")}</summary>
+                    <p className="text-sm text-muted-foreground">
+                      {t("setupHoursUx.businessScope")}
+                    </p>
                     <dl>
                       {Object.entries(preview.data.workingHours).map(
                         ([name, value]) => (

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-30T22:02:55.037Z",
+  "generatedAt": "2026-09-30T22:06:13.523Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -268,7 +268,7 @@
     },
     {
       "file": "client/src/pages/setup-wizard/TemplatesStep.tsx",
-      "hash": "bac9a92e76ab",
+      "hash": "90bfee458f5f",
       "queries": [
         "setupWizard.getTemplates",
         "setupWizard.previewTemplate"
@@ -324,7 +324,7 @@
     },
     {
       "file": "client/src/pages/setup-wizard/BasicInfoStep.tsx",
-      "hash": "4c8503314ecb",
+      "hash": "e62a810765b5",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
@@ -756,7 +756,7 @@
     },
     {
       "file": "client/src/pages/setup-wizard/CompleteStep.tsx",
-      "hash": "299205c9b974",
+      "hash": "c1ac4c9333b9",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
@@ -769,32 +769,32 @@
         },
         {
           "label": "المنتجات والخدمات",
-          "line": 217,
+          "line": 218,
           "tag": "h2"
         },
         {
           "label": "products setupApprovalUx.products setupApprovalUx.services",
-          "line": 237,
+          "line": 238,
           "tag": "summary"
         },
         {
           "label": "إعدادات المساعد",
-          "line": 301,
+          "line": 302,
           "tag": "h2"
         },
         {
           "label": "الموقع",
-          "line": 323,
+          "line": 324,
           "tag": "h2"
         },
         {
           "label": "القالب المختار",
-          "line": 334,
+          "line": 335,
           "tag": "h2"
         },
         {
           "label": "معاينة توضيحية للمساعد",
-          "line": 366,
+          "line": 367,
           "tag": "summary"
         }
       ],
@@ -8231,7 +8231,7 @@
     },
     {
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "hash": "75c53a831b38",
+      "hash": "ca3f1d232284",
       "queries": [
         "auth.me",
         "botSettings.get",
@@ -8291,42 +8291,42 @@
         },
         {
           "label": "الرسائل",
-          "line": 869,
+          "line": 872,
           "tag": "CardTitle"
         },
         {
           "label": "سلوك الذكاء الاصطناعي",
-          "line": 932,
+          "line": 935,
           "tag": "CardTitle"
         },
         {
           "label": "معاينة رسائل المسودة",
-          "line": 1070,
+          "line": 1073,
           "tag": "CardTitle"
         },
         {
           "label": "رسالة الترحيب",
-          "line": 1086,
+          "line": 1089,
           "tag": "h3"
         },
         {
           "label": "خارج ساعات العمل",
-          "line": 1096,
+          "line": 1099,
           "tag": "h3"
         },
         {
           "label": "اختبار الإعدادات المحفوظة",
-          "line": 1118,
+          "line": 1121,
           "tag": "CardTitle"
         },
         {
           "label": "سلوك المجموعات",
-          "line": 1159,
+          "line": 1162,
           "tag": "CardTitle"
         },
         {
           "label": "تعليمات مخصصة للمساعد",
-          "line": 1321,
+          "line": 1332,
           "tag": "CardTitle"
         }
       ],
@@ -17360,9 +17360,9 @@
         "3b478b63307d",
         "000e7f9d2ff7",
         "1da37b148e4a",
-        "b7fefbfd6130",
-        "066fc34cab9a",
-        "e68492706565",
+        "15af7d3b1943",
+        "9b5c17c0f32e",
+        "0c5d8f10b1e1",
         "ca48024bea9b",
         "d9796c90d895",
         "b6de0d7b28c1",
@@ -17370,7 +17370,7 @@
         "2757b506bff0",
         "f219f51e50af",
         "01fc9eda21d8",
-        "4b2f4b2d173f",
+        "b3dbdc3b9582",
         "e7b7d4ea5c7d",
         "4f5fae354f61",
         "d95440c59d73",
@@ -17422,13 +17422,13 @@
         "2921aafbeff4",
         "ee457100bd90",
         "cdf4d879104c",
-        "64335bb85caa",
-        "f8c9fdd31d49",
-        "970822eb8625",
-        "2900e5dfac1c",
-        "4e07f0719f15",
-        "51fda5fd47af",
-        "4eceff200f7d",
+        "af4d8acf141f",
+        "fade8f2d9e80",
+        "360ed4060456",
+        "98f46bf08ff4",
+        "b054e194f474",
+        "127910afeb79",
+        "fc0441235887",
         "78ca2a1d6641",
         "7e36ce351e17",
         "c1371807b59b",
@@ -19778,23 +19778,23 @@
         "40abf140f8df",
         "90db68c5911a",
         "81b078795bc8",
-        "3637e4ea539f",
-        "e5b1b50dbf8e",
-        "3903e821015d",
-        "c69d38f2a342",
-        "6a9c7818260b",
-        "6df4b6072e65",
-        "f7ccf5b75a57",
-        "a1d22e7a95f4",
-        "ed8b30c60d2a",
-        "0fc8d9aa30a9",
-        "e327181e5752",
-        "1e1e26dead14",
-        "bc0667c519e3",
-        "f6b488abd1dd",
-        "09abd25991e6",
-        "3f73b0429087",
-        "fac2952bbf1e",
+        "a07826f19c74",
+        "200f01b27666",
+        "28a901ebfbb7",
+        "eece21547910",
+        "f4b1ca0c5418",
+        "cf883d21865e",
+        "33a056e64b68",
+        "aac4796c6744",
+        "31dff9f4c5a1",
+        "f3d129655f49",
+        "6072acf506ee",
+        "9aa879a08bcc",
+        "e093f6941b1c",
+        "b58abeaf52ba",
+        "3915fe6d7f64",
+        "5cb8bf4635da",
+        "77b3958263f0",
         "431572148474",
         "13516fb4879f",
         "42fd90f34d5f",
@@ -24477,9 +24477,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "b7fefbfd6130",
+      "id": "15af7d3b1943",
       "file": "client/src/pages/setup-wizard/TemplatesStep.tsx",
-      "line": 308,
+      "line": 311,
       "tag": "input",
       "role": "",
       "kind": "field",
@@ -24502,9 +24502,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "066fc34cab9a",
+      "id": "9b5c17c0f32e",
       "file": "client/src/pages/setup-wizard/TemplatesStep.tsx",
-      "line": 333,
+      "line": 336,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -24523,9 +24523,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "e68492706565",
+      "id": "0c5d8f10b1e1",
       "file": "client/src/pages/setup-wizard/TemplatesStep.tsx",
-      "line": 336,
+      "line": 339,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -24712,9 +24712,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "4b2f4b2d173f",
+      "id": "b3dbdc3b9582",
       "file": "client/src/pages/setup-wizard/BasicInfoStep.tsx",
-      "line": 219,
+      "line": 222,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -25905,9 +25905,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "64335bb85caa",
+      "id": "af4d8acf141f",
       "file": "client/src/pages/setup-wizard/CompleteStep.tsx",
-      "line": 237,
+      "line": 238,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -25929,9 +25929,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "f8c9fdd31d49",
+      "id": "fade8f2d9e80",
       "file": "client/src/pages/setup-wizard/CompleteStep.tsx",
-      "line": 272,
+      "line": 273,
       "tag": "a",
       "role": "",
       "kind": "action",
@@ -25952,9 +25952,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "970822eb8625",
+      "id": "360ed4060456",
       "file": "client/src/pages/setup-wizard/CompleteStep.tsx",
-      "line": 282,
+      "line": 283,
       "tag": "a",
       "role": "",
       "kind": "action",
@@ -25975,9 +25975,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "2900e5dfac1c",
+      "id": "98f46bf08ff4",
       "file": "client/src/pages/setup-wizard/CompleteStep.tsx",
-      "line": 337,
+      "line": 338,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -25999,9 +25999,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "4e07f0719f15",
+      "id": "b054e194f474",
       "file": "client/src/pages/setup-wizard/CompleteStep.tsx",
-      "line": 349,
+      "line": 350,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -26022,9 +26022,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "51fda5fd47af",
+      "id": "127910afeb79",
       "file": "client/src/pages/setup-wizard/CompleteStep.tsx",
-      "line": 366,
+      "line": 367,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -26045,9 +26045,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "4eceff200f7d",
+      "id": "fc0441235887",
       "file": "client/src/pages/setup-wizard/CompleteStep.tsx",
-      "line": 428,
+      "line": 429,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -46403,9 +46403,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "3637e4ea539f",
+      "id": "a07826f19c74",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 716,
+      "line": 719,
       "tag": "Switch",
       "role": "",
       "kind": "field",
@@ -46424,9 +46424,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "e5b1b50dbf8e",
+      "id": "200f01b27666",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 735,
+      "line": 738,
       "tag": "Input",
       "role": "",
       "kind": "field",
@@ -46447,9 +46447,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "3903e821015d",
+      "id": "28a901ebfbb7",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 769,
+      "line": 772,
       "tag": "Input",
       "role": "",
       "kind": "field",
@@ -46470,9 +46470,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "c69d38f2a342",
+      "id": "eece21547910",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 822,
+      "line": 825,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -46493,9 +46493,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "6a9c7818260b",
+      "id": "f4b1ca0c5418",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 882,
+      "line": 885,
       "tag": "Textarea",
       "role": "",
       "kind": "field",
@@ -46514,9 +46514,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "6df4b6072e65",
+      "id": "cf883d21865e",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 903,
+      "line": 906,
       "tag": "Textarea",
       "role": "",
       "kind": "field",
@@ -46535,9 +46535,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "f7ccf5b75a57",
+      "id": "33a056e64b68",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 944,
+      "line": 947,
       "tag": "Select",
       "role": "",
       "kind": "field",
@@ -46573,9 +46573,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "a1d22e7a95f4",
+      "id": "aac4796c6744",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 974,
+      "line": 977,
       "tag": "Select",
       "role": "",
       "kind": "field",
@@ -46623,9 +46623,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ed8b30c60d2a",
+      "id": "31dff9f4c5a1",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 1007,
+      "line": 1010,
       "tag": "Input",
       "role": "",
       "kind": "field",
@@ -46644,9 +46644,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "0fc8d9aa30a9",
+      "id": "f3d129655f49",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 1029,
+      "line": 1032,
       "tag": "Input",
       "role": "",
       "kind": "field",
@@ -46665,9 +46665,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "e327181e5752",
+      "id": "6072acf506ee",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 1196,
+      "line": 1199,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -46686,9 +46686,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "1e1e26dead14",
+      "id": "9aa879a08bcc",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 1237,
+      "line": 1240,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -46709,9 +46709,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "bc0667c519e3",
+      "id": "e093f6941b1c",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 1255,
+      "line": 1258,
       "tag": "Input",
       "role": "",
       "kind": "field",
@@ -46732,9 +46732,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "f6b488abd1dd",
+      "id": "b58abeaf52ba",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 1274,
+      "line": 1277,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -46755,9 +46755,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "09abd25991e6",
+      "id": "3915fe6d7f64",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 1334,
+      "line": 1345,
       "tag": "Textarea",
       "role": "",
       "kind": "field",
@@ -46776,9 +46776,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "3f73b0429087",
+      "id": "5cb8bf4635da",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 1397,
+      "line": 1408,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -46797,9 +46797,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "fac2952bbf1e",
+      "id": "77b3958263f0",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 1415,
+      "line": 1426,
       "tag": "Button",
       "role": "",
       "kind": "action",

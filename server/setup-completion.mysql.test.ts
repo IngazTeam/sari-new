@@ -241,6 +241,35 @@ describe.skipIf(!process.env.DATABASE_URL)(
       ).rejects.toBeInstanceOf(SetupConflict);
       expect(await receipt(input.requestId)).toEqual(a);
     });
+    it("preserves the existing reply schedule when confirming different business hours", async () => {
+      await q(
+        "UPDATE bot_settings SET auto_reply_enabled=1,working_hours_enabled=1,working_hours_start='22:00',working_hours_end='02:00',working_days='6' WHERE merchant_id=?",
+        [owner.merchantId]
+      );
+      const saved = await complete(await request());
+      expect(saved.requestId).toBeTruthy();
+      const [merchant] = await q(
+        "SELECT workingHoursType,workingHours FROM merchants WHERE id=?",
+        [owner.merchantId]
+      );
+      expect(merchant.workingHoursType).toBe("custom");
+      expect(
+        typeof merchant.workingHours === "string"
+          ? JSON.parse(merchant.workingHours)
+          : merchant.workingHours
+      ).toEqual(fields.workingHours);
+      const [settings] = await q(
+        "SELECT auto_reply_enabled,working_hours_enabled,working_hours_start,working_hours_end,working_days FROM bot_settings WHERE merchant_id=?",
+        [owner.merchantId]
+      );
+      expect(settings).toMatchObject({
+        auto_reply_enabled: 1,
+        working_hours_enabled: 1,
+        working_hours_start: "22:00",
+        working_hours_end: "02:00",
+        working_days: "6",
+      });
+    });
     it("rejects a second request that reviewed the same incomplete setup", async () => {
       const input = await request();
       const results = await Promise.allSettled([

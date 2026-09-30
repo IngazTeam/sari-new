@@ -187,9 +187,9 @@
 | 233 | summary | استخدام أسلوب المساعد ولغته ورسالته من هذا القالب | إعدادات المساعد |
 | 260 | input | استخدام أسلوب المساعد ولغته ورسالته من هذا القالب | إعدادات المساعد |
 | 276 | summary | استخدام أوقات العمل المعروضة بدل المسودة الحالية | أوقات العمل المقترحة |
-| 308 | input | استخدام أوقات العمل المعروضة بدل المسودة الحالية | أوقات العمل المقترحة |
-| 333 | Button | لغة القوالب العربية English | أوقات العمل المقترحة |
+| 311 | input | استخدام أوقات العمل المعروضة بدل المسودة الحالية | أوقات العمل المقترحة |
 | 336 | Button | لغة القوالب العربية English | أوقات العمل المقترحة |
+| 339 | Button | لغة القوالب العربية English | أوقات العمل المقترحة |
 
 ## client/src/pages/setup-wizard/BasicInfoStep.tsx
 
@@ -202,7 +202,7 @@
 | 159 | Input | العنوان (اختياري) | تفاصيل إضافية (اختياري) |
 | 174 | Textarea | وصف النشاط (اختياري) | تفاصيل إضافية (اختياري) |
 | 190 | select | ساعات العمل 24_7 weekdays custom اختر أوقات العمل طوال اليوم أيام العمل أوقات مخصصة | تفاصيل إضافية (اختياري) |
-| 219 | Button | التالي | تفاصيل إضافية (اختياري) |
+| 222 | Button | التالي | تفاصيل إضافية (اختياري) |
 
 ## client/src/pages/setup-wizard/WorkingHoursFields.tsx
 
@@ -289,13 +289,13 @@
 | 100 | Button | تعديل {{name}} | CompleteStep |
 | 122 | button | تعديل {{name}} | CompleteStep |
 | 129 | button | تعديل {{name}} | CompleteStep |
-| 237 | summary | products setupApprovalUx.products setupApprovalUx.services | products setupApprovalUx.products setupApprovalUx.services |
-| 272 | a | تسمية ديناميكية / تحتاج مراجعة | products setupApprovalUx.products setupApprovalUx.services |
-| 282 | a | فتح صورة المنتج | products setupApprovalUx.products setupApprovalUx.services |
-| 337 | Button | إلغاء اختيار القالب | القالب المختار |
-| 349 | Button | إزالة مرجع الموقع من الاعتماد | القالب المختار |
-| 366 | summary | معاينة توضيحية للمساعد | معاينة توضيحية للمساعد |
-| 428 | Button | setupWorkspace.reviewConfirm setupApprovalUx.check | معاينة توضيحية للمساعد |
+| 238 | summary | products setupApprovalUx.products setupApprovalUx.services | products setupApprovalUx.products setupApprovalUx.services |
+| 273 | a | تسمية ديناميكية / تحتاج مراجعة | products setupApprovalUx.products setupApprovalUx.services |
+| 283 | a | فتح صورة المنتج | products setupApprovalUx.products setupApprovalUx.services |
+| 338 | Button | إلغاء اختيار القالب | القالب المختار |
+| 350 | Button | إزالة مرجع الموقع من الاعتماد | القالب المختار |
+| 367 | summary | معاينة توضيحية للمساعد | معاينة توضيحية للمساعد |
+| 429 | Button | setupWorkspace.reviewConfirm setupApprovalUx.check | معاينة توضيحية للمساعد |
 
 ## client/src/pages/setup-wizard/SetupDraftRecovery.tsx
 
@@ -1624,23 +1624,23 @@
 | 537 | Button | استخدام القالب في المسودة | BotSettings |
 | 579 | Button | تطبيق | BotSettings |
 | 679 | Switch | تفعيل الرد التلقائي | الرد التلقائي |
-| 716 | Switch | تفعيل ساعات العمل | ساعات العمل |
-| 735 | Input | وقت البداية | ساعات العمل |
-| 769 | Input | وقت النهاية | ساعات العمل |
-| 822 | Button | تسمية ديناميكية / تحتاج مراجعة | ساعات العمل |
-| 882 | Textarea | رسالة الترحيب | الرسائل |
-| 903 | Textarea | رسالة خارج أوقات العمل | الرسائل |
-| 944 | Select | نبرة الصوت | سلوك الذكاء الاصطناعي |
-| 974 | Select | اللغة | سلوك الذكاء الاصطناعي |
-| 1007 | Input | تأخير الرد (ثواني) | سلوك الذكاء الاصطناعي |
-| 1029 | Input | الحد الأقصى لطول الرد | سلوك الذكاء الاصطناعي |
-| 1196 | button | تسمية ديناميكية / تحتاج مراجعة | سلوك المجموعات |
-| 1237 | button | t("merchantUx.actions.removeNamed", {                               name: kw,                             }) | سلوك المجموعات |
-| 1255 | Input | t(                           "merchantUx.groupConversation.topicPlaceholder"                         ) | سلوك المجموعات |
-| 1274 | Button | تسمية ديناميكية / تحتاج مراجعة | سلوك المجموعات |
-| 1334 | Textarea | تعليمات التعامل مع العميل | تعليمات مخصصة للمساعد |
-| 1397 | Button | جاري الإرسال... إرسال اختبار واتساب | تعليمات مخصصة للمساعد |
-| 1415 | Button | جاري الحفظ... حفظ الإعدادات | تعليمات مخصصة للمساعد |
+| 719 | Switch | تفعيل ساعات العمل | ساعات العمل |
+| 738 | Input | وقت البداية | ساعات العمل |
+| 772 | Input | وقت النهاية | ساعات العمل |
+| 825 | Button | تسمية ديناميكية / تحتاج مراجعة | ساعات العمل |
+| 885 | Textarea | رسالة الترحيب | الرسائل |
+| 906 | Textarea | رسالة خارج أوقات العمل | الرسائل |
+| 947 | Select | نبرة الصوت | سلوك الذكاء الاصطناعي |
+| 977 | Select | اللغة | سلوك الذكاء الاصطناعي |
+| 1010 | Input | تأخير الرد (ثواني) | سلوك الذكاء الاصطناعي |
+| 1032 | Input | الحد الأقصى لطول الرد | سلوك الذكاء الاصطناعي |
+| 1199 | button | تسمية ديناميكية / تحتاج مراجعة | سلوك المجموعات |
+| 1240 | button | t("merchantUx.actions.removeNamed", {                               name: kw,                             }) | سلوك المجموعات |
+| 1258 | Input | t(                           "merchantUx.groupConversation.topicPlaceholder"                         ) | سلوك المجموعات |
+| 1277 | Button | تسمية ديناميكية / تحتاج مراجعة | سلوك المجموعات |
+| 1345 | Textarea | تعليمات التعامل مع العميل | تعليمات مخصصة للمساعد |
+| 1408 | Button | جاري الإرسال... إرسال اختبار واتساب | تعليمات مخصصة للمساعد |
+| 1426 | Button | جاري الحفظ... حفظ الإعدادات | تعليمات مخصصة للمساعد |
 
 ## client/src/components/merchant/AssistantDraftReview.tsx
 

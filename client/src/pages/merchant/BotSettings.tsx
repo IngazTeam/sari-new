@@ -701,6 +701,9 @@ export default function BotSettings() {
                 </CardTitle>
                 <CardDescription>
                   {t("botSettingsPage.workingHoursDesc")}
+                  <span className="block mt-2">
+                    {t("setupHoursUx.replyScope")}
+                  </span>
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -1291,9 +1294,17 @@ export default function BotSettings() {
                   </div>
                 )}
 
-                {groupMode === "private_redirect" && <p className="rounded-xl border p-4 leading-7">{t("merchantUx.groupConversation.privateNote")}</p>}
-                <p className="text-sm text-muted-foreground leading-7">{t("merchantUx.groupConversation.scope")}</p>
-                <p className="text-sm text-muted-foreground leading-7">{t("merchantUx.groupConversation.continuity")}</p>
+                {groupMode === "private_redirect" && (
+                  <p className="rounded-xl border p-4 leading-7">
+                    {t("merchantUx.groupConversation.privateNote")}
+                  </p>
+                )}
+                <p className="text-sm text-muted-foreground leading-7">
+                  {t("merchantUx.groupConversation.scope")}
+                </p>
+                <p className="text-sm text-muted-foreground leading-7">
+                  {t("merchantUx.groupConversation.continuity")}
+                </p>
               </CardContent>
             </Card>
           </section>

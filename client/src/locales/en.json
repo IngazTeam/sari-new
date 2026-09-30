@@ -1,4 +1,8 @@
 {
+  "setupHoursUx": {
+    "businessScope": "These hours are saved in the business profile and do not schedule Sary’s replies. Configure reply scheduling in Assistant Settings after setup.",
+    "replyScope": "This schedules Sary’s automatic replies independently from business hours in onboarding. Saving business hours does not change this schedule."
+  },
   "setupPreviewUx": {
     "messagePlaceholder": "Write a message to try the conversation",
     "greetingArProfessional": "مرحباً بك. أنا ساري، المساعد الافتراضي. كيف يمكنني خدمتك؟",
