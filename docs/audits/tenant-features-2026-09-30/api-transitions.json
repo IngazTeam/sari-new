@@ -91,7 +91,7 @@
         },
         {
           "file": "server/product-workspace-page.test.ts",
-          "contains": "17"
+          "contains": "toHaveLength(18)"
         }
       ]
     },

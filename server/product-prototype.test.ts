@@ -316,6 +316,19 @@ describe("built product prototype with actual UI", () => {
     expect(w.sessionStorage.getItem("sary:product-category:v1:1:1:products")).toBe("keep");
     expect(w.sessionStorage.getItem("sary:product-category:v1:9000082:9000082:products")).toBeNull();
   });
+  it("links a product to a category and reflects its usage in the category deletion guard", async () => {
+    await click("مراجعة وتعديل");
+    await choose("#product-categoryId", "4");
+    await click("حفظ المنتج");
+    await click(c.title); await fill(`[aria-label="${c.list}"] input`, "فئة توضيحية 4");
+    expect(text()).toContain("1 منتج مرتبط");
+    expect(button(c.delete).disabled).toBe(true);
+    await click(c.edit);
+    await categoryName("فئة معدلة مع منتج"); await reviewCategory(); await click(c.save);
+    await fill(`[aria-label="${c.list}"] input`, "فئة معدلة مع منتج");
+    expect(text()).toContain("1 منتج مرتبط");
+    expect(text()).not.toContain("2 منتج مرتبط");
+  });
   it("renders saved markup literally after leaving and reopening the workspace", async () => {
     await click("إضافة منتج");
     await fill("#product-name", "<img src=x onerror=alert(1)>");

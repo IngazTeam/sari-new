@@ -45,6 +45,7 @@ vi.mock("../client/src/lib/trpc", () => {
       }),
       products: {
         list: query("list"),
+        categories: { read: query("categories") },
         editor: {
           read: query("read"),
           deleteReview: query("deletion"),
@@ -129,6 +130,10 @@ const row = {
 let host: HTMLDivElement, root: Root, completed: ReturnType<typeof vi.fn>;
 function fixtures() {
   return {
+    categories: { merchantId: 20, actorId: 7, canManage: true, locked: false, digest, rows: [
+      { id: 1, merchantId: 20, name: "Coffee", nameEn: null, parentId: null, sortOrder: 0, isActive: 1, productCount: 0 },
+      { id: 2, merchantId: 20, name: "Inactive", nameEn: null, parentId: null, sortOrder: 0, isActive: 0, productCount: 0 },
+    ] },
     list: {
       merchantId: 20,
       canManage: true,
@@ -249,6 +254,45 @@ const deletion = () =>
     completed,
   });
 describe("product workspace UI", () => {
+  async function selectCategory(value: string) {
+    const select = host.querySelector<HTMLSelectElement>("#product-categoryId")!;
+    await act(async () => { select.value = value; select.dispatchEvent(new Event("change", { bubbles: true })); });
+  }
+  it("links a category without rewriting the text category, and restores the selected draft", async () => {
+    await render(editor()); await selectCategory("1");
+    expect(readProductWorkspaceCache(scope)).toMatchObject({ form: { categoryId: "1", category: "Category" } });
+    await click(button("Save product")); expect(m.write.mock.calls[0][0].fields).toEqual({ categoryId: 1 });
+  });
+  it("does not offer inactive categories and blocks a selected category that becomes inactive", async () => {
+    await render(editor()); expect(host.querySelector<HTMLOptionElement>('#product-categoryId option[value="2"]')!.disabled).toBe(true);
+    await selectCategory("1"); m.data.categories.rows[0].isActive = 0; await render(editor());
+    expect(button("Save product").disabled).toBe(true); expect(host.textContent).toContain(en.productWorkspaceUx.categorySelectionError);
+    await selectCategory(""); await change("#product-name", "Other edit"); await click(button("Save product"));
+    expect(m.write.mock.calls[0][0].fields).toEqual({ name: "Other edit" });
+  });
+  it.each(["missing", "foreign", "inactive"])("preserves an existing %s category on unrelated edits", async mode => {
+    m.data.read.product = { ...row, categoryId: 2 };
+    if (mode === "missing") m.data.categories.rows = [];
+    if (mode === "foreign") m.data.categories.actorId = 8;
+    await render(editor()); expect(host.querySelector<HTMLSelectElement>("#product-categoryId")!.value).toBe("2");
+    await change("#product-name", "Rename only"); await click(button("Save product"));
+    expect(m.write.mock.calls[0][0].fields).toEqual({ name: "Rename only" });
+    expect(host.textContent).not.toContain("productWorkspaceUx.");
+  });
+  it("sends an explicit unlink for an existing category", async () => {
+    m.data.read.product = { ...row, categoryId: 1 }; await render(editor());
+    await selectCategory(""); await click(button("Save product"));
+    expect(m.write.mock.calls[0][0].fields).toEqual({ categoryId: null });
+  });
+  it("migrates an older draft to the current link without overwriting the edited name", async () => {
+    m.data.read.product = { ...row, categoryId: 1 };
+    const { categoryId: _, ...oldForm } = newProductForm("SAR");
+    sessionStorage.setItem("sary:product-workspace:v1:" + scope, JSON.stringify({ savedAt: Date.now(), draft: {
+      kind: "editor", target: 81, digest, baseline: oldForm, form: { ...oldForm, name: "Old draft" },
+    } }));
+    await render(editor()); expect(host.querySelector<HTMLSelectElement>("#product-categoryId")!.value).toBe("1");
+    await click(button("Save product")); expect(m.write.mock.calls[0][0].fields).toEqual({ name: "Old draft" });
+  });
   it("renders literal text, unknown stock and real totals without pretending every product is available", async () => {
     await render(React.createElement(ProductCatalogWorkspace, { scope }));
     expect(host.textContent).toContain(row.name);
@@ -293,11 +337,11 @@ describe("product workspace UI", () => {
     expect(host.textContent).toContain("Add your first product");
     expect(button("Add product").disabled).toBe(true);
   });
-  it("keeps the 16 original form fields plus explicit currency and shows inline errors", async () => {
+  it("keeps the original fields plus explicit currency and linked category with inline errors", async () => {
     await render(editor("new"));
     expect(
       host.querySelectorAll("form input, form textarea, form select")
-    ).toHaveLength(17);
+    ).toHaveLength(18);
     await click(button("Save product"));
     expect(
       host.querySelector("#product-name")?.getAttribute("aria-invalid")

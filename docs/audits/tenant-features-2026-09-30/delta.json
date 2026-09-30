@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-09-30T17:11:07.359Z",
+  "generatedAt": "2026-09-30T17:32:59.429Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -11,7 +11,7 @@
     "after": {
       "routes": 126,
       "files": 308,
-      "controls": 2061
+      "controls": 2063
     }
   },
   "addedFiles": [
@@ -340,15 +340,15 @@
     {
       "route": "/merchant/products",
       "controlsBefore": 57,
-      "controlsNow": 60,
+      "controlsNow": 62,
       "removedQueries": [],
       "addedQueries": [
         "auth.me",
         "products.editor.read",
+        "products.categories.read",
         "products.editor.receipt",
         "products.editor.deleteReview",
         "products.editor.deleteReceipt",
-        "products.categories.read",
         "products.categories.receipt"
       ],
       "removedMutations": [

@@ -77,6 +77,42 @@ describe.skipIf(!process.env.DATABASE_URL)("product editor MySQL", () => {
     cleanupDisposableMerchants([owner?.userId, other?.userId].filter(Boolean))
   );
   afterAll(closeDb);
+  it("links an active branch, preserves text, and allows an explicit unlink", async () => {
+    const parent = await q("INSERT INTO product_categories (merchant_id,name) VALUES (?,'Root')", [owner.merchantId]);
+    const child = await q("INSERT INTO product_categories (merchant_id,name,parent_id) VALUES (?,'Leaf',?)", [owner.merchantId, parent.insertId]);
+    const saved = await create({ categoryId: child.insertId });
+    expect((await read(saved.productId)).product).toMatchObject({ categoryId: child.insertId, category: "Category" });
+    await q("UPDATE product_categories SET is_active=0 WHERE id=?", [parent.insertId]);
+    await expect(create({ categoryId: child.insertId })).rejects.toBeInstanceOf(ProductEditorInvalid);
+    const renamed = await patch(saved.productId, saved.digest, { name: "Rename" });
+    expect((await read(saved.productId)).product.categoryId).toBe(child.insertId);
+    await patch(saved.productId, renamed.digest, { categoryId: null });
+    expect((await read(saved.productId)).product).toMatchObject({ categoryId: null, category: "Category" });
+  });
+  it("rejects missing, cyclic and over-depth ancestry when linking a product", async () => {
+    const ids: number[] = [];
+    for (let i=0; i<9; i++) {
+      const row = await q("INSERT INTO product_categories (merchant_id,name,parent_id) VALUES (?,?,?)", [owner.merchantId, `Level ${i}`, ids.at(-1) ?? null]);
+      ids.push(row.insertId);
+    }
+    await expect(create({ categoryId: ids[8] })).rejects.toBeInstanceOf(ProductEditorInvalid);
+    await q("UPDATE product_categories SET parent_id=? WHERE id=?", [ids[1], ids[0]]);
+    await expect(create({ categoryId: ids[1] })).rejects.toBeInstanceOf(ProductEditorInvalid);
+    await q("UPDATE product_categories SET parent_id=2147483647 WHERE id=?", [ids[0]]);
+    await expect(create({ categoryId: ids[0] })).rejects.toBeInstanceOf(ProductEditorInvalid);
+    expect((await q("SELECT COUNT(*) n FROM products WHERE merchantId=?", [owner.merchantId]))[0].n).toBe(0);
+  });
+  it("rechecks a selected category after deletion and preserves retry receipts after deactivation", async () => {
+    const category = await q("INSERT INTO product_categories (merchant_id,name) VALUES (?,'Chosen')", [owner.merchantId]);
+    const id = randomUUID(), saved = await create({ categoryId: category.insertId }, id);
+    await q("UPDATE product_categories SET is_active=0 WHERE id=?", [category.insertId]);
+    await expect(create({ categoryId: category.insertId }, id)).resolves.toEqual(saved);
+    await expect(create({ categoryId: category.insertId })).rejects.toBeInstanceOf(ProductEditorInvalid);
+    const unused = await q("INSERT INTO product_categories (merchant_id,name) VALUES (?,'Removed')", [owner.merchantId]);
+    await q("DELETE FROM product_categories WHERE id=?", [unused.insertId]);
+    await expect(patch(saved.productId, saved.digest, { categoryId: unused.insertId })).rejects.toBeInstanceOf(ProductEditorInvalid);
+    expect((await read(saved.productId)).product.categoryId).toBe(category.insertId);
+  });
   it("saves exact prices and advanced fields with one durable receipt, then clears nullable fields", async () => {
     const saved = await create(),
       current = await read(saved.productId);

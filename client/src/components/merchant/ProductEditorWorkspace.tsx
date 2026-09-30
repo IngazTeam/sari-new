@@ -18,6 +18,11 @@ import {
 } from "@/lib/product-workspace-model";
 import { productEditorReadSchema } from "@shared/product-catalog";
 import {
+  categorySnapshot,
+  categoryPath,
+  productCategorySelectable,
+} from "@shared/product-categories";
+import {
   productEditorReceipt,
   type ProductEditorWrite,
 } from "@shared/product-editor";
@@ -77,6 +82,24 @@ export function ProductEditorWorkspace({
     ),
     mutation = trpc.products.editor.write.useMutation(),
     parsed = productEditorReadSchema.safeParse(query.data);
+  const categoryQuery = trpc.products.categories.read.useQuery(undefined, {
+      retry: false,
+      refetchOnMount: "always",
+      refetchOnWindowFocus: true,
+    }),
+    categoryParsed = categorySnapshot.safeParse(categoryQuery.data);
+  const categoryData =
+    categoryParsed.success &&
+    categoryParsed.data.merchantId === merchantId &&
+    categoryParsed.data.actorId === actorId
+      ? categoryParsed.data
+      : null;
+  const categoriesReady =
+    !!categoryData &&
+    !categoryQuery.error &&
+    !categoryQuery.isLoading &&
+    !categoryQuery.isFetching &&
+    categoryQuery.fetchStatus !== "paused";
   const data =
     parsed.success &&
     parsed.data.merchantId === merchantId &&
@@ -141,6 +164,20 @@ export function ProductEditorWorkspace({
       digest: target === "new" ? null : data!.digest,
     });
   }, [loaded, ready, data?.digest, target]);
+  useEffect(() => {
+    if (!draft?.legacyCategory || !ready || !data) return;
+    const value = String(data.product.categoryId ?? ""),
+      { legacyCategory: _, ...rest } = draft;
+    try {
+      persist({
+        ...rest,
+        form: { ...draft.form, categoryId: value },
+        baseline: { ...draft.baseline, categoryId: value },
+      });
+    } catch {
+      setStorageError(true);
+    }
+  }, [draft?.legacyCategory, ready, data?.digest]);
   const pending = draft?.attempt,
     conflict =
       !!draft &&
@@ -150,6 +187,19 @@ export function ProductEditorWorkspace({
       draft.digest !== data!.digest,
     dirty =
       !!draft && productFormChanged(draft.form, draft.baseline).length > 0;
+  const categoryChanged =
+    !!draft && draft.form.categoryId !== draft.baseline.categoryId;
+  const categoryBlocked =
+    !!draft &&
+    !!draft.form.categoryId &&
+    categoryChanged &&
+    (!categoriesReady ||
+      !categoryData!.canManage ||
+      categoryData!.locked ||
+      !productCategorySelectable(
+        categoryData!.rows,
+        Number(draft.form.categoryId)
+      ));
   useEffect(() => {
     if (!dirty && !pending) return;
     const warn = (event: BeforeUnloadEvent) => {
@@ -198,7 +248,15 @@ export function ProductEditorWorkspace({
       !canManage
     )
       return;
-    if (!draftRef.current.attempt && (!ready || !permitted || conflict)) return;
+    if (
+      !draftRef.current.attempt &&
+      (!ready ||
+        !permitted ||
+        conflict ||
+        categoryBlocked ||
+        draftRef.current.legacyCategory)
+    )
+      return;
     if (
       draftRef.current.attempt &&
       JSON.stringify(input) !== JSON.stringify(draftRef.current.attempt)
@@ -531,6 +589,82 @@ export function ProductEditorWorkspace({
                 disabled: target !== "new",
               })}
               {field("status", { options: choices.status })}
+              <div className="pw-wide">
+                <label htmlFor="product-categoryId">{labels.categoryId}</label>
+                <select
+                  id="product-categoryId"
+                  aria-label={labels.categoryId}
+                  value={draft.form.categoryId}
+                  disabled={
+                    disabled ||
+                    !!draft.legacyCategory ||
+                    !categoriesReady ||
+                    !categoryData?.canManage ||
+                    categoryData.locked
+                  }
+                  aria-invalid={categoryBlocked || !!errors.categoryId}
+                  aria-describedby="product-category-help"
+                  onChange={event => edit("categoryId", event.target.value)}
+                >
+                  <option value="">{t("productWorkspaceUx.noCategory")}</option>
+                  {draft.form.categoryId &&
+                    (!categoriesReady ||
+                      !categoryData!.rows.some(
+                        row => String(row.id) === draft.form.categoryId
+                      )) && (
+                      <option value={draft.form.categoryId} disabled>
+                        {t("productWorkspaceUx.unavailableCategory", {
+                          id: draft.form.categoryId,
+                        })}
+                      </option>
+                    )}
+                  {categoriesReady &&
+                    categoryData!.rows
+                      .slice()
+                      .sort((a, b) => a.sortOrder - b.sortOrder || a.id - b.id)
+                      .map(row => {
+                        const usable = productCategorySelectable(
+                          categoryData!.rows,
+                          row.id
+                        );
+                        return (
+                          <option
+                            key={row.id}
+                            value={row.id}
+                            disabled={!usable}
+                          >
+                            {categoryPath(categoryData!.rows, row.id)
+                              .path.map(item =>
+                                !i18n.language.startsWith("ar") && item.nameEn
+                                  ? item.nameEn
+                                  : item.name
+                              )
+                              .join(" / ")}
+                            {!usable
+                              ? ` · ${t("productWorkspaceUx.categoryNeedsReview")}`
+                              : ""}
+                          </option>
+                        );
+                      })}
+                </select>
+                <p id="product-category-help">
+                  {categoryBlocked || errors.categoryId
+                    ? t("productWorkspaceUx.categorySelectionError")
+                    : t("productWorkspaceUx.categoryLinkHint")}
+                </p>
+                {!categoriesReady && (
+                  <div className="pw-notice" role="status">
+                    <p>{t("productWorkspaceUx.categoriesUnavailable")}</p>
+                    <button
+                      type="button"
+                      disabled={categoryQuery.isFetching}
+                      onClick={() => void categoryQuery.refetch()}
+                    >
+                      {t("productWorkspaceUx.retryCategories")}
+                    </button>
+                  </div>
+                )}
+              </div>
               {field("description", { multiline: true })}
             </div>
             {target !== "new" &&
@@ -606,7 +740,12 @@ export function ProductEditorWorkspace({
             <button
               className="pw-primary"
               type="submit"
-              disabled={disabled || conflict || (target !== "new" && !dirty)}
+              disabled={
+                disabled ||
+                conflict ||
+                categoryBlocked ||
+                (target !== "new" && !dirty)
+              }
             >
               {busy
                 ? t("productWorkspaceUx.saving")

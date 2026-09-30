@@ -17,6 +17,8 @@ export const productFormSchema = z
     costPrice: z.string().max(32),
     weight: z.string().max(20),
     category: z.string().max(100),
+    // Default keeps drafts written before linked category selection readable.
+    categoryId: z.string().max(12).default(""),
     tags: z.string().max(65535),
     productType: z.string().max(20),
     status: z.string().max(20),
@@ -43,6 +45,7 @@ export function newProductForm(currency: "SAR" | "USD"): ProductForm {
     costPrice: "",
     weight: "",
     category: "",
+    categoryId: "",
     tags: "",
     productType: "physical",
     status: "active",
@@ -68,6 +71,7 @@ export function productToForm(row: ProductWorkspaceRow): ProductForm {
     costPrice: money(row.costPrice),
     weight: row.weight ?? "",
     category: row.category ?? "",
+    categoryId: row.categoryId?.toString() ?? "",
     tags: row.tags ?? "",
     productType: row.productType ?? "",
     status: row.status,
@@ -91,6 +95,7 @@ function fields(form: ProductForm) {
     costPrice: form.costPrice || null,
     weight: form.weight || null,
     category: form.category || null,
+    categoryId: numeric(form.categoryId),
     tags: form.tags || null,
     lowStockAlert: numeric(form.lowStockAlert),
     trackInventory: numeric(form.trackInventory),
@@ -106,7 +111,7 @@ export function productFormRequest(
   const all = fields(form);
   const raw =
     target === "new"
-      ? { kind: "create", requestId, fields: { ...all, categoryId: null } }
+      ? { kind: "create", requestId, fields: all }
       : {
           kind: "update",
           requestId,

@@ -9,6 +9,10 @@ import { hasPermission, type MerchantRole } from "./_core/permissions";
 import { catalogVisibleSql } from "./integrations/catalog-scope";
 import { majorToMinor } from "../shared/product-money";
 import {
+  PRODUCT_CATEGORY_LIMIT,
+  productCategorySelectable,
+} from "../shared/product-categories";
+import {
   productEditorReadInput,
   productEditorWrite,
   productEditorReceiptInput,
@@ -233,18 +237,25 @@ export async function writeProductEditor(
       throw new ProductEditorInvalid(
         "Currency changes require a separate conversion workflow"
       );
-    if (fields.categoryId != null) {
+    if (
+      fields.categoryId != null &&
+      fields.categoryId !== current?.product.categoryId
+    ) {
       const categories = await connectionDb(c)
-        .select({ id: productCategories.id })
+        .select({
+          id: productCategories.id,
+          parentId: productCategories.parentId,
+          isActive: productCategories.isActive,
+        })
         .from(productCategories)
-        .where(
-          and(
-            eq(productCategories.id, fields.categoryId),
-            eq(productCategories.merchantId, merchantId)
-          )
-        )
+        .where(eq(productCategories.merchantId, merchantId))
+        .orderBy(productCategories.id)
+        .limit(PRODUCT_CATEGORY_LIMIT + 1)
         .for("share");
-      if (categories.length !== 1)
+      if (
+        categories.length > PRODUCT_CATEGORY_LIMIT ||
+        !productCategorySelectable(categories, fields.categoryId)
+      )
         throw new ProductEditorInvalid("Category unavailable");
     }
     if (

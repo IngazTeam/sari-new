@@ -120,13 +120,13 @@ export class CategoryPlanFailure extends Error {
   }
 }
 // UI and server use the same bounded ancestry walk; no recursion on stored data.
-export function categoryPath(
-  rows: readonly CategoryRow[],
+export function categoryPath<T extends Pick<CategoryRow, "id" | "parentId">>(
+  rows: readonly T[],
   categoryId: number
-): { path: CategoryRow[]; issue: CategoryIssue | null } {
+): { path: T[]; issue: CategoryIssue | null } {
   const lookup = new Map(rows.map(row => [row.id, row])),
     seen = new Set<number>(),
-    path: CategoryRow[] = [];
+    path: T[] = [];
   let next: number | null = categoryId;
   while (next !== null) {
     if (seen.has(next)) return { path, issue: "cycle" };
@@ -138,6 +138,17 @@ export function categoryPath(
     next = row.parentId;
   }
   return { path, issue: null };
+}
+export function productCategorySelectable(
+  rows: readonly (Pick<CategoryRow, "id" | "parentId"> & { isActive: number })[],
+  categoryId: number
+) {
+  const result = categoryPath(rows, categoryId);
+  return (
+    !result.issue &&
+    result.path.length > 0 &&
+    result.path.every(row => row.isActive === 1)
+  );
 }
 const nameKey = (value: string) =>
   value.normalize("NFKC").trim().toLocaleLowerCase("en");

@@ -2,7 +2,11 @@ import { useSyncExternalStore } from "react";
 import { ProductPreviewStore } from "./product-model";
 import { ProductCategoryPreviewStore } from "./product-category-model";
 export const products = new ProductPreviewStore();
-export const categories = new ProductCategoryPreviewStore(() => products.changed());
+export const categories = new ProductCategoryPreviewStore(
+  () => products.changed(),
+  () => products.categoryUsage()
+);
+products.categorySource = categories.read;
 export let productLanguage = "ar",
   productHint = "";
 export function useProductVersion() {

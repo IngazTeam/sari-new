@@ -18,6 +18,7 @@ export const productWorkspaceDraft = z.discriminatedUnion("kind", [
         .regex(/^[a-f0-9]{64}$/)
         .nullable(),
       attempt: productEditorWrite.optional(),
+      legacyCategory: z.literal(true).optional(),
     })
     .strict(),
   z
@@ -38,6 +39,16 @@ function checked(raw: unknown) {
   const value = entry.parse(raw),
     draft = value.draft;
   if (draft.kind === "editor") {
+    const prior = (raw as { draft?: { form?: object; baseline?: object } })
+      .draft;
+    if (
+      draft.target !== "new" &&
+      prior?.form &&
+      prior?.baseline &&
+      !Object.hasOwn(prior.form, "categoryId") &&
+      !Object.hasOwn(prior.baseline, "categoryId")
+    )
+      draft.legacyCategory = true;
     if ((draft.target === "new") !== (draft.digest === null))
       throw Error("Invalid product baseline");
     if (draft.attempt) {

@@ -51,6 +51,7 @@ export function productLabels(t: TFunction): Record<ProductField, string> {
     costPrice: t("productWorkspaceUx.costPrice"),
     weight: t("productWorkspaceUx.weight"),
     category: t("productWorkspaceUx.category"),
+    categoryId: t("productWorkspaceUx.categoryId"),
     tags: t("productWorkspaceUx.tags"),
     productType: t("productWorkspaceUx.productType"),
     status: t("productWorkspaceUx.status"),

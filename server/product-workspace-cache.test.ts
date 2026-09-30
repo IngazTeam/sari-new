@@ -38,6 +38,30 @@ beforeEach(() => {
 });
 afterEach(() => vi.restoreAllMocks());
 describe("product drafts and form boundaries", () => {
+  it("reads a pre-category editor draft without inventing an unlink request", () => {
+    const { categoryId: _, ...oldForm } = form;
+    sessionStorage.setItem("sary:product-workspace:v1:" + scope, JSON.stringify({ savedAt: Date.now(), draft: {
+      kind: "editor", target: 2, digest, form: { ...oldForm, name: "My edit" }, baseline: oldForm,
+    } }));
+    const saved = readProductWorkspaceCache(scope);
+    expect(saved?.kind === "editor" && saved.legacyCategory).toBe(true);
+    if (saved?.kind !== "editor") throw Error();
+    expect(productFormRequest(2, saved.form, saved.baseline, digest, requestId)).toMatchObject({ success: true, data: { fields: { name: "My edit" } } });
+  });
+  it("preserves a pending creation made before the category selector existed", () => {
+    const { categoryId: _, ...oldForm } = form, { categoryId: __, ...oldBaseline } = baseline;
+    sessionStorage.setItem("sary:product-workspace:v1:" + scope, JSON.stringify({ savedAt: Date.now(), draft: {
+      ...draft, form: oldForm, baseline: oldBaseline, attempt: attempt(),
+    } }));
+    expect(readProductWorkspaceCache(scope)?.attempt).toEqual(attempt());
+  });
+  it("keeps numeric category links separate from historical text and sends explicit unlink", () => {
+    const linked = { ...form, category: "Legacy", categoryId: "42" };
+    expect(productFormRequest("new", linked, baseline, null, requestId)).toMatchObject({ success: true, data: { fields: { category: "Legacy", categoryId: 42 } } });
+    expect(productFormRequest(2, { ...linked, categoryId: "" }, linked, digest, requestId)).toMatchObject({ success: true, data: { fields: { categoryId: null } } });
+    for (const value of ["1e3", "-1", "0", "1.1", "abc", "2147483648"])
+      expect(productFormRequest("new", { ...linked, categoryId: value }, baseline, null, requestId).success).toBe(false);
+  });
   it("isolates actor and merchant and clears drafts on logout", () => {
     saveProductWorkspaceCache(
       scope,

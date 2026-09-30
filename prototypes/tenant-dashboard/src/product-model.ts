@@ -13,6 +13,10 @@ import {
   type ProductDeleteReceipt,
 } from "../../../shared/product-delete";
 import { majorToMinor } from "../../../shared/product-money";
+import {
+  categorySnapshot,
+  productCategorySelectable,
+} from "../../../shared/product-categories";
 export const productPreviewId = 9000082;
 export const productPreviewScope = "9000082:9000082:products";
 export const productModes = {
@@ -76,6 +80,14 @@ function fixture(id: number): ProductWorkspaceRow {
   };
 }
 export class ProductPreviewStore {
+  categorySource?: () => unknown;
+  categoryUsage = () => {
+    const counts = new Map<number, number>();
+    for (const row of this.rows.values())
+      if (row.categoryId !== null)
+        counts.set(row.categoryId, (counts.get(row.categoryId) ?? 0) + 1);
+    return counts;
+  };
   mode: ProductMode = "data";
   version = 0;
   private listeners = new Set<() => void>();
@@ -321,6 +333,24 @@ export class ProductPreviewStore {
       throw error("BAD_REQUEST");
     const fields = input.fields as Record<string, unknown>,
       next = { ...row };
+    if (
+      input.fields.categoryId != null &&
+      input.fields.categoryId !== row.categoryId
+    ) {
+      const categories = categorySnapshot.safeParse(this.categorySource?.());
+      if (
+        !categories.success ||
+        categories.data.actorId !== productPreviewId ||
+        categories.data.merchantId !== productPreviewId ||
+        !categories.data.canManage ||
+        categories.data.locked ||
+        !productCategorySelectable(
+          categories.data.rows,
+          input.fields.categoryId
+        )
+      )
+        throw error("BAD_REQUEST");
+    }
     if (row.priceUnit !== "minor" && fields.price !== undefined) {
       next.compareAtPrice = null;
       next.costPrice = null;
