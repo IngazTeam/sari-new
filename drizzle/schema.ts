@@ -3702,6 +3702,17 @@ export const quotationDeliveries = mysqlTable('quotation_deliveries', {
 	uniqueIndex('uq_quotation_delivery_once').on(table.merchantId,table.activeQuotationId),
 	index('idx_quotation_delivery_quote').on(table.merchantId,table.quotationId,table.id)]);
 
+export const quotationTemplateReceipts = mysqlTable('quotation_template_receipts', {
+	id: int().autoincrement().primaryKey(),
+	merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+	actorId: int('actor_id').notNull(),
+	requestId: char('request_id', { length: 36 }).notNull(),
+	action: mysqlEnum('action', ['create','update','delete']).notNull(),
+	inputHash: char('input_hash', { length: 64 }).notNull(),
+	result: json('result').notNull(),
+	createdAt: timestamp('created_at', { mode: 'string', fsp: 3 }).defaultNow().notNull(),
+}, table => [uniqueIndex('uq_quotation_template_request').on(table.merchantId, table.requestId)]);
+
 export const quotationTemplates = mysqlTable("quotation_templates", {
 	id: int().autoincrement().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),

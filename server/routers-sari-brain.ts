@@ -1,5 +1,6 @@
 import { pageUrlInput, pagePreviewReadInput, pagePreviewSaveInput } from '../shared/knowledge-page-intake';
 import { quotationWorkspaceRouter, quotationGuard } from './routers-quotations';
+import { quotationTemplatesRouter } from './routers-quotation-templates';
 import { quotationDeliveryInput } from '../shared/quotation-delivery';
 import { sendReviewedQuotation } from './quotation-delivery';
 import { storePagePreview, readPageIntake, savePagePreview } from './knowledge/page-intake';
@@ -1502,6 +1503,7 @@ ${sanitizedContent}`
 
   /** Create a quotation */
   quotations: quotationWorkspaceRouter,
+  quotationTemplates: quotationTemplatesRouter,
 
   createQuotation: permissionProcedure('orders.manage')
     .input(z.object({
