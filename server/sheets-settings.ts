@@ -12,7 +12,8 @@ export const sheetsSettingsStore = {
   transaction: sheetsOAuthStore.transaction,
   authority: sheetsOAuthStore.authority,
 };
-async function snapshot(c: PoolConnection, scope: Scope) {
+/** Internal locked snapshot: callers must return only view, never config/row. */
+export async function readSheetsSettingsOn(c: PoolConnection, scope: Scope) {
   await sheetsSettingsStore.authority(c, scope);
   const [integrations] = await c.execute<any[]>(
     "SELECT id,credentials,is_active,sheet_id,settings,last_sync FROM google_integrations WHERE merchant_id=? AND integration_type='sheets' ORDER BY id LIMIT 2 FOR UPDATE",
@@ -94,8 +95,9 @@ async function snapshot(c: PoolConnection, scope: Scope) {
       : undefined,
     reports,
   });
-  return { row, settings, view };
+  return { row, config, settings, view };
 }
+const snapshot = readSheetsSettingsOn;
 export async function readSheetsSettings(scope: Scope) {
   return sheetsSettingsStore.transaction(
     async c => (await snapshot(c, scope)).view

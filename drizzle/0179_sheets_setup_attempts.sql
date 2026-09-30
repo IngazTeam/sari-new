@@ -1,0 +1,21 @@
+CREATE TABLE IF NOT EXISTS `sheets_setup_attempts` (
+  `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `merchant_id` INT NOT NULL,
+  `actor_id` INT NOT NULL,
+  `request_id` CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `input_hash` CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `source_hash` CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `execution_hash` CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `state` VARCHAR(20) NOT NULL,
+  `spreadsheet_id` VARCHAR(255) NULL,
+  `receipt` JSON NULL,
+  `receipt_hash` CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NULL,
+  `failure_code` VARCHAR(24) NULL,
+  `created_at` TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  `lease_until` TIMESTAMP(3) NOT NULL,
+  `finished_at` TIMESTAMP(3) NULL,
+  `reviewed_at` TIMESTAMP(3) NULL,
+  UNIQUE KEY `uq_sheets_setup_request` (`merchant_id`,`request_id`),
+  KEY `idx_sheets_setup_open` (`merchant_id`,`state`,`id`),
+  CONSTRAINT `fk_sheets_setup_merchant` FOREIGN KEY (`merchant_id`) REFERENCES `merchants` (`id`) ON DELETE CASCADE
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

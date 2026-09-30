@@ -21,8 +21,29 @@ import { beginSheetsOAuth } from './sheets-oauth';
 import { guardSheetsOAuth } from './sheets-oauth-api';
 import { readSheetsSettings, writeSheetsReportSettings, disconnectSheets } from './sheets-settings';
 import { sheetsSettingsChange, sheetsDisconnect } from '../shared/sheets-settings';
+import { sheetsSetupInput, sheetsSetupRead, sheetsSetupAcknowledge } from '../shared/sheets-setup';
+import { startSheetsSetup, readSheetsSetup, recoverSheetsSetup, acknowledgeSheetsSetup } from './sheets-setup-attempts';
+import { guardSheetsSetup } from './sheets-setup-api';
 
 export const sheetsRouter = router({
+  setup: router({
+    start: permissionProcedure('integrations.manage').input(sheetsSetupInput).mutation(({ctx,input})=>{
+      if(!ctx.session?.sessionId)throw new TRPCError({code:'UNAUTHORIZED',message:'sheets_setup:session'});
+      return guardSheetsSetup(()=>startSheetsSetup({merchantId:ctx.merchantId,userId:ctx.user.id,sessionId:ctx.session!.sessionId},input));
+    }),
+    read: permissionProcedure('integrations.manage').input(sheetsSetupRead.optional()).query(({ctx,input})=>{
+      if(!ctx.session?.sessionId)throw new TRPCError({code:'UNAUTHORIZED',message:'sheets_setup:session'});
+      return guardSheetsSetup(()=>readSheetsSetup({merchantId:ctx.merchantId,userId:ctx.user.id,sessionId:ctx.session!.sessionId},input ?? {}));
+    }),
+    recover: permissionProcedure('integrations.manage').input(sheetsSetupRead.required()).mutation(({ctx,input})=>{
+      if(!ctx.session?.sessionId)throw new TRPCError({code:'UNAUTHORIZED',message:'sheets_setup:session'});
+      return guardSheetsSetup(()=>recoverSheetsSetup({merchantId:ctx.merchantId,userId:ctx.user.id,sessionId:ctx.session!.sessionId},input));
+    }),
+    acknowledge: permissionProcedure('integrations.manage').input(sheetsSetupAcknowledge).mutation(({ctx,input})=>{
+      if(!ctx.session?.sessionId)throw new TRPCError({code:'UNAUTHORIZED',message:'sheets_setup:session'});
+      return guardSheetsSetup(()=>acknowledgeSheetsSetup({merchantId:ctx.merchantId,userId:ctx.user.id,sessionId:ctx.session!.sessionId},input));
+    }),
+  }),
   beginOAuth: permissionProcedure('integrations.manage').mutation(({ctx}) => {
     if (!ctx.session?.sessionId) throw new TRPCError({code:'UNAUTHORIZED',message:'sheets_oauth:session'});
     return guardSheetsOAuth(() => beginSheetsOAuth({merchantId:ctx.merchantId,userId:ctx.user.id,sessionId:ctx.session!.sessionId}));

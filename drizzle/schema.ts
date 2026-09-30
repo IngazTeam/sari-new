@@ -2096,6 +2096,15 @@ export const zidOauthStates = mysqlTable("zid_oauth_states", {
 	index("zid_oauth_states_expiry_idx").on(table.expiresAt),
 ]);
 
+export const sheetsSetupAttempts = mysqlTable("sheets_setup_attempts", {
+	id:int().autoincrement().primaryKey(),
+	merchantId:int("merchant_id").notNull().references(()=>merchants.id,{onDelete:"cascade"}),
+	actorId:int("actor_id").notNull(),requestId:char("request_id",{length:36}).notNull(),
+	inputHash:char("input_hash",{length:64}).notNull(),sourceHash:char("source_hash",{length:64}).notNull(),executionHash:char("execution_hash",{length:64}).notNull(),
+	state:varchar({length:20}).notNull(),spreadsheetId:varchar("spreadsheet_id",{length:255}),receipt:json(),receiptHash:char("receipt_hash",{length:64}),failureCode:varchar("failure_code",{length:24}),
+	createdAt:timestamp("created_at",{mode:"string",fsp:3}).defaultNow().notNull(),leaseUntil:timestamp("lease_until",{mode:"string",fsp:3}).notNull(),finishedAt:timestamp("finished_at",{mode:"string",fsp:3}),reviewedAt:timestamp("reviewed_at",{mode:"string",fsp:3}),
+},table=>[uniqueIndex("uq_sheets_setup_request").on(table.merchantId,table.requestId),index("idx_sheets_setup_open").on(table.merchantId,table.state,table.id)]);
+
 export const sheetsOauthStates = mysqlTable("sheets_oauth_states", {
 	id: int().autoincrement().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
