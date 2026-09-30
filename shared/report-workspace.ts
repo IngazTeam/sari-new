@@ -2,15 +2,13 @@ import { z } from "zod";
 
 export const reportPeriods = ["day", "week", "month", "year"] as const;
 export const reportKinds = ["sales", "customers", "conversations"] as const;
-export const reportPeriodInput = z
-  .object({ period: z.enum(reportPeriods) })
+export const reportWorkspaceInput = z
+  .object({
+    kind: z.enum(reportKinds),
+    period: z.enum(reportPeriods),
+    currency: z.enum(["SAR", "USD"]).default("SAR"),
+  })
   .strict();
-export const reportSalesInput = reportPeriodInput.extend({
-  currency: z.enum(["SAR", "USD"]).default("SAR"),
-});
-export const reportWorkspaceInput = reportSalesInput.extend({
-  kind: z.enum(reportKinds),
-});
 export type ReportSelection = z.infer<typeof reportWorkspaceInput>;
 export const reportSelectionKey = (s: ReportSelection) =>
   JSON.stringify([s.kind, s.period, s.currency]);

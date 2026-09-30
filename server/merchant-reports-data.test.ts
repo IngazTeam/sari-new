@@ -240,44 +240,49 @@ describe("item sample units and exclusions", () => {
     ).toThrow();
   });
 });
-describe("report permission and compatibility", () => {
+describe("report permission and retired routes", () => {
   it("uses resolved membership rather than injected context", async () => {
     sales();
     expect(
-      await caller().getSalesReport({ period: "week", currency: "USD" })
+      await caller().workspace({
+        kind: "sales",
+        period: "week",
+        currency: "USD",
+      })
     ).toMatchObject({ merchantId: 20, currency: "USD" });
     expect(queries[0].params).toEqual([20]);
   });
   it("denies every read to a role without analytics.read", async () => {
     mocks.access.mockResolvedValue({ merchantId: 20, role: "support_agent" });
-    for (const method of [
-      "getSalesReport",
-      "getCustomersReport",
-      "getConversationsReport",
-    ] as const)
-      await expect(caller()[method]({ period: "day" })).rejects.toMatchObject({
+    for (const kind of ["sales", "customers", "conversations"] as const)
+      await expect(
+        caller().workspace({ kind, period: "day" })
+      ).rejects.toMatchObject({
         code: "FORBIDDEN",
       });
-    await expect(
-      caller().workspace({ kind: "sales", period: "day" })
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
     expect(mocks.db).not.toHaveBeenCalled();
   });
   it("rejects tenant injection at each route", async () => {
-    for (const method of [
-      "getSalesReport",
-      "getCustomersReport",
-      "getConversationsReport",
-    ] as const)
+    for (const kind of ["sales", "customers", "conversations"] as const)
       await expect(
-        caller()[method]({ period: "day", merchantId: 999 } as any)
+        caller().workspace({ kind, period: "day", merchantId: 999 } as any)
       ).rejects.toMatchObject({ code: "BAD_REQUEST" });
     expect(mocks.db).not.toHaveBeenCalled();
   });
   it("surfaces unavailable storage", async () => {
     mocks.db.mockResolvedValue(null);
     await expect(
-      caller().getSalesReport({ period: "month" })
+      caller().workspace({ kind: "sales", period: "month" })
     ).rejects.toMatchObject({ code: "INTERNAL_SERVER_ERROR" });
   });
+  it.each(["getSalesReport", "getCustomersReport", "getConversationsReport"])(
+    "rejects retired %s without access or database reads",
+    async method => {
+      await expect(
+        (caller() as any)[method]({ period: "month" })
+      ).rejects.toMatchObject({ code: "NOT_FOUND" });
+      expect(mocks.access).not.toHaveBeenCalled();
+      expect(mocks.db).not.toHaveBeenCalled();
+    }
+  );
 });
