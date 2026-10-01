@@ -1,10 +1,11 @@
 import {sql,type SQL} from 'drizzle-orm';
 import {getDb} from './db/connection';
 import {databaseTimeEpoch} from './db/time';
-import {campaignReportInput,campaignReportSchema,type CampaignReportSnapshot,type campaignReportReasons} from '../shared/campaign-report';
+import {campaignReportInput,campaignReportSchema,campaignReportExportInput,campaignReportExportSchema,campaignReportExportLimit,type CampaignReportExport,type CampaignReportSelection,type CampaignReportSnapshot,type campaignReportReasons} from '../shared/campaign-report';
 
 export class CampaignReportUnavailableError extends Error {constructor(){super('Campaign report is unavailable');this.name='CampaignReportUnavailableError';}}
 export class CampaignReportMissingError extends Error {constructor(){super('Campaign report not found');this.name='CampaignReportMissingError';}}
+export class CampaignReportExportLimitError extends Error {constructor(){super('Narrow the report filters before exporting');this.name='CampaignReportExportLimitError';}}
 type Row=Record<string,any>;
 function integer(value:unknown):number{if(!(typeof value==='number'||typeof value==='string'&&/^\d+$/.test(value)))throw new CampaignReportUnavailableError();const result=Number(value);if(!Number.isSafeInteger(result)||result<0)throw new CampaignReportUnavailableError();return result;}
 function identity(value:number){if(!Number.isSafeInteger(value)||value<=0)throw new CampaignReportUnavailableError();}
@@ -33,7 +34,16 @@ export function campaignReportReason(value:unknown):typeof campaignReportReasons
  * Result records and queued recipients remain separate datasets, not merged
  * into an invented delivery state. Legacy unlinked logs remain visible. */
 export async function readCampaignReport(actorId:number,merchantId:number,raw:unknown,now=new Date()):Promise<CampaignReportSnapshot>{
-  identity(actorId);identity(merchantId);const selection=campaignReportInput.parse(raw);if(!Number.isFinite(now.getTime()))throw new CampaignReportUnavailableError();
+  return readReport(actorId,merchantId,campaignReportInput.parse(raw),now,false);
+}
+export async function readCampaignReportExport(actorId:number,merchantId:number,raw:unknown,now=new Date()):Promise<CampaignReportExport>{
+  return readReport(actorId,merchantId,{...campaignReportExportInput.parse(raw),page:1},now,true);
+}
+function readReport(actorId:number,merchantId:number,selection:CampaignReportSelection,now:Date,exporting:false):Promise<CampaignReportSnapshot>;
+function readReport(actorId:number,merchantId:number,selection:CampaignReportSelection,now:Date,exporting:true):Promise<CampaignReportExport>;
+async function readReport(actorId:number,merchantId:number,selection:CampaignReportSelection,now:Date,exporting:boolean):Promise<CampaignReportSnapshot|CampaignReportExport>{
+  identity(actorId);identity(merchantId);if(!Number.isFinite(now.getTime()))throw new CampaignReportUnavailableError();
+  const pageSize=exporting?campaignReportExportLimit:25;
   try{
     const db=await getDb();if(!db)throw new CampaignReportUnavailableError();
     return await db.transaction(async tx=>{
@@ -56,17 +66,18 @@ export async function readCampaignReport(actorId:number,merchantId:number,raw:un
         AND (${selection.search}='' OR LOCATE(LOWER(${selection.search}),LOWER(l.customerPhone))>0 OR LOCATE(LOWER(${selection.search}),LOWER(COALESCE(l.customerName,'')))>0)`;
       const recipientFilter=sql`${queueWhere} AND (${selection.status}='all' OR o.status=${selection.status}) AND (${selection.search}='' OR LOCATE(${selection.search},o.customer_phone)>0)`;
       const total=integer(one(await read(selection.view==='results'?sql`SELECT COUNT(*) AS total FROM campaignLogs l WHERE ${resultFilter}`:sql`SELECT COUNT(*) AS total FROM campaign_delivery_outbox o WHERE ${recipientFilter}`)).total);
+      if(exporting&&total>campaignReportExportLimit)throw new CampaignReportExportLimitError();
       const source=await read(selection.view==='results'?
-        sql`SELECT l.id,l.customerPhone,l.customerName,l.status,l.errorMessage,l.sentAt FROM campaignLogs l WHERE ${resultFilter} ORDER BY l.sentAt DESC,l.id DESC LIMIT 25 OFFSET ${(selection.page-1)*25}`:
-        sql`SELECT o.id,o.customer_phone,o.status,o.attempts,o.quota_reserved,o.last_error,o.updated_at,o.sent_at FROM campaign_delivery_outbox o WHERE ${recipientFilter} ORDER BY o.updated_at DESC,o.id DESC LIMIT 25 OFFSET ${(selection.page-1)*25}`);
+        sql`SELECT l.id,l.customerPhone,l.customerName,l.status,l.errorMessage,l.sentAt FROM campaignLogs l WHERE ${resultFilter} ORDER BY l.sentAt DESC,l.id DESC LIMIT ${pageSize} OFFSET ${(selection.page-1)*pageSize}`:
+        sql`SELECT o.id,o.customer_phone,o.status,o.attempts,o.quota_reserved,o.last_error,o.updated_at,o.sent_at FROM campaign_delivery_outbox o WHERE ${recipientFilter} ORDER BY o.updated_at DESC,o.id DESC LIMIT ${pageSize} OFFSET ${(selection.page-1)*pageSize}`);
       const rows=source.map(row=>selection.view==='results'?{kind:'result' as const,id:integer(row.id),phone:row.customerPhone,name:row.customerName,status:row.status,reason:campaignReportReason(row.errorMessage),recordedAt:iso(row.sentAt)}:
         {kind:'recipient' as const,id:integer(row.id),phone:row.customer_phone,name:null,status:row.status,attempts:integer(row.attempts),quotaHeld:integer(row.quota_reserved)===1,reason:campaignReportReason(row.last_error),recordedAt:iso(row.updated_at),acceptedAt:row.sent_at?iso(row.sent_at):null});
       if(selection.view==='recipients'&&source.some(row=>![0,1].includes(integer(row.quota_reserved))))throw new CampaignReportUnavailableError();
       const results={total:integer(logCounts.total),success:integer(logCounts.success),failed:integer(logCounts.failed),pending:integer(logCounts.pending),excludedLinks};
       const recipients={total:integer(queueCounts.total),pending:integer(queueCounts.pending),processing:integer(queueCounts.processing),sent:integer(queueCounts.sent),failed:integer(queueCounts.failed),suppressed:integer(queueCounts.suppressed),manualReview:integer(queueCounts.manualReview)};
-      return campaignReportSchema.parse({actorId,merchantId,canManage:false,selection,checkedAt:now.toISOString(),timezone,
+      return (exporting?campaignReportExportSchema:campaignReportSchema).parse({actorId,merchantId,canManage:false,selection,checkedAt:now.toISOString(),timezone,
         campaign:{id:integer(c.id),name:c.name,message:c.message,imageUrl:c.imageUrl,status:c.status,createdAt:iso(c.createdAt),scheduledAt:c.scheduledAt?iso(c.scheduledAt):null,recipients:integer(c.totalRecipients),accepted:integer(c.sentCount),basis:'stored_campaign_counters'},
-        summary:{results:{...results,successRate:results.total?Math.round(results.success/results.total*1000)/10:0},recipients},pagination:{page:selection.page,pageSize:25,total,pages:Math.ceil(total/25)},rows});
+        summary:{results:{...results,successRate:results.total?Math.round(results.success/results.total*1000)/10:0},recipients},pagination:{page:selection.page,pageSize,total,pages:Math.ceil(total/pageSize)},rows});
     },{isolationLevel:'repeatable read',accessMode:'read only'});
-  }catch(error){if(error instanceof CampaignReportMissingError)throw error;throw new CampaignReportUnavailableError();}
+  }catch(error){if(error instanceof CampaignReportMissingError||error instanceof CampaignReportExportLimitError)throw error;throw new CampaignReportUnavailableError();}
 }

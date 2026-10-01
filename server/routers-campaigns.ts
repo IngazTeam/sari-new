@@ -1,7 +1,7 @@
 import { campaignListInput } from '../shared/campaign-workspace';
 import { campaignPerformanceInput } from '../shared/campaign-performance';
-import { campaignReportInput } from '../shared/campaign-report';
-import { readCampaignReport,CampaignReportMissingError,CampaignReportUnavailableError } from './campaign-report';
+import { campaignReportInput,campaignReportExportInput } from '../shared/campaign-report';
+import { readCampaignReport,readCampaignReportExport,CampaignReportMissingError,CampaignReportUnavailableError,CampaignReportExportLimitError } from './campaign-report';
 import { hasPermission } from './_core/permissions';
 import { readCampaignWorkspace, readCampaignStatistics, readCampaignPerformance, CampaignWorkspaceUnavailableError } from './campaign-workspace';
 /**
@@ -82,6 +82,10 @@ const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
 });
 
 export const campaignsRouter = router({
+    reportExport: permissionProcedure('analytics.read').input(campaignReportExportInput).query(async ({ctx,input})=>{
+        try{return {...await readCampaignReportExport(ctx.user.id,ctx.merchantId,input),canManage:hasPermission(ctx.merchantRole,'campaigns.manage')};}
+        catch(error){if(error instanceof CampaignReportMissingError)throw new TRPCError({code:'NOT_FOUND',message:'تقرير الحملة غير متاح.'});if(error instanceof CampaignReportExportLimitError)throw new TRPCError({code:'PAYLOAD_TOO_LARGE',message:'حدد فلاتر أدق لتصدير ما لا يزيد على 10000 سجل.'});if(error instanceof CampaignReportUnavailableError)throw new TRPCError({code:'SERVICE_UNAVAILABLE',message:'تعذر تصدير التقرير. حاول مجددًا.'});throw error;}
+    }),
     reportWorkspace: permissionProcedure('analytics.read').input(campaignReportInput).query(async ({ctx,input})=>{
         try{return {...await readCampaignReport(ctx.user.id,ctx.merchantId,input),canManage:hasPermission(ctx.merchantRole,'campaigns.manage')};}
         catch(error){if(error instanceof CampaignReportMissingError)throw new TRPCError({code:'NOT_FOUND',message:'تقرير الحملة غير متاح.'});if(error instanceof CampaignReportUnavailableError)throw new TRPCError({code:'SERVICE_UNAVAILABLE',message:'تعذر تحميل التقرير. حاول مجددًا.'});throw error;}
