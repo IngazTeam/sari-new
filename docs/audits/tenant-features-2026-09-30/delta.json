@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-01T01:27:01.784Z",
+  "generatedAt": "2026-10-01T02:23:30.403Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 329,
-      "controls": 2176
+      "files": 330,
+      "controls": 2181
     }
   },
   "addedFiles": [
@@ -92,6 +92,7 @@
     "client/src/components/merchant/AssistantOptionReview.tsx",
     "client/src/hooks/useReviewedAssistantOption.ts",
     "client/src/components/merchant/VirtualAgentReview.tsx",
+    "client/src/lib/virtual-team-draft.ts",
     "client/src/lib/brain-navigation.ts",
     "client/src/components/KnowledgeSourceGroupsWorkspace.tsx",
     "client/src/components/KnowledgeActivityWorkspace.tsx",
@@ -849,7 +850,7 @@
     {
       "route": "/merchant/virtual-team",
       "controlsBefore": 31,
-      "controlsNow": 47,
+      "controlsNow": 52,
       "removedQueries": [
         "virtualAgents.list"
       ],

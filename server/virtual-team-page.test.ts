@@ -10,7 +10,7 @@ const m = vi.hoisted(() => ({
   data: [] as any[],
   revision: "a".repeat(64),
   canManage: true,
-  scope: "store-1",
+  scope: "7:20:virtual-team",
   refetch: vi.fn(),
   updateCallbacks: {} as any,
   create: vi.fn(),
@@ -77,6 +77,7 @@ vi.mock("react-i18next", () => ({
   }),
 }));
 import VirtualTeamPage from "../client/src/pages/merchant/VirtualTeamPage";
+import { clearKnowledgeWorkspace } from "../client/src/lib/knowledge-workspace-cache";
 let root: Root, container: HTMLDivElement;
 async function render() {
   await act(async () => root.render(React.createElement(VirtualTeamPage)));
@@ -108,6 +109,8 @@ async function fill(id: string, value: string) {
   });
 }
 beforeEach(() => {
+  clearKnowledgeWorkspace();
+  sessionStorage.clear();
   vi.clearAllMocks();
   vi.stubGlobal("React", React);
   vi.stubGlobal(
@@ -122,7 +125,7 @@ beforeEach(() => {
   m.pending = false;
   m.revision = "a".repeat(64);
   m.canManage = true;
-  m.scope = "store-1";
+  m.scope = "7:20:virtual-team";
   m.refetch.mockReset();
   m.data = [
     {
@@ -164,6 +167,76 @@ afterEach(async () => {
   vi.unstubAllGlobals();
 });
 describe("rendered virtual team workflow", () => {
+  it("recovers the unfinished editor after remount and requires a fresh review before any save", async () => {
+    await render();
+    await click(`${ar.virtualTeamUx.edit} نورة`);
+    await fill("agent-name", "مسودة بعد المغادرة");
+    await click(ar.virtualTeamUx.routing);
+    await fill("agent-triggerKeywords", "كلمة معلقة");
+    await act(async () => root.render(null));
+    await render();
+    expect(document.body.textContent).toContain(ar.virtualTeamDraftUx.found);
+    expect(m.update).not.toHaveBeenCalled();
+    await click(ar.virtualTeamDraftUx.restore);
+    expect((button(ar.virtualTeamUx.save) as HTMLButtonElement).disabled).toBe(
+      true
+    );
+    expect(
+      (document.getElementById("agent-triggerKeywords") as HTMLInputElement)
+        .value
+    ).toBe("كلمة معلقة");
+    m.refetch.mockResolvedValueOnce({
+      data: { agents: m.data, revision: m.revision, canManage: true },
+    });
+    await click(ar.virtualTeamReview.load);
+    await click(ar.virtualTeamReview.applyReview);
+    await click(ar.virtualTeamUx.identity);
+    expect(
+      (document.getElementById("agent-name") as HTMLInputElement).value
+    ).toBe("مسودة بعد المغادرة");
+    expect(m.update).not.toHaveBeenCalled();
+    await click(ar.virtualTeamUx.save);
+    expect(m.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "مسودة بعد المغادرة",
+        triggerKeywords: '["كلمة معلقة"]',
+      })
+    );
+  });
+  it("offers close-and-keep without losing the draft and discards it only on explicit choice", async () => {
+    await render();
+    await click(ar.virtualTeamUx.new);
+    await fill("agent-name", "مسودة جديدة");
+    await click(ar.virtualTeamUx.cancel);
+    await click(ar.virtualTeamDraftUx.keep);
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(document.body.textContent).toContain(ar.virtualTeamDraftUx.found);
+    await click(ar.virtualTeamDraftUx.discard);
+    await click(ar.virtualTeamUx.new);
+    expect(
+      (document.getElementById("agent-name") as HTMLInputElement).value
+    ).toBe("");
+    expect(m.create).not.toHaveBeenCalled();
+  });
+  it("restores an interrupted submitted draft without replaying creation or enabling another save", async () => {
+    await render();
+    await click(ar.virtualTeamUx.new);
+    await fill("agent-name", "طلب غير مؤكد");
+    await fill("agent-role", "دعم");
+    await fill("agent-personalityPrompt", "تعليمات");
+    await click(ar.virtualTeamUx.save);
+    expect(m.create).toHaveBeenCalledTimes(1);
+    await act(async () => root.render(null));
+    await render();
+    await click(ar.virtualTeamDraftUx.restore);
+    expect(document.body.textContent).toContain(
+      ar.virtualTeamDraftUx.unconfirmed
+    );
+    expect((button(ar.virtualTeamUx.save) as HTMLButtonElement).disabled).toBe(
+      true
+    );
+    expect(m.create).toHaveBeenCalledTimes(1);
+  });
   it("retains a stale draft, fails closed on refresh failure, and requires choices plus a separate save", async () => {
     await render();
     await click(`${ar.virtualTeamUx.edit} نورة`);
@@ -263,7 +336,7 @@ describe("rendered virtual team workflow", () => {
     await fill("agent-name", "old store");
     await click(ar.virtualTeamUx.save);
     const old = m.updateCallbacks;
-    m.scope = "store-2";
+    m.scope = "7:21:virtual-team";
     await render();
     await click(`${ar.virtualTeamUx.edit} نورة`);
     await fill("agent-name", "new store draft");

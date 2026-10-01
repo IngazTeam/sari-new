@@ -6,6 +6,12 @@ import {
 } from "@/components/merchant/VirtualAgentReview";
 import { agentDraft } from "@shared/virtual-agent-review";
 import {
+  discardVirtualTeamDraft,
+  readVirtualTeamDraft,
+  writeVirtualTeamDraft,
+} from "@/lib/virtual-team-draft";
+import { knowledgeCacheEpoch } from "@/lib/knowledge-workspace-cache";
+import {
   AssistantReplyPreview,
   type PreviewSelection,
 } from "@/components/merchant/AssistantReplyPreview";
@@ -60,17 +66,24 @@ import {
 export default function VirtualTeamPage() {
   return (
     <KnowledgeWorkspaceScope slot="virtual-team">
-      {key => <VirtualTeamWorkspace key={key} />}
+      {key => <VirtualTeamWorkspace key={key} scopeKey={key} />}
     </KnowledgeWorkspaceScope>
   );
 }
 
-function VirtualTeamWorkspace() {
+function VirtualTeamWorkspace({ scopeKey }: { scopeKey: string }) {
   const { t } = useTranslation();
   const utils = trpc.useUtils();
   const query = trpc.virtualAgents.listReview.useQuery();
   type Agent = NonNullable<typeof query.data>["agents"][number];
   const alive = useRef(true);
+  const cacheEpoch = useRef(knowledgeCacheEpoch());
+  const [recovery, setRecovery] = useState(() =>
+    readVirtualTeamDraft(scopeKey)
+  );
+  const [storageFailed, setStorageFailed] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [restored, setRestored] = useState(false);
   useEffect(() => {
     alive.current = true;
     return () => {
@@ -119,6 +132,9 @@ function VirtualTeamWorkspace() {
   });
   const saved = () => {
     if (!alive.current) return;
+    discardVirtualTeamDraft(scopeKey, cacheEpoch.current);
+    setRecovery({ state: "missing" });
+    setSubmitted(false);
     void utils.virtualAgents.listReview.invalidate();
     void utils.virtualAgents.list.invalidate();
     setOpen(false);
@@ -128,9 +144,19 @@ function VirtualTeamWorkspace() {
   const failed = (error?: { data?: { code?: string } | null }) => {
     if (!alive.current) return;
     if (error?.data?.code === "CONFLICT") {
+      setRestored(false);
+      setSubmitted(false);
       setConflict(true);
       setReview(null);
-    } else setSaveError(true);
+    } else {
+      setSaveError(true);
+      if (
+        ["BAD_REQUEST", "FORBIDDEN", "UNAUTHORIZED", "NOT_FOUND"].includes(
+          error?.data?.code ?? ""
+        )
+      )
+        setSubmitted(false);
+    }
   };
   const create = trpc.virtualAgents.create.useMutation({
     onSuccess: saved,
@@ -173,6 +199,78 @@ function VirtualTeamWorkspace() {
   const agents = query.data?.agents || [];
   const canManage = !!query.data?.canManage && !query.isError && !actionError;
   const canPreview = !!query.data?.canManage && !query.isError;
+  const dirty =
+    JSON.stringify(form) !== initialDraft.current || !!keywords.trim();
+  function cacheDraft(
+    wasSubmitted = submitted,
+    currentForm = form,
+    currentKeywords = keywords
+  ) {
+    const ok = writeVirtualTeamDraft(
+      scopeKey,
+      {
+        editing,
+        revision,
+        base,
+        form: currentForm,
+        keywords: currentKeywords,
+        tab,
+        submitted: wasSubmitted,
+      },
+      cacheEpoch.current
+    );
+    setStorageFailed(!ok);
+  }
+  useEffect(() => {
+    if (open && revision && (dirty || submitted)) cacheDraft();
+  }, [
+    open,
+    revision,
+    dirty,
+    submitted,
+    form,
+    keywords,
+    tab,
+    base,
+    editing,
+    scopeKey,
+  ]);
+  useEffect(() => {
+    if (!open || !dirty || !storageFailed) return;
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [open, dirty, storageFailed]);
+  function restoreDraft() {
+    if (recovery.state !== "ready" || !canManage) return;
+    const value = recovery.value;
+    setEditing(value.editing);
+    setRevision(value.revision);
+    setBase(value.base);
+    setForm(value.form);
+    setKeywords(value.keywords);
+    setTab(value.tab);
+    setSubmitted(value.submitted);
+    initialDraft.current = JSON.stringify(value.base);
+    setErrors({});
+    setSaveError(false);
+    setRestored(true);
+    setConflict(true);
+    setReview(null);
+    setReviewError(false);
+    setConfirmDiscard(false);
+    setOpen(true);
+    setRecovery({ state: "missing" });
+  }
+  function discardDraft() {
+    const removed = discardVirtualTeamDraft(scopeKey, cacheEpoch.current);
+    setStorageFailed(!removed);
+    setRecovery(removed ? { state: "missing" } : { state: "unavailable" });
+    setSubmitted(false);
+  }
   async function loadReview() {
     if (reviewBusy) return;
     setReviewBusy(true);
@@ -209,6 +307,13 @@ function VirtualTeamWorkspace() {
     : 0;
   function edit(agent?: Agent) {
     if (!canManage || !query.data) return;
+    if (recovery.state !== "missing") {
+      document.getElementById("persona-draft-recovery")?.focus();
+      return;
+    }
+    setSubmitted(false);
+    setStorageFailed(false);
+    setRestored(false);
     setRevision(query.data.revision);
     setConflict(false);
     setReview(null);
@@ -247,7 +352,15 @@ function VirtualTeamWorkspace() {
     setKeywords("");
   }
   function save() {
-    if (saveLock.current || conflict || !canManage || !revision || reviewBusy)
+    if (
+      saveLock.current ||
+      submitted ||
+      conflict ||
+      !canManage ||
+      !revision ||
+      reviewBusy ||
+      cacheEpoch.current !== knowledgeCacheEpoch()
+    )
       return;
     const draft = {
       ...form,
@@ -274,6 +387,8 @@ function VirtualTeamWorkspace() {
     const payload = virtualAgentPayload(draft);
     setForm(draft);
     setKeywords("");
+    cacheDraft(true, draft, "");
+    setSubmitted(true);
     saveLock.current = true;
     // null explicitly removes an existing shift; undefined leaves it unchanged.
     if (editing !== null)
@@ -371,6 +486,49 @@ function VirtualTeamWorkspace() {
           {t("virtualTeamUx.new")}
         </Button>
       </header>
+      {recovery.state !== "missing" && !open && (
+        <section
+          id="persona-draft-recovery"
+          tabIndex={-1}
+          role="status"
+          className="space-y-3 rounded-xl border bg-muted/30 p-4"
+        >
+          <h2 className="font-semibold">{t("virtualTeamDraftUx.title")}</h2>
+          <p>
+            {t(
+              recovery.state === "ready"
+                ? "virtualTeamDraftUx.found"
+                : "virtualTeamDraftUx.unavailable"
+            )}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {recovery.state === "ready" && (
+              <Button
+                type="button"
+                disabled={!canManage}
+                onClick={restoreDraft}
+              >
+                {t("virtualTeamDraftUx.restore")}
+              </Button>
+            )}
+            {recovery.state === "unavailable" && (
+              <Button
+                type="button"
+                disabled={!canManage}
+                onClick={() => {
+                  setRecovery({ state: "missing" });
+                  setStorageFailed(true);
+                }}
+              >
+                {t("virtualTeamDraftUx.continueWithoutStorage")}
+              </Button>
+            )}
+            <Button type="button" variant="outline" onClick={discardDraft}>
+              {t("virtualTeamDraftUx.discard")}
+            </Button>
+          </div>
+        </section>
+      )}
       {(actionError || query.isError) && (
         <div role="alert" className="space-y-3 rounded-xl border p-4">
           <p>{t("virtualTeamReview.actionChanged")}</p>
@@ -750,13 +908,17 @@ function VirtualTeamWorkspace() {
               ))}
             </div>
             <fieldset
-              disabled={busy}
+              disabled={busy || submitted}
               className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain p-3 sm:p-5"
             >
               {conflict && (
                 <div className="mb-5 space-y-3">
                   <p role="alert" className="text-sm">
-                    {t("virtualTeamReview.changed")}
+                    {t(
+                      restored
+                        ? "virtualTeamDraftUx.reviewRequired"
+                        : "virtualTeamReview.changed"
+                    )}
                   </p>
                   {reviewError && (
                     <p role="alert" className="text-sm text-destructive">
@@ -786,6 +948,7 @@ function VirtualTeamWorkspace() {
                         setRevision(review.revision);
                         initialDraft.current = JSON.stringify(latest);
                         setConflict(false);
+                        setRestored(false);
                         setReview(null);
                         setErrors({});
                       }}
@@ -1070,6 +1233,32 @@ function VirtualTeamWorkspace() {
             </fieldset>
             <DialogFooter className="border-t bg-card p-4">
               <div className="w-full space-y-3">
+                <p className="text-xs text-muted-foreground">
+                  {t("virtualTeamDraftUx.retention")}
+                </p>
+                {storageFailed && (
+                  <p role="alert" className="text-sm text-destructive">
+                    {t("virtualTeamDraftUx.storageFailed")}
+                  </p>
+                )}
+                {submitted && !busy && (
+                  <p role="alert" className="text-sm">
+                    {t("virtualTeamDraftUx.unconfirmed")}
+                  </p>
+                )}
+                {submitted && !busy && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={reviewBusy}
+                    onClick={() => {
+                      setConflict(true);
+                      void loadReview();
+                    }}
+                  >
+                    {t("virtualTeamDraftUx.reviewSaved")}
+                  </Button>
+                )}
                 {confirmDiscard && (
                   <div
                     role="alert"
@@ -1087,9 +1276,23 @@ function VirtualTeamWorkspace() {
                       </Button>
                       <Button
                         type="button"
+                        variant="outline"
+                        className="min-h-11"
+                        onClick={() => {
+                          cacheDraft();
+                          setRecovery(readVirtualTeamDraft(scopeKey));
+                          setOpen(false);
+                          setConfirmDiscard(false);
+                        }}
+                      >
+                        {t("virtualTeamDraftUx.keep")}
+                      </Button>
+                      <Button
+                        type="button"
                         variant="destructive"
                         className="min-h-11"
                         onClick={() => {
+                          discardDraft();
                           setOpen(false);
                           setConfirmDiscard(false);
                         }}
@@ -1119,7 +1322,7 @@ function VirtualTeamWorkspace() {
                     </Button>
                     <Button
                       type="submit"
-                      disabled={busy || conflict || !canManage}
+                      disabled={busy || submitted || conflict || !canManage}
                     >
                       <Save className="size-4" />
                       {t(

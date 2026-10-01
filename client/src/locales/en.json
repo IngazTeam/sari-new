@@ -9812,6 +9812,20 @@
     "unsavedPreview": "You have an unsaved draft. The test below uses saved settings only; save to test your changes.",
     "testSavedHint": "WhatsApp testing sends the saved welcome message to the store's registered number. Save your changes first."
   },
+  "virtualTeamDraftUx": {
+    "title": "Unapplied persona draft",
+    "found": "A draft exists for this account and store. Restore it and review the latest version before saving, or remove only the local draft.",
+    "unavailable": "A valid draft could not be restored. It may have expired or storage may be unavailable. Saved personas have not changed.",
+    "restore": "Restore and review draft",
+    "discard": "Remove local draft",
+    "keep": "Close and keep draft",
+    "retention": "One draft for this team is kept in this tab for 24 hours after the last edit and cleared on logout. It is not an active persona until saved.",
+    "storageFailed": "The draft could not be saved in tab storage. The text remains on this page; reloading or closing the tab may lose it.",
+    "unconfirmed": "The save outcome is unconfirmed. We kept the draft and blocked resending to avoid a duplicate persona. Review the saved team before any new request. Removing the draft does not cancel the previous request.",
+    "reviewSaved": "Read saved team",
+    "continueWithoutStorage": "Continue without storage recovery",
+    "reviewRequired": "Your draft was restored as you left it. Read and review the latest team before saving; recovery does not imply that the saved version changed."
+  },
   "virtualTeamReview": {
     "title": "Review team changes",
     "changed": "The team changed after you opened this draft. Your edits have not been saved or lost. Review the latest version before saving.",
