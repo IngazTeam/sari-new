@@ -25,6 +25,7 @@ import {
 } from "./conversation-understanding-context";
 import { recordContextualSalesLoss } from "./contextual-sales-loss";
 import { detectLostDeals } from "./loss-detector";
+import { updateDealStage } from "./deal-stage";
 import { applyTapOrderPaymentState } from "../payment/order-payment-state";
 import type { CheckoutIdentity } from "./checkout-agreements";
 import { snapshotLearningSignals } from "./learning-analysis-contract";
@@ -123,6 +124,49 @@ describe.skipIf(!process.env.DATABASE_URL)(
       await cleanupDisposableMerchants(users);
     });
     afterAll(closeDb);
+
+    it("keeps every preview intent away from persisted deal stages and learning evidence", async () => {
+      await withConversationUnderstanding({ ...input, mode: 'preview', analysis: {} as ConversationUnderstanding }, async () => {
+        for (const intent of ['ready_to_buy', 'returning', 'declined', 'post_purchase']) {
+          await updateDealStage(input.conversationId, intent, owner.merchantId, input.customerPhone);
+        }
+      });
+      expect(await state()).toMatchObject({ deal_stage: 'qualified', loss_reason: null });
+      expect(await signals()).toEqual([]);
+      expect(model.call).not.toHaveBeenCalled();
+    });
+    it("cannot progress another merchant's conversation by changing the tenant ID", async () => {
+      const other = await createDisposableMerchant('deal-stage-foreign');
+      users.push(other.userId);
+      await updateDealStage(input.conversationId, 'returning', other.merchantId, input.customerPhone);
+      expect(await state()).toMatchObject({ deal_stage: 'qualified', loss_reason: null });
+    });
+    it("progresses interest but never certifies a purchase from a model intent", async () => {
+      await updateDealStage(input.conversationId, 'ready_to_buy', owner.merchantId);
+      expect(await state()).toMatchObject({ deal_stage: 'ready', loss_reason: null });
+      await updateDealStage(input.conversationId, 'post_purchase', owner.merchantId);
+      expect(await state()).toMatchObject({ deal_stage: 'ready', loss_reason: null });
+    });
+    it.each(['paid', 'purchased'])("keeps the verified %s outcome when a returning intent arrives", async stage => {
+      await q('UPDATE conversations SET deal_stage=? WHERE id=?', [stage, input.conversationId]);
+      await updateDealStage(input.conversationId, 'returning', owner.merchantId);
+      expect(await state()).toMatchObject({ deal_stage: stage });
+    });
+    it("does not overwrite a payment committed between the stage read and write", async () => {
+      const pool = (await getPool())!;
+      const execute = pool.execute.bind(pool);
+      const spy = vi.spyOn(pool, 'execute').mockImplementation((async (sql: any, args: any) => {
+        const result = await execute(sql, args);
+        if (typeof sql === 'string' && sql.startsWith('SELECT deal_stage FROM conversations WHERE')) {
+          await execute("UPDATE conversations SET deal_stage='paid' WHERE id=? AND merchantId=?", [input.conversationId, owner.merchantId]);
+        }
+        return result;
+      }) as any);
+      try {
+        await updateDealStage(input.conversationId, 'ready_to_buy', owner.merchantId);
+        expect(await state()).toMatchObject({ deal_stage: 'paid' });
+      } finally { spy.mockRestore(); }
+    });
 
     const historicalLoss = async () => {
       await interpret();

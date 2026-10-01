@@ -8,7 +8,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("./accounts/merchant-access", () => ({
   resolveMerchantAccess: mocks.access,
 }));
-vi.mock("./db", async original => ({
+vi.mock("./db", async (original) => ({
   ...(await original<typeof import("./db")>()),
   getMerchantById: mocks.merchant,
   updateBotSettings: mocks.update,
@@ -34,6 +34,23 @@ beforeEach(() => {
   mocks.update.mockResolvedValue({ workingDays: "" });
 });
 describe("bot settings validation at the API boundary", () => {
+  it.each([
+    "friendly",
+    "professional",
+    "casual",
+    "enthusiastic",
+    "legacy-tone",
+  ])(
+    "preserves supported tones and normalizes an unknown legacy value: %s",
+    async (tone) => {
+      await caller().update({ tone, expectedRevision: "a".repeat(64) });
+      expect(mocks.update).toHaveBeenCalledWith(
+        20,
+        { tone: tone === "legacy-tone" ? "friendly" : tone },
+        { expectedRevision: "a".repeat(64) },
+      );
+    },
+  );
   it("returns a tenant-bound timestamped schedule sample without a delivery claim", async () => {
     mocks.shouldRespond.mockResolvedValue({
       shouldRespond: false,
@@ -55,12 +72,12 @@ describe("bot settings validation at the API boundary", () => {
       caller().update({
         welcomeMessage: "draft",
         expectedRevision: "a".repeat(64),
-      })
+      }),
     ).rejects.toMatchObject({ code: "CONFLICT" });
     expect(mocks.update).toHaveBeenCalledWith(
       20,
       { welcomeMessage: "draft" },
-      { expectedRevision: "a".repeat(64) }
+      { expectedRevision: "a".repeat(64) },
     );
   });
   it.each([
@@ -68,9 +85,9 @@ describe("bot settings validation at the API boundary", () => {
     { workingHoursEnd: "24:00" },
     { workingDays: "NaN" },
     { workingDays: "1,1" },
-  ])("rejects malformed fields before writing: %j", async input => {
+  ])("rejects malformed fields before writing: %j", async (input) => {
     await expect(
-      caller().update({ ...input, expectedRevision: "a".repeat(64) })
+      caller().update({ ...input, expectedRevision: "a".repeat(64) }),
     ).rejects.toMatchObject({
       code: "BAD_REQUEST",
     });
@@ -78,23 +95,23 @@ describe("bot settings validation at the API boundary", () => {
   });
   it("accepts empty days and returns merged schedule rejection as a safe client error", async () => {
     await expect(
-      caller().update({ workingDays: "", expectedRevision: "a".repeat(64) })
+      caller().update({ workingDays: "", expectedRevision: "a".repeat(64) }),
     ).resolves.toMatchObject({
       workingDays: "",
     });
     expect(mocks.update).toHaveBeenCalledWith(
       20,
       { workingDays: "" },
-      { expectedRevision: "a".repeat(64) }
+      { expectedRevision: "a".repeat(64) },
     );
     mocks.update.mockRejectedValueOnce(
-      new InvalidWorkingScheduleError({ workingHoursEnd: "differentTimes" })
+      new InvalidWorkingScheduleError({ workingHoursEnd: "differentTimes" }),
     );
     await expect(
       caller().update({
         workingHoursEnd: "09:00",
         expectedRevision: "a".repeat(64),
-      })
+      }),
     ).rejects.toMatchObject({
       code: "BAD_REQUEST",
       message: "Review the working schedule",
@@ -106,7 +123,7 @@ describe("bot settings validation at the API boundary", () => {
       caller().update({
         workingHoursEnabled: false,
         expectedRevision: "a".repeat(64),
-      })
+      }),
     ).rejects.toMatchObject({
       code: "INTERNAL_SERVER_ERROR",
       message: "Unable to save bot settings",

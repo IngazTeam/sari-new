@@ -105,23 +105,7 @@ export function isOffTopicQuestion(message: string): boolean {
 // Deal Stage Map
 // ═══════════════════════════════════════════════════════════════
 
-export const DEAL_STAGE_MAP: Record<string, string> = {
-  browsing: 'new',
-  inquiring: 'interested',
-  comparing: 'qualified',
-  hesitating: 'qualified',
-  objecting: 'qualified',
-  ready_to_buy: 'ready',
-  post_purchase: 'purchased',
-  returning: 'returning',
-};
-
-export const STAGE_ORDER: Record<string, number> = {
-  new: 0, interested: 1, qualified: 2, ready: 3,
-  payment_link_sent: 4, purchased: 5, paid: 6,
-  returning: 7,
-  payment_failed: -1, lost: -2,
-};
+export { DEAL_STAGE_MAP, STAGE_ORDER } from './deal-stage';
 
 // ═══════════════════════════════════════════════════════════════
 // Product Search (Arabic-aware fuzzy matching)

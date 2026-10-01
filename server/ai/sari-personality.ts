@@ -1,6 +1,8 @@
 // @ts-nocheck
+import { updateDealStage } from './deal-stage';
+export { STAGE_ORDER } from './deal-stage';
 import { understandConversation, understandPreview, UNDERSTANDING_UNAVAILABLE } from './conversation-understanding';
-import { withConversationUnderstanding, currentConversationUnderstanding, hasConversationUnderstanding, contextualHandoffRequested, conversationUnderstandingIdentity } from './conversation-understanding-context';
+import { withConversationUnderstanding, currentConversationUnderstanding, hasConversationUnderstanding, contextualHandoffRequested } from './conversation-understanding-context';
 import { conversationHandoffSummary, handoffPrompt } from './conversation-handoff';
 import { reviewSalesResponse } from './review-sales-response';
 import { buildSalesReplyMessages, CONTEXTUAL_REPLY_UNAVAILABLE } from './sales-reply-prompt';
@@ -1496,60 +1498,6 @@ export async function buildEnhancedContextPrompt(context: {
 // Called BEFORE any path split (cache, fast, full) to ensure every
 // customer message updates the pipeline, regardless of response path.
 // ═══════════════════════════════════════════════════════════════
-
-const DEAL_STAGE_MAP: Record<string, string> = {
-  browsing: 'new',
-  inquiring: 'interested',
-  comparing: 'qualified',
-  hesitating: 'qualified',
-  objecting: 'qualified',
-  ready_to_buy: 'ready',
-  // Only verified order/payment events establish purchase status.
-  returning: 'returning',
-};
-
-export const STAGE_ORDER: Record<string, number> = {
-  new: 0, interested: 1, qualified: 2, ready: 3,
-  payment_link_sent: 4, purchased: 5, paid: 6,
-  returning: 7,
-  // Terminal stages (don't block progression):
-  payment_failed: -1, lost: -2,
-};
-
-async function updateDealStage(convId: number, intent: string, merchantId?: number, customerPhone?: string): Promise<void> {
-  if (!merchantId) return;
-  if (intent === 'declined') {
-    const identity = conversationUnderstandingIdentity();
-    if (!customerPhone || identity?.mode === 'preview' || identity?.merchantId !== merchantId || identity.conversationId !== convId) return;
-    try {
-      const { recordContextualSalesLoss } = await import('./contextual-sales-loss');
-      await recordContextualSalesLoss({ merchantId, conversationId: convId, incomingMessageId: identity.incomingMessageId, customerPhone });
-    } catch { console.warn('[DealStage] Decline projection deferred'); }
-    return;
-  }
-  const newStage = DEAL_STAGE_MAP[intent];
-  if (!newStage) return;
-  try {
-    const { getPool } = await import('../db');
-    const pool = await getPool();
-    if (!pool) return;
-    // SEC: Scope by merchantId when available
-    const whereClause = merchantId ? 'WHERE id = ? AND merchantId = ?' : 'WHERE id = ?';
-    const params = merchantId ? [convId, merchantId] : [convId];
-    const [rows] = await pool.execute(
-      `SELECT deal_stage FROM conversations ${whereClause} LIMIT 1`,
-      params
-    );
-    const current = (rows as any[])[0]?.deal_stage || 'new';
-    if (['paid', 'purchased'].includes(current)) return;
-    if ((STAGE_ORDER[newStage] ?? 0) > (STAGE_ORDER[current] ?? 0) || newStage === 'returning') {
-      await pool.execute(
-        `UPDATE conversations SET deal_stage = ?,loss_reason=NULL,stalled_since=NULL ${whereClause} AND deal_stage <=> ?`,
-        [newStage, ...params, (rows as any[])[0]?.deal_stage ?? null]
-      );
-    }
-  } catch (err) { console.warn('[DealStage] Update failed (non-blocking):', err); }
-}
 
 /**
  * P0-FIX: Load real payment context for Smart Escalation V2.

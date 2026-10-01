@@ -1,0 +1,106 @@
+[
+  {
+    "file": "phase185-tests.json",
+    "success": true,
+    "passed": 332,
+    "failed": 0,
+    "suites": [
+      {
+        "name": "assistant-options-page.test.ts",
+        "passed": 17,
+        "failed": 0
+      },
+      {
+        "name": "assistant-options.test.ts",
+        "passed": 17,
+        "failed": 0
+      },
+      {
+        "name": "assistant-personality-access.test.ts",
+        "passed": 18,
+        "failed": 0
+      },
+      {
+        "name": "bot-settings-validation.test.ts",
+        "passed": 14,
+        "failed": 0
+      },
+      {
+        "name": "sales-engine-pentest.test.ts",
+        "passed": 159,
+        "failed": 0
+      },
+      {
+        "name": "contextual-sales-loss-contract.test.ts",
+        "passed": 24,
+        "failed": 0
+      },
+      {
+        "name": "deal-stage.test.ts",
+        "passed": 33,
+        "failed": 0
+      },
+      {
+        "name": "loss-detector.test.ts",
+        "passed": 2,
+        "failed": 0
+      },
+      {
+        "name": "reprocess.test.ts",
+        "passed": 9,
+        "failed": 0
+      },
+      {
+        "name": "greenapi-escalation.test.ts",
+        "passed": 39,
+        "failed": 0
+      }
+    ]
+  },
+  {
+    "file": "phase185-mysql.json",
+    "success": false,
+    "passed": 55,
+    "failed": 105,
+    "suites": [
+      {
+        "name": "assistant-personality.mysql.test.ts",
+        "passed": 6,
+        "failed": 0
+      },
+      {
+        "name": "knowledge-document-extraction.mysql.test.ts",
+        "passed": 21,
+        "failed": 0
+      },
+      {
+        "name": "contextual-sales-loss.mysql.test.ts",
+        "passed": 7,
+        "failed": 67
+      },
+      {
+        "name": "group-understanding.mysql.test.ts",
+        "passed": 21,
+        "failed": 38
+      }
+    ]
+  },
+  {
+    "file": "phase185-mysql-retry.json",
+    "success": true,
+    "passed": 133,
+    "failed": 0,
+    "suites": [
+      {
+        "name": "contextual-sales-loss.mysql.test.ts",
+        "passed": 74,
+        "failed": 0
+      },
+      {
+        "name": "group-understanding.mysql.test.ts",
+        "passed": 59,
+        "failed": 0
+      }
+    ]
+  }
+]

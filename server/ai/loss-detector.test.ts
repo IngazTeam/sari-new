@@ -23,11 +23,11 @@ describe("bounded loss recovery fairness", () => {
       cursors.push(args[0]);
       return [
         candidates
-          .filter(row => row.incoming_message_id > args[0])
+          .filter((row) => row.incoming_message_id > args[0])
           .slice(0, 200),
       ];
     });
-    mocks.project.mockImplementation(async input => {
+    mocks.project.mockImplementation(async (input) => {
       if (input.merchantId === 1)
         throw Error("Synthetic evidence or quota failure");
       return {
@@ -48,6 +48,68 @@ describe("bounded loss recovery fairness", () => {
       expect(JSON.stringify(log.mock.calls)).not.toContain("Synthetic");
     } finally {
       log.mockRestore();
+    }
+  });
+  it("projects each candidate with its own tenant and source, and exposes only accepted evidence", async () => {
+    vi.clearAllMocks();
+    const rows = [
+      {
+        id: 81,
+        merchantId: 20,
+        customerPhone: "synthetic-a",
+        incoming_message_id: 201,
+      },
+      {
+        id: 82,
+        merchantId: 21,
+        customerPhone: "synthetic-b",
+        incoming_message_id: 202,
+      },
+    ];
+    mocks.execute.mockImplementation(async (sql: string) =>
+      sql.startsWith("SELECT c.id") ? [rows] : [{ affectedRows: 0 }],
+    );
+    mocks.project
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({
+        merchantId: 21,
+        conversationId: 82,
+        sourceMessageId: 202,
+        reason: "other",
+      });
+    expect(await detectLostDeals()).toEqual([
+      {
+        merchantId: 21,
+        conversationId: 82,
+        sourceMessageId: 202,
+        reason: "other",
+      },
+    ]);
+    expect(mocks.project.mock.calls).toEqual([
+      [
+        {
+          merchantId: 20,
+          conversationId: 81,
+          customerPhone: "synthetic-a",
+          incomingMessageId: 201,
+        },
+      ],
+      [
+        {
+          merchantId: 21,
+          conversationId: 82,
+          customerPhone: "synthetic-b",
+          incomingMessageId: 202,
+        },
+      ],
+    ]);
+    const updates = mocks.execute.mock.calls
+      .map((call) => call[0])
+      .filter((sql) => sql.startsWith("UPDATE"));
+    expect(updates).toHaveLength(2);
+    for (const sql of updates) {
+      expect(sql).toMatch(/SET c\.stalled_since=/);
+      expect(sql).not.toMatch(/SET[^]*?(?:deal_stage|loss_reason)\s*=/);
     }
   });
 });
