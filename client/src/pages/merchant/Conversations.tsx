@@ -639,7 +639,7 @@ function ScopedConversations({ currentMerchant, actorId }: { currentMerchant: { 
                   />
                 </div>
               </details>
-              <StaffAttemptReview key={`attempts-${selectedConversation.id}`} conversationId={selectedConversation.id} />
+              <StaffAttemptReview key={`attempts-${selectedConversation.id}`} conversationId={selectedConversation.id} merchantId={currentMerchant.id} actorUserId={actorId} />
               <nav className="flex flex-wrap items-center gap-2 border-y p-3 text-sm" aria-label={t('conversationHistory.navigation')}>
                 <p className="w-full text-muted-foreground" role="status">
                   {viewingLatest ? t('conversationHistory.latestWindow') : t('conversationHistory.olderWindow')}

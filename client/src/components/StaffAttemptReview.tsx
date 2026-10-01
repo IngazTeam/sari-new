@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { StaffAttemptGuidance } from './StaffAttemptGuidance';
-import { staffAttemptPage, staffAttemptItem, staffAttemptCheckResult } from '@shared/staff-attempt-review';
+import { staffAttemptSnapshot, staffAttemptItem, staffAttemptCheckResult } from '@shared/staff-attempt-review';
 
 function Attempt({ item, conversationId, kind, refreshing, revision, onChecked }: {
   item: z.infer<typeof staffAttemptItem>; conversationId: number; kind: 'text' | 'voice'; refreshing: boolean; revision: number; onChecked: () => void;
@@ -12,6 +12,8 @@ function Attempt({ item, conversationId, kind, refreshing, revision, onChecked }
   const { t, i18n } = useTranslation();
   const mutation = trpc.conversations.checkStaffAttempt.useMutation({ retry: false });
   const busy = useRef(false);
+  const live = useRef(true);
+  useEffect(() => { live.current = true; return () => { live.current = false; }; }, []);
   const [notice, setNotice] = useState('');
   const [blocked, setBlocked] = useState(false);
   useEffect(() => setBlocked(false), [revision]);
@@ -21,10 +23,11 @@ function Attempt({ item, conversationId, kind, refreshing, revision, onChecked }
     busy.current = true; setNotice('');
     try {
       const result = staffAttemptCheckResult.parse(await mutation.mutateAsync({ conversationId, kind, sourceId: item.id }));
+      if (!live.current) return;
       setNotice(result.success ? result.persisted ? t('merchantUx.staffAttempts.checked') : t('merchantUx.staffAttempts.unprojected')
         : result.status === 'pending' ? t('merchantUx.staffAttempts.unresolved') : result.status==='suppressed'?t('merchantUx.staffAttempts.dispatchSuppressed'):t('merchantUx.staffAttempts.providerFailed'));
       onChecked();
-    } catch { setBlocked(true); setNotice(t('merchantUx.staffAttempts.checkFailed')); }
+    } catch { if (live.current) { setBlocked(true); setNotice(t('merchantUx.staffAttempts.checkFailed')); } }
     finally { busy.current = false; }
   };
   return <article data-staff-attempt={item.id} data-attempt-state={item.state} className="min-w-0 space-y-2 rounded-lg border bg-background p-3 text-sm [overflow-wrap:anywhere]">
@@ -40,17 +43,25 @@ function Attempt({ item, conversationId, kind, refreshing, revision, onChecked }
 }
 
 /** The parent keys this panel by conversation, so late results cannot retarget another conversation. */
-export function StaffAttemptReview({ conversationId }: { conversationId: number }) {
+type ReviewScope = { conversationId: number; merchantId: number; actorUserId: number };
+export function StaffAttemptReview(props: ReviewScope) {
+  return <ScopedStaffAttemptReview key={`${props.actorUserId}:${props.merchantId}:${props.conversationId}`} {...props} />;
+}
+function ScopedStaffAttemptReview({ conversationId, merchantId, actorUserId }: ReviewScope) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false), [kind, setKind] = useState<'text' | 'voice'>('text');
   const [beforeId, setBeforeId] = useState<number>();
   const utils = trpc.useUtils();
-  const query = trpc.conversations.listStaffAttempts.useQuery({ conversationId, kind, beforeId }, { enabled: open, retry: false, staleTime: 0 });
-  const parsed = query.data === undefined ? null : staffAttemptPage.safeParse(query.data);
-  const page = parsed?.success ? parsed.data : null;
+  const query = trpc.conversations.staffAttemptSnapshot.useQuery({ conversationId, kind, beforeId }, { enabled: open, retry: false, staleTime: 0, refetchOnMount: 'always' });
+  const parsed = query.data === undefined ? null : staffAttemptSnapshot.safeParse(query.data);
+  const snapshot = parsed?.success ? parsed.data : null;
+  const reading = query.isLoading || query.isFetching;
+  const matches = snapshot?.merchantId === merchantId && snapshot.actorUserId === actorUserId && snapshot.conversationId === conversationId && snapshot.kind === kind && snapshot.beforeId === (beforeId ?? null);
+  const page = !reading && !query.isError && matches ? snapshot.page : null;
   const refresh = () => { if (beforeId !== undefined) setBeforeId(undefined); else void query.refetch(); };
   const checked = () => {
     void utils.conversations.listStaffAttempts.invalidate({ conversationId, kind });
+    void utils.conversations.staffAttemptSnapshot.invalidate({ conversationId, kind });
     void utils.conversations.getMessages.invalidate({ conversationId });
     void utils.conversations.messageHistory.invalidate({ conversationId });
   };
@@ -62,9 +73,9 @@ export function StaffAttemptReview({ conversationId }: { conversationId: number 
         <Button data-attempt-kind="text" aria-pressed={kind === 'text'} variant={kind === 'text' ? 'default' : 'outline'} className="h-auto min-h-11 whitespace-normal" onClick={() => { setKind('text'); setBeforeId(undefined); }}>{t('merchantUx.staffAttempts.text')}</Button>
         <Button data-attempt-kind="voice" aria-pressed={kind === 'voice'} variant={kind === 'voice' ? 'default' : 'outline'} className="h-auto min-h-11 whitespace-normal" onClick={() => { setKind('voice'); setBeforeId(undefined); }}>{t('merchantUx.staffAttempts.voice')}</Button>
       </div>
-      {query.isLoading ? <p role="status">{t('merchantUx.staffAttempts.loading')}</p>
-        : query.isError ? <p role="alert">{t('merchantUx.staffAttempts.loadFailed')}</p>
-        : parsed && !parsed.success ? <p role="alert">{t('merchantUx.staffAttempts.invalid')}</p>
+      {query.isError ? <p role="alert">{t('merchantUx.staffAttempts.loadFailed')}</p>
+        : reading ? <p role="status">{t('merchantUx.staffAttempts.loading')}</p>
+        : !page ? <p role="alert">{t('merchantUx.staffAttempts.invalid')}</p>
         : page && <div data-attempt-list key={`${kind}:${beforeId ?? 'latest'}`} className="max-h-72 space-y-3 overflow-y-auto overscroll-contain" tabIndex={0}>
           {page.items.length === 0 ? <p>{t('merchantUx.staffAttempts.empty')}</p> : page.items.map(item => <Attempt key={item.id} item={item} conversationId={conversationId} kind={kind} refreshing={query.isFetching} revision={query.dataUpdatedAt} onChecked={checked} />)}
         </div>}

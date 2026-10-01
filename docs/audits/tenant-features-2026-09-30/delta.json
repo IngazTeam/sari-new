@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-01T11:26:43.260Z",
+  "generatedAt": "2026-10-01T11:33:29.328Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -487,11 +487,13 @@
       "controlsBefore": 85,
       "controlsNow": 89,
       "removedQueries": [
-        "conversations.getMessages"
+        "conversations.getMessages",
+        "conversations.listStaffAttempts"
       ],
       "addedQueries": [
         "auth.me",
-        "conversations.messageHistory"
+        "conversations.messageHistory",
+        "conversations.staffAttemptSnapshot"
       ],
       "removedMutations": [],
       "addedMutations": []

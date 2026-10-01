@@ -1041,6 +1041,34 @@
           "contains": "historySnapshot.merchantId !== currentMerchant.id"
         }
       ]
+    },
+    {
+      "routes": [
+        "/merchant/conversations"
+      ],
+      "removed": [
+        "conversations.listStaffAttempts"
+      ],
+      "required": [
+        "conversations.staffAttemptSnapshot"
+      ],
+      "note": "My-reply review now validates authenticated actor, merchant, conversation, kind and cursor on an identity-bearing snapshot, and hides cached rows while refreshing. The compatible listStaffAttempts API remains available with its original page shape; checking prior attempts remains read/reconcile-only.",
+      "evidence": [
+        "shared/staff-attempt-review.ts",
+        "server/routers-staff-attempt-review.ts",
+        "server/staff-attempt-review-ui.test.ts",
+        "server/staff-attempt-review-access-pentest.test.ts"
+      ],
+      "checks": [
+        {
+          "file": "server/routers-staff-attempt-review.ts",
+          "contains": "listStaffAttempts: permissionProcedure"
+        },
+        {
+          "file": "client/src/components/StaffAttemptReview.tsx",
+          "contains": "snapshot.actorUserId === actorUserId"
+        }
+      ]
     }
   ]
 }

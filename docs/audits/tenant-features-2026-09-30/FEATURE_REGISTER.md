@@ -986,12 +986,12 @@
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 36 | Button | تسمية ديناميكية / تحتاج مراجعة | StaffAttemptReview |
-| 58 | summary | تسمية ديناميكية / تحتاج مراجعة | StaffAttemptReview |
-| 62 | Button | تسمية ديناميكية / تحتاج مراجعة | StaffAttemptReview |
-| 63 | Button | تسمية ديناميكية / تحتاج مراجعة | StaffAttemptReview |
-| 72 | Button | تسمية ديناميكية / تحتاج مراجعة | StaffAttemptReview |
+| 39 | Button | تسمية ديناميكية / تحتاج مراجعة | StaffAttemptReview |
+| 69 | summary | تسمية ديناميكية / تحتاج مراجعة | StaffAttemptReview |
 | 73 | Button | تسمية ديناميكية / تحتاج مراجعة | StaffAttemptReview |
+| 74 | Button | تسمية ديناميكية / تحتاج مراجعة | StaffAttemptReview |
+| 83 | Button | تسمية ديناميكية / تحتاج مراجعة | StaffAttemptReview |
+| 84 | Button | تسمية ديناميكية / تحتاج مراجعة | StaffAttemptReview |
 
 ## client/src/components/VoiceRecorder.tsx
 

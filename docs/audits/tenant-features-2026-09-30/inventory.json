@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-01T11:26:43.260Z",
+  "generatedAt": "2026-10-01T11:33:29.328Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -3762,7 +3762,7 @@
     },
     {
       "file": "client/src/pages/merchant/Conversations.tsx",
-      "hash": "dbbd14a327f9",
+      "hash": "bbe864cfa965",
       "queries": [
         "auth.me",
         "merchants.getCurrent",
@@ -3907,7 +3907,7 @@
     },
     {
       "file": "client/src/components/StaffTeamReview.tsx",
-      "hash": "d545a0d03e3b",
+      "hash": "0588ea30544f",
       "queries": [
         "conversations.listTeamStaffAttempts",
         "conversations.listStaffTeamReviews",
@@ -4156,9 +4156,9 @@
     },
     {
       "file": "client/src/components/StaffAttemptReview.tsx",
-      "hash": "26c5ebe0004f",
+      "hash": "cea72d00b368",
       "queries": [
-        "conversations.listStaffAttempts"
+        "conversations.staffAttemptSnapshot"
       ],
       "mutations": [
         "conversations.checkStaffAttempt"
@@ -4168,7 +4168,7 @@
       "sections": [
         {
           "label": "",
-          "line": 58,
+          "line": 69,
           "tag": "summary"
         }
       ],
@@ -4176,9 +4176,9 @@
       "handlers": [],
       "queryStates": [
         {
-          "query": "conversations.listStaffAttempts",
+          "query": "conversations.staffAttemptSnapshot",
           "binding": "query",
-          "line": 48,
+          "line": 55,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": "open"
@@ -18984,12 +18984,12 @@
         "cc01b2ccefa0",
         "713df34b2efa",
         "f11c50dbd5d0",
-        "2193e2e4d392",
-        "3af7e6b12826",
-        "68a16cb7c80c",
-        "f318c7cb0d0a",
-        "bc55de4ff325",
-        "ec3ebf7bc975",
+        "2e5f46d09113",
+        "460f7c9f41f0",
+        "a187edde6062",
+        "72b1db00be66",
+        "292edebd5e08",
+        "9a204a139478",
         "b8a20dae0238",
         "43f178d75807",
         "efac10ccd695",
@@ -19024,7 +19024,7 @@
         "conversations.getHandoffSource",
         "conversations.listEscalationRelays",
         "conversations.listSalesOfferAttempts",
-        "conversations.listStaffAttempts",
+        "conversations.staffAttemptSnapshot",
         "aiSuggestions.getQuickSuggestions"
       ],
       "mutations": [
@@ -37944,9 +37944,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "2193e2e4d392",
+      "id": "2e5f46d09113",
       "file": "client/src/components/StaffAttemptReview.tsx",
-      "line": 36,
+      "line": 39,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -37967,9 +37967,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "3af7e6b12826",
+      "id": "460f7c9f41f0",
       "file": "client/src/components/StaffAttemptReview.tsx",
-      "line": 58,
+      "line": 69,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -37988,9 +37988,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "68a16cb7c80c",
+      "id": "a187edde6062",
       "file": "client/src/components/StaffAttemptReview.tsx",
-      "line": 62,
+      "line": 73,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -38011,9 +38011,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "f318c7cb0d0a",
+      "id": "72b1db00be66",
       "file": "client/src/components/StaffAttemptReview.tsx",
-      "line": 63,
+      "line": 74,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -38034,9 +38034,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "bc55de4ff325",
+      "id": "292edebd5e08",
       "file": "client/src/components/StaffAttemptReview.tsx",
-      "line": 72,
+      "line": 83,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -38057,9 +38057,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ec3ebf7bc975",
+      "id": "9a204a139478",
       "file": "client/src/components/StaffAttemptReview.tsx",
-      "line": 73,
+      "line": 84,
       "tag": "Button",
       "role": "",
       "kind": "action",

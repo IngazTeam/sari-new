@@ -35,4 +35,8 @@ export const staffAttemptCheckResult = z.discriminatedUnion('success', [
   z.object({ success: z.literal(true), status: z.literal('accepted'), persisted: z.boolean() }).strict(),
   z.object({ success: z.literal(false), status: z.enum(['pending', 'failed', 'suppressed']), persisted: z.literal(false) }).strict(),
 ]);
+export const staffAttemptSnapshot = z.object({
+  merchantId: id, actorUserId: id, conversationId: id, kind: staffAttemptKind,
+  beforeId: id.nullable(), page: staffAttemptPage,
+}).strict();
 export type StaffAttemptReviewAuthority = z.infer<typeof staffAttemptReviewAuthority>;
