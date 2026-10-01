@@ -27,6 +27,15 @@ beforeEach(()=>{
   container=document.createElement('div');document.body.append(container);root=createRoot(container);
 });
 afterEach(async()=>{await act(async()=>root.unmount());container.remove();vi.restoreAllMocks();vi.unstubAllGlobals();});
+it('opens the compact team dialog only on demand and restores trigger focus',async()=>{
+ await render({compact:true});expect(m.calls).not.toHaveBeenCalled();const trigger=container.querySelector('[data-team-compact]') as HTMLButtonElement;await act(async()=>trigger.click());expect(document.body.querySelector('[role=dialog]')).toBeTruthy();expect(m.calls).toHaveBeenCalled();
+ await act(async()=>Array.from(document.body.querySelectorAll('button')).find(b=>b.textContent===copy.conversationTools.close)!.click());expect(document.body.querySelector('[role=dialog]')).toBeNull();await vi.waitFor(()=>expect(document.activeElement).toBe(trigger));
+});
+it.each(['fetching','error','foreign','denied'])('compact mode protects review reads with %s access',async state=>{
+ if(state==='fetching')m.access.isFetching=true;if(state==='error')m.access.isError=true;if(state==='foreign')m.access.data.actorUserId=99;if(state==='denied')m.access.data.canReview=false;
+ await render({compact:true});const trigger=container.querySelector('[data-team-compact]') as HTMLButtonElement|null;if(trigger&&!trigger.disabled)await act(async()=>trigger.click());expect(m.calls).not.toHaveBeenCalled();
+ if(state==='denied')expect(trigger).toBeNull();
+});
 it.each(['loading','fetching','error','merchant','actor','denied'])('does not mount review reads with %s permission state',async state=>{
   if(state==='loading')m.access.isLoading=true;if(state==='fetching')m.access.isFetching=true;if(state==='error')m.access.isError=true;
   if(state==='merchant')m.access.data.merchantId=99;if(state==='actor')m.access.data.actorUserId=8;if(state==='denied')m.access.data.canReview=false;

@@ -43,13 +43,13 @@ function Attempt({ item, conversationId, kind, refreshing, revision, onChecked }
 }
 
 /** The parent keys this panel by conversation, so late results cannot retarget another conversation. */
-type ReviewScope = { conversationId: number; merchantId: number; actorUserId: number };
+type ReviewScope = { conversationId: number; merchantId: number; actorUserId: number; defaultOpen?: boolean };
 export function StaffAttemptReview(props: ReviewScope) {
   return <ScopedStaffAttemptReview key={`${props.actorUserId}:${props.merchantId}:${props.conversationId}`} {...props} />;
 }
-function ScopedStaffAttemptReview({ conversationId, merchantId, actorUserId }: ReviewScope) {
+function ScopedStaffAttemptReview({ conversationId, merchantId, actorUserId, defaultOpen = false }: ReviewScope) {
   const { t } = useTranslation();
-  const [open, setOpen] = useState(false), [kind, setKind] = useState<'text' | 'voice'>('text');
+  const [open, setOpen] = useState(defaultOpen), [kind, setKind] = useState<'text' | 'voice'>('text');
   const [beforeId, setBeforeId] = useState<number>();
   const utils = trpc.useUtils();
   const query = trpc.conversations.staffAttemptSnapshot.useQuery({ conversationId, kind, beforeId }, { enabled: open, retry: false, staleTime: 0, refetchOnMount: 'always' });
@@ -65,7 +65,7 @@ function ScopedStaffAttemptReview({ conversationId, merchantId, actorUserId }: R
     void utils.conversations.getMessages.invalidate({ conversationId });
     void utils.conversations.messageHistory.invalidate({ conversationId });
   };
-  return <details data-staff-attempt-review className="mw-chat-actions" onToggle={event => setOpen(event.currentTarget.open)}>
+  return <details data-staff-attempt-review open={open} className={defaultOpen ? 'min-w-0 rounded-lg border p-3' : 'mw-chat-actions'} onToggle={event => setOpen(event.currentTarget.open)}>
     <summary style={{ minHeight: 44 }} className="cursor-pointer">{t('merchantUx.staffAttempts.title')}</summary>
     {open && <section aria-label={t('merchantUx.staffAttempts.title')} className="min-w-0 space-y-3 p-3 text-sm">
       <p className="leading-relaxed text-muted-foreground">{t('merchantUx.staffAttempts.scope')}</p>

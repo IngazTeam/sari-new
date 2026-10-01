@@ -2,7 +2,7 @@
 
 هذا حصر مصدر قابل لإعادة التوليد، وليس ادعاءً بأن كل مسار عمل اختُبر أو أُعيد تصميمه. يشمل المكونات الفرعية المحلية، الحقول، الأزرار، النوافذ، التبويبات، واجهات القراءة والتعديل. العناصر الديناميكية تحتاج مراجعة إضافية.
 
-- 126 مسارًا مسجلًا، 349 ملف واجهة متصلًا، 2234 عنصر تحكم في المصدر.
+- 126 مسارًا مسجلًا، 350 ملف واجهة متصلًا، 2241 عنصر تحكم في المصدر.
 - 0 رابطًا حرفيًا غير مطابق، و0 ملف صفحة غير متصل بالمسارات المحصورة.
 
 | الصفحة | الملفات | عناصر التحكم | القراءة / التعديل | موك أب للصفحة |
@@ -20,7 +20,7 @@
 | /merchant/campaigns/:id/report — تقرير الحملة | 2 | 3 | 1 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/products — المنتجات | 17 | 103 | 12 / 4 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/products/upload — استيراد المنتجات | 13 | 75 | 10 / 7 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/conversations — المحادثات | 25 | 104 | 13 / 10 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/conversations — المحادثات | 26 | 111 | 13 / 10 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/whatsapp — أرقام واتساب | 2 | 23 | 8 / 6 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/salla — ربط سلة | 2 | 22 | 5 / 4 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/integrations/byaan — ربط بيان | 1 | 9 | 1 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -898,26 +898,86 @@
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 282 | Button | ✕ إزالة الفلتر | المحادثات |
-| 318 | Input | البحث في جميع المحادثات | قائمة المحادثات |
-| 345 | div | t('merchantUx.actions.viewNamed', {                         name:                           conversation.customerName \|\|                           conversation.customerPhone,                       }) | قائمة المحادثات |
-| 425 | Button | العودة إلى الصفحة الأولى | قائمة المحادثات |
-| 426 | Button | السابق | قائمة المحادثات |
-| 441 | Button | التالي | قائمة المحادثات |
-| 467 | Button | العودة إلى قائمة المحادثات | قائمة المحادثات |
-| 529 | summary | إدارة المحادثة ومراجعة العروض | إدارة المحادثة ومراجعة العروض |
-| 560 | Button | رسائل أقدم | إدارة المحادثة ومراجعة العروض |
-| 565 | Button | رسائل أحدث | إدارة المحادثة ومراجعة العروض |
-| 566 | Button | العودة إلى آخر الرسائل | إدارة المحادثة ومراجعة العروض |
-| 568 | Button | وصلت رسائل جديدة — عرض الأحدث | إدارة المحادثة ومراجعة العروض |
-| 603 | summary | اقتراحات ساري والإجراءات السريعة | اقتراحات ساري والإجراءات السريعة |
-| 652 | Button | راجعت سجل الردود؛ متابعة التحرير | اقتراحات ساري والإجراءات السريعة |
-| 656 | Button | بدء مسودة فارغة | اقتراحات ساري والإجراءات السريعة |
-| 661 | Button | إعادة محاولة حفظ المسودة | اقتراحات ساري والإجراءات السريعة |
-| 668 | Textarea | رسالتك للعميل | اقتراحات ساري والإجراءات السريعة |
-| 692 | Button | تسمية ديناميكية / تحتاج مراجعة | اقتراحات ساري والإجراءات السريعة |
-| 712 | summary | رد صوتي | رد صوتي |
-| 754 | Button | العودة إلى قائمة المحادثات | رد صوتي |
+| 278 | Button | ✕ إزالة الفلتر | المحادثات |
+| 314 | Input | البحث في جميع المحادثات | قائمة المحادثات |
+| 341 | div | t('merchantUx.actions.viewNamed', {                         name:                           conversation.customerName \|\|                           conversation.customerPhone,                       }) | قائمة المحادثات |
+| 421 | Button | العودة إلى الصفحة الأولى | قائمة المحادثات |
+| 422 | Button | السابق | قائمة المحادثات |
+| 437 | Button | التالي | قائمة المحادثات |
+| 463 | Button | العودة إلى قائمة المحادثات | قائمة المحادثات |
+| 526 | Button | رسائل أقدم | عميل |
+| 531 | Button | رسائل أحدث | عميل |
+| 532 | Button | العودة إلى آخر الرسائل | عميل |
+| 534 | Button | وصلت رسائل جديدة — عرض الأحدث | عميل |
+| 569 | summary | اقتراحات ساري والإجراءات السريعة | اقتراحات ساري والإجراءات السريعة |
+| 618 | Button | راجعت سجل الردود؛ متابعة التحرير | اقتراحات ساري والإجراءات السريعة |
+| 622 | Button | بدء مسودة فارغة | اقتراحات ساري والإجراءات السريعة |
+| 627 | Button | إعادة محاولة حفظ المسودة | اقتراحات ساري والإجراءات السريعة |
+| 634 | Textarea | رسالتك للعميل | اقتراحات ساري والإجراءات السريعة |
+| 658 | Button | تسمية ديناميكية / تحتاج مراجعة | اقتراحات ساري والإجراءات السريعة |
+| 678 | summary | رد صوتي | رد صوتي |
+| 720 | Button | العودة إلى قائمة المحادثات | رد صوتي |
+
+## client/src/components/ConversationTools.tsx
+
+| السطر | النوع | التسمية | القسم |
+|---:|---|---|---|
+| 19 | Button | تسمية ديناميكية / تحتاج مراجعة | ConversationTools |
+| 20 | DialogContent | تسمية ديناميكية / تحتاج مراجعة | ConversationTools |
+| 23 | TabsTrigger | تسمية ديناميكية / تحتاج مراجعة | ConversationTools |
+| 29 | Button | تسمية ديناميكية / تحتاج مراجعة | ConversationTools |
+
+## client/src/components/ConversationHandoff.tsx
+
+| السطر | النوع | التسمية | القسم |
+|---:|---|---|---|
+| 69 | a | تسمية ديناميكية / تحتاج مراجعة | ConversationHandoff |
+| 74 | Button | تسمية ديناميكية / تحتاج مراجعة | ConversationHandoff |
+| 79 | summary | تسمية ديناميكية / تحتاج مراجعة | ConversationHandoff |
+| 103 | input | تسمية ديناميكية / تحتاج مراجعة | ConversationHandoff |
+| 105 | Button | تسمية ديناميكية / تحتاج مراجعة | ConversationHandoff |
+| 112 | Button | تسمية ديناميكية / تحتاج مراجعة | ConversationHandoff |
+| 115 | DialogContent | إغلاق | ConversationHandoff |
+| 120 | Button | إغلاق | ConversationHandoff |
+| 133 | Button | تسمية ديناميكية / تحتاج مراجعة | ConversationHandoff |
+
+## client/src/components/EscalationReconciliation.tsx
+
+| السطر | النوع | التسمية | القسم |
+|---:|---|---|---|
+| 40 | summary | تسمية ديناميكية / تحتاج مراجعة | EscalationReconciliation |
+| 53 | textarea | تسمية ديناميكية / تحتاج مراجعة | EscalationReconciliation |
+| 57 | input | تسمية ديناميكية / تحتاج مراجعة | EscalationReconciliation |
+| 60 | Button | تسمية ديناميكية / تحتاج مراجعة | EscalationReconciliation |
+| 64 | Button | تسمية ديناميكية / تحتاج مراجعة | EscalationReconciliation |
+| 90 | Button | تسمية ديناميكية / تحتاج مراجعة | EscalationReconciliation |
+| 97 | Button | تسمية ديناميكية / تحتاج مراجعة | EscalationReconciliation |
+| 98 | Button | تسمية ديناميكية / تحتاج مراجعة | EscalationReconciliation |
+
+## client/src/components/SalesOfferReview.tsx
+
+| السطر | النوع | التسمية | القسم |
+|---:|---|---|---|
+| 117 | summary | تسمية ديناميكية / تحتاج مراجعة | SalesOfferReview |
+| 161 | textarea | تسمية ديناميكية / تحتاج مراجعة | SalesOfferReview |
+| 177 | input | تسمية ديناميكية / تحتاج مراجعة | SalesOfferReview |
+| 187 | Button | تسمية ديناميكية / تحتاج مراجعة | SalesOfferReview |
+| 208 | Button | تسمية ديناميكية / تحتاج مراجعة | SalesOfferReview |
+| 240 | summary | تسمية ديناميكية / تحتاج مراجعة | SalesOfferReview |
+| 264 | Button | تسمية ديناميكية / تحتاج مراجعة | SalesOfferReview |
+| 272 | Button | تسمية ديناميكية / تحتاج مراجعة | SalesOfferReview |
+| 273 | Button | تسمية ديناميكية / تحتاج مراجعة | SalesOfferReview |
+
+## client/src/components/StaffAttemptReview.tsx
+
+| السطر | النوع | التسمية | القسم |
+|---:|---|---|---|
+| 39 | Button | تسمية ديناميكية / تحتاج مراجعة | StaffAttemptReview |
+| 69 | summary | تسمية ديناميكية / تحتاج مراجعة | StaffAttemptReview |
+| 73 | Button | تسمية ديناميكية / تحتاج مراجعة | StaffAttemptReview |
+| 74 | Button | تسمية ديناميكية / تحتاج مراجعة | StaffAttemptReview |
+| 83 | Button | تسمية ديناميكية / تحتاج مراجعة | StaffAttemptReview |
+| 84 | Button | تسمية ديناميكية / تحتاج مراجعة | StaffAttemptReview |
 
 ## client/src/components/ConversationMessage.tsx
 
@@ -947,73 +1007,25 @@
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 48 | Button | إعادة محاولة قراءة المرجع | StaffTeamReview |
-| 49 | Button | راجعت سجل المراجعات؛ بدء تحقق جديد | StaffTeamReview |
-| 52 | select | تسمية ديناميكية / تحتاج مراجعة | StaffTeamReview |
-| 57 | Button | تسمية ديناميكية / تحتاج مراجعة | StaffTeamReview |
-| 81 | Button | تسمية ديناميكية / تحتاج مراجعة | StaffTeamReview |
+| 49 | Button | إعادة محاولة قراءة المرجع | StaffTeamReview |
+| 50 | Button | راجعت سجل المراجعات؛ بدء تحقق جديد | StaffTeamReview |
+| 53 | select | تسمية ديناميكية / تحتاج مراجعة | StaffTeamReview |
+| 58 | Button | تسمية ديناميكية / تحتاج مراجعة | StaffTeamReview |
 | 82 | Button | تسمية ديناميكية / تحتاج مراجعة | StaffTeamReview |
 | 83 | Button | تسمية ديناميكية / تحتاج مراجعة | StaffTeamReview |
 | 84 | Button | تسمية ديناميكية / تحتاج مراجعة | StaffTeamReview |
-| 91 | input | تسمية ديناميكية / تحتاج مراجعة | StaffTeamReview |
+| 85 | Button | تسمية ديناميكية / تحتاج مراجعة | StaffTeamReview |
 | 92 | input | تسمية ديناميكية / تحتاج مراجعة | StaffTeamReview |
-| 93 | Button | تسمية ديناميكية / تحتاج مراجعة | StaffTeamReview |
-| 106 | Button | تسمية ديناميكية / تحتاج مراجعة | StaffTeamReview |
+| 93 | input | تسمية ديناميكية / تحتاج مراجعة | StaffTeamReview |
+| 94 | Button | تسمية ديناميكية / تحتاج مراجعة | StaffTeamReview |
 | 107 | Button | تسمية ديناميكية / تحتاج مراجعة | StaffTeamReview |
-| 119 | Button | تسمية ديناميكية / تحتاج مراجعة | StaffTeamReview |
-| 122 | summary | تسمية ديناميكية / تحتاج مراجعة | StaffTeamReview |
-
-## client/src/components/ConversationHandoff.tsx
-
-| السطر | النوع | التسمية | القسم |
-|---:|---|---|---|
-| 69 | a | تسمية ديناميكية / تحتاج مراجعة | ConversationHandoff |
-| 74 | Button | تسمية ديناميكية / تحتاج مراجعة | ConversationHandoff |
-| 79 | summary | تسمية ديناميكية / تحتاج مراجعة | ConversationHandoff |
-| 103 | input | تسمية ديناميكية / تحتاج مراجعة | ConversationHandoff |
-| 105 | Button | تسمية ديناميكية / تحتاج مراجعة | ConversationHandoff |
-| 112 | Button | تسمية ديناميكية / تحتاج مراجعة | ConversationHandoff |
-| 115 | DialogContent | إغلاق | ConversationHandoff |
-| 120 | Button | إغلاق | ConversationHandoff |
-| 133 | Button | تسمية ديناميكية / تحتاج مراجعة | ConversationHandoff |
-
-## client/src/components/EscalationReconciliation.tsx
-
-| السطر | النوع | التسمية | القسم |
-|---:|---|---|---|
-| 40 | summary | تسمية ديناميكية / تحتاج مراجعة | EscalationReconciliation |
-| 53 | textarea | تسمية ديناميكية / تحتاج مراجعة | EscalationReconciliation |
-| 57 | input | تسمية ديناميكية / تحتاج مراجعة | EscalationReconciliation |
-| 60 | Button | تسمية ديناميكية / تحتاج مراجعة | EscalationReconciliation |
-| 64 | Button | تسمية ديناميكية / تحتاج مراجعة | EscalationReconciliation |
-| 89 | Button | تسمية ديناميكية / تحتاج مراجعة | EscalationReconciliation |
-| 96 | Button | تسمية ديناميكية / تحتاج مراجعة | EscalationReconciliation |
-| 97 | Button | تسمية ديناميكية / تحتاج مراجعة | EscalationReconciliation |
-
-## client/src/components/SalesOfferReview.tsx
-
-| السطر | النوع | التسمية | القسم |
-|---:|---|---|---|
-| 117 | summary | تسمية ديناميكية / تحتاج مراجعة | SalesOfferReview |
-| 161 | textarea | تسمية ديناميكية / تحتاج مراجعة | SalesOfferReview |
-| 177 | input | تسمية ديناميكية / تحتاج مراجعة | SalesOfferReview |
-| 187 | Button | تسمية ديناميكية / تحتاج مراجعة | SalesOfferReview |
-| 208 | Button | تسمية ديناميكية / تحتاج مراجعة | SalesOfferReview |
-| 239 | summary | تسمية ديناميكية / تحتاج مراجعة | SalesOfferReview |
-| 263 | Button | تسمية ديناميكية / تحتاج مراجعة | SalesOfferReview |
-| 271 | Button | تسمية ديناميكية / تحتاج مراجعة | SalesOfferReview |
-| 272 | Button | تسمية ديناميكية / تحتاج مراجعة | SalesOfferReview |
-
-## client/src/components/StaffAttemptReview.tsx
-
-| السطر | النوع | التسمية | القسم |
-|---:|---|---|---|
-| 39 | Button | تسمية ديناميكية / تحتاج مراجعة | StaffAttemptReview |
-| 69 | summary | تسمية ديناميكية / تحتاج مراجعة | StaffAttemptReview |
-| 73 | Button | تسمية ديناميكية / تحتاج مراجعة | StaffAttemptReview |
-| 74 | Button | تسمية ديناميكية / تحتاج مراجعة | StaffAttemptReview |
-| 83 | Button | تسمية ديناميكية / تحتاج مراجعة | StaffAttemptReview |
-| 84 | Button | تسمية ديناميكية / تحتاج مراجعة | StaffAttemptReview |
+| 108 | Button | تسمية ديناميكية / تحتاج مراجعة | StaffTeamReview |
+| 121 | Button | تسمية ديناميكية / تحتاج مراجعة | StaffTeamReview |
+| 121 | DialogContent | تسمية ديناميكية / تحتاج مراجعة | StaffTeamReview |
+| 122 | Button | تسمية ديناميكية / تحتاج مراجعة | StaffTeamReview |
+| 123 | Button | تسمية ديناميكية / تحتاج مراجعة | StaffTeamReview |
+| 127 | Button | تسمية ديناميكية / تحتاج مراجعة | StaffTeamReview |
+| 130 | summary | تسمية ديناميكية / تحتاج مراجعة | StaffTeamReview |
 
 ## client/src/components/VoiceRecorder.tsx
 

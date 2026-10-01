@@ -22,6 +22,9 @@ beforeEach(()=>{
   container=document.createElement('div');document.body.append(container);root=createRoot(container);
 });
 afterEach(async()=>{await act(async()=>root.unmount());container.remove();vi.unstubAllGlobals();});
+it('opens the actual disclosure and its reads when embedded in conversation tools',async()=>{
+ await render({defaultOpen:true});expect(container.querySelector('details')?.open).toBe(true);expect(container.querySelector('[data-staff-attempt="20"]')).toBeTruthy();expect(m.calls).toHaveBeenLastCalledWith(expect.anything(),expect.objectContaining({enabled:true}));expect(container.querySelector('details')?.className).not.toContain('mw-chat-actions');
+});
 it('keeps queries disabled until opened and requests a fresh read',async()=>{
   await render();expect(m.calls).toHaveBeenLastCalledWith({conversationId:4,kind:'text',beforeId:undefined},expect.objectContaining({enabled:false,staleTime:0,refetchOnMount:'always'}));expect(container.querySelector('[data-staff-attempt]')).toBeNull();
   await open();expect(m.calls).toHaveBeenLastCalledWith(expect.anything(),expect.objectContaining({enabled:true}));expect(container.querySelector('[data-staff-attempt="20"]')).toBeTruthy();

@@ -67,11 +67,12 @@ function RelayReview({ item, conversationId, canManage, refreshing, revision, no
   </article>;
 }
 
-type Scope={conversationId:number;merchantId:number;actorUserId:number};
+type Scope={conversationId:number;merchantId:number;actorUserId:number;draftNotes?:Record<number,string>;onDraftNotesChange?:import('react').Dispatch<import('react').SetStateAction<Record<number,string>>>};
 export function EscalationReconciliation(props:Scope){return <ScopedEscalation key={`${props.actorUserId}:${props.merchantId}:${props.conversationId}`} {...props}/>;}
-function ScopedEscalation({conversationId,merchantId,actorUserId}:Scope){
+function ScopedEscalation({conversationId,merchantId,actorUserId,draftNotes,onDraftNotesChange}:Scope){
   const {t}=useTranslation(),utils=trpc.useUtils();const [beforeId,setBeforeId]=useState<number>();
-  const [notes,setNotes]=useState<Record<number,string>>({});
+  const [localNotes,setLocalNotes]=useState<Record<number,string>>({});
+  const notes=draftNotes??localNotes,setNotes=onDraftNotesChange??setLocalNotes;
   const query=trpc.conversations.escalationReviewSnapshot.useQuery({conversationId,beforeId},{retry:false,staleTime:0,refetchOnMount:'always',refetchInterval:15000});
   const parsed=escalationReviewSnapshot.safeParse(query.data);
   const matches=parsed.success&&parsed.data.merchantId===merchantId&&parsed.data.actorUserId===actorUserId&&parsed.data.conversationId===conversationId&&parsed.data.beforeId===(beforeId??null);

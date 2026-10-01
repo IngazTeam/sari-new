@@ -227,14 +227,15 @@ function OfferReviewCard({
   );
 }
 
-type OfferScope={conversationId:number;merchantId:number;actorUserId:number};
+type OfferScope={conversationId:number;merchantId:number;actorUserId:number;defaultOpen?:boolean;draftNotes?:Record<string,string>;onDraftNotesChange?:Dispatch<SetStateAction<Record<string,string>>>};
 export function SalesOfferReview(props:OfferScope){
   return <ScopedOfferReview key={[props.actorUserId,props.merchantId,props.conversationId].join(':')} {...props}/>;
 }
 function ScopedOfferReview(props:OfferScope){
   const {t}=useTranslation();
-  const [open,setOpen]=useState(false),[beforeSourceId,setBeforeSourceId]=useState<number>();
-  const [notes,setNotes]=useState<Record<string,string>>({});
+  const [open,setOpen]=useState(props.defaultOpen??false),[beforeSourceId,setBeforeSourceId]=useState<number>();
+  const [localNotes,setLocalNotes]=useState<Record<string,string>>({});
+  const notes=props.draftNotes??localNotes,setNotes=props.onDraftNotesChange??setLocalNotes;
   return <details data-offer-panel open={open} className="min-w-0 rounded-lg border bg-muted/20 px-4" onToggle={event=>setOpen(event.currentTarget.open)}>
     <summary className="flex min-h-12 cursor-pointer items-center justify-between gap-3 py-2 font-semibold">
       <span>{t('merchantUx.offerReview.title')}</span><ChevronDown aria-hidden="true" className={'h-4 w-4 shrink-0 transition-transform motion-reduce:transition-none '+(open?'rotate-180':'')}/>

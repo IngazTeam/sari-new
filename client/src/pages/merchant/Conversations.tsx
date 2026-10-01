@@ -1,13 +1,10 @@
+import {ConversationTools} from '@/components/ConversationTools';
 import {ConversationMessage} from '@/components/ConversationMessage';
 import {ConversationConnection} from '@/components/ConversationConnection';
 import {StaffTeamReview} from '@/components/StaffTeamReview';
 import { trpc } from '@/lib/trpc';
 import { staffVoiceAttempt } from '@/lib/staff-voice-attempt';
 import { staffDashboardAttempt } from '@/lib/staff-dashboard-attempt';
-import { ConversationHandoff } from '@/components/ConversationHandoff';
-import { EscalationReconciliation } from '@/components/EscalationReconciliation';
-import { SalesOfferReview } from '@/components/SalesOfferReview';
-import { StaffAttemptReview } from '@/components/StaffAttemptReview';
 import { useLocation, useSearch } from 'wouter';
 import { conversationHref, conversationNavigation } from '@/lib/conversation-navigation';
 import { conversationDraftEpoch, conversationDraftScope, readConversationDraft, saveConversationDraft } from '@/lib/conversation-draft';
@@ -261,7 +258,6 @@ function ScopedConversations({ currentMerchant, actorId }: { currentMerchant: { 
 
   return (
     <div className="mw-inbox-page">
-      <StaffTeamReview merchantId={currentMerchant.id} actorUserId={actorId}/>
       {/* Header */}
       <div>
         <div className="mw-inbox-header">
@@ -273,7 +269,7 @@ function ScopedConversations({ currentMerchant, actorId }: { currentMerchant: { 
               {t('conversationsPage.description')}
             </p>
           </div>
-          <ConversationConnection merchantId={currentMerchant.id} actorUserId={actorId}/>
+          <div className="flex min-w-0 flex-wrap items-center gap-2"><StaffTeamReview merchantId={currentMerchant.id} actorUserId={actorId} compact/><ConversationConnection merchantId={currentMerchant.id} actorUserId={actorId}/></div>
         </div>
         {hasActiveFilter && (
           <div className="flex flex-wrap items-center gap-2 mt-3">
@@ -522,40 +518,10 @@ function ScopedConversations({ currentMerchant, actorId }: { currentMerchant: { 
                 </div>
               </CardHeader>
               <Separator />
-              <details
-                className="mw-chat-actions"
-                key={`actions-${selectedConversation.id}`}
-              >
-                <summary>إدارة المحادثة ومراجعة العروض</summary>
-                <div className="p-4">
-                  <ConversationHandoff
-                    key={selectedConversation.id}
-                    conversationId={selectedConversation.id}
-                    merchantId={currentMerchant.id}
-                    actorUserId={actorId}
-                  />
-                </div>
-                <div className="px-4 pb-4">
-                  <EscalationReconciliation
-                    key={selectedConversation.id}
-                    conversationId={selectedConversation.id}
-                    merchantId={currentMerchant.id}
-                    actorUserId={actorId}
-                  />
-                </div>
-                <div className="px-4 pb-4">
-                  <SalesOfferReview
-                    key={selectedConversation.id}
-                    conversationId={selectedConversation.id}
-                    merchantId={currentMerchant.id}
-                    actorUserId={actorId}
-                  />
-                </div>
-              </details>
-              <StaffAttemptReview key={`attempts-${selectedConversation.id}`} conversationId={selectedConversation.id} merchantId={currentMerchant.id} actorUserId={actorId} />
-              <nav className="flex flex-wrap items-center gap-2 border-y p-3 text-sm" aria-label={t('conversationHistory.navigation')}>
-                <p className="w-full text-muted-foreground" role="status">
-                  {viewingLatest ? t('conversationHistory.latestWindow') : t('conversationHistory.olderWindow')}
+              <nav className="mw-chat-toolbar flex flex-wrap items-center gap-2 border-y p-2 text-sm" aria-label={t('conversationHistory.navigation')}>
+                <ConversationTools merchantId={currentMerchant.id} actorUserId={actorId} conversationId={selectedConversation.id}/>
+                <p className="min-w-0 flex-1 text-xs text-muted-foreground" role="status" title={viewingLatest ? t('conversationHistory.latestWindow') : t('conversationHistory.olderWindow')}>
+                  {viewingLatest ? t('merchantUx.conversationTools.latest') : t('merchantUx.conversationTools.older')}
                 </p>
                 <Button type="button" variant="outline" className="min-h-11" disabled={historyFetching || messagesLoading || !!messagesError || !historySnapshot?.hasMore || !historySnapshot.nextBeforeId || isSending || voiceBusy}
                   onClick={() => { const next=historySnapshot?.nextBeforeId;if(next)setHistoryTrail(current => current.at(-1)===next?current:[...current,next]); }}>

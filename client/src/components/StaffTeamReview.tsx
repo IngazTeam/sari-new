@@ -3,6 +3,7 @@ import {useTranslation} from 'react-i18next';
 import {z} from 'zod';
 import {trpc} from '@/lib/trpc';
 import {Button} from '@/components/ui/button';
+import {Dialog,DialogTrigger,DialogContent,DialogHeader,DialogTitle,DialogDescription,DialogClose} from '@/components/ui/dialog';
 import {StaffAttemptGuidance} from './StaffAttemptGuidance';
 import {readStaffTeamAttempt,prepareStaffTeamAttempt,completeStaffTeamAttempt,discardStaffTeamAttempt} from '@/lib/staff-team-review-attempt';
 import {staffTeamCheckResult,staffTeamListInput,staffTeamPage,staffTeamAuditPage,staffTeamReviewReason,staffTeamContext,staffTeamSnapshot,type staffTeamItem} from '@shared/staff-team-review';
@@ -108,13 +109,20 @@ function TeamBrowser({merchantId,actorUserId}:TeamScope){
   <p className="text-xs text-muted-foreground">{t('merchantUx.teamAttempts.auditScope')}</p>
  </section>;
 }
-export function StaffTeamReview(props:TeamScope){
+export function StaffTeamReview(props:TeamScope&{compact?:boolean}){
  return <ScopedTeamReview key={`${props.actorUserId}:${props.merchantId}`} {...props}/>;
 }
-function ScopedTeamReview({merchantId,actorUserId}:TeamScope){
+function ScopedTeamReview({merchantId,actorUserId,compact=false}:TeamScope&{compact?:boolean}){
  const {t}=useTranslation(),[open,setOpen]=useState(false);
  const access=trpc.conversations.staffTeamContext.useQuery(undefined,{retry:false,staleTime:0,refetchOnMount:'always'});
  const parsed=staffTeamContext.safeParse(access.data),matches=parsed.success&&parsed.data.merchantId===merchantId&&parsed.data.actorUserId===actorUserId;
+ if(compact){
+  if(!access.isLoading&&!access.isFetching&&!access.isError&&matches&&!parsed.data.canReview)return null;
+  return <Dialog open={open} onOpenChange={setOpen}><DialogTrigger asChild><Button type="button" data-team-compact variant="outline" className="h-auto min-h-11 whitespace-normal" disabled={access.isLoading||access.isFetching}>{t('merchantUx.conversationTools.team')}</Button></DialogTrigger><DialogContent className="max-h-[90dvh] min-w-0 max-w-3xl overflow-y-auto" showCloseButton={false}><DialogHeader className="text-start"><DialogTitle>{t('merchantUx.teamAttempts.title')}</DialogTitle><DialogDescription>{t('merchantUx.conversationTools.teamDescription')}</DialogDescription></DialogHeader>
+   {access.isLoading||access.isFetching?<p role="status">{t('merchantUx.teamAttempts.loading')}</p>:access.isError||!matches?<section role="alert" className="space-y-2"><p>{t('merchantUx.teamAttempts.loadFailed')}</p><Button type="button" variant="outline" onClick={()=>void access.refetch()}>{t('merchantUx.teamAttempts.refresh')}</Button></section>:parsed.data.canReview&&<TeamBrowser merchantId={merchantId} actorUserId={actorUserId}/>}
+   <DialogClose asChild><Button type="button" variant="outline" className="min-h-11">{t('merchantUx.conversationTools.close')}</Button></DialogClose>
+  </DialogContent></Dialog>;
+ }
  if(access.isLoading||access.isFetching)return <p role="status">{t('merchantUx.teamAttempts.loading')}</p>;
  if(access.isError||!matches)return <section role="alert" className="space-y-2 rounded-lg border p-3"><p>{t('merchantUx.teamAttempts.loadFailed')}</p><Button type="button" variant="outline" onClick={()=>void access.refetch()}>{t('merchantUx.teamAttempts.refresh')}</Button></section>;
  if(!parsed.data.canReview)return null;

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-01T14:16:15.238Z",
+  "generatedAt": "2026-10-01T14:31:02.122Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -3762,7 +3762,7 @@
     },
     {
       "file": "client/src/pages/merchant/Conversations.tsx",
-      "hash": "cfefe44439d2",
+      "hash": "d4bf773feb16",
       "queries": [
         "auth.me",
         "merchants.getCurrent",
@@ -3778,32 +3778,27 @@
       "sections": [
         {
           "label": "المحادثات",
-          "line": 269,
+          "line": 265,
           "tag": "h1"
         },
         {
           "label": "قائمة المحادثات",
-          "line": 310,
+          "line": 306,
           "tag": "CardTitle"
         },
         {
           "label": "عميل",
-          "line": 483,
+          "line": 479,
           "tag": "CardTitle"
         },
         {
-          "label": "إدارة المحادثة ومراجعة العروض",
-          "line": 529,
-          "tag": "summary"
-        },
-        {
           "label": "اقتراحات ساري والإجراءات السريعة",
-          "line": 603,
+          "line": 569,
           "tag": "summary"
         },
         {
           "label": "رد صوتي",
-          "line": 712,
+          "line": 678,
           "tag": "summary"
         }
       ],
@@ -3811,27 +3806,27 @@
       "handlers": [
         {
           "name": "saveDraft",
-          "line": 99,
+          "line": 96,
           "calls": []
         },
         {
           "name": "updateReplyText",
-          "line": 116,
+          "line": 113,
           "calls": []
         },
         {
           "name": "selectConversation",
-          "line": 117,
+          "line": 114,
           "calls": []
         },
         {
           "name": "handleSendReply",
-          "line": 204,
+          "line": 201,
           "calls": []
         },
         {
           "name": "handleQuickAction",
-          "line": 253,
+          "line": 250,
           "calls": []
         }
       ],
@@ -3839,7 +3834,7 @@
         {
           "query": "auth.me",
           "binding": "user",
-          "line": 65,
+          "line": 62,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
@@ -3847,7 +3842,7 @@
         {
           "query": "merchants.getCurrent",
           "binding": "merchant",
-          "line": 66,
+          "line": 63,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": "Boolean(user.data?.id) && !user.error && !user.isFetching"
@@ -3855,7 +3850,7 @@
         {
           "query": "conversations.list",
           "binding": "{\n    data: listSnapshot,\n    isLoading,\n    error: listQueryError,\n    refetch: refetchList,\n  }",
-          "line": 148,
+          "line": 145,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
@@ -3863,7 +3858,7 @@
         {
           "query": "conversations.messageHistory",
           "binding": "{\n    data: historySnapshot,\n    isLoading: messagesLoading,\n    isFetching: historyFetching,\n    error: historyError,\n    refetch: refetchMessages,\n  }",
-          "line": 176,
+          "line": 173,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": "selectedConversationId !== null"
@@ -3871,15 +3866,12 @@
       ],
       "conditions": [],
       "imports": [
+        "client/src/components/ConversationTools.tsx",
         "client/src/components/ConversationMessage.tsx",
         "client/src/components/ConversationConnection.tsx",
         "client/src/components/StaffTeamReview.tsx",
         "client/src/lib/staff-voice-attempt.ts",
         "client/src/lib/staff-dashboard-attempt.ts",
-        "client/src/components/ConversationHandoff.tsx",
-        "client/src/components/EscalationReconciliation.tsx",
-        "client/src/components/SalesOfferReview.tsx",
-        "client/src/components/StaffAttemptReview.tsx",
         "client/src/lib/conversation-navigation.ts",
         "client/src/lib/conversation-draft.ts",
         "client/src/components/VoiceRecorder.tsx",
@@ -3889,7 +3881,254 @@
         "client/src/lib/merchant-date.ts",
         "client/src/lib/use-conversation-scroll.ts"
       ],
-      "controlCount": 20
+      "controlCount": 19
+    },
+    {
+      "file": "client/src/components/ConversationTools.tsx",
+      "hash": "56dca88c2a18",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [
+        {
+          "label": "",
+          "line": 21,
+          "tag": "DialogTitle"
+        },
+        {
+          "label": "",
+          "line": 23,
+          "tag": "TabsTrigger"
+        }
+      ],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [
+        "client/src/components/ConversationHandoff.tsx",
+        "client/src/components/EscalationReconciliation.tsx",
+        "client/src/components/SalesOfferReview.tsx",
+        "client/src/components/StaffAttemptReview.tsx"
+      ],
+      "controlCount": 4
+    },
+    {
+      "file": "client/src/components/ConversationHandoff.tsx",
+      "hash": "0b2d7079e25e",
+      "queries": [
+        "conversations.handoffSnapshot",
+        "conversations.handoffSourceSnapshot"
+      ],
+      "mutations": [
+        "conversations.setOwnership"
+      ],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [
+        {
+          "label": "",
+          "line": 72,
+          "tag": "h3"
+        },
+        {
+          "label": "",
+          "line": 79,
+          "tag": "summary"
+        },
+        {
+          "label": "",
+          "line": 117,
+          "tag": "DialogTitle"
+        }
+      ],
+      "choices": [],
+      "handlers": [
+        {
+          "name": "save",
+          "line": 41,
+          "calls": [
+            "mutation"
+          ]
+        }
+      ],
+      "queryStates": [
+        {
+          "query": "conversations.handoffSnapshot",
+          "binding": "query",
+          "line": 15,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        },
+        {
+          "query": "conversations.handoffSourceSnapshot",
+          "binding": "source",
+          "line": 128,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        }
+      ],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 9
+    },
+    {
+      "file": "client/src/components/EscalationReconciliation.tsx",
+      "hash": "3a60e2ff5729",
+      "queries": [
+        "conversations.escalationReviewSnapshot"
+      ],
+      "mutations": [
+        "conversations.reviewEscalationRelay"
+      ],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [
+        {
+          "label": "",
+          "line": 40,
+          "tag": "summary"
+        },
+        {
+          "label": "",
+          "line": 88,
+          "tag": "h3"
+        }
+      ],
+      "choices": [],
+      "handlers": [
+        {
+          "name": "save",
+          "line": 21,
+          "calls": [
+            "mutation"
+          ]
+        },
+        {
+          "name": "saved",
+          "line": 81,
+          "calls": []
+        }
+      ],
+      "queryStates": [
+        {
+          "query": "conversations.escalationReviewSnapshot",
+          "binding": "query",
+          "line": 76,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        }
+      ],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 8
+    },
+    {
+      "file": "client/src/components/SalesOfferReview.tsx",
+      "hash": "a9afb43d99fd",
+      "queries": [
+        "conversations.salesOfferReviewSnapshot"
+      ],
+      "mutations": [
+        "conversations.reviewSalesOffer"
+      ],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [
+        {
+          "label": "",
+          "line": 117,
+          "tag": "summary"
+        },
+        {
+          "label": "",
+          "line": 240,
+          "tag": "summary"
+        }
+      ],
+      "choices": [],
+      "handlers": [
+        {
+          "name": "save",
+          "line": 41,
+          "calls": [
+            "mutation"
+          ]
+        },
+        {
+          "name": "saved",
+          "line": 255,
+          "calls": []
+        }
+      ],
+      "queryStates": [
+        {
+          "query": "conversations.salesOfferReviewSnapshot",
+          "binding": "query",
+          "line": 250,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        }
+      ],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 9
+    },
+    {
+      "file": "client/src/components/StaffAttemptReview.tsx",
+      "hash": "0240e1bf0859",
+      "queries": [
+        "conversations.staffAttemptSnapshot"
+      ],
+      "mutations": [
+        "conversations.checkStaffAttempt"
+      ],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [
+        {
+          "label": "",
+          "line": 69,
+          "tag": "summary"
+        }
+      ],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [
+        {
+          "query": "conversations.staffAttemptSnapshot",
+          "binding": "query",
+          "line": 55,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": "open"
+        }
+      ],
+      "conditions": [],
+      "imports": [
+        "client/src/components/StaffAttemptGuidance.tsx"
+      ],
+      "controlCount": 6
+    },
+    {
+      "file": "client/src/components/StaffAttemptGuidance.tsx",
+      "hash": "eab171304f16",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 0
     },
     {
       "file": "client/src/components/ConversationMessage.tsx",
@@ -3973,7 +4212,7 @@
     },
     {
       "file": "client/src/components/StaffTeamReview.tsx",
-      "hash": "2dd949648798",
+      "hash": "4e984023971d",
       "queries": [
         "conversations.staffTeamSnapshot",
         "conversations.staffTeamContext"
@@ -3986,7 +4225,12 @@
       "sections": [
         {
           "label": "",
-          "line": 122,
+          "line": 121,
+          "tag": "DialogTitle"
+        },
+        {
+          "label": "",
+          "line": 130,
           "tag": "summary"
         }
       ],
@@ -3996,7 +4240,7 @@
         {
           "query": "conversations.staffTeamSnapshot",
           "binding": "query",
-          "line": 69,
+          "line": 70,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
@@ -4004,7 +4248,7 @@
         {
           "query": "conversations.staffTeamContext",
           "binding": "access",
-          "line": 116,
+          "line": 117,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
@@ -4015,22 +4259,7 @@
         "client/src/components/StaffAttemptGuidance.tsx",
         "client/src/lib/staff-team-review-attempt.ts"
       ],
-      "controlCount": 15
-    },
-    {
-      "file": "client/src/components/StaffAttemptGuidance.tsx",
-      "hash": "eab171304f16",
-      "queries": [],
-      "mutations": [],
-      "imperativeReads": [],
-      "browserRequests": [],
-      "sections": [],
-      "choices": [],
-      "handlers": [],
-      "queryStates": [],
-      "conditions": [],
-      "imports": [],
-      "controlCount": 0
+      "controlCount": 19
     },
     {
       "file": "client/src/lib/staff-team-review-attempt.ts",
@@ -4095,207 +4324,6 @@
         "client/src/lib/staff-attempt-identity.ts"
       ],
       "controlCount": 0
-    },
-    {
-      "file": "client/src/components/ConversationHandoff.tsx",
-      "hash": "0b2d7079e25e",
-      "queries": [
-        "conversations.handoffSnapshot",
-        "conversations.handoffSourceSnapshot"
-      ],
-      "mutations": [
-        "conversations.setOwnership"
-      ],
-      "imperativeReads": [],
-      "browserRequests": [],
-      "sections": [
-        {
-          "label": "",
-          "line": 72,
-          "tag": "h3"
-        },
-        {
-          "label": "",
-          "line": 79,
-          "tag": "summary"
-        },
-        {
-          "label": "",
-          "line": 117,
-          "tag": "DialogTitle"
-        }
-      ],
-      "choices": [],
-      "handlers": [
-        {
-          "name": "save",
-          "line": 41,
-          "calls": [
-            "mutation"
-          ]
-        }
-      ],
-      "queryStates": [
-        {
-          "query": "conversations.handoffSnapshot",
-          "binding": "query",
-          "line": 15,
-          "errorSignal": true,
-          "loadingSignal": true,
-          "enabled": null
-        },
-        {
-          "query": "conversations.handoffSourceSnapshot",
-          "binding": "source",
-          "line": 128,
-          "errorSignal": true,
-          "loadingSignal": true,
-          "enabled": null
-        }
-      ],
-      "conditions": [],
-      "imports": [],
-      "controlCount": 9
-    },
-    {
-      "file": "client/src/components/EscalationReconciliation.tsx",
-      "hash": "baed13c09d02",
-      "queries": [
-        "conversations.escalationReviewSnapshot"
-      ],
-      "mutations": [
-        "conversations.reviewEscalationRelay"
-      ],
-      "imperativeReads": [],
-      "browserRequests": [],
-      "sections": [
-        {
-          "label": "",
-          "line": 40,
-          "tag": "summary"
-        },
-        {
-          "label": "",
-          "line": 87,
-          "tag": "h3"
-        }
-      ],
-      "choices": [],
-      "handlers": [
-        {
-          "name": "save",
-          "line": 21,
-          "calls": [
-            "mutation"
-          ]
-        },
-        {
-          "name": "saved",
-          "line": 80,
-          "calls": []
-        }
-      ],
-      "queryStates": [
-        {
-          "query": "conversations.escalationReviewSnapshot",
-          "binding": "query",
-          "line": 75,
-          "errorSignal": true,
-          "loadingSignal": true,
-          "enabled": null
-        }
-      ],
-      "conditions": [],
-      "imports": [],
-      "controlCount": 8
-    },
-    {
-      "file": "client/src/components/SalesOfferReview.tsx",
-      "hash": "81bb9f931c1c",
-      "queries": [
-        "conversations.salesOfferReviewSnapshot"
-      ],
-      "mutations": [
-        "conversations.reviewSalesOffer"
-      ],
-      "imperativeReads": [],
-      "browserRequests": [],
-      "sections": [
-        {
-          "label": "",
-          "line": 117,
-          "tag": "summary"
-        },
-        {
-          "label": "",
-          "line": 239,
-          "tag": "summary"
-        }
-      ],
-      "choices": [],
-      "handlers": [
-        {
-          "name": "save",
-          "line": 41,
-          "calls": [
-            "mutation"
-          ]
-        },
-        {
-          "name": "saved",
-          "line": 254,
-          "calls": []
-        }
-      ],
-      "queryStates": [
-        {
-          "query": "conversations.salesOfferReviewSnapshot",
-          "binding": "query",
-          "line": 249,
-          "errorSignal": true,
-          "loadingSignal": true,
-          "enabled": null
-        }
-      ],
-      "conditions": [],
-      "imports": [],
-      "controlCount": 9
-    },
-    {
-      "file": "client/src/components/StaffAttemptReview.tsx",
-      "hash": "cea72d00b368",
-      "queries": [
-        "conversations.staffAttemptSnapshot"
-      ],
-      "mutations": [
-        "conversations.checkStaffAttempt"
-      ],
-      "imperativeReads": [],
-      "browserRequests": [],
-      "sections": [
-        {
-          "label": "",
-          "line": 69,
-          "tag": "summary"
-        }
-      ],
-      "choices": [],
-      "handlers": [],
-      "queryStates": [
-        {
-          "query": "conversations.staffAttemptSnapshot",
-          "binding": "query",
-          "line": 55,
-          "errorSignal": true,
-          "loadingSignal": true,
-          "enabled": "open"
-        }
-      ],
-      "conditions": [],
-      "imports": [
-        "client/src/components/StaffAttemptGuidance.tsx"
-      ],
-      "controlCount": 6
     },
     {
       "file": "client/src/lib/conversation-navigation.ts",
@@ -18994,20 +19022,21 @@
       ],
       "files": [
         "client/src/pages/merchant/Conversations.tsx",
+        "client/src/components/ConversationTools.tsx",
+        "client/src/components/ConversationHandoff.tsx",
+        "client/src/components/EscalationReconciliation.tsx",
+        "client/src/components/SalesOfferReview.tsx",
+        "client/src/components/StaffAttemptReview.tsx",
+        "client/src/components/StaffAttemptGuidance.tsx",
         "client/src/components/ConversationMessage.tsx",
         "client/src/lib/conversation-message.ts",
         "client/src/lib/merchant-date.ts",
         "client/src/components/ConversationConnection.tsx",
         "client/src/components/StaffTeamReview.tsx",
-        "client/src/components/StaffAttemptGuidance.tsx",
         "client/src/lib/staff-team-review-attempt.ts",
         "client/src/lib/staff-voice-attempt.ts",
         "client/src/lib/staff-attempt-identity.ts",
         "client/src/lib/staff-dashboard-attempt.ts",
-        "client/src/components/ConversationHandoff.tsx",
-        "client/src/components/EscalationReconciliation.tsx",
-        "client/src/components/SalesOfferReview.tsx",
-        "client/src/components/StaffAttemptReview.tsx",
         "client/src/lib/conversation-navigation.ts",
         "client/src/lib/conversation-draft.ts",
         "client/src/components/VoiceRecorder.tsx",
@@ -19020,55 +19049,29 @@
         "client/src/lib/use-conversation-scroll.ts"
       ],
       "controls": [
-        "df388132404a",
-        "0a7aa6428cbb",
-        "aa5b8c0930e6",
-        "ac38474e5b7e",
-        "33f5da8c37a2",
-        "7073448fa735",
-        "7e83609316bd",
-        "ee8cf2d484f9",
-        "bfa031ec25a3",
-        "b3f3a10c8e5a",
-        "727ab3d1869d",
-        "971bb2be6c07",
-        "906d57b99b47",
-        "56c22fa057e8",
-        "83d3901d1d10",
-        "04c37c82de60",
-        "fc8adeba950a",
-        "10471fef573b",
-        "1477c0d28cd2",
-        "57f62e4126a4",
-        "3fbcdd73a5e5",
-        "a22634df53c5",
-        "afccc9bd6246",
-        "e74954bbdbe0",
-        "519d369d6809",
-        "4c1317ac59b1",
-        "f22bd7670df8",
-        "a0a1ab0e1469",
-        "a11a9e86a3b8",
-        "2a5ee07a5a01",
-        "42dfa6a90ba8",
-        "5be50d3aadfe",
-        "d2d5c101737e",
-        "aec3f76aade9",
-        "7c19f144b1df",
-        "442de96c6f21",
-        "ec8e32f4091f",
-        "afdedafb833b",
-        "e82444411b7f",
-        "9d5cfc967480",
-        "9286ef27d310",
-        "d0e9a53acf73",
-        "0ed3cc1b295e",
-        "5ca2da2a0595",
-        "cae8c0be5f14",
-        "0145540bba6f",
-        "158c0a1f40ba",
-        "351dbcc8a69e",
-        "cfc79f6d4d2e",
+        "0472470c19bf",
+        "92b95806210c",
+        "215c1694fae8",
+        "584748316017",
+        "59c31725e5f3",
+        "12ed8c181c6d",
+        "bec07d1765b9",
+        "7ce6e41214a3",
+        "d46f7c6e2ced",
+        "38af7b4993fc",
+        "98ea2646c112",
+        "94a54ecd0fb6",
+        "93a56b6750b0",
+        "b7f42baa297e",
+        "5067c3722506",
+        "5bb89e4c3cee",
+        "783a636179e6",
+        "2fc56e2a4136",
+        "01ec69baf5b4",
+        "15048aed2999",
+        "6d8a1ea80a8f",
+        "4e1da921d6b8",
+        "d42af144da2e",
         "73602ee182ee",
         "ff341665521c",
         "3adfa5919592",
@@ -19083,24 +19086,57 @@
         "54abfac8cc2b",
         "28d5bcdf114e",
         "a02628ac5515",
-        "3ccadd366428",
-        "7ead4443ecfe",
-        "cd83c9713a56",
+        "c7d7ea191f10",
+        "f014264938f6",
+        "98a7a0d49240",
         "5e4260be7387",
         "b9a1203cb239",
         "7ba94105f4c1",
         "8fa56e1e7962",
         "701136f0e5e0",
-        "419679c0fdb0",
-        "b8da9b160a82",
-        "8e869b287bf0",
-        "62d44a612af2",
+        "120f735841fa",
+        "c12e2a09f1cc",
+        "18d14ebe39e0",
+        "1cf6225de280",
         "2e5f46d09113",
         "460f7c9f41f0",
         "a187edde6062",
         "72b1db00be66",
         "292edebd5e08",
         "9a204a139478",
+        "3fbcdd73a5e5",
+        "a22634df53c5",
+        "afccc9bd6246",
+        "e74954bbdbe0",
+        "519d369d6809",
+        "4c1317ac59b1",
+        "f22bd7670df8",
+        "a0a1ab0e1469",
+        "a11a9e86a3b8",
+        "2a5ee07a5a01",
+        "42dfa6a90ba8",
+        "5be50d3aadfe",
+        "d2d5c101737e",
+        "aec3f76aade9",
+        "1019277dbc11",
+        "722cfefc1074",
+        "f4e51f85e2a6",
+        "85ee0b0e3afe",
+        "92661d85d63c",
+        "0298f1a0c338",
+        "65d2fb7f58ec",
+        "cdf4b59a4872",
+        "a9701de24722",
+        "e92b8059e31c",
+        "f0bf7d439165",
+        "251e430064dc",
+        "7659e06fc548",
+        "924188bfb584",
+        "f6526b72fccc",
+        "c4a8616ed386",
+        "fee9e9314abe",
+        "71d6c8932321",
+        "e45ae5888a2b",
         "b8a20dae0238",
         "43f178d75807",
         "efac10ccd695",
@@ -19130,26 +19166,26 @@
         "merchants.getCurrent",
         "conversations.list",
         "conversations.messageHistory",
-        "conversations.connectionStatus",
-        "conversations.staffTeamSnapshot",
-        "conversations.staffTeamContext",
         "conversations.handoffSnapshot",
         "conversations.handoffSourceSnapshot",
         "conversations.escalationReviewSnapshot",
         "conversations.salesOfferReviewSnapshot",
         "conversations.staffAttemptSnapshot",
+        "conversations.connectionStatus",
+        "conversations.staffTeamSnapshot",
+        "conversations.staffTeamContext",
         "aiSuggestions.getQuickSuggestions"
       ],
       "mutations": [
         "conversations.sendReply",
         "conversations.sendVoiceReply",
-        "conversations.diagnoseWebhook",
-        "conversations.syncFromWhatsApp",
-        "conversations.checkTeamStaffAttempt",
         "conversations.setOwnership",
         "conversations.reviewEscalationRelay",
         "conversations.reviewSalesOffer",
         "conversations.checkStaffAttempt",
+        "conversations.diagnoseWebhook",
+        "conversations.syncFromWhatsApp",
+        "conversations.checkTeamStaffAttempt",
         "aiSuggestions.generateSuggestions"
       ],
       "imperativeReads": [],
@@ -36591,9 +36627,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "df388132404a",
+      "id": "0472470c19bf",
       "file": "client/src/pages/merchant/Conversations.tsx",
-      "line": 282,
+      "line": 278,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -36614,9 +36650,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "0a7aa6428cbb",
+      "id": "92b95806210c",
       "file": "client/src/pages/merchant/Conversations.tsx",
-      "line": 318,
+      "line": 314,
       "tag": "Input",
       "role": "",
       "kind": "field",
@@ -36635,9 +36671,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "aa5b8c0930e6",
+      "id": "215c1694fae8",
       "file": "client/src/pages/merchant/Conversations.tsx",
-      "line": 345,
+      "line": 341,
       "tag": "div",
       "role": "button",
       "kind": "action",
@@ -36660,9 +36696,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ac38474e5b7e",
+      "id": "584748316017",
       "file": "client/src/pages/merchant/Conversations.tsx",
-      "line": 425,
+      "line": 421,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -36683,9 +36719,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "33f5da8c37a2",
+      "id": "59c31725e5f3",
       "file": "client/src/pages/merchant/Conversations.tsx",
-      "line": 426,
+      "line": 422,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -36704,9 +36740,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "7073448fa735",
+      "id": "12ed8c181c6d",
       "file": "client/src/pages/merchant/Conversations.tsx",
-      "line": 441,
+      "line": 437,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -36725,9 +36761,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "7e83609316bd",
+      "id": "bec07d1765b9",
       "file": "client/src/pages/merchant/Conversations.tsx",
-      "line": 467,
+      "line": 463,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -36748,37 +36784,14 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ee8cf2d484f9",
+      "id": "7ce6e41214a3",
       "file": "client/src/pages/merchant/Conversations.tsx",
-      "line": 529,
-      "tag": "summary",
-      "role": "",
-      "kind": "action",
-      "label": "إدارة المحادثة ومراجعة العروض",
-      "section": "إدارة المحادثة ومراجعة العروض",
-      "binding": "",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [
-        "selectedConversation"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "bfa031ec25a3",
-      "file": "client/src/pages/merchant/Conversations.tsx",
-      "line": 560,
+      "line": 526,
       "tag": "Button",
       "role": "",
       "kind": "action",
       "label": "رسائل أقدم",
-      "section": "إدارة المحادثة ومراجعة العروض",
+      "section": "عميل",
       "binding": "() => { const next=historySnapshot?.nextBeforeId;if(next)setHistoryTrail(current => current.at(-1)===next?current:[...current,next]); }",
       "type": "button",
       "options": [],
@@ -36794,14 +36807,14 @@
       "review": "source-inventoried"
     },
     {
-      "id": "b3f3a10c8e5a",
+      "id": "d46f7c6e2ced",
       "file": "client/src/pages/merchant/Conversations.tsx",
-      "line": 565,
+      "line": 531,
       "tag": "Button",
       "role": "",
       "kind": "action",
       "label": "رسائل أحدث",
-      "section": "إدارة المحادثة ومراجعة العروض",
+      "section": "عميل",
       "binding": "() => setHistoryTrail(current => current.slice(0,-1))",
       "type": "button",
       "options": [],
@@ -36818,14 +36831,14 @@
       "review": "source-inventoried"
     },
     {
-      "id": "727ab3d1869d",
+      "id": "38af7b4993fc",
       "file": "client/src/pages/merchant/Conversations.tsx",
-      "line": 566,
+      "line": 532,
       "tag": "Button",
       "role": "",
       "kind": "action",
       "label": "العودة إلى آخر الرسائل",
-      "section": "إدارة المحادثة ومراجعة العروض",
+      "section": "عميل",
       "binding": "() => setHistoryTrail([])",
       "type": "button",
       "options": [],
@@ -36842,14 +36855,14 @@
       "review": "source-inventoried"
     },
     {
-      "id": "971bb2be6c07",
+      "id": "98ea2646c112",
       "file": "client/src/pages/merchant/Conversations.tsx",
-      "line": 568,
+      "line": 534,
       "tag": "Button",
       "role": "",
       "kind": "action",
       "label": "وصلت رسائل جديدة — عرض الأحدث",
-      "section": "إدارة المحادثة ومراجعة العروض",
+      "section": "عميل",
       "binding": "messageScroll.jump",
       "type": "button",
       "options": [],
@@ -36866,9 +36879,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "906d57b99b47",
+      "id": "94a54ecd0fb6",
       "file": "client/src/pages/merchant/Conversations.tsx",
-      "line": 603,
+      "line": 569,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -36889,9 +36902,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "56c22fa057e8",
+      "id": "93a56b6750b0",
       "file": "client/src/pages/merchant/Conversations.tsx",
-      "line": 652,
+      "line": 618,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -36913,9 +36926,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "83d3901d1d10",
+      "id": "b7f42baa297e",
       "file": "client/src/pages/merchant/Conversations.tsx",
-      "line": 656,
+      "line": 622,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -36937,9 +36950,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "04c37c82de60",
+      "id": "5067c3722506",
       "file": "client/src/pages/merchant/Conversations.tsx",
-      "line": 661,
+      "line": 627,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -36961,9 +36974,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "fc8adeba950a",
+      "id": "5bb89e4c3cee",
       "file": "client/src/pages/merchant/Conversations.tsx",
-      "line": 668,
+      "line": 634,
       "tag": "Textarea",
       "role": "",
       "kind": "field",
@@ -36984,9 +36997,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "10471fef573b",
+      "id": "783a636179e6",
       "file": "client/src/pages/merchant/Conversations.tsx",
-      "line": 692,
+      "line": 658,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -37007,9 +37020,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "1477c0d28cd2",
+      "id": "2fc56e2a4136",
       "file": "client/src/pages/merchant/Conversations.tsx",
-      "line": 712,
+      "line": 678,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -37030,9 +37043,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "57f62e4126a4",
+      "id": "01ec69baf5b4",
       "file": "client/src/pages/merchant/Conversations.tsx",
-      "line": 754,
+      "line": 720,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -37054,15 +37067,15 @@
       "review": "source-inventoried"
     },
     {
-      "id": "3fbcdd73a5e5",
-      "file": "client/src/components/ConversationMessage.tsx",
-      "line": 13,
+      "id": "15048aed2999",
+      "file": "client/src/components/ConversationTools.tsx",
+      "line": 19,
       "tag": "Button",
       "role": "",
       "kind": "action",
       "label": "",
-      "section": "ConversationMessage",
-      "binding": "() => { setFailed(false); setAttempt(v => v + 1); }",
+      "section": "ConversationTools",
+      "binding": "",
       "type": "button",
       "options": [],
       "min": "",
@@ -37070,85 +37083,41 @@
       "maxLength": "",
       "required": false,
       "conditional": false,
-      "conditions": [
-        "failed"
-      ],
+      "conditions": [],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "a22634df53c5",
-      "file": "client/src/components/ConversationMessage.tsx",
+      "id": "6d8a1ea80a8f",
+      "file": "client/src/components/ConversationTools.tsx",
       "line": 20,
-      "tag": "Button",
+      "tag": "DialogContent",
       "role": "",
-      "kind": "action",
+      "kind": "dialog",
       "label": "",
-      "section": "ConversationMessage",
-      "binding": "() => { setFailed(false); setAttempt(v => v + 1); }",
-      "type": "button",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "afccc9bd6246",
-      "file": "client/src/components/ConversationMessage.tsx",
-      "line": 21,
-      "tag": "a",
-      "role": "",
-      "kind": "action",
-      "label": "",
-      "section": "ConversationMessage",
-      "binding": "url",
+      "section": "ConversationTools",
+      "binding": "",
       "type": "text",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": false,
+      "conditional": true,
       "conditions": [],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "e74954bbdbe0",
-      "file": "client/src/components/ConversationMessage.tsx",
+      "id": "4e1da921d6b8",
+      "file": "client/src/components/ConversationTools.tsx",
       "line": 23,
-      "tag": "button",
+      "tag": "TabsTrigger",
       "role": "",
       "kind": "action",
       "label": "",
-      "section": "ConversationMessage",
-      "binding": "",
-      "type": "button",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "519d369d6809",
-      "file": "client/src/components/ConversationMessage.tsx",
-      "line": 25,
-      "tag": "DialogContent",
-      "role": "",
-      "kind": "dialog",
-      "label": "",
-      "section": "ConversationMessage",
-      "binding": "",
+      "section": "ConversationTools",
+      "binding": "key",
       "type": "text",
       "options": [],
       "min": "",
@@ -37161,14 +37130,14 @@
       "review": "source-inventoried"
     },
     {
-      "id": "4c1317ac59b1",
-      "file": "client/src/components/ConversationMessage.tsx",
-      "line": 25,
+      "id": "d42af144da2e",
+      "file": "client/src/components/ConversationTools.tsx",
+      "line": 29,
       "tag": "Button",
       "role": "",
       "kind": "action",
       "label": "",
-      "section": "ConversationMessage",
+      "section": "ConversationTools",
       "binding": "",
       "type": "button",
       "options": [],
@@ -37177,527 +37146,6 @@
       "maxLength": "",
       "required": false,
       "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "f22bd7670df8",
-      "file": "client/src/components/ConversationConnection.tsx",
-      "line": 63,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "",
-      "section": "ConversationConnection",
-      "binding": "",
-      "type": "button",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "a0a1ab0e1469",
-      "file": "client/src/components/ConversationConnection.tsx",
-      "line": 64,
-      "tag": "DialogContent",
-      "role": "",
-      "kind": "dialog",
-      "label": "repair import green_api repair إغلاق",
-      "section": "ConversationConnection",
-      "binding": "",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "a11a9e86a3b8",
-      "file": "client/src/components/ConversationConnection.tsx",
-      "line": 68,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "",
-      "section": "ConversationConnection",
-      "binding": "()=>void refresh()",
-      "type": "button",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "Boolean(working||query.isFetching)",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "2a5ee07a5a01",
-      "file": "client/src/components/ConversationConnection.tsx",
-      "line": 71,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "",
-      "section": "ConversationConnection",
-      "binding": "",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [
-        "data?.canManage"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "42dfa6a90ba8",
-      "file": "client/src/components/ConversationConnection.tsx",
-      "line": 71,
-      "tag": "Link",
-      "role": "",
-      "kind": "action",
-      "label": "",
-      "section": "ConversationConnection",
-      "binding": "/merchant/whatsapp-instances",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [
-        "data?.canManage"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "5be50d3aadfe",
-      "file": "client/src/components/ConversationConnection.tsx",
-      "line": 72,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "repair",
-      "section": "ConversationConnection",
-      "binding": "()=>void run('repair')",
-      "type": "button",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [
-        "data?.canManage"
-      ],
-      "disabled": "disabled",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "d2d5c101737e",
-      "file": "client/src/components/ConversationConnection.tsx",
-      "line": 73,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "import",
-      "section": "ConversationConnection",
-      "binding": "()=>void run('import')",
-      "type": "button",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [
-        "data?.canManage"
-      ],
-      "disabled": "disabled",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "aec3f76aade9",
-      "file": "client/src/components/ConversationConnection.tsx",
-      "line": 80,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "إغلاق",
-      "section": "ConversationConnection",
-      "binding": "",
-      "type": "button",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "7c19f144b1df",
-      "file": "client/src/components/StaffTeamReview.tsx",
-      "line": 48,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "إعادة محاولة قراءة المرجع",
-      "section": "StaffTeamReview",
-      "binding": "restore",
-      "type": "button",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [
-        "(storageFailed||stored.state==='invalid'||stored.state==='unavailable')",
-        "a.state!=='accepted'"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "442de96c6f21",
-      "file": "client/src/components/StaffTeamReview.tsx",
-      "line": 49,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "راجعت سجل المراجعات؛ بدء تحقق جديد",
-      "section": "StaffTeamReview",
-      "binding": "()=>{try{discardStaffTeamAttempt(scope);restore();setBlocked(false);}catch{setNotice(t('conversationReview.storageFailed'));}}",
-      "type": "button",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [
-        "stored.state==='invalid'",
-        "(storageFailed||stored.state==='invalid'||stored.state==='unavailable')",
-        "a.state!=='accepted'"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "ec8e32f4091f",
-      "file": "client/src/components/StaffTeamReview.tsx",
-      "line": 52,
-      "tag": "select",
-      "role": "",
-      "kind": "field",
-      "label": "",
-      "section": "StaffTeamReview",
-      "binding": "reason",
-      "type": "text",
-      "options": [
-        {
-          "value": "",
-          "label": ""
-        },
-        {
-          "value": "delivery_check",
-          "label": ""
-        },
-        {
-          "value": "departed_employee",
-          "label": ""
-        },
-        {
-          "value": "incident_review",
-          "label": ""
-        }
-      ],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [
-        "a.state!=='accepted'"
-      ],
-      "disabled": "mutation.isPending||!!request.current||stored.state==='invalid'||stored.state==='unavailable'",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "afdedafb833b",
-      "file": "client/src/components/StaffTeamReview.tsx",
-      "line": 57,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "",
-      "section": "StaffTeamReview",
-      "binding": "()=>void check()",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [
-        "a.state!=='accepted'"
-      ],
-      "disabled": "!reason||blocked||refreshing||mutation.isPending||stored.state==='invalid'||stored.state==='unavailable'",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "e82444411b7f",
-      "file": "client/src/components/StaffTeamReview.tsx",
-      "line": 81,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "",
-      "section": "StaffTeamReview",
-      "binding": "()=>{setHistory(false);setBeforeId(undefined);}",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "9d5cfc967480",
-      "file": "client/src/components/StaffTeamReview.tsx",
-      "line": 82,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "",
-      "section": "StaffTeamReview",
-      "binding": "()=>{setHistory(true);setBeforeId(undefined);}",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "9286ef27d310",
-      "file": "client/src/components/StaffTeamReview.tsx",
-      "line": 83,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "",
-      "section": "StaffTeamReview",
-      "binding": "()=>{setKind('text');setBeforeId(undefined);}",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "d0e9a53acf73",
-      "file": "client/src/components/StaffTeamReview.tsx",
-      "line": 84,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "",
-      "section": "StaffTeamReview",
-      "binding": "()=>{setKind('voice');setBeforeId(undefined);}",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "0ed3cc1b295e",
-      "file": "client/src/components/StaffTeamReview.tsx",
-      "line": 91,
-      "tag": "input",
-      "role": "",
-      "kind": "field",
-      "label": "",
-      "section": "StaffTeamReview",
-      "binding": "conversation",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "5ca2da2a0595",
-      "file": "client/src/components/StaffTeamReview.tsx",
-      "line": 92,
-      "tag": "input",
-      "role": "",
-      "kind": "field",
-      "label": "",
-      "section": "StaffTeamReview",
-      "binding": "author",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "cae8c0be5f14",
-      "file": "client/src/components/StaffTeamReview.tsx",
-      "line": 93,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "",
-      "section": "StaffTeamReview",
-      "binding": "",
-      "type": "submit",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "0145540bba6f",
-      "file": "client/src/components/StaffTeamReview.tsx",
-      "line": 106,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "",
-      "section": "StaffTeamReview",
-      "binding": "refresh",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "query.isFetching",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "158c0a1f40ba",
-      "file": "client/src/components/StaffTeamReview.tsx",
-      "line": 107,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "",
-      "section": "StaffTeamReview",
-      "binding": "()=>setBeforeId(cursor)",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [
-        "!query.isError&&cursor"
-      ],
-      "disabled": "query.isFetching",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "351dbcc8a69e",
-      "file": "client/src/components/StaffTeamReview.tsx",
-      "line": 119,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "",
-      "section": "StaffTeamReview",
-      "binding": "()=>void access.refetch()",
-      "type": "button",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "cfc79f6d4d2e",
-      "file": "client/src/components/StaffTeamReview.tsx",
-      "line": 122,
-      "tag": "summary",
-      "role": "",
-      "kind": "action",
-      "label": "",
-      "section": "StaffTeamReview",
-      "binding": "",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
       "conditions": [],
       "disabled": "",
       "review": "source-inventoried"
@@ -38028,9 +37476,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "3ccadd366428",
+      "id": "c7d7ea191f10",
       "file": "client/src/components/EscalationReconciliation.tsx",
-      "line": 89,
+      "line": 90,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -38052,9 +37500,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "7ead4443ecfe",
+      "id": "f014264938f6",
       "file": "client/src/components/EscalationReconciliation.tsx",
-      "line": 96,
+      "line": 97,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -38076,9 +37524,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "cd83c9713a56",
+      "id": "98a7a0d49240",
       "file": "client/src/components/EscalationReconciliation.tsx",
-      "line": 97,
+      "line": 98,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -38215,9 +37663,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "419679c0fdb0",
+      "id": "120f735841fa",
       "file": "client/src/components/SalesOfferReview.tsx",
-      "line": 239,
+      "line": 240,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -38236,9 +37684,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "b8da9b160a82",
+      "id": "c12e2a09f1cc",
       "file": "client/src/components/SalesOfferReview.tsx",
-      "line": 263,
+      "line": 264,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -38260,9 +37708,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "8e869b287bf0",
+      "id": "18d14ebe39e0",
       "file": "client/src/components/SalesOfferReview.tsx",
-      "line": 271,
+      "line": 272,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -38284,9 +37732,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "62d44a612af2",
+      "id": "1cf6225de280",
       "file": "client/src/components/SalesOfferReview.tsx",
-      "line": 272,
+      "line": 273,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -38443,6 +37891,742 @@
         "open"
       ],
       "disabled": "query.isFetching",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "3fbcdd73a5e5",
+      "file": "client/src/components/ConversationMessage.tsx",
+      "line": 13,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ConversationMessage",
+      "binding": "() => { setFailed(false); setAttempt(v => v + 1); }",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "failed"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "a22634df53c5",
+      "file": "client/src/components/ConversationMessage.tsx",
+      "line": 20,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ConversationMessage",
+      "binding": "() => { setFailed(false); setAttempt(v => v + 1); }",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "afccc9bd6246",
+      "file": "client/src/components/ConversationMessage.tsx",
+      "line": 21,
+      "tag": "a",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ConversationMessage",
+      "binding": "url",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "e74954bbdbe0",
+      "file": "client/src/components/ConversationMessage.tsx",
+      "line": 23,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ConversationMessage",
+      "binding": "",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "519d369d6809",
+      "file": "client/src/components/ConversationMessage.tsx",
+      "line": 25,
+      "tag": "DialogContent",
+      "role": "",
+      "kind": "dialog",
+      "label": "",
+      "section": "ConversationMessage",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "4c1317ac59b1",
+      "file": "client/src/components/ConversationMessage.tsx",
+      "line": 25,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ConversationMessage",
+      "binding": "",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "f22bd7670df8",
+      "file": "client/src/components/ConversationConnection.tsx",
+      "line": 63,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ConversationConnection",
+      "binding": "",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "a0a1ab0e1469",
+      "file": "client/src/components/ConversationConnection.tsx",
+      "line": 64,
+      "tag": "DialogContent",
+      "role": "",
+      "kind": "dialog",
+      "label": "repair import green_api repair إغلاق",
+      "section": "ConversationConnection",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "a11a9e86a3b8",
+      "file": "client/src/components/ConversationConnection.tsx",
+      "line": 68,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ConversationConnection",
+      "binding": "()=>void refresh()",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "Boolean(working||query.isFetching)",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "2a5ee07a5a01",
+      "file": "client/src/components/ConversationConnection.tsx",
+      "line": 71,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ConversationConnection",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "data?.canManage"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "42dfa6a90ba8",
+      "file": "client/src/components/ConversationConnection.tsx",
+      "line": 71,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ConversationConnection",
+      "binding": "/merchant/whatsapp-instances",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "data?.canManage"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "5be50d3aadfe",
+      "file": "client/src/components/ConversationConnection.tsx",
+      "line": 72,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "repair",
+      "section": "ConversationConnection",
+      "binding": "()=>void run('repair')",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "data?.canManage"
+      ],
+      "disabled": "disabled",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "d2d5c101737e",
+      "file": "client/src/components/ConversationConnection.tsx",
+      "line": 73,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "import",
+      "section": "ConversationConnection",
+      "binding": "()=>void run('import')",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "data?.canManage"
+      ],
+      "disabled": "disabled",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "aec3f76aade9",
+      "file": "client/src/components/ConversationConnection.tsx",
+      "line": 80,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "إغلاق",
+      "section": "ConversationConnection",
+      "binding": "",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "1019277dbc11",
+      "file": "client/src/components/StaffTeamReview.tsx",
+      "line": 49,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "إعادة محاولة قراءة المرجع",
+      "section": "StaffTeamReview",
+      "binding": "restore",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "(storageFailed||stored.state==='invalid'||stored.state==='unavailable')",
+        "a.state!=='accepted'"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "722cfefc1074",
+      "file": "client/src/components/StaffTeamReview.tsx",
+      "line": 50,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "راجعت سجل المراجعات؛ بدء تحقق جديد",
+      "section": "StaffTeamReview",
+      "binding": "()=>{try{discardStaffTeamAttempt(scope);restore();setBlocked(false);}catch{setNotice(t('conversationReview.storageFailed'));}}",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "stored.state==='invalid'",
+        "(storageFailed||stored.state==='invalid'||stored.state==='unavailable')",
+        "a.state!=='accepted'"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "f4e51f85e2a6",
+      "file": "client/src/components/StaffTeamReview.tsx",
+      "line": 53,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "StaffTeamReview",
+      "binding": "reason",
+      "type": "text",
+      "options": [
+        {
+          "value": "",
+          "label": ""
+        },
+        {
+          "value": "delivery_check",
+          "label": ""
+        },
+        {
+          "value": "departed_employee",
+          "label": ""
+        },
+        {
+          "value": "incident_review",
+          "label": ""
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "a.state!=='accepted'"
+      ],
+      "disabled": "mutation.isPending||!!request.current||stored.state==='invalid'||stored.state==='unavailable'",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "85ee0b0e3afe",
+      "file": "client/src/components/StaffTeamReview.tsx",
+      "line": 58,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "StaffTeamReview",
+      "binding": "()=>void check()",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "a.state!=='accepted'"
+      ],
+      "disabled": "!reason||blocked||refreshing||mutation.isPending||stored.state==='invalid'||stored.state==='unavailable'",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "92661d85d63c",
+      "file": "client/src/components/StaffTeamReview.tsx",
+      "line": 82,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "StaffTeamReview",
+      "binding": "()=>{setHistory(false);setBeforeId(undefined);}",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "0298f1a0c338",
+      "file": "client/src/components/StaffTeamReview.tsx",
+      "line": 83,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "StaffTeamReview",
+      "binding": "()=>{setHistory(true);setBeforeId(undefined);}",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "65d2fb7f58ec",
+      "file": "client/src/components/StaffTeamReview.tsx",
+      "line": 84,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "StaffTeamReview",
+      "binding": "()=>{setKind('text');setBeforeId(undefined);}",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "cdf4b59a4872",
+      "file": "client/src/components/StaffTeamReview.tsx",
+      "line": 85,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "StaffTeamReview",
+      "binding": "()=>{setKind('voice');setBeforeId(undefined);}",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "a9701de24722",
+      "file": "client/src/components/StaffTeamReview.tsx",
+      "line": 92,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "StaffTeamReview",
+      "binding": "conversation",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "e92b8059e31c",
+      "file": "client/src/components/StaffTeamReview.tsx",
+      "line": 93,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "StaffTeamReview",
+      "binding": "author",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "f0bf7d439165",
+      "file": "client/src/components/StaffTeamReview.tsx",
+      "line": 94,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "StaffTeamReview",
+      "binding": "",
+      "type": "submit",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "251e430064dc",
+      "file": "client/src/components/StaffTeamReview.tsx",
+      "line": 107,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "StaffTeamReview",
+      "binding": "refresh",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "query.isFetching",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "7659e06fc548",
+      "file": "client/src/components/StaffTeamReview.tsx",
+      "line": 108,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "StaffTeamReview",
+      "binding": "()=>setBeforeId(cursor)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!query.isError&&cursor"
+      ],
+      "disabled": "query.isFetching",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "924188bfb584",
+      "file": "client/src/components/StaffTeamReview.tsx",
+      "line": 121,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "StaffTeamReview",
+      "binding": "",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "access.isLoading||access.isFetching",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "f6526b72fccc",
+      "file": "client/src/components/StaffTeamReview.tsx",
+      "line": 121,
+      "tag": "DialogContent",
+      "role": "",
+      "kind": "dialog",
+      "label": "",
+      "section": "StaffTeamReview",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "c4a8616ed386",
+      "file": "client/src/components/StaffTeamReview.tsx",
+      "line": 122,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "StaffTeamReview",
+      "binding": "()=>void access.refetch()",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "access.isError||!matches",
+        "access.isLoading||access.isFetching"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "fee9e9314abe",
+      "file": "client/src/components/StaffTeamReview.tsx",
+      "line": 123,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "StaffTeamReview",
+      "binding": "",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "71d6c8932321",
+      "file": "client/src/components/StaffTeamReview.tsx",
+      "line": 127,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "StaffTeamReview",
+      "binding": "()=>void access.refetch()",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "e45ae5888a2b",
+      "file": "client/src/components/StaffTeamReview.tsx",
+      "line": 130,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "StaffTeamReview",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
       "review": "source-inventoried"
     },
     {
