@@ -115,8 +115,8 @@ beforeEach(()=>{
   vi.resetAllMocks();vi.stubGlobal('React',React);vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT',true);vi.stubGlobal('ResizeObserver',class{observe(){}unobserve(){}disconnect(){}});
   const items=[4,5].map(id=>({id,merchantId:20,customerName:`Customer ${id}`,customerPhone:`local-${id}`,status:'active',lastMessageAt:'2026-10-01 10:00:00'}));
   m.queries={user:query({id:7}),merchant:query({id:20,timezone:'Asia/Riyadh'}),list:query({merchantId:20,items,total:2,page:1,totalPages:1,pageSize:50}),history:query({merchantId:20,conversationId:4,items:[{id:8,conversationId:4,content:'Private example',direction:'incoming',messageType:'text',createdAt:'2026-10-01 10:00:00'}],hasMore:false,nextBeforeId:null}),connection:query(undefined)};
-  m.attempt.mockResolvedValue({requestId:'00000000-0000-4000-8000-000000000001',complete:m.complete});m.send.mockResolvedValue({success:true,persisted:true});
-  m.voiceAttempt.mockResolvedValue({input:{conversationId:4,requestId:'00000000-0000-4000-8000-000000000002'},complete:m.complete});m.voice.mockResolvedValue({success:true,persisted:true});
+  m.attempt.mockResolvedValue({requestId:'00000000-0000-4000-8000-000000000001',complete:m.complete,confirmOwner:vi.fn()});m.send.mockResolvedValue({success:true,persisted:true});
+  m.voiceAttempt.mockResolvedValue({input:{conversationId:4,requestId:'00000000-0000-4000-8000-000000000002'},complete:m.complete,confirmOwner:vi.fn()});m.voice.mockResolvedValue({success:true,persisted:true});
   container=document.createElement('div');document.body.append(container);root=createRoot(container);
 });
 afterEach(async()=>{await act(async()=>root.unmount());container.remove();vi.restoreAllMocks();clearConversationDrafts();vi.unstubAllGlobals();vi.useRealTimers();});
@@ -155,14 +155,14 @@ describe('verified inbox scope and draft lifetime',()=>{
   });
   it('blocks duplicate clicks and clears the saved draft only after acceptance',async()=>{
     await render();await choose();await fill('Send once');await act(async()=>{send().click();send().click();});
-    expect(m.send).toHaveBeenCalledTimes(1);expect(m.complete).toHaveBeenCalledTimes(1);expect(draft().value).toBe('');await choose(5);await choose();expect(draft().value).toBe('');expect(m.invalidate).toHaveBeenCalledWith({conversationId:4});
+    expect(m.attempt).toHaveBeenCalledWith(7,20,4,'Send once');expect(m.send).toHaveBeenCalledTimes(1);expect(m.complete).toHaveBeenCalledTimes(1);expect(draft().value).toBe('');await choose(5);await choose();expect(draft().value).toBe('');expect(m.invalidate).toHaveBeenCalledWith({conversationId:4});
   });
   it('keeps the draft when preparation fails before the request',async()=>{
     m.attempt.mockRejectedValue(Error('storage unavailable'));await render();await choose();await fill('Keep me');await click(send());expect(m.send).not.toHaveBeenCalled();expect(draft().value).toBe('Keep me');
   });
   it('does not send after the user changes while request identity is being prepared',async()=>{
     let release!:(v:any)=>void;m.attempt.mockReturnValue(new Promise(resolve=>release=resolve));await render();await choose();await fill('Old user');await click(send());
-    m.queries.user.data={id:8};await render();await choose();await fill('New user');await act(async()=>release({requestId:'old',complete:m.complete}));expect(m.send).not.toHaveBeenCalled();expect(draft().value).toBe('New user');
+    m.queries.user.data={id:8};await render();await choose();await fill('New user');await act(async()=>release({requestId:'old',complete:m.complete,confirmOwner:vi.fn()}));expect(m.send).not.toHaveBeenCalled();expect(draft().value).toBe('New user');
   });
   it('ignores late send results after scope change without clearing another draft or showing success',async()=>{
     let release!:(v:any)=>void;m.send.mockReturnValue(new Promise(resolve=>release=resolve));await render();await choose();await fill('Old request');await click(send());
@@ -170,7 +170,7 @@ describe('verified inbox scope and draft lifetime',()=>{
   });
   it('does not upload voice after the scope changes during preparation',async()=>{
     let release!:(v:any)=>void;m.voiceAttempt.mockReturnValue(new Promise(resolve=>release=resolve));await render();await choose();await click(container.querySelector('[data-test-voice]')!);
-    m.queries.user.data={id:8};await render();await act(async()=>release({input:{conversationId:4},complete:m.complete}));expect(m.voice).not.toHaveBeenCalled();
+    m.queries.user.data={id:8};await render();await act(async()=>release({input:{conversationId:4},complete:m.complete,confirmOwner:vi.fn()}));expect(m.voice).not.toHaveBeenCalled();
   });
   it('ignores late voice success and refreshes only the current scope',async()=>{
     let release!:(v:any)=>void;m.voice.mockReturnValue(new Promise(resolve=>release=resolve));await render();await choose();await click(container.querySelector('[data-test-voice]')!);

@@ -241,7 +241,7 @@ function ScopedConversations({ currentMerchant, actorId }: { currentMerchant: { 
   };
 
   const sendDashboardText=async(conversationId:number,message:string)=>{
-    const attempt=await staffDashboardAttempt(currentMerchant?.id??0,conversationId,message);
+    const attempt=await staffDashboardAttempt(actorId,currentMerchant.id,conversationId,message);
     if(!live.current || selectedReplyConversation.current!==conversationId)return false;
     // Persist a review marker before contacting the provider. A crash or a failed
     // post-send cleanup must not restore this text as an ordinary unsent draft.
@@ -251,6 +251,7 @@ function ScopedConversations({ currentMerchant, actorId }: { currentMerchant: { 
     }
     const result=await sendReplyMutation.mutateAsync({conversationId,message,requestId:attempt.requestId});
     if(!live.current)return false;
+    attempt.confirmOwner();
     if(result.success)attempt.complete();
     if(selectedReplyConversation.current!==conversationId)return result.success;
     if(!result.success){
@@ -1018,10 +1019,11 @@ function ScopedConversations({ currentMerchant, actorId }: { currentMerchant: { 
                       sendLock.current=true;
                       setIsSending(true);
                       try{
-                        const attempt=await staffVoiceAttempt(currentMerchant?.id??0,conversationId,audioBlob,duration);
+                        const attempt=await staffVoiceAttempt(actorId,currentMerchant.id,conversationId,audioBlob,duration);
                         if(!live.current||selectedReplyConversation.current!==conversationId)return false;
                         const result=await sendVoiceReplyMutation.mutateAsync(attempt.input);
                         if(!live.current)return false;
+                        attempt.confirmOwner();
                         if(result.success)attempt.complete();
                         if(selectedReplyConversation.current!==conversationId)return result.success;
                         if(!result.success){
