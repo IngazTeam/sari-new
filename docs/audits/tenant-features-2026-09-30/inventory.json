@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-01T05:15:20.952Z",
+  "generatedAt": "2026-10-01T05:51:00.366Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -16648,7 +16648,25 @@
     },
     {
       "file": "client/src/pages/merchant/Tools.tsx",
-      "hash": "ba55e0f6ddeb",
+      "hash": "0e009208c03d",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [
+        "client/src/components/merchant/MerchantToolsDirectory.tsx",
+        "client/src/lib/merchant-tools-search.ts"
+      ],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/components/merchant/MerchantToolsDirectory.tsx",
+      "hash": "6be89b15b723",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
@@ -16656,8 +16674,13 @@
       "sections": [
         {
           "label": "جميع الأدوات",
-          "line": 26,
+          "line": 41,
           "tag": "h1"
+        },
+        {
+          "label": "لا توجد أدوات مطابقة",
+          "line": 127,
+          "tag": "h2"
         }
       ],
       "choices": [],
@@ -16665,9 +16688,10 @@
       "queryStates": [],
       "conditions": [],
       "imports": [
-        "client/src/components/merchant/navigation.ts"
+        "client/src/components/merchant/navigation.ts",
+        "client/src/lib/merchant-tools-search.ts"
       ],
-      "controlCount": 3
+      "controlCount": 5
     },
     {
       "file": "client/src/components/merchant/navigation.ts",
@@ -16699,6 +16723,23 @@
       "queryStates": [],
       "conditions": [],
       "imports": [],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/lib/merchant-tools-search.ts",
+      "hash": "a6361eb8d478",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [
+        "client/src/components/merchant/navigation.ts"
+      ],
       "controlCount": 0
     },
     {
@@ -23578,13 +23619,17 @@
       ],
       "files": [
         "client/src/pages/merchant/Tools.tsx",
+        "client/src/components/merchant/MerchantToolsDirectory.tsx",
         "client/src/components/merchant/navigation.ts",
-        "client/src/components/merchant/tools.ts"
+        "client/src/components/merchant/tools.ts",
+        "client/src/lib/merchant-tools-search.ts"
       ],
       "controls": [
-        "0828d69b749a",
-        "33b7b14bf010",
-        "5ea7c606f478"
+        "a5ce9f231540",
+        "ef55ec97cb5a",
+        "58cefe0e5c97",
+        "f8560ca0fe6c",
+        "552c1ad5c8e0"
       ],
       "queries": [],
       "mutations": [],
@@ -71760,20 +71805,20 @@
       "review": "source-inventoried"
     },
     {
-      "id": "0828d69b749a",
-      "file": "client/src/pages/merchant/Tools.tsx",
-      "line": 36,
+      "id": "a5ce9f231540",
+      "file": "client/src/components/merchant/MerchantToolsDirectory.tsx",
+      "line": 51,
       "tag": "input",
       "role": "",
       "kind": "field",
       "label": "البحث في الأدوات",
       "section": "جميع الأدوات",
-      "binding": "query",
-      "type": "text",
+      "binding": "filters.query",
+      "type": "search",
       "options": [],
       "min": "",
       "max": "",
-      "maxLength": "",
+      "maxLength": "100",
       "required": false,
       "conditional": false,
       "conditions": [],
@@ -71781,15 +71826,15 @@
       "review": "source-inventoried"
     },
     {
-      "id": "33b7b14bf010",
-      "file": "client/src/pages/merchant/Tools.tsx",
-      "line": 46,
+      "id": "ef55ec97cb5a",
+      "file": "client/src/components/merchant/MerchantToolsDirectory.tsx",
+      "line": 65,
       "tag": "select",
       "role": "",
       "kind": "field",
       "label": "القسم",
       "section": "جميع الأدوات",
-      "binding": "section",
+      "binding": "filters.section",
       "type": "text",
       "options": [
         {
@@ -71797,7 +71842,7 @@
           "label": "كل الأقسام"
         },
         {
-          "value": "s.id",
+          "value": "section.id",
           "label": ""
         }
       ],
@@ -71811,9 +71856,32 @@
       "review": "source-inventoried"
     },
     {
-      "id": "5ea7c606f478",
-      "file": "client/src/pages/merchant/Tools.tsx",
-      "line": 66,
+      "id": "58cefe0e5c97",
+      "file": "client/src/components/merchant/MerchantToolsDirectory.tsx",
+      "line": 82,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "مسح البحث والفلاتر",
+      "section": "جميع الأدوات",
+      "binding": "reset",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "filtered"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "f8560ca0fe6c",
+      "file": "client/src/components/merchant/MerchantToolsDirectory.tsx",
+      "line": 113,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -71828,6 +71896,29 @@
       "required": false,
       "conditional": false,
       "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "552c1ad5c8e0",
+      "file": "client/src/components/merchant/MerchantToolsDirectory.tsx",
+      "line": 129,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "مسح البحث والفلاتر",
+      "section": "لا توجد أدوات مطابقة",
+      "binding": "reset",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "!tools.length"
+      ],
       "disabled": "",
       "review": "source-inventoried"
     },

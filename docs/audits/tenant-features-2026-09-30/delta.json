@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-01T05:15:20.952Z",
+  "generatedAt": "2026-10-01T05:51:00.366Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 335,
-      "controls": 2186
+      "files": 337,
+      "controls": 2188
     }
   },
   "addedFiles": [
@@ -160,8 +160,10 @@
     "client/src/lib/report-export.ts",
     "client/src/lib/merchant-report-document.ts",
     "client/src/components/merchant/MerchantReportView.tsx",
+    "client/src/components/merchant/MerchantToolsDirectory.tsx",
     "client/src/components/merchant/navigation.ts",
     "client/src/components/merchant/tools.ts",
+    "client/src/lib/merchant-tools-search.ts",
     "client/src/components/merchant/CustomerListWorkspace.tsx",
     "client/src/components/merchant/CustomerWorkspaceView.tsx",
     "client/src/components/WebsiteImportWorkspace.tsx",
@@ -224,6 +226,7 @@
     "client/src/pages/Reports.tsx",
     "client/src/pages/merchant/MySubscription.tsx",
     "client/src/pages/merchant/SubscriptionPlans.tsx",
+    "client/src/pages/merchant/Tools.tsx",
     "client/src/pages/Customers.tsx",
     "client/src/pages/SmartAnalysis.tsx",
     "client/src/pages/CustomerDetails.tsx",
@@ -1686,7 +1689,7 @@
     {
       "route": "/merchant/tools",
       "controlsBefore": 3,
-      "controlsNow": 3,
+      "controlsNow": 5,
       "removedQueries": [],
       "addedQueries": [],
       "removedMutations": [],

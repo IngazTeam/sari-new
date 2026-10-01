@@ -617,6 +617,23 @@ html:has(.merchant-workspace) {
 .mw-tool-card:hover {
   border-color: var(--ring);
 }
+.mw-tool-card:focus-visible, .mw-tools-reset:focus-visible, .mw-tools-section select:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+}
+.mw-tools-directory { min-width: 0; }
+.mw-tools-directory .mw-tools-toolbar { align-items: flex-end; }
+.mw-tools-section { display: grid; gap: 6px; max-width: 100%; min-width: 0; }
+.mw-tools-section select { min-height: 44px; max-width: 100%; font-size: 16px; }
+.mw-tools-directory .mw-search-field { flex: 1 1 260px; min-height: 44px; }
+.mw-tools-directory .mw-search-field input { min-width: 0; font-size: 16px; }
+.mw-tools-reset { min-height: 44px; padding: 8px 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--card); color: var(--foreground); cursor: pointer; }
+.mw-tools-empty { display: grid; justify-items: center; gap: 12px; border: 1px dashed var(--border); border-radius: 16px; padding: 32px 16px; text-align: center; }
+.mw-tools-directory .mw-tool-card { min-height: 88px; align-items: center; }
+.mw-tools-directory .mw-tool-card > span { min-width: 0; overflow-wrap: anywhere; }
+.mw-tools-directory .mw-tool-card strong { font-size: 15px; }
+.mw-tools-directory .mw-tool-card small { font-size: 13px; }
+.mw-tools-directory .mw-tool-card > svg:last-child { transform: none; }
 .mw-tool-card > svg {
   width: 20px;
   height: 20px;

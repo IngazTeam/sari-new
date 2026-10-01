@@ -6,6 +6,7 @@ import ar from '../client/src/locales/ar.json';
 import merchantUx from '../client/src/locales/merchant-ux.ar';
 import authUx from '../client/src/locales/auth-ux.ar';
 import publicUx from '../client/src/locales/public-ux.ar';
+import { merchantTools } from '../client/src/components/merchant/tools';
 
 const catalogue = { ...ar, merchantUx, authUx, publicUx };
 const i18n = createInstance();
@@ -38,6 +39,14 @@ for (const file of files(resolve(args[1] || 'client/src'))) {
       return yes && no ? [...yes, ...no] : null;
     }
     const expression = node.getText(source);
+    if (fileName.endsWith('/MerchantToolsDirectory.tsx')) {
+      if (/^toolTranslationKey\((?:path|tool\.paths\[0\])\)$/.test(expression)) {
+        return merchantTools.map(tool => `merchantNavigationUx.tools.${tool.paths[0].replace(/^\/merchant\//, '').replace(/[^a-zA-Z0-9_]/g, '_')}`);
+      }
+      if (/^`merchantNavigationUx\.sections\.\$\{(?:section|section\.id|group\.id)\}`$/.test(expression)) {
+        return [...new Set(merchantTools.map(tool => `merchantNavigationUx.sections.${tool.section}`))];
+      }
+    }
     if (fileName.endsWith('/botTemplates.ts') && /^def\.(?:nameKey|descriptionKey|settings\.(?:welcomeMessageKey|outOfHoursMessageKey))$/.test(expression)) {
       return [...sourceText.matchAll(/(?:nameKey|descriptionKey|welcomeMessageKey|outOfHoursMessageKey):\s*'([^']+)'/g)].map(match => match[1]);
     }
