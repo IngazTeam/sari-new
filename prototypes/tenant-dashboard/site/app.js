@@ -92,15 +92,12 @@ function periodControl(){return `<label class="sr-only" for="period">فترة ا
 function heading(title,desc,actions='',eyebrow=''){return `<div class="page-head"><div>${eyebrow?`<div class="eyebrow">${eyebrow}</div>`:''}<h1>${title}</h1><p>${desc}</p></div>${actions?`<div class="head-actions">${actions}</div>`:''}</div>`;}
 function tabs(list){return `<nav class="tabs" aria-label="أقسام ${labels[ui.section]}">${list.map(([id,label])=>`<button class="tab" data-action="tab" data-id="${id}" aria-pressed="${ui.tab===id}">${label}</button>`).join('')}</nav>`;}
 function searchField(placeholder='ابحث بالاسم…'){return `<div class="search-field">${icon('search')}<label class="sr-only" for="view-search">${placeholder}</label><input id="view-search" class="control" data-input="query" value="${esc(ui.query)}" placeholder="${placeholder}" autocomplete="off"></div>`;}
+
+// Shared with the integrations status preview in notifications.js.
 function kpi(label,value,note,i){return `<div class="panel kpi"><div class="kpi-top"><span>${label}</span>${icon(i)}</div><div class="kpi-value">${value}</div><div class="kpi-note">${note}</div></div>`;}
 function scopedOrders(){return data.orders.filter(o=>o.day>23-Number(ui.period));}
-function revenue(){return scopedOrders().filter(o=>['paid','processing','shipped','delivered'].includes(o.status)).reduce((sum,o)=>sum+o.amount,0);}
-function chart(){
-  const days = ui.period==='7'?[17,18,19,20,21,22,23]:[0,4,8,12,16,20,23];
-  const vals=days.map((day,i)=>scopedOrders().filter(o=>ui.period==='7'?o.day===day:o.day> (days[i-1]??-8)&&o.day<=day).filter(o=>o.status!=='pending').reduce((a,o)=>a+o.amount,0));
-  const max=Math.ceil(Math.max(...vals,1)/500)*500;
-  return `<div class="chart-wrap" role="img" aria-label="الإيراد المحصل خلال ${ui.period} يومًا: ${money(revenue())} ريال. بيانات توضيحية."><div class="y-axis"><span>${money(max)}</span><span>${money(max*.75)}</span><span>${money(max*.5)}</span><span>${money(max*.25)}</span><span>0</span></div><div class="bars">${days.map((d,i)=>`<div class="bar-col" title="${d?d+' سبتمبر':'25–31 أغسطس'}: ${money(vals[i])} ر.س"><span class="bar-fill" style="height:${Math.max(1,vals[i]/max*100)}%"></span><small>${ui.period==='7'?d+' سبتمبر':i===0?'25 أغسطس':d+' سبتمبر'}</small></div>`).join('')}</div></div>`;
-}
+
+
 const orderStatus={pending:['بانتظار الدفع','amber'],paid:['مدفوع','blue'],processing:['قيد التجهيز','amber'],shipped:['تم الشحن','blue'],delivered:['تم التسليم','']};
 function orderTable(orders,compact=false){return `<div class="table-scroll responsive-table"><table><thead><tr><th>الطلب</th><th>العميل</th><th>المبلغ</th><th>الحالة</th><th class="hide-mobile">التاريخ</th><th>التفاصيل</th></tr></thead><tbody>${orders.map(o=>`<tr><td><strong dir="ltr">#${o.id}</strong><small>${o.items===1?'منتج واحد':o.items===2?'منتجان':o.items+' منتجات'}</small></td><td>${esc(customer(o.customer).name)}</td><td><strong>${money(o.amount)}</strong> <small style="display:inline">ر.س</small></td><td>${status(...orderStatus[o.status])}</td><td class="hide-mobile">${o.day} سبتمبر 2026</td><td><button class="table-row-button" data-action="order" data-id="${o.id}" aria-label="عرض الطلب ${o.id}">${compact?icon('left'):'عرض الطلب'}</button></td></tr>`).join('')}</tbody></table></div>`;}
 function inbox(){
@@ -142,8 +139,7 @@ function ai(){
 }
 function marketing(){return heading('التسويق','جهّز حملتك خطوة بخطوة، وراجع كل شيء قبل الجدولة.',button(icon('plus')+'إنشاء حملة','campaign-new','primary'))+
   `<div class="callout">${icon('shield')}<div><strong>رسائل ينتظرها عملاؤك</strong><p>اختر جمهورًا وافق على الرسائل، واكتب عرضًا واضحًا مع إمكانية إلغاء الاشتراك.</p></div></div><div class="campaign-grid">${data.campaigns.map(c=>`<article class="panel campaign-card"><div class="row between">${status(c.status==='draft'?'مسودة':'مجدولة',c.status==='draft'?'gray':'blue')}${icon('megaphone')}</div><h2>${esc(c.title)}</h2><p>${esc(c.message)}</p><div class="campaign-numbers"><div><strong>${c.audience==='all'?'65':'8'}</strong><small>مستلمًا توضيحيًا</small></div><div><strong>${c.status==='draft'?'—':esc(c.date?.slice(11,16)||'—')}</strong><small>${c.status==='draft'?'لم تُجدول':esc(c.date?.slice(0,10)||'موعد تجريبي')}</small></div></div>${button(c.status==='draft'?'أكمل المسودة':'مراجعة الجدولة','campaign-edit','',`data-id="${c.id}"`)}</article>`).join('')}</div><div class="panel panel-pad" style="margin-top:22px"><div class="panel-head"><div><h2>أدوات تنمية العلاقة</h2><p>مسارات فرعية ضمن التسويق، يسهل الوصول إليها عند الحاجة.</p></div><a class="text-link" href="#/tools/marketing">جميع أدوات التسويق ${icon('left')}</a></div><div class="segmented">${['كوبونات الخصم','السلات المتروكة','حملات المناسبات','إعدادات الولاء'].map(t=>`<button data-action="feature-title" data-title="${t}">${t}</button>`).join('')}</div></div>`;}
-function analytics(){return heading('التحليلات','أرقام بتعريفات واضحة وفترة واحدة في كل التقرير.',periodControl()+button(icon('download')+'تصدير CSV','export-orders'))+
-  `<div class="kpis">${kpi('الإيراد المحصّل',money(revenue())+' <small>ر.س</small>','يستبعد الطلبات غير المدفوعة','wallet')}${kpi('إجمالي الطلبات',scopedOrders().length,'حسب تاريخ إنشاء الطلب','bag')}${kpi('متوسط الطلب المدفوع',money(revenue()/Math.max(1,scopedOrders().filter(o=>o.status!=='pending').length))+' <small>ر.س</small>','الإيراد ÷ عدد الطلبات المدفوعة','chart')}${kpi('طلبات تم تسليمها',scopedOrders().filter(o=>o.status==='delivered').length,'الحالة الحالية للطلب','check')}</div><div class="overview-grid"><section class="panel panel-pad"><div class="panel-head"><h2>الإيراد خلال ${ui.period} يومًا</h2>${status('بيانات توضيحية','gray')}</div>${chart()}<div class="chart-foot"><span>العملة: ريال سعودي</span><span>الفترة تنتهي في 23 سبتمبر 2026</span></div></section><section class="panel panel-pad"><h2>توزيع حالات الطلبات</h2>${Object.entries(orderStatus).map(([s,t])=>`<div class="list-row"><span>${t[0]}</span><strong class="spacer">${scopedOrders().filter(o=>o.status===s).length}</strong></div>`).join('')}</section></div><section class="panel panel-pad"><div class="panel-head"><div><h2>كيف نقرأ هذه الأرقام؟</h2><p>تعريف المؤشر جزء من التقرير.</p></div>${icon('file')}</div><p class="hint">الإيراد المحصّل هنا يمثل مجموع الطلبات المدفوعة أو قيد التجهيز أو المشحونة أو المسلّمة. الطلب المسلّم يُحتسب من حالة «تم التسليم». في التنفيذ الفعلي يجب اشتقاق صافي الإيراد من المعاملات المؤكدة بعد الاستردادات، مع توثيق توقيت القياس. لا توجد مقارنة نمو أو تقييم رضا حين لا تتوفر عينة موثوقة.</p></section>`;}
+
 function settings(){
   let content='';
   if(ui.tab==='store')content=`<div class="setting-layout"><form class="panel panel-pad form-stack" data-form="store"><h2>هوية المتجر</h2><div class="field"><label for="shop-name">اسم المتجر</label><input id="shop-name" name="name" required maxlength="40" value="${esc(data.shop)}"></div><div class="field-grid"><div class="field"><label for="currency">عملة العرض</label><select id="currency"><option>الريال السعودي (SAR)</option></select></div><div class="field"><label for="timezone">المنطقة الزمنية</label><select id="timezone"><option>الرياض (UTC+3)</option></select></div></div><label class="check-label"><input type="checkbox" name="notifications" ${data.notifications?'checked':''}><span>إظهار إشعارات المهام التي تحتاج تدخلي.</span></label><div class="setting-footer"><button class="button primary" type="submit">حفظ التغييرات</button><small>يحفظ في هذا المتصفح</small></div></form><aside class="panel panel-pad"><h2>خصوصية الحساب</h2><p class="hint" style="margin:14px 0">بيانات المتجر وصلاحيات الفريق في مكان واضح، مع شرح أثر كل تغيير قبل اعتماده.</p><button class="text-link" data-action="feature-title" data-title="الخصوصية">مقترح مركز الخصوصية ${icon('left')}</button></aside></div>`;
@@ -160,7 +156,7 @@ function demoState(){
   if(ui.demo==='error')return head+`<section class="panel">${empty('تعذر تحميل البيانات','لم نتمكن من تحديث البيانات. تحقق من الاتصال ثم أعد المحاولة؛ لم تتغير بياناتك.',button(icon('refresh')+'إعادة المحاولة','retry','primary'),'alert')}</section>`;
   return head+`<section class="panel panel-pad" aria-busy="true" aria-label="جاري تحميل البيانات"><p role="status">جاري تحميل البيانات…</p><div class="skeleton skeleton-title" style="margin-top:25px"></div>${[1,2,3,4].map(()=>'<div class="skeleton skeleton-row"></div>').join('')}</section>`;
 }
-const renderers={overview:()=>TenantPages.render(TenantPages.find('/merchant/dashboard')),inbox,sales,catalog,customers,ai,marketing,analytics,settings};
+const renderers={overview:()=>TenantPages.render(TenantPages.find('/merchant/dashboard')),inbox,sales,catalog,customers,ai,marketing,settings};
 function render(keepFocus=false){
   window.SetupPreview?.unmount();
   window.ImportPreview?.unmount();
@@ -188,6 +184,8 @@ function render(keepFocus=false){
   if(ui.section==='inbox'&&ui.chat){const body=$('.chat-body');if(body)body.scrollTop=body.scrollHeight;}
 }
 function onRoute(){
+  const legacyAnalytics = location.hash.match(/^#\/analytics(?:\/[^?]*)?(\?.*)?$/);
+  if(legacyAnalytics)history.replaceState(null,'','#/page/merchant/analytics-hub'+(legacyAnalytics[1]||''));
   if(['','#','#/','#/overview'].includes(location.hash))history.replaceState(null,'','#/page/merchant/dashboard');
   if(location.hash==='#/tools'||location.hash.startsWith('#/tools/')) {
     const section=location.hash.split('/')[2];

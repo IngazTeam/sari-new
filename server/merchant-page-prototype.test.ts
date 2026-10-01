@@ -30,6 +30,15 @@ function submit(type: string) { w.document.querySelector(`[data-page-form="${typ
 const text = () => w.document.getElementById('main').textContent;
 
 describe('complete tenant page prototype', () => {
+  it.each(['#/analytics', '#/analytics/', '#/analytics?lang=en', '#/analytics/overview?lang=ar'])('opens the actual analytics hub for the legacy URL %s', async hash => {
+    w.history.replaceState(null, '', '/' + hash); w.dispatchEvent(new w.HashChangeEvent('hashchange'));
+    expect(w.location.hash).toBe('#/page/merchant/analytics-hub' + (hash.includes('?') ? hash.slice(hash.indexOf('?')) : ''));
+    await vi.waitFor(() => expect(w.document.querySelectorAll('.mw-analytics-hub h3')).toHaveLength(11));
+    expect(w.document.querySelectorAll('.mw-analytics-hub section')).toHaveLength(3);
+    expect(text()).not.toContain('الإيراد المحصّل');
+    expect(w.document.querySelector('[data-action="export-orders"]')).toBeNull();
+    expect(errors).toEqual([]);
+  });
   it.each(['','#','#/','#/overview'])('opens the actual dashboard for the legacy home URL %s',hash=>{
     w.history.replaceState(null,'','/'+hash);w.dispatchEvent(new w.HashChangeEvent('hashchange'));
     expect(w.location.hash).toBe('#/page/merchant/dashboard');expect(w.document.querySelector('#main iframe')?.getAttribute('src')).toBe('./dashboard.html?embed=brain');expect(text()).not.toContain('صباح الخير، أحمد');expect(w.document.querySelector('[data-action="quick"]')).toBeNull();
