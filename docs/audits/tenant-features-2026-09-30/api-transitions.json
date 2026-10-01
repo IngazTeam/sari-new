@@ -942,10 +942,11 @@
         "virtualAgents.saveReviewed",
         "virtualAgents.getSaveReceipt"
       ],
-      "note": "The complete persona editor now persists a scoped frozen request before saving and recovers the atomic server receipt. Create and update behavior remains available through saveReviewed; the prior server procedures await retirement after consumer auditing.",
+      "note": "The complete persona editor now persists a scoped frozen request before saving and recovers the atomic server receipt. Create and update behavior remains available through saveReviewed; the prior server procedures are retired after consumer auditing.",
       "evidence": [
         "docs/audits/tenant-persona-save-receipts-2026-10-01/REPORT.md",
-        "docs/audits/tenant-persona-save-workspace-2026-10-01/REPORT.md"
+        "docs/audits/tenant-persona-save-workspace-2026-10-01/REPORT.md",
+        "docs/audits/tenant-persona-write-retirement-2026-10-01/REPORT.md"
       ],
       "checks": [
         {

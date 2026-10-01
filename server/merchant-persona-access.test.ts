@@ -10,6 +10,7 @@ vi.mock("./accounts/merchant-access", () => ({
 vi.mock("./db", () => ({ getMerchantById: mocks.merchant, getDb: mocks.db }));
 import { virtualTeamRevision } from "./virtual-team-version";
 import { virtualAgentsRouter } from "./routers-virtual-agents";
+import { emptyVirtualAgent } from "../shared/virtual-agent-form";
 const caller = () =>
   virtualAgentsRouter.createCaller({
     user: { id: 7, role: "user" },
@@ -101,29 +102,31 @@ describe("persona mutations obey selected tenant and permissions", () => {
     expect(transaction).toHaveBeenCalledOnce();
     expect(writes).toHaveBeenCalledTimes(2);
   });
-  it("rejects a full team before clearing its existing default", async () => {
-    current = Array.from({ length: 10 }, (_, i) => ({
-      id: i + 1,
-      sortOrder: i,
-    }));
-    await expect(
-      caller().create({
-        expectedRevision: virtualTeamRevision(20, current),
-        name: "سارة",
-        role: "استقبال",
-        personalityPrompt: "تعليمات",
-        isDefault: true,
-      })
-    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
-    expect(writes).not.toHaveBeenCalled();
+  it("retires the unreceipted create and update procedures", async () => {
+    expect(Object.keys(virtualAgentsRouter._def.procedures)).not.toContain(
+      "create"
+    );
+    expect(Object.keys(virtualAgentsRouter._def.procedures)).not.toContain(
+      "update"
+    );
+    for (const name of ["create", "update"])
+      await expect((caller() as any)[name]({})).rejects.toMatchObject({
+        code: "NOT_FOUND",
+      });
   });
   it("rejects whitespace-only identity even when the UI is bypassed", async () => {
     await expect(
-      caller().create({
+      caller().saveReviewed({
+        merchantId: 20,
+        requestId: "30000000-0000-4000-8000-000000000001",
+        editing: null,
         expectedRevision: virtualTeamRevision(20, current),
-        name: "  ",
-        role: "مبيعات",
-        personalityPrompt: "تعليمات",
+        draft: {
+          ...emptyVirtualAgent,
+          name: "  ",
+          role: "مبيعات",
+          personalityPrompt: "تعليمات",
+        },
       })
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
     expect(mocks.db).not.toHaveBeenCalled();
@@ -134,13 +137,19 @@ describe("persona mutations obey selected tenant and permissions", () => {
       { shiftStart: "09:00", shiftEnd: "09:00" },
     ])
       await expect(
-        caller().create({
+        caller().saveReviewed({
+          merchantId: 20,
+          requestId: "30000000-0000-4000-8000-000000000001",
+          editing: null,
           expectedRevision: virtualTeamRevision(20, current),
-          name: "سارة",
-          role: "مبيعات",
-          personalityPrompt: "تعليمات",
-          isDefault: true,
-          ...schedule,
+          draft: {
+            ...emptyVirtualAgent,
+            name: "سارة",
+            role: "مبيعات",
+            personalityPrompt: "تعليمات",
+            isDefault: true,
+            ...schedule,
+          },
         })
       ).rejects.toMatchObject({ code: "BAD_REQUEST" });
     expect(writes).not.toHaveBeenCalled();

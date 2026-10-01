@@ -1,3 +1,6 @@
+import { randomUUID } from "node:crypto";
+import { agentDraft } from "../shared/virtual-agent-review";
+import { emptyVirtualAgent } from "../shared/virtual-agent-form";
 import {
   afterAll,
   afterEach,
@@ -9,7 +12,7 @@ import {
 } from "vitest";
 import { eq } from "drizzle-orm";
 import { botSettings, virtualAgents } from "../drizzle/schema";
-import { closeDb, getDb } from "./db/connection";
+import { closeDb, getDb, getPool } from "./db/connection";
 import { getBotSettings, updateBotSettings } from "./db";
 import { virtualTeamRevision } from "./virtual-team-version";
 import { virtualAgentsRouter } from "./routers-virtual-agents";
@@ -50,6 +53,34 @@ describe.skipIf(!process.env.DATABASE_URL)(
         await team(tenant.merchantId)
       ),
     });
+    // Test adapters build the complete editor contract; all writes use the production reviewed endpoint.
+    async function createPersona(input: any, tenant = owner) {
+      const { expectedRevision, ...fields } = input;
+      const receipt = await caller(tenant).saveReviewed({
+        merchantId: tenant.merchantId,
+        requestId: randomUUID(),
+        editing: null,
+        expectedRevision,
+        draft: { ...emptyVirtualAgent, ...fields },
+      });
+      return { ...receipt, id: receipt.personaId };
+    }
+    async function updatePersona(input: any) {
+      const { id, expectedRevision, ...fields } = input;
+      const current = (await team()).find(a => a.id === id);
+      return caller().saveReviewed({
+        merchantId: owner.merchantId,
+        requestId: randomUUID(),
+        editing: id,
+        expectedRevision,
+        draft: {
+          ...emptyVirtualAgent,
+          ...base,
+          ...(current ? agentDraft(current) : {}),
+          ...fields,
+        },
+      });
+    }
     beforeEach(async () => {
       owner = await createDisposableMerchant("assistant-save");
       other = await createDisposableMerchant("assistant-other");
@@ -122,15 +153,15 @@ describe.skipIf(!process.env.DATABASE_URL)(
 
     it("serializes competing creates at the ten-persona boundary and keeps unique priority", async () => {
       for (let i = 0; i < 9; i++)
-        await caller().create({
+        await createPersona({
           ...(await version()),
           ...base,
           isDefault: i === 0,
         });
       const reviewed = await version();
       const results = await Promise.allSettled([
-        caller().create({ ...base, ...reviewed }),
-        caller().create({ ...reviewed, ...base, isDefault: true }),
+        createPersona({ ...base, ...reviewed }),
+        createPersona({ ...reviewed, ...base, isDefault: true }),
       ]);
       expect(
         results.filter(result => result.status === "fulfilled")
@@ -144,19 +175,19 @@ describe.skipIf(!process.env.DATABASE_URL)(
       expect(rows.filter(row => row.isDefault)).toHaveLength(1);
     });
     it("rejects a stale save even when another persona, the default, or team priority changed", async () => {
-      const a = await caller().create({
+      const a = await createPersona({
         ...base,
         ...(await version()),
         isDefault: true,
       });
-      const b = await caller().create({
+      const b = await createPersona({
         ...base,
         ...(await version()),
         name: "Other",
       });
       const reviewed = await caller().listReview();
       expect(reviewed.canManage).toBe(true);
-      await caller().update({
+      await updatePersona({
         id: b.id,
         ...(await version()),
         role: "Sales",
@@ -164,7 +195,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
       });
       for (const change of [
         () =>
-          caller().update({
+          updatePersona({
             id: a.id,
             expectedRevision: reviewed.revision,
             personalityPrompt: "stale instructions",
@@ -192,40 +223,40 @@ describe.skipIf(!process.env.DATABASE_URL)(
       const beforeOrder = await version();
       await caller().reorder({ ...beforeOrder, orderedIds: [b.id, a.id] });
       await expect(
-        caller().update({ ...beforeOrder, id: a.id, name: "stale" })
+        updatePersona({ ...beforeOrder, id: a.id, name: "stale" })
       ).rejects.toMatchObject({ code: "CONFLICT" });
     });
     it("keeps a deleted persona deleted and rejects a foreign or omitted revision", async () => {
-      const own = await caller().create({ ...base, ...(await version()) });
+      const own = await createPersona({ ...base, ...(await version()) });
       const reviewed = await version();
       await caller().delete({ ...reviewed, id: own.id });
       await expect(
-        caller().update({ ...reviewed, id: own.id, name: "revive" })
+        updatePersona({ ...reviewed, id: own.id, name: "revive" })
       ).rejects.toMatchObject({ code: "CONFLICT" });
       await expect(
-        caller().create({ ...base, ...(await version(other)) })
+        createPersona({ ...base, ...(await version(other)) })
       ).rejects.toMatchObject({ code: "CONFLICT" });
-      await expect(caller().create(base as any)).rejects.toMatchObject({
+      await expect(createPersona(base as any)).rejects.toMatchObject({
         code: "BAD_REQUEST",
       });
       expect(await team()).toEqual([]);
     });
     it("keeps exactly one default after concurrent changes", async () => {
-      const a = await caller().create({
+      const a = await createPersona({
         ...(await version()),
         ...base,
         isDefault: true,
       });
-      const b = await caller().create({ ...base, ...(await version()) });
+      const b = await createPersona({ ...base, ...(await version()) });
       const reviewed = await version();
       const results = await Promise.allSettled([
-        caller().update({
+        updatePersona({
           ...reviewed,
           id: a.id,
           name: "changed",
           isDefault: true,
         }),
-        caller().update({ ...reviewed, id: b.id, isDefault: true }),
+        updatePersona({ ...reviewed, id: b.id, isDefault: true }),
       ]);
       expect(results.filter(r => r.status === "fulfilled")).toHaveLength(1);
       expect(results.find(r => r.status === "rejected")).toMatchObject({
@@ -249,44 +280,48 @@ describe.skipIf(!process.env.DATABASE_URL)(
       expect((await team()).filter(row => row.isDefault)).toHaveLength(1);
     });
     it("rolls back the cleared default when insertion fails", async () => {
-      const saved = await caller().create({
+      const saved = await createPersona({
         ...(await version()),
         ...base,
         isDefault: true,
       });
-      const db = (await getDb())!;
-      const original = db.transaction.bind(db);
-      vi.spyOn(db, "transaction").mockImplementationOnce((async (write: any) =>
-        original(async tx => {
-          const proxy = new Proxy(tx, {
-            get(target, key) {
-              if (key === "insert")
-                return () => ({
-                  values: async () => {
-                    throw Error("injected insert failure");
-                  },
-                });
-              const value = Reflect.get(target, key);
-              return typeof value === "function" ? value.bind(target) : value;
-            },
-          });
-          return write(proxy);
-        })) as any);
+      const pool = (await getPool())!,
+        acquire = pool.getConnection.bind(pool);
+      vi.spyOn(pool, "getConnection").mockImplementationOnce(async () => {
+        const c = await acquire();
+        return new Proxy(c, {
+          get(target, key) {
+            if (key === "query")
+              return (...args: any[]) => {
+                const sql =
+                  typeof args[0] === "string" ? args[0] : args[0]?.sql;
+                if (/insert into .virtual_agents./i.test(sql))
+                  return Promise.reject(Error("injected persona failure"));
+                return (target.query as any)(...args);
+              };
+            const value = Reflect.get(target, key);
+            return typeof value === "function" ? value.bind(target) : value;
+          },
+        });
+      });
       await expect(
-        caller().create({ ...(await version()), ...base, isDefault: true })
+        createPersona({ ...(await version()), ...base, isDefault: true })
       ).rejects.toMatchObject({ code: "INTERNAL_SERVER_ERROR" });
       expect(await team()).toMatchObject([{ id: saved.id, isDefault: 1 }]);
     });
     it("rejects foreign mutations and stale reorder lists without altering either tenant", async () => {
-      const own = await caller().create({ ...base, ...(await version()) });
-      const foreign = await caller(other).create({
-        ...(await version(other)),
-        ...base,
-        isDefault: true,
-      });
+      const own = await createPersona({ ...base, ...(await version()) });
+      const foreign = await createPersona(
+        {
+          ...(await version(other)),
+          ...base,
+          isDefault: true,
+        },
+        other
+      );
       for (const mutation of [
         async () =>
-          caller().update({
+          updatePersona({
             ...(await version()),
             id: foreign.id,
             isDefault: true,
@@ -300,7 +335,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
           orderedIds: [own.id, foreign.id],
         })
       ).rejects.toMatchObject({ code: "BAD_REQUEST" });
-      const later = await caller().create({ ...base, ...(await version()) });
+      const later = await createPersona({ ...base, ...(await version()) });
       await expect(
         caller().reorder({ ...(await version()), orderedIds: [own.id] })
       ).rejects.toMatchObject({ code: "BAD_REQUEST" });
