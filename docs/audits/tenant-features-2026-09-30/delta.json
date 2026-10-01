@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-01T07:37:27.779Z",
+  "generatedAt": "2026-10-01T07:46:35.177Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -11,7 +11,7 @@
     "after": {
       "routes": 126,
       "files": 339,
-      "controls": 2198
+      "controls": 2199
     }
   },
   "addedFiles": [
@@ -188,6 +188,7 @@
     "client/src/pages/setup-wizard/LanguageStep.tsx",
     "client/src/pages/setup-wizard/CompleteStep.tsx",
     "client/src/pages/merchant/Dashboard.tsx",
+    "client/src/components/TrialBanner.tsx",
     "client/src/components/LearningEvidenceCard.tsx",
     "client/src/pages/merchant/AIWhatsAppHub.tsx",
     "client/src/pages/merchant/Campaigns.tsx",
@@ -321,7 +322,7 @@
     {
       "route": "/merchant/dashboard",
       "controlsBefore": 174,
-      "controlsNow": 186,
+      "controlsNow": 187,
       "removedQueries": [
         "dashboard.getSummary",
         "sariBrain.getIntegrationSyncStatus"

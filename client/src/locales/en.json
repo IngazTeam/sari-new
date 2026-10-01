@@ -12418,5 +12418,25 @@
     "sync_products": "Latest product sync",
     "sync_orders": "Latest order sync",
     "sync_customers": "Latest customer sync"
+  },
+  "trialNoticeUx": {
+    "title": "Subscription status",
+    "loading": "Checking subscription…",
+    "failed": "We could not verify the subscription. Retry before relying on its status.",
+    "retry": "Retry",
+    "manage": "Subscription details",
+    "underMinute": "Less than a minute",
+    "noSubscription": "No active subscription recorded",
+    "trialEnded": "The recorded trial period has ended",
+    "subscriptionEnded": "The recorded subscription period has ended",
+    "trial": "You are in the trial period",
+    "review": "Review subscription status",
+    "trialHelp": "Review your account’s term and usage limits, then choose a suitable plan when needed.",
+    "reviewHelp": "Open subscription details or review plans to see the options available to your account.",
+    "unknownEnd": "A reliable expiry time is unavailable. Review subscription details.",
+    "ends": "Ends at:",
+    "remaining": "Time remaining:",
+    "plans": "View plans",
+    "compare": "Compare plans"
   }
 }

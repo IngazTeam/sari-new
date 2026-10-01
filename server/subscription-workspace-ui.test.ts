@@ -64,7 +64,7 @@ it('opens an explicit immediate-cancellation review and sends only the reviewed 
 it('keeps the subscription when confirmation is dismissed', async () => {
   await render(); await click('Cancel subscription'); await click('Keep subscription');
   expect(api.cancel).not.toHaveBeenCalled(); expect(document.querySelector('[role="alertdialog"]')).toBeNull();
-  expect(document.activeElement?.textContent).toBe('Cancel subscription');
+  await vi.waitFor(() => expect(document.activeElement?.textContent).toBe('Cancel subscription'));
 });
 it('prevents cancellation when the subscription changed after opening the review', async () => {
   await render(); await click('Cancel subscription'); api.current.data = { ...api.current.data, id: 92 }; await render();

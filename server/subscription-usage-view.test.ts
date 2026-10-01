@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { subscriptionDaysRemaining, subscriptionEndsAt, subscriptionPlanFeatures, subscriptionQuota } from '../shared/subscription-usage';
+import { subscriptionDaysRemaining, subscriptionEndsAt, subscriptionPlanFeatures, subscriptionQuota, subscriptionTimestamp } from '../shared/subscription-usage';
 it('keeps unlimited, zero allowance, over-limit, and missing limits distinct', () => {
   expect(subscriptionQuota(45, -1)).toMatchObject({ known: true, unlimited: true, percentage: null, remaining: null });
   expect(subscriptionQuota(0, 0)).toMatchObject({ known: true, limit: 0, percentage: 0, remaining: 0 });
@@ -25,3 +25,11 @@ it('uses the earlier trial end and rounds remaining partial days without negativ
   expect(subscriptionDaysRemaining({ ...subscription, status: 'active' }, now)).toBe(30);
   expect(subscriptionDaysRemaining({ ...subscription, trialEndsAt: '2026-09-27T12:00:00Z' }, now)).toBe(0);
 });
+it('normalizes stored UTC timestamps and explicit offsets without browser-dependent parsing',()=>{
+ const time=Date.parse('2026-10-01T12:00:00Z');
+ for(const value of ['2026-10-01 12:00:00','2026-10-01T12:00:00','2026-10-01T15:00:00+03:00'])expect(subscriptionTimestamp(value)).toBe(time);
+ expect(subscriptionTimestamp('2026-10-01')).toBe(Date.parse('2026-10-01T00:00:00Z'));
+ expect(subscriptionTimestamp('2026-10-01 12:00:00.123456')).toBe(time+123);
+ expect(subscriptionDaysRemaining({status:'trial',endDate:'2026-10-03 12:00:00',trialEndsAt:'2026-10-02 12:00:00'},time)).toBe(1);
+});
+it.each(['2026-02-30','2026-13-01','2026-00-01','2026-01-00','2026-10-01 25:00:00','2026-10-01 12:60:00','2026-10-01T12:00:00+99:00','Oct 1 2026',undefined,null])('keeps invalid subscription date %s unknown',value=>{expect(subscriptionTimestamp(value)).toBeNull();});
