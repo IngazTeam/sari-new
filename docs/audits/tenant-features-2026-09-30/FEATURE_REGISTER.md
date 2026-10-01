@@ -1369,15 +1369,15 @@
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 232 | summary | table · | table · |
-| 281 | select | period 7d 30d 90d 7d days7 30d days30 days90 | title |
-| 295 | Button | period 7d 30d 90d 7d days7 30d days30 days90 | title |
-| 351 | TabsTrigger | messages | messages |
-| 357 | TabsTrigger | sentiment | sentiment |
-| 363 | TabsTrigger | productsOrders | productsOrders |
-| 424 | summary | confidence | confidence |
-| 521 | select | format Excel PDF CSV | export |
-| 534 | Button | format Excel PDF CSV | export |
+| 240 | summary | table · | table · |
+| 291 | select | period 7d 30d 90d 7d days7 30d days30 days90 | title |
+| 305 | Button | period 7d 30d 90d 7d days7 30d days30 days90 | title |
+| 361 | TabsTrigger | messages | messages |
+| 367 | TabsTrigger | sentiment | sentiment |
+| 373 | TabsTrigger | productsOrders | productsOrders |
+| 434 | summary | confidence | confidence |
+| 531 | select | format Excel PDF CSV | export |
+| 544 | Button | format Excel PDF CSV | export |
 
 ## client/src/components/merchant/OverviewWorkspace.tsx
 

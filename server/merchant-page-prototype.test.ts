@@ -53,6 +53,7 @@ describe('complete tenant page prototype', () => {
       const embeddedPages = new Map([
         ["/merchant/dashboard", "dashboard.html?embed=brain"],
         ["/merchant/analytics", "sales-analytics.html?embed=brain"],
+        ...["message-analytics","sari-analytics","advanced-analytics","analytics-dashboard","voice-messages","analysis"].map(name=>["/merchant/"+name,"messages-analytics.html?embed=brain"] as const),
         ["/merchant/ai-hub", "assistant-settings.html?embed=brain&page=hub"],
         ["/merchant/bot-settings", "assistant-settings.html?embed=brain"],
         [

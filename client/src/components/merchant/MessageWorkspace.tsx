@@ -76,7 +76,15 @@ export function MessageWorkspace() {
     query.data?.period === period
       ? query.data
       : undefined;
-  const failed = query.error || merchant.error;
+  const failed =
+    query.error ||
+    merchant.error ||
+    (!reading &&
+    query.data &&
+    merchant.data?.id &&
+    query.data.merchantId !== merchant.data.id
+      ? new Error("Message snapshot does not match the current store")
+      : null);
   displayed.current = !failed ? data : undefined;
   // A context that changes away and back still invalidates an in-flight file.
   const review = useRef({
@@ -240,7 +248,9 @@ export function MessageWorkspace() {
                   <th scope="col" className="p-3 text-start">
                     {title === label("daily") ? label("date") : label("hour")}
                   </th>
-                  <th scope="col" className="p-3 text-end">{label("count")}</th>
+                  <th scope="col" className="p-3 text-end">
+                    {label("count")}
+                  </th>
                 </tr>
               </thead>
               <tbody>

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-01T09:38:15.312Z",
+  "generatedAt": "2026-10-01T09:52:13.435Z",
   "definition": "Every registered route is accounted for; source inventory and design completion are different statuses.",
   "routes": [
     {
@@ -22387,15 +22387,15 @@
       ],
       "controls": [
         "77ce5300e6f7",
-        "c5ce060fd338",
-        "1b846e10a68e",
-        "c326b0c36aec",
-        "374c0c88214f",
-        "570b7a313409",
-        "0469b5d775ef",
-        "83713c1516c1",
-        "bcba3afcb61b",
-        "3568a574738f"
+        "1e38548ab78b",
+        "3ccabf0cc9cd",
+        "6a1ef059e91b",
+        "bf3eda44e921",
+        "698cf0913ad6",
+        "586166a6c285",
+        "6098fda4feaf",
+        "a5a412029715",
+        "d8e0107ccde1"
       ],
       "queries": [
         "auth.me",
@@ -22414,20 +22414,20 @@
           "provenance": "browser-fetch-static"
         }
       ],
-      "design": "تفصيلي جزئي",
+      "design": "تفصيلي",
       "productionChanged": true,
       "designSections": [
-        "فترة واحدة 7/30/90 يومًا وعدادات الرسائل والأنواع الأربعة",
+        "المكوّن الفعلي في المسارات الستة، مع فترة7/30/90 وتبويب محفوظين في الرابط وعدادات الرسائل وأنواعها الأربعة",
         "ثلاثة تبويبات مع جداول كاملة للأيام والساعات",
         "تصنيفات محفوظة وتغطية وغير مصنف وثقة مبلغة دون ادعاء دقة",
         "أسماء منتجات كاملة وأسعار حالية وعلاقة الطلبات مع حدود الاستدلال",
-        "حالات انتظار وفشل واتصال وصلاحيات وفراغ وتحديث، وتنقل لوحة المفاتيح RTL",
+        "12حالة محاكاة بتيننتين ولغتين تشمل الفشل والاتصال والصلاحيات والفراغ والبيانات القديمة والنتائج الأجنبية والتصدير المعلق",
         "تصدير الأقسام الثمانية CSV/Excel/PDF من اللقطة نفسها باستخدام محوّل التطبيق، وإبطال التنزيل عند تغير الفترة أو الحالة أو الصفحة"
       ],
       "acceptancePlan": "الفترة والمرشحات؛ تعريف المؤشر ومصدره والعينة؛ الجدول والتفاصيل والتصدير؛ الصفر الحقيقي مقابل فشل تحميل البيانات.",
       "gaps": [
-        "اكتمل التطبيق والموك أب؛ راجع tenant-message-workspace-2026-09-30 وtenant-message-prototype-2026-09-30. تبقى واجهات messageAnalytics القديمة وقياس المبيعات الحقيقي وتأكيد حفظ التنزيل و320/390 وSafari/iPhone.",
-        "عناصر المصدر وواجهاته معادة من التطبيق الحالي؛ عدّها لا يثبت اكتمال الاختبارات. مصفوفة المطابقة في التقرير المرتبط."
+        "راجع tenant-message-actual-prototype-2026-10-01 وtenant-message-navigation-2026-10-01؛ تقاعد العرض اليدوي ومصدر التصدير المنفصل، وأُغلقت واجهات التوافق القديمة فيtenant-message-compatibility-2026-09-30. تبقى دلالة الارتباط محدودة ولا تثبت احتراف المبيعات.",
+        "تجهيزCSV/Excel/PDF ومحتواها مختبر محليًا؛ حفظ التنزيل في جهاز المستخدم وSafari/iPhone الفعلي و320/390 غير مثبتة. لا مزود خارجي في المحاكاة."
       ],
       "controlDetails": [
         {
@@ -22452,9 +22452,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "c5ce060fd338",
+          "id": "1e38548ab78b",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 232,
+          "line": 240,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -22473,9 +22473,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "1b846e10a68e",
+          "id": "3ccabf0cc9cd",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 281,
+          "line": 291,
           "tag": "select",
           "role": "",
           "kind": "field",
@@ -22499,9 +22499,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "c326b0c36aec",
+          "id": "6a1ef059e91b",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 295,
+          "line": 305,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -22520,9 +22520,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "374c0c88214f",
+          "id": "bf3eda44e921",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 351,
+          "line": 361,
           "tag": "TabsTrigger",
           "role": "",
           "kind": "action",
@@ -22544,9 +22544,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "570b7a313409",
+          "id": "698cf0913ad6",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 357,
+          "line": 367,
           "tag": "TabsTrigger",
           "role": "",
           "kind": "action",
@@ -22568,9 +22568,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "0469b5d775ef",
+          "id": "586166a6c285",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 363,
+          "line": 373,
           "tag": "TabsTrigger",
           "role": "",
           "kind": "action",
@@ -22592,9 +22592,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "83713c1516c1",
+          "id": "6098fda4feaf",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 424,
+          "line": 434,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -22616,9 +22616,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "bcba3afcb61b",
+          "id": "a5a412029715",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 521,
+          "line": 531,
           "tag": "select",
           "role": "",
           "kind": "field",
@@ -22653,9 +22653,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "3568a574738f",
+          "id": "d8e0107ccde1",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 534,
+          "line": 544,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -41270,15 +41270,15 @@
       ],
       "controls": [
         "77ce5300e6f7",
-        "c5ce060fd338",
-        "1b846e10a68e",
-        "c326b0c36aec",
-        "374c0c88214f",
-        "570b7a313409",
-        "0469b5d775ef",
-        "83713c1516c1",
-        "bcba3afcb61b",
-        "3568a574738f"
+        "1e38548ab78b",
+        "3ccabf0cc9cd",
+        "6a1ef059e91b",
+        "bf3eda44e921",
+        "698cf0913ad6",
+        "586166a6c285",
+        "6098fda4feaf",
+        "a5a412029715",
+        "d8e0107ccde1"
       ],
       "queries": [
         "auth.me",
@@ -41297,20 +41297,20 @@
           "provenance": "browser-fetch-static"
         }
       ],
-      "design": "تفصيلي جزئي",
+      "design": "تفصيلي",
       "productionChanged": true,
       "designSections": [
-        "فترة واحدة 7/30/90 يومًا وعدادات الرسائل والأنواع الأربعة",
+        "المكوّن الفعلي في المسارات الستة، مع فترة7/30/90 وتبويب محفوظين في الرابط وعدادات الرسائل وأنواعها الأربعة",
         "ثلاثة تبويبات مع جداول كاملة للأيام والساعات",
         "تصنيفات محفوظة وتغطية وغير مصنف وثقة مبلغة دون ادعاء دقة",
         "أسماء منتجات كاملة وأسعار حالية وعلاقة الطلبات مع حدود الاستدلال",
-        "حالات انتظار وفشل واتصال وصلاحيات وفراغ وتحديث، وتنقل لوحة المفاتيح RTL",
+        "12حالة محاكاة بتيننتين ولغتين تشمل الفشل والاتصال والصلاحيات والفراغ والبيانات القديمة والنتائج الأجنبية والتصدير المعلق",
         "تصدير الأقسام الثمانية CSV/Excel/PDF من اللقطة نفسها باستخدام محوّل التطبيق، وإبطال التنزيل عند تغير الفترة أو الحالة أو الصفحة"
       ],
       "acceptancePlan": "الفترة والمرشحات؛ تعريف المؤشر ومصدره والعينة؛ الجدول والتفاصيل والتصدير؛ الصفر الحقيقي مقابل فشل تحميل البيانات.",
       "gaps": [
-        "اكتمل التطبيق والموك أب؛ راجع tenant-message-workspace-2026-09-30 وtenant-message-prototype-2026-09-30. تبقى واجهات messageAnalytics القديمة وقياس المبيعات الحقيقي وتأكيد حفظ التنزيل و320/390 وSafari/iPhone.",
-        "عناصر المصدر وواجهاته معادة من التطبيق الحالي؛ عدّها لا يثبت اكتمال الاختبارات. مصفوفة المطابقة في التقرير المرتبط."
+        "راجع tenant-message-actual-prototype-2026-10-01 وtenant-message-navigation-2026-10-01؛ تقاعد العرض اليدوي ومصدر التصدير المنفصل، وأُغلقت واجهات التوافق القديمة فيtenant-message-compatibility-2026-09-30. تبقى دلالة الارتباط محدودة ولا تثبت احتراف المبيعات.",
+        "تجهيزCSV/Excel/PDF ومحتواها مختبر محليًا؛ حفظ التنزيل في جهاز المستخدم وSafari/iPhone الفعلي و320/390 غير مثبتة. لا مزود خارجي في المحاكاة."
       ],
       "controlDetails": [
         {
@@ -41335,9 +41335,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "c5ce060fd338",
+          "id": "1e38548ab78b",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 232,
+          "line": 240,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -41356,9 +41356,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "1b846e10a68e",
+          "id": "3ccabf0cc9cd",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 281,
+          "line": 291,
           "tag": "select",
           "role": "",
           "kind": "field",
@@ -41382,9 +41382,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "c326b0c36aec",
+          "id": "6a1ef059e91b",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 295,
+          "line": 305,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -41403,9 +41403,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "374c0c88214f",
+          "id": "bf3eda44e921",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 351,
+          "line": 361,
           "tag": "TabsTrigger",
           "role": "",
           "kind": "action",
@@ -41427,9 +41427,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "570b7a313409",
+          "id": "698cf0913ad6",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 357,
+          "line": 367,
           "tag": "TabsTrigger",
           "role": "",
           "kind": "action",
@@ -41451,9 +41451,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "0469b5d775ef",
+          "id": "586166a6c285",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 363,
+          "line": 373,
           "tag": "TabsTrigger",
           "role": "",
           "kind": "action",
@@ -41475,9 +41475,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "83713c1516c1",
+          "id": "6098fda4feaf",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 424,
+          "line": 434,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -41499,9 +41499,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "bcba3afcb61b",
+          "id": "a5a412029715",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 521,
+          "line": 531,
           "tag": "select",
           "role": "",
           "kind": "field",
@@ -41536,9 +41536,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "3568a574738f",
+          "id": "d8e0107ccde1",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 534,
+          "line": 544,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -46563,15 +46563,15 @@
       ],
       "controls": [
         "77ce5300e6f7",
-        "c5ce060fd338",
-        "1b846e10a68e",
-        "c326b0c36aec",
-        "374c0c88214f",
-        "570b7a313409",
-        "0469b5d775ef",
-        "83713c1516c1",
-        "bcba3afcb61b",
-        "3568a574738f"
+        "1e38548ab78b",
+        "3ccabf0cc9cd",
+        "6a1ef059e91b",
+        "bf3eda44e921",
+        "698cf0913ad6",
+        "586166a6c285",
+        "6098fda4feaf",
+        "a5a412029715",
+        "d8e0107ccde1"
       ],
       "queries": [
         "auth.me",
@@ -46590,20 +46590,20 @@
           "provenance": "browser-fetch-static"
         }
       ],
-      "design": "تفصيلي جزئي",
+      "design": "تفصيلي",
       "productionChanged": true,
       "designSections": [
-        "فترة واحدة 7/30/90 يومًا وعدادات الرسائل والأنواع الأربعة",
+        "المكوّن الفعلي في المسارات الستة، مع فترة7/30/90 وتبويب محفوظين في الرابط وعدادات الرسائل وأنواعها الأربعة",
         "ثلاثة تبويبات مع جداول كاملة للأيام والساعات",
         "تصنيفات محفوظة وتغطية وغير مصنف وثقة مبلغة دون ادعاء دقة",
         "أسماء منتجات كاملة وأسعار حالية وعلاقة الطلبات مع حدود الاستدلال",
-        "حالات انتظار وفشل واتصال وصلاحيات وفراغ وتحديث، وتنقل لوحة المفاتيح RTL",
+        "12حالة محاكاة بتيننتين ولغتين تشمل الفشل والاتصال والصلاحيات والفراغ والبيانات القديمة والنتائج الأجنبية والتصدير المعلق",
         "تصدير الأقسام الثمانية CSV/Excel/PDF من اللقطة نفسها باستخدام محوّل التطبيق، وإبطال التنزيل عند تغير الفترة أو الحالة أو الصفحة"
       ],
       "acceptancePlan": "الفترة والمرشحات؛ تعريف المؤشر ومصدره والعينة؛ الجدول والتفاصيل والتصدير؛ الصفر الحقيقي مقابل فشل تحميل البيانات.",
       "gaps": [
-        "اكتمل التطبيق والموك أب؛ راجع tenant-message-workspace-2026-09-30 وtenant-message-prototype-2026-09-30. تبقى واجهات messageAnalytics القديمة وقياس المبيعات الحقيقي وتأكيد حفظ التنزيل و320/390 وSafari/iPhone.",
-        "عناصر المصدر وواجهاته معادة من التطبيق الحالي؛ عدّها لا يثبت اكتمال الاختبارات. مصفوفة المطابقة في التقرير المرتبط."
+        "راجع tenant-message-actual-prototype-2026-10-01 وtenant-message-navigation-2026-10-01؛ تقاعد العرض اليدوي ومصدر التصدير المنفصل، وأُغلقت واجهات التوافق القديمة فيtenant-message-compatibility-2026-09-30. تبقى دلالة الارتباط محدودة ولا تثبت احتراف المبيعات.",
+        "تجهيزCSV/Excel/PDF ومحتواها مختبر محليًا؛ حفظ التنزيل في جهاز المستخدم وSafari/iPhone الفعلي و320/390 غير مثبتة. لا مزود خارجي في المحاكاة."
       ],
       "controlDetails": [
         {
@@ -46628,9 +46628,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "c5ce060fd338",
+          "id": "1e38548ab78b",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 232,
+          "line": 240,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -46649,9 +46649,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "1b846e10a68e",
+          "id": "3ccabf0cc9cd",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 281,
+          "line": 291,
           "tag": "select",
           "role": "",
           "kind": "field",
@@ -46675,9 +46675,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "c326b0c36aec",
+          "id": "6a1ef059e91b",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 295,
+          "line": 305,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -46696,9 +46696,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "374c0c88214f",
+          "id": "bf3eda44e921",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 351,
+          "line": 361,
           "tag": "TabsTrigger",
           "role": "",
           "kind": "action",
@@ -46720,9 +46720,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "570b7a313409",
+          "id": "698cf0913ad6",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 357,
+          "line": 367,
           "tag": "TabsTrigger",
           "role": "",
           "kind": "action",
@@ -46744,9 +46744,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "0469b5d775ef",
+          "id": "586166a6c285",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 363,
+          "line": 373,
           "tag": "TabsTrigger",
           "role": "",
           "kind": "action",
@@ -46768,9 +46768,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "83713c1516c1",
+          "id": "6098fda4feaf",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 424,
+          "line": 434,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -46792,9 +46792,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "bcba3afcb61b",
+          "id": "a5a412029715",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 521,
+          "line": 531,
           "tag": "select",
           "role": "",
           "kind": "field",
@@ -46829,9 +46829,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "3568a574738f",
+          "id": "d8e0107ccde1",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 534,
+          "line": 544,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -46872,15 +46872,15 @@
       ],
       "controls": [
         "77ce5300e6f7",
-        "c5ce060fd338",
-        "1b846e10a68e",
-        "c326b0c36aec",
-        "374c0c88214f",
-        "570b7a313409",
-        "0469b5d775ef",
-        "83713c1516c1",
-        "bcba3afcb61b",
-        "3568a574738f"
+        "1e38548ab78b",
+        "3ccabf0cc9cd",
+        "6a1ef059e91b",
+        "bf3eda44e921",
+        "698cf0913ad6",
+        "586166a6c285",
+        "6098fda4feaf",
+        "a5a412029715",
+        "d8e0107ccde1"
       ],
       "queries": [
         "auth.me",
@@ -46899,20 +46899,20 @@
           "provenance": "browser-fetch-static"
         }
       ],
-      "design": "تفصيلي جزئي",
+      "design": "تفصيلي",
       "productionChanged": true,
       "designSections": [
-        "فترة واحدة 7/30/90 يومًا وعدادات الرسائل والأنواع الأربعة",
+        "المكوّن الفعلي في المسارات الستة، مع فترة7/30/90 وتبويب محفوظين في الرابط وعدادات الرسائل وأنواعها الأربعة",
         "ثلاثة تبويبات مع جداول كاملة للأيام والساعات",
         "تصنيفات محفوظة وتغطية وغير مصنف وثقة مبلغة دون ادعاء دقة",
         "أسماء منتجات كاملة وأسعار حالية وعلاقة الطلبات مع حدود الاستدلال",
-        "حالات انتظار وفشل واتصال وصلاحيات وفراغ وتحديث، وتنقل لوحة المفاتيح RTL",
+        "12حالة محاكاة بتيننتين ولغتين تشمل الفشل والاتصال والصلاحيات والفراغ والبيانات القديمة والنتائج الأجنبية والتصدير المعلق",
         "تصدير الأقسام الثمانية CSV/Excel/PDF من اللقطة نفسها باستخدام محوّل التطبيق، وإبطال التنزيل عند تغير الفترة أو الحالة أو الصفحة"
       ],
       "acceptancePlan": "الفترة والمرشحات؛ تعريف المؤشر ومصدره والعينة؛ الجدول والتفاصيل والتصدير؛ الصفر الحقيقي مقابل فشل تحميل البيانات.",
       "gaps": [
-        "اكتمل التطبيق والموك أب؛ راجع tenant-message-workspace-2026-09-30 وtenant-message-prototype-2026-09-30. تبقى واجهات messageAnalytics القديمة وقياس المبيعات الحقيقي وتأكيد حفظ التنزيل و320/390 وSafari/iPhone.",
-        "عناصر المصدر وواجهاته معادة من التطبيق الحالي؛ عدّها لا يثبت اكتمال الاختبارات. مصفوفة المطابقة في التقرير المرتبط."
+        "راجع tenant-message-actual-prototype-2026-10-01 وtenant-message-navigation-2026-10-01؛ تقاعد العرض اليدوي ومصدر التصدير المنفصل، وأُغلقت واجهات التوافق القديمة فيtenant-message-compatibility-2026-09-30. تبقى دلالة الارتباط محدودة ولا تثبت احتراف المبيعات.",
+        "تجهيزCSV/Excel/PDF ومحتواها مختبر محليًا؛ حفظ التنزيل في جهاز المستخدم وSafari/iPhone الفعلي و320/390 غير مثبتة. لا مزود خارجي في المحاكاة."
       ],
       "controlDetails": [
         {
@@ -46937,9 +46937,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "c5ce060fd338",
+          "id": "1e38548ab78b",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 232,
+          "line": 240,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -46958,9 +46958,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "1b846e10a68e",
+          "id": "3ccabf0cc9cd",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 281,
+          "line": 291,
           "tag": "select",
           "role": "",
           "kind": "field",
@@ -46984,9 +46984,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "c326b0c36aec",
+          "id": "6a1ef059e91b",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 295,
+          "line": 305,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -47005,9 +47005,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "374c0c88214f",
+          "id": "bf3eda44e921",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 351,
+          "line": 361,
           "tag": "TabsTrigger",
           "role": "",
           "kind": "action",
@@ -47029,9 +47029,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "570b7a313409",
+          "id": "698cf0913ad6",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 357,
+          "line": 367,
           "tag": "TabsTrigger",
           "role": "",
           "kind": "action",
@@ -47053,9 +47053,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "0469b5d775ef",
+          "id": "586166a6c285",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 363,
+          "line": 373,
           "tag": "TabsTrigger",
           "role": "",
           "kind": "action",
@@ -47077,9 +47077,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "83713c1516c1",
+          "id": "6098fda4feaf",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 424,
+          "line": 434,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -47101,9 +47101,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "bcba3afcb61b",
+          "id": "a5a412029715",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 521,
+          "line": 531,
           "tag": "select",
           "role": "",
           "kind": "field",
@@ -47138,9 +47138,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "3568a574738f",
+          "id": "d8e0107ccde1",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 534,
+          "line": 544,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -68094,15 +68094,15 @@
       ],
       "controls": [
         "77ce5300e6f7",
-        "c5ce060fd338",
-        "1b846e10a68e",
-        "c326b0c36aec",
-        "374c0c88214f",
-        "570b7a313409",
-        "0469b5d775ef",
-        "83713c1516c1",
-        "bcba3afcb61b",
-        "3568a574738f"
+        "1e38548ab78b",
+        "3ccabf0cc9cd",
+        "6a1ef059e91b",
+        "bf3eda44e921",
+        "698cf0913ad6",
+        "586166a6c285",
+        "6098fda4feaf",
+        "a5a412029715",
+        "d8e0107ccde1"
       ],
       "queries": [
         "auth.me",
@@ -68121,20 +68121,20 @@
           "provenance": "browser-fetch-static"
         }
       ],
-      "design": "تفصيلي جزئي",
+      "design": "تفصيلي",
       "productionChanged": true,
       "designSections": [
-        "فترة واحدة 7/30/90 يومًا وعدادات الرسائل والأنواع الأربعة",
+        "المكوّن الفعلي في المسارات الستة، مع فترة7/30/90 وتبويب محفوظين في الرابط وعدادات الرسائل وأنواعها الأربعة",
         "ثلاثة تبويبات مع جداول كاملة للأيام والساعات",
         "تصنيفات محفوظة وتغطية وغير مصنف وثقة مبلغة دون ادعاء دقة",
         "أسماء منتجات كاملة وأسعار حالية وعلاقة الطلبات مع حدود الاستدلال",
-        "حالات انتظار وفشل واتصال وصلاحيات وفراغ وتحديث، وتنقل لوحة المفاتيح RTL",
+        "12حالة محاكاة بتيننتين ولغتين تشمل الفشل والاتصال والصلاحيات والفراغ والبيانات القديمة والنتائج الأجنبية والتصدير المعلق",
         "تصدير الأقسام الثمانية CSV/Excel/PDF من اللقطة نفسها باستخدام محوّل التطبيق، وإبطال التنزيل عند تغير الفترة أو الحالة أو الصفحة"
       ],
       "acceptancePlan": "الدخول والإعداد والتنقل والبحث والحفظ والتحقق من الحالة.",
       "gaps": [
-        "اكتمل التطبيق والموك أب؛ راجع tenant-message-workspace-2026-09-30 وtenant-message-prototype-2026-09-30. تبقى واجهات messageAnalytics القديمة وقياس المبيعات الحقيقي وتأكيد حفظ التنزيل و320/390 وSafari/iPhone.",
-        "عناصر المصدر وواجهاته معادة من التطبيق الحالي؛ عدّها لا يثبت اكتمال الاختبارات. مصفوفة المطابقة في التقرير المرتبط."
+        "راجع tenant-message-actual-prototype-2026-10-01 وtenant-message-navigation-2026-10-01؛ تقاعد العرض اليدوي ومصدر التصدير المنفصل، وأُغلقت واجهات التوافق القديمة فيtenant-message-compatibility-2026-09-30. تبقى دلالة الارتباط محدودة ولا تثبت احتراف المبيعات.",
+        "تجهيزCSV/Excel/PDF ومحتواها مختبر محليًا؛ حفظ التنزيل في جهاز المستخدم وSafari/iPhone الفعلي و320/390 غير مثبتة. لا مزود خارجي في المحاكاة."
       ],
       "controlDetails": [
         {
@@ -68159,9 +68159,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "c5ce060fd338",
+          "id": "1e38548ab78b",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 232,
+          "line": 240,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -68180,9 +68180,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "1b846e10a68e",
+          "id": "3ccabf0cc9cd",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 281,
+          "line": 291,
           "tag": "select",
           "role": "",
           "kind": "field",
@@ -68206,9 +68206,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "c326b0c36aec",
+          "id": "6a1ef059e91b",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 295,
+          "line": 305,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -68227,9 +68227,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "374c0c88214f",
+          "id": "bf3eda44e921",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 351,
+          "line": 361,
           "tag": "TabsTrigger",
           "role": "",
           "kind": "action",
@@ -68251,9 +68251,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "570b7a313409",
+          "id": "698cf0913ad6",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 357,
+          "line": 367,
           "tag": "TabsTrigger",
           "role": "",
           "kind": "action",
@@ -68275,9 +68275,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "0469b5d775ef",
+          "id": "586166a6c285",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 363,
+          "line": 373,
           "tag": "TabsTrigger",
           "role": "",
           "kind": "action",
@@ -68299,9 +68299,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "83713c1516c1",
+          "id": "6098fda4feaf",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 424,
+          "line": 434,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -68323,9 +68323,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "bcba3afcb61b",
+          "id": "a5a412029715",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 521,
+          "line": 531,
           "tag": "select",
           "role": "",
           "kind": "field",
@@ -68360,9 +68360,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "3568a574738f",
+          "id": "d8e0107ccde1",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 534,
+          "line": 544,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -68403,15 +68403,15 @@
       ],
       "controls": [
         "77ce5300e6f7",
-        "c5ce060fd338",
-        "1b846e10a68e",
-        "c326b0c36aec",
-        "374c0c88214f",
-        "570b7a313409",
-        "0469b5d775ef",
-        "83713c1516c1",
-        "bcba3afcb61b",
-        "3568a574738f"
+        "1e38548ab78b",
+        "3ccabf0cc9cd",
+        "6a1ef059e91b",
+        "bf3eda44e921",
+        "698cf0913ad6",
+        "586166a6c285",
+        "6098fda4feaf",
+        "a5a412029715",
+        "d8e0107ccde1"
       ],
       "queries": [
         "auth.me",
@@ -68430,20 +68430,20 @@
           "provenance": "browser-fetch-static"
         }
       ],
-      "design": "تفصيلي جزئي",
+      "design": "تفصيلي",
       "productionChanged": true,
       "designSections": [
-        "فترة واحدة 7/30/90 يومًا وعدادات الرسائل والأنواع الأربعة",
+        "المكوّن الفعلي في المسارات الستة، مع فترة7/30/90 وتبويب محفوظين في الرابط وعدادات الرسائل وأنواعها الأربعة",
         "ثلاثة تبويبات مع جداول كاملة للأيام والساعات",
         "تصنيفات محفوظة وتغطية وغير مصنف وثقة مبلغة دون ادعاء دقة",
         "أسماء منتجات كاملة وأسعار حالية وعلاقة الطلبات مع حدود الاستدلال",
-        "حالات انتظار وفشل واتصال وصلاحيات وفراغ وتحديث، وتنقل لوحة المفاتيح RTL",
+        "12حالة محاكاة بتيننتين ولغتين تشمل الفشل والاتصال والصلاحيات والفراغ والبيانات القديمة والنتائج الأجنبية والتصدير المعلق",
         "تصدير الأقسام الثمانية CSV/Excel/PDF من اللقطة نفسها باستخدام محوّل التطبيق، وإبطال التنزيل عند تغير الفترة أو الحالة أو الصفحة"
       ],
       "acceptancePlan": "الفترة والمرشحات؛ تعريف المؤشر ومصدره والعينة؛ الجدول والتفاصيل والتصدير؛ الصفر الحقيقي مقابل فشل تحميل البيانات.",
       "gaps": [
-        "اكتمل التطبيق والموك أب؛ راجع tenant-message-workspace-2026-09-30 وtenant-message-prototype-2026-09-30. تبقى واجهات messageAnalytics القديمة وقياس المبيعات الحقيقي وتأكيد حفظ التنزيل و320/390 وSafari/iPhone.",
-        "عناصر المصدر وواجهاته معادة من التطبيق الحالي؛ عدّها لا يثبت اكتمال الاختبارات. مصفوفة المطابقة في التقرير المرتبط."
+        "راجع tenant-message-actual-prototype-2026-10-01 وtenant-message-navigation-2026-10-01؛ تقاعد العرض اليدوي ومصدر التصدير المنفصل، وأُغلقت واجهات التوافق القديمة فيtenant-message-compatibility-2026-09-30. تبقى دلالة الارتباط محدودة ولا تثبت احتراف المبيعات.",
+        "تجهيزCSV/Excel/PDF ومحتواها مختبر محليًا؛ حفظ التنزيل في جهاز المستخدم وSafari/iPhone الفعلي و320/390 غير مثبتة. لا مزود خارجي في المحاكاة."
       ],
       "controlDetails": [
         {
@@ -68468,9 +68468,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "c5ce060fd338",
+          "id": "1e38548ab78b",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 232,
+          "line": 240,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -68489,9 +68489,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "1b846e10a68e",
+          "id": "3ccabf0cc9cd",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 281,
+          "line": 291,
           "tag": "select",
           "role": "",
           "kind": "field",
@@ -68515,9 +68515,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "c326b0c36aec",
+          "id": "6a1ef059e91b",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 295,
+          "line": 305,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -68536,9 +68536,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "374c0c88214f",
+          "id": "bf3eda44e921",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 351,
+          "line": 361,
           "tag": "TabsTrigger",
           "role": "",
           "kind": "action",
@@ -68560,9 +68560,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "570b7a313409",
+          "id": "698cf0913ad6",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 357,
+          "line": 367,
           "tag": "TabsTrigger",
           "role": "",
           "kind": "action",
@@ -68584,9 +68584,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "0469b5d775ef",
+          "id": "586166a6c285",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 363,
+          "line": 373,
           "tag": "TabsTrigger",
           "role": "",
           "kind": "action",
@@ -68608,9 +68608,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "83713c1516c1",
+          "id": "6098fda4feaf",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 424,
+          "line": 434,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -68632,9 +68632,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "bcba3afcb61b",
+          "id": "a5a412029715",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 521,
+          "line": 531,
           "tag": "select",
           "role": "",
           "kind": "field",
@@ -68669,9 +68669,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "3568a574738f",
+          "id": "d8e0107ccde1",
           "file": "client/src/components/merchant/MessageWorkspace.tsx",
-          "line": 534,
+          "line": 544,
           "tag": "Button",
           "role": "",
           "kind": "action",

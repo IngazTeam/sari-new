@@ -1,7 +1,9 @@
 // Same-origin, allowlisted communication between the central mockup and its actual-component previews.
 (() => {
-  const pages = new Set(['knowledge-groups.html','sales-knowledge.html','brain-preview.html','reply-quality.html','knowledge-activity.html','personas.html','assistant-options.html','assistant-settings.html','dashboard.html','sales-analytics.html']);
+  const pages = new Set(['knowledge-groups.html','sales-knowledge.html','brain-preview.html','reply-quality.html','knowledge-activity.html','personas.html','assistant-options.html','assistant-settings.html','dashboard.html','sales-analytics.html','messages-analytics.html']);
   const dashboardDestinations=new Set(["/merchant/conversations","/merchant/conversations?needs_human=1","/merchant/conversations?phone=ux-customer-051","/merchant/conversations?phone=ux-customer-052","/merchant/products","/merchant/campaigns","/merchant/campaigns/new","/merchant/reviews","/merchant/reports","/merchant/analytics","/merchant/analytics-hub","/merchant/orders","/merchant/services/new","/merchant/sales-hub","/merchant/setup-wizard","/merchant/bot-settings","/merchant/whatsapp","/merchant/whatsapp-instances","/merchant/test-sari","/merchant/my-subscription","/merchant/subscription/plans","/merchant/subscription/compare","/merchant/platform-integrations","/merchant/sari-brain","/merchant/sari-brain?view=overview","/merchant/sari-brain?view=sources","/merchant/sari-brain?view=knowledge&pane=conflicts","/merchant/sari-brain?view=knowledge&pane=pages","/merchant/sari-brain?view=knowledge&pane=faq","/merchant/sari-brain?view=knowledge&pane=sections","/merchant/sari-brain?view=sales"]);
+  const messagesDestinations=new Set(['/merchant/tools','/merchant/dashboard']);
+  const isMessages=url=>url.pathname==='/messages-analytics.html' && new URLSearchParams(url.search).get('embed')==='brain';
   const salesDestinations=new Set(['/merchant/reports','/merchant/products','/merchant/campaigns','/merchant/customers','/merchant/sari-brain?view=sales','/merchant/analytics-hub']);
   const isSales=url=>url.pathname==='/sales-analytics.html' && new URLSearchParams(url.search).get('embed')==='brain';
   const isDashboard=url=>url.pathname==='/dashboard.html' && new URLSearchParams(url.search).get('embed')==='brain';
@@ -15,6 +17,7 @@
       if(!anchor || event.defaultPrevented || event.button!==0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey)return;
       const url=new URL(anchor.getAttribute('href'),location.href);
       const tool = url.hash.startsWith('#/page') ? url.hash.slice(6) : '';
+      if(isMessages(location) && url.origin===location.origin && url.pathname==='/' && !url.search && messagesDestinations.has(tool)){event.preventDefault();parent.postMessage({type:'sary-brain-preview',action:'messagesTool',route:tool},location.origin);return;}
       if(isSales(location) && url.origin===location.origin && url.pathname==='/' && !url.search && salesDestinations.has(tool)){event.preventDefault();parent.postMessage({type:'sary-brain-preview',action:'salesTool',route:tool},location.origin);return;}
       if(isDashboard(location) && url.origin===location.origin && url.pathname==='/' && !url.search && dashboardDestinations.has(tool)){
         event.preventDefault();parent.postMessage({type:'sary-brain-preview',action:'dashboardTool',route:tool},location.origin);return;
@@ -43,8 +46,14 @@
     };
     const schedule = () => { if (!scheduled) { scheduled = true; requestAnimationFrame(measure); } };
     const observer = new MutationObserver(schedule);
-    observer.observe(document.body,{subtree:true,childList:true,attributes:true,characterData:true});
-    if (typeof ResizeObserver === 'function') new ResizeObserver(schedule).observe(document.body);
+    const observeBody = () => {
+      if (!document.body) return;
+      observer.observe(document.body,{subtree:true,childList:true,attributes:true,characterData:true});
+      if (typeof ResizeObserver === 'function') new ResizeObserver(schedule).observe(document.body);
+      schedule();
+    };
+    if (document.body) observeBody();
+    else document.addEventListener('DOMContentLoaded',observeBody,{once:true});
     addEventListener('resize',schedule);
     document.fonts?.ready.then(schedule);
     schedule();
@@ -81,6 +90,7 @@
     if (url.origin !== location.origin || !pages.has(url.pathname.split('/').pop()) || url.searchParams.get('embed') !== 'brain') return;
     const message=event.data;
     if (!message || typeof message !== 'object' || message.type!=='sary-brain-preview') return;
+    if(message.action==='messagesTool' && isMessages(url) && messagesDestinations.has(message.route))location.hash='#/page'+message.route;
     if(message.action==='salesTool' && isSales(url) && salesDestinations.has(message.route))location.hash='#/page'+message.route;
     if(message.action==='dashboardTool' && isDashboard(url) && dashboardDestinations.has(message.route))location.hash='#/page'+message.route;
     if(message.action==='assistantTool' && isAssistantHub(url) && assistantTools.has(message.route))location.hash='#/page'+message.route;

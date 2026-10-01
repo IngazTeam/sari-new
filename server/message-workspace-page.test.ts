@@ -134,6 +134,13 @@ afterEach(async () => {
   vi.unstubAllGlobals();
 });
 describe("message workspace review and complete snapshot exports", () => {
+  it("shows a recoverable error for a completed snapshot belonging to another store", async () => {
+    m.data = { ...m.data, merchantId: 999 };
+    await render();
+    expect(container.querySelector("[data-state=error]")).toBeTruthy();
+    expect(container.querySelector("[data-state=loading]")).toBeNull();
+    expect(button(ar.messageWorkspace.export)).toBeUndefined();
+  });
   it.each([
     "message-analytics",
     "sari-analytics",

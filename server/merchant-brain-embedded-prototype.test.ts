@@ -13,6 +13,20 @@ beforeEach(()=>{
 });
 afterEach(()=>dom.window.close());
 const send=(data:any,origin='http://127.0.0.1:4329',source=frame.contentWindow)=>w.dispatchEvent(new w.MessageEvent('message',{origin,source,data}));
+it('waits for the document body before attaching embedded layout observers',()=>{
+  const child=new JSDOM('<html><head></head><body></body></html>',{url:'http://127.0.0.1:4329/messages-analytics.html?embed=brain',runScripts:'outside-only',pretendToBeVisual:true});
+  Object.defineProperty(child.window,'parent',{value:{postMessage:vi.fn()}});child.window.document.body.remove();
+  expect(()=>runInContext(readFileSync('prototypes/tenant-dashboard/site/brain-embed.js','utf8'),child.getInternalVMContext())).not.toThrow();
+  const body=child.window.document.createElement('body');body.innerHTML='<main>Preview</main>';child.window.document.documentElement.append(body);
+  child.window.document.dispatchEvent(new child.window.Event('DOMContentLoaded'));child.window.close();
+});
+it('opens message recovery tools outside the owned frame and rejects forged routes',()=>{
+  frame.setAttribute('src','./messages-analytics.html?embed=brain');
+  const message={type:'sary-brain-preview',action:'messagesTool',route:'/merchant/tools'};
+  send(message,'https://example.com');send(message,undefined,w);send({...message,route:'/merchant/settings'});expect(w.location.hash).toBe('');
+  send(message);expect(w.location.hash).toBe('#/page/merchant/tools');
+  frame.setAttribute('src','./dashboard.html?embed=brain');send({...message,route:'/merchant/dashboard'});expect(w.location.hash).toBe('#/page/merchant/tools');
+});
 it.each(['/merchant/reports','/merchant/products','/merchant/campaigns','/merchant/customers','/merchant/sari-brain?view=sales','/merchant/analytics-hub'])('routes sales destination %s only from its owned local frame',route=>{
   frame.setAttribute('src','./sales-analytics.html?embed=brain&lang=en');
   send({type:'sary-brain-preview',action:'salesTool',route});
