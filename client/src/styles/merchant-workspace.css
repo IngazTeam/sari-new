@@ -590,6 +590,16 @@ html:has(.merchant-workspace) {
   width: 16px;
   height: 16px;
 }
+.merchant-workspace .mw-direction-arrow { transform: none; }
+.mw-mobile-sheet [data-slot="sheet-close"] {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  right: auto;
+  inset-inline-end: 12px;
+}
 .mw-tools-toolbar {
   display: flex;
   justify-content: space-between;

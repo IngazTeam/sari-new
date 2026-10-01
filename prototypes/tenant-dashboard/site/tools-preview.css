@@ -1111,6 +1111,16 @@
   width: 16px;
   height: 16px;
 }
+.tools-prototype .merchant-workspace .mw-direction-arrow { transform: none; }
+.tools-prototype .mw-mobile-sheet [data-slot="sheet-close"] {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  right: auto;
+  inset-inline-end: 12px;
+}
 .tools-prototype .mw-tools-toolbar {
   display: flex;
   justify-content: space-between;

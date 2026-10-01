@@ -19,6 +19,7 @@ import {
 } from "../client/src/lib/merchant-tools-search";
 import MerchantTools from "../client/src/pages/merchant/Tools";
 import { readFileSync } from "node:fs";
+import { createInstance } from 'i18next';
 let language: "ar" | "en" = "ar";
 const dictionaries = { ar, en };
 const translation = (key: string, args: Record<string, unknown> = {}) => {
@@ -78,6 +79,16 @@ const mount = async (searchPath = "") => {
   return memory;
 };
 describe("merchant tool discovery and navigation", () => {
+  it('searches English display names with the production Arabic-only resource gate', async () => {
+    const production = createInstance();
+    await production.init({ lng: 'ar', fallbackLng: 'ar', supportedLngs: ['ar'], resources: { ar: { translation: ar } }, initImmediate: false });
+    const found = searchMerchantTools({ query: 'assistant language', section: 'all' },
+      (path, lng) => production.t(toolTranslationKey(path), { lng }),
+      (section, lng) => production.t(`merchantNavigationUx.sections.${section}`, { lng }));
+    expect(found.map(tool => tool.path)).toEqual(['/merchant/language-settings']);
+    expect(production.hasResourceBundle('en', 'translation')).toBe(false);
+    expect(production.language).toBe('ar');
+  });
   it("keeps all existing navigable tools with real routes and complete bilingual labels", () => {
     const routes = JSON.parse(
       readFileSync(

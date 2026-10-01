@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-01T05:51:00.366Z",
+  "generatedAt": "2026-10-01T06:22:13.779Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -16727,7 +16727,7 @@
     },
     {
       "file": "client/src/lib/merchant-tools-search.ts",
-      "hash": "a6361eb8d478",
+      "hash": "3f096bddef17",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
@@ -17364,7 +17364,7 @@
     },
     {
       "file": "client/src/components/merchant/MerchantShell.tsx",
-      "hash": "e1e86c2672f6",
+      "hash": "add525efa871",
       "queries": [
         "merchants.getCurrent"
       ],
@@ -17374,17 +17374,17 @@
       "sections": [
         {
           "label": "قائمة التاجر",
-          "line": 217,
+          "line": 255,
           "tag": "SheetTitle"
         },
         {
           "label": "إلى أين تريد الذهاب؟",
-          "line": 368,
+          "line": 431,
           "tag": "DialogTitle"
         },
         {
           "label": "تسجيل الخروج",
-          "line": 419,
+          "line": 552,
           "tag": "AlertDialogTitle"
         }
       ],
@@ -17392,7 +17392,7 @@
       "handlers": [
         {
           "name": "handler",
-          "line": 100,
+          "line": 121,
           "calls": []
         }
       ],
@@ -17400,7 +17400,7 @@
         {
           "query": "merchants.getCurrent",
           "binding": "{ data: merchant }",
-          "line": 79,
+          "line": 89,
           "errorSignal": false,
           "loadingSignal": false,
           "enabled": null
@@ -17419,10 +17419,11 @@
         "client/src/components/SubscriptionBadge.tsx",
         "client/src/hooks/useIntegration.tsx",
         "client/src/components/merchant/navigation.ts",
+        "client/src/lib/merchant-tools-search.ts",
         "client/src/lib/merchant-viewport.ts",
         "client/src/components/ErrorBoundary.tsx"
       ],
-      "controlCount": 25
+      "controlCount": 26
     },
     {
       "file": "client/src/components/MerchantSelector.tsx",
@@ -73931,9 +73932,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "1d119352c928",
+      "id": "69db8728e3a5",
       "file": "client/src/components/merchant/MerchantShell.tsx",
-      "line": 112,
+      "line": 137,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -73952,9 +73953,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "7d157a3a2930",
+      "id": "b617bbb8648e",
       "file": "client/src/components/merchant/MerchantShell.tsx",
-      "line": 129,
+      "line": 154,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -73973,9 +73974,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "429003543e83",
+      "id": "cc7a592a3e41",
       "file": "client/src/components/merchant/MerchantShell.tsx",
-      "line": 141,
+      "line": 166,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -73994,9 +73995,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "f871d9f538f6",
+      "id": "14317caa9f3d",
       "file": "client/src/components/merchant/MerchantShell.tsx",
-      "line": 150,
+      "line": 179,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -74015,9 +74016,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "03f57c3f1d33",
+      "id": "76ae9aefede8",
       "file": "client/src/components/merchant/MerchantShell.tsx",
-      "line": 166,
+      "line": 195,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -74036,9 +74037,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ed94c2e7b596",
+      "id": "1f2292c9a147",
       "file": "client/src/components/merchant/MerchantShell.tsx",
-      "line": 184,
+      "line": 213,
       "tag": "a",
       "role": "",
       "kind": "action",
@@ -74057,15 +74058,15 @@
       "review": "source-inventoried"
     },
     {
-      "id": "c86160196649",
+      "id": "25e8345b98a4",
       "file": "client/src/components/merchant/MerchantShell.tsx",
-      "line": 202,
+      "line": 231,
       "tag": "Button",
       "role": "",
       "kind": "action",
       "label": "فتح قائمة التاجر",
       "section": "MerchantShell",
-      "binding": "",
+      "binding": "event => {\n                    mobileOpener.current = event.currentTarget;\n                  }",
       "type": "button",
       "options": [],
       "min": "",
@@ -74078,9 +74079,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "145d7472eb71",
+      "id": "909948b8c73f",
       "file": "client/src/components/merchant/MerchantShell.tsx",
-      "line": 212,
+      "line": 244,
       "tag": "SheetContent",
       "role": "",
       "kind": "dialog",
@@ -74099,9 +74100,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "2b1f49411b55",
+      "id": "49a4cf180bfe",
       "file": "client/src/components/merchant/MerchantShell.tsx",
-      "line": 225,
+      "line": 263,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -74120,9 +74121,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "d9f31d1de662",
+      "id": "078170300926",
       "file": "client/src/components/merchant/MerchantShell.tsx",
-      "line": 241,
+      "line": 284,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -74141,9 +74142,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "714d2e4ca6eb",
+      "id": "38fba9f38309",
       "file": "client/src/components/merchant/MerchantShell.tsx",
-      "line": 256,
+      "line": 299,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -74162,15 +74163,15 @@
       "review": "source-inventoried"
     },
     {
-      "id": "d42cb994303a",
+      "id": "d8bfc7768fce",
       "file": "client/src/components/merchant/MerchantShell.tsx",
-      "line": 277,
+      "line": 320,
       "tag": "DropdownMenuItem",
       "role": "",
       "kind": "action",
       "label": "إعدادات الحساب",
       "section": "قائمة التاجر",
-      "binding": "() => setLocation('/merchant/settings')",
+      "binding": "() => setLocation(\"/merchant/settings\")",
       "type": "text",
       "options": [],
       "min": "",
@@ -74183,15 +74184,15 @@
       "review": "source-inventoried"
     },
     {
-      "id": "aecb77044f5c",
+      "id": "5d0acdfbfd33",
       "file": "client/src/components/merchant/MerchantShell.tsx",
-      "line": 283,
+      "line": 326,
       "tag": "DropdownMenuItem",
       "role": "",
       "kind": "action",
       "label": "لوحة الإدارة",
       "section": "قائمة التاجر",
-      "binding": "() => setLocation('/admin/dashboard')",
+      "binding": "() => setLocation(\"/admin/dashboard\")",
       "type": "text",
       "options": [],
       "min": "",
@@ -74200,15 +74201,15 @@
       "required": false,
       "conditional": false,
       "conditions": [
-        "(user?.role === 'admin' || user?.role === 'superadmin')"
+        "(user?.role === \"admin\" || user?.role === \"superadmin\")"
       ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "e553f9252859",
+      "id": "1ab5b6c6be49",
       "file": "client/src/components/merchant/MerchantShell.tsx",
-      "line": 289,
+      "line": 332,
       "tag": "DropdownMenuItem",
       "role": "",
       "kind": "action",
@@ -74227,9 +74228,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "9e6b40cb6bf3",
+      "id": "95d0182507bd",
       "file": "client/src/components/merchant/MerchantShell.tsx",
-      "line": 306,
+      "line": 351,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -74244,15 +74245,15 @@
       "required": false,
       "conditional": true,
       "conditions": [
-        "section && !['overview', 'inbox'].includes(section.id)"
+        "section && ![\"overview\", \"inbox\"].includes(section.id)"
       ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "2c258f6941da",
+      "id": "7b24a66eb98d",
       "file": "client/src/components/merchant/MerchantShell.tsx",
-      "line": 318,
+      "line": 363,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -74267,15 +74268,15 @@
       "required": false,
       "conditional": true,
       "conditions": [
-        "section && !['overview', 'inbox'].includes(section.id)"
+        "section && ![\"overview\", \"inbox\"].includes(section.id)"
       ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "d6ed54ceaf0e",
+      "id": "dfd6c3935472",
       "file": "client/src/components/merchant/MerchantShell.tsx",
-      "line": 336,
+      "line": 392,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -74294,9 +74295,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "45d1688bff4e",
+      "id": "67d6e3e1558d",
       "file": "client/src/components/merchant/MerchantShell.tsx",
-      "line": 341,
+      "line": 399,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -74315,15 +74316,15 @@
       "review": "source-inventoried"
     },
     {
-      "id": "2cf24934f2fc",
+      "id": "a14cda668645",
       "file": "client/src/components/merchant/MerchantShell.tsx",
-      "line": 350,
+      "line": 408,
       "tag": "button",
       "role": "",
       "kind": "action",
       "label": "المزيد من أقسام المتجر",
       "section": "قائمة التاجر",
-      "binding": "() => setMobileOpen(true)",
+      "binding": "event => {\n            mobileOpener.current = event.currentTarget;\n            setMobileOpen(true);\n          }",
       "type": "button",
       "options": [],
       "min": "",
@@ -74336,13 +74337,13 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ce5bfaf39b60",
+      "id": "5b001acb8157",
       "file": "client/src/components/merchant/MerchantShell.tsx",
-      "line": 360,
+      "line": 421,
       "tag": "DialogContent",
       "role": "",
       "kind": "dialog",
-      "label": "إلى أين تريد الذهاب؟ ابحث في أقسام متجرك وأدواته. Esc للإغلاق. اسم الأداة لا توجد أداة مطابقة. جرّب كلمة أخرى.",
+      "label": "إلى أين تريد الذهاب؟ ابحث بالعربية أو الإنجليزية. استخدم الأسهم للتنقل وEsc للإغلاق. اسم الأداة عرض {{shown}} من {{total}} أداة مسح البحث لا توجد أداة مطابقة. جرّب كلمة أخرى.",
       "section": "قائمة التاجر",
       "binding": "",
       "type": "text",
@@ -74357,30 +74358,53 @@
       "review": "source-inventoried"
     },
     {
-      "id": "5d138e067203",
+      "id": "a9024f7febda",
       "file": "client/src/components/merchant/MerchantShell.tsx",
-      "line": 378,
+      "line": 441,
       "tag": "input",
       "role": "",
       "kind": "field",
       "label": "اسم الأداة",
       "section": "إلى أين تريد الذهاب؟",
       "binding": "query",
-      "type": "text",
+      "type": "search",
       "options": [],
       "min": "",
       "max": "",
-      "maxLength": "",
+      "maxLength": "100",
       "required": false,
-      "conditional": false,
+      "conditional": true,
       "conditions": [],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "fe3ea08fddd4",
+      "id": "eb7f4434d2dc",
       "file": "client/src/components/merchant/MerchantShell.tsx",
-      "line": 390,
+      "line": 481,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "مسح البحث",
+      "section": "إلى أين تريد الذهاب؟",
+      "binding": "() => {\n                setQuery(\"\");\n                searchInput.current?.focus();\n              }",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "query"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "059162598bf3",
+      "file": "client/src/components/merchant/MerchantShell.tsx",
+      "line": 525,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -74393,7 +74417,7 @@
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": true,
+      "conditional": false,
       "conditions": [
         "searchResults.length"
       ],
@@ -74401,9 +74425,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ffc3eaad3d4f",
+      "id": "2bc4e1939af4",
       "file": "client/src/components/merchant/MerchantShell.tsx",
-      "line": 417,
+      "line": 550,
       "tag": "AlertDialogContent",
       "role": "",
       "kind": "dialog",
@@ -74422,9 +74446,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "a7a82c50e9d8",
+      "id": "05c79a48214b",
       "file": "client/src/components/merchant/MerchantShell.tsx",
-      "line": 427,
+      "line": 568,
       "tag": "AlertDialogCancel",
       "role": "",
       "kind": "action",
@@ -74443,9 +74467,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "6b5470e38402",
+      "id": "33a1f550ac16",
       "file": "client/src/components/merchant/MerchantShell.tsx",
-      "line": 428,
+      "line": 569,
       "tag": "AlertDialogAction",
       "role": "",
       "kind": "action",

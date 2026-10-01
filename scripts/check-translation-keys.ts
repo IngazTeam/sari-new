@@ -39,8 +39,8 @@ for (const file of files(resolve(args[1] || 'client/src'))) {
       return yes && no ? [...yes, ...no] : null;
     }
     const expression = node.getText(source);
-    if (fileName.endsWith('/MerchantToolsDirectory.tsx')) {
-      if (/^toolTranslationKey\((?:path|tool\.paths\[0\])\)$/.test(expression)) {
+    if (fileName.endsWith('/MerchantToolsDirectory.tsx') || fileName.endsWith('/MerchantShell.tsx')) {
+      if (/^toolTranslationKey\((?:path|canonical|tool\.paths\[0\])\)$/.test(expression)) {
         return merchantTools.map(tool => `merchantNavigationUx.tools.${tool.paths[0].replace(/^\/merchant\//, '').replace(/[^a-zA-Z0-9_]/g, '_')}`);
       }
       if (/^`merchantNavigationUx\.sections\.\$\{(?:section|section\.id|group\.id)\}`$/.test(expression)) {

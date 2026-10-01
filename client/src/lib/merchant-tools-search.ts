@@ -2,6 +2,9 @@ import {
   merchantSections,
   navigableMerchantTools,
 } from "@/components/merchant/navigation";
+// Search vocabulary is available even when the English UI locale is not enabled.
+// A named JSON export keeps the rest of the candidate catalogue out of this chunk.
+import { merchantNavigationUx as englishNavigation } from "@/locales/en.json";
 export type ToolFilters = { query: string; section: string };
 export const toolTranslationKey = (path: string) =>
   `merchantNavigationUx.tools.${path.replace(/^\/merchant\//, "").replace(/[^a-zA-Z0-9_]/g, "_")}`;
@@ -56,6 +59,8 @@ export function searchMerchantTools(
         label(tool.paths[0], "en"),
         sectionLabel(tool.section, "ar"),
         sectionLabel(tool.section, "en"),
+        englishNavigation.tools[toolTranslationKey(tool.paths[0]).split('.').pop() as keyof typeof englishNavigation.tools],
+        englishNavigation.sections[tool.section],
       ].join(" "),
     );
     return tokens.every((token) => terms.includes(token));
