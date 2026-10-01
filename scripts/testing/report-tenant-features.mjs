@@ -11,6 +11,18 @@ const sourceDate = new Date(inventory.generatedAt).toLocaleDateString("ar-SA", {
   day: "numeric",
 });
 const specifics = {
+  "/merchant/analytics": {
+    level: "تفصيلي", implemented: true,
+    sections: [
+      "المكوّن الفعلي بأقسامه الخمسة وقراءات التحليلات الثماني، مع الفترة والتبويب في الرابط",
+      "رسوم العدد والقيمة وجداول الأرقام وUTC وعزل العملة والفشل وإعادة المحاولة لكل قسم",
+      "موك أب بتيننتين وعملتين ولغتين وتسع حالات محلية، مع تغير العملة والكاش القديم والتنقل المعزول",
+    ],
+    gaps: [
+      "راجع tenant-sales-analytics-prototype-2026-10-01 وتقارير203–205؛ المصدر يشمل حالةpaid الحالية والقراءات غير ذرية، ولا يقيس صافي التحصيل أو تحويل الشراء أو احتراف المبيعات.",
+      "المحاكاة لا تتصل بالمزودين؛ Safari/iPhone الفعلي و320/390 لم يُختبروا في هذه المرحلة. غلاف الموك أب المركزي عربي.",
+    ],
+  },
   "/merchant/analytics-hub": {
     level: "تفصيلي", implemented: true,
     sections: [

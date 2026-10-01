@@ -52,6 +52,7 @@ describe('complete tenant page prototype', () => {
       route(page.route);
       const embeddedPages = new Map([
         ["/merchant/dashboard", "dashboard.html?embed=brain"],
+        ["/merchant/analytics", "sales-analytics.html?embed=brain"],
         ["/merchant/ai-hub", "assistant-settings.html?embed=brain&page=hub"],
         ["/merchant/bot-settings", "assistant-settings.html?embed=brain"],
         [

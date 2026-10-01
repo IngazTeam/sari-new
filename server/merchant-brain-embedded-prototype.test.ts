@@ -13,6 +13,26 @@ beforeEach(()=>{
 });
 afterEach(()=>dom.window.close());
 const send=(data:any,origin='http://127.0.0.1:4329',source=frame.contentWindow)=>w.dispatchEvent(new w.MessageEvent('message',{origin,source,data}));
+it.each(['/merchant/reports','/merchant/products','/merchant/campaigns','/merchant/customers','/merchant/sari-brain?view=sales','/merchant/analytics-hub'])('routes sales destination %s only from its owned local frame',route=>{
+  frame.setAttribute('src','./sales-analytics.html?embed=brain&lang=en');
+  send({type:'sary-brain-preview',action:'salesTool',route});
+  expect(w.location.hash).toBe('#/page'+route);
+});
+it('rejects forged sales navigation and unrelated frame messages',()=>{
+  frame.setAttribute('src','./sales-analytics.html?embed=brain');
+  const message={type:'sary-brain-preview',action:'salesTool',route:'/merchant/reports'};
+  send(message,'https://example.com');send(message,undefined,w);
+  for(const route of ['/merchant/settings','/merchant/reports?token=secret','https://example.com','javascript:alert(1)',null])send({...message,route});
+  for(const src of ['./dashboard.html?embed=brain','./sales-analytics.html']){frame.setAttribute('src',src);send(message);}
+  expect(w.location.hash).toBe('');
+});
+it('intercepts sales links before navigating inside the frame',()=>{
+  const child=new JSDOM('<main><a href="./#/page/merchant/customers">Customers</a></main>',{url:'http://127.0.0.1:4329/sales-analytics.html?embed=brain',runScripts:'outside-only',pretendToBeVisual:true});
+  const postMessage=vi.fn();Object.defineProperty(child.window,'parent',{value:{postMessage}});
+  runInContext(readFileSync('prototypes/tenant-dashboard/site/brain-embed.js','utf8'),child.getInternalVMContext());
+  const click=new child.window.MouseEvent('click',{bubbles:true,cancelable:true,button:0});child.window.document.querySelector('a')!.dispatchEvent(click);
+  expect(click.defaultPrevented).toBe(true);expect(postMessage).toHaveBeenCalledWith({type:'sary-brain-preview',action:'salesTool',route:'/merchant/customers'},'http://127.0.0.1:4329');child.window.close();
+});
 it.each(['sari-brain','virtual-team','human-takeover','language-settings','bot-settings','test-sari','sari-playground','quick-responses','ai-suggestions','voice-messages','scheduled-messages','whatsapp-auto-notifications','sari-analytics'])('opens %s only through the owned assistant hub frame',route=>{
   frame.setAttribute('src','./assistant-settings.html?embed=brain&page=hub');
   send({type:'sary-brain-preview',action:'assistantTool',route:'/merchant/'+route});
