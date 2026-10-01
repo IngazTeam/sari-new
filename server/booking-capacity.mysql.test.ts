@@ -256,7 +256,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
         await query("UPDATE booking_time_slots SET is_available=0 WHERE id=?", [
           slot,
         ]);
-      if (kind === "inactive_service") await db.deleteService(serviceId);
+      if (kind === "inactive_service") await db.deleteService(serviceId, owner.merchantId);
       if (kind === "foreign_staff")
         await query("UPDATE booking_time_slots SET staff_id=? WHERE id=?", [
           foreignStaffId,
@@ -298,7 +298,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
       "does not create chat requests for %s services",
       async kind => {
         const { createBookingFromChat } = await import("./ai");
-        if (kind === "inactive") await db.deleteService(serviceId);
+        if (kind === "inactive") await db.deleteService(serviceId, owner.merchantId);
         expect(
           (
             await createBookingFromChat({
@@ -397,7 +397,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
       async kind => {
         const patch: any = {};
         if (kind === "foreign_service") patch.serviceId = foreignServiceId;
-        if (kind === "inactive_service") await db.deleteService(serviceId);
+        if (kind === "inactive_service") await db.deleteService(serviceId, owner.merchantId);
         if (kind === "foreign_staff") patch.staffId = foreignStaffId;
         if (kind === "inactive_staff")
           await query("UPDATE staff_members SET is_active=0 WHERE id=?", [

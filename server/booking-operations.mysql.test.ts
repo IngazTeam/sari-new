@@ -501,7 +501,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
     });
     it("service deletion continues to deactivate without cascading away booking payments", async () => {
       await checkout();
-      await db.deleteService(serviceId);
+      await db.deleteService(serviceId, owner.merchantId);
       expect(
         (
           await query("SELECT is_active FROM services WHERE id=?", [serviceId])
@@ -686,7 +686,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
           "UPDATE bookings SET google_event_id='calendar' WHERE id=?",
           [bookingId]
         );
-      if (kind === "inactive_service") await db.deleteService(serviceId);
+      if (kind === "inactive_service") await db.deleteService(serviceId, owner.merchantId);
       if (kind === "conflict") {
         const otherId = await create({ startTime: "12:00", endTime: "13:00" });
         await query(

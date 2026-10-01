@@ -1,3 +1,4 @@
+import {serviceCatalogCreateService,serviceCatalogUpdateService,serviceCatalogDefinition} from '../shared/service-catalog-write';
 /**
  * Services Router Module
  * Handles service management for booking-based businesses
@@ -19,28 +20,12 @@ import {
   getServicesByMerchant,
   updateService,
 } from './db';
-import {assertServiceReferences,serviceReferenceId,serviceReferenceIds} from './service-reference-access';
+import {assertServiceReferences,serviceReferenceId} from './service-reference-access';
 
 export const servicesRouter = router({
     // Create service
     create: permissionProcedure('products.manage')
-        .input(z.object({
-            name: z.string(),
-            description: z.string().optional(),
-            category: z.string().optional(),
-            categoryId: serviceReferenceId.optional(),
-            priceType: z.enum(['fixed', 'variable', 'custom']),
-            basePrice: z.number().optional(),
-            minPrice: z.number().optional(),
-            maxPrice: z.number().optional(),
-            durationMinutes: z.number(),
-            bufferTimeMinutes: z.number().optional(),
-            requiresAppointment: z.boolean().optional(),
-            maxBookingsPerDay: z.number().optional(),
-            advanceBookingDays: z.number().optional(),
-            staffIds: serviceReferenceIds.optional(),
-            displayOrder: z.number().optional(),
-        }).strict())
+        .input(serviceCatalogCreateService)
         .mutation(async ({ ctx, input }) => {
             const merchant = {id:ctx.merchantId};
 
@@ -59,10 +44,10 @@ export const servicesRouter = router({
                 bufferTimeMinutes: input.bufferTimeMinutes || 0,
                 requiresAppointment: input.requiresAppointment ? 1 : 0,
                 maxBookingsPerDay: input.maxBookingsPerDay,
-                advanceBookingDays: input.advanceBookingDays || 30,
+                advanceBookingDays: input.advanceBookingDays ?? 30,
                 staffIds: input.staffIds ? JSON.stringify(input.staffIds) : undefined,
                 displayOrder: input.displayOrder || 0,
-                isActive: 1,
+                isActive: input.isActive ? 1 : 0,
             });
 
             return { success: true, serviceId };
@@ -101,25 +86,7 @@ export const servicesRouter = router({
 
     // Update service
     update: permissionProcedure('products.manage')
-        .input(z.object({
-            serviceId: serviceReferenceId,
-            name: z.string().optional(),
-            description: z.string().optional(),
-            category: z.string().optional(),
-            categoryId: serviceReferenceId.optional(),
-            priceType: z.enum(['fixed', 'variable', 'custom']).optional(),
-            basePrice: z.number().optional(),
-            minPrice: z.number().optional(),
-            maxPrice: z.number().optional(),
-            durationMinutes: z.number().optional(),
-            bufferTimeMinutes: z.number().optional(),
-            requiresAppointment: z.boolean().optional(),
-            maxBookingsPerDay: z.number().optional(),
-            advanceBookingDays: z.number().optional(),
-            staffIds: serviceReferenceIds.optional(),
-            displayOrder: z.number().optional(),
-            isActive: z.boolean().optional(),
-        }).strict())
+        .input(serviceCatalogUpdateService)
         .mutation(async ({ ctx, input }) => {
             const merchant = {id:ctx.merchantId};
 
@@ -147,14 +114,14 @@ export const servicesRouter = router({
             if (input.displayOrder !== undefined) updateData.displayOrder = input.displayOrder;
             if (input.isActive !== undefined) updateData.isActive = input.isActive ? 1 : 0;
 
-            await updateService(input.serviceId, updateData);
+            await updateService(input.serviceId, updateData,merchant.id,input.expectedDefinition);
 
             return { success: true };
         }),
 
     // Delete service
     delete: permissionProcedure('products.manage')
-        .input(z.object({ serviceId: serviceReferenceId }).strict())
+        .input(z.object({ serviceId: serviceReferenceId,expectedDefinition:serviceCatalogDefinition.optional() }).strict())
         .mutation(async ({ ctx, input }) => {
             const merchant = {id:ctx.merchantId};
 
@@ -163,7 +130,7 @@ export const servicesRouter = router({
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Service not found' });
             }
 
-            await deleteService(input.serviceId);
+            await deleteService(input.serviceId,merchant.id,input.expectedDefinition);
 
             return { success: true };
         }),

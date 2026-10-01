@@ -1,14 +1,14 @@
 import {TRPCError} from '@trpc/server';
-import {z} from 'zod';
+import {serviceCatalogId,serviceCatalogIds} from '../shared/service-catalog-write';
 import {getServiceById,getServiceCategoryById,getStaffMemberById} from './db';
 
-export const serviceReferenceId=z.number().int().positive().max(2147483647);
-export const serviceReferenceIds=z.array(serviceReferenceId).max(200).refine(ids=>new Set(ids).size===ids.length,'Duplicate references');
+export const serviceReferenceId=serviceCatalogId;
+export const serviceReferenceIds=serviceCatalogIds;
 
 /** Validate only explicitly selected relationships; legacy stored values are reviewed separately. */
-export async function assertServiceReferences(merchantId:number,input:{categoryId?:number;staffIds?:number[];serviceIds?:number[]}){
+export async function assertServiceReferences(merchantId:number,input:{categoryId?:number|null;staffIds?:number[];serviceIds?:number[]}){
   const groups=[
-    [input.categoryId===undefined?[]:[input.categoryId],getServiceCategoryById],
+    [input.categoryId==null?[]:[input.categoryId],getServiceCategoryById],
     [input.staffIds??[],getStaffMemberById],
     [input.serviceIds??[],getServiceById],
   ] as const;

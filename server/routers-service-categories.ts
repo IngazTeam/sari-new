@@ -1,3 +1,4 @@
+import {serviceCatalogCreateCategory,serviceCatalogUpdateCategory,serviceCatalogDefinition} from '../shared/service-catalog-write';
 /**
  * Service Categories Router Module
  * Handles service category management
@@ -20,14 +21,7 @@ import {serviceReferenceId} from './service-reference-access';
 export const serviceCategoriesRouter = router({
     // Create category
     create: permissionProcedure('products.manage')
-        .input(z.object({
-            name: z.string(),
-            nameEn: z.string().optional(),
-            description: z.string().optional(),
-            icon: z.string().optional(),
-            color: z.string().optional(),
-            displayOrder: z.number().optional(),
-        }).strict())
+        .input(serviceCatalogCreateCategory)
         .mutation(async ({ ctx, input }) => {
             const merchant = {id:ctx.merchantId};
 
@@ -38,7 +32,8 @@ export const serviceCategoriesRouter = router({
                 description: input.description,
                 icon: input.icon,
                 color: input.color,
-                displayOrder: input.displayOrder || 0,
+                displayOrder: input.displayOrder ?? 0,
+                isActive:input.isActive?1:0,
             });
 
             return { success: true, categoryId };
@@ -54,16 +49,7 @@ export const serviceCategoriesRouter = router({
 
     // Update category
     update: permissionProcedure('products.manage')
-        .input(z.object({
-            categoryId: serviceReferenceId,
-            name: z.string().optional(),
-            nameEn: z.string().optional(),
-            description: z.string().optional(),
-            icon: z.string().optional(),
-            color: z.string().optional(),
-            displayOrder: z.number().optional(),
-            isActive: z.boolean().optional(),
-        }).strict())
+        .input(serviceCatalogUpdateCategory)
         .mutation(async ({ ctx, input }) => {
             const merchant = {id:ctx.merchantId};
 
@@ -81,14 +67,14 @@ export const serviceCategoriesRouter = router({
             if (input.displayOrder !== undefined) updateData.displayOrder = input.displayOrder;
             if (input.isActive !== undefined) updateData.isActive = input.isActive ? 1 : 0;
 
-            await updateServiceCategory(input.categoryId, updateData);
+            await updateServiceCategory(input.categoryId, updateData,merchant.id,input.expectedDefinition);
 
             return { success: true };
         }),
 
     // Delete category
     delete: permissionProcedure('products.manage')
-        .input(z.object({ categoryId: serviceReferenceId }).strict())
+        .input(z.object({ categoryId: serviceReferenceId,expectedDefinition:serviceCatalogDefinition.optional() }).strict())
         .mutation(async ({ ctx, input }) => {
             const merchant = {id:ctx.merchantId};
 
@@ -97,7 +83,7 @@ export const serviceCategoriesRouter = router({
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Category not found' });
             }
 
-            await deleteServiceCategory(input.categoryId);
+            await deleteServiceCategory(input.categoryId,merchant.id,input.expectedDefinition);
 
             return { success: true };
         }),

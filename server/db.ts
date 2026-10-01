@@ -1,3 +1,4 @@
+import {writeServiceCatalog,archiveServiceCatalog} from './service-catalog-write';
 import { normalizeProductMoneyWrite } from '../shared/product-money';
 import { deleteTenantCampaign } from './campaign-delete';
 import { editTenantCampaign } from './campaign-edit';
@@ -5580,12 +5581,7 @@ export async function incrementTemplateUsage(id: number) {
 
 // Services
 export async function createService(service: InsertService) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  const result = await db.insert(services).values(service);
-  const id = Number(result[0].insertId);
-  if (!Number.isSafeInteger(id) || id <= 0) throw new Error('Service creation result unavailable');
-  return id;
+  const {merchantId,...patch}=service;return writeServiceCatalog('service',merchantId,patch);
 }
 
 export async function getServicesByMerchant(merchantId: number) {
@@ -5606,26 +5602,16 @@ export async function getServiceById(id: number) {
   return results[0];
 }
 
-export async function updateService(id: number, data: Partial<InsertService>) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  await db.update(services).set(data).where(eq(services.id, id));
+export async function updateService(id:number,data:Partial<InsertService>,merchantId:number,expectedDefinition?:string) {
+  return writeServiceCatalog('service',merchantId,data,id,expectedDefinition);
 }
 
-export async function deleteService(id: number) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  await db.update(services).set({ isActive: 0 }).where(eq(services.id, id));
+export async function deleteService(id:number,merchantId:number,expectedDefinition?:string) {
+  return archiveServiceCatalog('service',merchantId,id,expectedDefinition);
 }
 
-// Service Packages
-export async function createServicePackage(pkg: InsertServicePackage) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  const result = await db.insert(servicePackages).values(pkg);
-  const id = Number(result[0].insertId);
-  if (!Number.isSafeInteger(id) || id <= 0) throw new Error('Package creation result unavailable');
-  return id;
+export async function createServicePackage(pkg:InsertServicePackage) {
+  const {merchantId,...patch}=pkg;return writeServiceCatalog('package',merchantId,patch);
 }
 
 export async function getServicePackagesByMerchant(merchantId: number) {
@@ -5989,21 +5975,8 @@ export async function toggleGoogleOAuthEnabled(isEnabled: boolean) {
 // Service Categories Functions
 // ============================================
 
-export async function createServiceCategory(category: {
-  merchantId: number;
-  name: string;
-  nameEn?: string;
-  description?: string;
-  icon?: string;
-  color?: string;
-  displayOrder?: number;
-}) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  const result = await db.insert(serviceCategories).values(category);
-  const id = Number(result[0].insertId);
-  if (!Number.isSafeInteger(id) || id <= 0) throw new Error('Category creation result unavailable');
-  return id;
+export async function createServiceCategory(category: {merchantId:number;name:string;nameEn?:string|null;description?:string|null;icon?:string|null;color?:string|null;displayOrder?:number;isActive?:number}) {
+  const {merchantId,...patch}=category;return writeServiceCatalog('category',merchantId,patch);
 }
 
 export async function getServiceCategoriesByMerchant(merchantId: number) {
@@ -6024,24 +5997,12 @@ export async function getServiceCategoryById(id: number) {
   return results[0];
 }
 
-export async function updateServiceCategory(id: number, data: {
-  name?: string;
-  nameEn?: string;
-  description?: string;
-  icon?: string;
-  color?: string;
-  displayOrder?: number;
-  isActive?: number;
-}) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  await db.update(serviceCategories).set(data).where(eq(serviceCategories.id, id));
+export async function updateServiceCategory(id:number,data:{name?:string;nameEn?:string|null;description?:string|null;icon?:string|null;color?:string|null;displayOrder?:number;isActive?:number},merchantId:number,expectedDefinition?:string) {
+  return writeServiceCatalog('category',merchantId,data,id,expectedDefinition);
 }
 
-export async function deleteServiceCategory(id: number) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  await db.update(serviceCategories).set({ isActive: 0 }).where(eq(serviceCategories.id, id));
+export async function deleteServiceCategory(id:number,merchantId:number,expectedDefinition?:string) {
+  return archiveServiceCatalog('category',merchantId,id,expectedDefinition);
 }
 
 export async function getServicesByCategory(categoryId: number, merchantId?: number) {
@@ -6114,24 +6075,12 @@ export async function getServicePackageById(id: number) {
   return results[0];
 }
 
-export async function updateServicePackage(id: number, data: {
-  name?: string;
-  description?: string;
-  serviceIds?: string;
-  originalPrice?: number;
-  packagePrice?: number;
-  discountPercentage?: number;
-  isActive?: number;
-}) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  await db.update(servicePackages).set(data).where(eq(servicePackages.id, id));
+export async function updateServicePackage(id:number,data:{name?:string;description?:string|null;serviceIds?:string;originalPrice?:number;packagePrice?:number;discountPercentage?:number;isActive?:number},merchantId:number,expectedDefinition?:string) {
+  return writeServiceCatalog('package',merchantId,data,id,expectedDefinition);
 }
 
-export async function deleteServicePackage(id: number) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  await db.update(servicePackages).set({ isActive: 0 }).where(eq(servicePackages.id, id));
+export async function deleteServicePackage(id:number,merchantId:number,expectedDefinition?:string) {
+  return archiveServiceCatalog('package',merchantId,id,expectedDefinition);
 }
 
 export async function getPackageServices(packageId: number) {

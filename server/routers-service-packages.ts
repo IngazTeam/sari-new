@@ -1,3 +1,4 @@
+import {serviceCatalogCreatePackage,serviceCatalogUpdatePackage,serviceCatalogDefinition} from '../shared/service-catalog-write';
 /**
  * Service Packages Router Module
  * Handles service package management
@@ -15,19 +16,12 @@ import {
   getServicePackagesByMerchant,
   updateServicePackage,
 } from './db';
-import {assertServiceReferences,serviceReferenceId,serviceReferenceIds} from './service-reference-access';
+import {assertServiceReferences,serviceReferenceId} from './service-reference-access';
 
 export const servicePackagesRouter = router({
     // Create package
     create: permissionProcedure('products.manage')
-        .input(z.object({
-            name: z.string(),
-            description: z.string().optional(),
-            serviceIds: serviceReferenceIds,
-            originalPrice: z.number(),
-            packagePrice: z.number(),
-            discountPercentage: z.number().optional(),
-        }).strict())
+        .input(serviceCatalogCreatePackage)
         .mutation(async ({ ctx, input }) => {
             const merchant = {id:ctx.merchantId};
 
@@ -40,7 +34,7 @@ export const servicePackagesRouter = router({
                 originalPrice: input.originalPrice,
                 packagePrice: input.packagePrice,
                 discountPercentage: input.discountPercentage,
-                isActive: 1,
+                isActive: input.isActive ? 1 : 0,
             });
 
             return { success: true, packageId };
@@ -70,16 +64,7 @@ export const servicePackagesRouter = router({
 
     // Update package
     update: permissionProcedure('products.manage')
-        .input(z.object({
-            packageId: serviceReferenceId,
-            name: z.string().optional(),
-            description: z.string().optional(),
-            serviceIds: serviceReferenceIds.optional(),
-            originalPrice: z.number().optional(),
-            packagePrice: z.number().optional(),
-            discountPercentage: z.number().optional(),
-            isActive: z.boolean().optional(),
-        }).strict())
+        .input(serviceCatalogUpdatePackage)
         .mutation(async ({ ctx, input }) => {
             const merchant = {id:ctx.merchantId};
 
@@ -98,14 +83,14 @@ export const servicePackagesRouter = router({
             if (input.discountPercentage !== undefined) updateData.discountPercentage = input.discountPercentage;
             if (input.isActive !== undefined) updateData.isActive = input.isActive ? 1 : 0;
 
-            await updateServicePackage(input.packageId, updateData);
+            await updateServicePackage(input.packageId, updateData,merchant.id,input.expectedDefinition);
 
             return { success: true };
         }),
 
     // Delete package
     delete: permissionProcedure('products.manage')
-        .input(z.object({ packageId: serviceReferenceId }).strict())
+        .input(z.object({ packageId: serviceReferenceId,expectedDefinition:serviceCatalogDefinition.optional() }).strict())
         .mutation(async ({ ctx, input }) => {
             const merchant = {id:ctx.merchantId};
 
@@ -114,7 +99,7 @@ export const servicePackagesRouter = router({
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Package not found' });
             }
 
-            await deleteServicePackage(input.packageId);
+            await deleteServicePackage(input.packageId,merchant.id,input.expectedDefinition);
 
             return { success: true };
         }),
