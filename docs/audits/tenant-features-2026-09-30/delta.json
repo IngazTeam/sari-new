@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-01T13:59:59.941Z",
+  "generatedAt": "2026-10-01T14:16:15.238Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 347,
-      "controls": 2231
+      "files": 349,
+      "controls": 2234
     }
   },
   "addedFiles": [
@@ -63,6 +63,8 @@
     "client/src/lib/product-sheet-workspace.ts",
     "client/src/components/merchant/ProductFileAdviceWorkspace.tsx",
     "client/src/lib/product-file-advice-workspace.ts",
+    "client/src/components/ConversationMessage.tsx",
+    "client/src/lib/conversation-message.ts",
     "client/src/components/ConversationConnection.tsx",
     "client/src/lib/staff-team-review-attempt.ts",
     "client/src/lib/staff-voice-attempt.ts",
@@ -490,7 +492,7 @@
     {
       "route": "/merchant/conversations",
       "controlsBefore": 85,
-      "controlsNow": 101,
+      "controlsNow": 104,
       "removedQueries": [
         "conversations.getMessages",
         "conversations.listTeamStaffAttempts",

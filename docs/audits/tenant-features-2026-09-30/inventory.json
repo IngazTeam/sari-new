@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-01T13:59:59.941Z",
+  "generatedAt": "2026-10-01T14:16:15.238Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -3762,7 +3762,7 @@
     },
     {
       "file": "client/src/pages/merchant/Conversations.tsx",
-      "hash": "cc2bf545c349",
+      "hash": "cfefe44439d2",
       "queries": [
         "auth.me",
         "merchants.getCurrent",
@@ -3778,37 +3778,32 @@
       "sections": [
         {
           "label": "المحادثات",
-          "line": 276,
+          "line": 269,
           "tag": "h1"
         },
         {
           "label": "قائمة المحادثات",
-          "line": 317,
+          "line": 310,
           "tag": "CardTitle"
         },
         {
           "label": "عميل",
-          "line": 490,
+          "line": 483,
           "tag": "CardTitle"
         },
         {
           "label": "إدارة المحادثة ومراجعة العروض",
-          "line": 536,
+          "line": 529,
           "tag": "summary"
         },
         {
-          "label": "",
-          "line": 807,
-          "tag": "DialogTitle"
-        },
-        {
           "label": "اقتراحات ساري والإجراءات السريعة",
-          "line": 832,
+          "line": 603,
           "tag": "summary"
         },
         {
           "label": "رد صوتي",
-          "line": 941,
+          "line": 712,
           "tag": "summary"
         }
       ],
@@ -3816,27 +3811,27 @@
       "handlers": [
         {
           "name": "saveDraft",
-          "line": 105,
+          "line": 99,
           "calls": []
         },
         {
           "name": "updateReplyText",
-          "line": 123,
+          "line": 116,
           "calls": []
         },
         {
           "name": "selectConversation",
-          "line": 124,
+          "line": 117,
           "calls": []
         },
         {
           "name": "handleSendReply",
-          "line": 211,
+          "line": 204,
           "calls": []
         },
         {
           "name": "handleQuickAction",
-          "line": 260,
+          "line": 253,
           "calls": []
         }
       ],
@@ -3844,7 +3839,7 @@
         {
           "query": "auth.me",
           "binding": "user",
-          "line": 71,
+          "line": 65,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
@@ -3852,7 +3847,7 @@
         {
           "query": "merchants.getCurrent",
           "binding": "merchant",
-          "line": 72,
+          "line": 66,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": "Boolean(user.data?.id) && !user.error && !user.isFetching"
@@ -3860,7 +3855,7 @@
         {
           "query": "conversations.list",
           "binding": "{\n    data: listSnapshot,\n    isLoading,\n    error: listQueryError,\n    refetch: refetchList,\n  }",
-          "line": 155,
+          "line": 148,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
@@ -3868,7 +3863,7 @@
         {
           "query": "conversations.messageHistory",
           "binding": "{\n    data: historySnapshot,\n    isLoading: messagesLoading,\n    isFetching: historyFetching,\n    error: historyError,\n    refetch: refetchMessages,\n  }",
-          "line": 183,
+          "line": 176,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": "selectedConversationId !== null"
@@ -3876,6 +3871,7 @@
       ],
       "conditions": [],
       "imports": [
+        "client/src/components/ConversationMessage.tsx",
         "client/src/components/ConversationConnection.tsx",
         "client/src/components/StaffTeamReview.tsx",
         "client/src/lib/staff-voice-attempt.ts",
@@ -3893,7 +3889,47 @@
         "client/src/lib/merchant-date.ts",
         "client/src/lib/use-conversation-scroll.ts"
       ],
-      "controlCount": 23
+      "controlCount": 20
+    },
+    {
+      "file": "client/src/components/ConversationMessage.tsx",
+      "hash": "0c8dbefd10ee",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [
+        {
+          "label": "",
+          "line": 25,
+          "tag": "DialogTitle"
+        }
+      ],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [
+        "client/src/lib/conversation-message.ts"
+      ],
+      "controlCount": 6
+    },
+    {
+      "file": "client/src/lib/conversation-message.ts",
+      "hash": "2931645f2626",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [
+        "client/src/lib/merchant-date.ts"
+      ],
+      "controlCount": 0
     },
     {
       "file": "client/src/components/ConversationConnection.tsx",
@@ -18958,6 +18994,9 @@
       ],
       "files": [
         "client/src/pages/merchant/Conversations.tsx",
+        "client/src/components/ConversationMessage.tsx",
+        "client/src/lib/conversation-message.ts",
+        "client/src/lib/merchant-date.ts",
         "client/src/components/ConversationConnection.tsx",
         "client/src/components/StaffTeamReview.tsx",
         "client/src/components/StaffAttemptGuidance.tsx",
@@ -18978,33 +19017,35 @@
         "client/src/components/AudioWaveAnimation.tsx",
         "client/src/components/AISuggestions.tsx",
         "client/src/components/QuickActions.tsx",
-        "client/src/lib/merchant-date.ts",
         "client/src/lib/use-conversation-scroll.ts"
       ],
       "controls": [
-        "72e70f6a43b5",
-        "37eae4306daf",
-        "3881a361891a",
-        "11ae2f300fcb",
-        "f7bbf61ca653",
-        "abeb413f3f4c",
-        "b0a8701718c2",
-        "4c5d1568a860",
-        "69a1665fa5ca",
-        "5323fbfe1aa3",
-        "97fab7780437",
-        "7e7fb1b28568",
-        "a26d533db50f",
-        "88b8f6cbf012",
-        "91492e065a57",
-        "f382ec5dae55",
-        "4e720972b11f",
-        "f39e13c7a310",
-        "dc41529c8fdf",
-        "b5c3340bda54",
-        "1ef221ba2a82",
-        "03df2d18b9e6",
-        "0b39688fdfa5",
+        "df388132404a",
+        "0a7aa6428cbb",
+        "aa5b8c0930e6",
+        "ac38474e5b7e",
+        "33f5da8c37a2",
+        "7073448fa735",
+        "7e83609316bd",
+        "ee8cf2d484f9",
+        "bfa031ec25a3",
+        "b3f3a10c8e5a",
+        "727ab3d1869d",
+        "971bb2be6c07",
+        "906d57b99b47",
+        "56c22fa057e8",
+        "83d3901d1d10",
+        "04c37c82de60",
+        "fc8adeba950a",
+        "10471fef573b",
+        "1477c0d28cd2",
+        "57f62e4126a4",
+        "3fbcdd73a5e5",
+        "a22634df53c5",
+        "afccc9bd6246",
+        "e74954bbdbe0",
+        "519d369d6809",
+        "4c1317ac59b1",
         "f22bd7670df8",
         "a0a1ab0e1469",
         "a11a9e86a3b8",
@@ -36550,9 +36591,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "72e70f6a43b5",
+      "id": "df388132404a",
       "file": "client/src/pages/merchant/Conversations.tsx",
-      "line": 289,
+      "line": 282,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -36573,9 +36614,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "37eae4306daf",
+      "id": "0a7aa6428cbb",
       "file": "client/src/pages/merchant/Conversations.tsx",
-      "line": 325,
+      "line": 318,
       "tag": "Input",
       "role": "",
       "kind": "field",
@@ -36594,9 +36635,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "3881a361891a",
+      "id": "aa5b8c0930e6",
       "file": "client/src/pages/merchant/Conversations.tsx",
-      "line": 352,
+      "line": 345,
       "tag": "div",
       "role": "button",
       "kind": "action",
@@ -36619,9 +36660,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "11ae2f300fcb",
+      "id": "ac38474e5b7e",
       "file": "client/src/pages/merchant/Conversations.tsx",
-      "line": 432,
+      "line": 425,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -36642,9 +36683,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "f7bbf61ca653",
+      "id": "33f5da8c37a2",
       "file": "client/src/pages/merchant/Conversations.tsx",
-      "line": 433,
+      "line": 426,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -36663,9 +36704,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "abeb413f3f4c",
+      "id": "7073448fa735",
       "file": "client/src/pages/merchant/Conversations.tsx",
-      "line": 448,
+      "line": 441,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -36684,9 +36725,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "b0a8701718c2",
+      "id": "7e83609316bd",
       "file": "client/src/pages/merchant/Conversations.tsx",
-      "line": 474,
+      "line": 467,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -36707,9 +36748,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "4c5d1568a860",
+      "id": "ee8cf2d484f9",
       "file": "client/src/pages/merchant/Conversations.tsx",
-      "line": 536,
+      "line": 529,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -36730,9 +36771,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "69a1665fa5ca",
+      "id": "bfa031ec25a3",
       "file": "client/src/pages/merchant/Conversations.tsx",
-      "line": 567,
+      "line": 560,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -36753,9 +36794,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "5323fbfe1aa3",
+      "id": "b3f3a10c8e5a",
       "file": "client/src/pages/merchant/Conversations.tsx",
-      "line": 572,
+      "line": 565,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -36777,9 +36818,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "97fab7780437",
+      "id": "727ab3d1869d",
       "file": "client/src/pages/merchant/Conversations.tsx",
-      "line": 573,
+      "line": 566,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -36801,9 +36842,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "7e7fb1b28568",
+      "id": "971bb2be6c07",
       "file": "client/src/pages/merchant/Conversations.tsx",
-      "line": 575,
+      "line": 568,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -36825,78 +36866,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "a26d533db50f",
+      "id": "906d57b99b47",
       "file": "client/src/pages/merchant/Conversations.tsx",
-      "line": 662,
-      "tag": "div",
-      "role": "button",
-      "kind": "action",
-      "label": "t(\n                                        'merchantUx.actions.openConversationImage'\n                                      )",
-      "section": "إدارة المحادثة ومراجعة العروض",
-      "binding": "() =>\n                                        setLightboxImage(finalImgUrl)",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [
-        "isImage && finalImgUrl"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "88b8f6cbf012",
-      "file": "client/src/pages/merchant/Conversations.tsx",
-      "line": 712,
-      "tag": "a",
-      "role": "",
-      "kind": "action",
-      "label": "[ملف: ] ملف مرفق اضغط للتحميل",
-      "section": "إدارة المحادثة ومراجعة العروض",
-      "binding": "docUrl",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [
-        "isDocument && docUrl"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "91492e065a57",
-      "file": "client/src/pages/merchant/Conversations.tsx",
-      "line": 805,
-      "tag": "DialogContent",
-      "role": "",
-      "kind": "dialog",
-      "label": "",
-      "section": "إدارة المحادثة ومراجعة العروض",
-      "binding": "",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [
-        "selectedConversation"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "f382ec5dae55",
-      "file": "client/src/pages/merchant/Conversations.tsx",
-      "line": 832,
+      "line": 603,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -36917,9 +36889,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "4e720972b11f",
+      "id": "56c22fa057e8",
       "file": "client/src/pages/merchant/Conversations.tsx",
-      "line": 881,
+      "line": 652,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -36941,9 +36913,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "f39e13c7a310",
+      "id": "83d3901d1d10",
       "file": "client/src/pages/merchant/Conversations.tsx",
-      "line": 885,
+      "line": 656,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -36965,9 +36937,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "dc41529c8fdf",
+      "id": "04c37c82de60",
       "file": "client/src/pages/merchant/Conversations.tsx",
-      "line": 890,
+      "line": 661,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -36989,9 +36961,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "b5c3340bda54",
+      "id": "fc8adeba950a",
       "file": "client/src/pages/merchant/Conversations.tsx",
-      "line": 897,
+      "line": 668,
       "tag": "Textarea",
       "role": "",
       "kind": "field",
@@ -37012,9 +36984,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "1ef221ba2a82",
+      "id": "10471fef573b",
       "file": "client/src/pages/merchant/Conversations.tsx",
-      "line": 921,
+      "line": 692,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -37035,9 +37007,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "03df2d18b9e6",
+      "id": "1477c0d28cd2",
       "file": "client/src/pages/merchant/Conversations.tsx",
-      "line": 941,
+      "line": 712,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -37058,9 +37030,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "0b39688fdfa5",
+      "id": "57f62e4126a4",
       "file": "client/src/pages/merchant/Conversations.tsx",
-      "line": 983,
+      "line": 754,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -37078,6 +37050,134 @@
         "selectedConversationId && !listError",
         "selectedConversation"
       ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "3fbcdd73a5e5",
+      "file": "client/src/components/ConversationMessage.tsx",
+      "line": 13,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ConversationMessage",
+      "binding": "() => { setFailed(false); setAttempt(v => v + 1); }",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "failed"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "a22634df53c5",
+      "file": "client/src/components/ConversationMessage.tsx",
+      "line": 20,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ConversationMessage",
+      "binding": "() => { setFailed(false); setAttempt(v => v + 1); }",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "afccc9bd6246",
+      "file": "client/src/components/ConversationMessage.tsx",
+      "line": 21,
+      "tag": "a",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ConversationMessage",
+      "binding": "url",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "e74954bbdbe0",
+      "file": "client/src/components/ConversationMessage.tsx",
+      "line": 23,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ConversationMessage",
+      "binding": "",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "519d369d6809",
+      "file": "client/src/components/ConversationMessage.tsx",
+      "line": 25,
+      "tag": "DialogContent",
+      "role": "",
+      "kind": "dialog",
+      "label": "",
+      "section": "ConversationMessage",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "4c1317ac59b1",
+      "file": "client/src/components/ConversationMessage.tsx",
+      "line": 25,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ConversationMessage",
+      "binding": "",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
       "disabled": "",
       "review": "source-inventoried"
     },

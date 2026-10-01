@@ -1015,8 +1015,14 @@ html:has(.merchant-workspace) {
 .mw-chat-scroll {
   height: 100% !important;
 }
+.mw-chat-scroll [data-radix-scroll-area-viewport] > div {
+  /* Radix's measurement table otherwise grows to long message/media intrinsic width. */
+  display: block !important;
+  width: 100%;
+  min-width: 0 !important;
+}
 .mw-chat-bubble {
-  max-width: 85% !important;
+  max-width: min(85%, 36rem) !important;
   overflow-wrap: anywhere;
 }
 .mw-chat-composer {

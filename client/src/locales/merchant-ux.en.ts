@@ -14,6 +14,7 @@ import {byaanSalesReviewEn} from './byaan-sales-review';
 import {staffTeamReviewEn} from './staff-team-review';
 import {replySuggestionsEn} from './reply-suggestions';
 import {conversationConnectionEn} from './conversation-connection';
+import {conversationMessageEn} from './conversation-message';
 import {sallaEffectReviewEn} from './salla-effect-review';
 import {sallaCheckoutReviewEn} from './salla-checkout-review';
 import { salesExperimentLaunchEn } from './sales-experiment-launch';
@@ -55,6 +56,7 @@ const merchantUxEn: MerchantUxCopy = {
   teamAttempts: staffTeamReviewEn,
   replySuggestions: replySuggestionsEn,
   conversationConnection: conversationConnectionEn,
+  conversationMessage: conversationMessageEn,
   staffAttempts: staffAttemptReviewEn,
   replyReview: salesReplyReviewEn,
   replySend: salesReplySendEn,
