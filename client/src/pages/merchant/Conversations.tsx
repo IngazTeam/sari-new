@@ -55,6 +55,7 @@ import { toast } from 'sonner';
 import { QueryStateCard } from '@/components/QueryStateCard';
 import { parseMerchantDate } from '@/lib/merchant-date';
 import { WorkspaceState, workspaceFailureKind } from '@/components/merchant/WorkspaceState';
+import { useConversationScroll } from '@/lib/use-conversation-scroll';
 
 function activityTime(value: string | Date | null) {
   if (!value) return 'لم تصل رسالة بعد';
@@ -94,11 +95,13 @@ function ScopedConversations({ currentMerchant, draftStore }: { currentMerchant:
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [replyText, setReplyText] = useState('');
+  const [historyTrail, setHistoryTrail] = useState<number[]>([]);
+  const beforeId = historyTrail.at(-1);
+  const viewingLatest = beforeId === undefined;
   const [isSending, setIsSending] = useState(false);
   const [voiceBusy,setVoiceBusy]=useState(false);
   const selectedReplyConversation=useRef(selectedConversationId);
   selectedReplyConversation.current=selectedConversationId;
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   // Pipeline filter state (from SalesPipeline deep-links)
   const [stageFilter, setStageFilter] = useState<string | undefined>();
@@ -116,6 +119,7 @@ function ScopedConversations({ currentMerchant, draftStore }: { currentMerchant:
       drafts.current[selectedConversationId] = replyText;
     setReplyText(id ? drafts.current[id] || '' : '');
     selectedReplyConversation.current = id;
+    setHistoryTrail([]);
     setSelectedConversationId(id);
   };
   useEffect(() => {
@@ -185,26 +189,21 @@ function ScopedConversations({ currentMerchant, draftStore }: { currentMerchant:
   const {
     data: historySnapshot,
     isLoading: messagesLoading,
+    isFetching: historyFetching,
     error: historyError,
     refetch: refetchMessages,
   } = trpc.conversations.messageHistory.useQuery(
-    { conversationId: selectedConversationId!, limit: 500 },
+    { conversationId: selectedConversationId!, beforeId, limit: 50 },
     {
       retry: false, staleTime: 0, refetchOnMount: 'always',
       enabled: selectedConversationId !== null,
-      refetchInterval: 5_000, // تحديث الرسائل كل 5 ثواني — يضمن التحديث اللحظي
+      refetchInterval: viewingLatest ? 5_000 : false,
     }
   );
   const messagesError = historyError || (historySnapshot && (historySnapshot.merchantId !== currentMerchant.id || historySnapshot.conversationId !== selectedConversationId || historySnapshot.items.some(m => m.conversationId !== selectedConversationId)) ? new Error('Message context mismatch') : null);
   const messages = !messagesError ? historySnapshot?.items : undefined;
 
-  // Auto-scroll to bottom when messages change
-  useEffect(() => {
-    const viewport = messagesEndRef.current?.closest(
-      '[data-radix-scroll-area-viewport]'
-    );
-    if (viewport) viewport.scrollTop = viewport.scrollHeight;
-  }, [messages]);
+  const messageScroll = useConversationScroll(`${selectedConversationId}:${beforeId ?? 'latest'}`, messages, viewingLatest);
 
   // Show loading skeleton
   const conversations = conversationsData?.items;
@@ -222,7 +221,7 @@ function ScopedConversations({ currentMerchant, draftStore }: { currentMerchant:
 
   // Send text reply
   const handleSendReply = async () => {
-    if (!live.current || !replyText.trim() || !selectedConversationId || !selectedConversation || messagesError || messagesLoading || !historySnapshot || isSending || voiceBusy || sendLock.current) return;
+    if (!viewingLatest || !live.current || !replyText.trim() || !selectedConversationId || !selectedConversation || messagesError || messagesLoading || !historySnapshot || isSending || voiceBusy || sendLock.current) return;
 
     sendLock.current = true;
     setIsSending(true);
@@ -265,7 +264,7 @@ function ScopedConversations({ currentMerchant, draftStore }: { currentMerchant:
 
   // A shortcut prepares a draft; only the explicit send action contacts the customer.
   const handleQuickAction = (_action: string, data: QuickActionDraft) => {
-    if (!selectedConversationId || !data?.message || isSending || voiceBusy) return;
+    if (!viewingLatest || !selectedConversationId || !data?.message || isSending || voiceBusy) return;
     if (replyText.trim()) {
       toast.warning(t('quickDrafts.existingDraft'), { position: 'top-center' });
       return;
@@ -647,6 +646,20 @@ function ScopedConversations({ currentMerchant, draftStore }: { currentMerchant:
                 </div>
               </details>
               <StaffAttemptReview key={`attempts-${selectedConversation.id}`} conversationId={selectedConversation.id} />
+              <nav className="flex flex-wrap items-center gap-2 border-y p-3 text-sm" aria-label={t('conversationHistory.navigation')}>
+                <p className="w-full text-muted-foreground" role="status">
+                  {viewingLatest ? t('conversationHistory.latestWindow') : t('conversationHistory.olderWindow')}
+                </p>
+                <Button type="button" variant="outline" className="min-h-11" disabled={historyFetching || messagesLoading || !!messagesError || !historySnapshot?.hasMore || !historySnapshot.nextBeforeId || isSending || voiceBusy}
+                  onClick={() => { const next=historySnapshot?.nextBeforeId;if(next)setHistoryTrail(current => current.at(-1)===next?current:[...current,next]); }}>
+                  {t('conversationHistory.older')}
+                </Button>
+                {!viewingLatest && <>
+                  <Button type="button" variant="outline" className="min-h-11" disabled={isSending || voiceBusy} onClick={() => setHistoryTrail(current => current.slice(0,-1))}>{t('conversationHistory.newer')}</Button>
+                  <Button type="button" className="min-h-11" disabled={isSending || voiceBusy} onClick={() => setHistoryTrail([])}>{t('conversationHistory.latest')}</Button>
+                </>}
+                {viewingLatest && messageScroll.unseen && <Button type="button" className="min-h-11" onClick={messageScroll.jump}>{t('conversationHistory.newMessages')}</Button>}
+              </nav>
               <CardContent className="p-0 mw-chat-messages">
                 <ScrollArea className="mw-chat-scroll p-4">
                   {messagesError ? (
@@ -858,7 +871,7 @@ function ScopedConversations({ currentMerchant, draftStore }: { currentMerchant:
                           </div>
                         );
                       })}
-                      <div ref={messagesEndRef} />
+                      <div ref={messageScroll.endRef} />
                     </div>
                   ) : (
                     <div className="flex items-center justify-center h-full text-muted-foreground">
@@ -905,7 +918,7 @@ function ScopedConversations({ currentMerchant, draftStore }: { currentMerchant:
                 <summary>اقتراحات ساري والإجراءات السريعة</summary>
                 <Separator />
                 <CardContent className="p-3">
-                  {messages && messages.length > 0 && (
+                  {viewingLatest && messages && messages.length > 0 && (
                     <AISuggestions
                       conversationId={selectedConversationId!}
                       messages={messages.map(m => ({
@@ -916,7 +929,7 @@ function ScopedConversations({ currentMerchant, draftStore }: { currentMerchant:
                         selectedConversation.customerName || undefined
                       }
                       onSelectSuggestion={text => {
-                        if(isSending || voiceBusy)return;
+                        if(!viewingLatest || isSending || voiceBusy)return;
                         updateReplyText(text);
                       }}
                       compact
@@ -931,20 +944,21 @@ function ScopedConversations({ currentMerchant, draftStore }: { currentMerchant:
                     conversationId={selectedConversationId!}
                     customerPhone={selectedConversation.customerPhone}
                     onActionComplete={handleQuickAction}
-                    disabled={isSending || voiceBusy}
+                    disabled={!viewingLatest || isSending || voiceBusy}
                   />
                 </CardContent>
               </details>
               {/* Text Input + Voice */}
               <Separator />
               <CardContent className="mw-chat-composer">
+                {!viewingLatest && <p className="mb-2 text-sm text-muted-foreground">{t('conversationHistory.replyFromLatest')}</p>}
                 <div className="flex items-end gap-2">
                   <div className="flex-1">
                     <Textarea
                       data-staff-draft
                       placeholder="اكتب رسالتك هنا..."
                       aria-label="رسالتك للعميل"
-                      disabled={isSending || voiceBusy}
+                      disabled={!viewingLatest || isSending || voiceBusy}
                       value={replyText}
                       maxLength={4096}
                       style={{fontSize:16}}
@@ -969,7 +983,7 @@ function ScopedConversations({ currentMerchant, draftStore }: { currentMerchant:
                     size="icon"
                     data-staff-send
                     onClick={handleSendReply}
-                    disabled={!replyText.trim() || isSending || voiceBusy || !!messagesError || messagesLoading || !historySnapshot}
+                    disabled={!viewingLatest || !replyText.trim() || isSending || voiceBusy || !!messagesError || messagesLoading || !historySnapshot}
                     className="shrink-0 h-[44px] w-[44px]"
                     aria-label={t('merchantUx.actions.sendMessage')}
                   >
@@ -988,10 +1002,10 @@ function ScopedConversations({ currentMerchant, draftStore }: { currentMerchant:
                     {t('staffVoice.title')}
                   </summary>
                   <VoiceRecorder
-                    disabled={isSending || !!messagesError || messagesLoading || !historySnapshot}
+                    disabled={!viewingLatest || isSending || !!messagesError || messagesLoading || !historySnapshot}
                     onBusyChange={setVoiceBusy}
                     onRecordingComplete={async (audioBlob, duration) => {
-                      if(!live.current||!selectedConversationId||isSending||messagesError||messagesLoading||!historySnapshot||sendLock.current)return false;
+                      if(!viewingLatest||!live.current||!selectedConversationId||isSending||messagesError||messagesLoading||!historySnapshot||sendLock.current)return false;
                       const conversationId=selectedConversationId;
                       sendLock.current=true;
                       setIsSending(true);

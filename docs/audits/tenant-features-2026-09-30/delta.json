@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-01T10:35:55.888Z",
+  "generatedAt": "2026-10-01T10:56:21.970Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 341,
-      "controls": 2210
+      "files": 342,
+      "controls": 2214
     }
   },
   "addedFiles": [
@@ -64,6 +64,7 @@
     "client/src/lib/product-file-advice-workspace.ts",
     "client/src/lib/staff-voice-attempt.ts",
     "client/src/lib/staff-dashboard-attempt.ts",
+    "client/src/lib/use-conversation-scroll.ts",
     "client/src/lib/meta-embedded-signup.ts",
     "client/src/hooks/use-toast.ts",
     "client/src/components/ByaanSalesReview.tsx",
@@ -481,7 +482,7 @@
     {
       "route": "/merchant/conversations",
       "controlsBefore": 85,
-      "controlsNow": 80,
+      "controlsNow": 84,
       "removedQueries": [
         "conversations.getMessages"
       ],

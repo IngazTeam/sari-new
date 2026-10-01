@@ -12601,5 +12601,15 @@
     "independentReads": "The period is shared, but sections are read independently and data may change between reads.",
     "salesEvidence": "Sales readiness evidence in Sari Brain",
     "hub": "Analytics hub"
+  },
+  "conversationHistory": {
+    "navigation": "Message history navigation",
+    "latestWindow": "Up to 50 latest messages. Updates automatically while this conversation is open.",
+    "olderWindow": "You are viewing an earlier part of the history. You can return to the latest messages at any time.",
+    "older": "Older messages",
+    "newer": "Newer messages",
+    "latest": "Back to latest messages",
+    "newMessages": "New messages — show latest",
+    "replyFromLatest": "Return to the latest messages before replying. Your draft is kept while browsing."
   }
 }

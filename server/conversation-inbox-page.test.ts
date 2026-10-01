@@ -7,7 +7,7 @@ import merchantAr from '../client/src/locales/merchant-ux.ar';
 const m=vi.hoisted(()=>({queries:{} as Record<string,any>,calls:vi.fn(),send:vi.fn(),voice:vi.fn(),attempt:vi.fn(),voiceAttempt:vi.fn(),complete:vi.fn(),invalidate:vi.fn(),success:vi.fn(),error:vi.fn(),warning:vi.fn()}));
 vi.mock('@/lib/trpc',()=>{
   const query=(name:string)=>({useQuery:(input:any,options:any)=>{
-    m.calls(name,input,options);return options?.enabled===false?{data:undefined,isLoading:false,isFetching:false,error:null,refetch:vi.fn()}:m.queries[name];
+    m.calls(name,input,options);return options?.enabled===false?{data:undefined,isLoading:false,isFetching:false,error:null,refetch:vi.fn()}:typeof m.queries[name]==='function'?m.queries[name](input,options):m.queries[name];
   }});
   const mutation=(call=vi.fn())=>({useMutation:()=>({mutateAsync:call,isPending:false})});
   const util=new Proxy({}, {get:()=>({invalidate:m.invalidate})});
@@ -101,5 +101,23 @@ describe('verified inbox scope and draft lifetime',()=>{
   it('ignores late voice success and refreshes only the current scope',async()=>{
     let release!:(v:any)=>void;m.voice.mockReturnValue(new Promise(resolve=>release=resolve));await render();await choose();await click(container.querySelector('[data-test-voice]')!);
     m.queries.user.data={id:8};await render();await choose();await fill('New voice context');await act(async()=>release({success:true,persisted:true}));expect(draft().value).toBe('New voice context');expect(m.invalidate).not.toHaveBeenCalled();expect(m.success).not.toHaveBeenCalled();
+  });
+  it('browses earlier windows and back, preserving the draft but requiring the latest context before sending',async()=>{
+    const base=m.queries.history.data;
+    m.queries.history=({beforeId,conversationId}:any)=>query({...base,conversationId,items:[{...base.items[0],conversationId,id:beforeId===8?3:beforeId===3?1:8,content:beforeId?'Older '+beforeId:'Latest example'}],hasMore:beforeId!==3,nextBeforeId:beforeId===8?3:beforeId===3?null:8});
+    const named=(text:string)=>Array.from(container.querySelectorAll('button')).find(b=>b.textContent===text)!;
+    await render();await choose();await fill('Keep while reading');
+    await click(named(ar.conversationHistory.older));expect(container.textContent).toContain('Older 8');expect(draft().value).toBe('Keep while reading');expect(draft().disabled).toBe(true);expect(send().disabled).toBe(true);
+    expect(m.calls).toHaveBeenCalledWith('history',expect.objectContaining({beforeId:8,limit:50}),expect.objectContaining({refetchInterval:false}));
+    await click(named(ar.conversationHistory.older));expect(container.textContent).toContain('Older 3');expect(named(ar.conversationHistory.older).disabled).toBe(true);
+    await click(named(ar.conversationHistory.newer));expect(container.textContent).toContain('Older 8');
+    await click(named(ar.conversationHistory.latest));expect(container.textContent).toContain('Latest example');expect(draft().disabled).toBe(false);expect(draft().value).toBe('Keep while reading');expect(m.send).not.toHaveBeenCalled();
+  });
+  it('lets a failed earlier page return to latest without losing its draft',async()=>{
+    const base=m.queries.history.data;
+    m.queries.history=({beforeId}:any)=>beforeId?{...query(undefined),error:Error('Earlier failed')}:query({...base,hasMore:true,nextBeforeId:8});
+    const named=(text:string)=>Array.from(container.querySelectorAll('button')).find(b=>b.textContent===text)!;
+    await render();await choose();await fill('Read failure draft');await click(named(ar.conversationHistory.older));expect(container.textContent).toContain('تعذر تحميل الرسائل');expect(send().disabled).toBe(true);
+    await click(named(ar.conversationHistory.latest));expect(draft().value).toBe('Read failure draft');expect(send().disabled).toBe(false);
   });
 });
