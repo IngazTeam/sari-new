@@ -52,7 +52,7 @@
 | /merchant/test-sari — تجربة المساعد | 6 | 30 | 5 / 5 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/metrics-dashboard — مقاييس المساعد | 8 | 7 | 3 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/whatsapp-webhook-setup — تشخيص Webhook | 1 | 6 | 1 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/bot-settings — سلوك المساعد | 8 | 53 | 5 / 6 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/bot-settings — سلوك المساعد | 10 | 54 | 6 / 6 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/human-takeover — التدخل البشري | 7 | 15 | 4 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/virtual-team — شخصيات المساعد | 7 | 53 | 4 / 6 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/sari-brain — عقل ساري | 63 | 415 | 51 / 36 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -1609,31 +1609,31 @@
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 383 | Button | استعادة المسودة | إعدادات الروبوت |
-| 397 | Button | تجاهل المسودة | إعدادات الروبوت |
-| 416 | Button | assistantDraftUx.loading assistantDraftUx.reviewLatest | إعدادات الروبوت |
-| 457 | Button | basics assistantSectionsUx.basics schedule assistantSectionsUx.schedule groups assistantSectionsUx.groups sales assistantSectionsUx.sales assistantSectionsUx.preview | إعدادات الروبوت |
-| 483 | summary | القوالب الجاهزة | القوالب الجاهزة |
-| 537 | Button | استخدام القالب في المسودة | BotSettings |
-| 579 | Button | تطبيق | BotSettings |
-| 679 | Switch | تفعيل الرد التلقائي | الرد التلقائي |
-| 719 | Switch | تفعيل ساعات العمل | ساعات العمل |
-| 738 | Input | وقت البداية | ساعات العمل |
-| 772 | Input | وقت النهاية | ساعات العمل |
-| 825 | Button | تسمية ديناميكية / تحتاج مراجعة | ساعات العمل |
-| 885 | Textarea | رسالة الترحيب | الرسائل |
-| 906 | Textarea | رسالة خارج أوقات العمل | الرسائل |
-| 947 | Select | نبرة الصوت | سلوك الذكاء الاصطناعي |
-| 977 | Select | اللغة | سلوك الذكاء الاصطناعي |
-| 1010 | Input | تأخير الرد (ثواني) | سلوك الذكاء الاصطناعي |
-| 1032 | Input | الحد الأقصى لطول الرد | سلوك الذكاء الاصطناعي |
-| 1199 | button | تسمية ديناميكية / تحتاج مراجعة | سلوك المجموعات |
-| 1240 | button | t("merchantUx.actions.removeNamed", {                               name: kw,                             }) | سلوك المجموعات |
-| 1258 | Input | t(                           "merchantUx.groupConversation.topicPlaceholder"                         ) | سلوك المجموعات |
-| 1277 | Button | تسمية ديناميكية / تحتاج مراجعة | سلوك المجموعات |
-| 1345 | Textarea | تعليمات التعامل مع العميل | تعليمات مخصصة للمساعد |
-| 1408 | Button | جاري الإرسال... إرسال اختبار واتساب | تعليمات مخصصة للمساعد |
-| 1426 | Button | جاري الحفظ... حفظ الإعدادات | تعليمات مخصصة للمساعد |
+| 473 | Button | استعادة المسودة | إعدادات الروبوت |
+| 493 | Button | تجاهل المسودة | إعدادات الروبوت |
+| 518 | Button | assistantDraftUx.loading assistantDraftUx.reviewLatest | إعدادات الروبوت |
+| 561 | Button | basics assistantSectionsUx.basics schedule assistantSectionsUx.schedule groups assistantSectionsUx.groups sales assistantSectionsUx.sales assistantSectionsUx.preview | إعدادات الروبوت |
+| 587 | summary | القوالب الجاهزة | القوالب الجاهزة |
+| 641 | Button | استخدام القالب في المسودة | BotSettings |
+| 683 | Button | تطبيق | BotSettings |
+| 792 | Switch | تفعيل الرد التلقائي | الرد التلقائي |
+| 832 | Switch | تفعيل ساعات العمل | ساعات العمل |
+| 851 | Input | وقت البداية | ساعات العمل |
+| 885 | Input | وقت النهاية | ساعات العمل |
+| 938 | Button | تسمية ديناميكية / تحتاج مراجعة | ساعات العمل |
+| 998 | Textarea | رسالة الترحيب | الرسائل |
+| 1019 | Textarea | رسالة خارج أوقات العمل | الرسائل |
+| 1060 | Select | نبرة الصوت | سلوك الذكاء الاصطناعي |
+| 1090 | Select | اللغة | سلوك الذكاء الاصطناعي |
+| 1123 | Input | تأخير الرد (ثواني) | سلوك الذكاء الاصطناعي |
+| 1145 | Input | الحد الأقصى لطول الرد | سلوك الذكاء الاصطناعي |
+| 1312 | button | تسمية ديناميكية / تحتاج مراجعة | سلوك المجموعات |
+| 1353 | button | t("merchantUx.actions.removeNamed", {                               name: kw,                             }) | سلوك المجموعات |
+| 1371 | Input | t(                           "merchantUx.groupConversation.topicPlaceholder"                         ) | سلوك المجموعات |
+| 1390 | Button | تسمية ديناميكية / تحتاج مراجعة | سلوك المجموعات |
+| 1458 | Textarea | تعليمات التعامل مع العميل | تعليمات مخصصة للمساعد |
+| 1521 | Button | جاري الإرسال... إرسال اختبار واتساب | تعليمات مخصصة للمساعد |
+| 1541 | Button | جاري الحفظ... حفظ الإعدادات | تعليمات مخصصة للمساعد |
 
 ## client/src/components/merchant/AssistantDraftReview.tsx
 

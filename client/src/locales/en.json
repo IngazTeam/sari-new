@@ -12023,4 +12023,9 @@
   "storageFailed": "The local copy could not be saved. Keep this page open. A new save will not be sent until the draft and its revision can be retained in browser storage.",
   "privacy": "The draft is private to this account and store in this tab for 24 hours and is cleared at sign-out. Restoring or reviewing does not save settings. Removing the local copy does not cancel a request already sent to the server."
 }
+,
+"assistantSettingsScopeUx":{
+  "pendingFound": "This draft is linked to a save request with an unconfirmed outcome. Restore it and fetch the current settings for review. It will not be resent automatically.",
+  "uncertain": "The save outcome is unconfirmed. Your draft is retained. Fetch and review the current settings before deciding to save again. Matching values do not prove the previous request saved them."
+}
 }

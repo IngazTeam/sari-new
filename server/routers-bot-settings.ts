@@ -137,7 +137,7 @@ export const botSettingsRouter = router({
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
 
-        return await shouldBotRespond(merchant.id);
+        return { ...await shouldBotRespond(merchant.id), merchantId: merchant.id };
     }),
 
     // Send test message

@@ -15,10 +15,17 @@ const m = vi.hoisted(() => ({
   callbacks: {} as any,
   query: vi.fn(),
   refetch: vi.fn(),
+  merchant: 20,
+  user: 7,
+  isError: false,
+  responseMerchant: 20,
 }));
 vi.mock("../client/src/lib/trpc", () => ({
   trpc: {
-    auth: { me: { useQuery: () => ({ data: { id: 7 } }) } },
+    auth: { me: { useQuery: () => ({ data: { id: m.user } }) } },
+    merchants: {
+      getCurrent: { useQuery: () => ({ data: { id: m.merchant } }) },
+    },
     useUtils: () => ({
       botSettings: {
         get: { invalidate: vi.fn() },
@@ -30,10 +37,15 @@ vi.mock("../client/src/lib/trpc", () => ({
         useQuery: () => ({
           data: m.settings,
           isLoading: false,
+          isError: m.isError,
           refetch: m.refetch,
         }),
       },
-      shouldRespond: { useQuery: () => ({ data: { shouldRespond: true } }) },
+      shouldRespond: {
+        useQuery: () => ({
+          data: { shouldRespond: true, merchantId: m.responseMerchant },
+        }),
+      },
       update: {
         useMutation: (callbacks: any) => {
           m.callbacks = callbacks;
@@ -59,6 +71,7 @@ vi.mock("../client/src/components/DiscountPolicySettings", () => ({
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
+    i18n: { language: "ar" },
     t: (key: string, values?: any) => {
       const value =
         key.split(".").reduce((value: any, part) => value?.[part], ar) ?? key;
@@ -103,6 +116,10 @@ async function fill(id: string, value: string) {
 beforeEach(() => {
   vi.clearAllMocks();
   clearAssistantDrafts();
+  m.merchant = 20;
+  m.user = 7;
+  m.isError = false;
+  m.responseMerchant = 20;
   vi.stubGlobal("React", React);
   vi.stubGlobal(
     "ResizeObserver",
@@ -267,6 +284,7 @@ describe("assistant settings review", () => {
     ).toBe("my private draft");
     expect(m.update).not.toHaveBeenCalled();
     await act(async () => root.render(null));
+    m.merchant = 21;
     m.settings = { ...m.settings, merchantId: 21 };
     await render();
     expect(container.textContent).not.toContain(
@@ -383,7 +401,9 @@ describe("assistant settings review", () => {
       m.callbacks.onSettled();
     });
     expect(container.textContent).not.toContain("password=secret");
-    expect(container.textContent).toContain(ar.assistantSaveUx.failed);
+    expect(container.textContent).toContain(
+      ar.assistantSettingsScopeUx.uncertain
+    );
     expect(
       container.querySelector<HTMLTextAreaElement>("#welcomeMessage")!.value
     ).toBe("keep my draft");
@@ -457,7 +477,7 @@ describe("assistant settings review", () => {
     );
     expect(preview.textContent).not.toContain("saved away");
   });
-  it("locks duplicate save events and releases the lock after a failed request", async () => {
+  it("locks duplicate saves and requires review before retrying an unconfirmed request", async () => {
     await render();
     const form = container.querySelector("form")!;
     await act(async () => {
@@ -474,6 +494,147 @@ describe("assistant settings review", () => {
       m.callbacks.onSettled();
     });
     await click(ar.botSettingsPage.saveSettings);
+    expect(m.update).toHaveBeenCalledTimes(1);
+    expect(readAssistantDraft("7:20")?.submitted).toBe(true);
+    await click(ar.assistantDraftUx.reviewLatest);
+    await act(async () =>
+      [...document.querySelectorAll('[role="dialog"] button')]
+        .find(b => b.textContent === ar.assistantDraftUx.applyReview)!
+        .dispatchEvent(new MouseEvent("click", { bubbles: true }))
+    );
+    expect(m.update).toHaveBeenCalledTimes(1);
+    await click(ar.botSettingsPage.saveSettings);
     expect(m.update).toHaveBeenCalledTimes(2);
+  });
+  it("does not initialize another store from an old cached settings response", async () => {
+    await render();
+    await fill("welcomeMessage", "store20 draft");
+    m.merchant = 21;
+    await render();
+    expect(container.querySelector("#welcomeMessage")).toBeNull();
+    expect(m.update).not.toHaveBeenCalled();
+    m.settings = {
+      ...m.settings,
+      merchantId: 21,
+      welcomeMessage: "store21 saved",
+    };
+    await render();
+    expect(
+      container.querySelector<HTMLTextAreaElement>("#welcomeMessage")!.value
+    ).toBe("store21 saved");
+    expect(readAssistantDraft("7:21")).toBeNull();
+    expect(readAssistantDraft("7:20")?.draft.welcomeMessage).toBe(
+      "store20 draft"
+    );
+  });
+  it("ignores a late save callback after tenant navigation", async () => {
+    await render();
+    await fill("welcomeMessage", "old store edit");
+    await click(ar.botSettingsPage.saveSettings);
+    const callbacks = m.callbacks,
+      submitted = m.update.mock.calls[0][0],
+      old = m.settings;
+    m.merchant = 21;
+    m.settings = { ...m.settings, merchantId: 21, welcomeMessage: "new store" };
+    await render();
+    await act(async () => {
+      callbacks.onSuccess(
+        { ...old, ...submitted, formRevision: "b".repeat(64) },
+        submitted
+      );
+      callbacks.onSettled();
+    });
+    expect(
+      container.querySelector<HTMLTextAreaElement>("#welcomeMessage")!.value
+    ).toBe("new store");
+    expect(readAssistantDraft("7:20")?.submitted).toBe(true);
+    expect(readAssistantDraft("7:21")).toBeNull();
+  });
+  it("rejects a save result belonging to another tenant", async () => {
+    await render();
+    await fill("welcomeMessage", "mine");
+    await click(ar.botSettingsPage.saveSettings);
+    await act(async () => {
+      m.callbacks.onSuccess(
+        { ...m.settings, merchantId: 21, formRevision: "b".repeat(64) },
+        m.update.mock.calls[0][0]
+      );
+      m.callbacks.onSettled();
+    });
+    expect(container.textContent).toContain(
+      ar.assistantSettingsScopeUx.uncertain
+    );
+    expect(readAssistantDraft("7:20")?.submitted).toBe(true);
+    expect(button(ar.botSettingsPage.saveSettings).disabled).toBe(true);
+  });
+  it("restores an uncertain request without resending even when its values match the baseline", async () => {
+    await render();
+    await click(ar.botSettingsPage.saveSettings);
+    await act(async () => {
+      m.callbacks.onError(Error("lost acknowledgement"));
+      m.callbacks.onSettled();
+      root.render(null);
+    });
+    await render();
+    expect(container.textContent).toContain(
+      ar.assistantSettingsScopeUx.pendingFound
+    );
+    await click(ar.assistantDraftUx.restore);
+    expect(button(ar.botSettingsPage.saveSettings).disabled).toBe(true);
+    expect(m.update).toHaveBeenCalledTimes(1);
+  });
+  it("ignores a late review response after an account change", async () => {
+    let resolve!: (value: any) => void;
+    await render();
+    await fill("welcomeMessage", "account7");
+    await click(ar.botSettingsPage.saveSettings);
+    await act(async () => {
+      m.callbacks.onError({ data: { code: "CONFLICT" } });
+      m.callbacks.onSettled();
+    });
+    m.refetch.mockImplementationOnce(
+      () =>
+        new Promise(yes => {
+          resolve = yes;
+        })
+    );
+    await click(ar.assistantDraftUx.reviewLatest);
+    m.user = 8;
+    await render();
+    await act(async () =>
+      resolve({
+        data: {
+          ...m.settings,
+          welcomeMessage: "late account7",
+          formRevision: "b".repeat(64),
+        },
+      })
+    );
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(
+      container.querySelector<HTMLTextAreaElement>("#welcomeMessage")!.value
+    ).toBe("saved welcome");
+    expect(readAssistantDraft("8:20")).toBeNull();
+  });
+  it("does not initialize stale settings after a failed first read", async () => {
+    m.isError = true;
+    await render();
+    expect(container.querySelector("#welcomeMessage")).toBeNull();
+    expect(m.update).not.toHaveBeenCalled();
+  });
+  it("does not display a previous store's response status", async () => {
+    m.responseMerchant = 21;
+    await render();
+    expect(container.textContent).not.toContain(ar.botSettingsPage.botActive);
+    m.responseMerchant = 20;
+    await render();
+    expect(container.textContent).toContain(ar.botSettingsPage.botActive);
+  });
+  it("cannot repopulate the draft cache from a callback after logout clears the epoch", async () => {
+    await render(); await fill("welcomeMessage", "old session"); await click(ar.botSettingsPage.saveSettings);
+    const submitted = m.update.mock.calls[0][0];
+    clearAssistantDrafts();
+    await act(async () => { m.callbacks.onSuccess({ ...m.settings, ...submitted, formRevision: "b".repeat(64) }, submitted); m.callbacks.onSettled(); });
+    expect(readAssistantDraft("7:20")).toBeNull();
   });
 });

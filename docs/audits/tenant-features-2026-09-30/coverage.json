@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-01T03:39:34.436Z",
+  "generatedAt": "2026-10-01T03:48:09.859Z",
   "definition": "Every registered route is accounted for; source inventory and design completion are different statuses.",
   "routes": [
     {
@@ -26819,6 +26819,8 @@
       ],
       "files": [
         "client/src/pages/merchant/BotSettings.tsx",
+        "client/src/components/KnowledgeWorkspaceScope.tsx",
+        "client/src/lib/knowledge-workspace-cache.ts",
         "client/src/components/merchant/AssistantDraftReview.tsx",
         "client/src/components/merchant/AssistantPersonalityFields.tsx",
         "client/src/lib/assistant-draft-cache.ts",
@@ -26828,31 +26830,32 @@
         "client/src/constants/botTemplates.ts"
       ],
       "controls": [
-        "f7f6ceeb449e",
-        "f5f02d842b47",
-        "d56b4c39857a",
-        "39736950d7d3",
-        "66bb40d8afbc",
-        "40abf140f8df",
-        "90db68c5911a",
-        "81b078795bc8",
-        "a07826f19c74",
-        "200f01b27666",
-        "28a901ebfbb7",
-        "eece21547910",
-        "f4b1ca0c5418",
-        "cf883d21865e",
-        "33a056e64b68",
-        "aac4796c6744",
-        "31dff9f4c5a1",
-        "f3d129655f49",
-        "6072acf506ee",
-        "9aa879a08bcc",
-        "e093f6941b1c",
-        "b58abeaf52ba",
-        "3915fe6d7f64",
-        "5cb8bf4635da",
-        "77b3958263f0",
+        "0a65e5e3cc75",
+        "3a9a359c6078",
+        "ebee9791d9cc",
+        "24fc41a79b6e",
+        "9f7e59508687",
+        "707fb3ec3e95",
+        "e4b4b91b3fc2",
+        "9cbe1ca35520",
+        "9392eceef87b",
+        "50ba07a96565",
+        "669bcee30466",
+        "15402bcf940b",
+        "3291fa684828",
+        "a828d12b687b",
+        "bcf060456079",
+        "d9462b51456c",
+        "3a3523045792",
+        "d721a33379d8",
+        "6fa40b3368f7",
+        "d98a25289fc8",
+        "0d8641834f3d",
+        "ca760129b12f",
+        "a023c4c00178",
+        "47fc62def133",
+        "c89d5a4b00ed",
+        "77ce5300e6f7",
         "431572148474",
         "13516fb4879f",
         "42fd90f34d5f",
@@ -26886,6 +26889,7 @@
         "auth.me",
         "botSettings.get",
         "botSettings.shouldRespond",
+        "merchants.getCurrent",
         "botSettings.getMarginPolicy",
         "botSettings.getDiscountPolicy"
       ],
@@ -26919,15 +26923,15 @@
       ],
       "controlDetails": [
         {
-          "id": "f7f6ceeb449e",
+          "id": "0a65e5e3cc75",
           "file": "client/src/pages/merchant/BotSettings.tsx",
-          "line": 383,
+          "line": 473,
           "tag": "Button",
           "role": "",
           "kind": "action",
           "label": "استعادة المسودة",
           "section": "إعدادات الروبوت",
-          "binding": "() => {\n                  applyDraft(restorable.draft);\n                  setBaseline(restorable.base);\n                  setSavedSnapshot(JSON.stringify(restorable.base));\n                  setRevision(restorable.revision);\n                  setConflict(restorable.revision !== settings?.formRevision);\n                  setActiveSection(restorable.section);\n                  setRestorable(null);\n                }",
+          "binding": "() => {\n                  if (!canManage || !current()) return;\n                  applyDraft(restorable.draft);\n                  setBaseline(restorable.base);\n                  setSavedSnapshot(JSON.stringify(restorable.base));\n                  setRevision(restorable.revision);\n                  setSubmitted(Boolean(restorable.submitted));\n                  setConflict(\n                    Boolean(restorable.submitted) ||\n                      restorable.revision !== settings?.formRevision\n                  );\n                  setActiveSection(restorable.section);\n                  setRestorable(null);\n                }",
           "type": "button",
           "options": [],
           "min": "",
@@ -26938,13 +26942,13 @@
           "conditions": [
             "restorable"
           ],
-          "disabled": "",
+          "disabled": "!canManage",
           "review": "source-inventoried"
         },
         {
-          "id": "f5f02d842b47",
+          "id": "3a9a359c6078",
           "file": "client/src/pages/merchant/BotSettings.tsx",
-          "line": 397,
+          "line": 493,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -26965,9 +26969,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "d56b4c39857a",
+          "id": "ebee9791d9cc",
           "file": "client/src/pages/merchant/BotSettings.tsx",
-          "line": 416,
+          "line": 518,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -26988,9 +26992,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "39736950d7d3",
+          "id": "24fc41a79b6e",
           "file": "client/src/pages/merchant/BotSettings.tsx",
-          "line": 457,
+          "line": 561,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -27009,9 +27013,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "66bb40d8afbc",
+          "id": "9f7e59508687",
           "file": "client/src/pages/merchant/BotSettings.tsx",
-          "line": 483,
+          "line": 587,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -27030,9 +27034,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "40abf140f8df",
+          "id": "707fb3ec3e95",
           "file": "client/src/pages/merchant/BotSettings.tsx",
-          "line": 537,
+          "line": 641,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -27051,9 +27055,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "90db68c5911a",
+          "id": "e4b4b91b3fc2",
           "file": "client/src/pages/merchant/BotSettings.tsx",
-          "line": 579,
+          "line": 683,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -27072,9 +27076,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "81b078795bc8",
+          "id": "9cbe1ca35520",
           "file": "client/src/pages/merchant/BotSettings.tsx",
-          "line": 679,
+          "line": 792,
           "tag": "Switch",
           "role": "",
           "kind": "field",
@@ -27093,9 +27097,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "a07826f19c74",
+          "id": "9392eceef87b",
           "file": "client/src/pages/merchant/BotSettings.tsx",
-          "line": 719,
+          "line": 832,
           "tag": "Switch",
           "role": "",
           "kind": "field",
@@ -27114,9 +27118,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "200f01b27666",
+          "id": "50ba07a96565",
           "file": "client/src/pages/merchant/BotSettings.tsx",
-          "line": 738,
+          "line": 851,
           "tag": "Input",
           "role": "",
           "kind": "field",
@@ -27137,9 +27141,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "28a901ebfbb7",
+          "id": "669bcee30466",
           "file": "client/src/pages/merchant/BotSettings.tsx",
-          "line": 772,
+          "line": 885,
           "tag": "Input",
           "role": "",
           "kind": "field",
@@ -27160,9 +27164,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "eece21547910",
+          "id": "15402bcf940b",
           "file": "client/src/pages/merchant/BotSettings.tsx",
-          "line": 825,
+          "line": 938,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -27183,9 +27187,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "f4b1ca0c5418",
+          "id": "3291fa684828",
           "file": "client/src/pages/merchant/BotSettings.tsx",
-          "line": 885,
+          "line": 998,
           "tag": "Textarea",
           "role": "",
           "kind": "field",
@@ -27204,9 +27208,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "cf883d21865e",
+          "id": "a828d12b687b",
           "file": "client/src/pages/merchant/BotSettings.tsx",
-          "line": 906,
+          "line": 1019,
           "tag": "Textarea",
           "role": "",
           "kind": "field",
@@ -27225,9 +27229,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "33a056e64b68",
+          "id": "bcf060456079",
           "file": "client/src/pages/merchant/BotSettings.tsx",
-          "line": 947,
+          "line": 1060,
           "tag": "Select",
           "role": "",
           "kind": "field",
@@ -27263,9 +27267,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "aac4796c6744",
+          "id": "d9462b51456c",
           "file": "client/src/pages/merchant/BotSettings.tsx",
-          "line": 977,
+          "line": 1090,
           "tag": "Select",
           "role": "",
           "kind": "field",
@@ -27313,9 +27317,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "31dff9f4c5a1",
+          "id": "3a3523045792",
           "file": "client/src/pages/merchant/BotSettings.tsx",
-          "line": 1010,
+          "line": 1123,
           "tag": "Input",
           "role": "",
           "kind": "field",
@@ -27334,9 +27338,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "f3d129655f49",
+          "id": "d721a33379d8",
           "file": "client/src/pages/merchant/BotSettings.tsx",
-          "line": 1032,
+          "line": 1145,
           "tag": "Input",
           "role": "",
           "kind": "field",
@@ -27355,9 +27359,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "6072acf506ee",
+          "id": "6fa40b3368f7",
           "file": "client/src/pages/merchant/BotSettings.tsx",
-          "line": 1199,
+          "line": 1312,
           "tag": "button",
           "role": "",
           "kind": "action",
@@ -27376,9 +27380,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "9aa879a08bcc",
+          "id": "d98a25289fc8",
           "file": "client/src/pages/merchant/BotSettings.tsx",
-          "line": 1240,
+          "line": 1353,
           "tag": "button",
           "role": "",
           "kind": "action",
@@ -27399,9 +27403,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "e093f6941b1c",
+          "id": "0d8641834f3d",
           "file": "client/src/pages/merchant/BotSettings.tsx",
-          "line": 1258,
+          "line": 1371,
           "tag": "Input",
           "role": "",
           "kind": "field",
@@ -27422,9 +27426,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "b58abeaf52ba",
+          "id": "ca760129b12f",
           "file": "client/src/pages/merchant/BotSettings.tsx",
-          "line": 1277,
+          "line": 1390,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -27445,9 +27449,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "3915fe6d7f64",
+          "id": "a023c4c00178",
           "file": "client/src/pages/merchant/BotSettings.tsx",
-          "line": 1345,
+          "line": 1458,
           "tag": "Textarea",
           "role": "",
           "kind": "field",
@@ -27466,9 +27470,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "5cb8bf4635da",
+          "id": "47fc62def133",
           "file": "client/src/pages/merchant/BotSettings.tsx",
-          "line": 1408,
+          "line": 1521,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -27483,13 +27487,13 @@
           "required": false,
           "conditional": true,
           "conditions": [],
-          "disabled": "!canManage ||\n                sendTestMutation.isPending ||\n                savedSnapshot !== currentSnapshot ||\n                updateMutation.isPending",
+          "disabled": "!canManage ||\n                sendTestMutation.isPending ||\n                savedSnapshot !== currentSnapshot ||\n                updateMutation.isPending ||\n                pending ||\n                submitted",
           "review": "source-inventoried"
         },
         {
-          "id": "77b3958263f0",
+          "id": "c89d5a4b00ed",
           "file": "client/src/pages/merchant/BotSettings.tsx",
-          "line": 1426,
+          "line": 1541,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -27504,7 +27508,28 @@
           "required": false,
           "conditional": true,
           "conditions": [],
-          "disabled": "!canManage || updateMutation.isPending || conflict || !revision",
+          "disabled": "!canManage ||\n                updateMutation.isPending ||\n                pending ||\n                submitted ||\n                conflict ||\n                !revision",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "77ce5300e6f7",
+          "file": "client/src/components/KnowledgeWorkspaceScope.tsx",
+          "line": 13,
+          "tag": "Button",
+          "role": "",
+          "kind": "action",
+          "label": "",
+          "section": "KnowledgeWorkspaceScope",
+          "binding": "() => { void user.refetch(); void merchant.refetch(); }",
+          "type": "text",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": false,
+          "conditions": [],
+          "disabled": "",
           "review": "source-inventoried"
         },
         {

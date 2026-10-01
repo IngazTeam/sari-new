@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-01T03:39:34.436Z",
+  "generatedAt": "2026-10-01T03:48:09.859Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -820,10 +820,11 @@
     {
       "route": "/merchant/bot-settings",
       "controlsBefore": 37,
-      "controlsNow": 53,
+      "controlsNow": 54,
       "removedQueries": [],
       "addedQueries": [
-        "auth.me"
+        "auth.me",
+        "merchants.getCurrent"
       ],
       "removedMutations": [],
       "addedMutations": [

@@ -1,4 +1,5 @@
 import { WorkspaceState } from "@/components/merchant/WorkspaceState";
+import { KnowledgeWorkspaceScope } from "@/components/KnowledgeWorkspaceScope";
 import { AssistantDraftReview } from "@/components/merchant/AssistantDraftReview";
 import { AssistantPersonalityFields } from "@/components/merchant/AssistantPersonalityFields";
 import {
@@ -11,6 +12,7 @@ import {
   readAssistantDraft,
   discardAssistantDraft,
   type CachedAssistantDraft,
+  assistantDraftEpoch,
 } from "@/lib/assistant-draft-cache";
 import { AssistantReplyPreview } from "@/components/merchant/AssistantReplyPreview";
 import { parseWorkingDays, toggleWorkingDay } from "@shared/bot-working-days";
@@ -69,12 +71,33 @@ import {
 import { parseAgentKeywords } from "@shared/virtual-agent-form";
 
 export default function BotSettings() {
+  return (
+    <KnowledgeWorkspaceScope slot="assistant-settings">
+      {scope => <BotSettingsWorkspace key={scope} scope={scope} />}
+    </KnowledgeWorkspaceScope>
+  );
+}
+
+export function BotSettingsWorkspace({ scope }: { scope: string }) {
   const { t } = useTranslation();
   const utils = trpc.useUtils();
   const [activeSection, setActiveSection] = useState("basics");
 
   const initialized = useRef(false);
   const saveLock = useRef(false);
+  const alive = useRef(true),
+    epoch = useRef(assistantDraftEpoch());
+  const [scopeUserId, scopeMerchantId] = scope.split(":").map(Number);
+  const current = () =>
+    alive.current && epoch.current === assistantDraftEpoch();
+  const [submitted, setSubmitted] = useState(false),
+    [pending, setPending] = useState(false);
+  useLayoutEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+    };
+  }, []);
   const [savedSnapshot, setSavedSnapshot] = useState("");
   const [reviewSchedule, setReviewSchedule] = useState(false);
   const [saveFailed, setSaveFailed] = useState(false);
@@ -101,16 +124,35 @@ export default function BotSettings() {
   });
   const { data: settings, isLoading } = settingsQuery;
   const canManage =
-    !!settings?.canManage && !settingsQuery.isError && !authQuery.isError;
-  const { data: shouldRespond } = trpc.botSettings.shouldRespond.useQuery();
+    !!settings?.canManage &&
+    !settingsQuery.isError &&
+    !authQuery.isError &&
+    settings.merchantId === scopeMerchantId &&
+    authQuery.data?.id === scopeUserId;
+  const { data: responseStatus } = trpc.botSettings.shouldRespond.useQuery();
+  const shouldRespond =
+    responseStatus?.merchantId === scopeMerchantId ? responseStatus : undefined;
   const draftKey =
-    settings && authQuery.data?.id
-      ? assistantDraftKey(authQuery.data.id, settings.merchantId)
+    settings?.merchantId === scopeMerchantId &&
+    authQuery.data?.id === scopeUserId
+      ? assistantDraftKey(scopeUserId, scopeMerchantId)
       : undefined;
 
   // Update mutation
   const updateMutation = trpc.botSettings.update.useMutation({
     onSuccess: (result, submitted) => {
+      if (!current()) return;
+      if (
+        result.merchantId !== scopeMerchantId ||
+        !/^[a-f0-9]{64}$/.test(result.formRevision || "")
+      ) {
+        setSubmitted(true);
+        setSaveFailed(false);
+        setConflict(true);
+        setLatestReview(null);
+        return;
+      }
+      setSubmitted(false);
       setSaveFailed(false);
       const saved = assistantSettingsDraft(submitted);
       setBaseline(saved);
@@ -122,6 +164,21 @@ export default function BotSettings() {
       utils.botSettings.shouldRespond.invalidate();
     },
     onError: error => {
+      if (!current()) return;
+      const definitive = [
+        "CONFLICT",
+        "BAD_REQUEST",
+        "FORBIDDEN",
+        "UNAUTHORIZED",
+        "NOT_FOUND",
+      ].includes(error.data?.code || "");
+      setSubmitted(!definitive);
+      if (!definitive) {
+        setConflict(true);
+        setLatestReview(null);
+        setSaveFailed(false);
+        return;
+      }
       if (error.data?.code === "CONFLICT") {
         setConflict(true);
         toast.error(t("assistantDraftUx.conflict"));
@@ -132,15 +189,18 @@ export default function BotSettings() {
     },
     onSettled: () => {
       saveLock.current = false;
+      if (current()) setPending(false);
     },
   });
 
   // Send test message mutation
   const sendTestMutation = trpc.botSettings.sendTestMessage.useMutation({
     onSuccess: (data: any) => {
+      if (!current()) return;
       toast.success(data.message);
     },
     onError: (error: any) => {
+      if (!current()) return;
       toast.error(error.message);
     },
   });
@@ -194,6 +254,8 @@ export default function BotSettings() {
     if (
       settings &&
       draftKey &&
+      current() &&
+      !settingsQuery.isError &&
       !settingsQuery.isFetching &&
       !initialized.current
     ) {
@@ -224,16 +286,19 @@ export default function BotSettings() {
       !draftKey ||
       !baseline ||
       !revision ||
-      restorable
+      restorable ||
+      !current()
     )
       return;
-    if (currentSnapshot === savedSnapshot) discardAssistantDraft(draftKey);
+    if (currentSnapshot === savedSnapshot && !submitted)
+      discardAssistantDraft(draftKey);
     else
       cacheAssistantDraft(draftKey, {
         base: baseline,
         draft: currentDraft,
         revision,
         section: activeSection,
+        submitted,
       });
   }, [
     currentSnapshot,
@@ -243,26 +308,32 @@ export default function BotSettings() {
     revision,
     restorable,
     activeSection,
+    submitted,
   ]);
 
   const reviewLatest = async () => {
-    if (reviewLock.current || saveLock.current) return;
+    if (reviewLock.current || saveLock.current || !current()) return;
     reviewLock.current = true;
     setReviewLoading(true);
     setReviewFailed(false);
     try {
       const result = await settingsQuery.refetch();
-      if (result.error || !result.data?.formRevision)
+      if (!current()) return;
+      if (
+        result.error ||
+        result.data?.merchantId !== scopeMerchantId ||
+        !/^[a-f0-9]{64}$/.test(result.data?.formRevision || "")
+      )
         throw Error("Unavailable");
       setLatestReview({
         draft: assistantSettingsDraft(result.data),
         revision: result.data.formRevision,
       });
     } catch {
-      setReviewFailed(true);
+      if (current()) setReviewFailed(true);
     } finally {
       reviewLock.current = false;
-      setReviewLoading(false);
+      if (current()) setReviewLoading(false);
     }
   };
 
@@ -270,7 +341,9 @@ export default function BotSettings() {
     e.preventDefault();
     if (
       !canManage ||
+      !current() ||
       saveLock.current ||
+      submitted ||
       restorable ||
       conflict ||
       !revision ||
@@ -292,6 +365,16 @@ export default function BotSettings() {
       return;
     }
     saveLock.current = true;
+    setSubmitted(true);
+    setPending(true);
+    if (draftKey && baseline)
+      cacheAssistantDraft(draftKey, {
+        base: baseline,
+        draft: currentDraft,
+        revision,
+        section: activeSection,
+        submitted: true,
+      });
     const words = parseAgentKeywords([...groupKeywords, keywordInput]);
     setGroupKeywords(words);
     setKeywordInput("");
@@ -356,7 +439,8 @@ export default function BotSettings() {
   );
 
   const applyTemplate = (template: (typeof allTemplates)[0]) => {
-    if (restorable || latestReview || reviewLoading) return;
+    if (!canManage || restorable || latestReview || reviewLoading || submitted)
+      return;
     setFormData({
       ...formData,
       ...template.settings,
@@ -378,16 +462,28 @@ export default function BotSettings() {
       {restorable && (
         <Alert className="my-4">
           <AlertDescription className="space-y-3">
-            <p>{t("assistantDraftUx.restoreHelp")}</p>
+            <p>
+              {t(
+                restorable.submitted
+                  ? "assistantSettingsScopeUx.pendingFound"
+                  : "assistantDraftUx.restoreHelp"
+              )}
+            </p>
             <div className="flex flex-wrap gap-2">
               <Button
                 type="button"
+                disabled={!canManage}
                 onClick={() => {
+                  if (!canManage || !current()) return;
                   applyDraft(restorable.draft);
                   setBaseline(restorable.base);
                   setSavedSnapshot(JSON.stringify(restorable.base));
                   setRevision(restorable.revision);
-                  setConflict(restorable.revision !== settings?.formRevision);
+                  setSubmitted(Boolean(restorable.submitted));
+                  setConflict(
+                    Boolean(restorable.submitted) ||
+                      restorable.revision !== settings?.formRevision
+                  );
                   setActiveSection(restorable.section);
                   setRestorable(null);
                 }}
@@ -412,7 +508,13 @@ export default function BotSettings() {
       {conflict && (
         <Alert className="my-4" role="alert">
           <AlertDescription className="space-y-3">
-            <p>{t("assistantDraftUx.conflict")}</p>
+            <p>
+              {t(
+                submitted
+                  ? "assistantSettingsScopeUx.uncertain"
+                  : "assistantDraftUx.conflict"
+              )}
+            </p>
             <Button
               type="button"
               onClick={() => void reviewLatest()}
@@ -438,6 +540,7 @@ export default function BotSettings() {
           latest={latestReview.draft}
           onClose={() => setLatestReview(null)}
           onApply={merged => {
+            if (!canManage || !current()) return;
             applyDraft(merged);
             setBaseline(latestReview.draft);
             setSavedSnapshot(JSON.stringify(latestReview.draft));
@@ -445,6 +548,7 @@ export default function BotSettings() {
             setConflict(false);
             setSaveFailed(false);
             setLatestReview(null);
+            setSubmitted(false);
           }}
         />
       )}
@@ -625,9 +729,13 @@ export default function BotSettings() {
       )}
 
       <p className="text-sm text-muted-foreground" role="status">
-        {savedSnapshot && currentSnapshot !== savedSnapshot
-          ? t("assistantDraftUx.unsaved")
-          : t("assistantSectionsUx.saved")}
+        {pending
+          ? t("botSettingsPage.saving")
+          : submitted
+            ? t("assistantOptionDraftUx.statusUnconfirmed")
+            : savedSnapshot && currentSnapshot !== savedSnapshot
+              ? t("assistantDraftUx.unsaved")
+              : t("assistantSectionsUx.saved")}
       </p>
       {!canManage && (
         <p role="note" className="rounded-xl border p-4 text-sm">
@@ -648,7 +756,12 @@ export default function BotSettings() {
         }}
       >
         <fieldset
-          disabled={!canManage || Boolean(restorable) || reviewLoading}
+          disabled={
+            !canManage ||
+            Boolean(restorable) ||
+            reviewLoading ||
+            (submitted && !pending)
+          }
           className="contents"
         >
           {/* Auto-Reply Toggle */}
@@ -1414,7 +1527,9 @@ export default function BotSettings() {
                 !canManage ||
                 sendTestMutation.isPending ||
                 savedSnapshot !== currentSnapshot ||
-                updateMutation.isPending
+                updateMutation.isPending ||
+                pending ||
+                submitted
               }
             >
               <Send className="h-4 w-4 ml-2" />
@@ -1427,7 +1542,12 @@ export default function BotSettings() {
               type="submit"
               size="lg"
               disabled={
-                !canManage || updateMutation.isPending || conflict || !revision
+                !canManage ||
+                updateMutation.isPending ||
+                pending ||
+                submitted ||
+                conflict ||
+                !revision
               }
             >
               <Save className="h-4 w-4 ml-2" />

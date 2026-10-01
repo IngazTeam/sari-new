@@ -5,9 +5,12 @@ export type CachedAssistantDraft = {
   draft: AssistantSettingsDraft;
   revision: string;
   section: string;
+  submitted?: boolean;
 };
 // Memory only: business instructions never enter browser persistent storage.
 const drafts = new Map<string, CachedAssistantDraft>();
+let epoch = 0;
+export const assistantDraftEpoch = () => epoch;
 const warnBeforeUnload = (event: BeforeUnloadEvent) => {
   if (!drafts.size) return;
   event.preventDefault();
@@ -30,6 +33,7 @@ export function discardAssistantDraft(key: string) {
     window.removeEventListener("beforeunload", warnBeforeUnload);
 }
 export function clearAssistantDrafts() {
+  epoch++;
   drafts.clear();
   window.removeEventListener("beforeunload", warnBeforeUnload);
 }
