@@ -18,7 +18,7 @@ export function requireCompleteCampaignAudience(audience: Awaited<ReturnType<typ
  * Phone normalization mirrors campaign-guard, including its Saudi local aliases.
  * Counts describe matching conversations/numbers, never consent or delivery eligibility.
  */
-export async function readCampaignAudience(merchantId: number, targetAudience: string | null | undefined, now = new Date()) {
+async function readCampaignAudienceProjection(merchantId: number, targetAudience: string | null | undefined, now: Date, includeCustomers: boolean) {
   if (!Number.isSafeInteger(merchantId) || merchantId <= 0) throw new Error('Invalid campaign audience scope');
   const filters = parseCampaignAudience(targetAudience);
   const through = campaignAudienceClock(now);
@@ -53,13 +53,16 @@ export async function readCampaignAudience(merchantId: number, targetAudience: s
     const count = Number(counts[0]?.matched), recipientCount = Number(counts[0]?.recipients), invalidPhoneCount = Number(counts[0]?.invalid);
     if (![count, recipientCount, invalidPhoneCount].every(value => Number.isSafeInteger(value) && value >= 0)
       || recipientCount + invalidPhoneCount > count) throw new Error('Invalid campaign audience aggregate');
-    const [rows] = await connection.execute<RowDataPacket[]>(`${cte}
-      SELECT MAX(id) AS id, phone AS customerPhone FROM identities WHERE phone IS NOT NULL
-      GROUP BY phone ORDER BY id DESC LIMIT ${campaignRecipientLimit}`, params);
-    const customers: CampaignAudienceRecipient[] = rows.map(row => ({ id: Number(row.id), customerPhone: String(row.customerPhone) }));
-    if (customers.length !== Math.min(recipientCount, campaignRecipientLimit)
-      || customers.some(row => !Number.isSafeInteger(row.id) || row.id <= 0 || !/^[1-9]\d{7,14}$/.test(row.customerPhone))) {
-      throw new Error('Invalid campaign audience projection');
+    let customers: CampaignAudienceRecipient[] = [];
+    if (includeCustomers) {
+      const [rows] = await connection.execute<RowDataPacket[]>(`${cte}
+        SELECT MAX(id) AS id, phone AS customerPhone FROM identities WHERE phone IS NOT NULL
+        GROUP BY phone ORDER BY id DESC LIMIT ${campaignRecipientLimit}`, params);
+      customers = rows.map(row => ({ id: Number(row.id), customerPhone: String(row.customerPhone) }));
+      if (customers.length !== Math.min(recipientCount, campaignRecipientLimit)
+        || customers.some(row => !Number.isSafeInteger(row.id) || row.id <= 0 || !/^[1-9]\d{7,14}$/.test(row.customerPhone))) {
+        throw new Error('Invalid campaign audience projection');
+      }
     }
     await connection.commit();
     return { count, recipientCount, invalidPhoneCount, duplicateCount: count - invalidPhoneCount - recipientCount,
@@ -68,4 +71,14 @@ export async function readCampaignAudience(merchantId: number, targetAudience: s
     try { await connection.rollback(); } catch { /* preserve the failure */ }
     throw error;
   } finally { connection.release(); }
+}
+
+export function readCampaignAudience(merchantId: number, targetAudience: string | null | undefined, now = new Date()) {
+  return readCampaignAudienceProjection(merchantId, targetAudience, now, true);
+}
+
+/** Count-only preview never projects or returns customer phone numbers. */
+export async function readCampaignAudienceSummary(merchantId: number, targetAudience: string | null | undefined, now = new Date()) {
+  const { customers: _customers, customersTruncated: _truncated, ...summary } = await readCampaignAudienceProjection(merchantId, targetAudience, now, false);
+  return summary;
 }

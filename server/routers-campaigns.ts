@@ -2,6 +2,9 @@ import { campaignListInput } from '../shared/campaign-workspace';
 import { campaignPerformanceInput } from '../shared/campaign-performance';
 import { campaignReportInput,campaignReportExportInput } from '../shared/campaign-report';
 import { campaignDetailsInput } from '../shared/campaign-details';
+import { campaignEditorInput } from '../shared/campaign-editor';
+import { campaignScheduleMaximum } from '../shared/campaign-schedule';
+import { readCampaignEditor, readCampaignAudiencePreview, CampaignEditorMissingError, CampaignEditorUnavailableError } from './campaign-editor';
 import { readCampaignDetails,CampaignDetailsMissingError,CampaignDetailsUnavailableError } from './campaign-details';
 import { readCampaignReport,readCampaignReportExport,CampaignReportMissingError,CampaignReportUnavailableError,CampaignReportExportLimitError } from './campaign-report';
 import { hasPermission } from './_core/permissions';
@@ -83,7 +86,7 @@ function requireCampaignContent(message: unknown, imageUrl: unknown): void {
 
 // Validate at the server boundary as API clients can bypass the campaign form.
 const campaignScheduleSchema = z.date()
-    .max(new Date('2038-01-19T03:14:07Z'), { message: 'موعد الحملة خارج النطاق المدعوم' })
+    .max(new Date(campaignScheduleMaximum), { message: 'موعد الحملة خارج النطاق المدعوم' })
     .refine(value => value.getTime() > Date.now(), { message: 'اختر موعدًا للحملة في المستقبل' });
 
 // Admin-only procedure
@@ -95,6 +98,14 @@ const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
 });
 
 export const campaignsRouter = router({
+    editorWorkspace: permissionProcedure('analytics.read').input(campaignEditorInput).query(async ({ ctx, input }) => {
+        try { const snapshot = await readCampaignEditor(ctx.user.id, ctx.merchantId, input); return { ...snapshot, canManage: snapshot.merchantStatus === 'active' && hasPermission(ctx.merchantRole, 'campaigns.manage') }; }
+        catch (error) { if (error instanceof CampaignEditorMissingError) throw new TRPCError({ code: 'NOT_FOUND', message: 'Campaign editor not found' }); if (error instanceof CampaignEditorUnavailableError) throw new TRPCError({ code: 'SERVICE_UNAVAILABLE', message: 'Campaign editor unavailable' }); throw error; }
+    }),
+    audiencePreview: permissionProcedure('campaigns.manage').input(campaignAudienceSchema).query(async ({ ctx, input }) => {
+        try { return await readCampaignAudiencePreview(ctx.user.id, ctx.merchantId, input); }
+        catch (error) { if (error instanceof CampaignEditorUnavailableError) throw new TRPCError({ code: 'SERVICE_UNAVAILABLE', message: 'Campaign audience preview unavailable' }); throw error; }
+    }),
     detailsWorkspace: permissionProcedure('analytics.read').input(campaignDetailsInput).query(async ({ctx,input})=>{
         try{return {...await readCampaignDetails(ctx.user.id,ctx.merchantId,input),canManage:hasPermission(ctx.merchantRole,'campaigns.manage')};}
         catch(error){if(error instanceof CampaignDetailsMissingError)throw new TRPCError({code:'NOT_FOUND',message:'Campaign not found'});if(error instanceof CampaignDetailsUnavailableError)throw new TRPCError({code:'SERVICE_UNAVAILABLE',message:'Campaign details unavailable'});throw error;}
