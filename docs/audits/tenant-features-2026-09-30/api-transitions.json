@@ -1168,6 +1168,35 @@
           "contains": "parsed.data.actorUserId===actorUserId"
         }
       ]
+    },
+    {
+      "routes": [
+        "/merchant/conversations"
+      ],
+      "removed": [
+        "conversations.listSalesOfferAttempts"
+      ],
+      "required": [
+        "conversations.salesOfferReviewSnapshot"
+      ],
+      "note": "Offer review now opens a fresh actor/merchant/conversation/source-cursor snapshot and keeps notes in the current workspace across disclosure closing, pagination and read failures. Existing review/list APIs remain compatible; receipt states, conflicting projections and prior acceptance remain visible. Writes reject stale or contradictory results and update message/handoff readers.",
+      "evidence": [
+        "shared/sales-offer-review.ts",
+        "server/routers-sales-offer-review.ts",
+        "server/sales-offer-review-access-pentest.test.ts",
+        "server/sales-offer-review-ui.test.ts",
+        "server/ai/sales-offer-review.mysql.test.ts"
+      ],
+      "checks": [
+        {
+          "file": "server/routers-sales-offer-review.ts",
+          "contains": "listSalesOfferAttempts: permissionProcedure"
+        },
+        {
+          "file": "client/src/components/SalesOfferReview.tsx",
+          "contains": "parsed.data.actorUserId===actorUserId"
+        }
+      ]
     }
   ]
 }

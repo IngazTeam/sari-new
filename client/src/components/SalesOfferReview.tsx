@@ -1,12 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { useTranslation } from "react-i18next";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { ChevronDown } from 'lucide-react';
-import type { listSalesOfferAttempts } from "../../../server/ai/sales-offer-review";
-import type { SalesOfferReviewOutcome } from "../../../server/ai/sales-offer-receipt-proof";
+import {z} from 'zod';
+import {salesOfferReviewItem,salesOfferReviewSnapshot,salesOfferReviewResult,type salesOfferReviewOutcome} from '@shared/sales-offer-review';
 
-type Item = Awaited<ReturnType<typeof listSalesOfferAttempts>>["items"][number];
+type Item=z.infer<typeof salesOfferReviewItem>;
+type SalesOfferReviewOutcome=z.infer<typeof salesOfferReviewOutcome>;
 
 function OfferReviewCard({
   item,
@@ -14,29 +15,39 @@ function OfferReviewCard({
   canManage,
   refreshing,
   onSaved,
+  onRefresh,
+  note,
+  setNote,
+  revision,
 }: {
   item: Item;
   conversationId: number;
   canManage: boolean;
   refreshing: boolean;
-  onSaved: () => void;
+  onSaved: (note:string) => void;
+  onRefresh:()=>void;
+  note:string;
+  setNote:(note:string)=>void;
+  revision:number;
 }) {
   const { t, i18n } = useTranslation();
-  const [note, setNote] = useState(""),
-    [reviewed, setReviewed] = useState(false),
-    [notice, setNotice] = useState<SalesOfferReviewOutcome>();
-  const mutation = trpc.conversations.reviewSalesOffer.useMutation({
-    onSuccess: result => {
-      setReviewed(false);
-      setNote("");
-      setNotice(result.outcome);
-      onSaved();
-    },
-  });
-  useEffect(() => {
-    setReviewed(false);
-    mutation.reset();
-  }, [item.evidence, item.revision]);
+  const basis=JSON.stringify([item,canManage,note]);
+  const [reviewBasis,setReviewBasis]=useState<string|null>(null),[blockedAt,setBlockedAt]=useState<number|null>(null);
+  const [saving,setSaving]=useState(false),[notice,setNotice]=useState<SalesOfferReviewOutcome|'error'|undefined>();
+  const reviewed=reviewBasis===basis,blocked=blockedAt!==null&&revision<=blockedAt;
+  const live=useRef(true),busy=useRef(false),latest=useRef(basis),latestRevision=useRef(revision);latest.current=basis;latestRevision.current=revision;
+  useEffect(()=>{live.current=true;return()=>{live.current=false;};},[]);
+  const mutation=trpc.conversations.reviewSalesOffer.useMutation({retry:false});
+  const save=async()=>{
+    if(busy.current||!canManage||refreshing||blocked||!reviewed||note.trim().length<3)return;
+    busy.current=true;setSaving(true);setNotice(undefined);const expected=basis;
+    try{
+      const result=salesOfferReviewResult.parse(await mutation.mutateAsync({conversationId,attemptId:item.id,expectedRevision:item.revision,evidence:item.evidence,reviewed:true,note:note.trim()}));
+      if(!live.current||latest.current!==expected)return;
+      setReviewBasis(null);setBlockedAt(latestRevision.current);setNotice(result.outcome);onSaved(note);
+    }catch{if(live.current&&latest.current===expected){setReviewBasis(null);setBlockedAt(latestRevision.current);setNotice('error');}}
+    finally{busy.current=false;if(live.current)setSaving(false);}
+  };
   const states = {
     missing: t("merchantUx.offerReview.missing"),
     invalid: t("merchantUx.offerReview.invalid"),
@@ -152,12 +163,12 @@ function OfferReviewCard({
               rows={3}
               maxLength={1000}
               value={note}
-              disabled={mutation.isPending}
+              data-offer-note
+              disabled={saving}
               onChange={event => {
                 setNote(event.target.value);
-                setReviewed(false);
+                setReviewBasis(null);
                 setNotice(undefined);
-                mutation.reset();
               }}
               className="min-h-24 w-full rounded-md border bg-background p-3"
             />
@@ -167,8 +178,9 @@ function OfferReviewCard({
               type="checkbox"
               className="mt-1 h-5 w-5 shrink-0"
               checked={reviewed}
-              disabled={refreshing || mutation.isPending}
-              onChange={event => setReviewed(event.target.checked)}
+              data-offer-reviewed
+              disabled={refreshing || saving || blocked}
+              onChange={event => setReviewBasis(event.target.checked?basis:null)}
             />
             <span>{t("merchantUx.offerReview.attestation")}</span>
           </label>
@@ -179,41 +191,30 @@ function OfferReviewCard({
               !reviewed ||
               note.trim().length < 3 ||
               refreshing ||
-              mutation.isPending ||
-              mutation.isError
+              saving ||
+              blocked
             }
-            onClick={() =>
-              mutation.mutate({
-                conversationId,
-                attemptId: item.id,
-                expectedRevision: item.revision,
-                evidence: item.evidence,
-                reviewed: true,
-                note: note.trim(),
-              })
-            }
+            onClick={() => void save()}
           >
-            {mutation.isPending
+            {saving
               ? t("merchantUx.offerReview.saving")
               : t("merchantUx.offerReview.save")}
           </Button>
-          {mutation.isError && (
+          {notice==='error' && (
             <div role="alert">
               <p>{t("merchantUx.offerReview.saveFailed")}</p>
-              <Button
-                className="mt-2 min-h-11"
-                variant="outline"
-                onClick={() => {
-                  setReviewed(false);
-                  mutation.reset();
-                  onSaved();
-                }}
-              >
-                {t("merchantUx.offerReview.refresh")}
-              </Button>
             </div>
           )}
-          {notice && (
+          {blocked&&<Button
+                data-offer-retry
+                className="mt-2 min-h-11"
+                variant="outline"
+                disabled={refreshing||saving}
+                onClick={() => {setReviewBasis(null);onRefresh();}}
+              >
+                {t("merchantUx.offerReview.refresh")}
+              </Button>}
+          {notice&&notice!=='error' && (
             <p role="status" data-offer-saved>
               {outcomes[notice]}
             </p>
@@ -226,102 +227,50 @@ function OfferReviewCard({
   );
 }
 
-export function SalesOfferReview({
-  conversationId,
-}: {
-  conversationId: number;
-}) {
-  const { t } = useTranslation();
-  const [open, setOpen] = useState(false),
-    [beforeSourceId, setBeforeSourceId] = useState<number>();
-  useEffect(() => setBeforeSourceId(undefined), [conversationId]);
-  const query = trpc.conversations.listSalesOfferAttempts.useQuery(
-    { conversationId, beforeSourceId },
-    { enabled: open, refetchInterval: open ? 15000 : false }
-  );
-  return (
-    <details
-      data-offer-panel
-      className="min-w-0 rounded-lg border bg-muted/20 px-4"
-      onToggle={event => setOpen(event.currentTarget.open)}
-    >
-      <summary className="flex min-h-12 cursor-pointer items-center justify-between gap-3 py-2 font-semibold">
-        <span>{t("merchantUx.offerReview.title")}</span>
-        <ChevronDown aria-hidden="true" className={`h-4 w-4 shrink-0 transition-transform motion-reduce:transition-none ${open?'rotate-180':''}`}/>
-      </summary>
-      {open && (
-        <section
-          aria-label={t("merchantUx.offerReview.title")}
-          className="min-w-0 space-y-3 pb-4"
-        >
-          <p className="text-sm leading-relaxed text-muted-foreground">
-            {t("merchantUx.offerReview.scope")}
-          </p>
-          {query.isLoading ? (
-            <p role="status">{t("merchantUx.offerReview.loading")}</p>
-          ) : query.isError ? (
-            <div role="alert">
-              <p>{t("merchantUx.offerReview.loadFailed")}</p>
-              <Button className="mt-2 min-h-11" onClick={() => query.refetch()}>
-                {t("merchantUx.offerReview.refresh")}
-              </Button>
-            </div>
-          ) : (
-            query.data && (
-              <>
-                {query.data.items.length === 0 ? (
-                  <p>{t("merchantUx.offerReview.empty")}</p>
-                ) : (
-                  <div className="max-h-[36rem] space-y-3 overflow-y-auto">
-                    {query.data.items.map(item => (
-                      <OfferReviewCard
-                        key={`${conversationId}:${item.id}`}
-                        item={item}
-                        conversationId={conversationId}
-                        canManage={query.data.canManage}
-                        refreshing={query.isFetching}
-                        onSaved={() => {
-                          void query.refetch();
-                        }}
-                      />
-                    ))}
-                  </div>
-                )}
-                <nav
-                  aria-label={t("merchantUx.offerReview.pages")}
-                  className="flex flex-wrap gap-2"
-                >
-                  <Button
-                    data-offer-refresh
-                    variant="outline"
-                    className="h-auto min-h-11 whitespace-normal"
-                    disabled={query.isFetching}
-                    onClick={() => {
-                      setBeforeSourceId(undefined);
-                      void query.refetch();
-                    }}
-                  >
-                    {beforeSourceId
-                      ? t("merchantUx.offerReview.latest")
-                      : t("merchantUx.offerReview.refresh")}
-                  </Button>
-                  {query.data.nextCursor && (
-                    <Button
-                      data-offer-older
-                      variant="outline"
-                      className="h-auto min-h-11 whitespace-normal"
-                      disabled={query.isFetching}
-                      onClick={() => setBeforeSourceId(query.data!.nextCursor!)}
-                    >
-                      {t("merchantUx.offerReview.older")}
-                    </Button>
-                  )}
-                </nav>
-              </>
-            )
-          )}
-        </section>
-      )}
-    </details>
-  );
+type OfferScope={conversationId:number;merchantId:number;actorUserId:number};
+export function SalesOfferReview(props:OfferScope){
+  return <ScopedOfferReview key={[props.actorUserId,props.merchantId,props.conversationId].join(':')} {...props}/>;
+}
+function ScopedOfferReview(props:OfferScope){
+  const {t}=useTranslation();
+  const [open,setOpen]=useState(false),[beforeSourceId,setBeforeSourceId]=useState<number>();
+  const [notes,setNotes]=useState<Record<string,string>>({});
+  return <details data-offer-panel open={open} className="min-w-0 rounded-lg border bg-muted/20 px-4" onToggle={event=>setOpen(event.currentTarget.open)}>
+    <summary className="flex min-h-12 cursor-pointer items-center justify-between gap-3 py-2 font-semibold">
+      <span>{t('merchantUx.offerReview.title')}</span><ChevronDown aria-hidden="true" className={'h-4 w-4 shrink-0 transition-transform motion-reduce:transition-none '+(open?'rotate-180':'')}/>
+    </summary>
+    {open&&<OfferBrowser {...props} beforeSourceId={beforeSourceId} setBeforeSourceId={setBeforeSourceId} notes={notes} setNotes={setNotes}/>}
+  </details>;
+}
+function OfferBrowser({conversationId,merchantId,actorUserId,beforeSourceId,setBeforeSourceId,notes,setNotes}:OfferScope&{
+  beforeSourceId:number|undefined;setBeforeSourceId:(value:number|undefined)=>void;notes:Record<string,string>;setNotes:Dispatch<SetStateAction<Record<string,string>>>;
+}){
+  const {t}=useTranslation(),utils=trpc.useUtils();
+  const query=trpc.conversations.salesOfferReviewSnapshot.useQuery({conversationId,beforeSourceId},{retry:false,staleTime:0,refetchOnMount:'always',refetchInterval:15000});
+  const parsed=salesOfferReviewSnapshot.safeParse(query.data);
+  const matches=parsed.success&&parsed.data.merchantId===merchantId&&parsed.data.actorUserId===actorUserId&&parsed.data.conversationId===conversationId&&parsed.data.beforeSourceId===(beforeSourceId??null);
+  const data=matches&&parsed.success&&!query.isError&&query.isFetchedAfterMount?parsed.data:null;
+  const refresh=()=>{if(beforeSourceId!==undefined)setBeforeSourceId(undefined);else void query.refetch();};
+  const saved=(id:string,note:string)=>{
+    setNotes(current=>current[id]===note?{...current,[id]:''}:current);
+    void query.refetch();void utils.conversations.listSalesOfferAttempts.invalidate({conversationId});
+    void utils.conversations.getMessages.invalidate({conversationId});void utils.conversations.messageHistory.invalidate({conversationId});
+    void utils.conversations.getHandoff.invalidate({conversationId});void utils.conversations.handoffSnapshot.invalidate({conversationId});void utils.conversations.list.invalidate();
+  };
+  return <section aria-label={t('merchantUx.offerReview.title')} className="min-w-0 space-y-3 pb-4">
+    <p className="text-sm leading-relaxed text-muted-foreground">{t('merchantUx.offerReview.scope')}</p>
+    {query.isLoading||(!query.isFetchedAfterMount&&query.isFetching)?<p role="status">{t('merchantUx.offerReview.loading')}</p>:!data?<div role="alert">
+      <p>{t('merchantUx.offerReview.loadFailed')}</p><Button data-offer-refresh className="mt-2 min-h-11" onClick={()=>void query.refetch()}>{t('merchantUx.offerReview.refresh')}</Button>
+    </div>:<>
+      {query.isFetching&&<p role="status">{t('merchantUx.offerReview.loading')}</p>}
+      {data.page.items.length===0?<p>{t('merchantUx.offerReview.empty')}</p>:<div className="max-h-[36rem] space-y-3 overflow-y-auto">
+        {data.page.items.map(item=><OfferReviewCard key={item.id} item={item} conversationId={conversationId} canManage={data.canManage} refreshing={query.isFetching} revision={query.dataUpdatedAt}
+          note={notes[item.id]??''} setNote={note=>setNotes(current=>({...current,[item.id]:note}))} onSaved={note=>saved(item.id,note)} onRefresh={()=>void query.refetch()}/>)}
+      </div>}
+      <nav aria-label={t('merchantUx.offerReview.pages')} className="flex flex-wrap gap-2">
+        <Button data-offer-refresh variant="outline" className="h-auto min-h-11 whitespace-normal" disabled={query.isFetching} onClick={refresh}>{beforeSourceId?t('merchantUx.offerReview.latest'):t('merchantUx.offerReview.refresh')}</Button>
+        {data.page.nextCursor&&<Button data-offer-older variant="outline" className="h-auto min-h-11 whitespace-normal" disabled={query.isFetching} onClick={()=>setBeforeSourceId(data.page.nextCursor!)}>{t('merchantUx.offerReview.older')}</Button>}
+      </nav>
+    </>}
+  </section>;
 }

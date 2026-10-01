@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-01T12:26:45.082Z",
+  "generatedAt": "2026-10-01T12:39:39.156Z",
   "definition": "Every registered route is accounted for; source inventory and design completion are different statuses.",
   "routes": [
     {
@@ -13576,21 +13576,21 @@
         "34053cf9106e",
         "2833b8103a5a",
         "db3e677a1ab5",
-        "0fb59774e60a",
-        "ab3b2b671890",
-        "769172be8229",
-        "63ccd5f7358b",
-        "173ed4eff6dd",
-        "cd18dae8cf4e",
-        "ad4df67c1d1b",
-        "7119271de5b0",
-        "18f20d1bfbea",
-        "efcef74bcd71",
-        "8e71eb9cdf58",
-        "798df30f29b2",
-        "d6bf763f648b",
-        "7350edf4d5cb",
-        "5eba1e25f973",
+        "9cbb704711a4",
+        "0998a0e3e73e",
+        "3e47be3a8de6",
+        "3dcf779d6025",
+        "66f4f754c732",
+        "4f78c2eb667e",
+        "7954d5567f56",
+        "a578c83c9b75",
+        "afdef2a5fcff",
+        "aa7670bbfbec",
+        "ee10b128c7fc",
+        "c567d31ccb83",
+        "6589d4324031",
+        "b25db2e7d17d",
+        "e7f611db0006",
         "7c19f144b1df",
         "442de96c6f21",
         "ec8e32f4091f",
@@ -13623,15 +13623,15 @@
         "3ccadd366428",
         "7ead4443ecfe",
         "cd83c9713a56",
-        "a2db9df3ed5c",
-        "26aeecc5ffda",
-        "51289c5019c8",
-        "d186ffd781b1",
-        "1f1fb360785c",
-        "c06fe26ca046",
-        "cc01b2ccefa0",
-        "713df34b2efa",
-        "f11c50dbd5d0",
+        "5e4260be7387",
+        "b9a1203cb239",
+        "7ba94105f4c1",
+        "8fa56e1e7962",
+        "701136f0e5e0",
+        "419679c0fdb0",
+        "b8da9b160a82",
+        "8e869b287bf0",
+        "62d44a612af2",
         "2e5f46d09113",
         "460f7c9f41f0",
         "a187edde6062",
@@ -13670,7 +13670,7 @@
         "conversations.handoffSnapshot",
         "conversations.handoffSourceSnapshot",
         "conversations.escalationReviewSnapshot",
-        "conversations.listSalesOfferAttempts",
+        "conversations.salesOfferReviewSnapshot",
         "conversations.staffAttemptSnapshot",
         "aiSuggestions.getQuickSuggestions"
       ],
@@ -13921,9 +13921,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "0fb59774e60a",
+          "id": "9cbb704711a4",
           "file": "client/src/pages/merchant/Conversations.tsx",
-          "line": 651,
+          "line": 653,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -13944,9 +13944,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "ab3b2b671890",
+          "id": "0998a0e3e73e",
           "file": "client/src/pages/merchant/Conversations.tsx",
-          "line": 656,
+          "line": 658,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -13968,9 +13968,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "769172be8229",
+          "id": "3e47be3a8de6",
           "file": "client/src/pages/merchant/Conversations.tsx",
-          "line": 657,
+          "line": 659,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -13992,9 +13992,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "63ccd5f7358b",
+          "id": "3dcf779d6025",
           "file": "client/src/pages/merchant/Conversations.tsx",
-          "line": 659,
+          "line": 661,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -14016,9 +14016,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "173ed4eff6dd",
+          "id": "66f4f754c732",
           "file": "client/src/pages/merchant/Conversations.tsx",
-          "line": 746,
+          "line": 748,
           "tag": "div",
           "role": "button",
           "kind": "action",
@@ -14039,9 +14039,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "cd18dae8cf4e",
+          "id": "4f78c2eb667e",
           "file": "client/src/pages/merchant/Conversations.tsx",
-          "line": 796,
+          "line": 798,
           "tag": "a",
           "role": "",
           "kind": "action",
@@ -14062,9 +14062,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "ad4df67c1d1b",
+          "id": "7954d5567f56",
           "file": "client/src/pages/merchant/Conversations.tsx",
-          "line": 889,
+          "line": 891,
           "tag": "DialogContent",
           "role": "",
           "kind": "dialog",
@@ -14085,9 +14085,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "7119271de5b0",
+          "id": "a578c83c9b75",
           "file": "client/src/pages/merchant/Conversations.tsx",
-          "line": 916,
+          "line": 918,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -14108,9 +14108,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "18f20d1bfbea",
+          "id": "afdef2a5fcff",
           "file": "client/src/pages/merchant/Conversations.tsx",
-          "line": 954,
+          "line": 956,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -14132,9 +14132,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "efcef74bcd71",
+          "id": "aa7670bbfbec",
           "file": "client/src/pages/merchant/Conversations.tsx",
-          "line": 958,
+          "line": 960,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -14156,9 +14156,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "8e71eb9cdf58",
+          "id": "ee10b128c7fc",
           "file": "client/src/pages/merchant/Conversations.tsx",
-          "line": 963,
+          "line": 965,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -14180,9 +14180,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "798df30f29b2",
+          "id": "c567d31ccb83",
           "file": "client/src/pages/merchant/Conversations.tsx",
-          "line": 970,
+          "line": 972,
           "tag": "Textarea",
           "role": "",
           "kind": "field",
@@ -14203,9 +14203,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "d6bf763f648b",
+          "id": "6589d4324031",
           "file": "client/src/pages/merchant/Conversations.tsx",
-          "line": 994,
+          "line": 996,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -14226,9 +14226,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "7350edf4d5cb",
+          "id": "b25db2e7d17d",
           "file": "client/src/pages/merchant/Conversations.tsx",
-          "line": 1014,
+          "line": 1016,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -14249,9 +14249,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "5eba1e25f973",
+          "id": "e7f611db0006",
           "file": "client/src/pages/merchant/Conversations.tsx",
-          "line": 1056,
+          "line": 1058,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -15016,9 +15016,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "a2db9df3ed5c",
+          "id": "5e4260be7387",
           "file": "client/src/components/SalesOfferReview.tsx",
-          "line": 106,
+          "line": 117,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -15037,9 +15037,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "26aeecc5ffda",
+          "id": "b9a1203cb239",
           "file": "client/src/components/SalesOfferReview.tsx",
-          "line": 150,
+          "line": 161,
           "tag": "textarea",
           "role": "",
           "kind": "field",
@@ -15056,13 +15056,13 @@
           "conditions": [
             "canManage"
           ],
-          "disabled": "mutation.isPending",
+          "disabled": "saving",
           "review": "source-inventoried"
         },
         {
-          "id": "51289c5019c8",
+          "id": "7ba94105f4c1",
           "file": "client/src/components/SalesOfferReview.tsx",
-          "line": 166,
+          "line": 177,
           "tag": "input",
           "role": "",
           "kind": "field",
@@ -15075,23 +15075,23 @@
           "max": "",
           "maxLength": "",
           "required": false,
-          "conditional": false,
+          "conditional": true,
           "conditions": [
             "canManage"
           ],
-          "disabled": "refreshing || mutation.isPending",
+          "disabled": "refreshing || saving || blocked",
           "review": "source-inventoried"
         },
         {
-          "id": "d186ffd781b1",
+          "id": "8fa56e1e7962",
           "file": "client/src/components/SalesOfferReview.tsx",
-          "line": 175,
+          "line": 187,
           "tag": "Button",
           "role": "",
           "kind": "action",
           "label": "",
           "section": "SalesOfferReview",
-          "binding": "() =>\n              mutation.mutate({\n                conversationId,\n                attemptId: item.id,\n                expectedRevision: item.revision,\n                evidence: item.evidence,\n                reviewed: true,\n                note: note.trim(),\n              })",
+          "binding": "() => void save()",
           "type": "text",
           "options": [],
           "min": "",
@@ -15102,37 +15102,37 @@
           "conditions": [
             "canManage"
           ],
-          "disabled": "!reviewed ||\n              note.trim().length < 3 ||\n              refreshing ||\n              mutation.isPending ||\n              mutation.isError",
+          "disabled": "!reviewed ||\n              note.trim().length < 3 ||\n              refreshing ||\n              saving ||\n              blocked",
           "review": "source-inventoried"
         },
         {
-          "id": "1f1fb360785c",
+          "id": "701136f0e5e0",
           "file": "client/src/components/SalesOfferReview.tsx",
-          "line": 203,
+          "line": 208,
           "tag": "Button",
           "role": "",
           "kind": "action",
           "label": "",
           "section": "SalesOfferReview",
-          "binding": "() => {\n                  setReviewed(false);\n                  mutation.reset();\n                  onSaved();\n                }",
+          "binding": "() => {setReviewBasis(null);onRefresh();}",
           "type": "text",
           "options": [],
           "min": "",
           "max": "",
           "maxLength": "",
           "required": false,
-          "conditional": false,
+          "conditional": true,
           "conditions": [
-            "mutation.isError",
+            "blocked",
             "canManage"
           ],
-          "disabled": "",
+          "disabled": "refreshing||saving",
           "review": "source-inventoried"
         },
         {
-          "id": "c06fe26ca046",
+          "id": "419679c0fdb0",
           "file": "client/src/components/SalesOfferReview.tsx",
-          "line": 248,
+          "line": 239,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -15151,15 +15151,15 @@
           "review": "source-inventoried"
         },
         {
-          "id": "cc01b2ccefa0",
+          "id": "b8da9b160a82",
           "file": "client/src/components/SalesOfferReview.tsx",
-          "line": 265,
+          "line": 263,
           "tag": "Button",
           "role": "",
           "kind": "action",
           "label": "",
           "section": "SalesOfferReview",
-          "binding": "() => query.refetch()",
+          "binding": "()=>void query.refetch()",
           "type": "text",
           "options": [],
           "min": "",
@@ -15168,23 +15168,22 @@
           "required": false,
           "conditional": false,
           "conditions": [
-            "query.isError",
-            "query.isLoading",
-            "open"
+            "!data",
+            "query.isLoading||(!query.isFetchedAfterMount&&query.isFetching)"
           ],
           "disabled": "",
           "review": "source-inventoried"
         },
         {
-          "id": "713df34b2efa",
+          "id": "8e869b287bf0",
           "file": "client/src/components/SalesOfferReview.tsx",
-          "line": 294,
+          "line": 271,
           "tag": "Button",
           "role": "",
           "kind": "action",
           "label": "",
           "section": "SalesOfferReview",
-          "binding": "() => {\n                      setBeforeSourceId(undefined);\n                      void query.refetch();\n                    }",
+          "binding": "refresh",
           "type": "text",
           "options": [],
           "min": "",
@@ -15193,35 +15192,33 @@
           "required": false,
           "conditional": true,
           "conditions": [
-            "query.data",
-            "query.isError",
-            "query.isLoading"
+            "!data",
+            "query.isLoading||(!query.isFetchedAfterMount&&query.isFetching)"
           ],
           "disabled": "query.isFetching",
           "review": "source-inventoried"
         },
         {
-          "id": "f11c50dbd5d0",
+          "id": "62d44a612af2",
           "file": "client/src/components/SalesOfferReview.tsx",
-          "line": 309,
+          "line": 272,
           "tag": "Button",
           "role": "",
           "kind": "action",
           "label": "",
           "section": "SalesOfferReview",
-          "binding": "() => setBeforeSourceId(query.data!.nextCursor!)",
+          "binding": "()=>setBeforeSourceId(data.page.nextCursor!)",
           "type": "text",
           "options": [],
           "min": "",
           "max": "",
           "maxLength": "",
           "required": false,
-          "conditional": false,
+          "conditional": true,
           "conditions": [
-            "query.data.nextCursor",
-            "query.data",
-            "query.isError",
-            "query.isLoading"
+            "data.page.nextCursor",
+            "!data",
+            "query.isLoading||(!query.isFetchedAfterMount&&query.isFetching)"
           ],
           "disabled": "query.isFetching",
           "review": "source-inventoried"

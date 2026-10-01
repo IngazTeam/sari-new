@@ -640,6 +640,8 @@ function ScopedConversations({ currentMerchant, actorId }: { currentMerchant: { 
                   <SalesOfferReview
                     key={selectedConversation.id}
                     conversationId={selectedConversation.id}
+                    merchantId={currentMerchant.id}
+                    actorUserId={actorId}
                   />
                 </div>
               </details>
