@@ -1,0 +1,6 @@
+{
+  "extends": "../../tsconfig.json",
+  "include": ["src/dashboard-preview*.ts", "src/dashboard-preview*.tsx", "../../server/_core/types/*.d.ts"],
+  "exclude": ["../../node_modules", "../../dist"],
+  "compilerOptions": { "incremental": false, "target": "ES2022" }
+}

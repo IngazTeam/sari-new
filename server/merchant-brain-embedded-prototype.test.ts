@@ -66,10 +66,27 @@ it('fits an embedded modal to the parent viewport and restores content height af
   send({type:'sary-brain-preview',action:'modal',open:'false'});expect(frame.dataset.modal).toBe('true');
   send({type:'sary-brain-preview',action:'modal',open:false});expect(frame.style.height).toBe('3600px');expect(frame.scrollIntoView).toHaveBeenCalledTimes(1);
 });
-it.each(['knowledge-groups','sales-knowledge','brain-preview','reply-quality','knowledge-activity','personas','assistant-options','assistant-settings'])('allows only same-origin embedding for the explicit %s preview',page=>{
+it.each(['knowledge-groups','sales-knowledge','brain-preview','reply-quality','knowledge-activity','personas','assistant-options','assistant-settings','dashboard'])('allows only same-origin embedding for the explicit %s preview',page=>{
   expect(previewPolicy('/'+page+'.html',new URLSearchParams('embed=brain'))).toContain("frame-ancestors 'self'");
   expect(previewPolicy('/'+page+'.html',new URLSearchParams())).toContain("frame-ancestors 'none'");
   const html=readFileSync('prototypes/tenant-dashboard/site/'+page+'.html','utf8');expect(html).toContain('brain-embed.js');expect(html).toContain('brain-embed.css');
+});
+it('routes only displayed dashboard destinations from its owned same-origin frame',()=>{
+  frame.setAttribute('src','./dashboard.html?embed=brain');
+  for(const route of ['/merchant/sari-brain?view=knowledge&pane=conflicts','/merchant/subscription/compare','/merchant/conversations?phone=ux-customer-051']){
+    send({type:'sary-brain-preview',action:'dashboardTool',route});expect(w.location.hash).toBe('#/page'+route);
+  }
+  const previous=w.location.hash,message={type:'sary-brain-preview',action:'dashboardTool',route:'/merchant/products'};
+  send(message,'https://example.com');send(message,undefined,w);
+  for(const route of ['/merchant/unknown','/merchant/products?token=secret','https://example.com','javascript:alert(1)','__proto__'])send({...message,route});
+  frame.setAttribute('src','./assistant-settings.html?embed=brain');send(message);expect(w.location.hash).toBe(previous);
+});
+it('intercepts dashboard child links before they navigate inside the frame',()=>{
+  const child=new JSDOM('<main><a href="./#/page/merchant/sari-brain?view=knowledge&pane=conflicts">Gaps</a></main>',{url:'http://127.0.0.1:4329/dashboard.html?embed=brain',runScripts:'outside-only',pretendToBeVisual:true});
+  const postMessage=vi.fn();Object.defineProperty(child.window,'parent',{value:{postMessage}});
+  runInContext(readFileSync('prototypes/tenant-dashboard/site/brain-embed.js','utf8'),child.getInternalVMContext());
+  const click=new child.window.MouseEvent('click',{bubbles:true,cancelable:true,button:0});child.window.document.querySelector('a')!.dispatchEvent(click);
+  expect(click.defaultPrevented).toBe(true);expect(postMessage).toHaveBeenCalledWith({type:'sary-brain-preview',action:'dashboardTool',route:'/merchant/sari-brain?view=knowledge&pane=conflicts'},'http://127.0.0.1:4329');child.window.close();
 });
 it('routes the settings preview connection link into the central dashboard',()=>{
   frame.setAttribute('src','./assistant-settings.html?embed=brain');
