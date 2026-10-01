@@ -57,6 +57,7 @@ export type WebsiteAnalysisIssue =
   | "startUnconfirmed"
   | "failed"
   | "missing"
+  | "unverified"
   | null;
 export type WebsiteAnalysisDestination =
   | "pages"
@@ -101,6 +102,7 @@ export function WebsiteAnalysisDialog(props: WebsiteAnalysisDialogProps) {
     startUnconfirmed: t("websiteAnalysisUx.startUnconfirmed"),
     failed: t("websiteAnalysisUx.failed"),
     missing: t("websiteAnalysisUx.missing"),
+    unverified: t("websiteAnalysisUx.unverified"),
   };
   const percent =
     Number.isFinite(props.progress) &&
@@ -143,7 +145,7 @@ export function WebsiteAnalysisDialog(props: WebsiteAnalysisDialogProps) {
             <p className="text-sm text-muted-foreground">
               {t("websiteAnalysisUx.reviewBeforeRetry")}
             </p>
-            {props.issue === "startUnconfirmed" && (
+            {(props.issue === "startUnconfirmed" || props.issue === "unverified") && (
               <Button
                 variant="outline"
                 disabled={props.statusFetching}

@@ -80,7 +80,7 @@ it("suppresses stale progress on read error and retries only the status", async 
   expect(props.onReadStatus).toHaveBeenCalledOnce();
   expect(props.onOpenDestination).not.toHaveBeenCalled();
 });
-it.each(["startUnconfirmed", "failed", "missing"] as const)(
+it.each(["startUnconfirmed", "unverified", "failed", "missing"] as const)(
   "describes %s without exposing provider errors or claiming rollback",
   async issue => {
     props.issue = issue;

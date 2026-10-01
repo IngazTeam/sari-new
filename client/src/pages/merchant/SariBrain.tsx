@@ -6,7 +6,9 @@ import type { KnowledgeRemovalTarget } from '@shared/knowledge-source-removal';
 import { SalesKnowledgeReadout } from "@/components/SalesKnowledgeReadout";
 import { BrainQuickPreview } from "@/components/BrainQuickPreview";
 import { ReplyQualityReadout } from '@/components/ReplyQualityReadout';
-import { WebsiteAnalysisDialog, type WebsiteAnalysisIssue } from '@/components/WebsiteAnalysisDialog';
+import { WebsiteAnalysisDialog } from '@/components/WebsiteAnalysisDialog';
+import { KnowledgeWorkspaceScope } from '@/components/KnowledgeWorkspaceScope';
+import { useWebsiteAnalysis } from '@/lib/use-website-analysis';
 import { KnowledgeWebsiteIntake } from '@/components/KnowledgeWebsiteIntake';
 import { KnowledgeWebsiteWorkspace } from '@/components/KnowledgeWebsiteWorkspace';
 import { KnowledgeSourceInventory } from '@/components/KnowledgeSourceInventory';
@@ -24,20 +26,23 @@ import { SalesSectorSettings } from '@/components/SalesSectorSettings';
 import { SalesExperimentProtocol } from '@/components/SalesExperimentProtocol';
 import { SalesReplyReview } from '@/components/SalesReplyReview';
 import { FollowupPolicySettings } from '@/components/FollowupPolicySettings';
-import { trpc } from '@/lib/trpc';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger
 } from '@/components/ui/alert-dialog';
 import { Brain, RotateCcw, Package, Globe, Settings, Upload } from 'lucide-react';
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { useLocation } from 'wouter';
 import { IntegrationLockBanner } from '@/hooks/useIntegration';
 import { useTranslation } from 'react-i18next';
 
 
 export default function SariBrain() {
+  return <KnowledgeWorkspaceScope slot="brain-page">{scopeKey => <SariBrainWorkspace key={scopeKey} scopeKey={scopeKey} />}</KnowledgeWorkspaceScope>;
+}
+
+function SariBrainWorkspace({scopeKey}: {scopeKey: string}) {
   const { t } = useTranslation();
   const [, setLocation] = useLocation();
   const brainViews = [
@@ -68,76 +73,9 @@ export default function SariBrain() {
     else if (destination === 'settings') setLocation('/merchant/settings');
     else openKnowledgePane(destination === 'faqs' ? 'faq' : destination);
   };
-  const utils = trpc.useUtils();
   const [removalTarget,setRemovalTarget] = useState<KnowledgeRemovalTarget|null>(null);
-  // Reanalyze progress modal
-  const [analysisDialogOpen, setAnalysisDialogOpen] = useState(false);
-  const [analysisStep, setAnalysisStep] = useState('');
-  const [analysisResults, setAnalysisResults] = useState<unknown | null>(null);
-  const [analysisError, setAnalysisError] = useState<WebsiteAnalysisIssue>(null);
-  const [reportedProgress, setReportedProgress] = useState(0);
-  const reanalyzeMutation = trpc.sariBrain.reanalyzeWebsite.useMutation({
-    onSuccess: () => {
-      // Mutation returns immediately — start polling for results
-      setPolling(true);
-    },
-    onError: () => {
-      setAnalysisError('startUnconfirmed');
-    },
-  });
-
-  // Polling for async analysis status
-  const [polling, setPolling] = useState(false);
-  const requestedStatusAfter = useRef(0);
-  const statusQuery = trpc.sariBrain.getAnalysisStatus.useQuery(undefined, {
-    enabled: polling,
-    retry: false,
-    refetchInterval: query => polling && !query.state.error ? 3000 : false,
-  });
-
-  useEffect(() => {
-    if (!polling || statusQuery.dataUpdatedAt < requestedStatusAfter.current || !statusQuery.isFetchedAfterMount || statusQuery.isFetching || statusQuery.isError || !statusQuery.data) return;
-    const data = statusQuery.data as any;
-
-    if (data.status === 'completed') {
-      setPolling(false);
-      setAnalysisStep('completed');
-      setReportedProgress(100);
-      setAnalysisResults(data);
-      utils.sariBrain.getSources.invalidate();
-      utils.sariBrain.getActivityLog.invalidate();
-      utils.sariBrain.getWebsiteKnowledge.invalidate();
-      utils.sariBrain.pageWorkspace.invalidate();
-      utils.sariBrain.getKnowledgeSections.invalidate();
-      utils.sariBrain.getHealthScore.invalidate();
-    } else if (data.status === 'error') {
-      setPolling(false);
-      setAnalysisError('failed');
-    } else if (data.status === 'idle') {
-      setPolling(false); setAnalysisError('missing');
-    } else if (data.status === 'running') {
-      // Real progress from server
-      if (typeof data.currentStep === 'string') setAnalysisStep(data.currentStep);
-      setReportedProgress(typeof data.progress === 'number' && Number.isFinite(data.progress) && data.progress >= 0 && data.progress <= 100 ? data.progress : 0);
-    }
-  }, [statusQuery.data, statusQuery.dataUpdatedAt, statusQuery.isFetchedAfterMount, statusQuery.isFetching, statusQuery.isError, polling]);
-
-  const startAnalysis = () => {
-    requestedStatusAfter.current = Date.now();
-    setAnalysisResults(null);
-    setAnalysisError(null);
-    setAnalysisStep('');
-    setReportedProgress(0);
-    setAnalysisDialogOpen(true);
-    reanalyzeMutation.mutate();
-  };
-
-
-
-
-  // Website Knowledge Dashboard
-  const websiteKnowledgeQuery = trpc.sariBrain.getWebsiteKnowledge.useQuery(undefined, {retry:false});
-  const websiteKnowledge = websiteKnowledgeQuery.data;
+  const analysis = useWebsiteAnalysis(scopeKey, brainView === 'overview');
+  const websiteKnowledge = analysis.websiteData;
 
   return (
     <div className="space-y-6">
@@ -166,7 +104,7 @@ export default function SariBrain() {
       <KnowledgeRemovalWorkspace target={removalTarget} onClose={()=>setRemovalTarget(null)}/>
 
       {/* Stats Cards */}
-      {(polling || reanalyzeMutation.isPending || analysisResults !== null || analysisError) && !analysisDialogOpen && <Button variant="outline" onClick={()=>setAnalysisDialogOpen(true)}>{t('brainWorkspaceUx.showProgress')}</Button>}
+      {analysis.hasAttempt && !analysis.dialogOpen && <Button variant="outline" onClick={()=>analysis.setDialogOpen(true)}>{t('brainWorkspaceUx.showProgress')}</Button>}
       <nav className="mw-feature-nav" aria-label={t('brainWorkspaceUx.navigation')}>
         {brainViews.map(view=><Button key={view.id} type="button" variant={brainView===view.id?'secondary':'ghost'} aria-pressed={brainView===view.id} onClick={()=>changeBrainView(view.id)}>{view.label}</Button>)}
       </nav>
@@ -208,11 +146,11 @@ export default function SariBrain() {
       <section hidden={brainView !== 'overview'} className="space-y-6" data-brain-section="overview">
 {/* Quick Actions */}
       <div className="flex flex-wrap gap-2">
-        {websiteKnowledgeQuery.isLoading ? <p role="status">{t('merchantUx.knowledgePages.loading')}</p> : websiteKnowledgeQuery.error ? <div role="alert" className="space-y-2"><p>{t('merchantUx.knowledgePages.loadFailed')}</p><Button variant="outline" onClick={()=>void websiteKnowledgeQuery.refetch()}>{t('merchantUx.knowledgePages.retry')}</Button></div> : websiteKnowledge && websiteKnowledge.totalPages > 0 ? (
+        {analysis.websiteError ? <div role="alert" className="space-y-2"><p>{t('merchantUx.knowledgePages.loadFailed')}</p><Button variant="outline" onClick={analysis.refreshWebsite}>{t('merchantUx.knowledgePages.retry')}</Button></div> : analysis.websiteLoading ? <p role="status">{t('merchantUx.knowledgePages.loading')}</p> : websiteKnowledge && websiteKnowledge.totalPages > 0 ? (
           /* ── Re-analysis: show warning dialog ── */
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="outline" size="sm" disabled={polling || reanalyzeMutation.isPending}>
+              <Button variant="outline" size="sm" disabled={analysis.busy || !websiteKnowledge.canManage}>
                 <RotateCcw className="h-4 w-4 me-2" />
                 {t('websiteAnalysisUx.title')}
               </Button>
@@ -229,7 +167,7 @@ export default function SariBrain() {
               </AlertDialogHeader>
               <AlertDialogFooter className="flex-row-reverse gap-2">
                 <AlertDialogCancel>{t('brainWorkspaceUx.cancel')}</AlertDialogCancel>
-                <AlertDialogAction onClick={startAnalysis} className="bg-primary text-primary-foreground hover:bg-primary/90">
+                <AlertDialogAction onClick={() => void analysis.start()} disabled={analysis.busy || !websiteKnowledge.canManage} className="bg-primary text-primary-foreground hover:bg-primary/90">
                   {t('websiteAnalysisUx.start')}
                 </AlertDialogAction>
               </AlertDialogFooter>
@@ -237,7 +175,7 @@ export default function SariBrain() {
           </AlertDialog>
         ) : (
           /* ── First-time analysis: direct button ── */
-          <Button variant="default" size="sm" onClick={startAnalysis} disabled={polling || reanalyzeMutation.isPending}>
+          <Button variant="default" size="sm" onClick={() => void analysis.start()} disabled={analysis.busy || !websiteKnowledge?.canManage}>
             <Globe className="h-4 w-4 me-2" />
             {t('websiteAnalysisUx.start')}
           </Button>
@@ -255,11 +193,11 @@ export default function SariBrain() {
       </section>
 
       <WebsiteAnalysisDialog
-        open={analysisDialogOpen} onOpenChange={setAnalysisDialogOpen}
-        result={analysisResults} issue={analysisError} pending={reanalyzeMutation.isPending}
-        currentStep={analysisStep} progress={reportedProgress}
-        statusError={!reanalyzeMutation.isPending && statusQuery.isError} statusFetching={statusQuery.isFetching}
-        onReadStatus={() => { requestedStatusAfter.current = Date.now(); setAnalysisError(null); setPolling(true); void statusQuery.refetch(); }}
+        open={analysis.dialogOpen} onOpenChange={analysis.setDialogOpen}
+        result={analysis.result} issue={analysis.issue} pending={analysis.pending}
+        currentStep={analysis.step} progress={analysis.progress}
+        statusError={!analysis.pending && analysis.statusError} statusFetching={analysis.statusFetching}
+        onReadStatus={analysis.readStatus}
         onOpenDestination={destination => {
           if (destination === 'settings') setLocation('/merchant/settings');
           else if (destination === 'testing') changeBrainView('testing');

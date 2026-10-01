@@ -42,7 +42,9 @@ it.each(["owner", "manager", "viewer", "sales_supervisor"])(
     );
     await caller().pageReview({ id: 4 });
     expect(m.read).toHaveBeenCalledWith(20, 4);
-    expect(await caller().getWebsiteKnowledge()).toEqual({
+    expect(await caller().getWebsiteKnowledge({merchantId:20})).toEqual({
+      merchantId:20,
+      canManage:["owner", "manager"].includes(role),
       totalPages: 2,
       activePages: 1,
     });
@@ -103,7 +105,7 @@ it("fails closed and sanitizes read and write database errors", async () => {
   await expect(caller().pageWorkspace()).rejects.toMatchObject({
     message: "Website knowledge unavailable",
   });
-  await expect(caller().getWebsiteKnowledge()).rejects.toMatchObject({
+  await expect(caller().getWebsiteKnowledge({merchantId:20})).rejects.toMatchObject({
     message: "Website knowledge unavailable",
   });
   await expect(caller().pageReview({ id: 4 })).rejects.toMatchObject({

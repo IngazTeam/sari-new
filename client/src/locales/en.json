@@ -47,6 +47,7 @@
     "coverage": "Records may include assistant tests. Recording happens after generation and can fail, with a daily limit of 2000 records per merchant, so this is not necessarily every reply or conversation."
   },
   "websiteAnalysisUx": {
+  "unverified": "The status could not be verified for this analysis attempt. Check the status again before starting another analysis.",
     "confirmHelp": "There are currently {{count}} saved pages. Analysis reads the website URL in settings and merges new pages and questions while preserving previously reviewed or disabled records.",
     "confirmReview": "Knowledge sections may change and conflicts may appear. Review the results afterwards. Analysis does not guarantee full website coverage or sales readiness.",
     "start": "Start website analysis",

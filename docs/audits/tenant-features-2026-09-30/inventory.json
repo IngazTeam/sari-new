@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-01T01:14:44.975Z",
+  "generatedAt": "2026-10-01T01:27:01.784Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -4038,7 +4038,7 @@
     },
     {
       "file": "client/src/components/WhatsAppPreview.tsx",
-      "hash": "2e2055369c53",
+      "hash": "3c76063c1971",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
@@ -8981,57 +8981,52 @@
     },
     {
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "hash": "031358b63d0c",
-      "queries": [
-        "sariBrain.getAnalysisStatus",
-        "sariBrain.getWebsiteKnowledge"
-      ],
-      "mutations": [
-        "sariBrain.reanalyzeWebsite"
-      ],
+      "hash": "8df2e3a5b774",
+      "queries": [],
+      "mutations": [],
       "imperativeReads": [],
       "browserRequests": [],
       "sections": [
         {
           "label": "عقل ساري",
-          "line": 149,
+          "line": 87,
           "tag": "h1"
         },
         {
           "label": "مؤشر احتراف المبيعات",
-          "line": 188,
+          "line": 126,
           "tag": "h2"
         },
         {
           "label": "تجارب البيع وتقييم النتائج",
-          "line": 194,
+          "line": 132,
           "tag": "summary"
         },
         {
           "label": "مراجعة الرد واعتماد إرساله",
-          "line": 195,
+          "line": 133,
           "tag": "summary"
         },
         {
           "label": "سياسة المتابعة",
-          "line": 196,
+          "line": 134,
           "tag": "summary"
         },
         {
           "label": "صلاحيات الخصم وهامش الربح",
-          "line": 197,
+          "line": 135,
           "tag": "summary"
         },
         {
           "label": "تحليل الموقع",
-          "line": 222,
+          "line": 160,
           "tag": "AlertDialogTitle"
         }
       ],
       "choices": [
         {
           "name": "brainViews",
-          "line": 43,
+          "line": 48,
           "values": [
             {
               "id": "overview",
@@ -9069,28 +9064,11 @@
       "handlers": [
         {
           "name": "openKnowledgePane",
-          "line": 52,
+          "line": 57,
           "calls": []
         }
       ],
-      "queryStates": [
-        {
-          "query": "sariBrain.getAnalysisStatus",
-          "binding": "statusQuery",
-          "line": 92,
-          "errorSignal": true,
-          "loadingSignal": false,
-          "enabled": "polling"
-        },
-        {
-          "query": "sariBrain.getWebsiteKnowledge",
-          "binding": "websiteKnowledgeQuery",
-          "line": 139,
-          "errorSignal": true,
-          "loadingSignal": true,
-          "enabled": null
-        }
-      ],
+      "queryStates": [],
       "conditions": [],
       "imports": [
         "client/src/lib/brain-navigation.ts",
@@ -9101,6 +9079,8 @@
         "client/src/components/BrainQuickPreview.tsx",
         "client/src/components/ReplyQualityReadout.tsx",
         "client/src/components/WebsiteAnalysisDialog.tsx",
+        "client/src/components/KnowledgeWorkspaceScope.tsx",
+        "client/src/lib/use-website-analysis.ts",
         "client/src/components/KnowledgeWebsiteIntake.tsx",
         "client/src/components/KnowledgeWebsiteWorkspace.tsx",
         "client/src/components/KnowledgeSourceInventory.tsx",
@@ -9485,7 +9465,7 @@
     },
     {
       "file": "client/src/components/WebsiteAnalysisDialog.tsx",
-      "hash": "7e0713733cac",
+      "hash": "17112b0ea610",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
@@ -9493,17 +9473,17 @@
       "sections": [
         {
           "label": "",
-          "line": 128,
+          "line": 130,
           "tag": "DialogTitle"
         },
         {
           "label": "ما قرأه التحليل",
-          "line": 256,
+          "line": 258,
           "tag": "h3"
         },
         {
           "label": "أثر التحليل في المعرفة",
-          "line": 283,
+          "line": 285,
           "tag": "h3"
         }
       ],
@@ -9511,7 +9491,7 @@
       "handlers": [
         {
           "name": "open",
-          "line": 116,
+          "line": 118,
           "calls": []
         }
       ],
@@ -9519,6 +9499,45 @@
       "conditions": [],
       "imports": [],
       "controlCount": 9
+    },
+    {
+      "file": "client/src/lib/use-website-analysis.ts",
+      "hash": "d2f307a223a4",
+      "queries": [
+        "sariBrain.getAnalysisStatus",
+        "sariBrain.getWebsiteKnowledge"
+      ],
+      "mutations": [
+        "sariBrain.reanalyzeWebsite"
+      ],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [
+        {
+          "query": "sariBrain.getAnalysisStatus",
+          "binding": "status",
+          "line": 31,
+          "errorSignal": true,
+          "loadingSignal": false,
+          "enabled": "!!jobId && polling"
+        },
+        {
+          "query": "sariBrain.getWebsiteKnowledge",
+          "binding": "website",
+          "line": 35,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": "active"
+        }
+      ],
+      "conditions": [],
+      "imports": [
+        "client/src/lib/knowledge-workspace-cache.ts"
+      ],
+      "controlCount": 0
     },
     {
       "file": "client/src/components/KnowledgeWebsiteIntake.tsx",
@@ -20184,6 +20203,7 @@
         "client/src/components/BrainQuickPreview.tsx",
         "client/src/components/ReplyQualityReadout.tsx",
         "client/src/components/WebsiteAnalysisDialog.tsx",
+        "client/src/lib/use-website-analysis.ts",
         "client/src/components/KnowledgeWebsiteIntake.tsx",
         "client/src/hooks/useKnowledgePageIntakeCopy.ts",
         "client/src/components/KnowledgeWebsiteWorkspace.tsx",
@@ -20236,25 +20256,25 @@
         "client/src/hooks/useIntegration.tsx"
       ],
       "controls": [
-        "81cd5ed0b7e2",
-        "957801d4ee69",
-        "84cf782186a6",
-        "2d485b2cba53",
-        "54e6fb52168c",
-        "29fdd7435fd4",
-        "72c332fae939",
-        "cd8e2f88ce24",
-        "558ba35c6c3f",
-        "3ca1f5570a12",
-        "a8592bd283b2",
-        "b556852c1e89",
-        "0e922b7972d5",
-        "6eb121143404",
-        "21467a0887bd",
-        "8be64bba1fce",
-        "9d7073e672b1",
-        "20bd03a75e94",
-        "a8e4d0e0a12a",
+        "3c9d49391f59",
+        "d9548a3490e7",
+        "4048a10d704d",
+        "013056acf51d",
+        "88f17e8654f7",
+        "c830f05be965",
+        "1a8e851c5757",
+        "50d1af104afc",
+        "3990e4c4b213",
+        "5102dd3ecc99",
+        "ebaa2a2b3cbd",
+        "1ad1739644ab",
+        "1053a95a1d1b",
+        "12b6c1b12b46",
+        "c9e1173a94df",
+        "26da166208cb",
+        "db28f3c397d1",
+        "5c33015868a1",
+        "13e704b6df61",
         "51279c03473e",
         "fb7f6a216b0b",
         "3f3f18c0ab2d",
@@ -20299,15 +20319,15 @@
         "1e76f8e6e637",
         "2cbfa6b876e5",
         "a1ffa1da07ac",
-        "4f0aa165d8f3",
-        "a997c08d173c",
-        "63125caa0547",
-        "fd3a39ef09e9",
-        "e5657e8eee51",
-        "9888f1de5be0",
-        "2139070305b7",
-        "10bdc27c1df8",
-        "9872a823e160",
+        "0f748193f78f",
+        "368c5c689674",
+        "8882c82efcf5",
+        "66b4ac93900e",
+        "7dfdb74b3333",
+        "595baff1694f",
+        "facdfcd048b2",
+        "08ac519e06b6",
+        "5c151ab533e7",
         "60d6368c6d0f",
         "1990efe74955",
         "539b8b8851eb",
@@ -20653,8 +20673,6 @@
         "310d417c8782"
       ],
       "queries": [
-        "sariBrain.getAnalysisStatus",
-        "sariBrain.getWebsiteKnowledge",
         "sariBrain.getSources",
         "auth.me",
         "merchants.getCurrent",
@@ -20664,6 +20682,8 @@
         "sariBrain.sectionWorkspace",
         "sariBrain.sectionReview",
         "sariBrain.getQualityDashboard",
+        "sariBrain.getAnalysisStatus",
+        "sariBrain.getWebsiteKnowledge",
         "sariBrain.pageWorkspace",
         "sariBrain.pageIntakeReceipt",
         "sariBrain.pageReview",
@@ -20706,9 +20726,9 @@
         "sariBrain.getFollowupPolicy"
       ],
       "mutations": [
-        "sariBrain.reanalyzeWebsite",
         "sariBrain.removeSources",
         "sariBrain.testSari",
+        "sariBrain.reanalyzeWebsite",
         "sariBrain.previewUrl",
         "sariBrain.savePreviewedPage",
         "sariBrain.changeWorkspacePage",
@@ -48810,9 +48830,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "81cd5ed0b7e2",
+      "id": "3c9d49391f59",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 158,
+      "line": 96,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -48831,9 +48851,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "957801d4ee69",
+      "id": "d9548a3490e7",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 162,
+      "line": 100,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -48852,15 +48872,15 @@
       "review": "source-inventoried"
     },
     {
-      "id": "84cf782186a6",
+      "id": "4048a10d704d",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 169,
+      "line": 107,
       "tag": "Button",
       "role": "",
       "kind": "action",
       "label": "عرض تقدم التحليل",
       "section": "عقل ساري",
-      "binding": "()=>setAnalysisDialogOpen(true)",
+      "binding": "()=>analysis.setDialogOpen(true)",
       "type": "text",
       "options": [],
       "min": "",
@@ -48869,15 +48889,15 @@
       "required": false,
       "conditional": true,
       "conditions": [
-        "(polling || reanalyzeMutation.isPending || analysisResults !== null || analysisError) && !analysisDialogOpen"
+        "analysis.hasAttempt && !analysis.dialogOpen"
       ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "2d485b2cba53",
+      "id": "013056acf51d",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 171,
+      "line": 109,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -48896,9 +48916,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "54e6fb52168c",
+      "id": "88f17e8654f7",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 180,
+      "line": 118,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -48919,9 +48939,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "29fdd7435fd4",
+      "id": "c830f05be965",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 191,
+      "line": 129,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -48940,9 +48960,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "72c332fae939",
+      "id": "1a8e851c5757",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 191,
+      "line": 129,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -48961,9 +48981,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "cd8e2f88ce24",
+      "id": "50d1af104afc",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 194,
+      "line": 132,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -48982,9 +49002,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "558ba35c6c3f",
+      "id": "3990e4c4b213",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 195,
+      "line": 133,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -49003,9 +49023,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "3ca1f5570a12",
+      "id": "5102dd3ecc99",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 196,
+      "line": 134,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -49024,9 +49044,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "a8592bd283b2",
+      "id": "ebaa2a2b3cbd",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 197,
+      "line": 135,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -49045,15 +49065,15 @@
       "review": "source-inventoried"
     },
     {
-      "id": "b556852c1e89",
+      "id": "1ad1739644ab",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 211,
+      "line": 149,
       "tag": "Button",
       "role": "",
       "kind": "action",
       "label": "",
       "section": "صلاحيات الخصم وهامش الربح",
-      "binding": "()=>void websiteKnowledgeQuery.refetch()",
+      "binding": "analysis.refreshWebsite",
       "type": "text",
       "options": [],
       "min": "",
@@ -49062,16 +49082,15 @@
       "required": false,
       "conditional": false,
       "conditions": [
-        "websiteKnowledgeQuery.error",
-        "websiteKnowledgeQuery.isLoading"
+        "analysis.websiteError"
       ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "0e922b7972d5",
+      "id": "1053a95a1d1b",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 215,
+      "line": 153,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -49087,16 +49106,16 @@
       "conditional": false,
       "conditions": [
         "websiteKnowledge && websiteKnowledge.totalPages > 0",
-        "websiteKnowledgeQuery.error",
-        "websiteKnowledgeQuery.isLoading"
+        "analysis.websiteLoading",
+        "analysis.websiteError"
       ],
-      "disabled": "polling || reanalyzeMutation.isPending",
+      "disabled": "analysis.busy || !websiteKnowledge.canManage",
       "review": "source-inventoried"
     },
     {
-      "id": "6eb121143404",
+      "id": "12b6c1b12b46",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 220,
+      "line": 158,
       "tag": "AlertDialogContent",
       "role": "",
       "kind": "dialog",
@@ -49112,16 +49131,16 @@
       "conditional": false,
       "conditions": [
         "websiteKnowledge && websiteKnowledge.totalPages > 0",
-        "websiteKnowledgeQuery.error",
-        "websiteKnowledgeQuery.isLoading"
+        "analysis.websiteLoading",
+        "analysis.websiteError"
       ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "21467a0887bd",
+      "id": "c9e1173a94df",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 231,
+      "line": 169,
       "tag": "AlertDialogCancel",
       "role": "",
       "kind": "action",
@@ -49137,22 +49156,22 @@
       "conditional": false,
       "conditions": [
         "websiteKnowledge && websiteKnowledge.totalPages > 0",
-        "websiteKnowledgeQuery.error",
-        "websiteKnowledgeQuery.isLoading"
+        "analysis.websiteLoading",
+        "analysis.websiteError"
       ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "8be64bba1fce",
+      "id": "26da166208cb",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 232,
+      "line": 170,
       "tag": "AlertDialogAction",
       "role": "",
       "kind": "action",
       "label": "بدء تحليل الموقع",
       "section": "تحليل الموقع",
-      "binding": "startAnalysis",
+      "binding": "() => void analysis.start()",
       "type": "text",
       "options": [],
       "min": "",
@@ -49162,41 +49181,41 @@
       "conditional": false,
       "conditions": [
         "websiteKnowledge && websiteKnowledge.totalPages > 0",
-        "websiteKnowledgeQuery.error",
-        "websiteKnowledgeQuery.isLoading"
+        "analysis.websiteLoading",
+        "analysis.websiteError"
       ],
-      "disabled": "",
+      "disabled": "analysis.busy || !websiteKnowledge.canManage",
       "review": "source-inventoried"
     },
     {
-      "id": "9d7073e672b1",
+      "id": "db28f3c397d1",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 240,
+      "line": 178,
       "tag": "Button",
       "role": "",
       "kind": "action",
       "label": "بدء تحليل الموقع",
       "section": "تحليل الموقع",
-      "binding": "startAnalysis",
+      "binding": "() => void analysis.start()",
       "type": "text",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": false,
+      "conditional": true,
       "conditions": [
         "websiteKnowledge && websiteKnowledge.totalPages > 0",
-        "websiteKnowledgeQuery.error",
-        "websiteKnowledgeQuery.isLoading"
+        "analysis.websiteLoading",
+        "analysis.websiteError"
       ],
-      "disabled": "polling || reanalyzeMutation.isPending",
+      "disabled": "analysis.busy || !websiteKnowledge?.canManage",
       "review": "source-inventoried"
     },
     {
-      "id": "20bd03a75e94",
+      "id": "5c33015868a1",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 245,
+      "line": 183,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -49215,9 +49234,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "a8e4d0e0a12a",
+      "id": "13e704b6df61",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 249,
+      "line": 187,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -50244,13 +50263,13 @@
       "review": "source-inventoried"
     },
     {
-      "id": "4f0aa165d8f3",
+      "id": "0f748193f78f",
       "file": "client/src/components/WebsiteAnalysisDialog.tsx",
-      "line": 122,
+      "line": 124,
       "tag": "DialogContent",
       "role": "",
       "kind": "dialog",
-      "label": "قراءة الموقع وتحديث المعرفة عمليتان منفصلتان. راجع الصفحات والأقسام ثم اختبر الردود قبل الاعتماد عليها. راجع الصفحات والمعرفة قبل بدء تحليل آخر لتجنب تكرار عملية ما زالت جارية. startUnconfirmed التحقق من الحالة تعذر قراء",
+      "label": "قراءة الموقع وتحديث المعرفة عمليتان منفصلتان. راجع الصفحات والأقسام ثم اختبر الردود قبل الاعتماد عليها. راجع الصفحات والمعرفة قبل بدء تحليل آخر لتجنب تكرار عملية ما زالت جارية. startUnconfirmed unverified التحقق من الحال",
       "section": "WebsiteAnalysisDialog",
       "binding": "",
       "type": "text",
@@ -50265,9 +50284,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "a997c08d173c",
+      "id": "368c5c689674",
       "file": "client/src/components/WebsiteAnalysisDialog.tsx",
-      "line": 147,
+      "line": 149,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -50282,16 +50301,16 @@
       "required": false,
       "conditional": false,
       "conditions": [
-        "props.issue === \"startUnconfirmed\"",
+        "(props.issue === \"startUnconfirmed\" || props.issue === \"unverified\")",
         "props.issue"
       ],
       "disabled": "props.statusFetching",
       "review": "source-inventoried"
     },
     {
-      "id": "63125caa0547",
+      "id": "8882c82efcf5",
       "file": "client/src/components/WebsiteAnalysisDialog.tsx",
-      "line": 165,
+      "line": 167,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -50313,9 +50332,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "fd3a39ef09e9",
+      "id": "66b4ac93900e",
       "file": "client/src/components/WebsiteAnalysisDialog.tsx",
-      "line": 315,
+      "line": 317,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -50336,9 +50355,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "e5657e8eee51",
+      "id": "7dfdb74b3333",
       "file": "client/src/components/WebsiteAnalysisDialog.tsx",
-      "line": 318,
+      "line": 320,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -50359,9 +50378,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "9888f1de5be0",
+      "id": "595baff1694f",
       "file": "client/src/components/WebsiteAnalysisDialog.tsx",
-      "line": 321,
+      "line": 323,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -50382,9 +50401,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "2139070305b7",
+      "id": "facdfcd048b2",
       "file": "client/src/components/WebsiteAnalysisDialog.tsx",
-      "line": 324,
+      "line": 326,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -50405,9 +50424,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "10bdc27c1df8",
+      "id": "08ac519e06b6",
       "file": "client/src/components/WebsiteAnalysisDialog.tsx",
-      "line": 328,
+      "line": 330,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -50429,9 +50448,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "9872a823e160",
+      "id": "5c151ab533e7",
       "file": "client/src/components/WebsiteAnalysisDialog.tsx",
-      "line": 335,
+      "line": 337,
       "tag": "Button",
       "role": "",
       "kind": "action",

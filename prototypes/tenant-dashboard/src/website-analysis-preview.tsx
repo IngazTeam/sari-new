@@ -36,6 +36,7 @@ function Preview() {
     ["embedding", "محاولة الفهرسة", "Attempting indexing"],
     ["readError", "تعذر قراءة الحالة", "Status read error"],
     ["startUnconfirmed", "بدء غير مؤكد", "Unconfirmed start"],
+    ["unverified", "نتيجة لا تطابق المحاولة", "Unverified attempt result"],
     ["missing", "حالة غير متاحة", "Unavailable status"],
     ["failed", "تعثر المعالجة", "Processing error"],
     ["partial", "نتيجة جزئية", "Partial outcome"],
@@ -43,7 +44,7 @@ function Preview() {
     ["unknown", "مقاييس غير متاحة", "Unavailable metrics"],
   ];
   const ar = language === "ar";
-  const issue = ["startUnconfirmed", "missing", "failed"].includes(mode)
+  const issue = ["startUnconfirmed", "unverified", "missing", "failed"].includes(mode)
     ? (mode as WebsiteAnalysisIssue)
     : null;
   const result =
