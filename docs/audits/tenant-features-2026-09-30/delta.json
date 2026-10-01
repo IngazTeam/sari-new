@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-01T00:49:08.727Z",
+  "generatedAt": "2026-10-01T00:59:40.321Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,7 +10,7 @@
     },
     "after": {
       "routes": 126,
-      "files": 327,
+      "files": 328,
       "controls": 2183
     }
   },
@@ -92,6 +92,7 @@
     "client/src/components/merchant/AssistantOptionReview.tsx",
     "client/src/hooks/useReviewedAssistantOption.ts",
     "client/src/components/merchant/VirtualAgentReview.tsx",
+    "client/src/lib/brain-navigation.ts",
     "client/src/components/KnowledgeSourceGroupsWorkspace.tsx",
     "client/src/components/KnowledgeActivityWorkspace.tsx",
     "client/src/components/KnowledgeRemovalWorkspace.tsx",

@@ -1,3 +1,4 @@
+import { useBrainNavigation, type KnowledgePane } from '@/lib/brain-navigation';
 import { KnowledgeSourceGroupsWorkspace, type KnowledgeGroupDestination } from '@/components/KnowledgeSourceGroupsWorkspace';
 import {KnowledgeActivityWorkspace} from '@/components/KnowledgeActivityWorkspace';
 import { KnowledgeRemovalWorkspace } from '@/components/KnowledgeRemovalWorkspace';
@@ -15,7 +16,6 @@ import { KnowledgeFaqWorkspace } from '@/components/KnowledgeFaqWorkspace';
 import { KnowledgeIntake } from '@/components/KnowledgeIntake';
 import { KnowledgeLibrary } from '@/components/KnowledgeLibrary';
 import { KnowledgeDocumentUpload } from '@/components/KnowledgeDocumentUpload';
-import { QueryStateCard } from '@/components/QueryStateCard';
 import { CheckoutMarginPolicySettings } from '@/components/CheckoutMarginPolicySettings';
 import { DiscountPolicySettings } from '@/components/DiscountPolicySettings';
 import { LearningAnalysisStatusCard } from '@/components/LearningAnalysisStatusCard';
@@ -27,22 +27,13 @@ import { FollowupPolicySettings } from '@/components/FollowupPolicySettings';
 import { trpc } from '@/lib/trpc';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger
 } from '@/components/ui/alert-dialog';
-import { toast } from 'sonner';
-import { Brain, Trash2, RotateCcw, FileText, Package, Globe, Settings, Clock, Upload, Search, CheckCircle2, XCircle, AlertTriangle, AlertCircle, MessageSquare, Sparkles, Shield, HelpCircle, Plus, Eye, EyeOff, BarChart3, ExternalLink, TrendingUp, Target, Zap, BookOpen, Link, Loader2 } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import { Brain, RotateCcw, Package, Globe, Settings, Upload } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useLocation } from 'wouter';
-import { useIntegration, IntegrationLockBanner } from '@/hooks/useIntegration';
-import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
-} from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { IntegrationLockBanner } from '@/hooks/useIntegration';
 import { useTranslation } from 'react-i18next';
 
 
@@ -56,15 +47,15 @@ export default function SariBrain() {
     {id:'sales',label:t('brainWorkspaceUx.sales'),help:t('brainWorkspaceUx.salesHelp')},
     {id:'testing',label:t('brainWorkspaceUx.testing'),help:t('brainWorkspaceUx.testingHelp')},
     {id:'history',label:t('brainWorkspaceUx.history'),help:t('brainWorkspaceUx.historyHelp')},
-  ];
-  const [brainView,setBrainView] = useState(() => {
-    const requested = new URLSearchParams(window.location.search).get('view');
-    return brainViews.some(v=>v.id===requested) ? requested! : 'overview';
-  });
-  const changeBrainView = (next:string) => {
-    setBrainView(next);
-    const url = new URL(window.location.href); url.searchParams.set('view',next);
-    window.history.replaceState(window.history.state,'',url);
+  ] as const;
+  const { brainView, knowledgePane, changeBrainView, setKnowledgePane } = useBrainNavigation();
+  const openKnowledgePane = (pane: KnowledgePane) => {
+    changeBrainView('knowledge', pane);
+    requestAnimationFrame(() => {
+      const panel = document.querySelector<HTMLElement>('[data-brain-section="knowledge"]:not([hidden])');
+      panel?.scrollIntoView({block:'start'});
+      panel?.querySelector<HTMLElement>('input,button')?.focus({preventScroll:true});
+    });
   };
   const focusSourceElement = (id: string) => {
     changeBrainView('sources');
@@ -75,10 +66,9 @@ export default function SariBrain() {
     if (destination === 'documents') focusSourceElement('brain-document-library');
     else if (destination === 'products') setLocation('/merchant/products');
     else if (destination === 'settings') setLocation('/merchant/settings');
-    else { setKnowledgePane(destination === 'faqs' ? 'faq' : destination); changeBrainView('knowledge'); }
+    else openKnowledgePane(destination === 'faqs' ? 'faq' : destination);
   };
   const utils = trpc.useUtils();
-  const [knowledgePane, setKnowledgePane] = useState('sections');
   const [removalTarget,setRemovalTarget] = useState<KnowledgeRemovalTarget|null>(null);
   // Reanalyze progress modal
   const [analysisDialogOpen, setAnalysisDialogOpen] = useState(false);
@@ -144,8 +134,6 @@ export default function SariBrain() {
 
 
 
-  // Integration awareness
-  const { term } = useIntegration();
 
   // Website Knowledge Dashboard
   const websiteKnowledgeQuery = trpc.sariBrain.getWebsiteKnowledge.useQuery(undefined, {retry:false});
@@ -160,15 +148,15 @@ export default function SariBrain() {
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-3">
             <Brain className="h-8 w-8 text-primary" />
-            عقل ساري
+            {t('brainWorkspaceUx.title')}
           </h1>
           <p className="text-muted-foreground mt-2">
-            إدارة مصادر المعرفة التي يستخدمها ساري للرد على عملائك
+            {t('brainWorkspaceUx.subtitle')}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={() => { changeBrainView('sources'); requestAnimationFrame(() => { const upload = document.getElementById('brain-document-upload'); upload?.scrollIntoView({block:'start'}); upload?.querySelector<HTMLButtonElement>('button')?.focus({preventScroll:true}); }); }}>
-            <Upload className="h-4 w-4 ml-2" />
+          <Button variant="outline" onClick={focusUpload}>
+            <Upload className="h-4 w-4 me-2" />
             {t('websiteAnalysisUx.upload')}
           </Button>
           <Button variant="outline" onClick={()=>setRemovalTarget({kind:'all'})}><RotateCcw className="h-4 w-4 me-2"/>{t('knowledgeRemovalUx.launchReset')}</Button>
@@ -189,7 +177,7 @@ export default function SariBrain() {
           {id:'conflicts',label:t('merchantUx.knowledgeSections.conflictsTab')},
           {id:'faq',label:t('merchantUx.knowledgeSections.faq')},
           {id:'pages',label:t('merchantUx.knowledgePages.title')},
-        ].map(pane=><Button key={pane.id} type="button" variant={knowledgePane===pane.id?'secondary':'ghost'} aria-pressed={knowledgePane===pane.id} onClick={()=>setKnowledgePane(pane.id)}>{pane.label}</Button>)}
+        ].map(pane=><Button key={pane.id} type="button" variant={knowledgePane===pane.id?'secondary':'ghost'} aria-pressed={knowledgePane===pane.id} onClick={()=>setKnowledgePane(pane.id as KnowledgePane)}>{pane.label}</Button>)}
       </nav>}
       <section hidden={brainView!=='overview'} className="space-y-6" data-brain-section="overview">
         <LearningAnalysisStatusCard />
@@ -211,8 +199,8 @@ export default function SariBrain() {
       <section hidden={brainView !== 'overview'} className="space-y-6" data-brain-section="overview">
 {brainView === 'overview' && <KnowledgeSourceInventory onOpen={kind => {
         if (kind === 'products') setLocation('/merchant/products');
-        else if (kind === 'faqs') { setKnowledgePane('faq'); changeBrainView('knowledge'); }
-        else if (kind === 'pages') { setKnowledgePane('pages'); changeBrainView('knowledge'); }
+        else if (kind === 'faqs') openKnowledgePane('faq');
+        else if (kind === 'pages') openKnowledgePane('pages');
         else changeBrainView('sources');
       }} />}
       </section>
@@ -225,14 +213,14 @@ export default function SariBrain() {
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="outline" size="sm" disabled={polling || reanalyzeMutation.isPending}>
-                <RotateCcw className="h-4 w-4 ml-2" />
+                <RotateCcw className="h-4 w-4 me-2" />
                 {t('websiteAnalysisUx.title')}
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle className="text-right">{t('websiteAnalysisUx.title')}</AlertDialogTitle>
-                <AlertDialogDescription className="text-right space-y-3" asChild>
+                <AlertDialogTitle className="text-start">{t('websiteAnalysisUx.title')}</AlertDialogTitle>
+                <AlertDialogDescription className="text-start space-y-3" asChild>
                   <div>
                     <p>{t('websiteAnalysisUx.confirmHelp', { count: websiteKnowledge.totalPages })}</p>
                     <p className="rounded-lg border bg-muted/40 p-3">{t('websiteAnalysisUx.confirmReview')}</p>
@@ -240,7 +228,7 @@ export default function SariBrain() {
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter className="flex-row-reverse gap-2">
-                <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                <AlertDialogCancel>{t('brainWorkspaceUx.cancel')}</AlertDialogCancel>
                 <AlertDialogAction onClick={startAnalysis} className="bg-primary text-primary-foreground hover:bg-primary/90">
                   {t('websiteAnalysisUx.start')}
                 </AlertDialogAction>
@@ -250,17 +238,17 @@ export default function SariBrain() {
         ) : (
           /* ── First-time analysis: direct button ── */
           <Button variant="default" size="sm" onClick={startAnalysis} disabled={polling || reanalyzeMutation.isPending}>
-            <Globe className="h-4 w-4 ml-2" />
+            <Globe className="h-4 w-4 me-2" />
             {t('websiteAnalysisUx.start')}
           </Button>
         )}
         <Button variant="outline" size="sm" onClick={() => setLocation('/merchant/products')}>
-          <Package className="h-4 w-4 ml-2" />
-          إدارة {term('products')}
+          <Package className="h-4 w-4 me-2" />
+          {t('knowledgeGroupsUx.openProducts')}
         </Button>
         <Button variant="outline" size="sm" onClick={() => setLocation('/merchant/settings')}>
-          <Settings className="h-4 w-4 ml-2" />
-          الإعدادات
+          <Settings className="h-4 w-4 me-2" />
+          {t('knowledgeGroupsUx.openSettings')}
         </Button>
       </div>
 
@@ -275,7 +263,7 @@ export default function SariBrain() {
         onOpenDestination={destination => {
           if (destination === 'settings') setLocation('/merchant/settings');
           else if (destination === 'testing') changeBrainView('testing');
-          else { setKnowledgePane(destination); changeBrainView('knowledge'); }
+          else openKnowledgePane(destination);
         }}
       />
 
@@ -292,7 +280,7 @@ export default function SariBrain() {
       </section>
 
       <section hidden={brainView !== 'sales'} className="space-y-6" data-brain-section="sales">
-<SalesKnowledgeReadout active={brainView === 'sales'} onManage={() => { setKnowledgePane('sections'); changeBrainView('knowledge'); }} />
+<SalesKnowledgeReadout active={brainView === 'sales'} onManage={() => openKnowledgePane('sections')} />
 
       </section>
 

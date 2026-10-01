@@ -9955,6 +9955,9 @@
     "healthHelp": "This percentage measures knowledge-section coverage. It does not measure every answer’s accuracy or sales proficiency; review evidence and response and sales evaluations."
   },
   "brainWorkspaceUx": {
+    "title": "Sari Brain",
+    "subtitle": "Review assistant knowledge, sources and results, then choose what needs improvement.",
+    "cancel": "Cancel",
     "navigation": "Sari brain sections",
     "overview": "Overview",
     "sources": "Sources and files",
