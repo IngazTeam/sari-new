@@ -1104,6 +1104,41 @@
           "contains": "snapshot.data.actorUserId===actorUserId"
         }
       ]
+    },
+    {
+      "routes": [
+        "/merchant/conversations"
+      ],
+      "removed": [
+        "conversations.getHandoff",
+        "conversations.getHandoffSource"
+      ],
+      "required": [
+        "conversations.handoffSnapshot",
+        "conversations.handoffSourceSnapshot"
+      ],
+      "note": "Handoff ownership, memory, offers and message evidence now use a consistent tenant snapshot with authenticated account identity. Exact-source dialogs independently verify actor, merchant, conversation and message and require a fresh read. Compatible original reads and the ownership mutation remain available; stale and late UI actions are fenced.",
+      "evidence": [
+        "shared/conversation-handoff.ts",
+        "server/routers-conversation-handoff.ts",
+        "server/ai/conversation-handoff.mysql.test.ts",
+        "server/conversation-handoff-access-pentest.test.ts",
+        "server/conversation-handoff-ui.test.ts"
+      ],
+      "checks": [
+        {
+          "file": "server/routers-conversation-handoff.ts",
+          "contains": "getHandoff: permissionProcedure"
+        },
+        {
+          "file": "server/routers-conversation-handoff.ts",
+          "contains": "getHandoffSource: permissionProcedure"
+        },
+        {
+          "file": "client/src/components/ConversationHandoff.tsx",
+          "contains": "parsed.data.actorUserId === actorUserId"
+        }
+      ]
     }
   ]
 }
