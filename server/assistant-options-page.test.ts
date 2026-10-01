@@ -225,6 +225,10 @@ describe("reviewed assistant options UI", () => {
     expect(
       container.querySelector<HTMLInputElement>('input[value="en"]')!.checked
     ).toBe(true);
+    await remount();
+    expect(container.textContent).not.toContain(
+      ar.assistantOptionDraftUx.pendingFound
+    );
   });
   it("discards only the local copy without calling a settings mutation", async () => {
     await render();
@@ -250,7 +254,9 @@ describe("reviewed assistant options UI", () => {
     expect(container.textContent).toContain(
       ar.assistantOptionDraftUx.uncertain
     );
-    expect(container.textContent).toContain(ar.assistantOptionDraftUx.statusUnconfirmed);
+    expect(container.textContent).toContain(
+      ar.assistantOptionDraftUx.statusUnconfirmed
+    );
     expect(container.textContent).not.toContain(ar.assistantOptionUx.unsaved);
     expect(button(ar.languageSettingsPage.text7).disabled).toBe(true);
   });

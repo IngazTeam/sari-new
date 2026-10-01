@@ -7,6 +7,7 @@ import { parseWorkingDays, toggleWorkingDay } from "../shared/bot-working-days";
 import {
   clearAssistantDrafts,
   readAssistantDraft,
+  readAssistantDraftStatus,
 } from "../client/src/lib/assistant-draft-cache";
 const m = vi.hoisted(() => ({
   settings: {} as any,
@@ -116,6 +117,7 @@ async function fill(id: string, value: string) {
 beforeEach(() => {
   vi.clearAllMocks();
   clearAssistantDrafts();
+  sessionStorage.clear();
   m.merchant = 20;
   m.user = 7;
   m.isError = false;
@@ -160,8 +162,88 @@ afterEach(async () => {
   container.remove();
   clearAssistantDrafts();
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
 describe("assistant settings review", () => {
+  it("restores persisted text and empty numeric fields after a reload without sending", async () => {
+    await render();
+    await fill("welcomeMessage", "durable draft");
+    await fill("responseDelay", "");
+    await fill("maxLength", "");
+    const key = "sary:assistant-settings-draft:v1:7:20";
+    const raw = sessionStorage.getItem(key)!;
+    await act(async () => root.render(null));
+    clearAssistantDrafts();
+    sessionStorage.setItem(key, raw);
+    await render();
+    expect(container.textContent).toContain(ar.assistantDraftUx.restoreHelp);
+    await click(ar.assistantDraftUx.restore);
+    expect(
+      container.querySelector<HTMLTextAreaElement>("#welcomeMessage")!.value
+    ).toBe("durable draft");
+    expect(
+      container.querySelector<HTMLInputElement>("#responseDelay")!.value
+    ).toBe("");
+    expect(container.querySelector<HTMLInputElement>("#maxLength")!.value).toBe(
+      ""
+    );
+    expect(
+      container.querySelector<HTMLInputElement>("#responseDelay")!.validity
+        .valueMissing
+    ).toBe(true);
+    expect(m.update).not.toHaveBeenCalled();
+  });
+  it("keeps an invalid local record untouched until explicit removal and never saves it", async () => {
+    const key = "sary:assistant-settings-draft:v1:7:20";
+    sessionStorage.setItem(key, "corrupt draft");
+    await render();
+    expect(container.textContent).toContain(
+      ar.assistantSettingsDraftUx.unavailable
+    );
+    expect(container.querySelector("fieldset")!.disabled).toBe(true);
+    expect(sessionStorage.getItem(key)).toBe("corrupt draft");
+    await click(ar.assistantSettingsDraftUx.discardLocal);
+    expect(readAssistantDraftStatus("7:20").state).toBe("missing");
+    expect(
+      container.querySelector<HTMLTextAreaElement>("#welcomeMessage")!.value
+    ).toBe("saved welcome");
+    expect(m.update).not.toHaveBeenCalled();
+  });
+  it("keeps an unsent draft and blocks writes when session storage fails", async () => {
+    await render();
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw Error("quota");
+    });
+    await fill("welcomeMessage", "unsent draft");
+    await click(ar.botSettingsPage.saveSettings);
+    expect(m.update).not.toHaveBeenCalled();
+    expect(readAssistantDraft("7:20")?.submitted).toBe(false);
+    expect(container.textContent).toContain(
+      ar.assistantSettingsDraftUx.storageFailed
+    );
+    const event = new Event("beforeunload", { cancelable: true });
+    window.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(true);
+    await act(async () => root.render(null));
+    await render();
+    expect(container.textContent).toContain(ar.assistantDraftUx.restoreHelp);
+    expect(container.textContent).not.toContain(
+      ar.assistantSettingsScopeUx.pendingFound
+    );
+  });
+  it("keeps recovery blocked when removing the local record fails", async () => {
+    sessionStorage.setItem("sary:assistant-settings-draft:v1:7:20", "corrupt");
+    await render();
+    vi.spyOn(Storage.prototype, "removeItem").mockImplementation(() => {
+      throw Error("denied");
+    });
+    await click(ar.assistantSettingsDraftUx.discardLocal);
+    expect(container.querySelector("fieldset")!.disabled).toBe(true);
+    expect(container.textContent).toContain(
+      ar.assistantSettingsDraftUx.unavailable
+    );
+    expect(m.update).not.toHaveBeenCalled();
+  });
   it("keeps saved settings readable while blocking editing, AI preview and external test sends for a reader", async () => {
     m.settings.canManage = false;
     await render();
@@ -631,10 +713,18 @@ describe("assistant settings review", () => {
     expect(container.textContent).toContain(ar.botSettingsPage.botActive);
   });
   it("cannot repopulate the draft cache from a callback after logout clears the epoch", async () => {
-    await render(); await fill("welcomeMessage", "old session"); await click(ar.botSettingsPage.saveSettings);
+    await render();
+    await fill("welcomeMessage", "old session");
+    await click(ar.botSettingsPage.saveSettings);
     const submitted = m.update.mock.calls[0][0];
     clearAssistantDrafts();
-    await act(async () => { m.callbacks.onSuccess({ ...m.settings, ...submitted, formRevision: "b".repeat(64) }, submitted); m.callbacks.onSettled(); });
+    await act(async () => {
+      m.callbacks.onSuccess(
+        { ...m.settings, ...submitted, formRevision: "b".repeat(64) },
+        submitted
+      );
+      m.callbacks.onSettled();
+    });
     expect(readAssistantDraft("7:20")).toBeNull();
   });
 });

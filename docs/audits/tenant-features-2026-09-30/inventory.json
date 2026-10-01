@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-01T03:48:09.859Z",
+  "generatedAt": "2026-10-01T04:04:25.773Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -6138,7 +6138,7 @@
     },
     {
       "file": "client/src/lib/assistant-draft-cache.ts",
-      "hash": "2e67e6011987",
+      "hash": "0b411dff284d",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
@@ -8231,7 +8231,7 @@
     },
     {
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "hash": "f66da80747e5",
+      "hash": "b7af1ffd6132",
       "queries": [
         "auth.me",
         "botSettings.get",
@@ -8246,94 +8246,94 @@
       "sections": [
         {
           "label": "إعدادات الروبوت",
-          "line": 456,
+          "line": 500,
           "tag": "h1"
         },
         {
           "label": "القوالب الجاهزة",
-          "line": 587,
+          "line": 670,
           "tag": "summary"
         },
         {
           "label": "القوالب الجاهزة",
-          "line": 592,
+          "line": 675,
           "tag": "CardTitle"
         },
         {
           "label": "قوالب عامة",
-          "line": 603,
+          "line": 686,
           "tag": "h3"
         },
         {
           "label": "",
-          "line": 614,
+          "line": 697,
           "tag": "CardTitle"
         },
         {
           "label": "قوالب متخصصة حسب نوع النشاط",
-          "line": 666,
+          "line": 749,
           "tag": "h3"
         },
         {
           "label": "",
-          "line": 677,
+          "line": 760,
           "tag": "CardTitle"
         },
         {
           "label": "الرد التلقائي",
-          "line": 774,
+          "line": 858,
           "tag": "CardTitle"
         },
         {
           "label": "ساعات العمل",
-          "line": 811,
+          "line": 895,
           "tag": "CardTitle"
         },
         {
           "label": "الرسائل",
-          "line": 985,
+          "line": 1069,
           "tag": "CardTitle"
         },
         {
           "label": "سلوك الذكاء الاصطناعي",
-          "line": 1048,
+          "line": 1132,
           "tag": "CardTitle"
         },
         {
           "label": "معاينة رسائل المسودة",
-          "line": 1186,
+          "line": 1280,
           "tag": "CardTitle"
         },
         {
           "label": "رسالة الترحيب",
-          "line": 1202,
+          "line": 1296,
           "tag": "h3"
         },
         {
           "label": "خارج ساعات العمل",
-          "line": 1212,
+          "line": 1306,
           "tag": "h3"
         },
         {
           "label": "اختبار الإعدادات المحفوظة",
-          "line": 1234,
+          "line": 1328,
           "tag": "CardTitle"
         },
         {
           "label": "سلوك المجموعات",
-          "line": 1275,
+          "line": 1369,
           "tag": "CardTitle"
         },
         {
           "label": "تعليمات مخصصة للمساعد",
-          "line": 1445,
+          "line": 1539,
           "tag": "CardTitle"
         }
       ],
       "choices": [
         {
           "name": "weekDays",
-          "line": 402,
+          "line": 439,
           "values": [
             {
               "value": "0",
@@ -8369,14 +8369,14 @@
       "handlers": [
         {
           "name": "handleSubmit",
-          "line": 340,
+          "line": 354,
           "calls": [
             "updateMutation"
           ]
         },
         {
           "name": "handleWorkingDayToggle",
-          "line": 391,
+          "line": 428,
           "calls": []
         }
       ],
@@ -8384,7 +8384,7 @@
         {
           "query": "auth.me",
           "binding": "authQuery",
-          "line": 117,
+          "line": 119,
           "errorSignal": true,
           "loadingSignal": false,
           "enabled": null
@@ -8392,7 +8392,7 @@
         {
           "query": "botSettings.get",
           "binding": "settingsQuery",
-          "line": 120,
+          "line": 122,
           "errorSignal": true,
           "loadingSignal": false,
           "enabled": null
@@ -8400,7 +8400,7 @@
         {
           "query": "botSettings.shouldRespond",
           "binding": "{ data: responseStatus }",
-          "line": 132,
+          "line": 134,
           "errorSignal": false,
           "loadingSignal": false,
           "enabled": null
@@ -8417,7 +8417,7 @@
         "client/src/components/DiscountPolicySettings.tsx",
         "client/src/constants/botTemplates.ts"
       ],
-      "controlCount": 25
+      "controlCount": 26
     },
     {
       "file": "client/src/components/merchant/AssistantDraftReview.tsx",
@@ -8832,7 +8832,7 @@
     },
     {
       "file": "client/src/hooks/useReviewedAssistantOption.ts",
-      "hash": "4549cb072a2f",
+      "hash": "44f390a0a018",
       "queries": [
         "merchants.getCurrent",
         "botSettings.get"
@@ -20072,31 +20072,32 @@
         "client/src/constants/botTemplates.ts"
       ],
       "controls": [
-        "0a65e5e3cc75",
-        "3a9a359c6078",
-        "ebee9791d9cc",
-        "24fc41a79b6e",
-        "9f7e59508687",
-        "707fb3ec3e95",
-        "e4b4b91b3fc2",
-        "9cbe1ca35520",
-        "9392eceef87b",
-        "50ba07a96565",
-        "669bcee30466",
-        "15402bcf940b",
-        "3291fa684828",
-        "a828d12b687b",
-        "bcf060456079",
-        "d9462b51456c",
-        "3a3523045792",
-        "d721a33379d8",
-        "6fa40b3368f7",
-        "d98a25289fc8",
-        "0d8641834f3d",
-        "ca760129b12f",
-        "a023c4c00178",
-        "47fc62def133",
-        "c89d5a4b00ed",
+        "1f2c6e7c5d0b",
+        "d9347e9844bb",
+        "90e0b388d354",
+        "1da3f4430628",
+        "956599c5eb11",
+        "7341fc15a8c5",
+        "d66dafc06171",
+        "0673dcd3d17c",
+        "66d527d5fffa",
+        "cb0f2e2f9dc6",
+        "9cbfc9800adf",
+        "18c2f54b0aff",
+        "5d419192af9f",
+        "d2cbc5f5c742",
+        "ed65e838584a",
+        "1193b8d9b709",
+        "277faa18c4f5",
+        "82c5b82fa176",
+        "fe0b823c9e02",
+        "90f45ba14d66",
+        "6a90095fa89d",
+        "9c22be0889f1",
+        "b4aabc3c8d1a",
+        "9c210a87077a",
+        "fb7aebf6a95a",
+        "0751ce1884ba",
         "77ce5300e6f7",
         "431572148474",
         "13516fb4879f",
@@ -46460,9 +46461,32 @@
       "review": "source-inventoried"
     },
     {
-      "id": "0a65e5e3cc75",
+      "id": "1f2c6e7c5d0b",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 473,
+      "line": 523,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "إزالة النسخة المحلية فقط",
+      "section": "إعدادات الروبوت",
+      "binding": "() => {\n              if (!current() || !draftKey) return;\n              if (!discardAssistantDraft(draftKey, epoch.current)) {\n                setStorageFailed(true);\n                return;\n              }\n              setRecoveryIssue(false);\n              setStorageFailed(false);\n            }",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "recoveryIssue"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "d9347e9844bb",
+      "file": "client/src/pages/merchant/BotSettings.tsx",
+      "line": 551,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -46483,15 +46507,15 @@
       "review": "source-inventoried"
     },
     {
-      "id": "3a9a359c6078",
+      "id": "90e0b388d354",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 493,
+      "line": 571,
       "tag": "Button",
       "role": "",
       "kind": "action",
       "label": "تجاهل المسودة",
       "section": "إعدادات الروبوت",
-      "binding": "() => {\n                  if (draftKey) discardAssistantDraft(draftKey);\n                  setRestorable(null);\n                }",
+      "binding": "() => {\n                  if (!current() || !draftKey) return;\n                  if (!discardAssistantDraft(draftKey, epoch.current)) {\n                    setStorageFailed(true);\n                    return;\n                  }\n                  setStorageFailed(false);\n                  setRestorable(null);\n                }",
       "type": "button",
       "options": [],
       "min": "",
@@ -46506,9 +46530,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ebee9791d9cc",
+      "id": "1da3f4430628",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 518,
+      "line": 601,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -46529,9 +46553,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "24fc41a79b6e",
+      "id": "956599c5eb11",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 561,
+      "line": 644,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -46550,9 +46574,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "9f7e59508687",
+      "id": "7341fc15a8c5",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 587,
+      "line": 670,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -46571,9 +46595,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "707fb3ec3e95",
+      "id": "d66dafc06171",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 641,
+      "line": 724,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -46592,9 +46616,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "e4b4b91b3fc2",
+      "id": "0673dcd3d17c",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 683,
+      "line": 766,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -46613,9 +46637,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "9cbe1ca35520",
+      "id": "66d527d5fffa",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 792,
+      "line": 876,
       "tag": "Switch",
       "role": "",
       "kind": "field",
@@ -46634,9 +46658,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "9392eceef87b",
+      "id": "cb0f2e2f9dc6",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 832,
+      "line": 916,
       "tag": "Switch",
       "role": "",
       "kind": "field",
@@ -46655,9 +46679,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "50ba07a96565",
+      "id": "9cbfc9800adf",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 851,
+      "line": 935,
       "tag": "Input",
       "role": "",
       "kind": "field",
@@ -46678,9 +46702,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "669bcee30466",
+      "id": "18c2f54b0aff",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 885,
+      "line": 969,
       "tag": "Input",
       "role": "",
       "kind": "field",
@@ -46701,9 +46725,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "15402bcf940b",
+      "id": "5d419192af9f",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 938,
+      "line": 1022,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -46724,9 +46748,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "3291fa684828",
+      "id": "d2cbc5f5c742",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 998,
+      "line": 1082,
       "tag": "Textarea",
       "role": "",
       "kind": "field",
@@ -46745,9 +46769,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "a828d12b687b",
+      "id": "ed65e838584a",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 1019,
+      "line": 1103,
       "tag": "Textarea",
       "role": "",
       "kind": "field",
@@ -46766,9 +46790,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "bcf060456079",
+      "id": "1193b8d9b709",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 1060,
+      "line": 1144,
       "tag": "Select",
       "role": "",
       "kind": "field",
@@ -46804,9 +46828,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "d9462b51456c",
+      "id": "277faa18c4f5",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 1090,
+      "line": 1174,
       "tag": "Select",
       "role": "",
       "kind": "field",
@@ -46854,51 +46878,51 @@
       "review": "source-inventoried"
     },
     {
-      "id": "3a3523045792",
+      "id": "82c5b82fa176",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 1123,
+      "line": 1207,
       "tag": "Input",
       "role": "",
       "kind": "field",
       "label": "تأخير الرد (ثواني)",
       "section": "سلوك الذكاء الاصطناعي",
-      "binding": "formData.responseDelay",
+      "binding": "Number.isFinite(formData.responseDelay)\n                          ? formData.responseDelay\n                          : \"\"",
       "type": "number",
       "options": [],
       "min": "1",
       "max": "10",
       "maxLength": "",
-      "required": false,
-      "conditional": false,
+      "required": true,
+      "conditional": true,
       "conditions": [],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "d721a33379d8",
+      "id": "fe0b823c9e02",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 1145,
+      "line": 1234,
       "tag": "Input",
       "role": "",
       "kind": "field",
       "label": "الحد الأقصى لطول الرد",
       "section": "سلوك الذكاء الاصطناعي",
-      "binding": "formData.maxResponseLength",
+      "binding": "Number.isFinite(formData.maxResponseLength)\n                          ? formData.maxResponseLength\n                          : \"\"",
       "type": "number",
       "options": [],
       "min": "50",
       "max": "500",
       "maxLength": "",
-      "required": false,
-      "conditional": false,
+      "required": true,
+      "conditional": true,
       "conditions": [],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "6fa40b3368f7",
+      "id": "90f45ba14d66",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 1312,
+      "line": 1406,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -46917,9 +46941,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "d98a25289fc8",
+      "id": "6a90095fa89d",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 1353,
+      "line": 1447,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -46940,9 +46964,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "0d8641834f3d",
+      "id": "9c22be0889f1",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 1371,
+      "line": 1465,
       "tag": "Input",
       "role": "",
       "kind": "field",
@@ -46963,9 +46987,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ca760129b12f",
+      "id": "b4aabc3c8d1a",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 1390,
+      "line": 1484,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -46986,9 +47010,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "a023c4c00178",
+      "id": "9c210a87077a",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 1458,
+      "line": 1552,
       "tag": "Textarea",
       "role": "",
       "kind": "field",
@@ -47007,9 +47031,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "47fc62def133",
+      "id": "fb7aebf6a95a",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 1521,
+      "line": 1615,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -47028,9 +47052,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "c89d5a4b00ed",
+      "id": "0751ce1884ba",
       "file": "client/src/pages/merchant/BotSettings.tsx",
-      "line": 1541,
+      "line": 1635,
       "tag": "Button",
       "role": "",
       "kind": "action",

@@ -9750,7 +9750,7 @@
     "discard": "Discard changes"
   },
   "assistantDraftUx": {
-    "unsaved": "You have unsaved changes. Your draft can be restored after navigating within this tab; refreshing or closing it removes the draft.",
+    "unsaved": "Local changes have not been applied. You can restore the draft after navigating or reloading this tab; saving applies it to the assistant.",
     "restoreHelp": "An assistant settings draft remains from your previous visit in this tab. Restore it to continue, or discard it to use the saved settings.",
     "restore": "Restore draft",
     "discard": "Discard draft",
@@ -12027,5 +12027,13 @@
 "assistantSettingsScopeUx":{
   "pendingFound": "This draft is linked to a save request with an unconfirmed outcome. Restore it and fetch the current settings for review. It will not be resent automatically.",
   "uncertain": "The save outcome is unconfirmed. Your draft is retained. Fetch and review the current settings before deciding to save again. Matching values do not prove the previous request saved them."
+}
+,
+"assistantSettingsDraftUx":{
+  "privacy": "This assistant behavior draft, including your business instructions, stays in this tab for 24 hours after the last edit and is cleared at sign-out. Discount and margin policies are reviewed and saved separately. Removing the draft does not cancel a request already sent to the server.",
+  "storageFailed": "The local copy could not be retained. Your draft is still on this page; keep it open. A new save will not be sent until the draft and its revision can be stored in the browser.",
+  "issueTitle": "Assistant draft unavailable",
+  "unavailable": "The local copy is invalid, expired, or inaccessible. Saved settings have not changed. Remove the local copy to start from the current settings.",
+  "discardLocal": "Remove local copy only"
 }
 }

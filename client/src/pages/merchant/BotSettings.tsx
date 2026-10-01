@@ -9,7 +9,7 @@ import {
 import {
   assistantDraftKey,
   cacheAssistantDraft,
-  readAssistantDraft,
+  readAssistantDraftStatus,
   discardAssistantDraft,
   type CachedAssistantDraft,
   assistantDraftEpoch,
@@ -106,6 +106,8 @@ export function BotSettingsWorkspace({ scope }: { scope: string }) {
   const [restorable, setRestorable] = useState<CachedAssistantDraft | null>(
     null
   );
+  const [recoveryIssue, setRecoveryIssue] = useState(false);
+  const [storageFailed, setStorageFailed] = useState(false);
   const [conflict, setConflict] = useState(false);
   const [reviewLoading, setReviewLoading] = useState(false);
   const [reviewFailed, setReviewFailed] = useState(false);
@@ -265,7 +267,11 @@ export function BotSettingsWorkspace({ scope }: { scope: string }) {
       setBaseline(loaded);
       setRevision(settings.formRevision);
       setSavedSnapshot(JSON.stringify(loaded));
-      setRestorable(readAssistantDraft(draftKey));
+      const stored = readAssistantDraftStatus(draftKey);
+      if (stored.state === "ready") {
+        setRestorable(stored.value);
+        setStorageFailed(!stored.persisted);
+      } else if (stored.state !== "missing") setRecoveryIssue(true);
     }
   }, [settings, draftKey, settingsQuery.isFetching]);
 
@@ -287,19 +293,26 @@ export function BotSettingsWorkspace({ scope }: { scope: string }) {
       !baseline ||
       !revision ||
       restorable ||
+      recoveryIssue ||
       !current()
     )
       return;
     if (currentSnapshot === savedSnapshot && !submitted)
-      discardAssistantDraft(draftKey);
+      setStorageFailed(!discardAssistantDraft(draftKey, epoch.current));
     else
-      cacheAssistantDraft(draftKey, {
-        base: baseline,
-        draft: currentDraft,
-        revision,
-        section: activeSection,
-        submitted,
-      });
+      setStorageFailed(
+        !cacheAssistantDraft(
+          draftKey,
+          {
+            base: baseline,
+            draft: currentDraft,
+            revision,
+            section: activeSection,
+            submitted,
+          },
+          epoch.current
+        )
+      );
   }, [
     currentSnapshot,
     savedSnapshot,
@@ -309,6 +322,7 @@ export function BotSettingsWorkspace({ scope }: { scope: string }) {
     restorable,
     activeSection,
     submitted,
+    recoveryIssue,
   ]);
 
   const reviewLatest = async () => {
@@ -345,6 +359,7 @@ export function BotSettingsWorkspace({ scope }: { scope: string }) {
       saveLock.current ||
       submitted ||
       restorable ||
+      recoveryIssue ||
       conflict ||
       !revision ||
       reviewLoading ||
@@ -364,17 +379,39 @@ export function BotSettingsWorkspace({ scope }: { scope: string }) {
       requestAnimationFrame(() => document.getElementById(id)?.focus());
       return;
     }
+    if (!draftKey || !baseline) return;
+    if (
+      !cacheAssistantDraft(
+        draftKey,
+        {
+          base: baseline,
+          draft: currentDraft,
+          revision,
+          section: activeSection,
+          submitted: true,
+        },
+        epoch.current
+      )
+    ) {
+      // No request was sent. Preserve an unsent draft if durable storage failed.
+      cacheAssistantDraft(
+        draftKey,
+        {
+          base: baseline,
+          draft: currentDraft,
+          revision,
+          section: activeSection,
+          submitted: false,
+        },
+        epoch.current
+      );
+      setStorageFailed(true);
+      return;
+    }
+    setStorageFailed(false);
     saveLock.current = true;
     setSubmitted(true);
     setPending(true);
-    if (draftKey && baseline)
-      cacheAssistantDraft(draftKey, {
-        base: baseline,
-        draft: currentDraft,
-        revision,
-        section: activeSection,
-        submitted: true,
-      });
     const words = parseAgentKeywords([...groupKeywords, keywordInput]);
     setGroupKeywords(words);
     setKeywordInput("");
@@ -439,7 +476,14 @@ export function BotSettingsWorkspace({ scope }: { scope: string }) {
   );
 
   const applyTemplate = (template: (typeof allTemplates)[0]) => {
-    if (!canManage || restorable || latestReview || reviewLoading || submitted)
+    if (
+      !canManage ||
+      restorable ||
+      recoveryIssue ||
+      latestReview ||
+      reviewLoading ||
+      submitted
+    )
       return;
     setFormData({
       ...formData,
@@ -459,6 +503,40 @@ export function BotSettingsWorkspace({ scope }: { scope: string }) {
         <p className="text-muted-foreground">{t("botSettingsPage.subtitle")}</p>
       </div>
 
+      <p className="mb-4 text-xs leading-6 text-muted-foreground">
+        {t("assistantSettingsDraftUx.privacy")}
+      </p>
+      {storageFailed && (
+        <p
+          role="alert"
+          className="my-4 rounded-xl border p-4 text-sm text-destructive"
+        >
+          {t("assistantSettingsDraftUx.storageFailed")}
+        </p>
+      )}
+      {recoveryIssue && (
+        <section
+          className="my-4 space-y-3 rounded-xl border p-4"
+          aria-label={t("assistantSettingsDraftUx.issueTitle")}
+        >
+          <p role="alert">{t("assistantSettingsDraftUx.unavailable")}</p>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              if (!current() || !draftKey) return;
+              if (!discardAssistantDraft(draftKey, epoch.current)) {
+                setStorageFailed(true);
+                return;
+              }
+              setRecoveryIssue(false);
+              setStorageFailed(false);
+            }}
+          >
+            {t("assistantSettingsDraftUx.discardLocal")}
+          </Button>
+        </section>
+      )}
       {restorable && (
         <Alert className="my-4">
           <AlertDescription className="space-y-3">
@@ -494,7 +572,12 @@ export function BotSettingsWorkspace({ scope }: { scope: string }) {
                 type="button"
                 variant="outline"
                 onClick={() => {
-                  if (draftKey) discardAssistantDraft(draftKey);
+                  if (!current() || !draftKey) return;
+                  if (!discardAssistantDraft(draftKey, epoch.current)) {
+                    setStorageFailed(true);
+                    return;
+                  }
+                  setStorageFailed(false);
                   setRestorable(null);
                 }}
               >
@@ -758,6 +841,7 @@ export function BotSettingsWorkspace({ scope }: { scope: string }) {
         <fieldset
           disabled={
             !canManage ||
+            recoveryIssue ||
             Boolean(restorable) ||
             reviewLoading ||
             (submitted && !pending)
@@ -1125,11 +1209,16 @@ export function BotSettingsWorkspace({ scope }: { scope: string }) {
                       type="number"
                       min={1}
                       max={10}
-                      value={formData.responseDelay}
+                      required
+                      value={
+                        Number.isFinite(formData.responseDelay)
+                          ? formData.responseDelay
+                          : ""
+                      }
                       onChange={e =>
                         setFormData({
                           ...formData,
-                          responseDelay: parseInt(e.target.value),
+                          responseDelay: e.target.valueAsNumber,
                         })
                       }
                     />
@@ -1147,11 +1236,16 @@ export function BotSettingsWorkspace({ scope }: { scope: string }) {
                       type="number"
                       min={50}
                       max={500}
-                      value={formData.maxResponseLength}
+                      required
+                      value={
+                        Number.isFinite(formData.maxResponseLength)
+                          ? formData.maxResponseLength
+                          : ""
+                      }
                       onChange={e =>
                         setFormData({
                           ...formData,
-                          maxResponseLength: parseInt(e.target.value),
+                          maxResponseLength: e.target.valueAsNumber,
                         })
                       }
                     />

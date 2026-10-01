@@ -120,7 +120,11 @@ export function useReviewedAssistantOption<T>(
       submitted
     )
       return;
-    if (!remember(draft, base, revision, true)) return;
+    if (!remember(draft, base, revision, true)) {
+      // The request has not started; navigation must restore an unsent draft.
+      remember(draft, base, revision, false);
+      return;
+    }
     setSubmitted(true);
     locked.current = true;
     setBusy(true);
