@@ -1,16 +1,18 @@
 import { getDb } from "./db";
-import { orders, products } from "../drizzle/schema";
+import { dashboardWindow } from "../shared/dashboard-window";
+import { orders } from "../drizzle/schema";
 import { eq, and, gte, lt, sql, desc } from "drizzle-orm";
 
 /**
  * الحصول على اتجاه الطلبات لآخر 30 يوم
  */
-export async function getOrdersTrend(merchantId: number, days: number = 30, currency?: "SAR" | "USD") {
+export async function getOrdersTrend(merchantId: number, days: number = 30, currency?: "SAR" | "USD", now = new Date()) {
+  const window = dashboardWindow(merchantId, days, now);
+  if (currency !== undefined && currency !== "SAR" && currency !== "USD") throw Error("Invalid dashboard currency");
   const db = await getDb();
-  if (!db) return [];
+  if (!db) throw Error("Dashboard data unavailable");
 
-  const now = new Date();
-  const startDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000).toISOString().slice(0, 19).replace("T", " ");
+  const startDate = window.sqlFrom;
 
   const result = await db
     .select({
@@ -23,7 +25,8 @@ export async function getOrdersTrend(merchantId: number, days: number = 30, curr
       and(
         eq(orders.merchantId, merchantId),
         currency ? eq(orders.currency, currency) : undefined,
-        gte(orders.createdAt, startDate)
+        gte(orders.createdAt, startDate),
+        lt(orders.createdAt, window.sqlThrough)
       )
     )
     .groupBy(sql`date`);
@@ -34,12 +37,13 @@ export async function getOrdersTrend(merchantId: number, days: number = 30, curr
 /**
  * الحصول على اتجاه الإيرادات لآخر 30 يوم
  */
-export async function getRevenueTrend(merchantId: number, days: number = 30, currency?: "SAR" | "USD") {
+export async function getRevenueTrend(merchantId: number, days: number = 30, currency?: "SAR" | "USD", now = new Date()) {
+  const window = dashboardWindow(merchantId, days, now);
+  if (currency !== undefined && currency !== "SAR" && currency !== "USD") throw Error("Invalid dashboard currency");
   const db = await getDb();
-  if (!db) return [];
+  if (!db) throw Error("Dashboard data unavailable");
 
-  const now = new Date();
-  const startDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000).toISOString().slice(0, 19).replace("T", " ");
+  const startDate = window.sqlFrom;
 
   const result = await db
     .select({
@@ -53,7 +57,8 @@ export async function getRevenueTrend(merchantId: number, days: number = 30, cur
         eq(orders.merchantId, merchantId),
         currency ? eq(orders.currency, currency) : undefined,
         sql`${orders.status} = 'delivered'`,
-        gte(orders.createdAt, startDate)
+        gte(orders.createdAt, startDate),
+        lt(orders.createdAt, window.sqlThrough)
       )
     )
     .groupBy(sql`date`);
@@ -64,17 +69,14 @@ export async function getRevenueTrend(merchantId: number, days: number = 30, cur
 /**
  * مقارنة الفترة الحالية مع الفترة السابقة
  */
-export async function getComparisonStats(merchantId: number, days: number = 30, currency?: "SAR" | "USD") {
+export async function getComparisonStats(merchantId: number, days: number = 30, currency?: "SAR" | "USD", now = new Date()) {
+  const window = dashboardWindow(merchantId, days, now);
+  if (currency !== undefined && currency !== "SAR" && currency !== "USD") throw Error("Invalid dashboard currency");
   const db = await getDb();
-  if (!db) return {
-    current: { totalOrders: 0, totalRevenue: 0, completedOrders: 0, averageOrderValue: 0 },
-    previous: { totalOrders: 0, totalRevenue: 0, completedOrders: 0, averageOrderValue: 0 },
-    growth: { orders: 0, revenue: 0, completed: 0, aov: 0 },
-  };
+  if (!db) throw Error("Dashboard data unavailable");
 
-  const now = new Date();
-  const currentPeriodStart = new Date(now.getTime() - days * 24 * 60 * 60 * 1000).toISOString().slice(0, 19).replace("T", " ");
-  const previousPeriodStart = new Date(now.getTime() - 2 * days * 24 * 60 * 60 * 1000).toISOString().slice(0, 19).replace("T", " ");
+  const currentPeriodStart = window.sqlFrom;
+  const previousPeriodStart = window.sqlPreviousFrom;
 
   // الفترة الحالية
   const currentPeriod = await db
@@ -88,7 +90,8 @@ export async function getComparisonStats(merchantId: number, days: number = 30, 
       and(
         eq(orders.merchantId, merchantId),
         currency ? eq(orders.currency, currency) : undefined,
-        gte(orders.createdAt, currentPeriodStart)
+        gte(orders.createdAt, currentPeriodStart),
+        lt(orders.createdAt, window.sqlThrough)
       )
     );
 
@@ -162,11 +165,13 @@ export async function getComparisonStats(merchantId: number, days: number = 30, 
  * محسّن: يستخدم JSON_TABLE في MySQL للتجميع على مستوى قاعدة البيانات
  * بدلاً من تحميل جميع الطلبات في الذاكرة
  */
-export async function getTopProducts(merchantId: number, limit: number = 5, days: number = 90, currency?: "SAR" | "USD"): Promise<Array<{ productName: string; totalSales: number; totalRevenue: number; averagePrice: number }>> {
+export async function getTopProducts(merchantId: number, limit: number = 5, days: number = 90, currency?: "SAR" | "USD", now = new Date()): Promise<Array<{ productName: string; totalSales: number; totalRevenue: number; averagePrice: number }>> {
+  const window = dashboardWindow(merchantId, days, now);
+  if (currency !== undefined && currency !== "SAR" && currency !== "USD") throw Error("Invalid dashboard currency");
   const db = await getDb();
-  if (!db) return [];
+  if (!db) throw Error("Dashboard data unavailable");
 
-  const last90Days = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  if (!Number.isInteger(limit) || limit < 1 || limit > 50) throw Error("Invalid dashboard product limit");
 
   try {
     // محاولة استخدام JSON_TABLE (MySQL 8.0+) للتجميع على مستوى DB
@@ -185,7 +190,8 @@ export async function getTopProducts(merchantId: number, limit: number = 5, days
       WHERE ${orders.merchantId} = ${merchantId}
         AND ${currency ? eq(orders.currency, currency) : sql`1 = 1`}
         AND ${orders.status} = 'delivered'
-        AND ${orders.createdAt} >= ${last90Days.toISOString()}
+        AND ${orders.createdAt} >= ${window.sqlFrom}
+        AND ${orders.createdAt} < ${window.sqlThrough}
       GROUP BY item_name
       ORDER BY totalSales DESC
       LIMIT ${limit}
@@ -211,7 +217,8 @@ export async function getTopProducts(merchantId: number, limit: number = 5, days
           eq(orders.merchantId, merchantId),
           currency ? eq(orders.currency, currency) : undefined,
           sql`${orders.status} = 'delivered'`,
-          sql`${orders.createdAt} >= ${last90Days.toISOString()}`
+          gte(orders.createdAt, window.sqlFrom),
+          lt(orders.createdAt, window.sqlThrough)
         )
       );
 
@@ -252,19 +259,13 @@ export async function getTopProducts(merchantId: number, limit: number = 5, days
 /**
  * الحصول على إحصائيات Dashboard الرئيسية
  */
-export async function getDashboardStats(merchantId: number, days: number = 30, currency?: "SAR" | "USD") {
+export async function getDashboardStats(merchantId: number, days: number = 30, currency?: "SAR" | "USD", now = new Date()) {
+  const window = dashboardWindow(merchantId, days, now);
+  if (currency !== undefined && currency !== "SAR" && currency !== "USD") throw Error("Invalid dashboard currency");
   const db = await getDb();
-  if (!db) return {
-    totalOrders: 0,
-    totalRevenue: 0,
-    pendingOrders: 0,
-    completedOrders: 0,
-    cancelledOrders: 0,
-    averageOrderValue: 0,
-  };
+  if (!db) throw Error("Dashboard data unavailable");
 
-  const now = new Date();
-  const last30Days = new Date(now.getTime() - days * 24 * 60 * 60 * 1000).toISOString().slice(0, 19).replace("T", " ");
+  const last30Days = window.sqlFrom;
 
   // إجمالي الطلبات والإيرادات
   const stats = await db
@@ -280,7 +281,8 @@ export async function getDashboardStats(merchantId: number, days: number = 30, c
       and(
         eq(orders.merchantId, merchantId),
         currency ? eq(orders.currency, currency) : undefined,
-        gte(orders.createdAt, last30Days)
+        gte(orders.createdAt, last30Days),
+        lt(orders.createdAt, window.sqlThrough)
       )
     );
 
@@ -308,16 +310,18 @@ export async function getDashboardStats(merchantId: number, days: number = 30, c
  * ملخص لوحة التحكم - يجمع كل البيانات في استدعاء واحد
  * يقلل عدد الطلبات المتزامنة من 5 إلى 1
  */
-export async function getDashboardSummary(merchantId: number, days: number = 30, topProductsLimit: number = 5, currency: "SAR" | "USD" = "SAR") {
+export async function getDashboardSummary(merchantId: number, days: number = 30, topProductsLimit: number = 5, currency: "SAR" | "USD" = "SAR", now = new Date()) {
+  const window = dashboardWindow(merchantId, days, now);
   const [stats, comparison, ordersTrend, revenueTrend, topProducts] = await Promise.all([
-    getDashboardStats(merchantId, days, currency),
-    getComparisonStats(merchantId, days, currency),
-    getOrdersTrend(merchantId, days, currency),
-    getRevenueTrend(merchantId, days, currency),
-    getTopProducts(merchantId, topProductsLimit, days, currency),
+    getDashboardStats(merchantId, days, currency, now),
+    getComparisonStats(merchantId, days, currency, now),
+    getOrdersTrend(merchantId, days, currency, now),
+    getRevenueTrend(merchantId, days, currency, now),
+    getTopProducts(merchantId, topProductsLimit, days, currency, now),
   ]);
 
   return {
+    merchantId, days, from: window.from, through: window.through, timeZone: "UTC" as const,
     currency,
     stats,
     comparison,

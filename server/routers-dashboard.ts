@@ -26,7 +26,7 @@ export const dashboardRouter = router({
             }
 
             const { getOrdersTrend } = await import('./dashboard-analytics');
-            return await getOrdersTrend(merchant.id, input.days);
+            return await getOrdersTrend(merchant.id, input.days, merchant.currency === 'USD' ? 'USD' : 'SAR');
         }),
 
     // Revenue trend
@@ -41,7 +41,7 @@ export const dashboardRouter = router({
             }
 
             const { getRevenueTrend } = await import('./dashboard-analytics');
-            return await getRevenueTrend(merchant.id, input.days);
+            return await getRevenueTrend(merchant.id, input.days, merchant.currency === 'USD' ? 'USD' : 'SAR');
         }),
 
     // Comparison with previous period
@@ -56,7 +56,7 @@ export const dashboardRouter = router({
             }
 
             const { getComparisonStats } = await import('./dashboard-analytics');
-            return await getComparisonStats(merchant.id, input.days);
+            return await getComparisonStats(merchant.id, input.days, merchant.currency === 'USD' ? 'USD' : 'SAR');
         }),
 
     // Top products
@@ -71,7 +71,7 @@ export const dashboardRouter = router({
             }
 
             const { getTopProducts } = await import('./dashboard-analytics');
-            return await getTopProducts(merchant.id, input.limit);
+            return await getTopProducts(merchant.id, input.limit, 90, merchant.currency === 'USD' ? 'USD' : 'SAR');
         }),
 
     // Main dashboard stats
@@ -83,7 +83,7 @@ export const dashboardRouter = router({
             }
 
             const { getDashboardStats } = await import('./dashboard-analytics');
-            return await getDashboardStats(merchant.id);
+            return await getDashboardStats(merchant.id, 30, merchant.currency === 'USD' ? 'USD' : 'SAR');
         }),
 
     // Combined dashboard summary - reduces 5 requests to 1
