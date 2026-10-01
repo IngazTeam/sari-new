@@ -24,6 +24,7 @@ import {
 } from '../automation/campaign-guard';
 
 import { readCampaignAudience, requireCompleteCampaignAudience } from '../campaign-audience';
+import { campaignDefinitionKey } from '../campaign-definition';
 
 export async function checkScheduledCampaigns(): Promise<{
   checked: number;
@@ -74,7 +75,7 @@ export async function checkScheduledCampaigns(): Promise<{
         if (phone && !candidates.has(phone)) candidates.set(phone, conversation);
       }
       if (candidates.size === 0) {
-        if (await completeCampaignWithoutRecipients(campaign.id, campaign.merchantId)) queued++;
+        if (await completeCampaignWithoutRecipients(campaign.id, campaign.merchantId, campaignDefinitionKey(campaign))) queued++;
         continue;
       }
 
@@ -84,13 +85,14 @@ export async function checkScheduledCampaigns(): Promise<{
           deferred++;
           continue;
         }
-        if (await completeCampaignWithoutRecipients(campaign.id, campaign.merchantId)) queued++;
+        if (await completeCampaignWithoutRecipients(campaign.id, campaign.merchantId, campaignDefinitionKey(campaign))) queued++;
         continue;
       }
 
       await enqueueCampaignDeliveries({
         campaignId: campaign.id,
         merchantId: campaign.merchantId,
+        expectedDefinition: campaignDefinitionKey(campaign),
         recipients: guard.allowed.flatMap(phone => {
           const conversation = candidates.get(phone);
           return conversation ? [{ customerId: conversation.id, phone }] : [];

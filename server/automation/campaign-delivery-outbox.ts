@@ -4,6 +4,7 @@ import { campaignRecipientLimit } from '../../shared/campaign-audience';
 export { CampaignTargetingError, filterCampaignAudience, isValidCampaignTargetAudience } from '../../shared/campaign-audience';
 import { getPool } from '../db';
 import { assertRuntimeSchema } from '../db/schema-readiness';
+import { campaignDefinitionKey, type CampaignDefinition } from '../campaign-definition';
 import {
   sendMerchantWhatsApp,
   WhatsAppDeliveryStateError,
@@ -124,10 +125,12 @@ function normalizeRecipients(recipients: Array<{ customerId?: number | null; pho
 export async function enqueueCampaignDeliveries(input: {
   campaignId: number;
   merchantId: number;
+  expectedDefinition: string;
   recipients: Array<{ customerId?: number | null; phone: string }>;
 }): Promise<{ queued: number }> {
   if (!Number.isSafeInteger(input.campaignId) || input.campaignId <= 0) throw new CampaignDispatchConflictError();
   if (!Number.isSafeInteger(input.merchantId) || input.merchantId <= 0) throw new CampaignDispatchConflictError();
+  if (!/^[a-f0-9]{64}$/.test(input.expectedDefinition)) throw new CampaignDispatchConflictError();
   const recipients = normalizeRecipients(input.recipients);
   await ensureCampaignOutboxSchema();
   const pool = await getPool();
@@ -135,13 +138,14 @@ export async function enqueueCampaignDeliveries(input: {
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
-    const [campaignRows] = await connection.execute<RowDataPacket[]>(
-      `SELECT id, status FROM campaigns
+    const [campaignRows] = await connection.execute<(RowDataPacket & CampaignDefinition)[]>(
+      `SELECT id, name, message, imageUrl, targetAudience, scheduledAt, status FROM campaigns
         WHERE id = ? AND merchantId = ? LIMIT 1 FOR UPDATE`,
       [input.campaignId, input.merchantId],
     );
     const campaign = campaignRows[0];
-    if (!campaign || !['draft', 'scheduled'].includes(String(campaign.status))) {
+    if (!campaign || !['draft', 'scheduled'].includes(String(campaign.status))
+      || campaignDefinitionKey(campaign) !== input.expectedDefinition) {
       throw new CampaignDispatchConflictError();
     }
     for (const recipient of recipients) {
@@ -177,13 +181,24 @@ export async function enqueueCampaignDeliveries(input: {
   }
 }
 
-export async function completeCampaignWithoutRecipients(campaignId: number, merchantId: number): Promise<boolean> {
+export async function completeCampaignWithoutRecipients(campaignId: number, merchantId: number, expectedDefinition: string): Promise<boolean> {
+  if (!Number.isSafeInteger(campaignId) || campaignId <= 0 || !Number.isSafeInteger(merchantId) || merchantId <= 0
+    || !/^[a-f0-9]{64}$/.test(expectedDefinition)) throw new CampaignDispatchConflictError();
   await ensureCampaignOutboxSchema();
   const pool = await getPool();
   if (!pool) throw new Error('Database unavailable');
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
+    const [campaignRows] = await connection.execute<(RowDataPacket & CampaignDefinition)[]>(
+      `SELECT id, name, message, imageUrl, targetAudience, scheduledAt, status FROM campaigns
+        WHERE id = ? AND merchantId = ? LIMIT 1 FOR UPDATE`, [campaignId, merchantId],
+    );
+    const campaign = campaignRows[0];
+    if (!campaign || !['draft', 'scheduled'].includes(campaign.status) || campaignDefinitionKey(campaign) !== expectedDefinition) {
+      await connection.rollback();
+      return false;
+    }
     const [result] = await connection.execute(
       `UPDATE campaigns
           SET status = 'completed', totalRecipients = 0, sentCount = 0, updatedAt = NOW()

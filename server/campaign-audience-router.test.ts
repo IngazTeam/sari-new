@@ -10,7 +10,7 @@ const caller = () => campaignsRouter.createCaller({ user: { id: 21, role: 'user'
 beforeEach(() => {
   for (const mock of Object.values(mocks)) mock.mockReset();
   mocks.merchant.mockResolvedValue({ id: 73, status: 'active' });
-  mocks.campaign.mockResolvedValue({ id: 7, merchantId: 73, status: 'draft', targetAudience: '{"purchaseCountMin":2}' });
+  mocks.campaign.mockResolvedValue({ id: 7, merchantId: 73, status: 'draft', name:'Fixture', message:'Fixture', imageUrl:null, scheduledAt:null, targetAudience: '{"purchaseCountMin":2}' });
   mocks.audience.mockResolvedValue({ count: 3, recipientCount: 2, customers: [{ id: 501, customerPhone: '966500000001' }, { id: 502, customerPhone: '966500000002' }] });
   mocks.guard.mockResolvedValue({ allowed: ['966500000002'], blocked: [{ phone: '966500000001', reason: 'missing_consent' }], warnings: [] });
 });
@@ -23,7 +23,7 @@ describe('manual campaigns and preview use the verified audience', () => {
   });
   it('uses the same audience and only enqueues consent-eligible identities', async () => {
     expect(await caller().send({ id: 7 })).toMatchObject({ totalRecipients: 1, blockedRecipients: 1 });
-    expect(mocks.audience).toHaveBeenCalledWith(73, '{"purchaseCountMin":2}'); expect(mocks.enqueue).toHaveBeenCalledWith({ campaignId: 7, merchantId: 73, recipients: [{ customerId: 502, phone: '966500000002' }] });
+    expect(mocks.audience).toHaveBeenCalledWith(73, '{"purchaseCountMin":2}'); expect(mocks.enqueue).toHaveBeenCalledWith({ campaignId: 7, merchantId: 73, expectedDefinition: expect.stringMatching(/^[a-f0-9]{64}$/), recipients: [{ customerId: 502, phone: '966500000002' }] });
   });
   it('rejects an oversized audience without quietly sending its first portion', async () => {
     mocks.audience.mockResolvedValue({ customers: [{ id: 501, customerPhone: '966500000001' }], recipientCount: 2001 });

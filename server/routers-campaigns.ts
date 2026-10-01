@@ -48,6 +48,7 @@ import {
 
 import { campaignAudienceSchema, parseCampaignAudience } from '../shared/campaign-audience';
 import { CampaignAudienceLimitError, readCampaignAudience, requireCompleteCampaignAudience } from './campaign-audience';
+import { campaignDefinitionKey } from './campaign-definition';
 
 const campaignImageUrlSchema = z.string().url().max(500).refine(value => {
     try {
@@ -288,6 +289,7 @@ export const campaignsRouter = router({
                 await enqueueCampaignDeliveries({
                     campaignId: input.id,
                     merchantId: merchant.id,
+                    expectedDefinition: campaignDefinitionKey(campaign),
                     recipients: eligibleRecipients.map(recipient => ({
                         customerId: recipient.id,
                         phone: recipient.canonicalPhone,
@@ -295,7 +297,7 @@ export const campaignsRouter = router({
                 });
             } catch (error) {
                 if (error instanceof CampaignDispatchConflictError) {
-                    throw new TRPCError({ code: 'CONFLICT', message: 'Campaign was already claimed for delivery' });
+                    throw new TRPCError({ code: 'CONFLICT', message: 'تغيرت الحملة أثناء التحضير. حدّثها وراجعها قبل الإرسال.' });
                 }
                 throw error;
             }

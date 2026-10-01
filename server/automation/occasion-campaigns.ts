@@ -9,6 +9,7 @@ import { randomBytes } from 'node:crypto';
 import type { PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import {
   getActiveSubscriptionByMerchantId,
+  getCampaignById,
   getConversationsByMerchantId,
   getDispatchableOccasionCampaigns,
   getMerchantById,
@@ -16,6 +17,7 @@ import {
   getPrimaryWhatsAppInstance,
 } from '../db';
 import { assertRuntimeSchema } from '../db/schema-readiness';
+import { campaignDefinitionKey } from '../campaign-definition';
 import {
   CampaignDispatchConflictError,
   completeCampaignWithoutRecipients,
@@ -344,6 +346,11 @@ async function admitOccasionCampaign(
     occasion,
     now,
   });
+  const campaign = await getCampaignById(campaignId);
+  if (!campaign || campaign.merchantId !== merchantId || !['draft', 'scheduled'].includes(campaign.status)) {
+    throw new CampaignDispatchConflictError();
+  }
+  const expectedDefinition = campaignDefinitionKey(campaign);
   const conversations = await getConversationsByMerchantId(merchantId);
   const unique = new Map<string, { customerId: number; phone: string }>();
   for (const conversation of conversations) {
@@ -357,10 +364,10 @@ async function admitOccasionCampaign(
   });
 
   if (recipients.length === 0) {
-    await completeCampaignWithoutRecipients(campaignId, merchantId);
+    await completeCampaignWithoutRecipients(campaignId, merchantId, expectedDefinition);
     return;
   }
-  await enqueueCampaignDeliveries({ campaignId, merchantId, recipients });
+  await enqueueCampaignDeliveries({ campaignId, merchantId, recipients, expectedDefinition });
 }
 
 /** Daily admission job. It processes only explicit, enabled merchant choices. */
