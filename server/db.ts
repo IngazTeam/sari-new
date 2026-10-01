@@ -1,5 +1,7 @@
 import { normalizeProductMoneyWrite } from '../shared/product-money';
 import { deleteTenantCampaign } from './campaign-delete';
+import { editTenantCampaign } from './campaign-edit';
+import { assertCampaignContent } from './campaign-content';
 import {
   eq, ne, and, or, desc, gte, lte, lt, gt, sql, like, isNull, inArray, notInArray, type InferSelectModel, type InferInsertModel
 } from "drizzle-orm";
@@ -1408,6 +1410,7 @@ export async function createCampaign(campaign: InsertCampaign): Promise<Campaign
   const db = await getDb();
   if (!db) throw new Error('Database not available');
 
+  assertCampaignContent(campaign.message, campaign.imageUrl);
   const result = await db.insert(campaigns).values(campaign);
   const insertedId = Number((result[0] as any).insertId);
 
@@ -1482,15 +1485,8 @@ export async function updateCampaign(id: number, data: Partial<InsertCampaign>):
 }
 
 /** Guard the write itself so a dispatcher cannot claim a campaign between read and edit. */
-export async function updateEditableCampaign(id: number, merchantId: number, data: Partial<InsertCampaign>): Promise<boolean> {
-  const database = await getDb();
-  if (!database) throw new Error('Database not available');
-  const [result] = await database.update(campaigns).set(data).where(and(
-    eq(campaigns.id, id),
-    eq(campaigns.merchantId, merchantId),
-    sql`${campaigns.status} IN ('draft', 'scheduled')`,
-  ));
-  return result.affectedRows > 0;
+export async function updateEditableCampaign(id: number, merchantId: number, data: Partial<InsertCampaign>, expectedDefinition?: string): Promise<boolean> {
+  return editTenantCampaign(id, merchantId, data, expectedDefinition);
 }
 
 export async function deleteCampaign(id: number, merchantId: number): Promise<boolean> {

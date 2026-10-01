@@ -58,6 +58,7 @@ import {
 import { campaignAudienceSchema, parseCampaignAudience } from '../shared/campaign-audience';
 import { CampaignAudienceLimitError, readCampaignAudience, requireCompleteCampaignAudience } from './campaign-audience';
 import { campaignDefinitionKey } from './campaign-definition';
+import { assertCampaignContent, CampaignContentError } from './campaign-content';
 import { CampaignCapacityUnavailableError } from './campaign-capacity';
 
 const campaignImageUrlSchema = z.string().url().max(500).refine(value => {
@@ -70,6 +71,15 @@ const campaignImageUrlSchema = z.string().url().max(500).refine(value => {
 }, { message: 'Campaign images must use a public HTTPS URL' });
 
 const campaignIdSchema = z.number().int().positive().max(Number.MAX_SAFE_INTEGER);
+const campaignDefinitionSchema = z.string().regex(/^[a-f0-9]{64}$/);
+
+function requireCampaignContent(message: unknown, imageUrl: unknown): void {
+    try { assertCampaignContent(message, imageUrl); }
+    catch (error) {
+        if (error instanceof CampaignContentError) throw new TRPCError({ code: 'BAD_REQUEST', message: error.message });
+        throw error;
+    }
+}
 
 // Validate at the server boundary as API clients can bypass the campaign form.
 const campaignScheduleSchema = z.date()
@@ -155,6 +165,7 @@ export const campaignsRouter = router({
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Merchant account is not active' });
             }
 
+            requireCampaignContent(input.message, input.imageUrl);
             const campaign = await createCampaign({
                 merchantId: merchant.id,
                 name: input.name,
@@ -174,12 +185,13 @@ export const campaignsRouter = router({
     update: permissionProcedure('campaigns.manage')
         .input(z.object({
             id: campaignIdSchema,
+            expectedDefinition: campaignDefinitionSchema.optional(),
             name: z.string().trim().min(1).max(255).optional(),
             message: z.string().trim().min(1).max(3800).optional(),
             imageUrl: campaignImageUrlSchema.nullable().optional(),
             targetAudience: z.string().max(1000).refine(isValidCampaignTargetAudience).optional(),
             scheduledAt: campaignScheduleSchema.nullable().optional(),
-        }).strict().refine(value => Object.entries(value).some(([key, field]) => key !== 'id' && field !== undefined), {
+        }).strict().refine(value => Object.entries(value).some(([key, field]) => !['id', 'expectedDefinition'].includes(key) && field !== undefined), {
             message: 'حدد بيانات الحملة المطلوب تعديلها',
         }))
         .mutation(async ({ input, ctx }) => {
@@ -197,13 +209,21 @@ export const campaignsRouter = router({
                 throw new TRPCError({ code: 'BAD_REQUEST', message: 'Cannot edit campaign in current status' });
             }
 
-            const { id, scheduledAt, ...updateData } = input;
+            const { id, scheduledAt, expectedDefinition, ...updateData } = input;
             // Changing the schedule must also change the queue eligibility.
             const scheduleStatus = scheduledAt !== undefined
                 ? { status: scheduledAt ? 'scheduled' as const : 'draft' as const,
                     scheduledAt: scheduledAt ? formatDateForDB(scheduledAt) : null }
                 : {};
-            const saved = await updateEditableCampaign(id, merchant.id, { ...updateData, ...scheduleStatus });
+            let saved: boolean;
+            try {
+                saved = expectedDefinition === undefined
+                    ? await updateEditableCampaign(id, merchant.id, { ...updateData, ...scheduleStatus })
+                    : await updateEditableCampaign(id, merchant.id, { ...updateData, ...scheduleStatus }, expectedDefinition);
+            } catch (error) {
+                if (error instanceof CampaignContentError) throw new TRPCError({ code: 'BAD_REQUEST', message: error.message });
+                throw new TRPCError({ code: 'SERVICE_UNAVAILABLE', message: 'Campaign could not be saved' });
+            }
             if (!saved) throw new TRPCError({ code: 'CONFLICT', message: 'تغيرت حالة الحملة. حدّث الصفحة قبل تعديلها.' });
 
             return { success: true };
@@ -237,7 +257,7 @@ export const campaignsRouter = router({
     // Durable send: consent-gated recipients are committed to an outbox in the
     // same transaction that claims the campaign. Provider I/O never runs here.
     send: permissionProcedure('campaigns.manage')
-        .input(z.object({ id: campaignIdSchema, expectedDefinition:z.string().regex(/^[a-f0-9]{64}$/).optional() }).strict())
+        .input(z.object({ id: campaignIdSchema, expectedDefinition: campaignDefinitionSchema.optional() }).strict())
         .mutation(async ({ input, ctx }) => {
             const campaign = await getCampaignById(input.id);
             if (!campaign) {
@@ -261,6 +281,8 @@ export const campaignsRouter = router({
             if (input.expectedDefinition && input.expectedDefinition !== definition) {
                 throw new TRPCError({code:'CONFLICT',message:'Campaign changed; review the current details before sending'});
             }
+
+            requireCampaignContent(campaign.message, campaign.imageUrl);
 
             const instance = await getPrimaryWhatsAppInstance(merchant.id);
             if (!instance || instance.status !== 'active') {
@@ -341,6 +363,7 @@ export const campaignsRouter = router({
                     })),
                 });
             } catch (error) {
+                if (error instanceof CampaignContentError) throw new TRPCError({ code: 'BAD_REQUEST', message: error.message });
                 if (error instanceof CampaignDispatchConflictError) {
                     throw new TRPCError({ code: 'CONFLICT', message: 'تغيرت الحملة أثناء التحضير. حدّثها وراجعها قبل الإرسال.' });
                 }

@@ -10,7 +10,7 @@ describe('campaign persistence outages are never success or empty results',()=>{
   it.each([
     ['createCampaign', [{merchantId:1,name:'Fixture',message:'Fixture'}]],
     ['getCampaignById',[1]], ['getCampaignsByMerchantId',[1]], ['getAllCampaigns',[]],
-    ['getAllCampaignsWithMerchants',[]], ['updateCampaign',[1,{name:'Fixture'}]],
+    ['getAllCampaignsWithMerchants',[]], ['updateCampaign',[1,{name:'Fixture'}]], ['updateEditableCampaign',[1,1,{name:'Fixture'}]],
     ['deleteCampaign',[1,1]], ['deleteCampaignLogsByCampaignId',[1]],
     ['createCampaignLog',[{campaignId:1,customerPhone:'99900000001'}]],
     ['getCampaignLogById',[1]], ['getCampaignLogsByCampaignId',[1]],

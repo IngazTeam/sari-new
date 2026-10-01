@@ -6,6 +6,7 @@ export { CampaignTargetingError, filterCampaignAudience, isValidCampaignTargetAu
 import { getPool } from '../db';
 import { assertRuntimeSchema } from '../db/schema-readiness';
 import { campaignDefinitionKey, type CampaignDefinition } from '../campaign-definition';
+import { assertCampaignContent } from '../campaign-content';
 import { reserveCampaignQuota as reserveDispatchCapacity, releaseCampaignQuota as releaseQuotaReservation, CampaignQuotaEvidenceError } from '../campaign-quota';
 import {
   sendMerchantWhatsApp,
@@ -191,6 +192,7 @@ export async function enqueueCampaignDeliveries(input: {
       || campaignDefinitionKey(campaign) !== input.expectedDefinition) {
       throw new CampaignDispatchConflictError();
     }
+    assertCampaignContent(campaign.message, campaign.imageUrl);
     if (!await occasionAllowsAdmission(connection, input.campaignId, input.merchantId)) throw new CampaignDispatchConflictError();
     for (const recipient of recipients) {
       await connection.execute(

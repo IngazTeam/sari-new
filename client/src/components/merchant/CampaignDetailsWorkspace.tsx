@@ -4,7 +4,7 @@ import {useTranslation} from 'react-i18next';
 import {RefreshCw,Send,FileText,Pencil} from 'lucide-react';
 import {trpc} from '@/lib/trpc';
 import {campaignDetailsSchema} from '@shared/campaign-details';
-import {withCampaignOptOutNotice} from '@shared/campaign-message';
+import {withCampaignOptOutNotice,campaignMessageIssue} from '@shared/campaign-message';
 import {campaignDetailsLabels} from '@/lib/campaign-details-labels';
 import {conversationMediaUrl} from '@/lib/conversation-message';
 import {Button} from '@/components/ui/button';
@@ -29,7 +29,7 @@ export function CampaignDetailsWorkspace({actorId,merchantId,campaignId}:{actorI
   const names={draft:t('merchantUx.campaignWorkspace.draft'),scheduled:t('merchantUx.campaignWorkspace.scheduledStatus'),sending:t('merchantUx.campaignWorkspace.sending'),completed:t('merchantUx.campaignWorkspace.completedStatus'),failed:t('merchantUx.campaignWorkspace.failed')};
   const campaign=data?.campaign,editable=!!campaign&&['draft','scheduled'].includes(campaign.status),image=conversationMediaUrl(campaign?.imageUrl);
   const outgoing=withCampaignOptOutNotice(campaign?.message??''),limit=campaign?.imageUrl?1024:4096;
-  const contentValid=!!campaign?.message.trim()&&outgoing.length<=limit,imageValid=!campaign?.imageUrl||!!image&&failedImage!==image;
+  const contentValid=campaignMessageIssue(campaign?.message,campaign?.imageUrl)===null,imageValid=!campaign?.imageUrl||!!image&&failedImage!==image;
   const canSend=!!data?.canManage&&editable&&data.audience.status==='valid'&&data.excludedRecipients===0&&contentValid&&imageValid;
   const unchanged=!!reviewed&&reviewed===campaign?.definitionKey;
   const refresh=()=>{void query.refetch();void utils.campaigns.workspace.invalidate();void utils.campaigns.performanceSnapshot.invalidate();};
