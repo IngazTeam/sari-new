@@ -103,11 +103,6 @@ function chart(){
 }
 const orderStatus={pending:['بانتظار الدفع','amber'],paid:['مدفوع','blue'],processing:['قيد التجهيز','amber'],shipped:['تم الشحن','blue'],delivered:['تم التسليم','']};
 function orderTable(orders,compact=false){return `<div class="table-scroll responsive-table"><table><thead><tr><th>الطلب</th><th>العميل</th><th>المبلغ</th><th>الحالة</th><th class="hide-mobile">التاريخ</th><th>التفاصيل</th></tr></thead><tbody>${orders.map(o=>`<tr><td><strong dir="ltr">#${o.id}</strong><small>${o.items===1?'منتج واحد':o.items===2?'منتجان':o.items+' منتجات'}</small></td><td>${esc(customer(o.customer).name)}</td><td><strong>${money(o.amount)}</strong> <small style="display:inline">ر.س</small></td><td>${status(...orderStatus[o.status])}</td><td class="hide-mobile">${o.day} سبتمبر 2026</td><td><button class="table-row-button" data-action="order" data-id="${o.id}" aria-label="عرض الطلب ${o.id}">${compact?icon('left'):'عرض الطلب'}</button></td></tr>`).join('')}</tbody></table></div>`;}
-function overview(){return heading('صباح الخير، أحمد','هذه أبرز مستجدات متجرك. لنبدأ بما يحتاج انتباهك.',periodControl()+button(icon('plus')+'إجراء سريع','quick','primary'),'الأربعاء، 23 سبتمبر 2026')+
-  `<section class="panel attention" aria-label="مهام تحتاج انتباهك"><div class="attention-title"><span class="orb">${icon('spark')}</span><div><h2>خطوتك التالية</h2><p>أشياء صغيرة تصنع فرقًا اليوم</p></div></div><div class="attention-items"><button class="attention-item" data-action="needs"><span><b>${data.contacts.filter(c=>c.needs).length} محادثات</b><small>تحتاج ردك</small></span>${icon('left')}</button><a class="attention-item" href="#/catalog"><span><b>${data.products.filter(p=>p.stock===0).length} منتج نفد</b><small>راجع المخزون</small></span>${icon('left')}</a><a class="attention-item" href="#/marketing"><span><b>${data.campaigns.filter(c=>c.status==='draft').length} حملة مسودة</b><small>أكمل تجهيزها</small></span>${icon('left')}</a></div></section>`+
-  `<section class="kpis" aria-label="ملخص الأداء">${kpi('الإيراد المحصّل',money(revenue())+' <small>ر.س</small>','للطلبات المدفوعة خلال الفترة','wallet')}${kpi('إجمالي الطلبات',scopedOrders().length,'تشمل الطلبات بانتظار الدفع','bag')}${kpi('محادثات العملاء',data.contacts.length,'إجمالي السجل التجريبي','chat')}${kpi('طلبات تم تسليمها',scopedOrders().filter(o=>o.status==='delivered').length,'بناءً على حالة «تم التسليم»','check')}</section>`+
-  `<div class="overview-grid"><section class="panel panel-pad"><div class="panel-head"><div><h2>مبيعاتك خلال الفترة</h2><p>توزيع الإيراد المحصّل بالريال السعودي</p></div><span class="chart-legend"><i></i>الإيراد</span></div>${chart()}<div class="chart-foot"><span>لا تشمل الطلبات غير المدفوعة</span><a href="#/analytics" class="text-link">استكشف التحليلات ${icon('left')}</a></div></section><section class="panel panel-pad assistant-panel"><div class="panel-head"><h2>ساري، إلى جانبك</h2>${status('محاكاة')}</div><div class="assistant-stat">${data.contacts.filter(c=>!c.needs).length} <span>محادثة</span></div><h3>لا تنتظر تدخلًا منك</h3><div class="meter"><span style="width:${data.contacts.filter(c=>!c.needs).length/65*100}%"></span></div><div class="row between"><small>من ${data.contacts.length} محادثة توضيحية</small><small>${data.contacts.filter(c=>c.needs).length} تحتاجك</small></div><a href="#/ai/test" class="button">${icon('spark')} جرّب تجربة العميل ${icon('left')}</a></section></div>`+
-  `<section class="panel"><div class="panel-head table-top"><div><h2>آخر الطلبات</h2><p>تابع الرحلة من أول طلب إلى التسليم</p></div><a class="text-link" href="#/sales">كل الطلبات ${icon('left')}</a></div>${orderTable(data.orders.slice(0,4),true)}</section>`;}
 function inbox(){
   const list=data.contacts.filter(c=>(ui.filter!=='needs'||c.needs)&&(c.name+' '+c.ref+' '+c.messages.map(m=>m.text).join(' ')).includes(ui.query));
   const c=data.contacts.find(c=>c.id===ui.chat);
@@ -165,7 +160,7 @@ function demoState(){
   if(ui.demo==='error')return head+`<section class="panel">${empty('تعذر تحميل البيانات','لم نتمكن من تحديث البيانات. تحقق من الاتصال ثم أعد المحاولة؛ لم تتغير بياناتك.',button(icon('refresh')+'إعادة المحاولة','retry','primary'),'alert')}</section>`;
   return head+`<section class="panel panel-pad" aria-busy="true" aria-label="جاري تحميل البيانات"><p role="status">جاري تحميل البيانات…</p><div class="skeleton skeleton-title" style="margin-top:25px"></div>${[1,2,3,4].map(()=>'<div class="skeleton skeleton-row"></div>').join('')}</section>`;
 }
-const renderers={overview,inbox,sales,catalog,customers,ai,marketing,analytics,settings};
+const renderers={overview:()=>TenantPages.render(TenantPages.find('/merchant/dashboard')),inbox,sales,catalog,customers,ai,marketing,analytics,settings};
 function render(keepFocus=false){
   window.SetupPreview?.unmount();
   window.ImportPreview?.unmount();
@@ -193,6 +188,7 @@ function render(keepFocus=false){
   if(ui.section==='inbox'&&ui.chat){const body=$('.chat-body');if(body)body.scrollTop=body.scrollHeight;}
 }
 function onRoute(){
+  if(['','#','#/','#/overview'].includes(location.hash))history.replaceState(null,'','#/page/merchant/dashboard');
   if(location.hash==='#/tools'||location.hash.startsWith('#/tools/')) {
     const section=location.hash.split('/')[2];
     const query=groups.slice(0,9).some(g=>g[0]===section)?'?section='+section:'';
@@ -286,7 +282,6 @@ document.addEventListener('click',e=>{
   else if(a==='prototype'){if(ui.page){document.querySelector('[data-page-action=states]')?.click();if(ui.page.kind==='state')location.hash=TenantPages.href('/merchant/tools');}else prototypeDialog();}
   else if(a==='retry'){ui.demo='normal';render();toast('تم عرض البيانات التوضيحية.');}
   else if(a==='demo-state'){ui.demo=id;$('#dialog').close();render();clearTimeout(loadingTimer);if(id==='loading')loadingTimer=setTimeout(()=>{ui.demo='normal';render();toast('اكتمل التحميل التجريبي.');},2200);}
-  else if(a==='quick')openDialog('ماذا تريد أن تنجز؟',`<div class="form-stack">${button(icon('chat')+'متابعة المحادثات','needs')}${button(icon('box')+'إضافة منتج','new-product','', 'data-type="product"')}${button(icon('file')+'إنشاء عرض سعر','new-quote')}${button(icon('megaphone')+'تجهيز حملة','campaign-new')}</div>`);
   else if(a==='notifications')openDialog('يحتاج انتباهك',data.notifications?`<div class="form-stack">${button(`${data.contacts.filter(c=>c.needs).length} محادثات تحتاج ردًا`,'needs')}<a class="button" href="#/catalog">مراجعة المنتجات غير المتوفرة ${icon('left')}</a><a class="button" href="#/marketing">أكمل مسودات الحملات ${icon('left')}</a></div>`:'<p>إشعارات المهام متوقفة وفق تفضيلاتك. يمكنك تفعيلها من الإعدادات.</p>');
   else if(a==='needs'){if(ui.section!=='inbox'){location.hash=route('inbox');setTimeout(()=>{ui.filter='needs';render();},0);}else{ui.filter='needs';render();}$('#dialog').close();}
   else if(a==='chat'){ui.chat=Number(id);render();}

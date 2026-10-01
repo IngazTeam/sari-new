@@ -6344,6 +6344,7 @@ html:has(.merchant-workspace) {
 }
 .mw-home-analytics { min-width: 0; }
 .mw-home-analytics .mw-metric { overflow-wrap: anywhere; }
+.mw-home-analytics .mw-metric > small { display: block; margin-block-start: 4px; }
 .mw-home-analytics .mw-daily-chart { display: flex; align-items: stretch; gap: clamp(1px, .35vw, 7px); height: 190px; direction: ltr; margin-block: 24px 8px; border-block-end: 1px solid var(--border); }
 .mw-home-analytics .mw-daily-column { display: flex; flex: 1; min-width: 0; align-items: end; }
 .mw-home-analytics .mw-daily-column > span { width: 100%; background: var(--primary); border-radius: 4px 4px 0 0; }

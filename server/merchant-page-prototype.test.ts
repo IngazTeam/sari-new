@@ -30,6 +30,10 @@ function submit(type: string) { w.document.querySelector(`[data-page-form="${typ
 const text = () => w.document.getElementById('main').textContent;
 
 describe('complete tenant page prototype', () => {
+  it.each(['','#','#/','#/overview'])('opens the actual dashboard for the legacy home URL %s',hash=>{
+    w.history.replaceState(null,'','/'+hash);w.dispatchEvent(new w.HashChangeEvent('hashchange'));
+    expect(w.location.hash).toBe('#/page/merchant/dashboard');expect(w.document.querySelector('#main iframe')?.getAttribute('src')).toBe('./dashboard.html?embed=brain');expect(text()).not.toContain('صباح الخير، أحمد');expect(w.document.querySelector('[data-action="quick"]')).toBeNull();
+  });
   it('renders every route and recovery state with one heading or one dedicated application frame and valid links', async () => {
     const inventory = JSON.parse(readFileSync('docs/audits/tenant-pages-2026-09-27/inventory.json', 'utf8'));
     const routes = inventory.routes;
