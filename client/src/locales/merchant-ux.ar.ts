@@ -2,6 +2,7 @@ import { campaignEditorWorkspaceAr } from './campaign-editor-workspace';
 import { campaignDetailsWorkspaceAr } from './campaign-details-workspace';
 import { campaignReportWorkspaceAr } from './campaign-report-workspace';
 import { campaignWorkspaceAr } from './campaign-workspace';
+import { serviceCatalogAr } from './service-catalog-workspace';
 import { websiteImportAr } from './website-import';
 import { groupConversationAr } from './group-conversation';
 import {websiteReportsAr} from './website-reports';
@@ -58,6 +59,7 @@ const merchantUxAr: MerchantUxCopy = {
   knowledgeFaq: knowledgeFaqAr,
   campaignPerformance: campaignPerformanceAr,
   campaignWorkspace: campaignWorkspaceAr,
+  serviceCatalog: serviceCatalogAr,
   campaignEditorWorkspace: campaignEditorWorkspaceAr,
   campaignDetailsWorkspace: campaignDetailsWorkspaceAr,
   campaignReportWorkspace: campaignReportWorkspaceAr,

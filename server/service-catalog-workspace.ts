@@ -35,8 +35,8 @@ async function records(read:Read,entity:ServiceCatalogEntity,merchantId:number,r
  const references=(record:CatalogRecord,kind:string):number[]=>record.entity==='service'?(kind==='category'&&record.fields.categoryId!==null?[record.fields.categoryId]:kind==='staff'?record.fields.staffIds??[]:[]):record.entity==='package'&&kind==='service'?record.fields.serviceIds??[]:[];
  for(const group of groups){
   const ids=Array.from(new Set(result.flatMap(row=>references(row,group.kind))));if(!ids.length)continue;
-  const available=new Set((await read(sql`SELECT id FROM ${sql.raw(group.table)} WHERE merchant_id=${merchantId} AND is_active=1 AND id IN (${sql.join(ids.map(id=>sql`${id}`),sql`,`)})`)).map(row=>integer(row.id)));
-  for(const record of result)record.unavailableReferences+=references(record,group.kind).filter(id=>!available.has(id)).length;
+  const available=new Map((await read(sql`SELECT id,name FROM ${sql.raw(group.table)} WHERE merchant_id=${merchantId} AND is_active=1 AND id IN (${sql.join(ids.map(id=>sql`${id}`),sql`,`)})`)).map(row=>[integer(row.id),String(row.name)]));
+  for(const record of result){record.unavailableReferences+=references(record,group.kind).filter(id=>!available.has(id)).length;if(group.kind==='category'&&record.entity==='service')record.categoryName=available.get(record.fields.categoryId??0)??null;}
  }
  return result;
 }

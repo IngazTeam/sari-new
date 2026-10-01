@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-01T20:18:43.040Z",
+  "generatedAt": "2026-10-01T21:29:28.295Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -14022,10 +14022,46 @@
     },
     {
       "file": "client/src/pages/merchant/ServicesManagement.tsx",
-      "hash": "da566adad79a",
+      "hash": "559b03975ad5",
       "queries": [
-        "services.list",
-        "serviceCategories.list"
+        "auth.me",
+        "merchants.getCurrent"
+      ],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [
+        {
+          "query": "auth.me",
+          "binding": "user",
+          "line": 5,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        },
+        {
+          "query": "merchants.getCurrent",
+          "binding": "merchant",
+          "line": 6,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": "!!user.data?.id&&!user.error&&!user.isFetching"
+        }
+      ],
+      "conditions": [],
+      "imports": [
+        "client/src/components/merchant/ServiceCatalogList.tsx"
+      ],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/components/merchant/ServiceCatalogList.tsx",
+      "hash": "0a6a55c31157",
+      "queries": [
+        "services.catalogWorkspace"
       ],
       "mutations": [
         "services.delete"
@@ -14034,77 +14070,72 @@
       "browserRequests": [],
       "sections": [
         {
-          "label": "إدارة الخدمات",
-          "line": 86,
+          "label": "title",
+          "line": 42,
           "tag": "h1"
         },
         {
-          "label": "إجمالي الخدمات",
-          "line": 119,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "التصنيفات",
-          "line": 127,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "الخدمات النشطة",
-          "line": 135,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "لا توجد خدمات",
-          "line": 151,
-          "tag": "h3"
+          "label": "outOfRange noResults empty",
+          "line": 50,
+          "tag": "h2"
         },
         {
           "label": "",
-          "line": 172,
-          "tag": "CardTitle"
+          "line": 52,
+          "tag": "h2"
         },
         {
-          "label": "تأكيد الحذف",
-          "line": 246,
+          "label": "archiveTitle",
+          "line": 60,
           "tag": "DialogTitle"
         }
       ],
       "choices": [],
       "handlers": [
         {
-          "name": "handleDelete",
-          "line": 41,
-          "calls": []
-        },
-        {
-          "name": "confirmDelete",
-          "line": 46,
+          "name": "confirm",
+          "line": 30,
           "calls": [
-            "deleteServiceMutation"
+            "archive"
           ]
         }
       ],
       "queryStates": [
         {
-          "query": "services.list",
-          "binding": "{ data: servicesData, isLoading, refetch }",
-          "line": 25,
-          "errorSignal": false,
+          "query": "services.catalogWorkspace",
+          "binding": "query",
+          "line": 22,
+          "errorSignal": true,
           "loadingSignal": true,
-          "enabled": null
-        },
-        {
-          "query": "serviceCategories.list",
-          "binding": "{ data: categoriesData }",
-          "line": 26,
-          "errorSignal": false,
-          "loadingSignal": false,
           "enabled": null
         }
       ],
       "conditions": [],
+      "imports": [
+        "client/src/lib/service-catalog-navigation.ts"
+      ],
+      "controlCount": 26
+    },
+    {
+      "file": "client/src/lib/service-catalog-navigation.ts",
+      "hash": "c8191352f3c6",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [
+        {
+          "name": "catalogSelectionKey",
+          "line": 9,
+          "calls": []
+        }
+      ],
+      "queryStates": [],
+      "conditions": [],
       "imports": [],
-      "controlCount": 10
+      "controlCount": 0
     },
     {
       "file": "client/src/pages/merchant/ServiceForm.tsx",
@@ -22973,23 +23004,42 @@
         "ServicesManagement"
       ],
       "files": [
-        "client/src/pages/merchant/ServicesManagement.tsx"
+        "client/src/pages/merchant/ServicesManagement.tsx",
+        "client/src/components/merchant/ServiceCatalogList.tsx",
+        "client/src/lib/service-catalog-navigation.ts"
       ],
       "controls": [
-        "072ed20da3df",
-        "63fc4998a9fb",
-        "e952cf806e7c",
-        "a3df58c67359",
-        "1faaf5260ca3",
-        "a4b1d9f0b515",
-        "8a4cb4ddce38",
-        "d8b755fd085a",
-        "7e85886dbdf3",
-        "8dcd16d0c1fb"
+        "33ac12179168",
+        "5e0f2babc1b0",
+        "5807db4f4731",
+        "26af7cd8a17c",
+        "dcb3651e58e5",
+        "9a6fbcb0e7af",
+        "8e24e21dd0de",
+        "e09e1df9f38c",
+        "6dc48b13b9e0",
+        "ec641f72fade",
+        "fee794a27266",
+        "edf792a4864c",
+        "3b7a898011e3",
+        "56d0694412ab",
+        "f9aef0cd1bcb",
+        "72217e21ce6d",
+        "f10c01c3f54a",
+        "72217e21ce6d",
+        "55288b2d75bc",
+        "9eac511164c1",
+        "c19ab5cb29ec",
+        "b7488e54d6c3",
+        "35208afc8cbc",
+        "14a78dd644de",
+        "797bf278417a",
+        "fbeb99337569"
       ],
       "queries": [
-        "services.list",
-        "serviceCategories.list"
+        "auth.me",
+        "merchants.getCurrent",
+        "services.catalogWorkspace"
       ],
       "mutations": [
         "services.delete"
@@ -65553,78 +65603,59 @@
       "review": "source-inventoried"
     },
     {
-      "id": "072ed20da3df",
-      "file": "client/src/pages/merchant/ServicesManagement.tsx",
-      "line": 92,
+      "id": "33ac12179168",
+      "file": "client/src/components/merchant/ServiceCatalogList.tsx",
+      "line": 42,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "التصنيفات",
-      "section": "إدارة الخدمات",
-      "binding": "() => setLocation('/merchant/service-categories')",
+      "label": "refresh",
+      "section": "title",
+      "binding": "()=>{void refresh();}",
       "type": "text",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": false,
+      "conditional": true,
       "conditions": [],
-      "disabled": "",
+      "disabled": "query.isFetching||busy",
       "review": "source-inventoried"
     },
     {
-      "id": "63fc4998a9fb",
-      "file": "client/src/pages/merchant/ServicesManagement.tsx",
-      "line": 99,
+      "id": "5e0f2babc1b0",
+      "file": "client/src/components/merchant/ServiceCatalogList.tsx",
+      "line": 42,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "الحزم",
-      "section": "إدارة الخدمات",
-      "binding": "() => setLocation('/merchant/service-packages')",
+      "label": "create",
+      "section": "title",
+      "binding": "",
       "type": "text",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": false,
-      "conditions": [],
+      "conditional": true,
+      "conditions": [
+        "data.canManage"
+      ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "e952cf806e7c",
-      "file": "client/src/pages/merchant/ServicesManagement.tsx",
-      "line": 106,
-      "tag": "Button",
+      "id": "5807db4f4731",
+      "file": "client/src/components/merchant/ServiceCatalogList.tsx",
+      "line": 42,
+      "tag": "Link",
       "role": "",
       "kind": "action",
-      "label": "إضافة خدمة جديدة",
-      "section": "إدارة الخدمات",
-      "binding": "() => setLocation('/merchant/services/new')",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "a3df58c67359",
-      "file": "client/src/pages/merchant/ServicesManagement.tsx",
-      "line": 155,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "إضافة خدمة جديدة",
-      "section": "لا توجد خدمات",
-      "binding": "() => setLocation('/merchant/services/new')",
+      "label": "create",
+      "section": "title",
+      "binding": "/merchant/services/new",
       "type": "text",
       "options": [],
       "min": "",
@@ -65633,21 +65664,21 @@
       "required": false,
       "conditional": false,
       "conditions": [
-        "services.length === 0"
+        "data.canManage"
       ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "1faaf5260ca3",
-      "file": "client/src/pages/merchant/ServicesManagement.tsx",
-      "line": 207,
-      "tag": "Button",
+      "id": "26af7cd8a17c",
+      "file": "client/src/components/merchant/ServiceCatalogList.tsx",
+      "line": 43,
+      "tag": "Link",
       "role": "",
       "kind": "action",
-      "label": "عرض",
-      "section": "ServicesManagement",
-      "binding": "() => setLocation(`/merchant/services/${service.id}`)",
+      "label": "categories",
+      "section": "title",
+      "binding": "/merchant/service-categories",
       "type": "text",
       "options": [],
       "min": "",
@@ -65660,15 +65691,15 @@
       "review": "source-inventoried"
     },
     {
-      "id": "a4b1d9f0b515",
-      "file": "client/src/pages/merchant/ServicesManagement.tsx",
-      "line": 216,
-      "tag": "Button",
+      "id": "dcb3651e58e5",
+      "file": "client/src/components/merchant/ServiceCatalogList.tsx",
+      "line": 43,
+      "tag": "Link",
       "role": "",
       "kind": "action",
-      "label": "تعديل",
-      "section": "ServicesManagement",
-      "binding": "() => setLocation(`/merchant/services/${service.id}/edit`)",
+      "label": "packages",
+      "section": "title",
+      "binding": "/merchant/service-packages",
       "type": "text",
       "options": [],
       "min": "",
@@ -65681,35 +65712,414 @@
       "review": "source-inventoried"
     },
     {
-      "id": "8a4cb4ddce38",
-      "file": "client/src/pages/merchant/ServicesManagement.tsx",
-      "line": 225,
+      "id": "9a6fbcb0e7af",
+      "file": "client/src/components/merchant/ServiceCatalogList.tsx",
+      "line": 44,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "",
-      "section": "ServicesManagement",
-      "binding": "() => handleDelete(service.id)",
+      "label": "reviewState",
+      "section": "title",
+      "binding": "()=>{void refresh();}",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "needsRefresh&&!action"
+      ],
+      "disabled": "busy||query.isFetching",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "8e24e21dd0de",
+      "file": "client/src/components/merchant/ServiceCatalogList.tsx",
+      "line": 48,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "search",
+      "section": "title",
+      "binding": "searchEdit?.source===search?searchEdit.value:selection.search",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "200",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "e09e1df9f38c",
+      "file": "client/src/components/merchant/ServiceCatalogList.tsx",
+      "line": 48,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "search",
+      "section": "title",
+      "binding": "",
+      "type": "submit",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "6dc48b13b9e0",
+      "file": "client/src/components/merchant/ServiceCatalogList.tsx",
+      "line": 48,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "status all active inactive unknown",
+      "section": "title",
+      "binding": "selection.status",
+      "type": "text",
+      "options": [
+        {
+          "value": "status",
+          "label": ""
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "ec641f72fade",
+      "file": "client/src/components/merchant/ServiceCatalogList.tsx",
+      "line": 48,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "search",
+      "section": "title",
+      "binding": "()=>change({q:null,status:null,page:null})",
       "type": "button",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": false,
-      "conditions": [],
+      "conditional": true,
+      "conditions": [
+        "filtered"
+      ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "d8b755fd085a",
-      "file": "client/src/pages/merchant/ServicesManagement.tsx",
-      "line": 244,
+      "id": "fee794a27266",
+      "file": "client/src/components/merchant/ServiceCatalogList.tsx",
+      "line": 50,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "first",
+      "section": "outOfRange noResults empty",
+      "binding": "()=>change({page:null})",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "selection.page>1",
+        "!data.rows.length"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "edf792a4864c",
+      "file": "client/src/components/merchant/ServiceCatalogList.tsx",
+      "line": 50,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "clear",
+      "section": "outOfRange noResults empty",
+      "binding": "()=>change({q:null,status:null,page:null})",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "filtered",
+        "selection.page>1",
+        "!data.rows.length"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "3b7a898011e3",
+      "file": "client/src/components/merchant/ServiceCatalogList.tsx",
+      "line": 50,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "create",
+      "section": "outOfRange noResults empty",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "data.canManage",
+        "filtered",
+        "selection.page>1",
+        "!data.rows.length"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "56d0694412ab",
+      "file": "client/src/components/merchant/ServiceCatalogList.tsx",
+      "line": 50,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "create",
+      "section": "outOfRange noResults empty",
+      "binding": "/merchant/services/new",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "data.canManage",
+        "filtered",
+        "selection.page>1",
+        "!data.rows.length"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "f9aef0cd1bcb",
+      "file": "client/src/components/merchant/ServiceCatalogList.tsx",
+      "line": 52,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "outOfRange noResults empty",
+      "binding": "`/merchant/services/${row.id}`",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!data.rows.length"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "72217e21ce6d",
+      "file": "client/src/components/merchant/ServiceCatalogList.tsx",
+      "line": 56,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "details",
+      "section": "ServiceCatalogList",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!data.rows.length"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "f10c01c3f54a",
+      "file": "client/src/components/merchant/ServiceCatalogList.tsx",
+      "line": 56,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "details",
+      "section": "ServiceCatalogList",
+      "binding": "`/merchant/services/${row.id}`",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "!data.rows.length"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "72217e21ce6d",
+      "file": "client/src/components/merchant/ServiceCatalogList.tsx",
+      "line": 56,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "edit",
+      "section": "ServiceCatalogList",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "data.canManage"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "55288b2d75bc",
+      "file": "client/src/components/merchant/ServiceCatalogList.tsx",
+      "line": 56,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "edit",
+      "section": "ServiceCatalogList",
+      "binding": "`/merchant/services/${row.id}/edit`",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "data.canManage"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "9eac511164c1",
+      "file": "client/src/components/merchant/ServiceCatalogList.tsx",
+      "line": 56,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "text('archiveNamed',{name:name(row)})",
+      "section": "ServiceCatalogList",
+      "binding": "()=>{opener.current=document.activeElement instanceof HTMLElement?document.activeElement:null;setFailure('');setAction({row,view:view.current});}",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "f.isActive!==false",
+        "data.canManage"
+      ],
+      "disabled": "busy||query.isFetching||needsRefresh",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "c19ab5cb29ec",
+      "file": "client/src/components/merchant/ServiceCatalogList.tsx",
+      "line": 58,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "previous",
+      "section": "ServiceCatalogList",
+      "binding": "()=>change({page:selection.page-1})",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "data.pagination.pages>0"
+      ],
+      "disabled": "selection.page<=1||busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "b7488e54d6c3",
+      "file": "client/src/components/merchant/ServiceCatalogList.tsx",
+      "line": 58,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "next",
+      "section": "ServiceCatalogList",
+      "binding": "()=>change({page:selection.page+1})",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "data.pagination.pages>0"
+      ],
+      "disabled": "selection.page>=data.pagination.pages||busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "35208afc8cbc",
+      "file": "client/src/components/merchant/ServiceCatalogList.tsx",
+      "line": 60,
       "tag": "DialogContent",
       "role": "",
       "kind": "dialog",
-      "label": "تأكيد الحذف هل أنت متأكد من حذف هذه الخدمة؟ لن يتم حذفها نهائياً بل سيتم تعطيلها فقط. إلغاء جاري الحذف... حذف",
-      "section": "ServicesManagement",
+      "label": "archiveTitle archiveHint changed reviewState cancel confirmArchive",
+      "section": "ServiceCatalogList",
       "binding": "",
       "type": "text",
       "options": [],
@@ -65723,15 +66133,15 @@
       "review": "source-inventoried"
     },
     {
-      "id": "7e85886dbdf3",
-      "file": "client/src/pages/merchant/ServicesManagement.tsx",
-      "line": 252,
+      "id": "14a78dd644de",
+      "file": "client/src/components/merchant/ServiceCatalogList.tsx",
+      "line": 60,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "إلغاء",
-      "section": "تأكيد الحذف",
-      "binding": "() => setDeleteDialogOpen(false)",
+      "label": "reviewState",
+      "section": "archiveTitle",
+      "binding": "()=>{void refresh();}",
       "type": "text",
       "options": [],
       "min": "",
@@ -65739,29 +66149,52 @@
       "maxLength": "",
       "required": false,
       "conditional": true,
-      "conditions": [],
-      "disabled": "",
+      "conditions": [
+        "needsRefresh"
+      ],
+      "disabled": "busy||query.isFetching",
       "review": "source-inventoried"
     },
     {
-      "id": "8dcd16d0c1fb",
-      "file": "client/src/pages/merchant/ServicesManagement.tsx",
-      "line": 258,
+      "id": "797bf278417a",
+      "file": "client/src/components/merchant/ServiceCatalogList.tsx",
+      "line": 60,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "جاري الحذف... حذف",
-      "section": "تأكيد الحذف",
-      "binding": "confirmDelete",
+      "label": "cancel",
+      "section": "archiveTitle",
+      "binding": "()=>setAction(null)",
       "type": "text",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": true,
+      "conditional": false,
       "conditions": [],
-      "disabled": "deleteServiceMutation.isPending",
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "fbeb99337569",
+      "file": "client/src/components/merchant/ServiceCatalogList.tsx",
+      "line": 60,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "confirmArchive",
+      "section": "archiveTitle",
+      "binding": "()=>{void confirm();}",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "!canConfirm",
       "review": "source-inventoried"
     },
     {

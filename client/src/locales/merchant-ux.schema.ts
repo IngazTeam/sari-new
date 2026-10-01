@@ -88,6 +88,7 @@ export type MerchantUxCopy = {
   knowledgeFaq: import('./knowledge-faq').KnowledgeFaqCopy;
   campaignPerformance: import('./campaign-performance').CampaignPerformanceCopy;
   campaignWorkspace: import('./campaign-workspace').CampaignWorkspaceCopy;
+  serviceCatalog: typeof import('./service-catalog-workspace').serviceCatalogEn;
   campaignEditorWorkspace: import('./campaign-editor-workspace').CampaignEditorWorkspaceCopy;
   campaignDetailsWorkspace: import('./campaign-details-workspace').CampaignDetailsWorkspaceCopy;
   campaignReportWorkspace: import('./campaign-report-workspace').CampaignReportWorkspaceCopy;

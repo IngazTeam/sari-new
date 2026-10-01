@@ -10,7 +10,7 @@ export const catalogRecordInput=z.object({entity:catalogEntity,id:serviceCatalog
 export const catalogChoicesInput=z.object({kind:z.enum(['category','staff','service']),search:z.string().trim().max(200).default(''),page:page.default(1)}).strict();
 const text=z.string().nullable(),number=z.number().int().nullable(),flag=z.boolean().nullable();
 const common={name:z.string(),description:text,isActive:flag};
-const metadata={id:serviceCatalogId,definition:serviceCatalogDefinition,issues:z.array(z.string()),unavailableReferences:count};
+const metadata={id:serviceCatalogId,definition:serviceCatalogDefinition,issues:z.array(z.string()),unavailableReferences:count,categoryName:z.string().nullable().default(null)};
 // Read stored values without converting corrupt/unknown selections into valid empty ones.
 export const catalogRecordSchema=z.discriminatedUnion('entity',[
  z.object({...metadata,entity:z.literal('service'),fields:z.object({...common,category:text,categoryId:number,priceType:z.string(),basePrice:number,minPrice:number,maxPrice:number,durationMinutes:number,bufferTimeMinutes:number,requiresAppointment:flag,maxBookingsPerDay:number,advanceBookingDays:number,staffIds:serviceCatalogIds.nullable(),displayOrder:number}).strict()}).strict(),

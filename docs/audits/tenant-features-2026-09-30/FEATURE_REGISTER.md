@@ -2,7 +2,7 @@
 
 هذا حصر مصدر قابل لإعادة التوليد، وليس ادعاءً بأن كل مسار عمل اختُبر أو أُعيد تصميمه. يشمل المكونات الفرعية المحلية، الحقول، الأزرار، النوافذ، التبويبات، واجهات القراءة والتعديل. العناصر الديناميكية تحتاج مراجعة إضافية.
 
-- 126 مسارًا مسجلًا، 360 ملف واجهة متصلًا، 2286 عنصر تحكم في المصدر.
+- 126 مسارًا مسجلًا، 362 ملف واجهة متصلًا، 2302 عنصر تحكم في المصدر.
 - 0 رابطًا حرفيًا غير مطابق، و0 ملف صفحة غير متصل بالمسارات المحصورة.
 
 | الصفحة | الملفات | عناصر التحكم | القراءة / التعديل | موك أب للصفحة |
@@ -82,7 +82,7 @@
 | /merchant/calendar — التقويم | 3 | 16 | 4 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/staff — مقدمو الخدمات | 1 | 11 | 1 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/team — الفريق والصلاحيات | 1 | 8 | 1 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/services — الخدمات | 1 | 10 | 2 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/services — الخدمات | 3 | 26 | 3 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/services/new — إضافة وتعديل خدمة | 1 | 17 | 2 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/services/:id/edit — إضافة وتعديل خدمة | 1 | 17 | 2 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/services/:id — تفاصيل الخدمة | 1 | 5 | 1 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -2768,20 +2768,36 @@
 | 256 | Button | تسمية ديناميكية / تحتاج مراجعة | الأعضاء |
 | 309 | Button | تسمية ديناميكية / تحتاج مراجعة | دعوات معلقة |
 
-## client/src/pages/merchant/ServicesManagement.tsx
+## client/src/components/merchant/ServiceCatalogList.tsx
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 92 | Button | التصنيفات | إدارة الخدمات |
-| 99 | Button | الحزم | إدارة الخدمات |
-| 106 | Button | إضافة خدمة جديدة | إدارة الخدمات |
-| 155 | Button | إضافة خدمة جديدة | لا توجد خدمات |
-| 207 | Button | عرض | ServicesManagement |
-| 216 | Button | تعديل | ServicesManagement |
-| 225 | Button | تسمية ديناميكية / تحتاج مراجعة | ServicesManagement |
-| 244 | DialogContent | تأكيد الحذف هل أنت متأكد من حذف هذه الخدمة؟ لن يتم حذفها نهائياً بل سيتم تعطيلها فقط. إلغاء جاري الحذف... حذف | ServicesManagement |
-| 252 | Button | إلغاء | تأكيد الحذف |
-| 258 | Button | جاري الحذف... حذف | تأكيد الحذف |
+| 42 | Button | refresh | title |
+| 42 | Button | create | title |
+| 42 | Link | create | title |
+| 43 | Link | categories | title |
+| 43 | Link | packages | title |
+| 44 | Button | reviewState | title |
+| 48 | input | search | title |
+| 48 | Button | search | title |
+| 48 | select | status all active inactive unknown | title |
+| 48 | Button | search | title |
+| 50 | Button | first | outOfRange noResults empty |
+| 50 | Button | clear | outOfRange noResults empty |
+| 50 | Button | create | outOfRange noResults empty |
+| 50 | Link | create | outOfRange noResults empty |
+| 52 | Link | تسمية ديناميكية / تحتاج مراجعة | outOfRange noResults empty |
+| 56 | Button | details | ServiceCatalogList |
+| 56 | Link | details | ServiceCatalogList |
+| 56 | Button | edit | ServiceCatalogList |
+| 56 | Link | edit | ServiceCatalogList |
+| 56 | Button | text('archiveNamed',{name:name(row)}) | ServiceCatalogList |
+| 58 | Button | previous | ServiceCatalogList |
+| 58 | Button | next | ServiceCatalogList |
+| 60 | DialogContent | archiveTitle archiveHint changed reviewState cancel confirmArchive | ServiceCatalogList |
+| 60 | Button | reviewState | archiveTitle |
+| 60 | Button | cancel | archiveTitle |
+| 60 | Button | confirmArchive | archiveTitle |
 
 ## client/src/pages/merchant/ServiceForm.tsx
 
