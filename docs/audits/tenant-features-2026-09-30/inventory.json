@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-01T03:05:36.811Z",
+  "generatedAt": "2026-10-01T03:22:25.695Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -443,7 +443,7 @@
     },
     {
       "file": "client/src/lib/knowledge-workspace-cache.ts",
-      "hash": "f6151e3dd5b9",
+      "hash": "d1465b68b3ae",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
@@ -8722,7 +8722,7 @@
     },
     {
       "file": "client/src/pages/merchant/HumanTakeoverSettings.tsx",
-      "hash": "e4f90ffd0eb7",
+      "hash": "245ac513685e",
       "queries": [
         "botSettings.takeoverWorkspace"
       ],
@@ -8732,37 +8732,37 @@
       "sections": [
         {
           "label": "التدخل البشري",
-          "line": 60,
+          "line": 68,
           "tag": "h1"
         },
         {
           "label": "الرد من لوحة التحكم",
-          "line": 68,
+          "line": 76,
           "tag": "CardTitle"
         },
         {
           "label": "الرد مباشرة من واتساب",
-          "line": 78,
+          "line": 86,
           "tag": "CardTitle"
         },
         {
           "label": "أمر بدء التدخل",
-          "line": 211,
+          "line": 227,
           "tag": "h2"
         },
         {
           "label": "أمر إنهاء التدخل",
-          "line": 226,
+          "line": 242,
           "tag": "h2"
         },
         {
           "label": "رسالة الاستئناف القديمة · للقراءة",
-          "line": 240,
+          "line": 256,
           "tag": "summary"
         },
         {
           "label": "المحادثات النشطة (بشري)",
-          "line": 304,
+          "line": 318,
           "tag": "h2"
         }
       ],
@@ -8772,7 +8772,7 @@
         {
           "query": "botSettings.takeoverWorkspace",
           "binding": "listing",
-          "line": 38,
+          "line": 44,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
@@ -8782,6 +8782,7 @@
       "imports": [
         "client/src/components/KnowledgeWorkspaceScope.tsx",
         "client/src/components/merchant/AssistantOptionReview.tsx",
+        "client/src/components/merchant/AssistantOptionRecovery.tsx",
         "client/src/hooks/useReviewedAssistantOption.ts"
       ],
       "controlCount": 10
@@ -8808,8 +8809,29 @@
       "controlCount": 2
     },
     {
+      "file": "client/src/components/merchant/AssistantOptionRecovery.tsx",
+      "hash": "1e97147df49c",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [
+        {
+          "label": "مسودة خيارات المساعد",
+          "line": 28,
+          "tag": "h2"
+        }
+      ],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 2
+    },
+    {
       "file": "client/src/hooks/useReviewedAssistantOption.ts",
-      "hash": "3e3e75008d1c",
+      "hash": "4549cb072a2f",
       "queries": [
         "merchants.getCurrent",
         "botSettings.get"
@@ -8826,7 +8848,7 @@
         {
           "query": "merchants.getCurrent",
           "binding": "merchant",
-          "line": 15,
+          "line": 23,
           "errorSignal": false,
           "loadingSignal": false,
           "enabled": null
@@ -8834,14 +8856,34 @@
         {
           "query": "botSettings.get",
           "binding": "query",
-          "line": 16,
+          "line": 24,
           "errorSignal": true,
           "loadingSignal": false,
           "enabled": null
         }
       ],
       "conditions": [],
-      "imports": [],
+      "imports": [
+        "client/src/lib/knowledge-workspace-cache.ts",
+        "client/src/lib/assistant-option-draft.ts"
+      ],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/lib/assistant-option-draft.ts",
+      "hash": "e475415942bf",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [
+        "client/src/lib/knowledge-workspace-cache.ts"
+      ],
       "controlCount": 0
     },
     {
@@ -12919,7 +12961,7 @@
     },
     {
       "file": "client/src/pages/merchant/LanguageSettings.tsx",
-      "hash": "4fd6315c8de7",
+      "hash": "2ac273c47038",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
@@ -12927,29 +12969,29 @@
       "sections": [
         {
           "label": "إعدادات اللغة",
-          "line": 116,
+          "line": 122,
           "tag": "h1"
         },
         {
           "label": "معاينة رسائل البوت",
-          "line": 226,
+          "line": 238,
           "tag": "h2"
         },
         {
           "label": "",
-          "line": 235,
+          "line": 247,
           "tag": "CardTitle"
         },
         {
           "label": "",
-          "line": 243,
+          "line": 255,
           "tag": "h3"
         }
       ],
       "choices": [
         {
           "name": "languages",
-          "line": 31,
+          "line": 37,
           "values": [
             {
               "code": "ar",
@@ -12995,6 +13037,7 @@
       "imports": [
         "client/src/components/KnowledgeWorkspaceScope.tsx",
         "client/src/components/merchant/AssistantOptionReview.tsx",
+        "client/src/components/merchant/AssistantOptionRecovery.tsx",
         "client/src/hooks/useReviewedAssistantOption.ts"
       ],
       "controlCount": 3
@@ -20110,22 +20153,26 @@
         "client/src/components/KnowledgeWorkspaceScope.tsx",
         "client/src/lib/knowledge-workspace-cache.ts",
         "client/src/components/merchant/AssistantOptionReview.tsx",
-        "client/src/hooks/useReviewedAssistantOption.ts"
+        "client/src/components/merchant/AssistantOptionRecovery.tsx",
+        "client/src/hooks/useReviewedAssistantOption.ts",
+        "client/src/lib/assistant-option-draft.ts"
       ],
       "controls": [
-        "375c2135eb7d",
-        "0c70f99fb78a",
-        "89b84f96ca9a",
-        "25645373cebd",
-        "48c2293611b0",
-        "2b1d8ec01b86",
-        "e74722e2538d",
-        "787d05766f65",
-        "7281e7f7eeb8",
-        "fa337c99071b",
+        "ae1090032693",
+        "7a92821ca4c6",
+        "d32142e4562e",
+        "149f010e1e0d",
+        "d78b69fc3975",
+        "ebdf41aa9871",
+        "368a94cac45c",
+        "eab56f32a451",
+        "ef837a473f82",
+        "35a2ed13ce75",
         "77ce5300e6f7",
         "03a912a88aad",
-        "75d02c53dd7e"
+        "75d02c53dd7e",
+        "5738695fdf79",
+        "c59c5589be5a"
       ],
       "queries": [
         "botSettings.takeoverWorkspace",
@@ -21936,15 +21983,19 @@
         "client/src/components/KnowledgeWorkspaceScope.tsx",
         "client/src/lib/knowledge-workspace-cache.ts",
         "client/src/components/merchant/AssistantOptionReview.tsx",
-        "client/src/hooks/useReviewedAssistantOption.ts"
+        "client/src/components/merchant/AssistantOptionRecovery.tsx",
+        "client/src/hooks/useReviewedAssistantOption.ts",
+        "client/src/lib/assistant-option-draft.ts"
       ],
       "controls": [
-        "c72214a12e24",
-        "f503e7ef0af0",
-        "0da59770eb25",
+        "e5cabb02d07c",
+        "bde80326a3c4",
+        "aeebcc5d98b8",
         "77ce5300e6f7",
         "03a912a88aad",
-        "75d02c53dd7e"
+        "75d02c53dd7e",
+        "5738695fdf79",
+        "c59c5589be5a"
       ],
       "queries": [
         "auth.me",
@@ -47684,9 +47735,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "375c2135eb7d",
+      "id": "ae1090032693",
       "file": "client/src/pages/merchant/HumanTakeoverSettings.tsx",
-      "line": 137,
+      "line": 153,
       "tag": "Input",
       "role": "",
       "kind": "field",
@@ -47705,9 +47756,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "0c70f99fb78a",
+      "id": "7a92821ca4c6",
       "file": "client/src/pages/merchant/HumanTakeoverSettings.tsx",
-      "line": 172,
+      "line": 188,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -47726,9 +47777,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "89b84f96ca9a",
+      "id": "d32142e4562e",
       "file": "client/src/pages/merchant/HumanTakeoverSettings.tsx",
-      "line": 200,
+      "line": 216,
       "tag": "Switch",
       "role": "",
       "kind": "field",
@@ -47747,9 +47798,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "25645373cebd",
+      "id": "149f010e1e0d",
       "file": "client/src/pages/merchant/HumanTakeoverSettings.tsx",
-      "line": 240,
+      "line": 256,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -47768,9 +47819,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "48c2293611b0",
+      "id": "d78b69fc3975",
       "file": "client/src/pages/merchant/HumanTakeoverSettings.tsx",
-      "line": 255,
+      "line": 271,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -47792,9 +47843,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "2b1d8ec01b86",
+      "id": "ebdf41aa9871",
       "file": "client/src/pages/merchant/HumanTakeoverSettings.tsx",
-      "line": 291,
+      "line": 307,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -47809,13 +47860,13 @@
       "required": false,
       "conditional": true,
       "conditions": [],
-      "disabled": "!form.canManage || form.busy || form.conflict || !form.dirty",
+      "disabled": "form.editingDisabled || form.conflict || !form.dirty",
       "review": "source-inventoried"
     },
     {
-      "id": "e74722e2538d",
+      "id": "368a94cac45c",
       "file": "client/src/pages/merchant/HumanTakeoverSettings.tsx",
-      "line": 307,
+      "line": 321,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -47834,9 +47885,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "787d05766f65",
+      "id": "eab56f32a451",
       "file": "client/src/pages/merchant/HumanTakeoverSettings.tsx",
-      "line": 373,
+      "line": 387,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -47857,9 +47908,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "7281e7f7eeb8",
+      "id": "ef837a473f82",
       "file": "client/src/pages/merchant/HumanTakeoverSettings.tsx",
-      "line": 385,
+      "line": 399,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -47881,9 +47932,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "fa337c99071b",
+      "id": "35a2ed13ce75",
       "file": "client/src/pages/merchant/HumanTakeoverSettings.tsx",
-      "line": 399,
+      "line": 413,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -47946,6 +47997,53 @@
       "conditional": true,
       "conditions": [],
       "disabled": "disabled || conflicts.some(key => !choices[String(key)])",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "5738695fdf79",
+      "file": "client/src/components/merchant/AssistantOptionRecovery.tsx",
+      "line": 40,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "استعادة المسودة للمراجعة",
+      "section": "مسودة خيارات المساعد",
+      "binding": "onRestore",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "recovery.state === \"ready\"",
+        "recovery"
+      ],
+      "disabled": "!canRestore",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "c59c5589be5a",
+      "file": "client/src/components/merchant/AssistantOptionRecovery.tsx",
+      "line": 49,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "إزالة النسخة المحلية فقط",
+      "section": "مسودة خيارات المساعد",
+      "binding": "onDiscard",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "recovery"
+      ],
+      "disabled": "",
       "review": "source-inventoried"
     },
     {
@@ -61542,9 +61640,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "c72214a12e24",
+      "id": "e5cabb02d07c",
       "file": "client/src/pages/merchant/LanguageSettings.tsx",
-      "line": 158,
+      "line": 172,
       "tag": "input",
       "role": "",
       "kind": "field",
@@ -61563,9 +61661,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "f503e7ef0af0",
+      "id": "bde80326a3c4",
       "file": "client/src/pages/merchant/LanguageSettings.tsx",
-      "line": 178,
+      "line": 192,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -61587,9 +61685,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "0da59770eb25",
+      "id": "aeebcc5d98b8",
       "file": "client/src/pages/merchant/LanguageSettings.tsx",
-      "line": 214,
+      "line": 228,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -61604,7 +61702,7 @@
       "required": false,
       "conditional": true,
       "conditions": [],
-      "disabled": "!form.canManage || form.busy || form.conflict || !form.dirty",
+      "disabled": "form.editingDisabled || form.conflict || !form.dirty",
       "review": "source-inventoried"
     },
     {

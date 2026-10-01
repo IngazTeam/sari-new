@@ -5,6 +5,7 @@ import { trpc } from "@/lib/trpc";
 import { KnowledgeWorkspaceScope } from "@/components/KnowledgeWorkspaceScope";
 import { WorkspaceState } from "@/components/merchant/WorkspaceState";
 import { AssistantOptionReview } from "@/components/merchant/AssistantOptionReview";
+import { AssistantOptionRecovery } from "@/components/merchant/AssistantOptionRecovery";
 import { useReviewedAssistantOption } from "@/hooks/useReviewedAssistantOption";
 import {
   takeoverDraft,
@@ -26,13 +27,18 @@ const input = (draft: TakeoverDraft, expectedRevision: string) => ({
 export default function HumanTakeoverSettings() {
   return (
     <KnowledgeWorkspaceScope slot="human-takeover">
-      {key => <TakeoverWorkspace key={key} />}
+      {key => <TakeoverWorkspace key={key} scope={key} />}
     </KnowledgeWorkspaceScope>
   );
 }
-function TakeoverWorkspace() {
+function TakeoverWorkspace({ scope }: { scope: string }) {
   const { t } = useTranslation();
-  const form = useReviewedAssistantOption("takeover", takeoverDraft, input);
+  const form = useReviewedAssistantOption(
+    "takeover",
+    takeoverDraft,
+    input,
+    scope
+  );
   const [page, setPage] = useState(1),
     [invalid, setInvalid] = useState(false);
   const listing = trpc.botSettings.takeoverWorkspace.useQuery(
@@ -52,7 +58,9 @@ function TakeoverWorkspace() {
   };
   const display = (key: keyof TakeoverDraft, value: number | boolean) =>
     key === "takeoverTimeoutMinutes"
-      ? t("takeoverWorkspaceUx.minutes", { count: Number(value) })
+      ? Number.isFinite(Number(value))
+        ? t("takeoverWorkspaceUx.minutes", { count: Number(value) })
+        : t("virtualTeamReview.empty")
       : t(value ? "virtualTeamReview.yes" : "virtualTeamReview.no");
   return (
     <div className="mx-auto max-w-5xl space-y-6 py-4">
@@ -103,6 +111,14 @@ function TakeoverWorkspace() {
           onRetry={() => void form.query.refetch()}
         />
       )}
+      <AssistantOptionRecovery
+        recovery={form.recovery}
+        storageFailed={form.storageFailed}
+        submitted={form.submitted && !form.busy}
+        canRestore={form.canManage && !form.busy}
+        onRestore={form.restore}
+        onDiscard={form.discardRecovery}
+      />
       <form
         noValidate
         className="space-y-4"
@@ -118,7 +134,7 @@ function TakeoverWorkspace() {
         }}
       >
         <fieldset
-          disabled={!form.canManage || form.busy}
+          disabled={form.editingDisabled}
           className="min-w-0 space-y-5 rounded-xl border bg-card p-4 sm:p-6"
         >
           <legend className="px-2 font-semibold">
@@ -275,7 +291,7 @@ function TakeoverWorkspace() {
             )}
           </div>
         )}
-        {form.error && (
+        {form.error && !form.submitted && (
           <p role="alert" className="text-sm text-destructive">
             {t("assistantOptionUx.failed")}
           </p>
@@ -291,9 +307,7 @@ function TakeoverWorkspace() {
           <Button
             type="submit"
             className="min-h-11"
-            disabled={
-              !form.canManage || form.busy || form.conflict || !form.dirty
-            }
+            disabled={form.editingDisabled || form.conflict || !form.dirty}
           >
             {t(form.busy ? "common.loading" : "humanTakeoverPage.saveSettings")}
           </Button>

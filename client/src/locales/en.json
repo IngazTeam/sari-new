@@ -9088,9 +9088,9 @@
   "sidebar.merchant.humanTakeover": "Human Takeover",
   "sidebar.merchant.virtualTeam": "Virtual Team",
   "assistantOptionUx": {
-    "unsaved": "You have unsaved changes. Save before leaving this page.",
+    "unsaved": "Local changes have not been applied. Saving applies them to the assistant.",
     "saved": "Settings saved",
-    "conflict": "These settings changed in another window. Your draft remains here. Review the saved values before saving.",
+    "conflict": "This draft needs a review of the current settings before saving. Fetch the current version and review its values.",
     "failed": "The request could not be completed. Your draft remains here; check saved values before retrying.",
     "review": "Review changed settings",
     "reviewHelp": "Untouched fields use the saved version. Choose which values to keep for conflicts. Applying the review does not save automatically.",
@@ -12009,5 +12009,17 @@
   "remove": "Review group removal",
   "removeNamed": "Review removal of {{name}}",
   "scope": "Counts do not measure answer accuracy or sales proficiency. Use switches do not prove actual content eligibility. Dates use your browser’s time zone. Group removal requires a separate impact review and confirmation."
+}
+,
+"assistantOptionDraftUx": {
+  "title": "Assistant options draft",
+  "found": "An unsaved local draft is available. Restore it, then review the current settings before saving.",
+  "pendingFound": "A save request has an unconfirmed outcome. Restore the draft and fetch the current settings for review. It will not be sent again automatically.",
+  "unreadable": "The local draft could not be restored. It may be invalid, expired, or inaccessible in browser storage. Remove the local copy to start from the current settings.",
+  "restore": "Restore draft for review",
+  "discard": "Remove local copy only",
+  "uncertain": "The save outcome is unconfirmed. Fetch and review the current settings before deciding to save again. Matching values do not prove this request saved them.",
+  "storageFailed": "The local copy could not be saved. Keep this page open. A new save will not be sent until the draft and its revision can be retained in browser storage.",
+  "privacy": "The draft is private to this account and store in this tab for 24 hours and is cleared at sign-out. Restoring or reviewing does not save settings. Removing the local copy does not cancel a request already sent to the server."
 }
 }

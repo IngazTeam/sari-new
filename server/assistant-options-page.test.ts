@@ -61,6 +61,7 @@ vi.mock("react-i18next", () => ({
 import HumanTakeover from "../client/src/pages/merchant/HumanTakeoverSettings";
 import Language from "../client/src/pages/merchant/LanguageSettings";
 import { toast } from "sonner";
+import { clearKnowledgeWorkspace } from "../client/src/lib/knowledge-workspace-cache";
 let root: Root, container: HTMLDivElement, Page: typeof Language;
 const version = (c: string) => ({
   language: c.repeat(64),
@@ -99,6 +100,8 @@ async function minutes(value: string) {
   });
 }
 beforeEach(() => {
+  clearKnowledgeWorkspace();
+  sessionStorage.clear();
   vi.clearAllMocks();
   vi.stubGlobal("React", React);
   vi.stubGlobal(
@@ -138,8 +141,138 @@ afterEach(async () => {
   await act(async () => root.unmount());
   container.remove();
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
 describe("reviewed assistant options UI", () => {
+  const remount = async () => {
+    await act(async () => root.unmount());
+    root = createRoot(container);
+    await render();
+  };
+  it("restores a language draft after remount, reviews latest data and saves only on a separate action", async () => {
+    await render();
+    await language("fr");
+    await remount();
+    expect(container.textContent).toContain(ar.assistantOptionDraftUx.found);
+    expect(container.querySelector("fieldset")!.disabled).toBe(true);
+    await click(ar.assistantOptionDraftUx.restore);
+    expect(
+      container.querySelector<HTMLInputElement>('input[value="fr"]')!.checked
+    ).toBe(true);
+    expect(button(ar.languageSettingsPage.text7).disabled).toBe(true);
+    await click(ar.virtualTeamReview.load);
+    await click(ar.virtualTeamReview.applyReview);
+    expect(m.write).not.toHaveBeenCalled();
+    await click(ar.languageSettingsPage.text7);
+    expect(m.write).toHaveBeenCalledTimes(1);
+    await remount();
+    expect(container.textContent).not.toContain(
+      ar.assistantOptionDraftUx.found
+    );
+  });
+  it("recovers an empty duration without substituting a valid default", async () => {
+    Page = HumanTakeover;
+    await render();
+    await minutes("");
+    await remount();
+    await click(ar.assistantOptionDraftUx.restore);
+    expect(
+      container.querySelector<HTMLInputElement>("#takeover-minutes")!.value
+    ).toBe("");
+    await click(ar.virtualTeamReview.load);
+    await click(ar.virtualTeamReview.applyReview);
+    await click(ar.humanTakeoverPage.saveSettings);
+    expect(container.textContent).toContain(
+      ar.takeoverWorkspaceUx.invalidMinutes
+    );
+    expect(m.write).not.toHaveBeenCalled();
+  });
+  it("does not resend an uncertain save after restoring it", async () => {
+    m.write.mockRejectedValueOnce(Error("lost response"));
+    await render();
+    await language("it");
+    await click(ar.languageSettingsPage.text7);
+    await remount();
+    expect(container.textContent).toContain(
+      ar.assistantOptionDraftUx.pendingFound
+    );
+    await click(ar.assistantOptionDraftUx.restore);
+    expect(container.querySelector("fieldset")!.disabled).toBe(true);
+    m.settings = {
+      ...m.settings,
+      language: "it",
+      optionRevisions: version("b"),
+    };
+    await click(ar.virtualTeamReview.load);
+    await click(ar.virtualTeamReview.applyReview);
+    expect(m.write).toHaveBeenCalledTimes(1);
+    expect(button(ar.languageSettingsPage.text7).disabled).toBe(true);
+    expect(container.textContent).not.toContain(
+      ar.assistantOptionDraftUx.uncertain
+    );
+  });
+  it("blocks a new save when a durable local draft cannot be kept", async () => {
+    await render();
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw Error("quota");
+    });
+    await language("en");
+    await click(ar.languageSettingsPage.text7);
+    expect(m.write).not.toHaveBeenCalled();
+    expect(container.textContent).toContain(
+      ar.assistantOptionDraftUx.storageFailed
+    );
+    expect(
+      container.querySelector<HTMLInputElement>('input[value="en"]')!.checked
+    ).toBe(true);
+  });
+  it("discards only the local copy without calling a settings mutation", async () => {
+    await render();
+    await language("fr");
+    await remount();
+    await click(ar.assistantOptionDraftUx.discard);
+    expect(
+      container.querySelector<HTMLInputElement>('input[value="ar"]')!.checked
+    ).toBe(true);
+    expect(m.write).not.toHaveBeenCalled();
+  });
+  it("rejects a save response belonging to another store and retains the pending draft", async () => {
+    await render();
+    await language("en");
+    m.write.mockResolvedValueOnce({
+      ...m.settings,
+      merchantId: 999,
+      language: "en",
+      optionRevisions: version("b"),
+    });
+    await click(ar.languageSettingsPage.text7);
+    expect(toast.success).not.toHaveBeenCalled();
+    expect(container.textContent).toContain(
+      ar.assistantOptionDraftUx.uncertain
+    );
+    expect(button(ar.languageSettingsPage.text7).disabled).toBe(true);
+  });
+  it("does not restore a previous tenant draft into the next tenant", async () => {
+    await render();
+    await language("fr");
+    m.merchant = 21;
+    m.settings = { ...m.settings, merchantId: 21, language: "en" };
+    await render();
+    expect(container.textContent).not.toContain(
+      ar.assistantOptionDraftUx.found
+    );
+    expect(
+      container.querySelector<HTMLInputElement>('input[value="en"]')!.checked
+    ).toBe(true);
+    m.merchant = 20;
+    m.settings = { ...m.settings, merchantId: 20, language: "ar" };
+    await render();
+    expect(container.textContent).toContain(ar.assistantOptionDraftUx.found);
+    await click(ar.assistantOptionDraftUx.restore);
+    expect(
+      container.querySelector<HTMLInputElement>('input[value="fr"]')!.checked
+    ).toBe(true);
+  });
   it("does not initialize the new store from old cached settings while its query refreshes", async () => {
     await render();
     m.merchant = 21;
@@ -208,7 +341,9 @@ describe("reviewed assistant options UI", () => {
     expect(m.write).toHaveBeenCalledTimes(1);
     expect(container.querySelector("fieldset")!.disabled).toBe(true);
     await act(async () => reject(Error("network")));
-    expect(container.textContent).toContain(ar.assistantOptionUx.failed);
+    expect(container.textContent).toContain(
+      ar.assistantOptionDraftUx.uncertain
+    );
     expect(
       container.querySelector<HTMLInputElement>('input[value="it"]')!.checked
     ).toBe(true);

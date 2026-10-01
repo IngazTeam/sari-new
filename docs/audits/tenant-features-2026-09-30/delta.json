@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-01T03:05:36.811Z",
+  "generatedAt": "2026-10-01T03:22:25.695Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 330,
-      "controls": 2182
+      "files": 332,
+      "controls": 2184
     }
   },
   "addedFiles": [
@@ -90,7 +90,9 @@
     "client/src/components/merchant/AssistantReplyPreview.tsx",
     "client/src/constants/botTemplates.ts",
     "client/src/components/merchant/AssistantOptionReview.tsx",
+    "client/src/components/merchant/AssistantOptionRecovery.tsx",
     "client/src/hooks/useReviewedAssistantOption.ts",
+    "client/src/lib/assistant-option-draft.ts",
     "client/src/components/merchant/VirtualAgentReview.tsx",
     "client/src/lib/virtual-team-draft.ts",
     "client/src/lib/brain-navigation.ts",
@@ -832,7 +834,7 @@
     {
       "route": "/merchant/human-takeover",
       "controlsBefore": 4,
-      "controlsNow": 13,
+      "controlsNow": 15,
       "removedQueries": [
         "botSettings.getTakeoverConversations"
       ],
@@ -1255,7 +1257,7 @@
     {
       "route": "/merchant/language-settings",
       "controlsBefore": 3,
-      "controlsNow": 6,
+      "controlsNow": 8,
       "removedQueries": [],
       "addedQueries": [
         "auth.me",

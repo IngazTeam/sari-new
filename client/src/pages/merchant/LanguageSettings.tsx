@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { KnowledgeWorkspaceScope } from "@/components/KnowledgeWorkspaceScope";
 import { WorkspaceState } from "@/components/merchant/WorkspaceState";
 import { AssistantOptionReview } from "@/components/merchant/AssistantOptionReview";
+import { AssistantOptionRecovery } from "@/components/merchant/AssistantOptionRecovery";
 import { useReviewedAssistantOption } from "@/hooks/useReviewedAssistantOption";
 import { assistantLanguages } from "@shared/assistant-options";
 type LanguageCode = (typeof assistantLanguages)[number];
@@ -21,13 +22,18 @@ const input = (
 export default function LanguageSettings() {
   return (
     <KnowledgeWorkspaceScope slot="assistant-language">
-      {key => <LanguageWorkspace key={key} />}
+      {key => <LanguageWorkspace key={key} scope={key} />}
     </KnowledgeWorkspaceScope>
   );
 }
-function LanguageWorkspace() {
+function LanguageWorkspace({ scope }: { scope: string }) {
   const { t } = useTranslation();
-  const form = useReviewedAssistantOption("language", readLanguage, input);
+  const form = useReviewedAssistantOption(
+    "language",
+    readLanguage,
+    input,
+    scope
+  );
   const languages = [
     { code: "ar", name: t("languageSettingsPage.text17"), flag: "🇸🇦" },
     { code: "en", name: "English", flag: "🇬🇧" },
@@ -132,6 +138,14 @@ function LanguageWorkspace() {
           onRetry={() => void form.query.refetch()}
         />
       )}
+      <AssistantOptionRecovery
+        recovery={form.recovery}
+        storageFailed={form.storageFailed}
+        submitted={form.submitted && !form.busy}
+        canRestore={form.canManage && !form.busy}
+        onRestore={form.restore}
+        onDiscard={form.discardRecovery}
+      />
       <div className="grid items-start gap-6 lg:grid-cols-2">
         <form
           className="min-w-0 space-y-4"
@@ -141,7 +155,7 @@ function LanguageWorkspace() {
           }}
         >
           <fieldset
-            disabled={form.busy || !form.canManage}
+            disabled={form.editingDisabled}
             className="min-w-0 space-y-3 rounded-xl border bg-card p-4 sm:p-6"
           >
             <legend className="px-2 font-semibold">
@@ -198,7 +212,7 @@ function LanguageWorkspace() {
               )}
             </div>
           )}
-          {form.error && (
+          {form.error && !form.submitted && (
             <p role="alert" className="text-sm text-destructive">
               {t("assistantOptionUx.failed")}
             </p>
@@ -214,9 +228,7 @@ function LanguageWorkspace() {
             <Button
               type="submit"
               className="min-h-11 w-full"
-              disabled={
-                !form.canManage || form.busy || form.conflict || !form.dirty
-              }
+              disabled={form.editingDisabled || form.conflict || !form.dirty}
             >
               {t(form.busy ? "common.loading" : "languageSettingsPage.text7")}
             </Button>
