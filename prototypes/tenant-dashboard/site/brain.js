@@ -22,7 +22,8 @@ window.SaryBrainPreview = (() => {
     if(location.hash!==hash)history.pushState(history.state,'',hash);
     section=target;refresh('brain-nav-'+target);
   }
-  const preview=(title,href,description)=>'<article class="panel panel-pad brain-current-card"><h2>'+title+'</h2><p>'+description+'</p><a class="button" href="'+href+'">فتح الشاشة التفاعلية</a></article>';
+  const embeddedPages=new Set(['./knowledge-groups.html','./sales-knowledge.html','./brain-preview.html','./reply-quality.html','./knowledge-activity.html']);
+  const preview=(title,href,description)=>embeddedPages.has(href)?'<section class="panel brain-embedded-card"><header><h2>'+escape(title)+'</h2><a class="button" href="'+href+'">فتح الشاشة التفاعلية</a></header><iframe data-brain-preview title="'+escape(title)+' · مكوّن التطبيق ببيانات مثال" src="'+href+'?embed=brain" loading="lazy"></iframe></section>':'<article class="panel panel-pad brain-current-card"><h2>'+title+'</h2><p>'+description+'</p><a class="button" href="'+href+'">فتح الشاشة التفاعلية</a></article>';
   const removal=()=>preview('مراجعة حذف المعرفة وإعادة الضبط','./knowledge-removal.html','مكوّن التطبيق نفسه: مراجعة الأثر ثم الإيصال واستعادة الطلب غير المؤكد. لا حذف فعلي.');
   function render(){
     const current=route();section=current.view;

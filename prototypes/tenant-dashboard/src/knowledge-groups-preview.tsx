@@ -8,6 +8,7 @@ import { readRemovalAttempt } from "../../../client/src/lib/knowledge-removal-at
 import { removalFixture, removalFixtureReceipt } from "./knowledge-removal-fixture";
 import { sourceGroupsFixture } from "./knowledge-groups-fixture";
 import { GroupsLanguage } from "./knowledge-groups-preview-i18n";
+import { navigateBrainPreview } from "./brain-embedded-navigation";
 const scopeKey = "970163:970163:knowledge-removal";
 function Preview() {
   useMerchantViewport();
@@ -27,7 +28,7 @@ function Preview() {
     </aside>
     {destination && <aside role="status" className="rounded-xl border p-4 space-y-3"><p>{ar?'اختيرت الوجهة: ':'Selected destination: '}{destinations[destination]}</p><p>{ar?'في التطبيق يفتح الزر القسم المقابل. هذه المعاينة تفحص بطاقات المجموعات فقط، دون محاكاة محرر آخر.':'In the app, this opens the corresponding workspace. This preview checks group cards and does not simulate another editor.'}</p><button className="underline" onClick={()=>setDestination(null)}>{ar?'إغلاق':'Close'}</button></aside>}
     {done && <p role="status">{ar?'اكتملت عملية الحذف التوضيحية فقط؛ بيانات البطاقات ثابتة للمعاينة.':'The example removal completed; card data remains a fixed preview fixture.'}</p>}
-    <KnowledgeSourceGroupsView merchantId={970163} data={data} loading={mode==='loading'} error={mode==='error'} onRefresh={()=>setMode('sample')} onUpload={()=>setDestination('upload')} onManage={setDestination} onRemove={setTarget}/>
+    <KnowledgeSourceGroupsView merchantId={970163} data={data} loading={mode==='loading'} error={mode==='error'} onRefresh={()=>setMode('sample')} onUpload={()=>{if(!navigateBrainPreview('upload'))setDestination('upload');}} onManage={next=>{if(!navigateBrainPreview(next))setDestination(next);}} onRemove={setTarget}/>
     <KnowledgeRemovalView scopeKey={scopeKey} target={target} onClose={()=>setTarget(null)} api={{
       review: async choice=>{const r=removalFixture(choice,970163,970163);r.businessName=data.businessName; if(choice.kind==='document')r.counts.documents=data.documents.total;if(choice.kind==='products')r.counts.products=data.products.total;if(choice.kind==='website'){r.counts.analyses=data.website.analyses;r.counts.pages=data.website.pages;}if(choice.kind==='faqs')r.counts.faqs=data.faqs.total;return r;},
       send: async input=>{const p=readRemovalAttempt(scopeKey)!;return removalFixtureReceipt(p.review,input.requestId);},

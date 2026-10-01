@@ -114,3 +114,7 @@
   .brain-gap { padding:18px; }.brain-gap-bottom { flex-direction:column; align-items:stretch; gap:10px; }.brain-score { padding:27px 20px; }.brain-score>strong { font-size:72px; }.brain-score-layout { gap:22px; }
   .brain-period { flex-wrap:wrap; }.brain-conflict { grid-template-columns:1fr; }.brain-dialog .button { white-space:normal; line-height:1.6; }.brain-dialog .dialog-foot { gap:10px; }.brain-dialog .check-label { align-items:flex-start; }.brain-dialog .check-label input { flex-shrink:0; margin-top:5px; }
 }
+.brain-embedded-card{overflow:hidden;min-width:0}
+.brain-embedded-card>header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:20px}
+.brain-embedded-card>header h2{margin:0}
+.brain-embedded-card iframe{display:block;border:0;width:100%;min-height:640px;height:760px;background:var(--surface,#fff)}

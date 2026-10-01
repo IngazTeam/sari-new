@@ -32,6 +32,7 @@ await build({
   minify: true,
   legalComments: "none",
   alias: {
+    "@/lib/knowledge-workspace-cache": path.resolve("prototypes/tenant-dashboard/src/brain-preview-cache.ts"),
     "@/lib/trpc": path.resolve(
       "prototypes/tenant-dashboard/src/brain-preview-api.ts"
     ),

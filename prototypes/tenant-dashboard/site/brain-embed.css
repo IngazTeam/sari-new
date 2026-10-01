@@ -1,0 +1,4 @@
+html[data-brain-embedded] body.merchant-surface{margin:0;min-height:0;width:100%;max-width:none;border:0;box-shadow:none;background:transparent}
+html[data-brain-embedded] main{margin:0!important;max-width:none!important;padding:12px!important}
+html[data-brain-embedded] main>a:first-child{display:none}
+html[data-brain-embedded] button,html[data-brain-embedded] input,html[data-brain-embedded] select,html[data-brain-embedded] textarea{font-size:16px;min-height:44px}

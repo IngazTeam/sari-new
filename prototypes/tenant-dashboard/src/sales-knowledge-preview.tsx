@@ -4,6 +4,7 @@ import { SalesKnowledgeGroupView } from "../../../client/src/components/SalesKno
 import { useMerchantViewport } from "../../../client/src/lib/merchant-viewport";
 import { salesKnowledgeFixture } from "./sales-knowledge-fixture";
 import { SalesLanguage } from "./sales-knowledge-preview-i18n";
+import { navigateBrainPreview } from "./brain-embedded-navigation";
 function Preview() {
   useMerchantViewport();
   const [language, setLanguage] = useState<"ar" | "en">("ar"),
@@ -132,7 +133,7 @@ function Preview() {
             setSelected(null);
           }}
           onRefreshDetail={() => setMode("sample")}
-          onManage={() => setDestination(true)}
+          onManage={() => { if (!navigateBrainPreview("sections")) setDestination(true); }}
         />
       </main>
     </SalesLanguage.Provider>

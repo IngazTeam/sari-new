@@ -21,6 +21,7 @@ function Preview() {
     document.documentElement.dir = language === "ar" ? "rtl" : "ltr";
   }, [language]);
   const ar = language === "ar";
+  const scopePrefix = new URLSearchParams(window.location.search).get("embed") === "brain" && window.parent !== window ? "central" : "preview";
   async function send({ question }: { question: string }) {
     setCalls(n => n + 1);
     if (mode === "failed") throw Error("Synthetic unavailable result");
@@ -139,13 +140,13 @@ function Preview() {
         {view === "brain" ? (
           <BrainQuickPreviewView
             key={mode}
-            scopeKey={`preview:153:${mode}`}
+            scopeKey={`${scopePrefix}:153:${mode}`}
             send={send}
           />
         ) : (
           <SariPlaygroundWorkspace
             key={mode}
-            scopeKey={`preview:154:${mode}`}
+            scopeKey={`${scopePrefix}:154:${mode}`}
             send={async ({ message }) => {
               const result = await send({ question: message });
               return {
