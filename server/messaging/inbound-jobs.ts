@@ -2,6 +2,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import type { PoolConnection, RowDataPacket } from 'mysql2/promise';
 import { getPool } from '../db/connection';
 import { assertRuntimeSchema } from '../db/schema-readiness';
+import { inboundEventKey, inboundMessageId } from './message-identity';
 import { currentInboundExecution, withInboundExecution, type InboundExecution } from './inbound-context';
 
 export const INBOUND_LEASE_SECONDS = 90;
@@ -61,7 +62,7 @@ export async function enqueueInbound(input: {
     throw new Error('Inbound instance is unavailable');
   }
   const instance = instances[0];
-  const eventKey = hash(instance.merchantId, provider, account, messageId);
+  const eventKey = inboundEventKey(instance.merchantId, provider, account, messageId);
   // Same customer is serialized across all numbers belonging to the same merchant.
   const partitionKey = hash(instance.merchantId, chatId.replace('@s.whatsapp.net', '@c.us'));
   try {
@@ -197,7 +198,7 @@ export async function executeInbound(job: InboundJob, process: (payload: any) =>
     };
     // Scope the message identity to tenant + provider account as well as event.
     // The immutable raw provider envelope remains available in the queue row.
-    const canonicalPayload = { ...job.payload_json, providerMessageId: job.payload_json.idMessage, idMessage: `inbound:v1:${job.event_key}` };
+    const canonicalPayload = { ...job.payload_json, providerMessageId: job.payload_json.idMessage, idMessage: inboundMessageId(job.event_key) };
     const result = await withInboundExecution(context, () => process(canonicalPayload));
     await finishInbound(job, result.success && !context.uncertainEffect, context.uncertainEffect ? 'effect_unconfirmed' : undefined);
   } catch (error) {

@@ -63,7 +63,7 @@ async function ownedRequest(merchantId: number, ref: RequestRef) {
 }
 
 type Credentials = { instanceId: string; token: string; apiUrl?: string | null };
-export async function greenWorkspaceCall(credentials: Credentials, method: 'qr' | 'getStateInstance' | 'getSettings' | 'logout' | 'setSettings', body?: Record<string, unknown>): Promise<Record<string, unknown>> {
+async function greenRequest(credentials: Credentials, method: string, body?: Record<string, unknown>): Promise<unknown> {
   try {
     const url = new URL(credentials.apiUrl || 'https://api.green-api.com');
     const allowed = ['api.green-api.com', 'api.greenapi.com'].some(h => url.hostname === h || url.hostname.endsWith(`.${h}`));
@@ -73,10 +73,22 @@ export async function greenWorkspaceCall(credentials: Credentials, method: 'qr' 
       ...(body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {}),
     });
     if (!result.ok) throw failed();
-    const data: unknown = await result.json();
-    if (!data || typeof data !== 'object' || Array.isArray(data)) throw failed();
-    return data as Record<string, unknown>;
+    return await result.json();
   } catch { throw failed(); }
+}
+
+export async function greenWorkspaceCall(credentials: Credentials, method: 'qr' | 'getStateInstance' | 'getSettings' | 'logout' | 'setSettings', body?: Record<string, unknown>): Promise<Record<string, unknown>> {
+  const data = await greenRequest(credentials, method, body);
+  if (!data || typeof data !== 'object' || Array.isArray(data)) throw failed();
+  return data as Record<string, unknown>;
+}
+
+/** GET lists chats; POST retrieves the latest available 50 messages of one personal chat. */
+export async function greenHistoryCall(credentials: Credentials, chatId?: string): Promise<unknown[]> {
+  if (chatId !== undefined && !/^\d{7,15}@c\.us$/.test(chatId)) throw failed();
+  const data = await greenRequest(credentials, chatId === undefined ? 'getChats' : 'getChatHistory', chatId === undefined ? undefined : { chatId, count: 50 });
+  if (!Array.isArray(data)) throw failed();
+  return data;
 }
 
 export async function workspaceQR(merchantId: number, ref: RequestRef) {
