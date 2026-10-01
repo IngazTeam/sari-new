@@ -1,4 +1,5 @@
 import type { Pool, PoolConnection } from 'mysql2/promise';
+import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import { getPool } from '../db/connection';
 import { checkoutTransaction } from './checkout-agreements';
@@ -103,6 +104,15 @@ export async function canSendConversationReply(pool: Pick<Pool, 'execute'>, merc
 }
 
 export async function conversationHandoffSummary(merchantId: number, conversationId: number, throughMessageId?: number, afterMessageId = 0) {
+  return (await readHandoffSnapshot(merchantId, conversationId, throughMessageId, afterMessageId)).summary;
+}
+
+/** Private binding stays on the server; excerpts alone cannot detect a customer or long-message edit. */
+export async function conversationReplyEvidence(merchantId: number, conversationId: number) {
+  return readHandoffSnapshot(merchantId, conversationId, undefined, 0);
+}
+
+async function readHandoffSnapshot(merchantId: number, conversationId: number, throughMessageId: number | undefined, afterMessageId: number) {
   for (const id of [merchantId, conversationId, ...(throughMessageId === undefined ? [] : [throughMessageId])]) z.number().int().positive().safe().parse(id);
   z.number().int().nonnegative().safe().parse(afterMessageId);
   const pool = await getPool(); if (!pool) throw new Error('Handoff storage unavailable');
@@ -131,7 +141,9 @@ async function readHandoffSummary(pool: PoolConnection, merchantId: number, conv
     FROM sales_quotations q JOIN messages source ON source.id=q.source_message_id AND source.conversationId=q.conversation_id AND source.direction='incoming'
     WHERE q.merchant_id=? AND q.conversation_id=? AND q.source_message_id>? AND (? IS NULL OR q.source_message_id<?)
     ORDER BY q.id DESC LIMIT 3`, [merchantId, conversationId, afterMessageId, throughMessageId ?? null, throughMessageId ?? null]);
-  return { conversationId, version: Number(rows[0].handoff_version), lastMessageId: Number(rows[0].last_message_id), humanOwned: Boolean(rows[0].human_takeover),
+  const sourceBinding = createHash('sha256').update(JSON.stringify({customer: rows[0].customerPhone,
+    messages: messages.map(m => ({id:m.id,direction:m.direction,role:m.sender_type,text:m.content,at:m.createdAt})),afterMessageId})).digest('hex');
+  const summary = { conversationId, version: Number(rows[0].handoff_version), lastMessageId: Number(rows[0].last_message_id), humanOwned: Boolean(rows[0].human_takeover),
     expiresAt: instant(rows[0].human_expires_at)?.toISOString() ?? null,
     dealStage: rows[0].deal_stage, lossReason: rows[0].loss_reason,
     facts: memory.facts.filter(f => f.conversationId === conversationId && f.sourceMessageId > afterMessageId && (!throughMessageId || f.sourceMessageId < throughMessageId)),
@@ -141,6 +153,7 @@ async function readHandoffSummary(pool: PoolConnection, merchantId: number, conv
       consentMessageId: q.consent_message_id, orderId: q.order_id, provider: q.external_provider,
       current: Boolean(q.current_offer) && ['sent', 'viewed'].includes(q.status) && !q.order_id && !q.consent_message_id,
       items: offerItems(q.checkout_snapshot) })) };
+  return {summary,sourceBinding};
 }
 
 export function handoffPrompt(summary: Awaited<ReturnType<typeof conversationHandoffSummary>>) {
