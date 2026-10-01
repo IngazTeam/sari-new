@@ -10,7 +10,6 @@ import type { PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/prom
 import {
   getActiveSubscriptionByMerchantId,
   getCampaignById,
-  getConversationsByMerchantId,
   getDispatchableOccasionCampaigns,
   getMerchantById,
   getPool,
@@ -18,6 +17,7 @@ import {
 } from '../db';
 import { assertRuntimeSchema } from '../db/schema-readiness';
 import { campaignDefinitionKey } from '../campaign-definition';
+import { readCampaignAudience, requireCompleteCampaignAudience } from '../campaign-audience';
 import {
   CampaignDispatchConflictError,
   completeCampaignWithoutRecipients,
@@ -270,7 +270,7 @@ export async function prepareOccasionCampaignEnvelope(input: {
       [input.occasionCampaignId, input.merchantId],
     );
     const row = rows[0];
-    if (!row
+    if (!row || Number(row.merchantId) !== input.merchantId
       || Number(row.enabled) !== 1
       || row.status !== 'pending'
       || row.merchantStatus !== 'active'
@@ -351,13 +351,15 @@ async function admitOccasionCampaign(
     throw new CampaignDispatchConflictError();
   }
   const expectedDefinition = campaignDefinitionKey(campaign);
-  const conversations = await getConversationsByMerchantId(merchantId);
+  const conversations = requireCompleteCampaignAudience(await readCampaignAudience(merchantId, campaign.targetAudience, now));
   const unique = new Map<string, { customerId: number; phone: string }>();
   for (const conversation of conversations) {
     const phone = normalizeCampaignPhone(conversation.customerPhone);
     if (phone && !unique.has(phone)) unique.set(phone, { customerId: conversation.id, phone });
   }
   const guard = await filterCampaignRecipients(merchantId, Array.from(unique.keys()));
+  // A temporary block must leave the entire occasion pending for a later run.
+  if (guard.blocked.some(row => row.reason === 'quiet_hours' || row.reason === 'rate_limit')) return;
   const recipients = guard.allowed.flatMap(phone => {
     const recipient = unique.get(phone);
     return recipient ? [recipient] : [];

@@ -259,6 +259,9 @@ export const campaignsRouter = router({
                     merchant.id,
                     uniqueRecipients.map(recipient => recipient.customerPhone),
                 );
+                if (guard.blocked.some(row => row.reason === 'quiet_hours' || row.reason === 'rate_limit')) {
+                    throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'تعذر بدء الحملة كاملة بسبب ساعات الهدوء أو حد الإرسال. لم يُرسل أي جزء منها؛ راجع الجمهور أو حاول لاحقًا.' });
+                }
                 const allowed = new Set(guard.allowed);
                 eligibleRecipients = uniqueRecipients.flatMap(recipient => {
                     const phone = normalizeCampaignPhone(recipient.customerPhone);

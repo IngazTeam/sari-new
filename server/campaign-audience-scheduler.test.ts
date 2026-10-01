@@ -25,4 +25,9 @@ describe('scheduled audience boundaries', () => {
     mocks.audience.mockRejectedValue(Error('Unavailable')); expect(await checkScheduledCampaigns()).toMatchObject({ queued: 0, failed: 1 }); expect(mocks.enqueue).not.toHaveBeenCalled(); expect(mocks.complete).not.toHaveBeenCalled();
   });
   it('surfaces a database outage rather than reporting a successful empty batch', async () => { mocks.db.mockResolvedValue(null); await expect(checkScheduledCampaigns()).rejects.toThrow('Database not available'); });
+  it.each(['quiet_hours','rate_limit'])('defers the entire campaign on %s without completing or truncating it', async reason => {
+    mocks.guard.mockResolvedValue({ allowed: ['966500000001'], blocked: [{ phone: '966500000002', reason }], warnings: [] });
+    expect(await checkScheduledCampaigns()).toEqual({ checked: 1, queued: 0, deferred: 1, failed: 0 });
+    expect(mocks.enqueue).not.toHaveBeenCalled(); expect(mocks.complete).not.toHaveBeenCalled();
+  });
 });

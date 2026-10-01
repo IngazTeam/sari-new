@@ -33,4 +33,8 @@ describe('manual campaigns and preview use the verified audience', () => {
     mocks.audience.mockRejectedValue(Error('Unavailable audience storage')); await expect(caller().filterCustomers({})).rejects.toThrow('Unavailable audience storage');
     await expect(caller().send({ id: 7 })).rejects.toThrow('Unavailable audience storage'); expect(mocks.enqueue).not.toHaveBeenCalled();
   });
+  it.each(['quiet_hours','rate_limit'])('does not send the allowed portion when another portion is temporarily blocked by %s', async reason => {
+    mocks.guard.mockResolvedValue({ allowed: ['966500000002'], blocked: [{ phone: '966500000001', reason }], warnings: [] });
+    await expect(caller().send({ id: 7 })).rejects.toMatchObject({ code: 'PRECONDITION_FAILED' }); expect(mocks.enqueue).not.toHaveBeenCalled();
+  });
 });

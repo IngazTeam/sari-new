@@ -2770,7 +2770,7 @@ export async function getReferralsByCodeId(referralCodeId: number): Promise<Refe
  */
 export async function createOccasionCampaign(data: InsertOccasionCampaign): Promise<OccasionCampaign | undefined> {
   const db = await getDb();
-  if (!db) return undefined;
+  if (!db) throw new Error('Database not available');
 
   const [campaign] = await db.insert(occasionCampaigns).values(data);
   return getOccasionCampaignById(campaign.insertId);
@@ -2781,7 +2781,7 @@ export async function createOccasionCampaign(data: InsertOccasionCampaign): Prom
  */
 export async function getOccasionCampaignById(id: number): Promise<OccasionCampaign | undefined> {
   const db = await getDb();
-  if (!db) return undefined;
+  if (!db) throw new Error('Database not available');
 
   const [campaign] = await db.select().from(occasionCampaigns).where(eq(occasionCampaigns.id, id));
   return campaign;
@@ -2792,7 +2792,7 @@ export async function getOccasionCampaignById(id: number): Promise<OccasionCampa
  */
 export async function getOccasionCampaignsByMerchantId(merchantId: number): Promise<OccasionCampaign[]> {
   const db = await getDb();
-  if (!db) return [];
+  if (!db) throw new Error('Database not available');
 
   return db.select().from(occasionCampaigns).where(eq(occasionCampaigns.merchantId, merchantId)).orderBy(desc(occasionCampaigns.createdAt));
 }
@@ -2806,7 +2806,7 @@ export async function getOccasionCampaignByTypeAndYear(
   year: number
 ): Promise<OccasionCampaign | undefined> {
   const db = await getDb();
-  if (!db) return undefined;
+  if (!db) throw new Error('Database not available');
 
   const [campaign] = await db
     .select()
@@ -2826,9 +2826,22 @@ export async function getOccasionCampaignByTypeAndYear(
  */
 export async function updateOccasionCampaign(id: number, data: Partial<InsertOccasionCampaign>): Promise<void> {
   const db = await getDb();
-  if (!db) return;
+  if (!db) throw new Error('Database not available');
 
   await db.update(occasionCampaigns).set(data).where(eq(occasionCampaigns.id, id));
+}
+
+/** Compare lifecycle in the write; a dispatcher may have claimed it after the UI read. */
+export async function setPendingOccasionEnabled(id: number, merchantId: number, enabled: boolean): Promise<boolean> {
+  if (!Number.isSafeInteger(id) || id <= 0 || !Number.isSafeInteger(merchantId) || merchantId <= 0 || typeof enabled !== 'boolean') {
+    throw new Error('Invalid occasion toggle scope');
+  }
+  const database = await getDb();
+  if (!database) throw new Error('Database not available');
+  const [result] = await database.update(occasionCampaigns).set({ enabled: enabled ? 1 : 0 }).where(and(
+    eq(occasionCampaigns.id, id), eq(occasionCampaigns.merchantId, merchantId), eq(occasionCampaigns.status, 'pending'),
+  ));
+  return result.affectedRows > 0;
 }
 
 /**
@@ -2837,7 +2850,7 @@ export async function updateOccasionCampaign(id: number, data: Partial<InsertOcc
  */
 export async function markOccasionCampaignSent(id: number, recipientCount: number): Promise<void> {
   const db = await getDb();
-  if (!db) return;
+  if (!db) throw new Error('Database not available');
 
   await db
     .update(occasionCampaigns)
@@ -2854,7 +2867,7 @@ export async function markOccasionCampaignSent(id: number, recipientCount: numbe
  */
 export async function getEnabledOccasionCampaigns(): Promise<OccasionCampaign[]> {
   const db = await getDb();
-  if (!db) return [];
+  if (!db) throw new Error('Database not available');
 
   return db.select().from(occasionCampaigns).where(eq(occasionCampaigns.enabled, 1));
 }
@@ -2870,7 +2883,7 @@ export async function getDispatchableOccasionCampaigns(
   afterId = 0,
 ): Promise<OccasionCampaign[]> {
   const db = await getDb();
-  if (!db) return [];
+  if (!db) throw new Error('Database not available');
   const safeLimit = Math.max(1, Math.min(100, Math.trunc(limit)));
   return db
     .select()
@@ -2891,7 +2904,7 @@ export async function getDispatchableOccasionCampaigns(
  */
 export async function getOccasionCampaignsStats(merchantId: number) {
   const db = await getDb();
-  if (!db) return { totalCampaigns: 0, completedCampaigns: 0, acceptedRecipients: 0 };
+  if (!db) throw new Error('Database not available');
 
   const campaigns = await getOccasionCampaignsByMerchantId(merchantId);
 

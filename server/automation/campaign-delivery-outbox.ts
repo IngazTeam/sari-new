@@ -104,8 +104,17 @@ async function ensureCampaignOutboxSchema(): Promise<void> {
     },
     { table: 'campaign_dispatch_rate_limits', columns: ['merchant_id', 'window_started_at', 'reserved_count'] },
     { table: 'whatsapp_message_deliveries', columns: ['idempotency_key', 'provider_message_id', 'status'] },
-    { table: 'occasion_campaigns', columns: ['campaign_id', 'merchantId', 'status', 'recipientCount', 'sentAt'] },
+    { table: 'occasion_campaigns', columns: ['campaign_id', 'merchantId', 'enabled', 'status', 'recipientCount', 'sentAt'] },
   ]);
+}
+
+async function occasionAllowsAdmission(connection: PoolConnection, campaignId: number, merchantId: number): Promise<boolean> {
+  const [rows] = await connection.execute<RowDataPacket[]>(
+    'SELECT merchantId, enabled, status FROM occasion_campaigns WHERE campaign_id = ? FOR UPDATE', [campaignId],
+  );
+  // This shares the campaign -> occasion lock order with state reconciliation.
+  return rows.length === 0 || (rows.length === 1 && Number(rows[0].merchantId) === merchantId
+    && Number(rows[0].enabled) === 1 && rows[0].status === 'pending');
 }
 
 function normalizeRecipients(recipients: Array<{ customerId?: number | null; phone: string }>) {
@@ -148,6 +157,7 @@ export async function enqueueCampaignDeliveries(input: {
       || campaignDefinitionKey(campaign) !== input.expectedDefinition) {
       throw new CampaignDispatchConflictError();
     }
+    if (!await occasionAllowsAdmission(connection, input.campaignId, input.merchantId)) throw new CampaignDispatchConflictError();
     for (const recipient of recipients) {
       await connection.execute(
         `INSERT INTO campaign_delivery_outbox
@@ -195,7 +205,8 @@ export async function completeCampaignWithoutRecipients(campaignId: number, merc
         WHERE id = ? AND merchantId = ? LIMIT 1 FOR UPDATE`, [campaignId, merchantId],
     );
     const campaign = campaignRows[0];
-    if (!campaign || !['draft', 'scheduled'].includes(campaign.status) || campaignDefinitionKey(campaign) !== expectedDefinition) {
+    if (!campaign || !['draft', 'scheduled'].includes(campaign.status) || campaignDefinitionKey(campaign) !== expectedDefinition
+      || !await occasionAllowsAdmission(connection, campaignId, merchantId)) {
       await connection.rollback();
       return false;
     }

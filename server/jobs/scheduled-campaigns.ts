@@ -80,11 +80,11 @@ export async function checkScheduledCampaigns(): Promise<{
       }
 
       const guard = await filterCampaignRecipients(campaign.merchantId, Array.from(candidates.keys()));
+      if (guard.blocked.some(blocked => blocked.reason === 'quiet_hours' || blocked.reason === 'rate_limit')) {
+        deferred++;
+        continue;
+      }
       if (guard.allowed.length === 0) {
-        if (guard.blocked.some(blocked => blocked.reason === 'quiet_hours')) {
-          deferred++;
-          continue;
-        }
         if (await completeCampaignWithoutRecipients(campaign.id, campaign.merchantId, campaignDefinitionKey(campaign))) queued++;
         continue;
       }

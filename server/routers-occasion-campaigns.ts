@@ -2,15 +2,15 @@
 
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
-import { protectedProcedure, router } from './_core/trpc';
+import { permissionProcedure, protectedProcedure, router } from './_core/trpc';
 import {
   createOccasionCampaign,
-  getMerchantByUserId,
+  getMerchantById,
   getOccasionCampaignById,
   getOccasionCampaignByTypeAndYear,
   getOccasionCampaignsByMerchantId,
   getOccasionCampaignsStats,
-  updateOccasionCampaign,
+  setPendingOccasionEnabled,
 } from './db';
 import {
   getOccasionDiscountPercentage,
@@ -32,27 +32,27 @@ function isDuplicateDefinition(error: unknown): boolean {
 }
 
 export const occasionCampaignsRouter = router({
-  list: protectedProcedure.query(async ({ ctx }) => {
-    const merchant = await getMerchantByUserId(ctx.user.id);
+  list: permissionProcedure('analytics.read').query(async ({ ctx }) => {
+    const merchant = await getMerchantById(ctx.merchantId);
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
     return getOccasionCampaignsByMerchantId(merchant.id);
   }),
 
-  getStats: protectedProcedure.query(async ({ ctx }) => {
-    const merchant = await getMerchantByUserId(ctx.user.id);
+  getStats: permissionProcedure('analytics.read').query(async ({ ctx }) => {
+    const merchant = await getMerchantById(ctx.merchantId);
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
     return getOccasionCampaignsStats(merchant.id);
   }),
 
   getUpcoming: protectedProcedure.query(() => getUpcomingOccasions()),
 
-  toggle: protectedProcedure
+  toggle: permissionProcedure('campaigns.manage')
     .input(z.object({
-      campaignId: z.number().int().positive(),
+      campaignId: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
       enabled: z.boolean(),
     }).strict())
     .mutation(async ({ input, ctx }) => {
-      const merchant = await getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantById(ctx.merchantId);
       const campaign = await getOccasionCampaignById(input.campaignId);
       if (!merchant || !campaign || campaign.merchantId !== merchant.id) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
@@ -60,17 +60,19 @@ export const occasionCampaignsRouter = router({
       if (campaign.status !== 'pending') {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'A campaign in progress or completed cannot be changed' });
       }
-      await updateOccasionCampaign(campaign.id, { enabled: input.enabled ? 1 : 0 });
+      if (!await setPendingOccasionEnabled(campaign.id, merchant.id, input.enabled)) {
+        throw new TRPCError({ code: 'CONFLICT', message: 'تغيرت حالة الحملة. حدّث الصفحة قبل تغيير تفعيلها.' });
+      }
       return { success: true };
     }),
 
-  create: protectedProcedure
+  create: permissionProcedure('campaigns.manage')
     .input(z.object({
       occasionType: occasionTypeSchema,
       year: z.number().int(),
     }).strict())
     .mutation(async ({ input, ctx }) => {
-      const merchant = await getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantById(ctx.merchantId);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
       if (merchant.status !== 'active') {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Merchant account is not active' });

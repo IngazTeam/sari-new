@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getPool, closeDb } from './db/connection';
-import { getCampaignById, updateEditableCampaign } from './db';
+import { getCampaignById, updateEditableCampaign, setPendingOccasionEnabled } from './db';
 import { createDisposableMerchant, cleanupDisposableMerchants } from './tests/helpers/disposable-merchant';
 import { campaignDefinitionKey } from './campaign-definition';
 import { enqueueCampaignDeliveries, completeCampaignWithoutRecipients, CampaignDispatchConflictError } from './automation/campaign-delivery-outbox';
@@ -10,6 +10,7 @@ describe.skipIf(!process.env.DATABASE_URL)('campaign definition admission race i
   const q = async (sql: string, params: any[] = []) => (await (await getPool())!.execute<any>(sql, params))[0];
   const queued = () => q('SELECT * FROM campaign_delivery_outbox WHERE campaign_id=?', [id]);
   const enqueue = (merchantId = owner.merchantId, definition = expectedDefinition) => enqueueCampaignDeliveries({ campaignId: id, merchantId, expectedDefinition: definition, recipients: [{ phone: '99900000001' }] });
+  const occasion = async (enabled = 1, merchantId = owner.merchantId) => Number((await q("INSERT INTO occasion_campaigns (merchantId,campaign_id,occasionType,year,enabled,discountPercentage,status) VALUES (?,?,'national_day',2026,?,23,'pending')", [merchantId,id,enabled])).insertId);
   beforeEach(async () => {
     owner = await createDisposableMerchant('campaign-definition'); other = await createDisposableMerchant('campaign-definition-other');
     id = Number((await q("INSERT INTO campaigns (merchantId,name,message,imageUrl,targetAudience,scheduledAt,status) VALUES (?,'Original name','Original message',NULL,'{}','2027-01-01 12:00:00','scheduled')", [owner.merchantId])).insertId);
@@ -23,6 +24,39 @@ describe.skipIf(!process.env.DATABASE_URL)('campaign definition admission race i
     expect(await getCampaignById(id)).toMatchObject({ status: 'sending', totalRecipients: 1, message: 'Original message' });
     expect(await updateEditableCampaign(id, owner.merchantId, { message: 'Late edit' })).toBe(false);
     expect((await getCampaignById(id))!.message).toBe('Original message');
+  });
+  it('cannot start or complete a disabled linked occasion', async () => {
+    await occasion(0); await expect(enqueue()).rejects.toBeInstanceOf(CampaignDispatchConflictError);
+    expect(await completeCampaignWithoutRecipients(id, owner.merchantId, expectedDefinition)).toBe(false); expect(await queued()).toEqual([]);
+    expect((await getCampaignById(id))!.status).toBe('scheduled');
+  });
+  it('claims an enabled occasion together with its campaign and refuses late toggles', async () => {
+    const oc = await occasion(); expect(await enqueue()).toEqual({ queued: 1 });
+    expect(await q('SELECT status,enabled FROM occasion_campaigns WHERE id=?', [oc])).toEqual([expect.objectContaining({ status: 'sending', enabled: 1 })]);
+    expect(await setPendingOccasionEnabled(oc, owner.merchantId, false)).toBe(false);
+  });
+  it('rejects a foreign merchant linked to the campaign', async () => {
+    await occasion(1, other.merchantId); await expect(enqueue()).rejects.toBeInstanceOf(CampaignDispatchConflictError); expect(await queued()).toEqual([]);
+  });
+  it('honors a disable committed while admission is waiting for the occasion lock', async () => {
+    const oc = await occasion(), connection = await (await getPool())!.getConnection(); let sending: Promise<unknown> | undefined;
+    try {
+      await connection.beginTransaction(); await connection.execute('SELECT id FROM occasion_campaigns WHERE id=? FOR UPDATE', [oc]);
+      let settled = false; sending = enqueue().then(value => ({ value }), error => ({ error })).finally(() => { settled = true; });
+      await new Promise(resolve => setTimeout(resolve,60)); expect(settled).toBe(false);
+      await connection.execute('UPDATE occasion_campaigns SET enabled=0 WHERE id=?', [oc]); await connection.commit();
+      expect(await sending).toMatchObject({ error: expect.any(CampaignDispatchConflictError) }); expect(await queued()).toEqual([]);
+    } finally { await connection.rollback(); connection.release(); await sending; }
+  });
+  it('allows idempotent pending toggles only for the owning tenant', async () => {
+    const oc = await occasion(); expect(await setPendingOccasionEnabled(oc, other.merchantId, false)).toBe(false);
+    expect(await setPendingOccasionEnabled(oc, owner.merchantId, false)).toBe(true);
+    expect(await setPendingOccasionEnabled(oc, owner.merchantId, false)).toBe(true);
+    expect(await setPendingOccasionEnabled(oc, owner.merchantId, true)).toBe(true);
+  });
+  it.each(['sending','completed','failed'])('refuses toggling a %s occasion', async status => {
+    const oc = await occasion(); await q('UPDATE occasion_campaigns SET status=? WHERE id=?', [status,oc]);
+    expect(await setPendingOccasionEnabled(oc, owner.merchantId, false)).toBe(false);
   });
   it.each([
     ['name', 'Renamed'], ['message', 'Changed message'], ['imageUrl', 'https://example.test/changed.png'],

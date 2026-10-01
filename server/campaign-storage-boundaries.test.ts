@@ -15,6 +15,10 @@ describe('campaign persistence outages are never success or empty results',()=>{
     ['createCampaignLog',[{campaignId:1,customerPhone:'99900000001'}]],
     ['getCampaignLogById',[1]], ['getCampaignLogsByCampaignId',[1]],
     ['getCampaignLogsWithStats',[1]], ['updateCampaignLog',[1,{status:'success'}]],
+    ['createOccasionCampaign',[{merchantId:1,occasionType:'national_day',year:2026,discountPercentage:23}]],
+    ['getOccasionCampaignById',[1]],['getOccasionCampaignsByMerchantId',[1]],['getOccasionCampaignByTypeAndYear',[1,'national_day',2026]],
+    ['updateOccasionCampaign',[1,{enabled:0}]],['setPendingOccasionEnabled',[1,1,false]],['markOccasionCampaignSent',[1,0]],
+    ['getEnabledOccasionCampaigns',[]],['getDispatchableOccasionCampaigns',['national_day',2026]],['getOccasionCampaignsStats',[1]],
   ])('rejects %s when storage is unavailable',async(name,args)=>{
     await expect((db as any)[name as string](...(args as any[]))).rejects.toThrow('Database not available');
   });
