@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-01T11:45:03.203Z",
+  "generatedAt": "2026-10-01T11:57:48.888Z",
   "definition": "Every registered route is accounted for; source inventory and design completion are different statuses.",
   "routes": [
     {
@@ -13545,6 +13545,7 @@
         "client/src/pages/merchant/Conversations.tsx",
         "client/src/components/StaffTeamReview.tsx",
         "client/src/components/StaffAttemptGuidance.tsx",
+        "client/src/lib/staff-team-review-attempt.ts",
         "client/src/lib/staff-voice-attempt.ts",
         "client/src/lib/staff-attempt-identity.ts",
         "client/src/lib/staff-dashboard-attempt.ts",
@@ -13590,19 +13591,21 @@
         "73ca17879769",
         "98c96da32e73",
         "3261186d8de5",
-        "f90c7d60a105",
-        "1f9031ee505d",
-        "a013c3f5a45e",
-        "dc90cad66074",
-        "b53bb1eb4832",
-        "c7a928eb4773",
-        "7bdb4875b7ec",
-        "606597e892c9",
-        "3bdbb2124cc9",
-        "132d5571ffc9",
-        "76537ef52b0c",
-        "2752a5eb2178",
-        "3e8752550314",
+        "7c19f144b1df",
+        "442de96c6f21",
+        "ec8e32f4091f",
+        "afdedafb833b",
+        "e82444411b7f",
+        "9d5cfc967480",
+        "9286ef27d310",
+        "d0e9a53acf73",
+        "0ed3cc1b295e",
+        "5ca2da2a0595",
+        "cae8c0be5f14",
+        "0145540bba6f",
+        "158c0a1f40ba",
+        "351dbcc8a69e",
+        "cfc79f6d4d2e",
         "d6e8938c09e8",
         "0f972e12a3e0",
         "8dcc42ad961d",
@@ -14270,9 +14273,58 @@
           "review": "source-inventoried"
         },
         {
-          "id": "f90c7d60a105",
+          "id": "7c19f144b1df",
           "file": "client/src/components/StaffTeamReview.tsx",
-          "line": 40,
+          "line": 48,
+          "tag": "Button",
+          "role": "",
+          "kind": "action",
+          "label": "إعادة محاولة قراءة المرجع",
+          "section": "StaffTeamReview",
+          "binding": "restore",
+          "type": "button",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": true,
+          "conditions": [
+            "(storageFailed||stored.state==='invalid'||stored.state==='unavailable')",
+            "a.state!=='accepted'"
+          ],
+          "disabled": "",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "442de96c6f21",
+          "file": "client/src/components/StaffTeamReview.tsx",
+          "line": 49,
+          "tag": "Button",
+          "role": "",
+          "kind": "action",
+          "label": "راجعت سجل المراجعات؛ بدء تحقق جديد",
+          "section": "StaffTeamReview",
+          "binding": "()=>{try{discardStaffTeamAttempt(scope);restore();setBlocked(false);}catch{setNotice(t('conversationReview.storageFailed'));}}",
+          "type": "button",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": true,
+          "conditions": [
+            "stored.state==='invalid'",
+            "(storageFailed||stored.state==='invalid'||stored.state==='unavailable')",
+            "a.state!=='accepted'"
+          ],
+          "disabled": "",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "ec8e32f4091f",
+          "file": "client/src/components/StaffTeamReview.tsx",
+          "line": 52,
           "tag": "select",
           "role": "",
           "kind": "field",
@@ -14306,13 +14358,13 @@
           "conditions": [
             "a.state!=='accepted'"
           ],
-          "disabled": "mutation.isPending||!!request.current",
+          "disabled": "mutation.isPending||!!request.current||stored.state==='invalid'||stored.state==='unavailable'",
           "review": "source-inventoried"
         },
         {
-          "id": "1f9031ee505d",
+          "id": "afdedafb833b",
           "file": "client/src/components/StaffTeamReview.tsx",
-          "line": 45,
+          "line": 57,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -14329,13 +14381,13 @@
           "conditions": [
             "a.state!=='accepted'"
           ],
-          "disabled": "!reason||blocked||refreshing||mutation.isPending",
+          "disabled": "!reason||blocked||refreshing||mutation.isPending||stored.state==='invalid'||stored.state==='unavailable'",
           "review": "source-inventoried"
         },
         {
-          "id": "a013c3f5a45e",
+          "id": "e82444411b7f",
           "file": "client/src/components/StaffTeamReview.tsx",
-          "line": 69,
+          "line": 81,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -14354,9 +14406,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "dc90cad66074",
+          "id": "9d5cfc967480",
           "file": "client/src/components/StaffTeamReview.tsx",
-          "line": 70,
+          "line": 82,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -14375,9 +14427,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "b53bb1eb4832",
+          "id": "9286ef27d310",
           "file": "client/src/components/StaffTeamReview.tsx",
-          "line": 71,
+          "line": 83,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -14396,9 +14448,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "c7a928eb4773",
+          "id": "d0e9a53acf73",
           "file": "client/src/components/StaffTeamReview.tsx",
-          "line": 72,
+          "line": 84,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -14417,9 +14469,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "7bdb4875b7ec",
+          "id": "0ed3cc1b295e",
           "file": "client/src/components/StaffTeamReview.tsx",
-          "line": 79,
+          "line": 91,
           "tag": "input",
           "role": "",
           "kind": "field",
@@ -14438,9 +14490,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "606597e892c9",
+          "id": "5ca2da2a0595",
           "file": "client/src/components/StaffTeamReview.tsx",
-          "line": 80,
+          "line": 92,
           "tag": "input",
           "role": "",
           "kind": "field",
@@ -14459,9 +14511,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "3bdbb2124cc9",
+          "id": "cae8c0be5f14",
           "file": "client/src/components/StaffTeamReview.tsx",
-          "line": 81,
+          "line": 93,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -14480,9 +14532,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "132d5571ffc9",
+          "id": "0145540bba6f",
           "file": "client/src/components/StaffTeamReview.tsx",
-          "line": 94,
+          "line": 106,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -14501,9 +14553,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "76537ef52b0c",
+          "id": "158c0a1f40ba",
           "file": "client/src/components/StaffTeamReview.tsx",
-          "line": 95,
+          "line": 107,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -14524,9 +14576,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "2752a5eb2178",
+          "id": "351dbcc8a69e",
           "file": "client/src/components/StaffTeamReview.tsx",
-          "line": 107,
+          "line": 119,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -14545,9 +14597,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "3e8752550314",
+          "id": "cfc79f6d4d2e",
           "file": "client/src/components/StaffTeamReview.tsx",
-          "line": 110,
+          "line": 122,
           "tag": "summary",
           "role": "",
           "kind": "action",

@@ -4,10 +4,11 @@ import {webcrypto} from 'node:crypto';
 import {createRoot,type Root} from 'react-dom/client';
 import {beforeEach,afterEach,it,expect,vi} from 'vitest';
 import copy from '../client/src/locales/merchant-ux.ar';
+import ar from '../client/src/locales/ar.json';
 const m=vi.hoisted(()=>({access:{} as any,query:{} as any,accessCalls:vi.fn(),calls:vi.fn(),check:vi.fn(),invalidate:vi.fn(),refetch:vi.fn()}));
 vi.mock('@/lib/trpc',()=>({trpc:{conversations:{staffTeamContext:{useQuery:(input:any,options:any)=>{m.accessCalls(input,options);return m.access;}},staffTeamSnapshot:{useQuery:(input:any,options:any)=>{m.calls(input,options);return m.query;}},checkTeamStaffAttempt:{useMutation:()=>({mutateAsync:m.check,isPending:false})}},useUtils:()=>({conversations:new Proxy({},{get:()=>({invalidate:m.invalidate})})})}}));
 vi.mock('react-i18next',()=>({useTranslation:()=>({i18n:{language:'ar'},t:(key:string,args:Record<string,unknown>={})=>{
-  const value=key.split('.').reduce((v:any,k)=>v?.[k],{merchantUx:copy})??key;return value.replace(/\{\{(\w+)\}\}/g,(_:string,key:string)=>String(args[key]??''));
+  const value=key.split('.').reduce((v:any,k)=>v?.[k],{...ar,merchantUx:copy})??key;return value.replace(/\{\{(\w+)\}\}/g,(_:string,key:string)=>String(args[key]??''));
 }})}));
 import {StaffTeamReview} from '../client/src/components/StaffTeamReview';
 let root:Root,container:HTMLDivElement;
@@ -20,11 +21,12 @@ const input=(selector:string,value:string)=>act(async()=>{const el=container.que
 const reason=()=>act(async()=>{const el=container.querySelector('select')!;el.value='delivery_check';el.dispatchEvent(new Event('change',{bubbles:true}));});
 const ready=(data:any)=>({data,isLoading:false,isFetching:false,isError:false,dataUpdatedAt:1,refetch:m.refetch});
 beforeEach(()=>{
+  sessionStorage.clear();
   vi.resetAllMocks();vi.stubGlobal('React',React);vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT',true);vi.stubGlobal('crypto',webcrypto);
   m.access=ready({merchantId:20,actorUserId:7,canReview:true});m.query=ready(snapshot());m.check.mockResolvedValue({reviewId:1,result:{success:false,status:'pending',persisted:false}});
   container=document.createElement('div');document.body.append(container);root=createRoot(container);
 });
-afterEach(async()=>{await act(async()=>root.unmount());container.remove();vi.unstubAllGlobals();});
+afterEach(async()=>{await act(async()=>root.unmount());container.remove();vi.restoreAllMocks();vi.unstubAllGlobals();});
 it.each(['loading','fetching','error','merchant','actor','denied'])('does not mount review reads with %s permission state',async state=>{
   if(state==='loading')m.access.isLoading=true;if(state==='fetching')m.access.isFetching=true;if(state==='error')m.access.isError=true;
   if(state==='merchant')m.access.data.merchantId=99;if(state==='actor')m.access.data.actorUserId=8;if(state==='denied')m.access.data.canReview=false;
@@ -56,4 +58,19 @@ it('checks once and refreshes the new and compatible readers after success',asyn
 });
 it('lets a failed access read retry without mounting private rows',async()=>{
   m.access.isError=true;await render();await click('button');expect(m.refetch).toHaveBeenCalledOnce();expect(m.calls).not.toHaveBeenCalled();
+});
+const close=()=>act(async()=>{const el=container.querySelector('details')!;el.open=false;el.dispatchEvent(new Event('toggle'));});
+it('restores an uncertain administrative request and reason after closing the panel',async()=>{
+  m.check.mockRejectedValue(Error('response lost'));await render();await open();await reason();await click('[data-team-check]');const first=m.check.mock.calls[0][0];
+  expect(Object.keys(first).sort()).toEqual(['authorUserId','conversationId','kind','reason','requestId','sourceId']);
+  await close();await open();expect(container.querySelector('[data-team-restored]')).toBeTruthy();expect(container.querySelector('select')?.value).toBe('delivery_check');expect(container.querySelector('select')?.disabled).toBe(true);
+  await click('[data-team-check]');expect(m.check.mock.calls[1][0]).toEqual(first);
+});
+it('retains an old pending request when its late response arrives after closing',async()=>{
+  let release!:(result:any)=>void;m.check.mockReturnValue(new Promise(resolve=>release=resolve));await render();await open();await reason();await click('[data-team-check]');const first=m.check.mock.calls[0][0];await close();await act(async()=>release({reviewId:1,result:{success:false,status:'pending',persisted:false}}));expect(m.invalidate).not.toHaveBeenCalled();
+  await open();m.check.mockResolvedValue({reviewId:1,result:{success:false,status:'pending',persisted:false}});await click('[data-team-check]');expect(m.check.mock.calls[1][0]).toEqual(first);expect(container.querySelector('[data-team-restored]')).toBeNull();
+});
+it('does not start a server review until the local reference is durably saved',async()=>{
+  await render();await open();await reason();const failure=vi.spyOn(Storage.prototype,'setItem').mockImplementation(()=>{});await click('[data-team-check]');expect(m.check).not.toHaveBeenCalled();expect(container.querySelector('[data-team-storage-error]')).toBeTruthy();failure.mockRestore();
+  const retry=Array.from(container.querySelectorAll('button')).find(b=>b.textContent===ar.conversationReview.retryStorage)!;await act(async()=>retry.click());await click('[data-team-check]');expect(m.check).toHaveBeenCalledOnce();
 });

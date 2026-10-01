@@ -4,28 +4,34 @@ import {z} from 'zod';
 import {trpc} from '@/lib/trpc';
 import {Button} from '@/components/ui/button';
 import {StaffAttemptGuidance} from './StaffAttemptGuidance';
+import {readStaffTeamAttempt,prepareStaffTeamAttempt,completeStaffTeamAttempt,discardStaffTeamAttempt} from '@/lib/staff-team-review-attempt';
 import {staffTeamCheckResult,staffTeamListInput,staffTeamPage,staffTeamAuditPage,staffTeamReviewReason,staffTeamContext,staffTeamSnapshot,type staffTeamItem} from '@shared/staff-team-review';
 
 type Kind='text'|'voice';type Reason=z.infer<typeof staffTeamReviewReason>;
-function TeamAttempt({item,kind,refreshing,revision,onChecked}:{item:z.infer<typeof staffTeamItem>;kind:Kind;refreshing:boolean;revision:number;onChecked:()=>void}){
+function TeamAttempt({item,kind,refreshing,revision,onChecked,merchantId,actorUserId}:{item:z.infer<typeof staffTeamItem>;kind:Kind;refreshing:boolean;revision:number;onChecked:()=>void;merchantId:number;actorUserId:number}){
  const {t,i18n}=useTranslation(),mutation=trpc.conversations.checkTeamStaffAttempt.useMutation({retry:false});
- const [reason,setReason]=useState<Reason|''>(''),[notice,setNotice]=useState(''),[blocked,setBlocked]=useState(false);
- const busy=useRef(false),request=useRef<{requestId:string;reason:Reason}|undefined>(undefined);
+ const scope={merchantId,actorUserId,kind,sourceId:item.attempt.id,conversationId:item.conversationId,authorUserId:item.authorUserId};
+ const [stored,setStored]=useState(()=>readStaffTeamAttempt(scope));
+ const [storageFailed,setStorageFailed]=useState(false);
+ const [reason,setReason]=useState<Reason|''>(stored.state==='ready'?stored.value.reason:''),[notice,setNotice]=useState(''),[blocked,setBlocked]=useState(false);
+ const busy=useRef(false),request=useRef<{requestId:string;reason:Reason}|undefined>(stored.state==='ready'?stored.value:undefined);
+ const restore=()=>{const value=readStaffTeamAttempt(scope);setStored(value);request.current=value.state==='ready'?value.value:undefined;if(value.state==='ready')setReason(value.value.reason);if(value.state==='ready'||value.state==='missing'){setStorageFailed(false);setBlocked(false);}};
  const live=useRef(true);
  useEffect(()=>{live.current=true;return()=>{live.current=false;};},[]);
  useEffect(()=>setBlocked(false),[revision]);
  const a=item.attempt;
  const check=async()=>{
-  if(busy.current||blocked||refreshing||!reason||a.state==='accepted')return;
+  if(busy.current||blocked||refreshing||!reason||a.state==='accepted'||stored.state==='invalid'||stored.state==='unavailable')return;
   busy.current=true;setNotice('');
   try{
-   request.current??={requestId:crypto.randomUUID(),reason};
-   const response=staffTeamCheckResult.parse(await mutation.mutateAsync({kind,sourceId:a.id,conversationId:item.conversationId,authorUserId:item.authorUserId,...request.current}));
+   try{const prepared=prepareStaffTeamAttempt(scope,reason);request.current={requestId:prepared.requestId,reason:prepared.reason};setStored({state:'ready',value:prepared});setReason(prepared.reason);setStorageFailed(false);}catch{setStorageFailed(true);throw Error('Review identity unavailable');}
+   const response=staffTeamCheckResult.parse(await mutation.mutateAsync({kind,sourceId:a.id,conversationId:item.conversationId,authorUserId:item.authorUserId,requestId:request.current.requestId,reason:request.current.reason}));
    if(!live.current)return;
    const outcome=response.result.success?(response.result.persisted?t('merchantUx.staffAttempts.accepted'):t('merchantUx.staffAttempts.unprojected'))
     :response.result.status==='unavailable'?t('merchantUx.staffAttempts.unavailable'):response.result.status==='pending'?t('merchantUx.staffAttempts.unresolved'):response.result.status==='suppressed'?t('merchantUx.staffAttempts.dispatchSuppressed'):t('merchantUx.staffAttempts.providerFailed');
-   setNotice(`${t('merchantUx.teamAttempts.saved',{id:response.reviewId})} ${outcome}`);request.current=undefined;onChecked();
-  }catch{if(live.current){setBlocked(true);setNotice(t('merchantUx.teamAttempts.failed'));}}
+   try{completeStaffTeamAttempt(scope,request.current.requestId);}catch{setStorageFailed(true);throw Error('Review identity cleanup unavailable');}
+   setNotice(`${t('merchantUx.teamAttempts.saved',{id:response.reviewId})} ${outcome}`);request.current=undefined;setStored({state:'missing'});onChecked();
+  }catch{if(live.current){const value=readStaffTeamAttempt(scope);setStored(value);request.current=value.state==='ready'?value.value:undefined;setBlocked(true);setNotice(t('merchantUx.teamAttempts.failed'));}}
   finally{busy.current=false;}
  };
  return <article data-team-attempt={a.id} data-team-state={a.state} className="space-y-2 rounded-lg border p-3 text-sm [overflow-wrap:anywhere]">
@@ -36,13 +42,19 @@ function TeamAttempt({item,kind,refreshing,revision,onChecked}:{item:z.infer<typ
   <StaffAttemptGuidance diagnostic={a.diagnostic}/>
   {a.state==='accepted'&&!a.persisted&&<p>{t('merchantUx.staffAttempts.unprojected')}</p>}
   {a.state!=='accepted'&&<>
+   {stored.state==='ready'&&<p data-team-restored role="status">{t('conversationReview.savedRequest')}</p>}
+   {(storageFailed||stored.state==='invalid'||stored.state==='unavailable')&&<div role="alert" data-team-storage-error className="space-y-2">
+    <p>{t('conversationReview.storageFailed')}</p>
+    <Button type="button" variant="outline" className="h-auto min-h-11 whitespace-normal" onClick={restore}>{t('conversationReview.retryStorage')}</Button>
+    {stored.state==='invalid'&&<Button type="button" variant="outline" className="h-auto min-h-11 whitespace-normal" onClick={()=>{try{discardStaffTeamAttempt(scope);restore();setBlocked(false);}catch{setNotice(t('conversationReview.storageFailed'));}}}>{t('conversationReview.reviewedReset')}</Button>}
+   </div>}
    <label className="block">{t('merchantUx.teamAttempts.reason')}
-    <select data-team-reason className="mt-1 min-h-11 w-full rounded-md border bg-background px-2" value={reason} disabled={mutation.isPending||!!request.current} onChange={e=>setReason(e.target.value as Reason)}>
+    <select data-team-reason className="mt-1 min-h-11 w-full rounded-md border bg-background px-2" value={reason} disabled={mutation.isPending||!!request.current||stored.state==='invalid'||stored.state==='unavailable'} onChange={e=>setReason(e.target.value as Reason)}>
      <option value="">{t('merchantUx.teamAttempts.chooseReason')}</option><option value="delivery_check">{t('merchantUx.teamAttempts.delivery')}</option>
      <option value="departed_employee">{t('merchantUx.teamAttempts.departed')}</option><option value="incident_review">{t('merchantUx.teamAttempts.incident')}</option>
     </select>
    </label>
-   <Button data-team-check className="h-auto min-h-11 w-full whitespace-normal" disabled={!reason||blocked||refreshing||mutation.isPending} onClick={()=>void check()}>{mutation.isPending?t('merchantUx.teamAttempts.checking'):t('merchantUx.teamAttempts.check')}</Button>
+   <Button data-team-check className="h-auto min-h-11 w-full whitespace-normal" disabled={!reason||blocked||refreshing||mutation.isPending||stored.state==='invalid'||stored.state==='unavailable'} onClick={()=>void check()}>{mutation.isPending?t('merchantUx.teamAttempts.checking'):t('merchantUx.teamAttempts.check')}</Button>
   </>}
   {notice&&<p role="status" data-team-notice>{notice}</p>}
  </article>;
@@ -89,7 +101,7 @@ function TeamBrowser({merchantId,actorUserId}:TeamScope){
      <time dateTime={v.createdAt}>{new Intl.DateTimeFormat(i18n.language,{dateStyle:'medium',timeStyle:'short'}).format(new Date(v.createdAt))}</time><p>{reasons[v.reason]}</p>
      <p>{v.result.success?t('merchantUx.staffAttempts.accepted'):v.result.status==='unavailable'?t('merchantUx.staffAttempts.unavailable'):v.result.status==='pending'?t('merchantUx.staffAttempts.unresolved'):v.result.status==='suppressed'?t('merchantUx.staffAttempts.dispatchSuppressed'):t('merchantUx.staffAttempts.providerFailed')}</p>
      {v.result.success&&!v.result.persisted&&<p>{t('merchantUx.staffAttempts.unprojected')}</p>}
-    </article>):<p>{t('merchantUx.teamAttempts.empty')}</p>:page.success&&(page.data.items.length?page.data.items.map(item=><TeamAttempt key={item.attempt.id} item={item} kind={kind} refreshing={query.isFetching} revision={query.dataUpdatedAt} onChecked={()=>checked(item.conversationId)}/>):<p>{t('merchantUx.teamAttempts.empty')}</p>)}
+    </article>):<p>{t('merchantUx.teamAttempts.empty')}</p>:page.success&&(page.data.items.length?page.data.items.map(item=><TeamAttempt key={item.attempt.id} item={item} kind={kind} merchantId={merchantId} actorUserId={actorUserId} refreshing={query.isFetching} revision={query.dataUpdatedAt} onChecked={()=>checked(item.conversationId)}/>):<p>{t('merchantUx.teamAttempts.empty')}</p>)}
    </div>}
   <div className="flex flex-wrap gap-2"><Button data-team-refresh variant="outline" className="h-auto min-h-11 whitespace-normal" disabled={query.isFetching} onClick={refresh}>{beforeId?t('merchantUx.teamAttempts.latest'):t('merchantUx.teamAttempts.refresh')}</Button>
    {!query.isError&&cursor&&<Button data-team-older variant="outline" className="h-auto min-h-11 whitespace-normal" disabled={query.isFetching} onClick={()=>setBeforeId(cursor)}>{t('merchantUx.teamAttempts.older')}</Button>}</div>

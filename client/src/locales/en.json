@@ -12629,5 +12629,11 @@
     "startEmpty": "Start an empty draft",
     "expired": "The previous draft expired. You can write a new reply.",
     "tooLong": "Shorten the reply to at most 4096 characters before sending."
+  },
+  "conversationReview": {
+    "savedRequest": "The review reference and reason are saved in this tab. Retrying continues the same request.",
+    "storageFailed": "The review reference could not be saved or restored. Check the audit history before starting a new request if its outcome is unknown.",
+    "retryStorage": "Retry reading reference",
+    "reviewedReset": "I reviewed the audit history; start a new check"
   }
 }
