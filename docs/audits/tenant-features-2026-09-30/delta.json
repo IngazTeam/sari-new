@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-01T21:54:40.741Z",
+  "generatedAt": "2026-10-01T22:21:23.026Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 367,
-      "controls": 2307
+      "files": 371,
+      "controls": 2289
     }
   },
   "addedFiles": [
@@ -180,12 +180,16 @@
     "client/src/components/merchant/DataSyncWorkspace.tsx",
     "client/src/lib/inventory-export-attempt.ts",
     "client/src/components/merchant/ServiceCatalogList.tsx",
+    "client/src/lib/service-collection-labels.ts",
     "client/src/lib/service-catalog-labels.ts",
     "client/src/lib/service-catalog-navigation.ts",
     "client/src/lib/service-editor-form.ts",
     "client/src/components/merchant/ServiceEditorWorkspace.tsx",
     "client/src/lib/service-editor-labels.ts",
     "client/src/components/merchant/CatalogChoicePicker.tsx",
+    "client/src/components/merchant/ServiceCollectionPage.tsx",
+    "client/src/components/merchant/ServiceCollectionEditor.tsx",
+    "client/src/lib/service-collection-form.ts",
     "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
     "client/src/components/merchant/InventorySheetWorkspace.tsx",
     "client/src/lib/inventory-sheet-workspace.ts",
@@ -270,6 +274,8 @@
     "client/src/pages/merchant/LanguageSettings.tsx",
     "client/src/pages/merchant/ServicesManagement.tsx",
     "client/src/pages/merchant/ServiceForm.tsx",
+    "client/src/pages/merchant/ServiceCategories.tsx",
+    "client/src/pages/merchant/ServicePackages.tsx",
     "client/src/pages/SheetsSettings.tsx",
     "client/src/pages/SheetsInventory.tsx",
     "client/src/pages/PlatformIntegrations.tsx",
@@ -1441,7 +1447,7 @@
     {
       "route": "/merchant/services",
       "controlsBefore": 10,
-      "controlsNow": 26,
+      "controlsNow": 27,
       "removedQueries": [
         "services.list",
         "serviceCategories.list"
@@ -1452,7 +1458,10 @@
         "services.catalogWorkspace"
       ],
       "removedMutations": [],
-      "addedMutations": []
+      "addedMutations": [
+        "serviceCategories.delete",
+        "servicePackages.delete"
+      ]
     },
     {
       "route": "/merchant/services/new",
@@ -1511,20 +1520,47 @@
     {
       "route": "/merchant/service-categories",
       "controlsBefore": 16,
-      "controlsNow": 16,
-      "removedQueries": [],
-      "addedQueries": [],
+      "controlsNow": 48,
+      "removedQueries": [
+        "serviceCategories.list"
+      ],
+      "addedQueries": [
+        "auth.me",
+        "merchants.getCurrent",
+        "services.catalogWorkspace",
+        "services.catalogEditor",
+        "services.catalogChoices"
+      ],
       "removedMutations": [],
-      "addedMutations": []
+      "addedMutations": [
+        "services.delete",
+        "servicePackages.delete",
+        "servicePackages.create",
+        "servicePackages.update"
+      ]
     },
     {
       "route": "/merchant/service-packages",
       "controlsBefore": 16,
-      "controlsNow": 16,
-      "removedQueries": [],
-      "addedQueries": [],
+      "controlsNow": 48,
+      "removedQueries": [
+        "servicePackages.list",
+        "services.list"
+      ],
+      "addedQueries": [
+        "auth.me",
+        "merchants.getCurrent",
+        "services.catalogWorkspace",
+        "services.catalogEditor",
+        "services.catalogChoices"
+      ],
       "removedMutations": [],
-      "addedMutations": []
+      "addedMutations": [
+        "services.delete",
+        "serviceCategories.delete",
+        "serviceCategories.create",
+        "serviceCategories.update"
+      ]
     },
     {
       "route": "/merchant/sheets/settings",

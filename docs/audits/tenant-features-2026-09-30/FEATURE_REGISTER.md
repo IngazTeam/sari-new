@@ -2,7 +2,7 @@
 
 هذا حصر مصدر قابل لإعادة التوليد، وليس ادعاءً بأن كل مسار عمل اختُبر أو أُعيد تصميمه. يشمل المكونات الفرعية المحلية، الحقول، الأزرار، النوافذ، التبويبات، واجهات القراءة والتعديل. العناصر الديناميكية تحتاج مراجعة إضافية.
 
-- 126 مسارًا مسجلًا، 367 ملف واجهة متصلًا، 2307 عنصر تحكم في المصدر.
+- 126 مسارًا مسجلًا، 371 ملف واجهة متصلًا، 2289 عنصر تحكم في المصدر.
 - 0 رابطًا حرفيًا غير مطابق، و0 ملف صفحة غير متصل بالمسارات المحصورة.
 
 | الصفحة | الملفات | عناصر التحكم | القراءة / التعديل | موك أب للصفحة |
@@ -82,13 +82,13 @@
 | /merchant/calendar — التقويم | 3 | 16 | 4 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/staff — مقدمو الخدمات | 1 | 11 | 1 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/team — الفريق والصلاحيات | 1 | 8 | 1 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/services — الخدمات | 4 | 26 | 3 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/services — الخدمات | 5 | 27 | 3 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/services/new — إضافة وتعديل خدمة | 5 | 22 | 4 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/services/:id/edit — إضافة وتعديل خدمة | 5 | 22 | 4 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/services/:id — تفاصيل الخدمة | 1 | 5 | 1 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/bookings — الحجوزات | 11 | 65 | 11 / 9 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/service-categories — تصنيفات الخدمات | 1 | 16 | 1 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/service-packages — حزم الخدمات | 1 | 16 | 2 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/service-categories — تصنيفات الخدمات | 11 | 48 | 5 / 7 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/service-packages — حزم الخدمات | 11 | 48 | 5 / 7 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/sheets/settings — ربط Google Sheets | 7 | 30 | 4 / 6 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/sheets/export — تصدير المحادثات | 1 | 3 | 1 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/sheets/reports — تقارير Google Sheets | 1 | 2 | 0 / 4 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -2772,32 +2772,33 @@
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 43 | Button | refresh | title |
-| 43 | Button | create | title |
-| 43 | Link | create | title |
-| 44 | Link | categories | title |
-| 44 | Link | packages | title |
-| 45 | Button | reviewState | title |
-| 49 | input | search | title |
-| 49 | Button | search | title |
-| 49 | select | status all active inactive unknown | title |
-| 49 | Button | search | title |
-| 51 | Button | first | outOfRange noResults empty |
-| 51 | Button | clear | outOfRange noResults empty |
-| 51 | Button | create | outOfRange noResults empty |
-| 51 | Link | create | outOfRange noResults empty |
-| 53 | Link | تسمية ديناميكية / تحتاج مراجعة | outOfRange noResults empty |
-| 57 | Button | details | ServiceCatalogList |
-| 57 | Link | details | ServiceCatalogList |
-| 57 | Button | edit | ServiceCatalogList |
-| 57 | Link | edit | ServiceCatalogList |
-| 57 | Button | text('archiveNamed',{name:name(row)}) | ServiceCatalogList |
-| 59 | Button | previous | ServiceCatalogList |
-| 59 | Button | next | ServiceCatalogList |
-| 61 | DialogContent | archiveTitle archiveHint changed reviewState cancel confirmArchive | ServiceCatalogList |
-| 61 | Button | reviewState | archiveTitle |
-| 61 | Button | cancel | archiveTitle |
-| 61 | Button | confirmArchive | archiveTitle |
+| 49 | Button | refresh | title |
+| 49 | Button | create | title |
+| 49 | Link | create | title |
+| 50 | Link | تسمية ديناميكية / تحتاج مراجعة | title |
+| 50 | Link | categories | title |
+| 50 | Link | packages | title |
+| 51 | Button | reviewState | title |
+| 55 | input | search | title |
+| 55 | Button | search | title |
+| 55 | select | status all active inactive unknown | title |
+| 55 | Button | search | title |
+| 57 | Button | first | outOfRange noResults empty |
+| 57 | Button | clear | outOfRange noResults empty |
+| 57 | Button | create | outOfRange noResults empty |
+| 57 | Link | create | outOfRange noResults empty |
+| 59 | Link | تسمية ديناميكية / تحتاج مراجعة | outOfRange noResults empty |
+| 65 | Button | details | ServiceCatalogList |
+| 65 | Link | details | ServiceCatalogList |
+| 65 | Button | edit details | ServiceCatalogList |
+| 65 | Link | edit details | ServiceCatalogList |
+| 65 | Button | text('archiveNamed',{name:name(row)}) | ServiceCatalogList |
+| 67 | Button | previous | ServiceCatalogList |
+| 67 | Button | next | ServiceCatalogList |
+| 69 | DialogContent | archiveTitle archiveHint changed reviewState cancel confirmArchive | ServiceCatalogList |
+| 69 | Button | reviewState | archiveTitle |
+| 69 | Button | cancel | archiveTitle |
+| 69 | Button | confirmArchive | archiveTitle |
 
 ## client/src/components/merchant/ServiceEditorWorkspace.tsx
 
@@ -2956,47 +2957,23 @@
 | 251 | summary | تسمية ديناميكية / تحتاج مراجعة | BookingReschedule |
 | 282 | Button | تسمية ديناميكية / تحتاج مراجعة | BookingReschedule |
 
-## client/src/pages/merchant/ServiceCategories.tsx
+## client/src/components/merchant/ServiceCollectionEditor.tsx
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 149 | Button | العودة إلى الخدمات | ServiceCategories |
-| 164 | Button | إضافة تصنيف جديد | تصنيفات الخدمات |
-| 181 | Button | إضافة تصنيف جديد | لا توجد تصنيفات |
-| 224 | Button | تعديل | ServiceCategories |
-| 233 | Button | تسمية ديناميكية / تحتاج مراجعة | ServiceCategories |
-| 252 | DialogContent | تعديل التصنيف إضافة تصنيف جديد تحديث معلومات التصنيف إضافة تصنيف جديد لتنظيم خدماتك الاسم بالعربي * الاسم بالإنجليزي الوصف الأيقونة (Emoji) اللون إلغاء ? 'جاري الحفظ...' تحديث إضافة | ServiceCategories |
-| 265 | Input | الاسم بالعربي * | تعديل التصنيف إضافة تصنيف جديد |
-| 276 | Input | الاسم بالإنجليزي | تعديل التصنيف إضافة تصنيف جديد |
-| 286 | Textarea | الوصف | تعديل التصنيف إضافة تصنيف جديد |
-| 298 | Input | الأيقونة (Emoji) | تعديل التصنيف إضافة تصنيف جديد |
-| 308 | Input | اللون | تعديل التصنيف إضافة تصنيف جديد |
-| 318 | Button | إلغاء | تعديل التصنيف إضافة تصنيف جديد |
-| 328 | Button | ? 'جاري الحفظ...' تحديث إضافة | تعديل التصنيف إضافة تصنيف جديد |
-| 344 | DialogContent | تأكيد الحذف هل أنت متأكد من حذف هذا التصنيف؟ لن يتم حذفه نهائياً بل سيتم تعطيله فقط. إلغاء جاري الحذف... حذف | تعديل التصنيف إضافة تصنيف جديد |
-| 352 | Button | إلغاء | تأكيد الحذف |
-| 358 | Button | جاري الحذف... حذف | تأكيد الحذف |
-
-## client/src/pages/merchant/ServicePackages.tsx
-
-| السطر | النوع | التسمية | القسم |
-|---:|---|---|---|
-| 186 | Button | العودة إلى الخدمات | ServicePackages |
-| 201 | Button | إضافة حزمة جديدة | حزم الخدمات |
-| 218 | Button | إضافة حزمة جديدة | لا توجد حزم |
-| 268 | Button | تعديل | ServicePackages |
-| 277 | Button | تسمية ديناميكية / تحتاج مراجعة | ServicePackages |
-| 296 | DialogContent | تعديل الحزمة إضافة حزمة جديدة تحديث معلومات الحزمة إنشاء حزمة خدمات مخفضة اسم الحزمة * الوصف الخدمات المشمولة * لا توجد خدمات. يجب إضافة خدمات أولاً. السعر الأصلي (ريال) * سعر الحزمة (ريال) * الخصم:{{var0}} % توفير: {{va | ServicePackages |
-| 309 | Input | اسم الحزمة * | تعديل الحزمة إضافة حزمة جديدة |
-| 320 | Textarea | الوصف | تعديل الحزمة إضافة حزمة جديدة |
-| 339 | Checkbox | تسمية ديناميكية / تحتاج مراجعة | تعديل الحزمة إضافة حزمة جديدة |
-| 359 | Input | السعر الأصلي (ريال) * | تعديل الحزمة إضافة حزمة جديدة |
-| 371 | Input | سعر الحزمة (ريال) * | تعديل الحزمة إضافة حزمة جديدة |
-| 401 | Button | إلغاء | تعديل الحزمة إضافة حزمة جديدة |
-| 411 | Button | ? 'جاري الحفظ...' تحديث إضافة | تعديل الحزمة إضافة حزمة جديدة |
-| 427 | DialogContent | تأكيد الحذف هل أنت متأكد من حذف هذه الحزمة؟ لن يتم حذفها نهائياً بل سيتم تعطيلها فقط. إلغاء جاري الحذف... حذف | تعديل الحزمة إضافة حزمة جديدة |
-| 435 | Button | إلغاء | تأكيد الحذف |
-| 438 | Button | جاري الحذف... حذف | تأكيد الحذف |
+| 45 | textarea | description descriptionField * | ServiceCollectionEditor |
+| 45 | input | description descriptionField * | ServiceCollectionEditor |
+| 47 | select | isActive | ServiceCollectionEditor |
+| 66 | Link | back | ServiceCollectionEditor |
+| 66 | Button | refresh | category categoryEdit categoryCreate packageEdit packageCreate |
+| 67 | Button | reload | category categoryEdit categoryCreate packageEdit packageCreate |
+| 67 | Button | viewList | category categoryEdit categoryCreate packageEdit packageCreate |
+| 67 | Link | viewList | category categoryEdit categoryCreate packageEdit packageCreate |
+| 69 | summary | advanced advancedHint | advanced advancedHint |
+| 70 | Button | review | advanced advancedHint |
+| 71 | DialogContent | reload reloadTitle reviewTitle reload reloadHint reviewHint review descriptionField emptyValue review stale cancel reload confirm | preview |
+| 71 | Button | cancel | reload reloadTitle reviewTitle |
+| 71 | Button | reload confirm | reload reloadTitle reviewTitle |
 
 ## client/src/components/merchant/SheetsSettingsWorkspace.tsx
 
