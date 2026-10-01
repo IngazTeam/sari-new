@@ -1,5 +1,6 @@
+import { dashboardHomeLabels } from "@/lib/dashboard-labels";
 import { useRef, useState } from "react";
-import { DashboardSources } from '@/components/merchant/DashboardSources';
+import { DashboardSources } from "@/components/merchant/DashboardSources";
 import { useTranslation } from "react-i18next";
 import { Link, useSearch, useLocation } from "wouter";
 import { ArrowLeft, ArrowRight, Plus } from "lucide-react";
@@ -26,8 +27,7 @@ const freshRead = {
 function useLabels() {
   const { t, i18n } = useTranslation();
   return {
-    label: (key: string, args: Record<string, unknown> = {}) =>
-      t(`dashboardHomeUx.${key}`, args),
+    label: dashboardHomeLabels(t),
     i18n,
   };
 }
@@ -145,7 +145,7 @@ function DashboardContent({
             value={days}
             onChange={e => setDays(e.target.value)}
           >
-            {[7, 30, 90].map(d => (
+            {([7, 30, 90] as const).map(d => (
               <option key={d} value={d}>
                 {label(d === 7 ? "week" : "days", { count: d })}
               </option>
@@ -182,11 +182,13 @@ function DashboardContent({
           <p>{label("nextHelp")}</p>
         </div>
         <div className="mw-task-links">
-          {[
-            ["/merchant/conversations?needs_human=1", "human"],
-            ["/merchant/products", "catalog"],
-            ["/merchant/campaigns", "campaigns"],
-          ].map(([path, text]) => (
+          {(
+            [
+              ["/merchant/conversations?needs_human=1", "human"],
+              ["/merchant/products", "catalog"],
+              ["/merchant/campaigns", "campaigns"],
+            ] as const
+          ).map(([path, text]) => (
             <Link href={path} key={path}>
               {label(text)}
               <Arrow aria-hidden="true" />
@@ -202,12 +204,14 @@ function DashboardContent({
           </div>
         </div>
         <div className="mw-home-brain-links">
-          {[
-            ["overview", "results", "resultsHelp"],
-            ["sources", "files", "filesHelp"],
-            ["knowledge&pane=conflicts", "gaps", "gapsHelp"],
-            ["sales", "sales", "salesHelp"],
-          ].map(([view, title, help]) => (
+          {(
+            [
+              ["overview", "results", "resultsHelp"],
+              ["sources", "files", "filesHelp"],
+              ["knowledge&pane=conflicts", "gaps", "gapsHelp"],
+              ["sales", "sales", "salesHelp"],
+            ] as const
+          ).map(([view, title, help]) => (
             <Link key={view} href={"/merchant/sari-brain?view=" + view}>
               <strong>{label(title)}</strong>
               <span>{label(help)}</span>
@@ -385,13 +389,15 @@ function DashboardContent({
             <DialogDescription>{label("quickHelp")}</DialogDescription>
           </DialogHeader>
           <div className="grid gap-3">
-            {[
-              ["/merchant/conversations", "allConversations"],
-              ["/merchant/products", "manageProducts"],
-              ["/merchant/services/new", "newService"],
-              ["/merchant/sales-hub", "newQuote"],
-              ["/merchant/campaigns/new", "newCampaign"],
-            ].map(([path, text]) => (
+            {(
+              [
+                ["/merchant/conversations", "allConversations"],
+                ["/merchant/products", "manageProducts"],
+                ["/merchant/services/new", "newService"],
+                ["/merchant/sales-hub", "newQuote"],
+                ["/merchant/campaigns/new", "newCampaign"],
+              ] as const
+            ).map(([path, text]) => (
               <Button asChild variant="outline" key={path}>
                 <Link href={path} onClick={() => setQuickOpen(false)}>
                   {label(text)}
@@ -405,21 +411,23 @@ function DashboardContent({
     </div>
   );
 }
-function DashboardDetails({merchantId}:{merchantId:number}) {
+function DashboardDetails({ merchantId }: { merchantId: number }) {
   const { label, i18n } = useLabels();
-  const language = i18n.language.startsWith('ar') ? 'ar' : 'en';
-  const [requestedLanguage, setRequestedLanguage] = useState<string | null>(null);
-  const requested = requestedLanguage === language;
-  const sync = trpc.dashboard.sources.useQuery(
-    undefined,
-    freshRead
+  const language = i18n.language.startsWith("ar") ? "ar" : "en";
+  const [requestedLanguage, setRequestedLanguage] = useState<string | null>(
+    null
   );
+  const requested = requestedLanguage === language;
+  const sync = trpc.dashboard.sources.useQuery(undefined, freshRead);
   // Generating suggestions may call a provider. Never start it merely by opening the dashboard.
-  const insights = trpc.dashboard.getAiInsights.useQuery({ language }, {
-    enabled: false,
-    retry: false,
-    refetchOnWindowFocus: false,
-  });
+  const insights = trpc.dashboard.getAiInsights.useQuery(
+    { language },
+    {
+      enabled: false,
+      retry: false,
+      refetchOnWindowFocus: false,
+    }
+  );
   const generate = () => {
     setRequestedLanguage(language);
     void insights.refetch();
@@ -427,13 +435,21 @@ function DashboardDetails({merchantId}:{merchantId:number}) {
   return (
     <div className="mt-5 space-y-5">
       <LearningEvidenceCard />
-      <DashboardSources merchantId={merchantId} data={sync.data} loading={sync.isFetching} failed={sync.isError} onRefresh={()=>void sync.refetch()} />
+      <DashboardSources
+        merchantId={merchantId}
+        data={sync.data}
+        loading={sync.isFetching}
+        failed={sync.isError}
+        onRefresh={() => void sync.refetch()}
+      />
       <section className="space-y-3">
         <h2 className="font-semibold">{label("suggestions")}</h2>
         <p className="text-sm text-muted-foreground">
           {label("suggestionsHelp")}
         </p>
-        <p className="text-xs text-muted-foreground">{label('suggestionsCache')}</p>
+        <p className="text-xs text-muted-foreground">
+          {label("suggestionsCache")}
+        </p>
         <Button
           variant="outline"
           onClick={generate}

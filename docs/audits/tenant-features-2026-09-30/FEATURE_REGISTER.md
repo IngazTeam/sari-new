@@ -2,7 +2,7 @@
 
 هذا حصر مصدر قابل لإعادة التوليد، وليس ادعاءً بأن كل مسار عمل اختُبر أو أُعيد تصميمه. يشمل المكونات الفرعية المحلية، الحقول، الأزرار، النوافذ، التبويبات، واجهات القراءة والتعديل. العناصر الديناميكية تحتاج مراجعة إضافية.
 
-- 126 مسارًا مسجلًا، 339 ملف واجهة متصلًا، 2201 عنصر تحكم في المصدر.
+- 126 مسارًا مسجلًا، 340 ملف واجهة متصلًا، 2201 عنصر تحكم في المصدر.
 - 0 رابطًا حرفيًا غير مطابق، و0 ملف صفحة غير متصل بالمسارات المحصورة.
 
 | الصفحة | الملفات | عناصر التحكم | القراءة / التعديل | موك أب للصفحة |
@@ -10,7 +10,7 @@
 | /merchant/setup-wizard — الإعداد الأولي | 25 | 106 | 4 / 8 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant — مدخل لوحة التاجر | 0 | 0 | 0 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/ — مدخل لوحة التاجر | 0 | 0 | 0 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/dashboard — نظرة عامة | 25 | 187 | 29 / 12 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/dashboard — نظرة عامة | 26 | 187 | 29 / 12 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/ai-hub — مركز المساعد | 1 | 1 | 0 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/analytics-hub — مركز التحليلات | 1 | 3 | 0 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/campaigns — الحملات | 2 | 16 | 5 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -317,33 +317,33 @@
 | 143 | select | period | welcome |
 | 154 | Button | period | welcome |
 | 172 | Link | finishSetup | setup |
-| 190 | Link | تسمية ديناميكية / تحتاج مراجعة | next |
-| 211 | Link | تسمية ديناميكية / تحتاج مراجعة | brain |
-| 234 | Link | settings | assistant |
-| 261 | Button | test | assistant |
-| 262 | Link | test | assistant |
-| 271 | Link | allConversations | recent |
-| 283 | Link | active closed archived unknownStatus | recent |
-| 309 | Link | connect | recent |
-| 324 | Link | yourCampaigns campaignsScope loading unavailable | relationships |
-| 337 | Link | reviews loading reviewsCount noReviews unavailable loading | relationships |
-| 371 | summary | details | details |
-| 375 | DialogContent | quickTitle quickHelp /merchant/conversations allConversations /merchant/products manageProducts /merchant/services/new newService /merchant/sales-hub newQuote /merchant/campaigns/new newCampaign | details |
-| 395 | Button | تسمية ديناميكية / تحتاج مراجعة | quickTitle |
-| 396 | Link | تسمية ديناميكية / تحتاج مراجعة | quickTitle |
-| 437 | Button | generating generate | suggestions |
-| 459 | Link | more | Dashboard |
+| 192 | Link | تسمية ديناميكية / تحتاج مراجعة | next |
+| 215 | Link | تسمية ديناميكية / تحتاج مراجعة | brain |
+| 238 | Link | settings | assistant |
+| 265 | Button | test | assistant |
+| 266 | Link | test | assistant |
+| 275 | Link | allConversations | recent |
+| 287 | Link | active closed archived unknownStatus | recent |
+| 313 | Link | connect | recent |
+| 328 | Link | yourCampaigns campaignsScope loading unavailable | relationships |
+| 341 | Link | reviews loading reviewsCount noReviews unavailable loading | relationships |
+| 375 | summary | details | details |
+| 379 | DialogContent | quickTitle quickHelp /merchant/conversations allConversations /merchant/products manageProducts /merchant/services/new newService /merchant/sales-hub newQuote /merchant/campaigns/new newCampaign | details |
+| 401 | Button | تسمية ديناميكية / تحتاج مراجعة | quickTitle |
+| 402 | Link | تسمية ديناميكية / تحتاج مراجعة | quickTitle |
+| 453 | Button | generating generate | suggestions |
+| 475 | Link | more | Dashboard |
 
 ## client/src/components/merchant/DashboardSources.tsx
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 48 | Button | refresh | title |
-| 57 | Button | retry | title |
-| 95 | Link | openDocuments | documents · |
-| 153 | Link | تسمية ديناميكية / تحتاج مراجعة | · |
-| 168 | Link | integrations | DashboardSources |
-| 194 | Link | integrations | integration |
+| 52 | Button | refresh | title |
+| 61 | Button | retry | title |
+| 101 | Link | openDocuments | documents · |
+| 161 | Link | تسمية ديناميكية / تحتاج مراجعة | · |
+| 176 | Link | integrations | DashboardSources |
+| 202 | Link | integrations | integration |
 
 ## client/src/components/merchant/DashboardAnalytics.tsx
 
@@ -351,13 +351,13 @@
 |---:|---|---|---|
 | 49 | Button | retry | title |
 | 121 | Button | refresh | title |
-| 129 | summary | window | window |
-| 194 | Link | تسمية ديناميكية / تحتاج مراجعة | window |
-| 213 | button | orders | trend |
-| 220 | button | deliveredValue | trend |
-| 254 | summary | table | table |
-| 295 | Link | analytics | table |
-| 305 | Link | catalog | products |
+| 132 | summary | window | window |
+| 199 | Link | growth | window |
+| 218 | button | orders | trend |
+| 225 | button | deliveredValue | trend |
+| 259 | summary | table | table |
+| 300 | Link | analytics | table |
+| 310 | Link | catalog | products |
 
 ## client/src/components/merchant/AssistantScheduleStatus.tsx
 
@@ -371,13 +371,13 @@
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 38 | Button | retry | TrialBanner |
-| 41 | Link | manage | TrialBanner |
-| 87 | Link | manage | TrialBanner |
-| 116 | Button | plans | TrialBanner |
-| 117 | Link | plans | TrialBanner |
-| 119 | Button | compare | TrialBanner |
-| 120 | Link | compare | TrialBanner |
+| 39 | Button | retry | TrialBanner |
+| 42 | Link | manage | TrialBanner |
+| 88 | Link | manage | TrialBanner |
+| 117 | Button | plans | TrialBanner |
+| 118 | Link | plans | TrialBanner |
+| 120 | Button | compare | TrialBanner |
+| 121 | Link | compare | TrialBanner |
 
 ## client/src/components/LearningEvidenceCard.tsx
 

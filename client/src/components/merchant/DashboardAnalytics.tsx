@@ -1,3 +1,4 @@
+import { dashboardAnalyticsLabels } from "@/lib/dashboard-labels";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "wouter";
@@ -24,8 +25,7 @@ export function DashboardAnalytics({
 }) {
   const { t, i18n } = useTranslation();
   const [measure, setMeasure] = useState<"orders" | "value">("orders");
-  const label = (key: string, args: Record<string, unknown> = {}) =>
-    t(`dashboardAnalyticsUx.${key}`, args);
+  const label = dashboardAnalyticsLabels(t);
   const parsed = dashboardWorkspaceSchema.safeParse(data);
   const snapshot =
     !failed &&
@@ -87,7 +87,7 @@ export function DashboardAnalytics({
   const current = snapshot.current,
     sample = snapshot.productSample;
   const daily = new Map(snapshot.trend.map(row => [row.date, row]));
-  const rows: DashboardWorkspace['trend'] = [];
+  const rows: DashboardWorkspace["trend"] = [];
   for (
     let day = new Date(snapshot.from.slice(0, 10) + "T00:00:00Z").getTime();
     day < Date.parse(snapshot.through);
@@ -123,7 +123,10 @@ export function DashboardAnalytics({
           </Button>
         </div>
         <p className="text-sm text-muted-foreground">
-          {label(days === 7 ? "scopeWeek" : "scope", { days, currency: snapshot.currency })}
+          {label(days === 7 ? "scopeWeek" : "scope", {
+            days,
+            currency: snapshot.currency,
+          })}
         </p>
         <details>
           <summary className="min-h-11 py-3 cursor-pointer text-sm">
@@ -163,39 +166,41 @@ export function DashboardAnalytics({
         )}
       </div>
       <div className="mw-metrics">
-        {[
-          {
-            title: "value",
-            value: money(current.totalValueMinor),
-            note: label("allStates"),
-            growth: growth(snapshot.growth.value),
-            path: "/merchant/reports",
-          },
-          {
-            title: "orders",
-            value: number(current.totalOrders),
-            note: label("created"),
-            growth: growth(snapshot.growth.orders),
-            path: "/merchant/orders",
-          },
-          {
-            title: "average",
-            value: money(current.averageValueMinor),
-            note: label("averageScope", { count: current.validValueOrders }),
-            path: "/merchant/analytics",
-          },
-          {
-            title: "delivered",
-            value: number(current.deliveredOrders),
-            note: label("deliveredScope"),
-            path: "/merchant/orders",
-          },
-        ].map(metric => (
+        {(
+          [
+            {
+              title: "value",
+              value: money(current.totalValueMinor),
+              note: label("allStates"),
+              growth: growth(snapshot.growth.value),
+              path: "/merchant/reports",
+            },
+            {
+              title: "orders",
+              value: number(current.totalOrders),
+              note: label("created"),
+              growth: growth(snapshot.growth.orders),
+              path: "/merchant/orders",
+            },
+            {
+              title: "average",
+              value: money(current.averageValueMinor),
+              note: label("averageScope", { count: current.validValueOrders }),
+              path: "/merchant/analytics",
+            },
+            {
+              title: "delivered",
+              value: number(current.deliveredOrders),
+              note: label("deliveredScope"),
+              path: "/merchant/orders",
+            },
+          ] as const
+        ).map(metric => (
           <Link key={metric.title} href={metric.path} className="mw-metric">
             <span>{label(metric.title)}</span>
             <strong>{metric.value}</strong>
             <small>{metric.note}</small>
-            {metric.growth && <small>{metric.growth}</small>}
+            {"growth" in metric && metric.growth && <small>{metric.growth}</small>}
           </Link>
         ))}
       </div>

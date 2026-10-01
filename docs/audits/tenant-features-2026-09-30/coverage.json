@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-01T08:18:26.390Z",
+  "generatedAt": "2026-10-01T08:31:07.615Z",
   "definition": "Every registered route is accounted for; source inventory and design completion are different statuses.",
   "routes": [
     {
@@ -2680,6 +2680,7 @@
       ],
       "files": [
         "client/src/pages/merchant/Dashboard.tsx",
+        "client/src/lib/dashboard-labels.ts",
         "client/src/components/merchant/DashboardSources.tsx",
         "client/src/components/merchant/DashboardAnalytics.tsx",
         "client/src/components/merchant/AssistantScheduleStatus.tsx",
@@ -2710,47 +2711,47 @@
         "77ce6bd86926",
         "e1ac0c644272",
         "cfa21f3cb846",
-        "b38ecdfefd9b",
-        "07be1b768e9c",
-        "0b54b7eaf057",
-        "660a3ef8d6e3",
-        "7ddd8029f204",
-        "a4f4fbfa2406",
-        "c5cb5052b7c3",
-        "677289bb53c2",
-        "94b6fa646d6c",
-        "0595141933b1",
-        "3f9a8fcd8107",
-        "9373eb5a03cb",
-        "305c08d1e772",
-        "96053e9e4fac",
-        "27a267431d97",
-        "4d735011bdbf",
-        "8de0b23dbf42",
-        "4e1e4bb866bb",
-        "0db8edd75fa7",
-        "e8dd5f4281d8",
-        "5cbbff77754b",
-        "799de776bd81",
+        "eb17a6f958f2",
+        "1ff8e01c6cd7",
+        "4fa1e683f29b",
+        "4cc405a62b23",
+        "9707c0575276",
+        "0a8976a16c9f",
+        "6a41af5735c8",
+        "d7cf5d6030c6",
+        "073275b2d69c",
+        "8830ee614b36",
+        "6fe2c20dbdbd",
+        "cb2fef10a143",
+        "1c4c1e2fef77",
+        "fca5e5fa43f0",
+        "8df56cc1a4b1",
+        "c85e6cca40be",
+        "ca88274a0a5d",
+        "f1ead0b51497",
+        "eec7133e6e1d",
+        "3fc143ddc50c",
+        "95edb58d471c",
+        "7d5f37951fa6",
         "dad91762be70",
         "6a4fcb6764e8",
-        "97b2d54bee9c",
-        "87df141ce45d",
-        "1cdb5d11f1b9",
-        "05418313fa13",
-        "dfe983757e67",
-        "31cb2bc1f61b",
-        "cfe9b3d6df9e",
+        "eb81e99be8ec",
+        "b3e65d3f0802",
+        "c8b8b386e851",
+        "885e730c9c18",
+        "5ebc9b7b7e10",
+        "7edce4a2f969",
+        "866b3373e579",
         "4830a67f0e26",
         "50aaaa44424a",
         "60ae9ba351d1",
-        "9b2edcc02b89",
-        "f1e32ebfec06",
-        "b18c4766da00",
-        "5ce9ee29be0b",
-        "300e624cc00a",
-        "191d211a25c8",
-        "11363a249ab6",
+        "c07997c72a49",
+        "9ad0ae38f581",
+        "cd61ff94e057",
+        "bdb5bb0eca50",
+        "17a09cc2ad1d",
+        "6f5e9f78d7b6",
+        "2b83b18069bb",
         "876057155644",
         "d817bd30f9fb",
         "21ad31056530",
@@ -3049,9 +3050,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "b38ecdfefd9b",
+          "id": "eb17a6f958f2",
           "file": "client/src/pages/merchant/Dashboard.tsx",
-          "line": 190,
+          "line": 192,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -3070,9 +3071,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "07be1b768e9c",
+          "id": "1ff8e01c6cd7",
           "file": "client/src/pages/merchant/Dashboard.tsx",
-          "line": 211,
+          "line": 215,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -3091,9 +3092,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "0b54b7eaf057",
+          "id": "4fa1e683f29b",
           "file": "client/src/pages/merchant/Dashboard.tsx",
-          "line": 234,
+          "line": 238,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -3112,9 +3113,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "660a3ef8d6e3",
+          "id": "4cc405a62b23",
           "file": "client/src/pages/merchant/Dashboard.tsx",
-          "line": 261,
+          "line": 265,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -3133,9 +3134,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "7ddd8029f204",
+          "id": "9707c0575276",
           "file": "client/src/pages/merchant/Dashboard.tsx",
-          "line": 262,
+          "line": 266,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -3154,9 +3155,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "a4f4fbfa2406",
+          "id": "0a8976a16c9f",
           "file": "client/src/pages/merchant/Dashboard.tsx",
-          "line": 271,
+          "line": 275,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -3175,9 +3176,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "c5cb5052b7c3",
+          "id": "6a41af5735c8",
           "file": "client/src/pages/merchant/Dashboard.tsx",
-          "line": 283,
+          "line": 287,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -3200,9 +3201,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "677289bb53c2",
+          "id": "d7cf5d6030c6",
           "file": "client/src/pages/merchant/Dashboard.tsx",
-          "line": 309,
+          "line": 313,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -3225,9 +3226,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "94b6fa646d6c",
+          "id": "073275b2d69c",
           "file": "client/src/pages/merchant/Dashboard.tsx",
-          "line": 324,
+          "line": 328,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -3246,9 +3247,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "0595141933b1",
+          "id": "8830ee614b36",
           "file": "client/src/pages/merchant/Dashboard.tsx",
-          "line": 337,
+          "line": 341,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -3267,9 +3268,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "3f9a8fcd8107",
+          "id": "6fe2c20dbdbd",
           "file": "client/src/pages/merchant/Dashboard.tsx",
-          "line": 371,
+          "line": 375,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -3288,9 +3289,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "9373eb5a03cb",
+          "id": "cb2fef10a143",
           "file": "client/src/pages/merchant/Dashboard.tsx",
-          "line": 375,
+          "line": 379,
           "tag": "DialogContent",
           "role": "",
           "kind": "dialog",
@@ -3309,9 +3310,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "305c08d1e772",
+          "id": "1c4c1e2fef77",
           "file": "client/src/pages/merchant/Dashboard.tsx",
-          "line": 395,
+          "line": 401,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -3330,9 +3331,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "96053e9e4fac",
+          "id": "fca5e5fa43f0",
           "file": "client/src/pages/merchant/Dashboard.tsx",
-          "line": 396,
+          "line": 402,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -3351,9 +3352,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "27a267431d97",
+          "id": "8df56cc1a4b1",
           "file": "client/src/pages/merchant/Dashboard.tsx",
-          "line": 437,
+          "line": 453,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -3372,9 +3373,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "4d735011bdbf",
+          "id": "c85e6cca40be",
           "file": "client/src/pages/merchant/Dashboard.tsx",
-          "line": 459,
+          "line": 475,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -3395,9 +3396,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "8de0b23dbf42",
+          "id": "ca88274a0a5d",
           "file": "client/src/components/merchant/DashboardSources.tsx",
-          "line": 48,
+          "line": 52,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -3416,9 +3417,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "4e1e4bb866bb",
+          "id": "f1ead0b51497",
           "file": "client/src/components/merchant/DashboardSources.tsx",
-          "line": 57,
+          "line": 61,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -3440,9 +3441,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "0db8edd75fa7",
+          "id": "eec7133e6e1d",
           "file": "client/src/components/merchant/DashboardSources.tsx",
-          "line": 95,
+          "line": 101,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -3464,9 +3465,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "e8dd5f4281d8",
+          "id": "3fc143ddc50c",
           "file": "client/src/components/merchant/DashboardSources.tsx",
-          "line": 153,
+          "line": 161,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -3488,9 +3489,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "5cbbff77754b",
+          "id": "95edb58d471c",
           "file": "client/src/components/merchant/DashboardSources.tsx",
-          "line": 168,
+          "line": 176,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -3512,9 +3513,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "799de776bd81",
+          "id": "7d5f37951fa6",
           "file": "client/src/components/merchant/DashboardSources.tsx",
-          "line": 194,
+          "line": 202,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -3578,9 +3579,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "97b2d54bee9c",
+          "id": "eb81e99be8ec",
           "file": "client/src/components/merchant/DashboardAnalytics.tsx",
-          "line": 129,
+          "line": 132,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -3599,13 +3600,13 @@
           "review": "source-inventoried"
         },
         {
-          "id": "87df141ce45d",
+          "id": "b3e65d3f0802",
           "file": "client/src/components/merchant/DashboardAnalytics.tsx",
-          "line": 194,
+          "line": 199,
           "tag": "Link",
           "role": "",
           "kind": "action",
-          "label": "",
+          "label": "growth",
           "section": "window",
           "binding": "metric.path",
           "type": "text",
@@ -3620,9 +3621,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "1cdb5d11f1b9",
+          "id": "c8b8b386e851",
           "file": "client/src/components/merchant/DashboardAnalytics.tsx",
-          "line": 213,
+          "line": 218,
           "tag": "button",
           "role": "",
           "kind": "action",
@@ -3641,9 +3642,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "05418313fa13",
+          "id": "885e730c9c18",
           "file": "client/src/components/merchant/DashboardAnalytics.tsx",
-          "line": 220,
+          "line": 225,
           "tag": "button",
           "role": "",
           "kind": "action",
@@ -3662,9 +3663,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "dfe983757e67",
+          "id": "5ebc9b7b7e10",
           "file": "client/src/components/merchant/DashboardAnalytics.tsx",
-          "line": 254,
+          "line": 259,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -3685,9 +3686,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "31cb2bc1f61b",
+          "id": "7edce4a2f969",
           "file": "client/src/components/merchant/DashboardAnalytics.tsx",
-          "line": 295,
+          "line": 300,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -3706,9 +3707,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "cfe9b3d6df9e",
+          "id": "866b3373e579",
           "file": "client/src/components/merchant/DashboardAnalytics.tsx",
-          "line": 305,
+          "line": 310,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -3790,9 +3791,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "9b2edcc02b89",
+          "id": "c07997c72a49",
           "file": "client/src/components/TrialBanner.tsx",
-          "line": 38,
+          "line": 39,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -3811,9 +3812,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "f1e32ebfec06",
+          "id": "9ad0ae38f581",
           "file": "client/src/components/TrialBanner.tsx",
-          "line": 41,
+          "line": 42,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -3832,9 +3833,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "b18c4766da00",
+          "id": "cd61ff94e057",
           "file": "client/src/components/TrialBanner.tsx",
-          "line": 87,
+          "line": 88,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -3853,9 +3854,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "5ce9ee29be0b",
+          "id": "bdb5bb0eca50",
           "file": "client/src/components/TrialBanner.tsx",
-          "line": 116,
+          "line": 117,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -3874,9 +3875,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "300e624cc00a",
+          "id": "17a09cc2ad1d",
           "file": "client/src/components/TrialBanner.tsx",
-          "line": 117,
+          "line": 118,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -3895,9 +3896,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "191d211a25c8",
+          "id": "6f5e9f78d7b6",
           "file": "client/src/components/TrialBanner.tsx",
-          "line": 119,
+          "line": 120,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -3916,9 +3917,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "11363a249ab6",
+          "id": "2b83b18069bb",
           "file": "client/src/components/TrialBanner.tsx",
-          "line": 120,
+          "line": 121,
           "tag": "Link",
           "role": "",
           "kind": "action",

@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-01T08:18:26.390Z",
+  "generatedAt": "2026-10-01T08:31:07.615Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,7 +10,7 @@
     },
     "after": {
       "routes": 126,
-      "files": 339,
+      "files": 340,
       "controls": 2201
     }
   },
@@ -29,6 +29,7 @@
     "client/src/lib/setup-draft-cache.ts",
     "client/src/pages/setup-wizard/SetupDraftRecovery.tsx",
     "client/src/lib/merchant-setup-navigation.ts",
+    "client/src/lib/dashboard-labels.ts",
     "client/src/components/merchant/DashboardSources.tsx",
     "client/src/components/merchant/DashboardAnalytics.tsx",
     "client/src/components/merchant/AssistantScheduleStatus.tsx",
