@@ -2,7 +2,7 @@
 
 هذا حصر مصدر قابل لإعادة التوليد، وليس ادعاءً بأن كل مسار عمل اختُبر أو أُعيد تصميمه. يشمل المكونات الفرعية المحلية، الحقول، الأزرار، النوافذ، التبويبات، واجهات القراءة والتعديل. العناصر الديناميكية تحتاج مراجعة إضافية.
 
-- 126 مسارًا مسجلًا، 371 ملف واجهة متصلًا، 2289 عنصر تحكم في المصدر.
+- 126 مسارًا مسجلًا، 373 ملف واجهة متصلًا، 2292 عنصر تحكم في المصدر.
 - 0 رابطًا حرفيًا غير مطابق، و0 ملف صفحة غير متصل بالمسارات المحصورة.
 
 | الصفحة | الملفات | عناصر التحكم | القراءة / التعديل | موك أب للصفحة |
@@ -85,7 +85,7 @@
 | /merchant/services — الخدمات | 5 | 27 | 3 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/services/new — إضافة وتعديل خدمة | 5 | 22 | 4 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/services/:id/edit — إضافة وتعديل خدمة | 5 | 22 | 4 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/services/:id — تفاصيل الخدمة | 1 | 5 | 1 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/services/:id — تفاصيل الخدمة | 5 | 8 | 3 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/bookings — الحجوزات | 11 | 65 | 11 / 9 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/service-categories — تصنيفات الخدمات | 11 | 48 | 5 / 7 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/service-packages — حزم الخدمات | 11 | 48 | 5 / 7 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -2832,15 +2832,18 @@
 | 18 | Button | previous | CatalogChoicePicker |
 | 18 | Button | next | CatalogChoicePicker |
 
-## client/src/pages/ServiceDetails.tsx
+## client/src/components/merchant/ServiceDetailsWorkspace.tsx
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 39 | Button | الخدمات | ServiceDetails |
-| 65 | Button | تسمية ديناميكية / تحتاج مراجعة | ServiceDetails |
-| 115 | Calendar | تسمية ديناميكية / تحتاج مراجعة | ServiceDetails |
-| 239 | Calendar | تسمية ديناميكية / تحتاج مراجعة | قيد الانتظار |
-| 254 | Calendar | تسمية ديناميكية / تحتاج مراجعة | قيد الانتظار |
+| 28 | Link | back | ServiceDetailsWorkspace |
+| 28 | Button | refresh | noName |
+| 28 | Button | edit | noName |
+| 28 | Link | edit | noName |
+| 31 | Button | bookingsLink | bookings |
+| 31 | Link | bookingsLink | bookings |
+| 31 | Calendar | تسمية ديناميكية / تحتاج مراجعة | bookings |
+| 34 | summary | settings settingsHint | settings settingsHint |
 
 ## client/src/pages/BookingsManagement.tsx
 

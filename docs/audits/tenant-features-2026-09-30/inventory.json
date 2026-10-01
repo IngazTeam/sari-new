@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-01T22:21:23.026Z",
+  "generatedAt": "2026-10-01T23:52:48.552Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -14373,50 +14373,153 @@
     },
     {
       "file": "client/src/pages/ServiceDetails.tsx",
-      "hash": "ba25dd4380ac",
+      "hash": "22348c403bf8",
       "queries": [
-        "services.getById"
+        "auth.me",
+        "merchants.getCurrent"
+      ],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [
+        {
+          "query": "auth.me",
+          "binding": "user",
+          "line": 7,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        },
+        {
+          "query": "merchants.getCurrent",
+          "binding": "merchant",
+          "line": 8,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": "!!user.data?.id&&!user.error&&!user.isFetching"
+        }
+      ],
+      "conditions": [],
+      "imports": [
+        "client/src/lib/service-editor-form.ts",
+        "client/src/components/merchant/ServiceDetailsWorkspace.tsx"
+      ],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/components/merchant/ServiceDetailsWorkspace.tsx",
+      "hash": "7460ed231825",
+      "queries": [
+        "services.detailsWorkspace"
       ],
       "mutations": [],
       "imperativeReads": [],
       "browserRequests": [],
       "sections": [
         {
-          "label": "",
-          "line": 73,
+          "label": "noName",
+          "line": 28,
           "tag": "h1"
         },
         {
-          "label": "ملغي",
-          "line": 152,
+          "label": "bookings",
+          "line": 31,
           "tag": "h2"
         },
         {
-          "label": "قيد الانتظار",
-          "line": 236,
+          "label": "paidValue",
+          "line": 31,
+          "tag": "h3"
+        },
+        {
+          "label": "completion",
+          "line": 31,
+          "tag": "h3"
+        },
+        {
+          "label": "recent",
+          "line": 32,
           "tag": "h2"
         },
         {
-          "label": "جاري التنفيذ",
-          "line": 279,
+          "label": "customer",
+          "line": 32,
+          "tag": "h3"
+        },
+        {
+          "label": "ratings",
+          "line": 33,
           "tag": "h2"
+        },
+        {
+          "label": "settings settingsHint",
+          "line": 34,
+          "tag": "summary"
         }
       ],
-      "choices": [],
+      "choices": [
+        {
+          "name": "ratingEntries",
+          "line": 25,
+          "values": [
+            [
+              "five",
+              "5"
+            ],
+            [
+              "four",
+              "4"
+            ],
+            [
+              "three",
+              "3"
+            ],
+            [
+              "two",
+              "2"
+            ],
+            [
+              "one",
+              "1"
+            ]
+          ]
+        }
+      ],
       "handlers": [],
       "queryStates": [
         {
-          "query": "services.getById",
-          "binding": "{ data, isLoading, isError, error, refetch }",
-          "line": 31,
+          "query": "services.detailsWorkspace",
+          "binding": "query",
+          "line": 16,
           "errorSignal": true,
           "loadingSignal": true,
-          "enabled": "!!serviceId "
+          "enabled": null
         }
       ],
       "conditions": [],
+      "imports": [
+        "client/src/lib/service-details-labels.ts",
+        "client/src/lib/service-editor-labels.ts"
+      ],
+      "controlCount": 8
+    },
+    {
+      "file": "client/src/lib/service-details-labels.ts",
+      "hash": "54caf9fd7672",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
       "imports": [],
-      "controlCount": 5
+      "controlCount": 0
     },
     {
       "file": "client/src/pages/BookingsManagement.tsx",
@@ -23311,17 +23414,26 @@
         "ServiceDetails"
       ],
       "files": [
-        "client/src/pages/ServiceDetails.tsx"
+        "client/src/pages/ServiceDetails.tsx",
+        "client/src/lib/service-editor-form.ts",
+        "client/src/components/merchant/ServiceDetailsWorkspace.tsx",
+        "client/src/lib/service-details-labels.ts",
+        "client/src/lib/service-editor-labels.ts"
       ],
       "controls": [
-        "5559812655a2",
-        "4b37f8f3fc9f",
-        "0507a1e9962a",
-        "25272b436505",
-        "f74a749bceac"
+        "ea9d6fd6457c",
+        "ada9c9271832",
+        "26a5596de857",
+        "cf23c1bbfea5",
+        "5f2c1c1233d4",
+        "12c7a04dda19",
+        "1ba7e7a4a38b",
+        "5225757d683a"
       ],
       "queries": [
-        "services.getById"
+        "auth.me",
+        "merchants.getCurrent",
+        "services.detailsWorkspace"
       ],
       "mutations": [],
       "imperativeReads": [],
@@ -67008,56 +67120,56 @@
       "review": "source-inventoried"
     },
     {
-      "id": "5559812655a2",
-      "file": "client/src/pages/ServiceDetails.tsx",
-      "line": 39,
-      "tag": "Button",
+      "id": "ea9d6fd6457c",
+      "file": "client/src/components/merchant/ServiceDetailsWorkspace.tsx",
+      "line": 28,
+      "tag": "Link",
       "role": "",
       "kind": "action",
-      "label": "الخدمات",
-      "section": "ServiceDetails",
-      "binding": "() => setLocation('/merchant/services')",
+      "label": "back",
+      "section": "ServiceDetailsWorkspace",
+      "binding": "/merchant/services",
       "type": "text",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": false,
+      "conditional": true,
       "conditions": [],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "4b37f8f3fc9f",
-      "file": "client/src/pages/ServiceDetails.tsx",
-      "line": 65,
+      "id": "ada9c9271832",
+      "file": "client/src/components/merchant/ServiceDetailsWorkspace.tsx",
+      "line": 28,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "",
-      "section": "ServiceDetails",
-      "binding": "() => setLocation(\"/merchant/services\")",
+      "label": "refresh",
+      "section": "noName",
+      "binding": "refresh",
       "type": "text",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": false,
+      "conditional": true,
       "conditions": [],
-      "disabled": "",
+      "disabled": "query.isFetching",
       "review": "source-inventoried"
     },
     {
-      "id": "0507a1e9962a",
-      "file": "client/src/pages/ServiceDetails.tsx",
-      "line": 115,
-      "tag": "Calendar",
+      "id": "26a5596de857",
+      "file": "client/src/components/merchant/ServiceDetailsWorkspace.tsx",
+      "line": 28,
+      "tag": "Button",
       "role": "",
-      "kind": "field",
-      "label": "",
-      "section": "ServiceDetails",
+      "kind": "action",
+      "label": "edit",
+      "section": "noName",
       "binding": "",
       "type": "text",
       "options": [],
@@ -67065,21 +67177,23 @@
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": false,
-      "conditions": [],
+      "conditional": true,
+      "conditions": [
+        "data.canManage"
+      ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "25272b436505",
-      "file": "client/src/pages/ServiceDetails.tsx",
-      "line": 239,
-      "tag": "Calendar",
+      "id": "cf23c1bbfea5",
+      "file": "client/src/components/merchant/ServiceDetailsWorkspace.tsx",
+      "line": 28,
+      "tag": "Link",
       "role": "",
-      "kind": "field",
-      "label": "",
-      "section": "قيد الانتظار",
-      "binding": "",
+      "kind": "action",
+      "label": "edit",
+      "section": "noName",
+      "binding": "`/merchant/services/${serviceId}/edit`",
       "type": "text",
       "options": [],
       "min": "",
@@ -67088,20 +67202,20 @@
       "required": false,
       "conditional": false,
       "conditions": [
-        "recentBookings.length === 0"
+        "data.canManage"
       ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "f74a749bceac",
-      "file": "client/src/pages/ServiceDetails.tsx",
-      "line": 254,
-      "tag": "Calendar",
+      "id": "5f2c1c1233d4",
+      "file": "client/src/components/merchant/ServiceDetailsWorkspace.tsx",
+      "line": 31,
+      "tag": "Button",
       "role": "",
-      "kind": "field",
-      "label": "",
-      "section": "قيد الانتظار",
+      "kind": "action",
+      "label": "bookingsLink",
+      "section": "bookings",
       "binding": "",
       "type": "text",
       "options": [],
@@ -67110,6 +67224,69 @@
       "maxLength": "",
       "required": false,
       "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "12c7a04dda19",
+      "file": "client/src/components/merchant/ServiceDetailsWorkspace.tsx",
+      "line": 31,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "bookingsLink",
+      "section": "bookings",
+      "binding": "/merchant/bookings",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "1ba7e7a4a38b",
+      "file": "client/src/components/merchant/ServiceDetailsWorkspace.tsx",
+      "line": 31,
+      "tag": "Calendar",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "bookings",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "5225757d683a",
+      "file": "client/src/components/merchant/ServiceDetailsWorkspace.tsx",
+      "line": 34,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "settings settingsHint",
+      "section": "settings settingsHint",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
       "conditions": [],
       "disabled": "",
       "review": "source-inventoried"

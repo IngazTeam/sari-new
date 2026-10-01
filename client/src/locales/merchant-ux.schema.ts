@@ -90,6 +90,7 @@ export type MerchantUxCopy = {
   campaignWorkspace: import('./campaign-workspace').CampaignWorkspaceCopy;
   serviceCatalog: typeof import('./service-catalog-workspace').serviceCatalogEn;
   serviceEditor: typeof import('./service-editor-workspace').serviceEditorEn;
+  serviceDetails: typeof import('./service-details-workspace').serviceDetailsEn;
   serviceCollection: typeof import('./service-collection-workspace').serviceCollectionEn;
   serviceCategory: typeof import('./service-collection-workspace').serviceCategoryEn;
   servicePackage: typeof import('./service-collection-workspace').servicePackageEn;
