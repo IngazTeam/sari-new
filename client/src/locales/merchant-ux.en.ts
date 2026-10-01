@@ -12,6 +12,7 @@ import { knowledgeLibraryEn } from './knowledge-library';
 import { knowledgeDocumentEn } from './knowledge-document';
 import {byaanSalesReviewEn} from './byaan-sales-review';
 import {staffTeamReviewEn} from './staff-team-review';
+import {replySuggestionsEn} from './reply-suggestions';
 import {sallaEffectReviewEn} from './salla-effect-review';
 import {sallaCheckoutReviewEn} from './salla-checkout-review';
 import { salesExperimentLaunchEn } from './sales-experiment-launch';
@@ -51,6 +52,7 @@ const merchantUxEn: MerchantUxCopy = {
   sallaEffects: sallaEffectReviewEn,
   sallaCheckout: sallaCheckoutReviewEn,
   teamAttempts: staffTeamReviewEn,
+  replySuggestions: replySuggestionsEn,
   staffAttempts: staffAttemptReviewEn,
   replyReview: salesReplyReviewEn,
   replySend: salesReplySendEn,

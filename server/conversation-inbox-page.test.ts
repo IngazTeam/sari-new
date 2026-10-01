@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import ar from '../client/src/locales/ar.json';
 import merchantAr from '../client/src/locales/merchant-ux.ar';
 import { clearConversationDrafts, CONVERSATION_DRAFT_PREFIX, conversationDraftScope, conversationDraftEpoch, saveConversationDraft, readConversationDraft } from '../client/src/lib/conversation-draft';
-const m=vi.hoisted(()=>({queries:{} as Record<string,any>,calls:vi.fn(),send:vi.fn(),voice:vi.fn(),attempt:vi.fn(),voiceAttempt:vi.fn(),complete:vi.fn(),invalidate:vi.fn(),success:vi.fn(),error:vi.fn(),warning:vi.fn()}));
+const m=vi.hoisted(()=>({queries:{} as Record<string,any>,suggestionProps:null as any,calls:vi.fn(),send:vi.fn(),voice:vi.fn(),attempt:vi.fn(),voiceAttempt:vi.fn(),complete:vi.fn(),invalidate:vi.fn(),success:vi.fn(),error:vi.fn(),warning:vi.fn()}));
 vi.mock('@/lib/trpc',()=>{
   const query=(name:string)=>({useQuery:(input:any,options:any)=>{
     m.calls(name,input,options);return options?.enabled===false?{data:undefined,isLoading:false,isFetching:false,error:null,refetch:vi.fn()}:typeof m.queries[name]==='function'?m.queries[name](input,options):m.queries[name];
@@ -96,7 +96,7 @@ vi.mock('@/components/StaffAttemptReview',()=>({StaffAttemptReview:()=>null}));
 vi.mock('@/components/ConversationHandoff',()=>({ConversationHandoff:()=>null}));
 vi.mock('@/components/EscalationReconciliation',()=>({EscalationReconciliation:()=>null}));
 vi.mock('@/components/SalesOfferReview',()=>({SalesOfferReview:()=>null}));
-vi.mock('@/components/AISuggestions',()=>({AISuggestions:()=>null}));
+vi.mock('@/components/AISuggestions',()=>({AISuggestions:(props:any)=>{m.suggestionProps=props;return null;}}));
 vi.mock('@/components/QuickActions',()=>({QuickActionsBar:()=>null}));
 vi.mock('@/components/ConversationPreviewMode',()=>({ConversationPreviewMode:()=>null}));
 vi.mock('@/components/VoiceRecorder',()=>({VoiceRecorder:({disabled,onRecordingComplete}:any)=>React.createElement('button',{'data-test-voice':true,disabled,onClick:()=>void onRecordingComplete(new Blob(['local fixture']),1)},'Voice fixture')}));
@@ -110,6 +110,7 @@ const draft=()=>container.querySelector('[data-staff-draft]') as HTMLTextAreaEle
 const send=()=>container.querySelector('[data-staff-send]') as HTMLButtonElement;
 const fill=(value:string)=>act(async()=>{Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value')!.set!.call(draft(),value);draft().dispatchEvent(new Event('input',{bubbles:true}));});
 beforeEach(()=>{
+  m.suggestionProps=null;
   clearConversationDrafts();sessionStorage.clear();
   memory=memoryLocation({path:'/merchant/conversations',record:true});
   vi.resetAllMocks();vi.stubGlobal('React',React);vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT',true);vi.stubGlobal('ResizeObserver',class{observe(){}unobserve(){}disconnect(){}});
@@ -121,6 +122,17 @@ beforeEach(()=>{
 });
 afterEach(async()=>{await act(async()=>root.unmount());container.remove();vi.restoreAllMocks();clearConversationDrafts();vi.unstubAllGlobals();vi.useRealTimers();});
 describe('verified inbox scope and draft lifetime',()=>{
+  it('binds suggestions to the account and merchant and preserves a concurrent saved draft',async()=>{
+    await render();await choose();await fill('Existing draft');expect(m.suggestionProps).toMatchObject({merchantId:20,actorUserId:7,conversationId:4,draftText:'Existing draft'});
+    const apply=m.suggestionProps.onSelectSuggestion;saveConversationDraft(conversationDraftScope(7,20,4),'Newer saved draft',false,conversationDraftEpoch());
+    expect(apply('Suggestion','Existing draft')).toBe(false);expect(readConversationDraft(conversationDraftScope(7,20,4))).toMatchObject({record:{text:'Newer saved draft'}});expect(m.send).not.toHaveBeenCalled();
+  });
+  it('adds an explicitly reviewed suggestion to the saved draft without sending',async()=>{
+    await render();await choose();await fill('Original');await act(async()=>{expect(m.suggestionProps.onSelectSuggestion('Original\n\nSuggestion','Original')).toBe(true);});expect(draft().value).toBe('Original\n\nSuggestion');expect(m.send).not.toHaveBeenCalled();
+  });
+  it('rejects suggestion insertion after a send review marker is saved',async()=>{
+    await render();await choose();const apply=m.suggestionProps.onSelectSuggestion;saveConversationDraft(conversationDraftScope(7,20,4),'',true,conversationDraftEpoch());expect(apply('Suggestion','')).toBe(false);expect(m.send).not.toHaveBeenCalled();
+  });
   it.each(['user','merchant'])('does not mount inbox reads while %s is being reverified',async name=>{
     m.queries[name].isFetching=true;await render();expect(container.querySelector('[data-state=loading]')).toBeTruthy();expect(m.calls.mock.calls.some(c=>c[0]==='list')).toBe(false);
   });

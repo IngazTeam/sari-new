@@ -91,6 +91,7 @@ export type MerchantUxCopy = {
   sallaCheckout: Record<keyof typeof import('./salla-checkout-review').sallaCheckoutReviewAr,string>;
   sallaEffects: Record<keyof typeof import('./salla-effect-review').sallaEffectReviewAr, string>;
   teamAttempts: Record<keyof typeof import('./staff-team-review').staffTeamReviewAr, string>;
+  replySuggestions: Record<keyof typeof import('./reply-suggestions').replySuggestionsAr, string>;
   staffAttempts: Record<keyof typeof import('./staff-attempt-review').staffAttemptReviewAr, string>;
   experimentLaunch: SalesExperimentLaunchCopy;
   experimentReview: SalesExperimentReviewCopy;

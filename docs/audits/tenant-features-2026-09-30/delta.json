@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-01T12:56:28.805Z",
+  "generatedAt": "2026-10-01T13:08:09.757Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -11,7 +11,7 @@
     "after": {
       "routes": 126,
       "files": 346,
-      "controls": 2222
+      "controls": 2225
     }
   },
   "addedFiles": [
@@ -489,7 +489,7 @@
     {
       "route": "/merchant/conversations",
       "controlsBefore": 85,
-      "controlsNow": 92,
+      "controlsNow": 95,
       "removedQueries": [
         "conversations.getMessages",
         "conversations.listTeamStaffAttempts",

@@ -920,17 +920,28 @@ function ScopedConversations({ currentMerchant, actorId }: { currentMerchant: { 
                 <CardContent className="p-3">
                   {viewingLatest && !draftReview && !draftInvalid && messages && messages.length > 0 && (
                     <AISuggestions
+                      merchantId={currentMerchant.id}
+                      actorUserId={actorId}
                       conversationId={selectedConversationId!}
+                      customerPhone={selectedConversation.customerPhone}
+                      version={historySnapshot?.conversation?.handoffVersion ?? selectedConversation.handoffVersion}
+                      draftText={replyText}
+                      disabled={isSending || voiceBusy || historyFetching || messagesLoading || !!messagesError}
                       messages={messages.map(m => ({
+                        id: m.id,
                         content: m.content,
                         direction: m.direction,
+                        senderType: m.senderType,
+                        timestamp: String(m.createdAt),
                       }))}
-                      customerName={
-                        selectedConversation.customerName || undefined
-                      }
-                      onSelectSuggestion={text => {
-                        if(!viewingLatest || isSending || voiceBusy)return;
-                        updateReplyText(text);
+                      onSelectSuggestion={(text, expectedDraft) => {
+                        if(!live.current || !viewingLatest || isSending || voiceBusy || historyFetching || messagesLoading || messagesError || text.length > 4096)return false;
+                        const current = readConversationDraft(draftScope(selectedConversationId!));
+                        if(current.state === 'invalid' || (current.state === 'ready' && current.record.review))return false;
+                        if((current.state === 'ready' ? current.record.text : '') !== expectedDraft)return false;
+                        saveDraft(selectedConversationId!, text);
+                        const saved = readConversationDraft(draftScope(selectedConversationId!));
+                        return saved.state === 'ready' && saved.record.text === text && !saved.record.review;
                       }}
                       compact
                     />
