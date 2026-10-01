@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-01T07:46:35.177Z",
+  "generatedAt": "2026-10-01T08:18:26.390Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -2289,94 +2289,102 @@
     },
     {
       "file": "client/src/pages/merchant/AnalyticsHub.tsx",
-      "hash": "965cce987db3",
+      "hash": "95bdaff3c748",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
       "browserRequests": [],
       "sections": [
         {
-          "label": "مركز التحليلات",
-          "line": 109,
+          "label": "title",
+          "line": 105,
           "tag": "h1"
         },
         {
-          "label": "",
-          "line": 131,
-          "tag": "CardTitle"
+          "label": "groups. .title",
+          "line": 120,
+          "tag": "h2"
+        },
+        {
+          "label": "cards. .title",
+          "line": 141,
+          "tag": "h3"
         }
       ],
       "choices": [
         {
-          "name": "cards",
-          "line": 30,
+          "name": "analyticsHubGroups",
+          "line": 19,
           "values": [
             {
-              "icon": "BarChart3",
-              "title": "تحليلات المبيعات",
-              "description": "نظرة شاملة على إيراداتك، الطلبات، ومعدلات التحويل.",
-              "path": "/merchant/analytics",
-              "badge": "أساسي",
-              "badgeVariant": "default",
-              "color": "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+              "id": "store",
+              "cards": [
+                {
+                  "id": "overview",
+                  "path": "/merchant/overview-analytics",
+                  "icon": "PieChart"
+                },
+                {
+                  "id": "sales",
+                  "path": "/merchant/analytics",
+                  "icon": "BarChart3"
+                },
+                {
+                  "id": "performance",
+                  "path": "/merchant/performance-metrics",
+                  "icon": "Gauge"
+                },
+                {
+                  "id": "reports",
+                  "path": "/merchant/weekly-reports",
+                  "icon": "FileText"
+                }
+              ]
             },
             {
-              "icon": "TrendingUp",
-              "title": "التحليلات المتقدمة",
-              "description": "تحليل عميق للاتجاهات والأنماط مع مقارنات زمنية.",
-              "path": "/merchant/advanced-analytics",
-              "color": "bg-violet-500/10 text-violet-600 dark:text-violet-400"
+              "id": "assistant",
+              "cards": [
+                {
+                  "id": "messages",
+                  "path": "/merchant/advanced-analytics",
+                  "icon": "MessageCircle"
+                },
+                {
+                  "id": "insights",
+                  "path": "/merchant/insights",
+                  "icon": "Lightbulb"
+                },
+                {
+                  "id": "tests",
+                  "path": "/merchant/try-sari-analytics",
+                  "icon": "TestTube"
+                },
+                {
+                  "id": "brain",
+                  "path": "/merchant/sari-brain",
+                  "icon": "Brain"
+                }
+              ]
             },
             {
-              "icon": "Gauge",
-              "title": "مقاييس الأداء",
-              "description": "سرعة الرد، معدل الإغلاق، ومؤشرات الأداء الرئيسية.",
-              "path": "/merchant/performance-metrics",
-              "color": "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-            },
-            {
-              "icon": "Activity",
-              "title": "لوحة الرؤى",
-              "description": "رؤى ذكية مدعومة بالذكاء الاصطناعي حول أداء متجرك.",
-              "path": "/merchant/insights",
-              "badge": "AI",
-              "badgeVariant": "secondary",
-              "color": "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400"
-            },
-            {
-              "icon": "Search",
-              "title": "تحليل الموقع",
-              "description": "تحليل SEO وأداء موقعك الإلكتروني وتوصيات التحسين.",
-              "path": "/merchant/website-analysis",
-              "color": "bg-orange-500/10 text-orange-600 dark:text-orange-400"
-            },
-            {
-              "icon": "FileText",
-              "title": "التقارير الأسبوعية",
-              "description": "ملخص أسبوعي تلقائي لأداء متجرك وساري.",
-              "path": "/merchant/weekly-reports",
-              "color": "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400"
-            },
-            {
-              "icon": "MessageCircle",
-              "title": "استخدام الرسائل",
-              "description": "تتبع حجم الرسائل المرسلة واستهلاك الباقة.",
-              "path": "/merchant/usage",
-              "color": "bg-rose-500/10 text-rose-600 dark:text-rose-400"
-            },
-            {
-              "icon": "Clock",
-              "title": "التقارير المجدولة",
-              "description": "جدول تقارير تلقائية تصلك عبر البريد الإلكتروني.",
-              "path": "/merchant/scheduled-reports",
-              "color": "bg-amber-500/10 text-amber-600 dark:text-amber-400"
-            },
-            {
-              "icon": "Globe",
-              "title": "تحليلات تجربة ساري",
-              "description": "تتبع أداء صفحة تجربة ساري العامة ومعدلات التفاعل.",
-              "path": "/merchant/try-sari-analytics",
-              "color": "bg-teal-500/10 text-teal-600 dark:text-teal-400"
+              "id": "manage",
+              "cards": [
+                {
+                  "id": "usage",
+                  "path": "/merchant/usage",
+                  "icon": "Wallet"
+                },
+                {
+                  "id": "schedule",
+                  "path": "/merchant/scheduled-reports",
+                  "icon": "CalendarClock"
+                },
+                {
+                  "id": "website",
+                  "path": "/merchant/website-analysis",
+                  "icon": "Globe"
+                }
+              ]
             }
           ]
         }
@@ -2385,7 +2393,7 @@
       "queryStates": [],
       "conditions": [],
       "imports": [],
-      "controlCount": 1
+      "controlCount": 3
     },
     {
       "file": "client/src/pages/merchant/Campaigns.tsx",
@@ -18273,7 +18281,9 @@
         "client/src/pages/merchant/AnalyticsHub.tsx"
       ],
       "controls": [
-        "b0fc1fe05355"
+        "a8279813889c",
+        "961df93642b2",
+        "c822c3c73f2a"
       ],
       "queries": [],
       "mutations": [],
@@ -31187,14 +31197,35 @@
       "review": "source-inventoried"
     },
     {
-      "id": "b0fc1fe05355",
+      "id": "a8279813889c",
       "file": "client/src/pages/merchant/AnalyticsHub.tsx",
-      "line": 118,
+      "line": 108,
       "tag": "Link",
       "role": "",
       "kind": "action",
-      "label": "",
-      "section": "مركز التحليلات",
+      "label": "openReports",
+      "section": "title",
+      "binding": "/merchant/reports",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "961df93642b2",
+      "file": "client/src/pages/merchant/AnalyticsHub.tsx",
+      "line": 132,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "cards. .title cards. .help",
+      "section": "groups. .title",
       "binding": "card.path",
       "type": "text",
       "options": [],
@@ -31202,7 +31233,28 @@
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": true,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "c822c3c73f2a",
+      "file": "client/src/pages/merchant/AnalyticsHub.tsx",
+      "line": 159,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "allTools",
+      "section": "cards. .title",
+      "binding": "/merchant/tools",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
       "conditions": [],
       "disabled": "",
       "review": "source-inventoried"

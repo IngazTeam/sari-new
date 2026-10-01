@@ -1,4 +1,5 @@
 import React from "react";
+import AnalyticsHub from "../../../client/src/pages/merchant/AnalyticsHub";
 import { renderToStaticMarkup } from "react-dom/server";
 import { MerchantToolsDirectory } from "../../../client/src/components/merchant/MerchantToolsDirectory";
 import {
@@ -8,18 +9,47 @@ import {
   toolTranslationKey,
   type ToolFilters,
 } from "../../../client/src/lib/merchant-tools-search";
-import { setToolsPreviewLanguage, translateToolsPreview } from "./tools-preview-i18n";
-import { navigableMerchantTools } from '../../../client/src/components/merchant/navigation';
+import {
+  setToolsPreviewLanguage,
+  translateToolsPreview,
+} from "./tools-preview-i18n";
+import { navigableMerchantTools } from "../../../client/src/components/merchant/navigation";
 
-export function discovery(query: string, lang: 'ar' | 'en' = 'ar') {
-  const label = (path: string, lng: 'ar' | 'en') => translateToolsPreview(toolTranslationKey(path), { lng });
-  const section = (id: string, lng: 'ar' | 'en') => translateToolsPreview(`merchantNavigationUx.sections.${id}`, { lng });
-  const matches = searchMerchantTools({ query: query.slice(0,100), section: 'all' }, label, section);
-  const copy = (key: string) => translateToolsPreview('merchantShellUx.' + key, { lng: lang });
-  return { title: copy('searchTitle'), help: copy('searchHelp'), label: copy('searchLabel'), placeholder: copy('searchPlaceholder'), empty: copy('searchEmpty'), clear: copy('clearSearch'), close: copy('close'),
-    count: translateToolsPreview('merchantToolsUx.results', { lng: lang, shown: matches.length, total: navigableMerchantTools.length }),
-    resultsLabel: translateToolsPreview('merchantToolsUx.resultsLabel', { lng: lang }),
-    matches: matches.map(tool => ({ path: tool.path, group: tool.section, title: label(tool.paths[0], lang), section: section(tool.section, lang) })) };
+export function discovery(query: string, lang: "ar" | "en" = "ar") {
+  const label = (path: string, lng: "ar" | "en") =>
+    translateToolsPreview(toolTranslationKey(path), { lng });
+  const section = (id: string, lng: "ar" | "en") =>
+    translateToolsPreview(`merchantNavigationUx.sections.${id}`, { lng });
+  const matches = searchMerchantTools(
+    { query: query.slice(0, 100), section: "all" },
+    label,
+    section
+  );
+  const copy = (key: string) =>
+    translateToolsPreview("merchantShellUx." + key, { lng: lang });
+  return {
+    title: copy("searchTitle"),
+    help: copy("searchHelp"),
+    label: copy("searchLabel"),
+    placeholder: copy("searchPlaceholder"),
+    empty: copy("searchEmpty"),
+    clear: copy("clearSearch"),
+    close: copy("close"),
+    count: translateToolsPreview("merchantToolsUx.results", {
+      lng: lang,
+      shown: matches.length,
+      total: navigableMerchantTools.length,
+    }),
+    resultsLabel: translateToolsPreview("merchantToolsUx.resultsLabel", {
+      lng: lang,
+    }),
+    matches: matches.map(tool => ({
+      path: tool.path,
+      group: tool.section,
+      title: label(tool.paths[0], lang),
+      section: section(tool.section, lang),
+    })),
+  };
 }
 declare global {
   interface Window {
@@ -28,12 +58,15 @@ declare global {
 }
 
 const route = "/merchant/tools";
-export const handles = (page: { route: string }) => page?.route === route;
+export const handles = (page: { route: string }) =>
+  [route, "/merchant/analytics-hub"].includes(page?.route);
 const current = () => window.location.hash.split("?")[0] === "#/page" + route;
 const search = () => window.location.hash.split("?").slice(1).join("?");
 const language = () =>
   new URLSearchParams(search()).get("lang") === "en" ? "en" : "ar";
 export function render() {
+  const analytics =
+    window.location.hash.split("?")[0] === "#/page/merchant/analytics-hub";
   const lang = language(),
     ar = lang === "ar",
     filters = readToolFilters(search());
@@ -54,11 +87,15 @@ export function render() {
           <option value="en">English</option>
         </select>
       </aside>
-      <MerchantToolsDirectory
-        filters={filters}
-        unknownSection={filters.unknownSection}
-        onChange={() => {}}
-      />
+      {analytics ? (
+        <AnalyticsHub />
+      ) : (
+        <MerchantToolsDirectory
+          filters={filters}
+          unknownSection={filters.unknownSection}
+          onChange={() => {}}
+        />
+      )}
     </div>
   );
 }
@@ -109,8 +146,23 @@ document.addEventListener("input", event => {
     textChange(input);
 });
 document.addEventListener("change", event => {
-  if (!current()) return;
   const select = event.target as HTMLSelectElement;
+  if (
+    window.location.hash.split("?")[0] === "#/page/merchant/analytics-hub" &&
+    select.id === "tools-preview-language"
+  ) {
+    const params = new URLSearchParams(search());
+    params.set("lang", select.value === "en" ? "en" : "ar");
+    history.replaceState(
+      null,
+      "",
+      "#/page/merchant/analytics-hub?" + params.toString()
+    );
+    window.render();
+    document.getElementById(select.id)?.focus();
+    return;
+  }
+  if (!current()) return;
   if (select.id === "tools-preview-language") {
     update(
       readToolFilters(search()),

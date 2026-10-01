@@ -5,6 +5,7 @@ import path from "node:path";
 import postcss from "postcss";
 import { loadPreviewLocales } from "./preview-locales.mjs";
 const copy = await loadPreviewLocales([
+  "analyticsHubUx",
   "merchantToolsUx",
   "merchantNavigationUx",
   "merchantShellUx",
@@ -46,6 +47,7 @@ const compiler = await compile(
 const candidates = new Set();
 for (const file of [
   "client/src/components/merchant/MerchantToolsDirectory.tsx",
+  "client/src/pages/merchant/AnalyticsHub.tsx",
   "prototypes/tenant-dashboard/src/tools-preview.tsx",
 ])
   for (const token of readFileSync(file, "utf8").match(/[^\s"'`<>]+/g) || [])
@@ -81,7 +83,7 @@ writeFileSync(
 writeFileSync(
   "prototypes/tenant-dashboard/site/tools-preview.css",
   readFileSync("prototypes/tenant-dashboard/site/tools-preview.css", "utf8") +
-    '\n.tools-prototype{width:100%;max-width:none;margin:0;border:0;border-radius:0;box-shadow:none;min-height:0;height:auto;font-family:inherit}.tools-prototype-note p,.tools-prototype .mw-tools-directory > [role="status"]{color:var(--muted-foreground)}\n'
+    '\n.tools-prototype{width:100%;max-width:none;margin:0;border:0;border-radius:0;box-shadow:none;min-height:0;height:auto;font-family:inherit}.tools-prototype-note p,.tools-prototype .mw-tools-directory > [role="status"],.tools-prototype .mw-analytics-hub p{color:var(--muted-foreground)}\n'
 );
 console.log(
   "Tools preview built from the application directory, translations and scoped styles."

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-01T07:46:35.177Z",
+  "generatedAt": "2026-10-01T08:18:26.390Z",
   "definition": "Every registered route is accounted for; source inventory and design completion are different statuses.",
   "routes": [
     {
@@ -7345,29 +7345,57 @@
         "client/src/pages/merchant/AnalyticsHub.tsx"
       ],
       "controls": [
-        "b0fc1fe05355"
+        "a8279813889c",
+        "961df93642b2",
+        "c822c3c73f2a"
       ],
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
       "browserRequests": [],
-      "design": "موك أب عام",
-      "productionChanged": false,
-      "designSections": [],
+      "design": "تفصيلي",
+      "productionChanged": true,
+      "designSections": [
+        "مكوّن التطبيق الفعلي بثلاث مجموعات و11 وجهة، مع الحفاظ على الروابط التسعة السابقة",
+        "ترجمة عربية وإنجليزية واتجاهان وعناوين مرتبة وأوصاف مطابقة لمصادر الوجهات",
+        "موك أب بنفس المكوّن وتبديل اللغة المحفوظ في الرابط وتباين نصوص مصحح على الهاتف"
+      ],
       "acceptancePlan": "الفترة والمرشحات؛ تعريف المؤشر ومصدره والعينة؛ الجدول والتفاصيل والتصدير؛ الصفر الحقيقي مقابل فشل تحميل البيانات.",
       "gaps": [
-        "التصميم العام موجود. لا يوجد إثبات تطابق جميع الحقول والأزرار والنوافذ أدناه مع الموك أب."
+        "راجع tenant-analytics-hub-2026-10-01؛ فحص المركز وروابطه لا يثبت اكتمال الصفحات الداخلية أو المزودين.",
+        "فُحص عرض480 بالعربية والإنجليزية؛ غلاف الموك أب عربي. Safari/iPhone الفعلي و320/390 غير مختبرين هنا."
       ],
       "controlDetails": [
         {
-          "id": "b0fc1fe05355",
+          "id": "a8279813889c",
           "file": "client/src/pages/merchant/AnalyticsHub.tsx",
-          "line": 118,
+          "line": 108,
           "tag": "Link",
           "role": "",
           "kind": "action",
-          "label": "",
-          "section": "مركز التحليلات",
+          "label": "openReports",
+          "section": "title",
+          "binding": "/merchant/reports",
+          "type": "text",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": false,
+          "conditions": [],
+          "disabled": "",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "961df93642b2",
+          "file": "client/src/pages/merchant/AnalyticsHub.tsx",
+          "line": 132,
+          "tag": "Link",
+          "role": "",
+          "kind": "action",
+          "label": "cards. .title cards. .help",
+          "section": "groups. .title",
           "binding": "card.path",
           "type": "text",
           "options": [],
@@ -7375,7 +7403,28 @@
           "max": "",
           "maxLength": "",
           "required": false,
-          "conditional": true,
+          "conditional": false,
+          "conditions": [],
+          "disabled": "",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "c822c3c73f2a",
+          "file": "client/src/pages/merchant/AnalyticsHub.tsx",
+          "line": 159,
+          "tag": "Link",
+          "role": "",
+          "kind": "action",
+          "label": "allTools",
+          "section": "cards. .title",
+          "binding": "/merchant/tools",
+          "type": "text",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": false,
           "conditions": [],
           "disabled": "",
           "review": "source-inventoried"

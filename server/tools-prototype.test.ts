@@ -70,6 +70,20 @@ afterEach(() => {
   dom.window.close();
 });
 describe("built interactive tool directory", () => {
+  it('uses the actual analytics hub, retaining all nine existing destinations and adding activity and knowledge entry points',()=>{
+    w.history.replaceState(null,'','#/page/merchant/analytics-hub');w.dispatchEvent(new w.HashChangeEvent('hashchange'));
+    const hub=w.document.querySelector('.mw-analytics-hub');expect(hub).toBeTruthy();expect(hub.querySelectorAll('section')).toHaveLength(3);expect(hub.querySelectorAll('h3')).toHaveLength(11);expect(w.document.querySelectorAll('#main h1')).toHaveLength(1);
+    const links=Array.from(hub.querySelectorAll('a')).map((a:any)=>a.getAttribute('href'));
+    for(const path of ['analytics','advanced-analytics','performance-metrics','insights','website-analysis','weekly-reports','usage','scheduled-reports','try-sari-analytics','overview-analytics','sari-brain'])expect(links).toContain('#/page/merchant/'+path);
+    expect(hub.textContent).not.toContain('SEO');expect(hub.textContent).not.toContain('ملخص أسبوعي تلقائي');expect(hub.textContent).toContain('تحليلات الرسائل');
+  });
+  it('translates analytics cards and direction, keeps language and focus on rerender, and avoids changing tool filters',()=>{
+    w.history.replaceState(null,'','#/page/merchant/analytics-hub');w.dispatchEvent(new w.HashChangeEvent('hashchange'));select('#tools-preview-language','en');
+    expect(w.location.hash).toBe('#/page/merchant/analytics-hub?lang=en');expect(w.document.activeElement.id).toBe('tools-preview-language');
+    const hub=w.document.querySelector('.mw-analytics-hub');expect(hub.getAttribute('dir')).toBe('ltr');expect(hub.textContent).toContain('Website knowledge');expect(hub.textContent).toContain('Message analytics');expect(hub.textContent).not.toMatch(/[\u0600-\u06ff]|analyticsHubUx/);
+    w.render();expect(w.document.querySelector('#tools-preview-language').value).toBe('en');expect(w.document.querySelector('.mw-analytics-hub')).toBeTruthy();
+    route('?section=ai');expect(w.document.querySelector('.mw-analytics-hub')).toBeNull();expect(w.document.querySelectorAll('.mw-tools-directory nav a')).toHaveLength(8);
+  });
   it("replaces the old directory with exactly the real navigable catalog and one heading", () => {
     const links = [
       ...w.document.querySelectorAll(".tools-prototype nav a"),

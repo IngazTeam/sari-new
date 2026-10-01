@@ -12438,5 +12438,73 @@
     "remaining": "Time remaining:",
     "plans": "View plans",
     "compare": "Compare plans"
+  },
+  "analyticsHubUx": {
+    "eyebrow": "From figures to decisions",
+    "title": "Analytics and reports",
+    "intro": "Choose what to review. Each report explains its period and data source.",
+    "openReports": "Open reports",
+    "footer": "Looking for another tool? Search the directory by name or task.",
+    "allTools": "All tools",
+    "groups": {
+      "store": {
+        "title": "Store performance",
+        "help": "Orders and their values, with summaries and reports you can review."
+      },
+      "assistant": {
+        "title": "Conversations and Sary knowledge",
+        "help": "Review message activity, reply evidence, knowledge and test results."
+      },
+      "manage": {
+        "title": "Usage and sources",
+        "help": "Review account consumption and organize reports and knowledge sources."
+      }
+    },
+    "cards": {
+      "overview": {
+        "title": "Activity summary",
+        "help": "A combined view of store activity for the selected period."
+      },
+      "sales": {
+        "title": "Sales analytics",
+        "help": "Review order, product and campaign indicators for a selected period."
+      },
+      "reports": {
+        "title": "Reports and exports",
+        "help": "Choose a report, period and currency, then review and export its results."
+      },
+      "messages": {
+        "title": "Message analytics",
+        "help": "Message volume and its distribution over time within the available data."
+      },
+      "performance": {
+        "title": "Performance comparison",
+        "help": "Compare store activity, orders and reviews across two periods, with sample limitations."
+      },
+      "insights": {
+        "title": "Keywords and suggestions",
+        "help": "Recorded keywords, their frequency and suggested replies awaiting review."
+      },
+      "tests": {
+        "title": "Assistant test metrics",
+        "help": "Assistant test sessions, messages and available execution results."
+      },
+      "brain": {
+        "title": "Knowledge and sales readiness",
+        "help": "Brain results, files, gaps and sales performance evidence in one place."
+      },
+      "usage": {
+        "title": "Account usage",
+        "help": "Review recorded consumption and the plan limits available to the account."
+      },
+      "schedule": {
+        "title": "Scheduled reports",
+        "help": "Choose content, timing, recipients and how the report is delivered."
+      },
+      "website": {
+        "title": "Website knowledge",
+        "help": "Import website content and review its analysis, pages and questions before approval."
+      }
+    }
   }
 }

@@ -11,6 +11,18 @@ const sourceDate = new Date(inventory.generatedAt).toLocaleDateString("ar-SA", {
   day: "numeric",
 });
 const specifics = {
+  "/merchant/analytics-hub": {
+    level: "تفصيلي", implemented: true,
+    sections: [
+      "مكوّن التطبيق الفعلي بثلاث مجموعات و11 وجهة، مع الحفاظ على الروابط التسعة السابقة",
+      "ترجمة عربية وإنجليزية واتجاهان وعناوين مرتبة وأوصاف مطابقة لمصادر الوجهات",
+      "موك أب بنفس المكوّن وتبديل اللغة المحفوظ في الرابط وتباين نصوص مصحح على الهاتف",
+    ],
+    gaps: [
+      "راجع tenant-analytics-hub-2026-10-01؛ فحص المركز وروابطه لا يثبت اكتمال الصفحات الداخلية أو المزودين.",
+      "فُحص عرض480 بالعربية والإنجليزية؛ غلاف الموك أب عربي. Safari/iPhone الفعلي و320/390 غير مختبرين هنا.",
+    ],
+  },
   "/merchant/dashboard": {
     level: "تفصيلي", implemented: true,
     sections: [

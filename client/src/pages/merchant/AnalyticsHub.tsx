@@ -1,146 +1,166 @@
-﻿import { useTranslation } from 'react-i18next';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { useTranslation } from "react-i18next";
 import { Link } from "wouter";
 import {
+  ArrowLeft,
+  ArrowRight,
   BarChart3,
-  TrendingUp,
-  Activity,
-  Gauge,
+  Brain,
+  CalendarClock,
   FileText,
-  Clock,
-  MessageCircle,
-  Search,
+  Gauge,
   Globe,
+  Lightbulb,
+  MessageCircle,
+  PieChart,
+  TestTube,
+  Wallet,
 } from "lucide-react";
 
-interface HubCard {
-  icon: React.ElementType;
-  title: string;
-  description: string;
-  path: string;
-  badge?: string;
-  badgeVariant?: "default" | "secondary" | "destructive" | "outline";
-  color: string;
-}
+export const analyticsHubGroups = [
+  {
+    id: "store",
+    cards: [
+      { id: "overview", path: "/merchant/overview-analytics", icon: PieChart },
+      { id: "sales", path: "/merchant/analytics", icon: BarChart3 },
+      { id: "performance", path: "/merchant/performance-metrics", icon: Gauge },
+      { id: "reports", path: "/merchant/weekly-reports", icon: FileText },
+    ],
+  },
+  {
+    id: "assistant",
+    cards: [
+      {
+        id: "messages",
+        path: "/merchant/advanced-analytics",
+        icon: MessageCircle,
+      },
+      { id: "insights", path: "/merchant/insights", icon: Lightbulb },
+      { id: "tests", path: "/merchant/try-sari-analytics", icon: TestTube },
+      { id: "brain", path: "/merchant/sari-brain", icon: Brain },
+    ],
+  },
+  {
+    id: "manage",
+    cards: [
+      { id: "usage", path: "/merchant/usage", icon: Wallet },
+      {
+        id: "schedule",
+        path: "/merchant/scheduled-reports",
+        icon: CalendarClock,
+      },
+      { id: "website", path: "/merchant/website-analysis", icon: Globe },
+    ],
+  },
+] as const;
 
 export default function AnalyticsHub() {
-  const { t } = useTranslation();
-
-  const cards: HubCard[] = [
-    {
-      icon: BarChart3,
-      title: "تحليلات المبيعات",
-      description: "نظرة شاملة على إيراداتك، الطلبات، ومعدلات التحويل.",
-      path: "/merchant/analytics",
-      badge: "أساسي",
-      badgeVariant: "default",
-      color: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
+  const { t, i18n } = useTranslation(),
+    labels: Record<string, string> = {
+      eyebrow: t("analyticsHubUx.eyebrow"),
+      title: t("analyticsHubUx.title"),
+      intro: t("analyticsHubUx.intro"),
+      openReports: t("analyticsHubUx.openReports"),
+      footer: t("analyticsHubUx.footer"),
+      allTools: t("analyticsHubUx.allTools"),
+      "groups.store.title": t("analyticsHubUx.groups.store.title"),
+      "groups.store.help": t("analyticsHubUx.groups.store.help"),
+      "groups.assistant.title": t("analyticsHubUx.groups.assistant.title"),
+      "groups.assistant.help": t("analyticsHubUx.groups.assistant.help"),
+      "groups.manage.title": t("analyticsHubUx.groups.manage.title"),
+      "groups.manage.help": t("analyticsHubUx.groups.manage.help"),
+      "cards.overview.title": t("analyticsHubUx.cards.overview.title"),
+      "cards.overview.help": t("analyticsHubUx.cards.overview.help"),
+      "cards.sales.title": t("analyticsHubUx.cards.sales.title"),
+      "cards.sales.help": t("analyticsHubUx.cards.sales.help"),
+      "cards.reports.title": t("analyticsHubUx.cards.reports.title"),
+      "cards.reports.help": t("analyticsHubUx.cards.reports.help"),
+      "cards.messages.title": t("analyticsHubUx.cards.messages.title"),
+      "cards.messages.help": t("analyticsHubUx.cards.messages.help"),
+      "cards.performance.title": t("analyticsHubUx.cards.performance.title"),
+      "cards.performance.help": t("analyticsHubUx.cards.performance.help"),
+      "cards.insights.title": t("analyticsHubUx.cards.insights.title"),
+      "cards.insights.help": t("analyticsHubUx.cards.insights.help"),
+      "cards.tests.title": t("analyticsHubUx.cards.tests.title"),
+      "cards.tests.help": t("analyticsHubUx.cards.tests.help"),
+      "cards.brain.title": t("analyticsHubUx.cards.brain.title"),
+      "cards.brain.help": t("analyticsHubUx.cards.brain.help"),
+      "cards.usage.title": t("analyticsHubUx.cards.usage.title"),
+      "cards.usage.help": t("analyticsHubUx.cards.usage.help"),
+      "cards.schedule.title": t("analyticsHubUx.cards.schedule.title"),
+      "cards.schedule.help": t("analyticsHubUx.cards.schedule.help"),
+      "cards.website.title": t("analyticsHubUx.cards.website.title"),
+      "cards.website.help": t("analyticsHubUx.cards.website.help"),
     },
-    {
-      icon: TrendingUp,
-      title: "التحليلات المتقدمة",
-      description: "تحليل عميق للاتجاهات والأنماط مع مقارنات زمنية.",
-      path: "/merchant/advanced-analytics",
-      color: "bg-violet-500/10 text-violet-600 dark:text-violet-400",
-    },
-    {
-      icon: Gauge,
-      title: "مقاييس الأداء",
-      description: "سرعة الرد، معدل الإغلاق، ومؤشرات الأداء الرئيسية.",
-      path: "/merchant/performance-metrics",
-      color: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
-    },
-    {
-      icon: Activity,
-      title: "لوحة الرؤى",
-      description: "رؤى ذكية مدعومة بالذكاء الاصطناعي حول أداء متجرك.",
-      path: "/merchant/insights",
-      badge: "AI",
-      badgeVariant: "secondary",
-      color: "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400",
-    },
-    {
-      icon: Search,
-      title: "تحليل الموقع",
-      description: "تحليل SEO وأداء موقعك الإلكتروني وتوصيات التحسين.",
-      path: "/merchant/website-analysis",
-      color: "bg-orange-500/10 text-orange-600 dark:text-orange-400",
-    },
-    {
-      icon: FileText,
-      title: "التقارير الأسبوعية",
-      description: "ملخص أسبوعي تلقائي لأداء متجرك وساري.",
-      path: "/merchant/weekly-reports",
-      color: "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400",
-    },
-    {
-      icon: MessageCircle,
-      title: "استخدام الرسائل",
-      description: "تتبع حجم الرسائل المرسلة واستهلاك الباقة.",
-      path: "/merchant/usage",
-      color: "bg-rose-500/10 text-rose-600 dark:text-rose-400",
-    },
-    {
-      icon: Clock,
-      title: "التقارير المجدولة",
-      description: "جدول تقارير تلقائية تصلك عبر البريد الإلكتروني.",
-      path: "/merchant/scheduled-reports",
-      color: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
-    },
-    {
-      icon: Globe,
-      title: "تحليلات تجربة ساري",
-      description: "تتبع أداء صفحة تجربة ساري العامة ومعدلات التفاعل.",
-      path: "/merchant/try-sari-analytics",
-      color: "bg-teal-500/10 text-teal-600 dark:text-teal-400",
-    },
-  ];
-
+    label = (key: string) => labels[key],
+    rtl = i18n.language.startsWith("ar"),
+    Arrow = rtl ? ArrowLeft : ArrowRight;
   return (
-    <div className="container mx-auto py-6 space-y-8" dir="rtl">
-      {/* Header */}
-      <div className="space-y-2">
-        <div className="flex items-center gap-3">
-          <div className="p-3 rounded-xl bg-primary text-white shadow-lg">
-            <BarChart3 className="h-7 w-7" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">{t('analyticsHub.auto_0')}</h1>
-            <p className="text-muted-foreground">{t('analyticsHub.auto_1')}</p>
-          </div>
+    <div
+      className="mw-analytics-hub min-w-0 space-y-8"
+      dir={rtl ? "rtl" : "ltr"}
+    >
+      <header className="mw-page-heading">
+        <div>
+          <p className="mw-eyebrow">{label("eyebrow")}</p>
+          <h1>{label("title")}</h1>
+          <p>{label("intro")}</p>
         </div>
-      </div>
-
-      {/* Feature Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {cards.map((card) => (
-          <Link key={card.path} href={card.path}>
-            <Card className="group cursor-pointer transition-all duration-200 hover:shadow-md hover:border-primary/30 hover:-translate-y-0.5 h-full">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className={`p-2.5 rounded-lg ${card.color}`}>
-                    <card.icon className="h-5 w-5" />
-                  </div>
-                  {card.badge && (
-                    <Badge variant={card.badgeVariant || "default"} className="text-xs">
-                      {card.badge}
-                    </Badge>
-                  )}
+        <Link className="mw-link" href="/merchant/reports">
+          {label("openReports")}
+          <Arrow aria-hidden="true" />
+        </Link>
+      </header>
+      {analyticsHubGroups.map(group => (
+        <section
+          key={group.id}
+          aria-labelledby={"analytics-group-" + group.id}
+          className="space-y-4"
+        >
+          <div>
+            <h2
+              id={"analytics-group-" + group.id}
+              className="text-lg font-semibold"
+            >
+              {label("groups." + group.id + ".title")}
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {label("groups." + group.id + ".help")}
+            </p>
+          </div>
+          <div className={group.cards.length === 3 ? "grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3" : "grid grid-cols-1 gap-4 md:grid-cols-2"}>
+            {group.cards.map(card => (
+              <Link
+                key={card.id}
+                href={card.path}
+                className="group flex min-w-0 items-start gap-4 rounded-xl border bg-card p-5 text-start transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <card.icon className="size-5" aria-hidden="true" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-semibold">
+                    {label("cards." + card.id + ".title")}
+                  </h3>
+                  <p className="mt-2 break-words text-sm leading-6 text-muted-foreground">
+                    {label("cards." + card.id + ".help")}
+                  </p>
                 </div>
-                <CardTitle className="text-base mt-3 group-hover:text-primary transition-colors">
-                  {card.title}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <CardDescription className="text-sm leading-relaxed">
-                  {card.description}
-                </CardDescription>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
-      </div>
+                <Arrow
+                  className="mt-2 size-4 shrink-0 text-muted-foreground"
+                  aria-hidden="true"
+                />
+              </Link>
+            ))}
+          </div>
+        </section>
+      ))}
+      <footer className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-muted/30 p-4">
+        <p className="text-sm text-muted-foreground">{label("footer")}</p>
+        <Link className="mw-link" href="/merchant/tools">
+          {label("allTools")}
+          <Arrow aria-hidden="true" />
+        </Link>
+      </footer>
     </div>
   );
 }
