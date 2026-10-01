@@ -27,7 +27,7 @@ export const CAMPAIGN_CONSENT_VERSION = 'campaign-marketing-v1';
 const CAMPAIGN_DECISION_SOURCES = new Set(['whatsapp_text', 'interactive_control']);
 const CAMPAIGN_DECISION_PROVIDERS = new Set(['green_api', 'meta_cloud']);
 
-export const CAMPAIGN_OPT_OUT_NOTICE_AR = 'لإيقاف الرسائل التسويقية أرسل «إلغاء الاشتراك».';
+export { CAMPAIGN_OPT_OUT_NOTICE_AR, withCampaignOptOutNotice } from '../../shared/campaign-message';
 
 export class CampaignSuppressionUnavailableError extends Error {
   constructor() {
@@ -296,19 +296,6 @@ export async function filterSuppressedCampaignRecipients(
     else blocked.push({ phone, reason: status === 'withdrawn' ? 'opted_out' : 'missing_consent' });
   }
   return { allowed, blocked };
-}
-
-export function withCampaignOptOutNotice(message: string): string {
-  const trimmed = message.trim();
-  if (isOptOutNoticePresent(trimmed)) return trimmed;
-  return `${trimmed}\n\n${CAMPAIGN_OPT_OUT_NOTICE_AR}`;
-}
-
-function isOptOutNoticePresent(message: string): boolean {
-  const normalized = message.normalize('NFKC').toLowerCase();
-  return normalized.includes('إلغاء الاشتراك')
-    || normalized.includes('الغاء الاشتراك')
-    || /\b(?:unsubscribe|opt[ -]?out)\b/i.test(normalized);
 }
 
 // ═══════════════════════════════════════════════════════════════

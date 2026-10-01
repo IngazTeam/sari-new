@@ -1209,11 +1209,10 @@
       ],
       "required": [
         "campaigns.workspace",
-        "campaigns.send",
         "campaigns.delete",
         "campaigns.acknowledgeManualReview"
       ],
-      "note": "The real list now reads a full scoped paginated snapshot with actor, tenant, permission and selection checks. Search/status/review filters and pagination are restored through URLs. Review still explicitly acknowledges all outstanding campaign records at execution; performance retains the existing APIs pending its own snapshot migration. Legacy APIs remain available.",
+      "note": "The real list now reads a full scoped paginated snapshot with actor, tenant, permission and selection checks. Search/status/review filters and pagination are restored through URLs. Review still explicitly acknowledges all outstanding campaign records at execution; performance retains the existing APIs pending its own snapshot migration. Legacy APIs remain available. Sending subsequently moved to the detail review in phase254; its route-level preservation check is recorded below.",
       "evidence": [
         "shared/campaign-workspace.ts",
         "server/campaign-workspace.ts",
@@ -1286,6 +1285,59 @@
         {
           "file": "client/src/components/merchant/CampaignReportWorkspace.tsx",
           "contains": "utils.campaigns.reportExport.fetch"
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/campaigns/:id"
+      ],
+      "removed": [
+        "campaigns.getById"
+      ],
+      "required": [
+        "campaigns.detailsWorkspace",
+        "campaigns.send"
+      ],
+      "note": "Actual details use a scoped consistent snapshot, show the outgoing opt-out notice and bind explicit send confirmation to the reviewed definition.",
+      "evidence": [
+        "server/campaign-details-page.test.tsx",
+        "server/campaign-details.mysql.test.ts"
+      ],
+      "checks": [
+        {
+          "file": "client/src/components/merchant/CampaignDetailsWorkspace.tsx",
+          "contains": "expectedDefinition:definition"
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/campaigns"
+      ],
+      "removed": [
+        "campaigns.send"
+      ],
+      "required": [
+        "campaigns.workspace"
+      ],
+      "note": "List sending now navigates to actual campaign detail review; the first-party send mutation is available only there with the reviewed definition.",
+      "evidence": [
+        "server/campaign-workspace-page.test.tsx",
+        "server/campaign-details-page.test.tsx"
+      ],
+      "checks": [
+        {
+          "file": "client/src/components/merchant/CampaignListWorkspace.tsx",
+          "contains": "?review=send"
+        },
+        {
+          "route": "/merchant/campaigns/:id",
+          "api": "campaigns.send"
+        },
+        {
+          "route": "/merchant/campaigns/:id",
+          "api": "campaigns.detailsWorkspace"
         }
       ]
     }

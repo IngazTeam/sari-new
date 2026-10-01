@@ -2,7 +2,7 @@
 
 هذا حصر مصدر قابل لإعادة التوليد، وليس ادعاءً بأن كل مسار عمل اختُبر أو أُعيد تصميمه. يشمل المكونات الفرعية المحلية، الحقول، الأزرار، النوافذ، التبويبات، واجهات القراءة والتعديل. العناصر الديناميكية تحتاج مراجعة إضافية.
 
-- 126 مسارًا مسجلًا، 355 ملف واجهة متصلًا، 2271 عنصر تحكم في المصدر.
+- 126 مسارًا مسجلًا، 357 ملف واجهة متصلًا، 2280 عنصر تحكم في المصدر.
 - 0 رابطًا حرفيًا غير مطابق، و0 ملف صفحة غير متصل بالمسارات المحصورة.
 
 | الصفحة | الملفات | عناصر التحكم | القراءة / التعديل | موك أب للصفحة |
@@ -13,10 +13,10 @@
 | /merchant/dashboard — نظرة عامة | 26 | 187 | 29 / 12 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/ai-hub — مركز المساعد | 1 | 1 | 0 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/analytics-hub — مركز التحليلات | 1 | 3 | 0 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/campaigns — الحملات | 4 | 35 | 4 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/campaigns — الحملات | 4 | 36 | 4 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/campaigns/new — إنشاء حملة | 2 | 13 | 2 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/campaigns/:id/edit — إنشاء حملة | 2 | 13 | 2 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/campaigns/:id — تفاصيل الحملة | 1 | 4 | 1 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/campaigns/:id — تفاصيل الحملة | 6 | 12 | 3 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/campaigns/:id/report — تقرير الحملة | 8 | 16 | 4 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/products — المنتجات | 17 | 103 | 12 / 4 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/products/upload — استيراد المنتجات | 13 | 75 | 10 / 7 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -599,38 +599,39 @@
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
+| 67 | Button | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
 | 68 | Button | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
-| 69 | Button | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
-| 69 | Link | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
+| 68 | Link | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
+| 77 | Button | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
 | 78 | Button | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
-| 79 | Button | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
-| 79 | Button | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
-| 81 | input | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
-| 82 | select | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
-| 83 | input | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
-| 84 | Button | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
-| 87 | Button | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
-| 87 | Button | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
-| 87 | Button | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
-| 87 | Link | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
-| 89 | Link | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
+| 78 | Button | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
+| 80 | input | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
+| 81 | select | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
+| 82 | input | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
+| 83 | Button | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
+| 86 | Button | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
+| 86 | Button | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
+| 86 | Button | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
+| 86 | Link | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
+| 88 | Link | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
+| 91 | Button | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
+| 91 | Link | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
+| 91 | Button | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
+| 91 | Link | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
 | 92 | Button | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
 | 92 | Link | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
 | 92 | Button | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
-| 92 | Link | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
-| 93 | Button | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
-| 93 | Link | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
-| 93 | Button | `${t('merchantUx.campaignWorkspace.send')}: ${row.name}` | CampaignListWorkspace |
-| 93 | Button | `${t('merchantUx.campaignWorkspace.remove')}: ${row.name}` | CampaignListWorkspace |
-| 94 | Button | `${t('merchantUx.campaignWorkspace.review')}: ${row.name}` | CampaignListWorkspace |
-| 96 | Button | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
-| 96 | Button | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
-| 98 | DialogContent | send delete review | CampaignListWorkspace |
-| 99 | Button | review | send delete |
-| 99 | Link | review | send delete |
-| 101 | input | تسمية ديناميكية / تحتاج مراجعة | send delete |
-| 102 | Button | تسمية ديناميكية / تحتاج مراجعة | send delete |
-| 102 | Button | send delete | send delete |
+| 92 | Link | `${t('merchantUx.campaignWorkspace.send')}: ${row.name}` | CampaignListWorkspace |
+| 92 | Button | `${t('merchantUx.campaignWorkspace.remove')}: ${row.name}` | CampaignListWorkspace |
+| 93 | Button | `${t('merchantUx.campaignWorkspace.review')}: ${row.name}` | CampaignListWorkspace |
+| 95 | Button | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
+| 95 | Button | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
+| 97 | DialogContent | delete review | CampaignListWorkspace |
+| 98 | Button | review | delete |
+| 98 | Link | review | delete |
+| 100 | input | تسمية ديناميكية / تحتاج مراجعة | delete |
+| 101 | Button | تسمية ديناميكية / تحتاج مراجعة | delete |
+| 101 | Button | delete | delete |
 
 ## client/src/components/merchant/CampaignPerformance.tsx
 
@@ -658,14 +659,22 @@
 | 456 | Button | السابق إلغاء | NewCampaign |
 | 466 | Button | جارٍ الحفظ… التالي تأكيد الجدولة حفظ التعديلات حفظ كمسودة | NewCampaign |
 
-## client/src/pages/merchant/CampaignDetails.tsx
+## client/src/components/merchant/CampaignDetailsWorkspace.tsx
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 39 | Calendar | تسمية ديناميكية / تحتاج مراجعة | CampaignDetails |
-| 57 | Button | العودة للحملات | CampaignDetails |
-| 64 | Button | العودة | CampaignDetails |
-| 80 | Button | إرسال الحملة الآن | CampaignDetails |
+| 52 | Link | allCampaigns | CampaignDetailsWorkspace |
+| 54 | Button | refresh | CampaignDetailsWorkspace |
+| 55 | Button | report | CampaignDetailsWorkspace |
+| 55 | Link | report | CampaignDetailsWorkspace |
+| 56 | Button | edit | CampaignDetailsWorkspace |
+| 56 | Link | edit | CampaignDetailsWorkspace |
+| 64 | Button | send | reviewTitle |
+| 67 | Button | openReviews | queueTitle |
+| 67 | Link | openReviews | queueTitle |
+| 69 | DialogContent | confirmTitle confirmHint audienceTitle scheduledNow changed cancel busy confirm | queueTitle |
+| 72 | Button | cancel | audienceTitle |
+| 72 | Button | busy confirm | audienceTitle |
 
 ## client/src/components/merchant/CampaignReportWorkspace.tsx
 

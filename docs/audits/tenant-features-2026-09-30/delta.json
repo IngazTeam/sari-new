@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-01T18:28:28.487Z",
+  "generatedAt": "2026-10-01T19:06:43.601Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 355,
-      "controls": 2271
+      "files": 357,
+      "controls": 2280
     }
   },
   "addedFiles": [
@@ -46,10 +46,12 @@
     "client/src/components/merchant/CampaignPerformance.tsx",
     "client/src/lib/merchant-date.ts",
     "client/src/lib/campaign-report-navigation.ts",
+    "client/src/components/merchant/CampaignDetailsWorkspace.tsx",
+    "client/src/lib/campaign-details-labels.ts",
+    "client/src/lib/conversation-message.ts",
     "client/src/components/merchant/CampaignReportWorkspace.tsx",
     "client/src/lib/campaign-report-labels.ts",
     "client/src/lib/campaign-report-csv.ts",
-    "client/src/lib/conversation-message.ts",
     "client/src/components/KnowledgeWorkspaceScope.tsx",
     "client/src/components/merchant/ProductCatalogWorkspace.tsx",
     "client/src/lib/product-workspace-cache.ts",
@@ -212,6 +214,7 @@
     "client/src/pages/merchant/AIWhatsAppHub.tsx",
     "client/src/pages/merchant/AnalyticsHub.tsx",
     "client/src/pages/merchant/Campaigns.tsx",
+    "client/src/pages/merchant/CampaignDetails.tsx",
     "client/src/pages/merchant/CampaignReport.tsx",
     "client/src/pages/merchant/Products.tsx",
     "client/src/pages/merchant/UploadProducts.tsx",
@@ -397,7 +400,7 @@
     {
       "route": "/merchant/campaigns",
       "controlsBefore": 11,
-      "controlsNow": 35,
+      "controlsNow": 36,
       "removedQueries": [
         "campaigns.list",
         "campaigns.getSendProgress",
@@ -409,7 +412,9 @@
         "campaigns.workspace",
         "campaigns.performanceSnapshot"
       ],
-      "removedMutations": [],
+      "removedMutations": [
+        "campaigns.send"
+      ],
       "addedMutations": []
     },
     {
@@ -433,9 +438,15 @@
     {
       "route": "/merchant/campaigns/:id",
       "controlsBefore": 4,
-      "controlsNow": 4,
-      "removedQueries": [],
-      "addedQueries": [],
+      "controlsNow": 12,
+      "removedQueries": [
+        "campaigns.getById"
+      ],
+      "addedQueries": [
+        "auth.me",
+        "merchants.getCurrent",
+        "campaigns.detailsWorkspace"
+      ],
       "removedMutations": [],
       "addedMutations": []
     },
