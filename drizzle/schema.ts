@@ -2027,6 +2027,16 @@ export const knowledgeRemovalReceipts = mysqlTable("knowledge_removal_receipts",
   createdAt: timestamp("created_at", { mode: "string", fsp: 3 }).defaultNow().notNull(),
 }, table => [uniqueIndex("uq_knowledge_removal_request").on(table.merchantId, table.requestId)]);
 
+export const virtualTeamSaveReceipts = mysqlTable("virtual_team_save_receipts", {
+  id: int().autoincrement().primaryKey(),
+  merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+  actorId: int("actor_id").notNull(),
+  requestId: char("request_id", { length: 36 }).notNull(),
+  inputHash: char("input_hash", { length: 64 }).notNull(),
+  result: json().$type<import('../shared/virtual-team-save').VirtualTeamSaveReceipt>().notNull(),
+  createdAt: timestamp("created_at", { mode: "string", fsp: 3 }).defaultNow().notNull(),
+}, table => [uniqueIndex("uq_virtual_team_save_request").on(table.merchantId, table.requestId)]);
+
 export const setupCompletionReceipts = mysqlTable("setup_completion_receipts", {
 	id: int().autoincrement().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),

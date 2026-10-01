@@ -14,6 +14,14 @@ import type { SariDb } from "./db/connection";
 import { personaPreviewProcedure } from "./routers-persona-preview";
 import { virtualTeamRevision } from "./virtual-team-version";
 import { hasPermission } from "./_core/permissions";
+import {
+  virtualTeamSaveInput,
+  virtualTeamSaveReceiptInput,
+} from "../shared/virtual-team-save";
+import {
+  readVirtualAgentSaveReceipt,
+  saveReviewedVirtualAgent,
+} from "./virtual-team-save";
 
 const expectedRevision = z.string().regex(/^[a-f0-9]{64}$/);
 
@@ -74,6 +82,36 @@ async function writeTeam<T>(
 
 export const virtualAgentsRouter = router({
   preview: personaPreviewProcedure,
+  saveReviewed: permissionProcedure("bot_settings.manage")
+    .input(virtualTeamSaveInput)
+    .mutation(async ({ ctx, input }) => {
+      if (input.merchantId !== ctx.merchantId)
+        throw new TRPCError({ code: "FORBIDDEN" });
+      try {
+        return await saveReviewedVirtualAgent(ctx.user.id, input);
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Unable to confirm virtual team save",
+        });
+      }
+    }),
+  getSaveReceipt: permissionProcedure("bot_settings.manage")
+    .input(virtualTeamSaveReceiptInput)
+    .query(async ({ ctx, input }) => {
+      if (input.merchantId !== ctx.merchantId)
+        throw new TRPCError({ code: "FORBIDDEN" });
+      try {
+        return await readVirtualAgentSaveReceipt(ctx.user.id, input);
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Unable to read virtual team receipt",
+        });
+      }
+    }),
   listReview: merchantProcedure.query(async ({ ctx }) => {
     const pool = await getDb();
     if (!pool)
