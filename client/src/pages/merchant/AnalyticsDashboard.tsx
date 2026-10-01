@@ -1,90 +1,225 @@
-import { useState, useMemo } from "react";
+import {
+  createContext,
+  useContext,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import { useTranslation } from "react-i18next";
+import { Link, useLocation, useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
+import { salesAnalyticsLabels } from "@/lib/sales-analytics-labels";
+import { completeSalesTrend } from "@/lib/sales-analytics-trend";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { QueryStateCard } from "@/components/QueryStateCard";
 import { DashboardSkeleton } from "@/components/DashboardSkeleton";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  TrendingUp,
-  TrendingDown,
-  DollarSign,
-  ShoppingCart,
-  Users,
-  Target,
-  BarChart3,
-  Clock,
-  Calendar,
-  Package,
-  Megaphone,
-  Ticket,
-} from "lucide-react";
-import {
-  LineChart,
-  Line,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from "recharts";
 
-// Date range presets
-// Date range keys mapped to days
-const DATE_RANGE_DAYS = {
-  "7d": 7,
-  "30d": 30,
-  "90d": 90,
-  "1y": 365,
+const periods = { "7d": 7, "30d": 30, "90d": 90, "1y": 365 } as const;
+const tabIds = [
+  "overview",
+  "products",
+  "campaigns",
+  "customers",
+  "time",
+] as const;
+type TabId = (typeof tabIds)[number];
+type Copy = ReturnType<typeof salesAnalyticsLabels>;
+type Query<T> = {
+  data?: T;
+  isLoading: boolean;
+  isFetching: boolean;
+  isError: boolean;
+  refetch: () => Promise<unknown>;
+  error?: unknown;
 };
+const RefreshStore = createContext<() => void>(() => {});
+const fresh = { retry: false, staleTime: 0, refetchOnMount: "always" as const };
 
-// Colors for charts
-const COLORS = [
-  "#3b82f6",
-  "#10b981",
-  "#f59e0b",
-  "#ef4444",
-  "#8b5cf6",
-  "#ec4899",
-];
-
+function Read<T>({
+  query,
+  l,
+  children,
+}: {
+  query: Query<T>;
+  l: Copy;
+  children: (value: T) => ReactNode;
+}) {
+  const refreshStore = useContext(RefreshStore);
+  const currencyChanged =
+    (query.error as { data?: { code?: string } } | null)?.data?.code ===
+    "CONFLICT";
+  if (query.isLoading || query.isFetching)
+    return (
+      <p role="status" aria-busy="true" className="mw-sales-wait">
+        {l.loading}
+      </p>
+    );
+  if (query.isError || query.data === undefined)
+    return (
+      <div role="alert" className="space-y-3">
+        <p>{l.failedHelp}</p>
+        <Button
+          variant="outline"
+          onClick={() =>
+            currencyChanged ? refreshStore() : void query.refetch()
+          }
+        >
+          {l.retry}
+        </Button>
+      </div>
+    );
+  return children(query.data);
+}
+function Panel({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description?: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="mw-panel min-w-0 space-y-4">
+      <div>
+        <h2 className="font-semibold">{title}</h2>
+        {description && (
+          <p className="text-sm text-muted-foreground mt-2 leading-6">
+            {description}
+          </p>
+        )}
+      </div>
+      {children}
+    </section>
+  );
+}
+function DataTable({
+  title,
+  headers,
+  rows,
+  empty,
+}: {
+  title: string;
+  headers: string[];
+  rows: ReactNode[][];
+  empty: string;
+}) {
+  if (!rows.length) return <p className="mw-empty-inline">{empty}</p>;
+  return (
+    <div
+      className="mw-sales-table"
+      role="region"
+      aria-label={title}
+      tabIndex={0}
+    >
+      <table>
+        <caption className="sr-only">{title}</caption>
+        <thead>
+          <tr>
+            {headers.map(h => (
+              <th key={h} scope="col">
+                {h}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((cells, index) => (
+            <tr key={index}>
+              {cells.map((cell, i) =>
+                i === 0 ? (
+                  <th scope="row" key={i}>
+                    {cell}
+                  </th>
+                ) : (
+                  <td key={i}>{cell}</td>
+                )
+              )}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+function Trend({
+  rows,
+  l,
+  money,
+  number,
+}: {
+  rows: Array<{ label: string; orders: number; revenue: number }>;
+  l: Copy;
+  money: (value: number | null) => string;
+  number: (value: number) => string;
+}) {
+  const [measure, setMeasure] = useState<"orders" | "revenue">("orders");
+  const max = Math.max(1, ...rows.map(r => r[measure]));
+  const active = rows.some(r => r.orders > 0);
+  return (
+    <div className="mw-sales-trend">
+      <div className="mw-chart-switch" role="group" aria-label={l.measure}>
+        <button
+          type="button"
+          aria-pressed={measure === "orders"}
+          onClick={() => setMeasure("orders")}
+        >
+          {l.orders}
+        </button>
+        <button
+          type="button"
+          aria-pressed={measure === "revenue"}
+          onClick={() => setMeasure("revenue")}
+        >
+          {l.value}
+        </button>
+      </div>
+      {!active ? (
+        <p className="mw-empty-inline">{l.emptyOrders}</p>
+      ) : (
+        <>
+          <div className="mw-sales-bars" aria-hidden="true">
+            {rows.map((row, i) => (
+              <div
+                key={i}
+                title={
+                  row.label +
+                  ": " +
+                  (measure === "orders"
+                    ? number(row.orders)
+                    : money(row.revenue))
+                }
+              >
+                <span style={{ height: `${(row[measure] / max) * 100}%` }} />
+              </div>
+            ))}
+          </div>
+          <div
+            className="flex justify-between gap-3 text-xs text-muted-foreground"
+            dir="ltr"
+          >
+            <span>{rows[0]?.label}</span>
+            <span>{rows.at(-1)?.label}</span>
+          </div>
+        </>
+      )}
+      <details className="mw-sales-details">
+        <summary>{l.showNumbers}</summary>
+        <DataTable
+          title={l.showNumbers}
+          headers={[l.bucket, l.orders, l.value]}
+          rows={rows.map(r => [r.label, number(r.orders), money(r.revenue)])}
+          empty={l.emptyOrders}
+        />
+      </details>
+    </div>
+  );
+}
 export default function AnalyticsDashboard() {
   const { t } = useTranslation();
-  const query = trpc.merchants.getCurrent.useQuery(undefined, {
-    retry: false,
-    staleTime: 0,
-    refetchOnMount: "always",
-  });
-  if (query.isLoading || query.isFetching) return <DashboardSkeleton />;
+  const query = trpc.merchants.getCurrent.useQuery(undefined, fresh);
+  if (query.isFetching || query.isLoading) return <DashboardSkeleton />;
   if (query.isError || !query.data)
     return (
       <QueryStateCard
@@ -96,972 +231,463 @@ export default function AnalyticsDashboard() {
       />
     );
   return (
-    <AnalyticsContent
-      key={query.data.id + ":" + query.data.currency}
-      merchant={query.data}
-    />
+    <RefreshStore.Provider value={() => void query.refetch()}>
+      <SalesAnalyticsContent
+        key={query.data.id + ":" + query.data.currency}
+        merchant={query.data}
+      />
+    </RefreshStore.Provider>
   );
 }
-function AnalyticsContent({
+function SalesAnalyticsContent({
   merchant,
 }: {
   merchant: { id: number; currency: "SAR" | "USD" };
 }) {
-  const { t, i18n } = useTranslation();
-  const [dateRange, setDateRange] =
-    useState<keyof typeof DATE_RANGE_DAYS>("30d");
-  const [activeTab, setActiveTab] = useState("overview");
-
-  const DATE_RANGES = {
-    "7d": { label: t("analyticsDashboardPage.last7Days"), days: 7 },
-    "30d": { label: t("analyticsDashboardPage.last30Days"), days: 30 },
-    "90d": { label: t("analyticsDashboardPage.last90Days"), days: 90 },
-    "1y": { label: t("analyticsDashboardPage.lastYear"), days: 365 },
+  const { t, i18n } = useTranslation(),
+    l = salesAnalyticsLabels(t, merchant.currency),
+    search = useSearch(),
+    [, navigate] = useLocation();
+  const params = new URLSearchParams(search),
+    requested = params.get("range") ?? "30d";
+  const period: keyof typeof periods = Object.hasOwn(periods, requested)
+    ? (requested as keyof typeof periods)
+    : "30d";
+  const tab: TabId = tabIds.includes(params.get("tab") as TabId)
+    ? (params.get("tab") as TabId)
+    : "overview";
+  const select = (key: "range" | "tab", value: string) => {
+    const next = new URLSearchParams(search);
+    next.set(key, value);
+    navigate("/merchant/analytics?" + next.toString());
   };
-
-  // Calculate date range
+  const [refreshVersion, setRefreshVersion] = useState(0);
   const { startDate, endDate } = useMemo(() => {
     const end = new Date();
-    const start = new Date(
-      end.getTime() - DATE_RANGE_DAYS[dateRange] * 86400000
-    );
     return {
-      startDate: start.toISOString(),
+      startDate: new Date(
+        end.getTime() - periods[period] * 86400000
+      ).toISOString(),
       endDate: end.toISOString(),
     };
-  }, [dateRange]);
-
-  // Fetch analytics data
-  const kpisQuery = trpc.analytics.getDashboardKPIs.useQuery(
-    {
-      currency: merchant.currency,
-      merchantId: merchant?.id || 0,
-      startDate,
-      endDate,
-    },
-    {
-      staleTime: 0,
-      refetchOnMount: "always",
-      retry: false,
-      enabled: !!merchant,
-    }
+  }, [period, refreshVersion]);
+  const scope = {
+    merchantId: merchant.id,
+    currency: merchant.currency,
+    startDate,
+    endDate,
+  };
+  const kpis = trpc.analytics.getDashboardKPIs.useQuery(scope, fresh);
+  const trends = trpc.analytics.getRevenueTrends.useQuery(
+    { ...scope, groupBy: period === "7d" || period === "30d" ? "day" : "week" },
+    { ...fresh, enabled: tab === "overview" }
   );
-
-  const revenueTrendsQuery = trpc.analytics.getRevenueTrends.useQuery(
-    {
-      currency: merchant.currency,
-      merchantId: merchant?.id || 0,
-      startDate,
-      endDate,
-      groupBy:
-        dateRange === "7d" ? "day" : dateRange === "30d" ? "day" : "week",
-    },
-    {
-      staleTime: 0,
-      refetchOnMount: "always",
-      retry: false,
-      enabled: !!merchant,
-    }
+  const products = trpc.analytics.getTopProducts.useQuery(
+    { ...scope, limit: 10 },
+    { ...fresh, enabled: tab === "overview" || tab === "products" }
   );
-
-  const topProductsQuery = trpc.analytics.getTopProducts.useQuery(
-    {
-      currency: merchant.currency,
-      merchantId: merchant?.id || 0,
-      startDate,
-      endDate,
-      limit: 10,
-    },
-    {
-      staleTime: 0,
-      refetchOnMount: "always",
-      retry: false,
-      enabled:
-        !!merchant && (activeTab === "overview" || activeTab === "products"),
-    }
-  );
-
-  const campaignAnalyticsQuery = trpc.analytics.getCampaignAnalytics.useQuery(
-    {
-      merchantId: merchant?.id || 0,
-      startDate,
-      endDate,
-    },
-    {
-      staleTime: 0,
-      refetchOnMount: "always",
-      retry: false,
-      enabled: !!merchant && activeTab === "campaigns",
-    }
-  );
-
-  const customerSegmentsQuery = trpc.analytics.getCustomerSegments.useQuery(
-    {
-      currency: merchant.currency,
-      merchantId: merchant?.id || 0,
-      startDate,
-      endDate,
-    },
-    {
-      staleTime: 0,
-      refetchOnMount: "always",
-      retry: false,
-      enabled:
-        !!merchant && (activeTab === "overview" || activeTab === "customers"),
-    }
-  );
-
-  const hourlyAnalyticsQuery = trpc.analytics.getHourlyAnalytics.useQuery(
-    {
-      currency: merchant.currency,
-      merchantId: merchant?.id || 0,
-      startDate,
-      endDate,
-    },
-    {
-      staleTime: 0,
-      refetchOnMount: "always",
-      retry: false,
-      enabled: !!merchant && activeTab === "time",
-    }
-  );
-
-  const weekdayAnalyticsQuery = trpc.analytics.getWeekdayAnalytics.useQuery(
-    {
-      currency: merchant.currency,
-      merchantId: merchant?.id || 0,
-      startDate,
-      endDate,
-    },
-    {
-      staleTime: 0,
-      refetchOnMount: "always",
-      retry: false,
-      enabled: !!merchant && activeTab === "time",
-    }
-  );
-
-  const discountAnalyticsQuery =
-    trpc.analytics.getDiscountCodeAnalytics.useQuery(
-      {
-        currency: merchant.currency,
-        merchantId: merchant?.id || 0,
-        startDate,
-        endDate,
-      },
-      {
-        staleTime: 0,
-        refetchOnMount: "always",
-        retry: false,
-        enabled: !!merchant && activeTab === "campaigns",
-      }
-    );
-
-  const formatCurrency = (minor: number | null | undefined) =>
-    typeof minor !== "number" || !Number.isFinite(minor)
-      ? t("analyticsEvidenceUx.unavailable")
-      : new Intl.NumberFormat(
-          i18n.language.startsWith("ar") ? "ar-SA" : "en-GB",
-          {
-            style: "currency",
-            currency: merchant.currency === "USD" ? "USD" : "SAR",
-          }
-        ).format(minor / 100);
-  const activeQueries = [
-    kpisQuery,
-    revenueTrendsQuery,
-    ...(["overview", "products"].includes(activeTab) ? [topProductsQuery] : []),
-    ...(["overview", "customers"].includes(activeTab)
-      ? [customerSegmentsQuery]
-      : []),
-    ...(activeTab === "campaigns"
-      ? [campaignAnalyticsQuery, discountAnalyticsQuery]
-      : []),
-    ...(activeTab === "time"
-      ? [hourlyAnalyticsQuery, weekdayAnalyticsQuery]
-      : []),
+  const campaigns = trpc.analytics.getCampaignAnalytics.useQuery(scope, {
+    ...fresh,
+    enabled: tab === "campaigns",
+  });
+  const segments = trpc.analytics.getCustomerSegments.useQuery(scope, {
+    ...fresh,
+    enabled: tab === "overview" || tab === "customers",
+  });
+  const hours = trpc.analytics.getHourlyAnalytics.useQuery(scope, {
+    ...fresh,
+    enabled: tab === "time",
+  });
+  const weekdays = trpc.analytics.getWeekdayAnalytics.useQuery(scope, {
+    ...fresh,
+    enabled: tab === "time",
+  });
+  const discounts = trpc.analytics.getDiscountCodeAnalytics.useQuery(scope, {
+    ...fresh,
+    enabled: tab === "campaigns",
+  });
+  const active = [
+    kpis,
+    ...(tab === "overview"
+      ? [trends, products, segments]
+      : tab === "products"
+        ? [products]
+        : tab === "customers"
+          ? [segments]
+          : tab === "campaigns"
+            ? [campaigns, discounts]
+            : [hours, weekdays]),
   ];
-  if (activeQueries.some(query => query.isLoading || query.isFetching))
-    return <DashboardSkeleton />;
-  if (activeQueries.some(query => query.isError || query.data === undefined))
-    return (
-      <QueryStateCard
-        kind="error"
-        title={t("analyticsEvidenceUx.failed")}
-        description={t("analyticsEvidenceUx.failedHelp")}
-        retryLabel={t("analyticsEvidenceUx.retry")}
-        onRetry={() => {
-          for (const query of activeQueries) void query.refetch();
-        }}
-      />
-    );
-  const kpis = kpisQuery.data;
-  const revenueTrends = revenueTrendsQuery.data ?? [];
-  const topProducts = topProductsQuery.data ?? [];
-  const campaignAnalytics = campaignAnalyticsQuery.data ?? [];
-  const customerSegments = customerSegmentsQuery.data ?? [];
-  const hourlyAnalytics = hourlyAnalyticsQuery.data ?? [];
-  const weekdayAnalytics = weekdayAnalyticsQuery.data ?? [];
-  const discountAnalytics = discountAnalyticsQuery.data ?? [];
-
-  const formatPercent = (value: number | null) => {
-    return value === null || !Number.isFinite(value)
-      ? t("analyticsEvidenceUx.unavailable")
-      : `${value.toFixed(1)}%`;
+  const [refreshing, setRefreshing] = useState(false);
+  const refresh = async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    try {
+      if (Date.now() > Date.parse(endDate)) setRefreshVersion(v => v + 1);
+      else await Promise.allSettled(active.map(q => q.refetch()));
+    } finally {
+      setRefreshing(false);
+    }
   };
-
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString(
-      i18n.language === "ar" ? "ar-SA" : i18n.language,
-      {
-        month: "short",
-        day: "numeric",
-      }
-    );
-  };
-
-  const growth = (value: number | null | undefined) =>
-    value === null || value === undefined ? (
-      <p className="text-xs text-muted-foreground mt-2">
-        {t("analyticsEvidenceUx.noComparison")}
-      </p>
-    ) : (
-      <p
-        className={
-          "text-xs mt-2 " +
-          (value < 0 ? "text-destructive" : "text-muted-foreground")
-        }
-      >
-        {formatPercent(value)} {t("analyticsDashboardPage.vsPreviousPeriod")}
-      </p>
-    );
-
-  return (
-    <div className="container mx-auto py-8 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">
-            {t("analyticsDashboardPage.title")}
-          </h1>
-          <p className="text-muted-foreground">
-            {t("analyticsDashboardPage.subtitle")}
-          </p>
+  const locale = i18n.language.startsWith("ar") ? "ar-SA" : "en-GB";
+  const number = (v: number) =>
+    Number.isFinite(v) ? v.toLocaleString(locale) : l.unavailable;
+  const money = (v: number | null) =>
+    v === null || !Number.isFinite(v)
+      ? l.unavailable
+      : new Intl.NumberFormat(locale, {
+          style: "currency",
+          currency: merchant.currency,
+        }).format(v / 100);
+  const date = (v: string) =>
+    new Intl.DateTimeFormat(locale, {
+      calendar: "gregory",
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      timeZone: "UTC",
+    }).format(new Date(v));
+  const growth = (v: number | null) =>
+    v === null
+      ? l.noComparison
+      : new Intl.NumberFormat(locale, {
+          style: "percent",
+          signDisplay: "exceptZero",
+          maximumFractionDigits: 1,
+        }).format(v / 100) +
+        " " +
+        l.previous;
+  const groupLabels = { new: l.once, returning: l.repeated, vip: l.frequent };
+  const customerCards = (
+    <Read query={segments} l={l}>
+      {data => (
+        <div className="mw-sales-segments">
+          {data.map(row => (
+            <article
+              key={row.segment}
+              className="rounded-xl border p-4 min-w-0"
+            >
+              <h3 className="font-semibold">{groupLabels[row.segment]}</h3>
+              <dl className="mw-sales-facts">
+                <div>
+                  <dt>{l.customers}</dt>
+                  <dd>{number(row.count)}</dd>
+                </div>
+                <div>
+                  <dt>{l.value}</dt>
+                  <dd>{money(row.revenue)}</dd>
+                </div>
+                <div>
+                  <dt>{l.average}</dt>
+                  <dd>{money(row.averageOrderValue)}</dd>
+                </div>
+              </dl>
+            </article>
+          ))}
         </div>
-
-        <Select
-          value={dateRange}
-          onValueChange={value =>
-            setDateRange(value as keyof typeof DATE_RANGES)
-          }
+      )}
+    </Read>
+  );
+  const productTable = (
+    <Read query={products} l={l}>
+      {data => (
+        <DataTable
+          title={l.products}
+          headers={[l.product, l.quantity, l.value, l.unitPrice, l.stock]}
+          rows={data.map(row => [
+            row.productName,
+            number(row.totalSales),
+            money(row.totalRevenue),
+            money(row.averagePrice),
+            row.stockLevel === null ? l.unavailable : number(row.stockLevel),
+          ])}
+          empty={l.emptyProducts}
+        />
+      )}
+    </Read>
+  );
+  return (
+    <div
+      className="mw-sales-analytics min-w-0 space-y-6"
+      dir={i18n.language.startsWith("ar") ? "rtl" : "ltr"}
+    >
+      <header className="mw-page-heading">
+        <div>
+          <p className="mw-eyebrow">{l.eyebrow}</p>
+          <h1>{l.title}</h1>
+          <p>{l.subtitle}</p>
+        </div>
+        <Link href="/merchant/reports" className="mw-link">
+          {l.reports}
+        </Link>
+      </header>
+      <div className="mw-sales-toolbar">
+        <label htmlFor="sales-period">
+          {l.period}
+          <select
+            id="sales-period"
+            value={period}
+            onChange={e => select("range", e.target.value)}
+          >
+            <option value="7d">{l.days7}</option>
+            <option value="30d">{l.days30}</option>
+            <option value="90d">{l.days90}</option>
+            <option value="1y">{l.year}</option>
+          </select>
+        </label>
+        <Button
+          variant="outline"
+          disabled={refreshing || active.some(q => q.isFetching)}
+          onClick={() => void refresh()}
         >
-          <SelectTrigger className="w-[180px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {Object.entries(DATE_RANGES).map(([key, { label }]) => (
-              <SelectItem key={key} value={key}>
-                {label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <section
-        className="mw-panel space-y-2 text-sm"
-        aria-label={t("analyticsEvidenceUx.scopeTitle")}
-      >
+          {l.refresh}
+        </Button>
         <p>
-          {t("analyticsEvidenceUx.orderScope", { currency: merchant.currency })}
+          <time dateTime={startDate}>{date(startDate)}</time> —{" "}
+          <time dateTime={endDate}>{date(endDate)}</time> · UTC ·{" "}
+          {merchant.currency}
         </p>
-        <p className="text-muted-foreground">
-          {t("analyticsEvidenceUx.itemScope")}
-        </p>
-      </section>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">
-              {t("analyticsEvidenceUx.orderValue")}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <strong className="text-2xl">
-              {formatCurrency(kpis?.totalRevenue)}
-            </strong>
-            {growth(kpis?.revenueGrowth)}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">
-              {t("analyticsDashboardPage.totalOrders")}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <strong className="text-2xl">{kpis?.totalOrders}</strong>
-            {growth(kpis?.ordersGrowth)}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">
-              {t("analyticsDashboardPage.avgOrderValue")}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <strong className="text-2xl">
-              {formatCurrency(kpis?.averageOrderValue)}
-            </strong>
-            <p className="text-xs mt-2">
-              {t("analyticsDashboardPage.perOrder")}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">
-              {t("analyticsDashboardPage.conversionRate")}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <strong className="text-2xl">
-              {t("analyticsEvidenceUx.unavailable")}
-            </strong>
-            <p className="text-xs mt-2">
-              {t("analyticsEvidenceUx.conversionScope")}
-            </p>
-            <p className="text-xs mt-2">
-              {kpis?.totalCustomers} {t("analyticsDashboardPage.customer")}
-            </p>
-          </CardContent>
-        </Card>
       </div>
-
-      {/* Tabs */}
-      <Tabs
-        value={activeTab}
-        className="space-y-4"
-        onValueChange={setActiveTab}
-      >
-        <TabsList>
-          <TabsTrigger value="overview">
-            {t("analyticsDashboardPage.tabOverview")}
-          </TabsTrigger>
-          <TabsTrigger value="products">
-            {t("analyticsDashboardPage.tabProducts")}
-          </TabsTrigger>
-          <TabsTrigger value="campaigns">
-            {t("analyticsDashboardPage.tabCampaigns")}
-          </TabsTrigger>
-          <TabsTrigger value="customers">
-            {t("analyticsDashboardPage.tabCustomers")}
-          </TabsTrigger>
-          <TabsTrigger value="time">
-            {t("analyticsDashboardPage.tabTime")}
-          </TabsTrigger>
-        </TabsList>
-
-        {/* Overview Tab */}
-        <TabsContent value="overview" className="space-y-4">
-          {/* Revenue Trends */}
-          <Card>
-            <CardHeader>
-              <CardTitle>{t("analyticsDashboardPage.revenueTrends")}</CardTitle>
-              <CardDescription>
-                {t("analyticsDashboardPage.revenueTrendsDesc")}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={revenueTrends}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" tickFormatter={formatDate} />
-                  <YAxis
-                    yAxisId="left"
-                    tickFormatter={value => formatCurrency(Number(value))}
-                  />
-                  <YAxis yAxisId="right" orientation="right" />
-                  <Tooltip
-                    labelFormatter={formatDate}
-                    formatter={(value: number, name: string) => [
-                      name === "revenue" ? formatCurrency(value) : value,
-                      name === "revenue"
-                        ? t("analyticsEvidenceUx.orderValue")
-                        : t("analyticsDashboardPage.orders"),
-                    ]}
-                  />
-                  <Legend
-                    formatter={value =>
-                      value === "revenue"
-                        ? t("analyticsEvidenceUx.orderValue")
-                        : t("analyticsDashboardPage.orders")
-                    }
-                  />
-                  <Line
-                    yAxisId="left"
-                    type="monotone"
-                    dataKey="revenue"
-                    stroke="#3b82f6"
-                    strokeWidth={2}
-                  />
-                  <Line
-                    yAxisId="right"
-                    type="monotone"
-                    dataKey="orders"
-                    stroke="#10b981"
-                    strokeWidth={2}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          {/* Customer Segments */}
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>
-                  {t("analyticsDashboardPage.customerSegments")}
-                </CardTitle>
-                <CardDescription>
-                  {t("analyticsDashboardPage.customerSegmentsDesc")}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={250}>
-                  <PieChart>
-                    <Pie
-                      data={customerSegments}
-                      dataKey="count"
-                      nameKey="segment"
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={80}
-                      label={entry => {
-                        const labels = {
-                          new: t("analyticsDashboardPage.segmentNew"),
-                          returning: t(
-                            "analyticsDashboardPage.segmentReturning"
-                          ),
-                          vip: t("analyticsDashboardPage.segmentVIP"),
-                        };
-                        return `${labels[entry.segment as keyof typeof labels]}: ${entry.count}`;
-                      }}
-                    >
-                      {customerSegments.map((entry, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={COLORS[index % COLORS.length]}
-                        />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>
-                  {t("analyticsDashboardPage.segmentStats")}
-                </CardTitle>
-                <CardDescription>
-                  {t("analyticsDashboardPage.segmentStatsDesc")}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {customerSegments.map((segment, index) => {
-                    const labels = {
-                      new: t("analyticsDashboardPage.newCustomers"),
-                      returning: t("analyticsDashboardPage.returningCustomers"),
-                      vip: t("analyticsDashboardPage.vipCustomers"),
-                    };
-                    return (
-                      <div
-                        key={segment.segment}
-                        className="flex items-center justify-between"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div
-                            className="w-3 h-3 rounded-full"
-                            style={{
-                              backgroundColor: COLORS[index % COLORS.length],
-                            }}
-                          />
-                          <div>
-                            <p className="font-medium">
-                              {labels[segment.segment as keyof typeof labels]}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              {segment.count}{" "}
-                              {t("analyticsDashboardPage.customer")}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="text-left">
-                          <p className="font-medium">
-                            {formatCurrency(segment.revenue)}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            {formatCurrency(segment.averageOrderValue)}{" "}
-                            {t("analyticsDashboardPage.average")}
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
+      <p className="text-sm text-muted-foreground leading-6">{l.scope}</p>
+      <Read query={kpis} l={l}>
+        {data => (
+          <div className="mw-metrics">
+            {[
+              {
+                title: l.value,
+                value: money(data.totalRevenue),
+                note: growth(data.revenueGrowth),
+              },
+              {
+                title: l.orders,
+                value: number(data.totalOrders),
+                note: growth(data.ordersGrowth),
+              },
+              {
+                title: l.average,
+                value: money(data.averageOrderValue),
+                note: l.perOrder,
+              },
+              {
+                title: l.buyers,
+                value: number(data.totalCustomers),
+                note: l.buyersScope,
+              },
+            ].map(row => (
+              <article className="mw-panel mw-metric" key={row.title}>
+                <h2 className="text-sm font-medium">{row.title}</h2>
+                <strong>{row.value}</strong>
+                <p className="text-xs text-muted-foreground leading-6">
+                  {row.note}
+                </p>
+              </article>
+            ))}
           </div>
-        </TabsContent>
-
-        {/* Products Tab */}
-        <TabsContent value="products" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Package className="h-5 w-5" />
-                {t("analyticsDashboardPage.topProducts")}
-              </CardTitle>
-              <CardDescription>
-                {t("analyticsDashboardPage.topProductsDesc")}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {topProducts.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>{t("analyticsDashboardPage.noSalesData")}</p>
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>
-                        {t("analyticsDashboardPage.product")}
-                      </TableHead>
-                      <TableHead>{t("analyticsDashboardPage.sales")}</TableHead>
-                      <TableHead>
-                        {t("analyticsEvidenceUx.orderValue")}
-                      </TableHead>
-                      <TableHead>
-                        {t("analyticsDashboardPage.avgPrice")}
-                      </TableHead>
-                      <TableHead>{t("analyticsDashboardPage.stock")}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {topProducts.map((product, index) => (
-                      <TableRow key={product.productId}>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline">#{index + 1}</Badge>
-                            <span className="font-medium">
-                              {product.productName}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell>{product.totalSales}</TableCell>
-                        <TableCell className="font-medium">
-                          {formatCurrency(product.totalRevenue)}
-                        </TableCell>
-                        <TableCell>
-                          {formatCurrency(product.averagePrice)}
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={
-                              product.stockLevel === null
-                                ? "secondary"
-                                : product.stockLevel > 10
-                                  ? "default"
-                                  : "destructive"
-                            }
-                          >
-                            {product.stockLevel ??
-                              t("analyticsEvidenceUx.unavailable")}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+        )}
+      </Read>
+      <Tabs
+        value={tab}
+        onValueChange={value => select("tab", value)}
+        dir={i18n.language.startsWith("ar") ? "rtl" : "ltr"}
+      >
+        <TabsList className="mw-sales-tabs" aria-label={l.sections}>
+          {tabIds.map(id => (
+            <TabsTrigger key={id} value={id}>
+              {
+                {
+                  overview: l.overview,
+                  products: l.products,
+                  campaigns: l.campaigns,
+                  customers: l.customers,
+                  time: l.time,
+                }[id]
+              }
+            </TabsTrigger>
+          ))}
+        </TabsList>
+        <TabsContent value="overview" className="space-y-5">
+          <Panel
+            title={l.trend}
+            description={
+              period === "7d" || period === "30d" ? l.daily : l.weekly
+            }
+          >
+            <Read query={trends} l={l}>
+              {data => (
+                <Trend
+                  rows={completeSalesTrend(
+                    data,
+                    startDate,
+                    endDate,
+                    period === "7d" || period === "30d" ? "day" : "week"
+                  ).map(row => ({
+                    ...row,
+                    label: date(row.date + "T00:00:00Z"),
+                  }))}
+                  l={l}
+                  money={money}
+                  number={number}
+                />
               )}
-            </CardContent>
-          </Card>
+            </Read>
+          </Panel>
+          <Panel title={l.products} description={l.productScope}>
+            {productTable}
+          </Panel>
+          <Panel title={l.customerGroups} description={l.groupScope}>
+            {customerCards}
+          </Panel>
         </TabsContent>
-
-        {/* Campaigns Tab */}
-        <TabsContent value="campaigns" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Megaphone className="h-5 w-5" />
-                {t("analyticsDashboardPage.campaignPerformance")}
-              </CardTitle>
-              <CardDescription>
-                {t("analyticsEvidenceUx.campaignScope")}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {campaignAnalytics.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Megaphone className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>{t("analyticsDashboardPage.noCampaigns")}</p>
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>
-                        {t("analyticsDashboardPage.campaign")}
-                      </TableHead>
-                      <TableHead>{t("analyticsDashboardPage.sent")}</TableHead>
-                      <TableHead>
-                        {t("analyticsDashboardPage.openRate")}
-                      </TableHead>
-                      <TableHead>
-                        {t("analyticsDashboardPage.clickRate")}
-                      </TableHead>
-                      <TableHead>
-                        {t("analyticsDashboardPage.conversionRateCol")}
-                      </TableHead>
-                      <TableHead>
-                        {t("analyticsEvidenceUx.orderValue")}
-                      </TableHead>
-                      <TableHead>ROI</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {campaignAnalytics.map(campaign => (
-                      <TableRow key={campaign.campaignId}>
-                        <TableCell className="font-medium">
-                          {campaign.campaignName}
-                        </TableCell>
-                        <TableCell>
-                          {campaign.sentCount ??
-                            t("analyticsEvidenceUx.unavailable")}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">
-                            {formatPercent(campaign.openRate)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">
-                            {formatPercent(campaign.clickRate)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">
-                            {formatPercent(campaign.conversionRate)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          {campaign.revenue === null
-                            ? t("analyticsEvidenceUx.unavailable")
-                            : formatCurrency(campaign.revenue)}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">
-                            {formatPercent(campaign.roi)}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
+        <TabsContent value="products">
+          <Panel title={l.products} description={l.productScope}>
+            {productTable}
+            <Link href="/merchant/products" className="mw-link">
+              {l.catalog}
+            </Link>
+          </Panel>
+        </TabsContent>
+        <TabsContent value="campaigns" className="space-y-5">
+          <Panel title={l.campaigns} description={l.campaignScope}>
+            <Read query={campaigns} l={l}>
+              {data =>
+                data.length ? (
+                  <div className="grid gap-3">
+                    {data.map(row => (
+                      <article
+                        className="rounded-xl border p-4 space-y-3"
+                        key={row.campaignId}
+                      >
+                        <h3 className="font-semibold break-words">
+                          {row.campaignName}
+                        </h3>
+                        <p>
+                          {l.sent}:{" "}
+                          <strong>
+                            {row.sentCount === null
+                              ? l.unavailable
+                              : number(row.sentCount)}
+                          </strong>
+                        </p>
+                        <details className="mw-sales-details">
+                          <summary>{l.attribution}</summary>
+                          <dl className="mw-sales-facts">
+                            {[
+                              l.opens,
+                              l.clicks,
+                              l.conversion,
+                              l.value,
+                              l.roi,
+                            ].map(label => (
+                              <div key={label}>
+                                <dt>{label}</dt>
+                                <dd>{l.unavailable}</dd>
+                              </div>
+                            ))}
+                          </dl>
+                        </details>
+                      </article>
                     ))}
-                  </TableBody>
-                </Table>
+                  </div>
+                ) : (
+                  <p className="mw-empty-inline">{l.emptyCampaigns}</p>
+                )
+              }
+            </Read>
+            <Link href="/merchant/campaigns" className="mw-link">
+              {l.manageCampaigns}
+            </Link>
+          </Panel>
+          <Panel title={l.discounts} description={l.discountScope}>
+            <Read query={discounts} l={l}>
+              {data => (
+                <DataTable
+                  title={l.discounts}
+                  headers={[
+                    l.code,
+                    l.type,
+                    l.discountValue,
+                    l.uses,
+                    l.value,
+                    l.average,
+                  ]}
+                  rows={data.map(row => [
+                    row.code,
+                    row.type === "percentage" ? l.percentage : l.fixed,
+                    row.type === "percentage"
+                      ? number(row.value) + "%"
+                      : money(row.value * 100),
+                    number(row.usageCount),
+                    money(row.revenue),
+                    money(row.averageOrderValue),
+                  ])}
+                  empty={l.emptyDiscounts}
+                />
               )}
-            </CardContent>
-          </Card>
-
-          {/* Discount Codes */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Ticket className="h-5 w-5" />
-                {t("analyticsDashboardPage.discountCodes")}
-              </CardTitle>
-              <CardDescription>
-                {t("analyticsDashboardPage.discountCodesDesc")}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {discountAnalytics.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Ticket className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>{t("analyticsDashboardPage.noDiscounts")}</p>
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{t("analyticsDashboardPage.code")}</TableHead>
-                      <TableHead>{t("analyticsDashboardPage.type")}</TableHead>
-                      <TableHead>{t("analyticsDashboardPage.value")}</TableHead>
-                      <TableHead>
-                        {t("analyticsDashboardPage.usages")}
-                      </TableHead>
-                      <TableHead>
-                        {t("analyticsEvidenceUx.orderValue")}
-                      </TableHead>
-                      <TableHead>
-                        {t("analyticsDashboardPage.avgOrder")}
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {discountAnalytics.map(discount => (
-                      <TableRow key={discount.code}>
-                        <TableCell>
-                          <code className="bg-muted px-2 py-1 rounded text-sm">
-                            {discount.code}
-                          </code>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">
-                            {discount.type === "percentage"
-                              ? t("analyticsDashboardPage.percentage")
-                              : t("analyticsDashboardPage.fixedAmount")}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {discount.type === "percentage"
-                            ? `${discount.value}%`
-                            : formatCurrency(discount.value * 100)}
-                        </TableCell>
-                        <TableCell>{discount.usageCount}</TableCell>
-                        <TableCell className="font-medium">
-                          {formatCurrency(discount.revenue)}
-                        </TableCell>
-                        <TableCell>
-                          {formatCurrency(discount.averageOrderValue)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+            </Read>
+          </Panel>
+        </TabsContent>
+        <TabsContent value="customers">
+          <Panel title={l.customerGroups} description={l.groupScope}>
+            {customerCards}
+            <Link href="/merchant/customers" className="mw-link">
+              {l.manageCustomers}
+            </Link>
+          </Panel>
+        </TabsContent>
+        <TabsContent value="time" className="space-y-5">
+          <Panel title={l.hourly} description={l.timeScope}>
+            <Read query={hours} l={l}>
+              {data => (
+                <Trend
+                  rows={data.map(row => ({
+                    ...row,
+                    label: String(row.hour).padStart(2, "0") + ":00",
+                  }))}
+                  l={l}
+                  money={money}
+                  number={number}
+                />
               )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Customers Tab */}
-        <TabsContent value="customers" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                {t("analyticsDashboardPage.customerAnalysis")}
-              </CardTitle>
-              <CardDescription>
-                {t("analyticsDashboardPage.customerAnalysisDesc")}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-3">
-                {customerSegments.map((segment, index) => {
-                  const labels = {
-                    new: t("analyticsDashboardPage.newCustomers"),
-                    returning: t("analyticsDashboardPage.returningCustomers"),
-                    vip: t("analyticsDashboardPage.vipCustomers"),
-                  };
-                  const descriptions = {
-                    new: t("analyticsDashboardPage.newCustomerDesc"),
-                    returning: t(
-                      "analyticsDashboardPage.returningCustomerDesc"
-                    ),
-                    vip: t("analyticsDashboardPage.vipCustomerDesc"),
-                  };
-                  return (
-                    <Card key={segment.segment} className="border-2">
-                      <CardHeader className="pb-3">
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="w-3 h-3 rounded-full"
-                            style={{
-                              backgroundColor: COLORS[index % COLORS.length],
-                            }}
-                          />
-                          <CardTitle className="text-lg">
-                            {labels[segment.segment as keyof typeof labels]}
-                          </CardTitle>
-                        </div>
-                        <CardDescription>
-                          {
-                            descriptions[
-                              segment.segment as keyof typeof descriptions
-                            ]
-                          }
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-2">
-                        <div className="flex justify-between">
-                          <span className="text-sm text-muted-foreground">
-                            {t("analyticsDashboardPage.customerCount")}
-                          </span>
-                          <span className="font-bold">{segment.count}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm text-muted-foreground">
-                            {t("analyticsEvidenceUx.orderValue")}
-                          </span>
-                          <span className="font-bold">
-                            {formatCurrency(segment.revenue)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm text-muted-foreground">
-                            {t("analyticsDashboardPage.avgOrderLabel")}
-                          </span>
-                          <span className="font-bold">
-                            {formatCurrency(segment.averageOrderValue)}
-                          </span>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Time Tab */}
-        <TabsContent value="time" className="space-y-4">
-          {/* Hourly Analytics */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5" />
-                {t("analyticsDashboardPage.hourlyAnalysis")}
-              </CardTitle>
-              <CardDescription>
-                {t("analyticsDashboardPage.hourlyAnalysisDesc")}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={hourlyAnalytics}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="hour" tickFormatter={hour => `${hour}:00`} />
-                  <YAxis
-                    yAxisId="value"
-                    tickFormatter={value => formatCurrency(Number(value))}
-                  />
-                  <YAxis yAxisId="orders" orientation="right" />
-                  <Tooltip
-                    labelFormatter={hour =>
-                      `${t("analyticsDashboardPage.hour")} ${hour}:00`
-                    }
-                    formatter={(value: number, name: string) => [
-                      name === "revenue" ? formatCurrency(value) : value,
-                      name === "revenue"
-                        ? t("analyticsEvidenceUx.orderValue")
-                        : t("analyticsDashboardPage.orders"),
-                    ]}
-                  />
-                  <Legend
-                    formatter={value =>
-                      value === "revenue"
-                        ? t("analyticsEvidenceUx.orderValue")
-                        : t("analyticsDashboardPage.orders")
-                    }
-                  />
-                  <Bar yAxisId="value" dataKey="revenue" fill="#3b82f6" />
-                  <Bar yAxisId="orders" dataKey="orders" fill="#10b981" />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          {/* Weekday Analytics */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
-                {t("analyticsDashboardPage.weekdayAnalysis")}
-              </CardTitle>
-              <CardDescription>
-                {t("analyticsDashboardPage.weekdayAnalysisDesc")}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={weekdayAnalytics}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="day" />
-                  <YAxis
-                    yAxisId="value"
-                    tickFormatter={value => formatCurrency(Number(value))}
-                  />
-                  <YAxis yAxisId="orders" orientation="right" />
-                  <Tooltip
-                    formatter={(value: number, name: string) => [
-                      name === "revenue" ? formatCurrency(value) : value,
-                      name === "revenue"
-                        ? t("analyticsEvidenceUx.orderValue")
-                        : t("analyticsDashboardPage.orders"),
-                    ]}
-                  />
-                  <Legend
-                    formatter={value =>
-                      value === "revenue"
-                        ? t("analyticsEvidenceUx.orderValue")
-                        : t("analyticsDashboardPage.orders")
-                    }
-                  />
-                  <Bar yAxisId="value" dataKey="revenue" fill="#3b82f6" />
-                  <Bar yAxisId="orders" dataKey="orders" fill="#10b981" />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          {/* Insights */}
-          <Card className="border-primary/30 bg-primary/10/50">
-            <CardHeader>
-              <CardTitle className="text-primary">
-                {t("analyticsDashboardPage.insightsTitle")}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 text-primary">
-              <div className="flex items-start gap-2">
-                <span className="text-primary font-bold">•</span>
-                <p className="text-sm">
-                  <strong>
-                    {t("analyticsDashboardPage.insightCampaignTiming")}
-                  </strong>{" "}
-                  {t("analyticsDashboardPage.insightCampaignTimingDesc")}
-                </p>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="text-primary font-bold">•</span>
-                <p className="text-sm">
-                  <strong>
-                    {t("analyticsDashboardPage.insightTargetVIP")}
-                  </strong>{" "}
-                  {t("analyticsDashboardPage.insightTargetVIPDesc")}
-                </p>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="text-primary font-bold">•</span>
-                <p className="text-sm">
-                  <strong>
-                    {t("analyticsDashboardPage.insightOptimizeStock")}
-                  </strong>{" "}
-                  {t("analyticsDashboardPage.insightOptimizeStockDesc")}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+            </Read>
+          </Panel>
+          <Panel title={l.weekdays} description={l.timeScope}>
+            <Read query={weekdays} l={l}>
+              {data => (
+                <Trend
+                  rows={data.map(row => ({
+                    ...row,
+                    label: new Intl.DateTimeFormat(locale, {
+                      weekday: "long",
+                      timeZone: "UTC",
+                    }).format(new Date(Date.UTC(2024, 0, 7 + row.dayNumber))),
+                  }))}
+                  l={l}
+                  money={money}
+                  number={number}
+                />
+              )}
+            </Read>
+          </Panel>
+          <details className="mw-panel mw-sales-details">
+            <summary>{l.timingAdvice}</summary>
+            <p className="text-sm leading-7">{l.advice}</p>
+          </details>
         </TabsContent>
       </Tabs>
+      <details className="mw-panel mw-sales-details">
+        <summary>{l.limits}</summary>
+        <div className="space-y-3 text-sm leading-7">
+          <p>{l.fullScope}</p>
+          <p>{l.conversionScope}</p>
+          <p>{l.independentReads}</p>
+          <Link href="/merchant/sari-brain?view=sales" className="mw-link">
+            {l.salesEvidence}
+          </Link>
+          <Link href="/merchant/analytics-hub" className="mw-link">
+            {l.hub}
+          </Link>
+        </div>
+      </details>
     </div>
   );
 }

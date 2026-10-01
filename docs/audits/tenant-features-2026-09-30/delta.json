@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-01T09:02:04.148Z",
+  "generatedAt": "2026-10-01T09:20:19.706Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 339,
-      "controls": 2201
+      "files": 341,
+      "controls": 2210
     }
   },
   "addedFiles": [
@@ -70,6 +70,8 @@
     "client/src/components/merchant/WorkspaceState.tsx",
     "client/src/_core/hooks/useAuth.ts",
     "client/src/lib/assistant-draft-cache.ts",
+    "client/src/lib/sales-analytics-labels.ts",
+    "client/src/lib/sales-analytics-trend.ts",
     "client/src/components/merchant/MessageWorkspace.tsx",
     "client/src/lib/message-labels.ts",
     "client/src/lib/message-export.ts",
@@ -682,7 +684,7 @@
     {
       "route": "/merchant/analytics",
       "controlsBefore": 7,
-      "controlsNow": 7,
+      "controlsNow": 16,
       "removedQueries": [],
       "addedQueries": [],
       "removedMutations": [],
