@@ -1,0 +1,21 @@
+import {beforeEach,describe,it,expect,vi} from 'vitest';
+import {serviceDetailsSchema,serviceBookingDate} from '../shared/service-details-workspace';
+const m=vi.hoisted(()=>({access:vi.fn(),read:vi.fn()}));
+vi.mock('./accounts/merchant-access',()=>({resolveMerchantAccess:m.access}));
+vi.mock('./service-catalog-workspace',async original=>({...await original<typeof import('./service-catalog-workspace')>(),readServiceDetails:m.read}));
+import {servicesRouter} from './routers-services';
+import {CatalogRecordMissingError,CatalogWorkspaceUnavailableError} from './service-catalog-workspace';
+const caller=(user:any={id:5,role:'user'})=>servicesRouter.createCaller({user,merchantId:99,merchantRole:'owner',req:{headers:{'x-merchant-id':'20'}},res:{}} as any);
+beforeEach(()=>{vi.resetAllMocks();m.access.mockResolvedValue({merchantId:20,role:'viewer'});m.read.mockResolvedValue({actorId:5,merchantId:20,canManage:false});});
+describe('service details scope and evidence',()=>{
+ it('uses authenticated membership instead of forged context for read-only users',async()=>{expect(await caller().detailsWorkspace({serviceId:1})).toMatchObject({merchantId:20,canManage:false});expect(m.read).toHaveBeenCalledExactlyOnceWith(5,20,{serviceId:1});});
+ it('derives manager authority from membership',async()=>{m.access.mockResolvedValue({merchantId:20,role:'manager'});expect(await caller().detailsWorkspace({serviceId:1})).toMatchObject({canManage:true});});
+ it('denies anonymous and non-member requests before querying data',async()=>{await expect(caller(null).detailsWorkspace({serviceId:1})).rejects.toMatchObject({code:'UNAUTHORIZED'});m.access.mockResolvedValue(null);await expect(caller().detailsWorkspace({serviceId:1})).rejects.toMatchObject({code:'FORBIDDEN'});expect(m.read).not.toHaveBeenCalled();});
+ it.each([0,-1,1.5,2147483648])('rejects invalid service identity %s',async serviceId=>{await expect(caller().detailsWorkspace({serviceId})).rejects.toMatchObject({code:'BAD_REQUEST'});expect(m.read).not.toHaveBeenCalled();});
+ it('rejects merchant identity supplied in input',async()=>{await expect(caller().detailsWorkspace({serviceId:1,merchantId:99} as any)).rejects.toMatchObject({code:'BAD_REQUEST'});});
+ it('distinguishes missing records and sanitized storage failures',async()=>{m.read.mockRejectedValue(new CatalogRecordMissingError());await expect(caller().detailsWorkspace({serviceId:1})).rejects.toMatchObject({code:'NOT_FOUND'});m.read.mockRejectedValue(new CatalogWorkspaceUnavailableError());await expect(caller().detailsWorkspace({serviceId:1})).rejects.toMatchObject({code:'SERVICE_UNAVAILABLE',message:'Catalog workspace unavailable'});});
+ it('validates real calendar days without timezone conversion',()=>{expect(serviceBookingDate.safeParse('2024-02-29').success).toBe(true);for(const value of ['2025-02-29','2026-02-30','0000-00-00','2026-10-02T01:00Z'])expect(serviceBookingDate.safeParse(value).success).toBe(false);});
+ const base=()=>({actorId:5,merchantId:20,canManage:true,checkedAt:'2026-10-02T00:00:00.000Z',selection:{serviceId:1},service:{entity:'service',id:1,definition:'a'.repeat(64),issues:[],unavailableReferences:0,fields:{name:'Service',description:null,isActive:true,category:null,categoryId:null,priceType:'fixed',basePrice:0,minPrice:null,maxPrice:null,durationMinutes:60,bufferTimeMinutes:0,requiresAppointment:true,maxBookingsPerDay:null,advanceBookingDays:0,staffIds:[],displayOrder:0}},bookings:{total:0,counts:{pending:0,confirmed:0,in_progress:0,completed:0,cancelled:0,no_show:0,unknown:0},paidValue:{minor:0,eligible:0,invalid:0}},recent:[],ratings:{total:0,excluded:0,distribution:{one:0,two:0,three:0,four:0,five:0}}});
+ it('accepts true empty data without invented rating or conversion metrics',()=>{expect(serviceDetailsSchema.safeParse(base()).success).toBe(true);});
+ it.each(['identity','counts','recent','rating','amount','eligible'])('rejects inconsistent %s evidence',key=>{const value=base();if(key==='identity')value.selection.serviceId=2;if(key==='counts')value.bookings.total=1;if(key==='recent')(value.recent as any[]).push({id:1});if(key==='rating')value.ratings.total=1;if(key==='amount')value.bookings.paidValue.minor=1;if(key==='eligible')value.bookings.paidValue.eligible=1;expect(serviceDetailsSchema.safeParse(value).success).toBe(false);});
+});

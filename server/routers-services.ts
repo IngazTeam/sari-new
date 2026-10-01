@@ -1,6 +1,7 @@
 import {serviceCatalogCreateService,serviceCatalogUpdateService,serviceCatalogDefinition} from '../shared/service-catalog-write';
 import {catalogListInput,catalogRecordInput,catalogEditorInput,catalogChoicesInput} from '../shared/service-catalog-workspace';
-import {readCatalogWorkspace,readCatalogRecord,readCatalogEditor,readCatalogChoices,CatalogRecordMissingError,CatalogWorkspaceUnavailableError} from './service-catalog-workspace';
+import {readCatalogWorkspace,readCatalogRecord,readCatalogEditor,readCatalogChoices,readServiceDetails,CatalogRecordMissingError,CatalogWorkspaceUnavailableError} from './service-catalog-workspace';
+import {serviceDetailsInput} from '../shared/service-details-workspace';
 import {hasPermission} from './_core/permissions';
 /**
  * Services Router Module
@@ -26,6 +27,9 @@ import {
 import {assertServiceReferences,serviceReferenceId} from './service-reference-access';
 
 export const servicesRouter = router({
+    detailsWorkspace: merchantProcedure.input(serviceDetailsInput).query(async ({ctx,input})=>{
+        try{return {...await readServiceDetails(ctx.user.id,ctx.merchantId,input),canManage:hasPermission(ctx.merchantRole,'products.manage')};}catch(error){catalogReadError(error);}
+    }),
     catalogEditor: merchantProcedure.input(catalogEditorInput).query(async ({ctx,input})=>{
         try{return {...await readCatalogEditor(ctx.user.id,ctx.merchantId,input),canManage:hasPermission(ctx.merchantRole,'products.manage')};}catch(error){catalogReadError(error);}
     }),

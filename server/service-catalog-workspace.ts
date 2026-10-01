@@ -4,6 +4,7 @@ import {getDb} from './db/connection';
 import {serviceCatalogColumns,serviceCatalogTables,serviceCatalogDefinitionKey,type ServiceCatalogEntity} from './service-catalog-write';
 import {serviceCatalogId,serviceCatalogIds,normalizeCatalogService,normalizeCatalogCategory,normalizeCatalogPackage} from '../shared/service-catalog-write';
 import {catalogListInput,catalogRecordInput,catalogEditorInput,catalogChoicesInput,catalogWorkspaceSchema,catalogEditorSchema,catalogEditorContextSchema,catalogChoicesSchema,catalogRecordSchema,catalogPageSize,type CatalogRecord} from '../shared/service-catalog-workspace';
+import {serviceDetailsInput,serviceDetailsSchema,serviceBookingStatus,serviceBookingDate,serviceBookingTime} from '../shared/service-details-workspace';
 
 export class CatalogWorkspaceUnavailableError extends Error{constructor(){super('Catalog workspace unavailable');}}
 export class CatalogRecordMissingError extends Error{constructor(){super('Catalog record not found');}}
@@ -73,4 +74,28 @@ export async function readCatalogEditor(actorId:number,merchantId:number,input:u
  const selection=catalogEditorInput.parse(input);
  if(selection.id!==undefined){const data=await readCatalogRecord(actorId,merchantId,selection,now);return catalogEditorContextSchema.parse(data);}
  return snapshot(actorId,merchantId,now,async(_read,scope)=>catalogEditorContextSchema.parse({...scope,selection,record:null}));
+}
+
+/** Service definition, aggregates and recent bookings share one read-only RR snapshot. */
+export async function readServiceDetails(actorId:number,merchantId:number,input:unknown,now=new Date()){
+ const selection=serviceDetailsInput.parse(input),id=selection.serviceId;
+ return snapshot(actorId,merchantId,now,async(read,scope)=>{
+  const source=await read(sql`SELECT ${projection('service')} FROM services WHERE id=${id} AND merchant_id=${merchantId}`);
+  if(!source.length)throw new CatalogRecordMissingError();
+  const service=(await records(read,'service',merchantId,source))[0];
+  const counts={pending:0,confirmed:0,in_progress:0,completed:0,cancelled:0,no_show:0,unknown:0};
+  for(const row of await read(sql`SELECT status,COUNT(*) AS count FROM bookings WHERE merchant_id=${merchantId} AND service_id=${id} GROUP BY status`)){
+   const status=serviceBookingStatus.safeParse(row.status);counts[status.success?status.data:'unknown']+=integer(row.count);
+  }
+  const paid=one(await read(sql`SELECT COUNT(*) AS eligible,COALESCE(SUM(CASE WHEN final_price IS NULL OR final_price<0 THEN 1 ELSE 0 END),0) AS invalid,COALESCE(SUM(CASE WHEN final_price>=0 THEN final_price ELSE 0 END),0) AS amount FROM bookings WHERE merchant_id=${merchantId} AND service_id=${id} AND status='completed' AND payment_status='paid'`));
+  const invalid=integer(paid.invalid),total=Object.values(counts).reduce((a,n)=>a+n,0);
+  const recentSource=await read(sql`SELECT id,customer_name AS customerName,customer_phone AS customerPhone,DATE_FORMAT(booking_date,'%Y-%m-%d') AS date,start_time AS startTime,end_time AS endTime,duration_minutes AS durationMinutes,status,payment_status AS paymentStatus,final_price AS finalPrice FROM bookings WHERE merchant_id=${merchantId} AND service_id=${id} ORDER BY booking_date DESC,id DESC LIMIT 10`);
+  const nullable=<T>(schema:z.ZodType<T>,value:unknown):T|null=>{const checked=schema.safeParse(value);return checked.success?checked.data:null;};
+  const recent=recentSource.map(row=>({...row,id:integer(row.id),date:nullable(serviceBookingDate,row.date),startTime:nullable(serviceBookingTime,row.startTime),endTime:nullable(serviceBookingTime,row.endTime),durationMinutes:nullable(z.number().int().min(1).max(1439),row.durationMinutes),status:nullable(serviceBookingStatus,row.status)??'unknown',paymentStatus:nullable(z.enum(['unpaid','paid','refunded']),row.paymentStatus)??'unknown',finalPrice:nullable(z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),row.finalPrice)}));
+  // Invalid public ratings are counted, but foreign/private ratings and raw review content are not returned.
+  const ratingRows=await read(sql`SELECT CASE WHEN b.id IS NOT NULL AND r.overall_rating BETWEEN 1 AND 5 THEN r.overall_rating ELSE 0 END AS rating,COUNT(*) AS count FROM booking_reviews r LEFT JOIN bookings b ON b.id=r.booking_id AND b.merchant_id=${merchantId} AND b.service_id=${id} WHERE r.merchant_id=${merchantId} AND r.service_id=${id} AND r.is_public=1 GROUP BY rating`);
+  const distribution={one:0,two:0,three:0,four:0,five:0},keys=['one','two','three','four','five'] as const;let excluded=0;
+  for(const row of ratingRows){const count=integer(row.count),rating=Number(row.rating);if(Number.isInteger(rating)&&rating>=1&&rating<=5)distribution[keys[rating-1]]+=count;else excluded+=count;}
+  return serviceDetailsSchema.parse({...scope,selection,service,bookings:{total,counts,paidValue:{minor:invalid?null:integer(paid.amount),eligible:integer(paid.eligible),invalid}},recent,ratings:{total:Object.values(distribution).reduce((a,n)=>a+n,0),excluded,distribution}});
+ });
 }
