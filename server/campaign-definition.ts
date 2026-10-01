@@ -9,7 +9,7 @@ export type CampaignDefinition = {
   scheduledAt: string | Date | null;
 };
 
-/** Internal optimistic admission identity, never a client authorization token.
+/** Optimistic content identity for admission and review, never an authorization token.
  * Comparing content also catches two edits within a timestamp's one-second precision.
  */
 export function campaignDefinitionKey(campaign: CampaignDefinition): string {

@@ -1,6 +1,8 @@
 import { campaignListInput } from '../shared/campaign-workspace';
 import { campaignPerformanceInput } from '../shared/campaign-performance';
 import { campaignReportInput,campaignReportExportInput } from '../shared/campaign-report';
+import { campaignDetailsInput } from '../shared/campaign-details';
+import { readCampaignDetails,CampaignDetailsMissingError,CampaignDetailsUnavailableError } from './campaign-details';
 import { readCampaignReport,readCampaignReportExport,CampaignReportMissingError,CampaignReportUnavailableError,CampaignReportExportLimitError } from './campaign-report';
 import { hasPermission } from './_core/permissions';
 import { readCampaignWorkspace, readCampaignStatistics, readCampaignPerformance, CampaignWorkspaceUnavailableError } from './campaign-workspace';
@@ -83,6 +85,10 @@ const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
 });
 
 export const campaignsRouter = router({
+    detailsWorkspace: permissionProcedure('analytics.read').input(campaignDetailsInput).query(async ({ctx,input})=>{
+        try{return {...await readCampaignDetails(ctx.user.id,ctx.merchantId,input),canManage:hasPermission(ctx.merchantRole,'campaigns.manage')};}
+        catch(error){if(error instanceof CampaignDetailsMissingError)throw new TRPCError({code:'NOT_FOUND',message:'Campaign not found'});if(error instanceof CampaignDetailsUnavailableError)throw new TRPCError({code:'SERVICE_UNAVAILABLE',message:'Campaign details unavailable'});throw error;}
+    }),
     reportExport: permissionProcedure('analytics.read').input(campaignReportExportInput).query(async ({ctx,input})=>{
         try{return {...await readCampaignReportExport(ctx.user.id,ctx.merchantId,input),canManage:hasPermission(ctx.merchantRole,'campaigns.manage')};}
         catch(error){if(error instanceof CampaignReportMissingError)throw new TRPCError({code:'NOT_FOUND',message:'تقرير الحملة غير متاح.'});if(error instanceof CampaignReportExportLimitError)throw new TRPCError({code:'PAYLOAD_TOO_LARGE',message:'حدد فلاتر أدق لتصدير ما لا يزيد على 10000 سجل.'});if(error instanceof CampaignReportUnavailableError)throw new TRPCError({code:'SERVICE_UNAVAILABLE',message:'تعذر تصدير التقرير. حاول مجددًا.'});throw error;}
@@ -231,7 +237,7 @@ export const campaignsRouter = router({
     // Durable send: consent-gated recipients are committed to an outbox in the
     // same transaction that claims the campaign. Provider I/O never runs here.
     send: permissionProcedure('campaigns.manage')
-        .input(z.object({ id: campaignIdSchema }).strict())
+        .input(z.object({ id: campaignIdSchema, expectedDefinition:z.string().regex(/^[a-f0-9]{64}$/).optional() }).strict())
         .mutation(async ({ input, ctx }) => {
             const campaign = await getCampaignById(input.id);
             if (!campaign) {
@@ -245,6 +251,15 @@ export const campaignsRouter = router({
 
             if (!['draft', 'scheduled'].includes(campaign.status)) {
                 throw new TRPCError({ code: 'BAD_REQUEST', message: 'Campaign already sent or in progress' });
+            }
+
+            let definition: string;
+            try { definition = campaignDefinitionKey(campaign); }
+            catch { throw new TRPCError({code:'SERVICE_UNAVAILABLE',message:'Campaign details unavailable'}); }
+            // Compatibility callers can omit this during migration. New review
+            // screens submit the digest of the definition actually displayed.
+            if (input.expectedDefinition && input.expectedDefinition !== definition) {
+                throw new TRPCError({code:'CONFLICT',message:'Campaign changed; review the current details before sending'});
             }
 
             const instance = await getPrimaryWhatsAppInstance(merchant.id);
@@ -319,7 +334,7 @@ export const campaignsRouter = router({
                 await enqueueCampaignDeliveries({
                     campaignId: input.id,
                     merchantId: merchant.id,
-                    expectedDefinition: campaignDefinitionKey(campaign),
+                    expectedDefinition: definition,
                     recipients: eligibleRecipients.map(recipient => ({
                         customerId: recipient.id,
                         phone: recipient.canonicalPhone,
