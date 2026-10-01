@@ -1,3 +1,5 @@
+import {knowledgeActivityInput} from '../shared/knowledge-activity';
+import {readKnowledgeActivity} from './knowledge/activity-readout';
 import { brainPreviewInput } from "../shared/brain-preview";
 import { previewRateLimit } from "./routers-test-workspace";
 import { qualityReadoutInput } from '../shared/quality-readout';
@@ -670,72 +672,11 @@ export const sariBrainRouter = router({
   deleteSource: permissionProcedure('bot_settings.manage').input(z.object({sourceId:z.string(),sourceType:z.enum(['document','products','website','faqs'])})).mutation(()=>retiredSourceRemoval()),
   resetBrain: permissionProcedure('bot_settings.manage').mutation(()=>retiredSourceRemoval()),
 
-  // Get activity log
-  getActivityLog: merchantProcedure
-    // PEN-BRAIN-01 FIX: Clamp limit, add pagination + filter
-    .input(z.object({
-      page: z.number().min(1).max(500).default(1),
-      pageSize: z.number().min(5).max(50).default(15),
-      actionType: z.string().max(50).optional(),
-      limit: z.number().min(1).max(200).default(50).optional(), // backward compat
-    }).optional())
-    .query(async ({ ctx, input }) => {
-      const merchant = await getMerchantById(ctx.merchantId);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-
-      try {
-        await ensureActivityTable();
-        const dbConn = await getRawPool();
-        if (!dbConn) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Knowledge activity is temporarily unavailable' });
-
-        const page = Math.max(1, input?.page || 1);
-        const pageSize = Math.min(Math.max(5, input?.pageSize || 15), 50);
-        const offset = (page - 1) * pageSize;
-        const actionTypeFilter = input?.actionType?.trim() || null;
-
-        // Build WHERE clause
-        let whereClause = 'WHERE merchant_id = ?';
-        const params: any[] = [merchant.id];
-        if (actionTypeFilter && actionTypeFilter !== 'all') {
-          whereClause += ' AND action_type = ?';
-          params.push(actionTypeFilter);
-        }
-
-        // Count total
-        const [countRows] = await (dbConn as any).execute(
-          `SELECT COUNT(*) as cnt FROM sari_activity_log ${whereClause}`,
-          params
-        );
-        const total = (countRows as any[])[0]?.cnt || 0;
-        const totalPages = Math.ceil(total / pageSize);
-
-        // Fetch page
-        const [rows] = await (dbConn as any).execute(
-          `SELECT id, action_type, description, details, created_at FROM sari_activity_log ${whereClause} ORDER BY created_at DESC LIMIT ${pageSize} OFFSET ${offset}`,
-          params
-        );
-
-        // PEN-BRAIN-06: Cleanup old records (90 days TTL, async non-blocking)
-        (dbConn as any).execute(
-          `DELETE FROM sari_activity_log WHERE merchant_id = ? AND created_at < DATE_SUB(NOW(), INTERVAL 90 DAY)`,
-          [merchant.id]
-        ).catch(() => {}); // Fire-and-forget cleanup
-
-        const items = (rows as any[]).map((row: any) => ({
-          id: row.id,
-          actionType: row.action_type,
-          description: row.description,
-          details: row.details ? (typeof row.details === 'string' ? JSON.parse(row.details) : row.details) : null,
-          createdAt: row.created_at,
-        }));
-
-        return sanitizeForTRPC({ items, total, page, pageSize, totalPages });
-      } catch (error) {
-        console.error('[SariBrain] Failed to get activity log:', error);
-        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Knowledge activity is temporarily unavailable' });
-      }
-    }),
-
+  // Reading history never deletes history or expands arbitrary legacy payloads.
+  getActivityLog: merchantProcedure.input(knowledgeActivityInput).query(async ({ctx,input}) => {
+    try { return await readKnowledgeActivity(ctx.merchantId,input); }
+    catch { throw new TRPCError({code:'INTERNAL_SERVER_ERROR',message:'Knowledge activity is temporarily unavailable'}); }
+  }),
   // Re-analyze merchant's website
   reanalyzeWebsite: permissionProcedure('bot_settings.manage').mutation(async ({ ctx }) => {
     const merchant = await getMerchantById(ctx.merchantId);
