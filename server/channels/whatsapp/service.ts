@@ -1,3 +1,5 @@
+import type { Pool, PoolConnection } from 'mysql2/promise';
+import { validCampaignTransportInput, canRetryCampaignTransport, withCampaignTransportAuthority } from '../../campaign-transport';
 import { getPool, getPrimaryWhatsAppInstance, getWhatsAppInstanceById } from '../../db';
 import { assertRuntimeSchema } from '../../db/schema-readiness';
 import { getWhatsAppProvider } from './providers';
@@ -50,7 +52,7 @@ function toProviderConfig(instance: any): WhatsAppProviderConfig {
 
 function validateSendInput(input: SendMerchantWhatsAppInput): void {
   if (!Number.isInteger(input.merchantId) || input.merchantId <= 0) throw new Error('Invalid merchant');
-  if (!IDEMPOTENCY_PATTERN.test(input.idempotencyKey)) throw new Error('Invalid WhatsApp idempotency key');
+  if (!IDEMPOTENCY_PATTERN.test(input.idempotencyKey) && !validCampaignTransportInput(input)) throw new Error('Invalid WhatsApp idempotency key');
   if (input.kind === 'text' && (!input.text?.trim() || input.text.length > 4096)) throw new Error('Text must contain 1-4096 characters');
   if (input.text && input.kind !== 'text' && input.text.length > 1024) throw new Error('Media caption exceeds 1024 characters');
   if (input.kind !== 'text' && input.kind !== 'template' && !input.mediaUrl) throw new Error('Media URL is required');
@@ -91,6 +93,9 @@ async function dispatchMerchantWhatsApp(input: SendMerchantWhatsAppInput): Promi
   // Old clients must restore history and create a reviewed document, never bypass it.
   if (input.idempotencyKey.startsWith('quotation:'))
     return {accepted:false,duplicate:false,status:'failed',errorCode:'quotation_legacy_retired'};
+  const campaignTransport = input.idempotencyKey.startsWith('campaign:') || !!input.campaignGuard;
+  if (campaignTransport && !validCampaignTransportInput(input))
+    return {accepted:false,duplicate:false,status:'failed',errorCode:'campaign_authority_suppressed'};
   await ensureChannelSchema();
   const pool = await getPool();
   if (!pool) throw new Error('Database unavailable');
@@ -107,6 +112,8 @@ async function dispatchMerchantWhatsApp(input: SendMerchantWhatsAppInput): Promi
     await execution.assertOwned();
   }
 
+  const requestJson=JSON.stringify({ to: input.to, kind: input.kind, text: input.text, mediaUrl: input.mediaUrl,
+    fileName:input.fileName,template:input.template,campaignGuard:input.campaignGuard });
   let reserved = false;
   try {
     // Lock the parent before FK validation takes an instance lock. Reply authority uses
@@ -117,7 +124,7 @@ async function dispatchMerchantWhatsApp(input: SendMerchantWhatsAppInput): Promi
        SELECT ?, ?, ?, ?, ?, 'outgoing', 'queued', ? FROM merchants WHERE id=? FOR SHARE`,
       [input.merchantId, input.messageId || null, instance.id, config.provider, input.idempotencyKey,
         JSON.stringify({ to: input.to, kind: input.kind, text: input.text, mediaUrl: input.mediaUrl,
-          fileName: input.fileName, template: input.template, inboundJobId: execution?.id, escalationGuard: input.escalationGuard, sallaOrderGuard: input.sallaOrderGuard,
+          fileName: input.fileName, template: input.template, campaignGuard:input.campaignGuard, inboundJobId: execution?.id, escalationGuard: input.escalationGuard, sallaOrderGuard: input.sallaOrderGuard,
           replyGuard: input.replyGuard, salesOfferGuard: input.salesOfferGuard, salesReplyGuard: input.salesReplyGuard, quotationGuard: input.quotationGuard, coachingGuard: input.coachingGuard, onboardingGuard: input.onboardingGuard, staffReplyGuard:input.staffReplyGuard, staffVoiceGuard:input.staffVoiceGuard, staffCompatibilityGuard:input.staffCompatibilityGuard, staffCompatibilityVoiceGuard:input.staffCompatibilityVoiceGuard, bookingNoticeGuard: input.bookingNoticeGuard, appointmentReminderGuard: input.appointmentReminderGuard }), input.merchantId]
     );
     if (Number(inserted.affectedRows) !== 1) throw new Error('WhatsApp delivery reservation unavailable');
@@ -143,13 +150,15 @@ async function dispatchMerchantWhatsApp(input: SendMerchantWhatsAppInput): Promi
         && !input.idempotencyKey.startsWith('staff_voice:') && !input.staffVoiceGuard && !priorRequest?.staffVoiceGuard
         && !input.idempotencyKey.startsWith('staff_compat_text:') && !input.staffCompatibilityGuard && !priorRequest?.staffCompatibilityGuard
         && !input.idempotencyKey.startsWith('staff_compat_voice:') && !input.staffCompatibilityVoiceGuard && !priorRequest?.staffCompatibilityVoiceGuard
+        && (campaignTransport ? canRetryCampaignTransport(input,priorRequest) : !priorRequest?.campaignGuard)
         && existing.error_code !== 'provider_unreachable'
         && !/^http_(?:[235]\d\d|408)$/.test(existing.error_code || '')) {
       const [retry] = await pool.execute(
         `UPDATE whatsapp_message_deliveries
-         SET status = 'queued', error_code = NULL, error_details = NULL, status_updated_at = NOW()
-         WHERE idempotency_key = ? AND merchant_id = ? AND status = 'failed'`,
-        [input.idempotencyKey, input.merchantId]
+         SET status = 'queued', error_code = NULL, error_details = NULL, status_updated_at = NOW(),
+           request_json = IF(?=1,?,request_json)
+         WHERE idempotency_key = ? AND merchant_id = ? AND status = 'failed' AND provider_message_id IS NULL`,
+        [campaignTransport?1:0,requestJson,input.idempotencyKey, input.merchantId]
       );
       reserved = Number((retry as any)?.affectedRows || 0) === 1;
     }
@@ -304,54 +313,71 @@ async function dispatchMerchantWhatsApp(input: SendMerchantWhatsAppInput): Promi
       return {accepted:false,duplicate:false,status:'failed',errorCode:'quotation_suppressed'};
     }
   }
-  const result = await provider.send(config, input).catch((error: any) => ({
-    accepted: false as const,
-    outcome: 'unknown' as const,
-    status: 'failed' as const,
-    providerMessageId: undefined,
-    errorCode: 'provider_unreachable',
-    errorMessage: 'Provider outcome is unknown; reconcile before retrying',
-  }));
-  const unknown = result.outcome === 'unknown' || (result.accepted && !result.providerMessageId)
-    || (!result.accepted && result.errorCode === 'provider_unreachable');
-  const accepted = result.accepted && !unknown;
-  const errorCode = unknown ? 'provider_unreachable' : result.errorCode;
-  const status: WhatsAppDeliveryStatus = accepted ? 'sent' : unknown ? 'queued' : 'failed';
-  try {
-    const [persisted] = await pool.execute(
-      `UPDATE whatsapp_message_deliveries
-       SET provider_message_id = ?, status = ?, error_code = ?, error_details = ?, status_updated_at = NOW()
-       WHERE idempotency_key = ? AND merchant_id = ? AND status = 'queued'`,
-      [
-        result.providerMessageId || null,
-        status,
-        errorCode || null,
-        result.errorMessage?.replace(/[\r\n]/g, ' ').slice(0, 500) || null,
-        input.idempotencyKey,
-        input.merchantId,
-      ]
-    );
-    if (Number((persisted as any)?.affectedRows || 0) !== 1) throw new WhatsAppDeliveryStateError();
-  } catch (error) {
-    if (execution) execution.uncertainEffect = true;
-    if (error instanceof WhatsAppDeliveryStateError) throw error;
-    throw new WhatsAppDeliveryStateError();
-  }
-  if (execution && !accepted) execution.uncertainEffect = true;
-  if (input.idempotencyKey.startsWith('sales_followup:') && input.followUpGuard) {
-    const { settleSalesFollowupDispatch } = await import('../../ai/followup-send-guard');
-    // A settlement failure leaves the durable reservation counted; never free an uncertain slot.
-    await settleSalesFollowupDispatch(pool, input.merchantId, input.followUpGuard.id,
-      accepted ? 'accepted' : !unknown && result.outcome === 'rejected' ? 'rejected' : 'unknown')
-      .catch(() => console.warn('[FollowUp] Dispatch reservation retained for reconciliation'));
-  }
-  return {
-    accepted,
-    duplicate: false,
-    status,
-    providerMessageId: result.providerMessageId,
-    errorCode,
+  const sendReserved = async (executor:Pool|PoolConnection) => {
+    const result = await provider.send(config, input).catch((error: any) => ({
+      accepted: false as const,
+      outcome: 'unknown' as const,
+      status: 'failed' as const,
+      providerMessageId: undefined,
+      errorCode: 'provider_unreachable',
+      errorMessage: 'Provider outcome is unknown; reconcile before retrying',
+    }));
+    const unknown = result.outcome === 'unknown' || (result.accepted && !result.providerMessageId)
+      || (!result.accepted && result.errorCode === 'provider_unreachable');
+    const accepted = result.accepted && !unknown;
+    const errorCode = unknown ? 'provider_unreachable' : result.errorCode;
+    const status: WhatsAppDeliveryStatus = accepted ? 'sent' : unknown ? 'queued' : 'failed';
+    try {
+      const [persisted] = await executor.execute(
+        `UPDATE whatsapp_message_deliveries
+         SET provider_message_id = ?, status = ?, error_code = ?, error_details = ?, status_updated_at = NOW()
+         WHERE idempotency_key = ? AND merchant_id = ? AND status = 'queued'`,
+        [
+          result.providerMessageId || null,
+          status,
+          errorCode || null,
+          result.errorMessage?.replace(/[\r\n]/g, ' ').slice(0, 500) || null,
+          input.idempotencyKey,
+          input.merchantId,
+        ]
+      );
+      if (Number((persisted as any)?.affectedRows || 0) !== 1) throw new WhatsAppDeliveryStateError();
+    } catch (error) {
+      if (execution) execution.uncertainEffect = true;
+      if (error instanceof WhatsAppDeliveryStateError) throw error;
+      throw new WhatsAppDeliveryStateError();
+    }
+    if (execution && !accepted) execution.uncertainEffect = true;
+    if (input.idempotencyKey.startsWith('sales_followup:') && input.followUpGuard) {
+      const { settleSalesFollowupDispatch } = await import('../../ai/followup-send-guard');
+      // A settlement failure leaves the durable reservation counted; never free an uncertain slot.
+      await settleSalesFollowupDispatch(pool, input.merchantId, input.followUpGuard.id,
+        accepted ? 'accepted' : !unknown && result.outcome === 'rejected' ? 'rejected' : 'unknown')
+        .catch(() => console.warn('[FollowUp] Dispatch reservation retained for reconciliation'));
+    }
+    return {
+      accepted,
+      duplicate: false,
+      status,
+      providerMessageId: result.providerMessageId,
+      errorCode,
+    };
   };
+  if (campaignTransport) {
+    let enteredProvider=false;
+    try {
+      const outcome=await withCampaignTransportAuthority(input,config,instance.id,async connection=>{
+        enteredProvider=true;return sendReserved(connection);
+      });
+      if(outcome.allowed)return outcome.result;
+      await pool.execute("UPDATE whatsapp_message_deliveries SET status='failed',error_code='campaign_authority_suppressed',status_updated_at=NOW() WHERE merchant_id=? AND idempotency_key=? AND status='queued'",[input.merchantId,input.idempotencyKey]);
+      return {accepted:false,duplicate:false,status:'failed',errorCode:'campaign_authority_suppressed'};
+    } catch(error) {
+      if(enteredProvider)throw new WhatsAppDeliveryStateError();
+      throw error;
+    }
+  }
+  return sendReserved(pool);
 }
 
 export async function updateWhatsAppDeliveryStatus(input: {

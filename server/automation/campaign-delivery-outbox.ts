@@ -329,6 +329,20 @@ async function writeTerminalState(
       await connection.rollback();
       return false;
     }
+    // Recovery may have observed queued just before a fenced provider call finished.
+    // The update above waits for that lease lock; reread its committed receipt now.
+    if (status === 'manual_review') {
+      const [receipts] = await connection.execute<DeliveryLedgerRow[]>(
+        `SELECT status, error_code FROM whatsapp_message_deliveries
+          WHERE merchant_id = ? AND idempotency_key = ? FOR SHARE`,
+        [row.merchant_id, deliveryIdempotencyKey(row)],
+      );
+      if (receipts[0] && ['sent', 'delivered', 'read'].includes(receipts[0].status)) {
+        status = 'sent'; reason = null;
+        await connection.execute(`UPDATE campaign_delivery_outbox SET status='sent',sent_at=NOW(3),last_error=NULL
+          WHERE id=? AND merchant_id=?`, [row.id, row.merchant_id]);
+      }
+    }
     const logStatus = status === 'sent' ? 'success' : 'failed';
     await connection.execute(
       `INSERT INTO campaignLogs
@@ -519,6 +533,7 @@ async function dispatchDelivery(row: CampaignDeliveryRow): Promise<void> {
       mediaUrl: context.imageUrl || undefined,
       fileName: context.imageUrl ? 'campaign.jpg' : undefined,
       retryFailed: true,
+      campaignGuard: {campaignId:row.campaign_id,deliveryId:row.id,token:row.processing_token},
     });
   } catch (error) {
     if (error instanceof WhatsAppDeliveryStateError) {
@@ -543,6 +558,10 @@ async function dispatchDelivery(row: CampaignDeliveryRow): Promise<void> {
       return;
     }
     await releaseQuotaReservation(row);
+    if (result.errorCode === 'campaign_authority_suppressed') {
+      await writeTerminalState(row, 'suppressed', 'campaign_authority_suppressed');
+      return;
+    }
     await scheduleRetry(row, result.errorCode || 'provider_rejected');
   } catch {
     // The provider call completed. Preserve the processing lease and quota so

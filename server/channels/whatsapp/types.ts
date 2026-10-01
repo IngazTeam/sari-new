@@ -48,6 +48,7 @@ export type SendMerchantWhatsAppInput = WhatsAppSendRequest & {
   // A still-queued row is never resent because its provider outcome is unknown.
   retryFailed?: boolean;
   /** Server-owned claim required for sales_followup transport keys. */
+  campaignGuard?: import('../../campaign-transport').CampaignTransportGuard;
   followUpGuard?: { id: number; token: string };
   replyGuard?: import('../../ai/conversation-handoff').ConversationReplyGuard;
   escalationGuard?: import('../../ai/escalation-relay').EscalationTransportGuard;
