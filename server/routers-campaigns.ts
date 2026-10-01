@@ -1,5 +1,7 @@
 import { campaignListInput } from '../shared/campaign-workspace';
 import { campaignPerformanceInput } from '../shared/campaign-performance';
+import { campaignReportInput } from '../shared/campaign-report';
+import { readCampaignReport,CampaignReportMissingError,CampaignReportUnavailableError } from './campaign-report';
 import { hasPermission } from './_core/permissions';
 import { readCampaignWorkspace, readCampaignStatistics, readCampaignPerformance, CampaignWorkspaceUnavailableError } from './campaign-workspace';
 /**
@@ -80,6 +82,10 @@ const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
 });
 
 export const campaignsRouter = router({
+    reportWorkspace: permissionProcedure('analytics.read').input(campaignReportInput).query(async ({ctx,input})=>{
+        try{return {...await readCampaignReport(ctx.user.id,ctx.merchantId,input),canManage:hasPermission(ctx.merchantRole,'campaigns.manage')};}
+        catch(error){if(error instanceof CampaignReportMissingError)throw new TRPCError({code:'NOT_FOUND',message:'تقرير الحملة غير متاح.'});if(error instanceof CampaignReportUnavailableError)throw new TRPCError({code:'SERVICE_UNAVAILABLE',message:'تعذر تحميل التقرير. حاول مجددًا.'});throw error;}
+    }),
     performanceSnapshot: permissionProcedure('analytics.read').input(campaignPerformanceInput).query(async ({ctx,input}) => {
         try { return await readCampaignPerformance(ctx.user.id,ctx.merchantId,input); }
         catch(error) { if(error instanceof CampaignWorkspaceUnavailableError) throw new TRPCError({code:'SERVICE_UNAVAILABLE',message:'تعذر تحميل أداء الحملات. حاول مجددًا.'}); throw error; }
