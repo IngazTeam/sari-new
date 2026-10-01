@@ -1,3 +1,4 @@
+import { conversationConnectionProcedures } from './routers-conversation-connection';
 import { conversationHistoryProcedures } from "./routers-conversation-history";
 import { conversationInboxProcedure } from "./routers-conversation-inbox";
 /**
@@ -29,6 +30,7 @@ import {
 } from './db';
 
 export const conversationsRouter = router({
+    ...conversationConnectionProcedures,
     ...staffAttemptReviewProcedures,
     ...conversationHandoffProcedures,
     ...escalationReconciliationProcedures,
