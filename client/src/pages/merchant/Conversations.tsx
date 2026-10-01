@@ -6,7 +6,8 @@ import { ConversationHandoff } from '@/components/ConversationHandoff';
 import { EscalationReconciliation } from '@/components/EscalationReconciliation';
 import { SalesOfferReview } from '@/components/SalesOfferReview';
 import { StaffAttemptReview } from '@/components/StaffAttemptReview';
-import { isValidDealStage } from '@shared/const';
+import { useLocation, useSearch } from 'wouter';
+import { conversationHref, conversationNavigation } from '@/lib/conversation-navigation';
 import {
   Card,
   CardContent,
@@ -88,14 +89,28 @@ function ScopedConversations({ currentMerchant, draftStore }: { currentMerchant:
   const { t } = useTranslation();
   const live = useRef(true), sendLock = useRef(false);
   useEffect(() => { live.current = true; return () => { live.current = false; }; }, []);
-  const [selectedConversationId, setSelectedConversationId] = useState<
-    number | null
-  >(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [replyText, setReplyText] = useState('');
-  const [historyTrail, setHistoryTrail] = useState<number[]>([]);
+  const search = useSearch(), [pathname, navigate] = useLocation();
+  const navigation = conversationNavigation(search);
+  const { conversationId: selectedConversationId, search: debouncedSearch, page: currentPage, stage: stageFilter, needsHuman: needsHumanFilter } = navigation;
+  const [searchEdit, setSearchEdit] = useState<{ source: string; value: string } | null>(null);
+  const searchQuery = searchEdit?.source === search ? searchEdit.value : debouncedSearch;
+  useEffect(() => { setSearchEdit(null); }, [search]);
+  const changeRoute = (patch: Record<string, string | number | null>) => navigate(conversationHref(pathname, search, patch));
+  const drafts = useRef(draftStore);
+  const [, refreshDraft] = useState(0);
+  const replyText = selectedConversationId ? drafts.current[selectedConversationId] || '' : '';
+  const setReplyText = (value: string | ((current: string) => string)) => {
+    if (!selectedConversationId) return;
+    const current = drafts.current[selectedConversationId] || '';
+    drafts.current[selectedConversationId] = typeof value === 'function' ? value(current) : value;
+    refreshDraft(version => version + 1);
+  };
+  const [historyState, setHistoryState] = useState<{ conversationId: number | null; trail: number[] }>({ conversationId: null, trail: [] });
+  const historyTrail = historyState.conversationId === selectedConversationId ? historyState.trail : [];
+  const setHistoryTrail = (value: number[] | ((current: number[]) => number[])) => setHistoryState(current => ({
+    conversationId: selectedConversationId,
+    trail: typeof value === 'function' ? value(current.conversationId === selectedConversationId ? current.trail : []) : value,
+  }));
   const beforeId = historyTrail.at(-1);
   const viewingLatest = beforeId === undefined;
   const [isSending, setIsSending] = useState(false);
@@ -103,43 +118,19 @@ function ScopedConversations({ currentMerchant, draftStore }: { currentMerchant:
   const selectedReplyConversation=useRef(selectedConversationId);
   selectedReplyConversation.current=selectedConversationId;
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
-  // Pipeline filter state (from SalesPipeline deep-links)
-  const [stageFilter, setStageFilter] = useState<string | undefined>();
-  const [needsHumanFilter, setNeedsHumanFilter] = useState<
-    boolean | undefined
-  >();
-  const drafts = useRef(draftStore);
-  const updateReplyText = (text: string) => {
-    if (selectedConversationId) drafts.current[selectedConversationId] = text;
-    setReplyText(text);
-  };
+  const updateReplyText = (text: string) => setReplyText(text);
   const selectConversation = (id: number | null) => {
     if (isSending || voiceBusy) return;
-    if (selectedConversationId)
-      drafts.current[selectedConversationId] = replyText;
-    setReplyText(id ? drafts.current[id] || '' : '');
-    selectedReplyConversation.current = id;
     setHistoryTrail([]);
-    setSelectedConversationId(id);
+    changeRoute({ conversationId: id });
   };
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setDebouncedSearch(searchQuery.trim());
-      setCurrentPage(1);
-    }, 300);
+    if (searchQuery.trim() === debouncedSearch || isSending || voiceBusy) return;
+    const timer = window.setTimeout(() => navigate(conversationHref(pathname, search, {
+      phone: searchQuery.trim(), page: null, conversationId: null,
+    })), 300);
     return () => window.clearTimeout(timer);
-  }, [searchQuery]);
-
-  // P0-FIX: Read URL params from SalesPipeline deep-links
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const phone = params.get('phone');
-    const stage = params.get('stage');
-    const needsHuman = params.get('needs_human');
-    if (phone) setSearchQuery(phone);
-    if (stage && isValidDealStage(stage)) setStageFilter(stage);
-    if (needsHuman === '1') setNeedsHumanFilter(true);
-  }, []);
+  }, [searchQuery, debouncedSearch, pathname, search, navigate, isSending, voiceBusy]);
 
   const STAGE_LABELS: Record<string, string> = {
     ready: '🔥 جاهزون للدفع',
@@ -149,6 +140,8 @@ function ScopedConversations({ currentMerchant, draftStore }: { currentMerchant:
     interested: 'مهتم',
     qualified: 'مؤهل',
     paid: 'مدفوع',
+    purchased: 'تم الشراء',
+    payment_failed: 'تعذر الدفع',
     lost: 'خسارة',
   };
 
@@ -200,7 +193,7 @@ function ScopedConversations({ currentMerchant, draftStore }: { currentMerchant:
       refetchInterval: viewingLatest ? 5_000 : false,
     }
   );
-  const messagesError = historyError || (historySnapshot && (historySnapshot.merchantId !== currentMerchant.id || historySnapshot.conversationId !== selectedConversationId || historySnapshot.items.some(m => m.conversationId !== selectedConversationId)) ? new Error('Message context mismatch') : null);
+  const messagesError = historyError || (historySnapshot && (historySnapshot.merchantId !== currentMerchant.id || historySnapshot.conversationId !== selectedConversationId || historySnapshot.items.some(m => m.conversationId !== selectedConversationId) || (historySnapshot.conversation && (historySnapshot.conversation.id !== selectedConversationId || historySnapshot.conversation.merchantId !== currentMerchant.id))) ? new Error('Message context mismatch') : null);
   const messages = !messagesError ? historySnapshot?.items : undefined;
 
   const messageScroll = useConversationScroll(`${selectedConversationId}:${beforeId ?? 'latest'}`, messages, viewingLatest);
@@ -217,7 +210,7 @@ function ScopedConversations({ currentMerchant, draftStore }: { currentMerchant:
   );
   const voiceConversationSnapshot=useRef<typeof listedSelectedConversation>(undefined);
   if(listedSelectedConversation)voiceConversationSnapshot.current=listedSelectedConversation;
-  const selectedConversation=!listError ? listedSelectedConversation || (voiceBusy&&voiceConversationSnapshot.current?.id===selectedConversationId?voiceConversationSnapshot.current:undefined) : undefined;
+  const selectedConversation=!listError ? listedSelectedConversation || (!messagesError && !messagesLoading ? historySnapshot?.conversation : undefined) || (voiceBusy&&voiceConversationSnapshot.current?.id===selectedConversationId?voiceConversationSnapshot.current:undefined) : undefined;
 
   // Send text reply
   const handleSendReply = async () => {
@@ -229,10 +222,8 @@ function ScopedConversations({ currentMerchant, draftStore }: { currentMerchant:
       const text=replyText.trim(),conversationId=selectedConversationId;
       const accepted=await sendDashboardText(conversationId,text);
       if(!accepted || !live.current)return;
-      if(selectedReplyConversation.current===conversationId){
-        if(drafts.current[conversationId]?.trim()===text)drafts.current[conversationId]='';
-        setReplyText(current=>current.trim()===text?'':current);
-      }
+      if(drafts.current[conversationId]?.trim()===text)drafts.current[conversationId]='';
+      refreshDraft(version => version + 1);
       // Refresh messages
       utils.conversations.getMessages.invalidate({
         conversationId: selectedConversationId,
@@ -251,12 +242,13 @@ function ScopedConversations({ currentMerchant, draftStore }: { currentMerchant:
     if(!live.current || selectedReplyConversation.current!==conversationId)return false;
     const result=await sendReplyMutation.mutateAsync({conversationId,message,requestId:attempt.requestId});
     if(!live.current)return false;
+    if(result.success)attempt.complete();
+    if(selectedReplyConversation.current!==conversationId)return result.success;
     if(!result.success){
       if('status' in result&&result.status!=='pending')toast.warning(t('staffDashboardReply.failed'), { position: 'top-center' });
       else toast.warning(t('staffDashboardReply.pending'), { position: 'top-center' });
       return false;
     }
-    attempt.complete();
     if('persisted' in result&&!result.persisted)toast.warning(t('staffDashboardReply.projectionPending'), { position: 'top-center' });
     else toast.success(t('staffDashboardReply.accepted'), { position: 'top-center' });
     return true;
@@ -367,23 +359,16 @@ function ScopedConversations({ currentMerchant, draftStore }: { currentMerchant:
           </Button>
         </div>
         {hasActiveFilter && (
-          <div className="flex items-center gap-2 mt-3">
-            <Badge variant="secondary" className="text-sm py-1 px-3">
-              {needsHumanFilter
-                ? '⚠️ تحتاج تدخل بشري'
-                : `🔍 ${STAGE_LABELS[stageFilter!] || stageFilter}`}{' '}
-              ({conversationsData?.total || 0})
-            </Badge>
+          <div className="flex flex-wrap items-center gap-2 mt-3">
+            {needsHumanFilter && <Badge variant="secondary" className="text-sm py-1 px-3">⚠️ تحتاج تدخل بشري</Badge>}
+            {stageFilter && <Badge variant="secondary" className="text-sm py-1 px-3">{STAGE_LABELS[stageFilter] || stageFilter}</Badge>}
             <Button
               size="sm"
               variant="ghost"
               className="h-7 text-xs"
               disabled={voiceBusy || isSending}
               onClick={() => {
-                setCurrentPage(1);
-                setStageFilter(undefined);
-                setNeedsHumanFilter(undefined);
-                window.history.replaceState({}, '', window.location.pathname);
+                changeRoute({ page: null, stage: null, needs_human: null });
               }}
             >
               ✕ إزالة الفلتر
@@ -401,7 +386,7 @@ function ScopedConversations({ currentMerchant, draftStore }: { currentMerchant:
       </div>
 
       {/* Main Content — 5-col grid: 2 for list, 3 for chat */}
-      <div className="mw-inbox-grid" data-selected={!!selectedConversation}>
+      <div className="mw-inbox-grid" data-selected={!!selectedConversation || (!!selectedConversationId && !listError)}>
         {/* Conversations List — wider */}
         <Card className="mw-inbox-list">
           <CardHeader className="pb-3">
@@ -419,7 +404,7 @@ function ScopedConversations({ currentMerchant, draftStore }: { currentMerchant:
                 maxLength={200}
                 disabled={voiceBusy || isSending}
                 value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
+                onChange={e => setSearchEdit({ source: search, value: e.target.value })}
                 className="pr-10 h-9 text-sm"
               />
             </div>
@@ -520,13 +505,13 @@ function ScopedConversations({ currentMerchant, draftStore }: { currentMerchant:
               )}
             </ScrollArea>
             <div className="mw-inbox-pagination">
+              {!isLoading && !listError && conversationsData && currentPage > Math.max(1, conversationsData.totalPages) && <Button type="button" variant="outline" disabled={isSending || voiceBusy} onClick={() => changeRoute({ page: null, conversationId: null })}>{t('conversationNavigation.firstPage')}</Button>}
               <Button
                 type="button"
                 variant="outline"
                 disabled={currentPage <= 1 || isLoading || isSending || voiceBusy}
                 onClick={() => {
-                  selectConversation(null);
-                  setCurrentPage(page => page - 1);
+                  changeRoute({ conversationId: null, page: currentPage - 1 });
                 }}
               >
                 السابق
@@ -546,8 +531,7 @@ function ScopedConversations({ currentMerchant, draftStore }: { currentMerchant:
                   isSending || voiceBusy
                 }
                 onClick={() => {
-                  selectConversation(null);
-                  setCurrentPage(page => page + 1);
+                  changeRoute({ conversationId: null, page: currentPage + 1 });
                 }}
               >
                 التالي
@@ -1014,11 +998,12 @@ function ScopedConversations({ currentMerchant, draftStore }: { currentMerchant:
                         if(!live.current||selectedReplyConversation.current!==conversationId)return false;
                         const result=await sendVoiceReplyMutation.mutateAsync(attempt.input);
                         if(!live.current)return false;
+                        if(result.success)attempt.complete();
+                        if(selectedReplyConversation.current!==conversationId)return result.success;
                         if(!result.success){
                           toast.warning(t('staffVoice.pending'),{position:'top-center'});
                           return false;
                         }
-                        attempt.complete();
                         if(result.persisted)toast.success(t('staffVoice.accepted'),{position:'top-center'});
                         else toast.warning(t('staffDashboardReply.projectionPending'),{position:'top-center'});
                         utils.conversations.getMessages.invalidate({conversationId});
@@ -1036,6 +1021,11 @@ function ScopedConversations({ currentMerchant, draftStore }: { currentMerchant:
                 </details>
               </CardContent>
             </>
+          ) : selectedConversationId && !listError ? (
+            <div className="space-y-3 p-4">
+              <Button type="button" variant="outline" onClick={() => changeRoute({ conversationId: null })}>{t('conversationNavigation.backToList')}</Button>
+              {messagesLoading ? <p role="status">{t('conversationNavigation.loading')}</p> : <QueryStateCard kind="error" title={t('conversationNavigation.unavailable')} description={t('conversationNavigation.tryAgain')} onRetry={() => void refetchMessages()} />}
+            </div>
           ) : (
             <div className="mw-chat-no-selection">
               <div className="text-center text-muted-foreground">

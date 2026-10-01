@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
 import React, { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
+import { Router } from 'wouter';
+import { memoryLocation } from 'wouter/memory-location';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import ar from '../client/src/locales/ar.json';
 import merchantAr from '../client/src/locales/merchant-ux.ar';
@@ -12,6 +14,49 @@ vi.mock('@/lib/trpc',()=>{
   const mutation=(call=vi.fn())=>({useMutation:()=>({mutateAsync:call,isPending:false})});
   const util=new Proxy({}, {get:()=>({invalidate:m.invalidate})});
   return {trpc:{auth:{me:query('user')},merchants:{getCurrent:query('merchant')},conversations:{list:query('list'),messageHistory:query('history'),connectionStatus:query('connection'),sendReply:mutation(m.send),sendVoiceReply:mutation(m.voice),syncFromWhatsApp:mutation(),diagnoseWebhook:mutation()},useUtils:()=>({conversations:util})}};
+});
+describe('restorable conversation navigation',()=>{
+  const go=(path:string)=>act(async()=>memory.navigate(path));
+  const button=(text:string)=>Array.from(container.querySelectorAll('button')).find(b=>b.textContent?.trim()===text)!;
+  it('loads search, page and both filters from a link without resetting page after the debounce',async()=>{
+    vi.useFakeTimers();memory.navigate('/merchant/conversations?phone=local&page=2&stage=ready&needs_human=1');await render();await act(async()=>vi.advanceTimersByTime(350));
+    expect(m.calls.mock.calls.filter(c=>c[0]==='list').every(c=>c[1].page===2&&c[1].stage==='ready'&&c[1].needsHuman===true&&c[1].search==='local')).toBe(true);
+    expect(container.textContent).toContain('جاهزون للدفع');expect(container.textContent).toContain('تحتاج تدخل بشري');
+  });
+  it('opens a quotation deep link even when its owned conversation is outside the list page',async()=>{
+    memory.navigate('/merchant/conversations?conversationId=9');m.queries.history=query({...m.queries.history.data,conversationId:9,conversation:{id:9,merchantId:20,customerName:'Outside list',customerPhone:'local-nine',status:'active'},items:[]});
+    await render();expect(container.textContent).toContain('Outside list');expect(draft()).toBeTruthy();
+  });
+  it('does not show an unavailable or foreign conversation from a direct link',async()=>{
+    memory.navigate('/merchant/conversations?conversationId=9');m.queries.history=query({...m.queries.history.data,conversationId:9,conversation:{id:9,merchantId:99,customerName:'FOREIGN'},items:[]});
+    await render();expect(container.textContent).not.toContain('FOREIGN');expect(draft()).toBeNull();expect(container.textContent).toContain(ar.conversationNavigation.unavailable);
+    await click(button(ar.conversationNavigation.backToList));expect(memory.history?.at(-1)).not.toContain('conversationId');expect(container.querySelector('[data-staff-conversation]')).toBeTruthy();
+  });
+  it('restores URL selection and per-conversation drafts on browser navigation',async()=>{
+    const base=m.queries.history.data;m.queries.history=({conversationId}:any)=>query({...base,conversationId,items:[]});
+    await render();await choose();await fill('Draft 4');const four=memory.history!.at(-1)!;await choose(5);expect(draft().value).toBe('');await fill('Draft 5');const five=memory.history!.at(-1)!;
+    await go(four);expect(draft().value).toBe('Draft 4');await go(five);expect(draft().value).toBe('Draft 5');
+  });
+  it('clears stage and human filters while preserving search, selection and unrelated parameters',async()=>{
+    memory.navigate('/merchant/conversations?phone=local&stage=ready&needs_human=1&page=2&conversationId=4&lang=en');await render();await click(button('✕ إزالة الفلتر'));
+    const params=new URL(memory.history!.at(-1)!,'https://local.test').searchParams;expect(params.get('phone')).toBe('local');expect(params.get('conversationId')).toBe('4');expect(params.get('lang')).toBe('en');expect(params.has('stage')).toBe(false);expect(params.has('needs_human')).toBe(false);expect(params.has('page')).toBe(false);
+  });
+  it('updates debounced search without losing filters, then restores a prior query without a stale timer',async()=>{
+    vi.useFakeTimers();memory.navigate('/merchant/conversations?page=2&stage=ready');await render();
+    const input=container.querySelector('input[aria-label="البحث في جميع المحادثات"]')!;
+    await act(async()=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')!.set!.call(input,'local-5');input.dispatchEvent(new Event('input',{bubbles:true}));});await act(async()=>vi.advanceTimersByTime(301));
+    expect(memory.history?.at(-1)).toContain('phone=local-5');expect(memory.history?.at(-1)).toContain('stage=ready');expect(memory.history?.at(-1)).not.toContain('page=');
+    await go('/merchant/conversations?page=2&stage=ready');await act(async()=>vi.advanceTimersByTime(350));expect((input as HTMLInputElement).value).toBe('');expect(memory.history?.at(-1)).toBe('/merchant/conversations?page=2&stage=ready');
+    await go('/merchant/conversations?phone=other&page=3');await act(async()=>vi.advanceTimersByTime(350));expect((input as HTMLInputElement).value).toBe('other');expect(memory.history?.at(-1)).toBe('/merchant/conversations?phone=other&page=3');
+  });
+  it('recovers an out-of-range page without discarding its search',async()=>{
+    memory.navigate('/merchant/conversations?phone=local&page=999');await render();await click(button(ar.conversationNavigation.firstPage));expect(memory.history?.at(-1)).toBe('/merchant/conversations?phone=local');
+  });
+  it('does not notify or clear the current draft for a late send in another conversation',async()=>{
+    const base=m.queries.history.data;m.queries.history=({conversationId}:any)=>query({...base,conversationId,items:[]});let release!:(v:any)=>void;m.send.mockReturnValue(new Promise(resolve=>release=resolve));
+    await render();await choose();await fill('Accepted 4');await click(send());await go('/merchant/conversations?conversationId=5');await fill('Keep 5');await act(async()=>release({success:true,persisted:true}));
+    expect(draft().value).toBe('Keep 5');expect(m.success).not.toHaveBeenCalled();expect(m.complete).toHaveBeenCalledOnce();await go('/merchant/conversations?conversationId=4');expect(draft().value).toBe('');
+  });
 });
 vi.mock('@/lib/staff-dashboard-attempt',()=>({staffDashboardAttempt:m.attempt}));
 vi.mock('@/lib/staff-voice-attempt',()=>({staffVoiceAttempt:m.voiceAttempt}));
@@ -29,15 +74,16 @@ vi.mock('@/components/QuickActions',()=>({QuickActionsBar:()=>null}));
 vi.mock('@/components/ConversationPreviewMode',()=>({ConversationPreviewMode:()=>null}));
 vi.mock('@/components/VoiceRecorder',()=>({VoiceRecorder:({disabled,onRecordingComplete}:any)=>React.createElement('button',{'data-test-voice':true,disabled,onClick:()=>void onRecordingComplete(new Blob(['local fixture']),1)},'Voice fixture')}));
 import Conversations from '../client/src/pages/merchant/Conversations';
-let root:Root,container:HTMLDivElement;
+let root:Root,container:HTMLDivElement,memory:ReturnType<typeof memoryLocation>;
 const query=(data:any)=>({data,error:null,isLoading:false,isFetching:false,refetch:vi.fn()});
-const render=()=>act(async()=>root.render(React.createElement(Conversations)));
+const render=()=>act(async()=>root.render(React.createElement(Router,{hook:memory.hook,searchHook:memory.searchHook},React.createElement(Conversations))));
 const click=(element:Element)=>act(async()=>{(element as HTMLElement).click();});
 const choose=(id=4)=>click(container.querySelector(`[data-staff-conversation="${id}"]`)!);
 const draft=()=>container.querySelector('[data-staff-draft]') as HTMLTextAreaElement;
 const send=()=>container.querySelector('[data-staff-send]') as HTMLButtonElement;
 const fill=(value:string)=>act(async()=>{Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value')!.set!.call(draft(),value);draft().dispatchEvent(new Event('input',{bubbles:true}));});
 beforeEach(()=>{
+  memory=memoryLocation({path:'/merchant/conversations',record:true});
   vi.resetAllMocks();vi.stubGlobal('React',React);vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT',true);vi.stubGlobal('ResizeObserver',class{observe(){}unobserve(){}disconnect(){}});
   const items=[4,5].map(id=>({id,merchantId:20,customerName:`Customer ${id}`,customerPhone:`local-${id}`,status:'active',lastMessageAt:'2026-10-01 10:00:00'}));
   m.queries={user:query({id:7}),merchant:query({id:20,timezone:'Asia/Riyadh'}),list:query({merchantId:20,items,total:2,page:1,totalPages:1,pageSize:50}),history:query({merchantId:20,conversationId:4,items:[{id:8,conversationId:4,content:'Private example',direction:'incoming',messageType:'text',createdAt:'2026-10-01 10:00:00'}],hasMore:false,nextBeforeId:null}),connection:query(undefined)};
@@ -45,7 +91,7 @@ beforeEach(()=>{
   m.voiceAttempt.mockResolvedValue({input:{conversationId:4,requestId:'00000000-0000-4000-8000-000000000002'},complete:m.complete});m.voice.mockResolvedValue({success:true,persisted:true});
   container=document.createElement('div');document.body.append(container);root=createRoot(container);
 });
-afterEach(async()=>{await act(async()=>root.unmount());container.remove();vi.unstubAllGlobals();});
+afterEach(async()=>{await act(async()=>root.unmount());container.remove();vi.unstubAllGlobals();vi.useRealTimers();});
 describe('verified inbox scope and draft lifetime',()=>{
   it.each(['user','merchant'])('does not mount inbox reads while %s is being reverified',async name=>{
     m.queries[name].isFetching=true;await render();expect(container.querySelector('[data-state=loading]')).toBeTruthy();expect(m.calls.mock.calls.some(c=>c[0]==='list')).toBe(false);

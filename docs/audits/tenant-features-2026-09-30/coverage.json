@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-01T10:56:21.970Z",
+  "generatedAt": "2026-10-01T11:06:18.938Z",
   "definition": "Every registered route is accounted for; source inventory and design completion are different statuses.",
   "routes": [
     {
@@ -13548,6 +13548,7 @@
         "client/src/components/EscalationReconciliation.tsx",
         "client/src/components/SalesOfferReview.tsx",
         "client/src/components/StaffAttemptReview.tsx",
+        "client/src/lib/conversation-navigation.ts",
         "client/src/components/VoiceRecorder.tsx",
         "client/src/components/ConversationPreviewMode.tsx",
         "client/src/components/WhatsAppPreview.tsx",
@@ -13559,26 +13560,28 @@
         "client/src/lib/use-conversation-scroll.ts"
       ],
       "controls": [
-        "64e99a2edb61",
-        "b8cb8f25cbc3",
-        "cb35b0b37f99",
-        "418ba875e255",
-        "134b627cec55",
-        "b5621019d526",
-        "33fbcb8199cf",
-        "050227b8752c",
-        "cf807567fc47",
-        "9cbb704711a4",
-        "0998a0e3e73e",
-        "3e47be3a8de6",
-        "3dcf779d6025",
-        "66f4f754c732",
-        "4f78c2eb667e",
-        "7954d5567f56",
-        "a578c83c9b75",
-        "baa6290f8ba3",
-        "37759030c838",
-        "e256d7e3b19e",
+        "441ede2cb807",
+        "3ed49a1ae893",
+        "ee34d391711b",
+        "acb49775cae6",
+        "042166799a9e",
+        "e22e7a62dc17",
+        "af7d23b1eca9",
+        "36918543b6ef",
+        "931937f63ab1",
+        "69f14860e48f",
+        "6acfef70d99f",
+        "daf0c5ad8354",
+        "216aa8623ca5",
+        "825ca4d787ab",
+        "80c9bad90ec1",
+        "ee9c23dbd9f3",
+        "2b27f7eac714",
+        "78478e89efe1",
+        "bd3c11733641",
+        "bfb0658ae2d6",
+        "b2580f10464e",
+        "37dcf2ce0b34",
         "0da565edb144",
         "17f7d62d784e",
         "33ce0ec1dcaf",
@@ -13683,9 +13686,9 @@
       ],
       "controlDetails": [
         {
-          "id": "64e99a2edb61",
+          "id": "441ede2cb807",
           "file": "client/src/pages/merchant/Conversations.tsx",
-          "line": 292,
+          "line": 284,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -13706,9 +13709,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "b8cb8f25cbc3",
+          "id": "3ed49a1ae893",
           "file": "client/src/pages/merchant/Conversations.tsx",
-          "line": 316,
+          "line": 308,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -13727,15 +13730,15 @@
           "review": "source-inventoried"
         },
         {
-          "id": "cb35b0b37f99",
+          "id": "ee34d391711b",
           "file": "client/src/pages/merchant/Conversations.tsx",
-          "line": 377,
+          "line": 365,
           "tag": "Button",
           "role": "",
           "kind": "action",
           "label": "✕ إزالة الفلتر",
           "section": "المحادثات",
-          "binding": "() => {\n                setCurrentPage(1);\n                setStageFilter(undefined);\n                setNeedsHumanFilter(undefined);\n                window.history.replaceState({}, '', window.location.pathname);\n              }",
+          "binding": "() => {\n                changeRoute({ page: null, stage: null, needs_human: null });\n              }",
           "type": "text",
           "options": [],
           "min": "",
@@ -13750,9 +13753,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "418ba875e255",
+          "id": "acb49775cae6",
           "file": "client/src/pages/merchant/Conversations.tsx",
-          "line": 416,
+          "line": 401,
           "tag": "Input",
           "role": "",
           "kind": "field",
@@ -13771,9 +13774,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "134b627cec55",
+          "id": "042166799a9e",
           "file": "client/src/pages/merchant/Conversations.tsx",
-          "line": 443,
+          "line": 428,
           "tag": "div",
           "role": "button",
           "kind": "action",
@@ -13796,15 +13799,38 @@
           "review": "source-inventoried"
         },
         {
-          "id": "b5621019d526",
+          "id": "e22e7a62dc17",
           "file": "client/src/pages/merchant/Conversations.tsx",
-          "line": 523,
+          "line": 508,
+          "tag": "Button",
+          "role": "",
+          "kind": "action",
+          "label": "العودة إلى الصفحة الأولى",
+          "section": "قائمة المحادثات",
+          "binding": "() => changeRoute({ page: null, conversationId: null })",
+          "type": "button",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": true,
+          "conditions": [
+            "!isLoading && !listError && conversationsData && currentPage > Math.max(1, conversationsData.totalPages)"
+          ],
+          "disabled": "isSending || voiceBusy",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "af7d23b1eca9",
+          "file": "client/src/pages/merchant/Conversations.tsx",
+          "line": 509,
           "tag": "Button",
           "role": "",
           "kind": "action",
           "label": "السابق",
           "section": "قائمة المحادثات",
-          "binding": "() => {\n                  selectConversation(null);\n                  setCurrentPage(page => page - 1);\n                }",
+          "binding": "() => {\n                  changeRoute({ conversationId: null, page: currentPage - 1 });\n                }",
           "type": "button",
           "options": [],
           "min": "",
@@ -13817,15 +13843,15 @@
           "review": "source-inventoried"
         },
         {
-          "id": "33fbcb8199cf",
+          "id": "36918543b6ef",
           "file": "client/src/pages/merchant/Conversations.tsx",
-          "line": 539,
+          "line": 524,
           "tag": "Button",
           "role": "",
           "kind": "action",
           "label": "التالي",
           "section": "قائمة المحادثات",
-          "binding": "() => {\n                  selectConversation(null);\n                  setCurrentPage(page => page + 1);\n                }",
+          "binding": "() => {\n                  changeRoute({ conversationId: null, page: currentPage + 1 });\n                }",
           "type": "button",
           "options": [],
           "min": "",
@@ -13838,9 +13864,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "050227b8752c",
+          "id": "931937f63ab1",
           "file": "client/src/pages/merchant/Conversations.tsx",
-          "line": 566,
+          "line": 550,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -13861,9 +13887,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "cf807567fc47",
+          "id": "69f14860e48f",
           "file": "client/src/pages/merchant/Conversations.tsx",
-          "line": 628,
+          "line": 612,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -13884,9 +13910,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "9cbb704711a4",
+          "id": "6acfef70d99f",
           "file": "client/src/pages/merchant/Conversations.tsx",
-          "line": 653,
+          "line": 637,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -13907,9 +13933,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "0998a0e3e73e",
+          "id": "daf0c5ad8354",
           "file": "client/src/pages/merchant/Conversations.tsx",
-          "line": 658,
+          "line": 642,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -13931,9 +13957,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "3e47be3a8de6",
+          "id": "216aa8623ca5",
           "file": "client/src/pages/merchant/Conversations.tsx",
-          "line": 659,
+          "line": 643,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -13955,9 +13981,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "3dcf779d6025",
+          "id": "825ca4d787ab",
           "file": "client/src/pages/merchant/Conversations.tsx",
-          "line": 661,
+          "line": 645,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -13979,9 +14005,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "66f4f754c732",
+          "id": "80c9bad90ec1",
           "file": "client/src/pages/merchant/Conversations.tsx",
-          "line": 748,
+          "line": 732,
           "tag": "div",
           "role": "button",
           "kind": "action",
@@ -14002,9 +14028,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "4f78c2eb667e",
+          "id": "ee9c23dbd9f3",
           "file": "client/src/pages/merchant/Conversations.tsx",
-          "line": 798,
+          "line": 782,
           "tag": "a",
           "role": "",
           "kind": "action",
@@ -14025,9 +14051,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "7954d5567f56",
+          "id": "2b27f7eac714",
           "file": "client/src/pages/merchant/Conversations.tsx",
-          "line": 891,
+          "line": 875,
           "tag": "DialogContent",
           "role": "",
           "kind": "dialog",
@@ -14048,9 +14074,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "a578c83c9b75",
+          "id": "78478e89efe1",
           "file": "client/src/pages/merchant/Conversations.tsx",
-          "line": 918,
+          "line": 902,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -14071,9 +14097,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "baa6290f8ba3",
+          "id": "bd3c11733641",
           "file": "client/src/pages/merchant/Conversations.tsx",
-          "line": 957,
+          "line": 941,
           "tag": "Textarea",
           "role": "",
           "kind": "field",
@@ -14094,9 +14120,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "37759030c838",
+          "id": "bfb0658ae2d6",
           "file": "client/src/pages/merchant/Conversations.tsx",
-          "line": 981,
+          "line": 965,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -14117,9 +14143,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "e256d7e3b19e",
+          "id": "b2580f10464e",
           "file": "client/src/pages/merchant/Conversations.tsx",
-          "line": 1001,
+          "line": 985,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -14134,6 +14160,30 @@
           "required": false,
           "conditional": true,
           "conditions": [
+            "selectedConversation"
+          ],
+          "disabled": "",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "37dcf2ce0b34",
+          "file": "client/src/pages/merchant/Conversations.tsx",
+          "line": 1026,
+          "tag": "Button",
+          "role": "",
+          "kind": "action",
+          "label": "العودة إلى قائمة المحادثات",
+          "section": "رد صوتي",
+          "binding": "() => changeRoute({ conversationId: null })",
+          "type": "button",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": true,
+          "conditions": [
+            "selectedConversationId && !listError",
             "selectedConversation"
           ],
           "disabled": "",

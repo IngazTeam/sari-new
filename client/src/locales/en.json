@@ -12611,5 +12611,12 @@
     "latest": "Back to latest messages",
     "newMessages": "New messages — show latest",
     "replyFromLatest": "Return to the latest messages before replying. Your draft is kept while browsing."
+  },
+  "conversationNavigation": {
+    "firstPage": "Return to the first page",
+    "backToList": "Back to conversations",
+    "loading": "Opening conversation…",
+    "unavailable": "Could not open this conversation",
+    "tryAgain": "This conversation may be unavailable for this store, or could not be loaded. Try again or return to the list."
   }
 }
