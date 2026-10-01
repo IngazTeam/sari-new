@@ -1,0 +1,26 @@
+export const conversationConnectionAr={
+ connectedShort:'متصل',disconnectedShort:'غير متصل',noInstanceShort:'يلزم الربط',checkShort:'راجع الحالة',checkingShort:'جارٍ الفحص…',
+ title:'اتصال واتساب',authorized:'تم التحقق من الاتصال بالرقم الرئيسي.',disconnected:'الرقم الرئيسي غير متصل. راجع إدارة الأرقام لإعادة الربط.',
+ noInstance:'لا يوجد رقم رئيسي نشط. اختر رقمًا من إدارة الأرقام.',checkFailed:'تعذر التحقق من الاتصال. أعد الفحص دون تغيير الربط.',configurationMissing:'إعدادات الرقم الرئيسي غير مكتملة. راجع إدارة الأرقام.',unsupported:'هذا المزود لا يدعم الفحص هنا. راجع إدارة الأرقام.',
+ loading:'جارٍ التحقق من الاتصال…',refresh:'فحص الاتصال',manage:'إدارة الاتصال واستيراد الرسائل',numbers:'إدارة الأرقام',
+ scope:'الإصلاح يتحقق من إعدادات استقبال الأحداث ويضبط حمايتها عند الحاجة. استيراد الرسائل إجراء مستقل.',
+ repair:'فحص وإصلاح الاستقبال',repairing:'جارٍ التحقق من إعدادات الاستقبال…',import:'استيراد آخر الرسائل',importing:'جارٍ استيراد الرسائل…',
+ importScope:'استيراد حتى آخر 50 رسالة لكل محادثة فردية متاحة لدى المزود. لا يرسل ردودًا للعميل ولا يشمل المحادثات الجماعية.',
+ greenOnly:'الإصلاح والاستيراد هنا متاحان لاتصال Green API فقط.',readOnly:'إدارة الربط والاستيراد متاحة للمالك والمدير.',
+ verified:'تم التحقق من إعدادات الاستقبال. هذا لا يثبت وصول رسالة جديدة.',fixed:'تأكد تطبيق إعدادات الاستقبال المحمية. يمكنك الاستيراد الآن.',
+ imported:'استُوردت {{chats}} محادثة جديدة و{{messages}} رسالة. بقيت مسودات الرد كما هي.',partial:'استُوردت {{chats}} محادثة و{{messages}} رسالة، وتعذر استكمال بعض المحادثات. افحص الاتصال قبل المحاولة التالية.',
+ unconfirmed:'لم يتأكد تطبيق الإصلاح أو تطابق رقم الجلسة. افحص الاتصال وراجع إدارة الأرقام قبل المتابعة.',failed:'تعذر تأكيد اكتمال العملية. قد تكون بعض التغييرات قد طُبقت؛ افحص الاتصال قبل إعادة المحاولة.',refreshFirst:'استخدم «فحص الاتصال» قبل إعادة العملية.',
+};
+export const conversationConnectionEn:Record<keyof typeof conversationConnectionAr,string>={
+ connectedShort:'Connected',disconnectedShort:'Disconnected',noInstanceShort:'Connect a number',checkShort:'Check status',checkingShort:'Checking…',
+ title:'WhatsApp connection',authorized:'The primary number is connected.',disconnected:'The primary number is disconnected. Open number management to reconnect.',
+ noInstance:'There is no active primary number. Select one in number management.',checkFailed:'The connection could not be verified. Check again without changing the connection.',configurationMissing:'The primary number configuration is incomplete. Open number management.',unsupported:'This provider cannot be checked here. Open number management.',
+ loading:'Checking the connection…',refresh:'Check connection',manage:'Connection and message import',numbers:'Manage numbers',
+ scope:'Repair checks incoming event settings and configures authentication when needed. Message import is a separate action.',
+ repair:'Check and repair incoming events',repairing:'Checking incoming event settings…',import:'Import recent messages',importing:'Importing messages…',
+ importScope:'Imports up to the latest 50 messages per personal chat available from the provider. It does not send replies or include group chats.',
+ greenOnly:'Repair and import here are available for Green API connections only.',readOnly:'Owners and managers can manage the connection and import messages.',
+ verified:'Incoming event settings are verified. This does not prove receipt of a new message.',fixed:'Authenticated incoming event settings are verified. You can import now.',
+ imported:'Imported {{chats}} new conversations and {{messages}} messages. Reply drafts are unchanged.',partial:'Imported {{chats}} conversations and {{messages}} messages, but some chats could not be completed. Check the connection before retrying.',
+ unconfirmed:'The repair or session number could not be verified. Check the connection and number management before continuing.',failed:'Completion could not be confirmed. Some changes may have been applied; check the connection before retrying.',refreshFirst:'Use “Check connection” before retrying the action.',
+};

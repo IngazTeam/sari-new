@@ -92,6 +92,7 @@ vi.mock('react-i18next',()=>({useTranslation:()=>({i18n:{language:'ar',dir:()=> 
   const source={...ar,merchantUx:merchantAr};return key.split('.').reduce((v:any,k)=>v?.[k],source)??key;
 }})}));
 vi.mock('@/components/StaffTeamReview',()=>({StaffTeamReview:()=>null}));
+vi.mock('@/components/ConversationConnection',()=>({ConversationConnection:()=>null}));
 vi.mock('@/components/StaffAttemptReview',()=>({StaffAttemptReview:()=>null}));
 vi.mock('@/components/ConversationHandoff',()=>({ConversationHandoff:()=>null}));
 vi.mock('@/components/EscalationReconciliation',()=>({EscalationReconciliation:()=>null}));

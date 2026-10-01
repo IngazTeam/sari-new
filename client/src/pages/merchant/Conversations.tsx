@@ -1,3 +1,4 @@
+import {ConversationConnection} from '@/components/ConversationConnection';
 import {StaffTeamReview} from '@/components/StaffTeamReview';
 import { trpc } from '@/lib/trpc';
 import { staffVoiceAttempt } from '@/lib/staff-voice-attempt';
@@ -40,8 +41,6 @@ import {
   Image as ImageIcon,
   FileText,
   Download,
-  RefreshCw,
-  AlertTriangle,
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -173,13 +172,6 @@ function ScopedConversations({ currentMerchant, actorId }: { currentMerchant: { 
   const sendReplyMutation = trpc.conversations.sendReply.useMutation();
   const sendVoiceReplyMutation =
     trpc.conversations.sendVoiceReply.useMutation();
-  const syncMutation = trpc.conversations.syncFromWhatsApp.useMutation();
-  const diagnoseMutation = trpc.conversations.diagnoseWebhook.useMutation();
-  const { data: connectionHealth } =
-    trpc.conversations.connectionStatus.useQuery(undefined, {
-      refetchInterval: 60_000, // Check every 60 seconds
-      staleTime: 30_000,
-    });
   const utils = trpc.useUtils();
 
   const {
@@ -277,33 +269,6 @@ function ScopedConversations({ currentMerchant, actorId }: { currentMerchant: { 
   return (
     <div className="mw-inbox-page">
       <StaffTeamReview merchantId={currentMerchant.id} actorUserId={actorId}/>
-      {/* WhatsApp Disconnected Warning Banner */}
-      {connectionHealth &&
-        !connectionHealth.connected &&
-        connectionHealth.state !== 'no_instance' && (
-          <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg p-4 flex items-center gap-3">
-            <AlertTriangle className="w-5 h-5 text-red-600 shrink-0" />
-            <div className="flex-1">
-              <p className="text-red-800 dark:text-red-200 font-medium">
-                ⚠️ واتساب غير متصل — الرسائل لا تصل حالياً
-              </p>
-              <p className="text-red-600 dark:text-red-300 text-sm mt-1">
-                {connectionHealth.message}
-              </p>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="shrink-0 border-red-300 text-red-700 hover:bg-red-100"
-              onClick={() =>
-                (window.location.href = '/merchant/whatsapp-instances')
-              }
-            >
-              إعادة الربط
-            </Button>
-          </div>
-        )}
-
       {/* Header */}
       <div>
         <div className="mw-inbox-header">
@@ -315,58 +280,7 @@ function ScopedConversations({ currentMerchant, actorId }: { currentMerchant: { 
               {t('conversationsPage.description')}
             </p>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-2 shrink-0"
-            disabled={syncMutation.isPending || diagnoseMutation.isPending}
-            onClick={async () => {
-              try {
-                // Step 1: Diagnose & fix webhook + settings
-                const diagResult = await diagnoseMutation.mutateAsync();
-
-                if (diagResult.status === 'no_instance') {
-                  toast.error('لا يوجد اتصال واتساب نشط');
-                  return;
-                }
-
-                if (diagResult.status === 'disconnected') {
-                  toast.error(diagResult.message, { duration: 8000 });
-                  return;
-                }
-
-                if (diagResult.fixed) {
-                  toast.success(diagResult.message, { duration: 6000 });
-                } else if (diagResult.status === 'ok') {
-                  toast.success(diagResult.message);
-                } else {
-                  toast.error(diagResult.message, { duration: 6000 });
-                }
-
-                // Log details to console for debugging
-                console.log('[Diagnose] Full result:', diagResult);
-
-                // Step 2: Sync historical messages
-                const result = await syncMutation.mutateAsync();
-                if (result.messagesImported > 0 || result.chatsImported > 0) {
-                  toast.success(
-                    `تم استيراد ${result.chatsImported} محادثة جديدة و ${result.messagesImported} رسالة`
-                  );
-                }
-                utils.conversations.list.invalidate();
-                utils.conversations.listRecent.invalidate();
-              } catch (err: any) {
-                toast.error(err.message || 'فشلت المزامنة');
-              }
-            }}
-          >
-            <RefreshCw
-              className={`h-4 w-4 ${syncMutation.isPending || diagnoseMutation.isPending ? 'animate-spin' : ''}`}
-            />
-            {syncMutation.isPending || diagnoseMutation.isPending
-              ? 'جاري الفحص...'
-              : 'مزامنة من واتساب'}
-          </Button>
+          <ConversationConnection merchantId={currentMerchant.id} actorUserId={actorId}/>
         </div>
         {hasActiveFilter && (
           <div className="flex flex-wrap items-center gap-2 mt-3">
