@@ -53,10 +53,15 @@ it('fits an embedded modal to the parent viewport and restores content height af
   send({type:'sary-brain-preview',action:'modal',open:'false'});expect(frame.dataset.modal).toBe('true');
   send({type:'sary-brain-preview',action:'modal',open:false});expect(frame.style.height).toBe('3600px');expect(frame.scrollIntoView).toHaveBeenCalledTimes(1);
 });
-it.each(['knowledge-groups','sales-knowledge','brain-preview','reply-quality','knowledge-activity'])('allows only same-origin embedding for the explicit %s preview',page=>{
+it.each(['knowledge-groups','sales-knowledge','brain-preview','reply-quality','knowledge-activity','personas'])('allows only same-origin embedding for the explicit %s preview',page=>{
   expect(previewPolicy('/'+page+'.html',new URLSearchParams('embed=brain'))).toContain("frame-ancestors 'self'");
   expect(previewPolicy('/'+page+'.html',new URLSearchParams())).toContain("frame-ancestors 'none'");
   const html=readFileSync('prototypes/tenant-dashboard/site/'+page+'.html','utf8');expect(html).toContain('brain-embed.js');expect(html).toContain('brain-embed.css');
+});
+it('routes persona settings from its owned frame into the central dashboard',()=>{
+  frame.setAttribute('src','./personas.html?embed=brain');
+  send({type:'sary-brain-preview',action:'navigate',destination:'assistantSettings'});
+  expect(w.location.hash).toBe('#/page/merchant/bot-settings');
 });
 it.each(['/index.html','/','/elsewhere/knowledge-groups.html','/knowledge-removal.html'])('does not enable embedding or external connections for %s',path=>{
   const policy=previewPolicy(path,new URLSearchParams('embed=brain'));expect(policy).toContain("frame-ancestors 'none'");expect(policy).toContain("connect-src 'none'");expect(policy).toContain("object-src 'none'");

@@ -1,6 +1,6 @@
 // Same-origin, allowlisted communication between the central mockup and its actual-component previews.
 (() => {
-  const pages = new Set(['knowledge-groups.html','sales-knowledge.html','brain-preview.html','reply-quality.html','knowledge-activity.html']);
+  const pages = new Set(['knowledge-groups.html','sales-knowledge.html','brain-preview.html','reply-quality.html','knowledge-activity.html','personas.html']);
   const embedded = parent !== window && new URLSearchParams(location.search).get('embed') === 'brain' && pages.has(location.pathname.split('/').pop());
   if (embedded) {
     document.documentElement.dataset.brainEmbedded = 'true';
@@ -8,8 +8,9 @@
       const anchor=event.target.closest?.('a[href]');
       if(!anchor || event.defaultPrevented || event.button!==0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey)return;
       const url=new URL(anchor.getAttribute('href'),location.href);
-      if(url.origin===location.origin && url.hash==='#/page/merchant/test-sari'){
-        event.preventDefault(); parent.postMessage({type:'sary-brain-preview',action:'navigate',destination:'testSession'},location.origin);
+      const destination = {'#/page/merchant/test-sari':'testSession','#/page/merchant/bot-settings':'assistantSettings'}[url.hash];
+      if(url.origin===location.origin && destination){
+        event.preventDefault(); parent.postMessage({type:'sary-brain-preview',action:'navigate',destination},location.origin);
       }
     });
     let previous = -1, previousModal = false, scheduled = false;
@@ -46,6 +47,7 @@
     clear:()=>{epoch++;drafts.clear();removeEventListener('beforeunload',warn);}
   };
   const destinations = {
+    assistantSettings:()=>{location.hash='#/page/merchant/bot-settings';},
     documents:()=>window.SaryBrainPreview?.openAdd(), upload:()=>window.SaryBrainPreview?.openAdd(),
     pages:()=>window.SaryBrainPreview?.navigate('knowledge','pages'), faqs:()=>window.SaryBrainPreview?.navigate('knowledge','faq'),
     sections:()=>window.SaryBrainPreview?.navigate('knowledge','sections'), conflicts:()=>window.SaryBrainPreview?.navigate('knowledge','conflicts'),

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-01T02:42:03.334Z",
+  "generatedAt": "2026-10-01T03:05:36.811Z",
   "definition": "Every registered route is accounted for; source inventory and design completion are different statuses.",
   "routes": [
     {
@@ -28561,48 +28561,48 @@
       "controls": [
         "5f0080639c5b",
         "de1e76ce751c",
-        "ee3d00eb8212",
-        "ae6837ded888",
-        "80770ec6bd21",
-        "b435e091e946",
-        "d354c3552c32",
-        "e7d4bc0d2869",
-        "b18f67e1a455",
-        "d02fdb1d6bb5",
-        "70e9b16d901e",
-        "8948fe5f1892",
-        "5d4259d2db26",
-        "9888bea43870",
-        "6a382abd8f1d",
-        "27b76fa7fdcd",
-        "6e77755cae90",
-        "7d9abc1243fd",
-        "2ea5166ac4fd",
-        "3fbf45360a5b",
-        "5d6d813cfb4c",
-        "7a7471c462cd",
-        "99c83057d9c0",
-        "4aa36affa9a4",
-        "787e705f2a99",
-        "2ee4c502da79",
-        "aa6981f273ca",
-        "1e5f6385cf49",
-        "8f1d214268d9",
-        "aa203ce3d722",
-        "9474fc0af0c2",
-        "ebcfb776e9c9",
-        "5de92663ddc3",
-        "6da8259ee18a",
-        "da018f2334f5",
-        "4cf2b69529d5",
-        "9c4cea7856d1",
-        "2a7e0f2c3477",
-        "79faceb1d60d",
-        "636243533dc4",
-        "5812b38f5afd",
-        "22c5d681e039",
-        "712ac4c70b55",
-        "2882077e5e7a",
+        "536cb615cac4",
+        "98c9358d6912",
+        "09bc9ee447d8",
+        "d8b57e14855a",
+        "efb64e4839a0",
+        "2edfeebb942d",
+        "dada16f69e22",
+        "20acd9e7e334",
+        "e863d4485987",
+        "31f0a3c78acc",
+        "d0cf34aa685b",
+        "f81c286424fe",
+        "b97102200d6a",
+        "9216d73b8c4f",
+        "f76d27f847bd",
+        "d13f1234edbe",
+        "48ba81aadefa",
+        "7d1d606d0790",
+        "598fa3359543",
+        "55272cd412cc",
+        "665ceb619784",
+        "4891aa0a3eb4",
+        "3e8bded614f2",
+        "eaca12d1f04f",
+        "5be912095dff",
+        "fe7284e2f091",
+        "412baebf0273",
+        "dcb31511225f",
+        "abbb961317fb",
+        "69cdf79d6833",
+        "d1881095a856",
+        "965f5e6afa3a",
+        "77eeefb05e0b",
+        "71d07ff930b6",
+        "d9fdb3c5fd7f",
+        "7d1bf4d8968f",
+        "4988b790d3b5",
+        "caef260c5e56",
+        "2b5c9bf8688c",
+        "4f7197d19ad0",
+        "93ec3e5be8cd",
+        "d53b4194ac9a",
         "77ce5300e6f7",
         "58d9f8faadd4",
         "2610afd241cf",
@@ -28702,14 +28702,14 @@
           "review": "source-inventoried"
         },
         {
-          "id": "ee3d00eb8212",
+          "id": "536cb615cac4",
           "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-          "line": 613,
+          "line": 621,
           "tag": "Button",
           "role": "",
           "kind": "action",
           "label": "استعادة المسودة ومراجعتها",
-          "section": "مسودة شخصية لم تُعتمد",
+          "section": "ready virtualTeamReceiptUx.recoveryTitle virtualTeamDraftUx.title",
           "binding": "restoreDraft",
           "type": "button",
           "options": [],
@@ -28726,14 +28726,14 @@
           "review": "source-inventoried"
         },
         {
-          "id": "ae6837ded888",
+          "id": "98c9358d6912",
           "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-          "line": 622,
+          "line": 630,
           "tag": "Button",
           "role": "",
           "kind": "action",
           "label": "المتابعة دون استعادة من التخزين",
-          "section": "مسودة شخصية لم تُعتمد",
+          "section": "ready virtualTeamReceiptUx.recoveryTitle virtualTeamDraftUx.title",
           "binding": "() => {\n                  setRecovery({ state: \"missing\" });\n                  setStorageFailed(true);\n                }",
           "type": "button",
           "options": [],
@@ -28750,14 +28750,14 @@
           "review": "source-inventoried"
         },
         {
-          "id": "80770ec6bd21",
+          "id": "09bc9ee447d8",
           "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-          "line": 633,
+          "line": 641,
           "tag": "Button",
           "role": "",
           "kind": "action",
           "label": "حذف المسودة المحلية",
-          "section": "مسودة شخصية لم تُعتمد",
+          "section": "ready virtualTeamReceiptUx.recoveryTitle virtualTeamDraftUx.title",
           "binding": "discardDraft",
           "type": "button",
           "options": [],
@@ -28773,14 +28773,14 @@
           "review": "source-inventoried"
         },
         {
-          "id": "b435e091e946",
+          "id": "d8b57e14855a",
           "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-          "line": 642,
+          "line": 650,
           "tag": "Button",
           "role": "",
           "kind": "action",
           "label": "تحديث قائمة الفريق",
-          "section": "مسودة شخصية لم تُعتمد",
+          "section": "ready virtualTeamReceiptUx.recoveryTitle virtualTeamDraftUx.title",
           "binding": "() => void refreshActions()",
           "type": "button",
           "options": [],
@@ -28796,14 +28796,14 @@
           "review": "source-inventoried"
         },
         {
-          "id": "d354c3552c32",
+          "id": "efb64e4839a0",
           "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-          "line": 664,
+          "line": 672,
           "tag": "Link",
           "role": "",
           "kind": "action",
           "label": "إعدادات المساعد",
-          "section": "مسودة شخصية لم تُعتمد",
+          "section": "ready virtualTeamReceiptUx.recoveryTitle virtualTeamDraftUx.title",
           "binding": "/merchant/bot-settings",
           "type": "text",
           "options": [],
@@ -28817,14 +28817,14 @@
           "review": "source-inventoried"
         },
         {
-          "id": "e7d4bc0d2869",
+          "id": "2edfeebb942d",
           "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-          "line": 670,
+          "line": 678,
           "tag": "Link",
           "role": "",
           "kind": "action",
           "label": "جرّب ساري",
-          "section": "مسودة شخصية لم تُعتمد",
+          "section": "ready virtualTeamReceiptUx.recoveryTitle virtualTeamDraftUx.title",
           "binding": "/merchant/test-sari",
           "type": "text",
           "options": [],
@@ -28838,14 +28838,14 @@
           "review": "source-inventoried"
         },
         {
-          "id": "b18f67e1a455",
+          "id": "dada16f69e22",
           "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-          "line": 680,
+          "line": 688,
           "tag": "Input",
           "role": "",
           "kind": "field",
           "label": "ابحث بالاسم أو الدور",
-          "section": "مسودة شخصية لم تُعتمد",
+          "section": "ready virtualTeamReceiptUx.recoveryTitle virtualTeamDraftUx.title",
           "binding": "filter",
           "type": "text",
           "options": [],
@@ -28861,9 +28861,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "d02fdb1d6bb5",
+          "id": "20acd9e7e334",
           "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-          "line": 697,
+          "line": 705,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -28884,9 +28884,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "70e9b16d901e",
+          "id": "e863d4485987",
           "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-          "line": 724,
+          "line": 732,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -28907,9 +28907,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "8948fe5f1892",
+          "id": "31f0a3c78acc",
           "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-          "line": 747,
+          "line": 755,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -28930,9 +28930,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "5d4259d2db26",
+          "id": "d0cf34aa685b",
           "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-          "line": 839,
+          "line": 847,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -28953,9 +28953,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "9888bea43870",
+          "id": "f81c286424fe",
           "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-          "line": 856,
+          "line": 864,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -28976,9 +28976,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "6a382abd8f1d",
+          "id": "b97102200d6a",
           "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-          "line": 867,
+          "line": 875,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -28999,9 +28999,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "27b76fa7fdcd",
+          "id": "9216d73b8c4f",
           "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-          "line": 907,
+          "line": 915,
           "tag": "Input",
           "role": "",
           "kind": "field",
@@ -29020,9 +29020,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "6e77755cae90",
+          "id": "f76d27f847bd",
           "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-          "line": 918,
+          "line": 926,
           "tag": "Input",
           "role": "",
           "kind": "field",
@@ -29041,9 +29041,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "7d9abc1243fd",
+          "id": "d13f1234edbe",
           "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-          "line": 946,
+          "line": 954,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -29062,9 +29062,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "2ea5166ac4fd",
+          "id": "48ba81aadefa",
           "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-          "line": 975,
+          "line": 983,
           "tag": "DialogContent",
           "role": "",
           "kind": "dialog",
@@ -29083,9 +29083,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "3fbf45360a5b",
+          "id": "7d1d606d0790",
           "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-          "line": 1001,
+          "line": 1009,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -29104,9 +29104,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "5d6d813cfb4c",
+          "id": "598fa3359543",
           "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-          "line": 1036,
+          "line": 1044,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -29128,9 +29128,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "7a7471c462cd",
+          "id": "55272cd412cc",
           "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-          "line": 1074,
+          "line": 1082,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -29151,9 +29151,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "99c83057d9c0",
+          "id": "665ceb619784",
           "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-          "line": 1108,
+          "line": 1116,
           "tag": "button",
           "role": "",
           "kind": "action",
@@ -29174,9 +29174,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "4aa36affa9a4",
+          "id": "4891aa0a3eb4",
           "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-          "line": 1151,
+          "line": 1159,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -29197,9 +29197,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "787e705f2a99",
+          "id": "3e8bded614f2",
           "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-          "line": 1183,
+          "line": 1191,
           "tag": "Textarea",
           "role": "",
           "kind": "field",
@@ -29220,9 +29220,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "2ee4c502da79",
+          "id": "eaca12d1f04f",
           "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-          "line": 1208,
+          "line": 1216,
           "tag": "Input",
           "role": "",
           "kind": "field",
@@ -29243,9 +29243,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "aa6981f273ca",
+          "id": "5be912095dff",
           "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-          "line": 1225,
+          "line": 1233,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -29266,9 +29266,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "1e5f6385cf49",
+          "id": "fe7284e2f091",
           "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-          "line": 1238,
+          "line": 1246,
           "tag": "button",
           "role": "",
           "kind": "action",
@@ -29289,9 +29289,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "8f1d214268d9",
+          "id": "412baebf0273",
           "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-          "line": 1267,
+          "line": 1275,
           "tag": "Input",
           "role": "",
           "kind": "field",
@@ -29312,9 +29312,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "aa203ce3d722",
+          "id": "dcb31511225f",
           "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-          "line": 1285,
+          "line": 1293,
           "tag": "Input",
           "role": "",
           "kind": "field",
@@ -29335,9 +29335,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "9474fc0af0c2",
+          "id": "abbb961317fb",
           "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-          "line": 1295,
+          "line": 1303,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -29358,9 +29358,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "ebcfb776e9c9",
+          "id": "69cdf79d6833",
           "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-          "line": 1315,
+          "line": 1323,
           "tag": "Switch",
           "role": "",
           "kind": "field",
@@ -29381,9 +29381,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "5de92663ddc3",
+          "id": "d1881095a856",
           "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-          "line": 1330,
+          "line": 1338,
           "tag": "Switch",
           "role": "",
           "kind": "field",
@@ -29404,9 +29404,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "6da8259ee18a",
+          "id": "965f5e6afa3a",
           "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-          "line": 1355,
+          "line": 1367,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -29427,9 +29427,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "da018f2334f5",
+          "id": "77eeefb05e0b",
           "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-          "line": 1387,
+          "line": 1399,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -29450,9 +29450,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "4cf2b69529d5",
+          "id": "71d07ff930b6",
           "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-          "line": 1410,
+          "line": 1422,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -29473,9 +29473,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "9c4cea7856d1",
+          "id": "d9fdb3c5fd7f",
           "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-          "line": 1418,
+          "line": 1430,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -29496,9 +29496,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "2a7e0f2c3477",
+          "id": "7d1bf4d8968f",
           "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-          "line": 1431,
+          "line": 1443,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -29519,9 +29519,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "79faceb1d60d",
+          "id": "4988b790d3b5",
           "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-          "line": 1456,
+          "line": 1468,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -29540,9 +29540,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "636243533dc4",
+          "id": "caef260c5e56",
           "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-          "line": 1464,
+          "line": 1476,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -29561,9 +29561,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "5812b38f5afd",
+          "id": "2b5c9bf8688c",
           "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-          "line": 1490,
+          "line": 1502,
           "tag": "DialogContent",
           "role": "",
           "kind": "dialog",
@@ -29582,9 +29582,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "22c5d681e039",
+          "id": "4f7197d19ad0",
           "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-          "line": 1508,
+          "line": 1520,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -29603,9 +29603,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "712ac4c70b55",
+          "id": "93ec3e5be8cd",
           "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-          "line": 1516,
+          "line": 1528,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -29624,9 +29624,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "2882077e5e7a",
+          "id": "d53b4194ac9a",
           "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
-          "line": 1543,
+          "line": 1555,
           "tag": "DialogContent",
           "role": "",
           "kind": "dialog",

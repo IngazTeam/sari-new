@@ -172,6 +172,89 @@ afterEach(async () => {
   vi.unstubAllGlobals();
 });
 describe("rendered virtual team workflow", () => {
+  it("keeps every avatar and tone in the actual editor without losing fields between sections", async () => {
+    await render();
+    await click(ar.virtualTeamUx.new);
+    await fill("agent-name", "ريم");
+    await fill("agent-role", "مبيعات");
+    await fill("agent-personalityPrompt", "تعليمات محفوظة");
+    for (const label of Object.values(ar.virtualTeamUx.avatars))
+      expect(
+        [...document.querySelectorAll('[role="dialog"] details button')].some(
+          el => el.textContent?.trim().endsWith(label)
+        )
+      ).toBe(true);
+    for (const label of Object.values(ar.virtualTeamUx.tones))
+      expect(button(label)).toBeTruthy();
+    await click(ar.virtualTeamUx.avatars.sales);
+    await click(ar.virtualTeamUx.tones.persuasive);
+    await click(ar.virtualTeamUx.routing);
+    await click(ar.virtualTeamUx.identity);
+    expect(
+      (document.getElementById("agent-name") as HTMLInputElement).value
+    ).toBe("ريم");
+    await click(ar.virtualTeamUx.save);
+    expect(m.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        draft: expect.objectContaining({
+          avatarEmoji: "sales",
+          tone: "persuasive",
+          name: "ريم",
+        }),
+      })
+    );
+  });
+  it("validates routing hours, de-duplicates keywords and allows an inactive new persona", async () => {
+    await render();
+    await click(ar.virtualTeamUx.new);
+    await fill("agent-name", "ريم");
+    await fill("agent-role", "مبيعات");
+    await fill("agent-personalityPrompt", "تعليمات");
+    await click(ar.virtualTeamUx.routing);
+    await fill("agent-triggerKeywords", "سعر");
+    await click(ar.virtualTeamUx.add);
+    await fill("agent-triggerKeywords", "سعر");
+    await click(ar.virtualTeamUx.add);
+    await fill("agent-shiftStart", "22:00");
+    await click(ar.virtualTeamUx.save);
+    expect(m.save).not.toHaveBeenCalled();
+    expect(
+      document.getElementById("agent-shiftStart")?.getAttribute("aria-invalid")
+    ).toBe("true");
+    await fill("agent-shiftEnd", "06:00");
+    await act(async () => document.getElementById("agent-active")!.click());
+    await click(ar.virtualTeamUx.save);
+    expect(m.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        editing: null,
+        draft: expect.objectContaining({
+          triggerKeywords: ["سعر"],
+          shiftStart: "22:00",
+          shiftEnd: "06:00",
+          isActive: false,
+        }),
+      })
+    );
+  });
+  it("renders hostile persona text as text and submits explicit empty hours after clearing", async () => {
+    m.data[0] = {
+      ...m.data[0],
+      name: "<img src=x onerror=alert(1)>",
+      shiftStart: "22:00",
+      shiftEnd: "06:00",
+    };
+    await render();
+    expect(document.querySelector("img[src=x]")).toBeNull();
+    await click(`${ar.virtualTeamUx.edit} ${m.data[0].name}`);
+    await click(ar.virtualTeamUx.routing);
+    await click(ar.virtualTeamUx.clearHours);
+    await click(ar.virtualTeamUx.save);
+    expect(m.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        draft: expect.objectContaining({ shiftStart: "", shiftEnd: "" }),
+      })
+    );
+  });
   const result = (input: any) => ({
     merchantId: input.merchantId,
     actorId: 7,
@@ -357,7 +440,7 @@ describe("rendered virtual team workflow", () => {
     await render();
     await click(ar.virtualTeamDraftUx.restore);
     expect(document.body.textContent).toContain(
-      ar.virtualTeamDraftUx.unconfirmed
+      ar.virtualTeamReceiptUx.unconfirmed
     );
     expect((button(ar.virtualTeamUx.save) as HTMLButtonElement).disabled).toBe(
       true
@@ -583,7 +666,12 @@ describe("rendered virtual team workflow", () => {
       m.callbacks.onSettled();
     });
     await render();
-    expect(document.body.textContent).toContain(ar.virtualTeamUx.saveFailed);
+    expect(document.body.textContent).toContain(
+      ar.virtualTeamReceiptUx.unconfirmed
+    );
+    expect(document.body.textContent).not.toContain(
+      ar.virtualTeamUx.saveFailed
+    );
     expect(
       (document.getElementById("agent-name") as HTMLInputElement).value
     ).toBe("نورة");

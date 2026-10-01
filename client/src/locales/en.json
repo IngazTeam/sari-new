@@ -9813,6 +9813,9 @@
     "testSavedHint": "WhatsApp testing sends the saved welcome message to the store's registered number. Save your changes first."
   },
   "virtualTeamReceiptUx": {
+    "recoveryTitle": "A save request needs checking",
+    "recoveryFound": "The result of an earlier request did not reach this page. Restore the draft to check it before another save.",
+    "unconfirmed": "The save result is unconfirmed. Check the request result before retrying.",
     "saved": "Persona save confirmed",
     "savedHint": "This receipt confirms the earlier request. The team may have changed since; the list shows the current version.",
     "reference": "Save reference:",

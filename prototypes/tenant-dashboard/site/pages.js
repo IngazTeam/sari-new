@@ -118,6 +118,7 @@ window.TenantPages = (() => {
     if(mode!=='normal')return state(p,mode);
     if(p.kind==='state')return state(p,p.state);
     if(p.redirect)return renderPage(find(p.redirect));
+    if(p.route==='/merchant/virtual-team')return '<section class="space-y-4"><p class="page-local-note">محرر التطبيق الفعلي ببيانات محاكاة معزولة · <a href="./personas.html">فتح المعاينة المستقلة</a></p><iframe data-brain-preview title="موك أب شخصيات العمل" src="./personas.html?embed=brain" style="width:100%;height:900px;border:0;display:block;scroll-margin-top:80px"></iframe></section>';
     if(window.OrderPreview?.handles(p))return window.OrderPreview.render();
     if(window.ReportPreview?.handles(p))return window.ReportPreview.render();
     if(window.CustomerPreview?.handles(p))return window.CustomerPreview.render();

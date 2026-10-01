@@ -76,7 +76,7 @@ export default function VirtualTeamPage() {
   );
 }
 
-function VirtualTeamWorkspace({ scopeKey }: { scopeKey: string }) {
+export function VirtualTeamWorkspace({ scopeKey }: { scopeKey: string }) {
   const { t } = useTranslation();
   const utils = trpc.useUtils();
   const query = trpc.virtualAgents.listReview.useQuery();
@@ -600,11 +600,19 @@ function VirtualTeamWorkspace({ scopeKey }: { scopeKey: string }) {
           role="status"
           className="space-y-3 rounded-xl border bg-muted/30 p-4"
         >
-          <h2 className="font-semibold">{t("virtualTeamDraftUx.title")}</h2>
+          <h2 className="font-semibold">
+            {t(
+              recovery.state === "ready" && recovery.value.submitted
+                ? "virtualTeamReceiptUx.recoveryTitle"
+                : "virtualTeamDraftUx.title"
+            )}
+          </h2>
           <p>
             {t(
               recovery.state === "ready"
-                ? "virtualTeamDraftUx.found"
+                ? recovery.value.submitted
+                  ? "virtualTeamReceiptUx.recoveryFound"
+                  : "virtualTeamDraftUx.found"
                 : "virtualTeamDraftUx.unavailable"
             )}
           </p>
@@ -1348,7 +1356,11 @@ function VirtualTeamWorkspace({ scopeKey }: { scopeKey: string }) {
                 )}
                 {submitted && !busy && (
                   <p role="alert" className="text-sm">
-                    {t("virtualTeamDraftUx.unconfirmed")}
+                    {t(
+                      attempt
+                        ? "virtualTeamReceiptUx.unconfirmed"
+                        : "virtualTeamDraftUx.unconfirmed"
+                    )}
                   </p>
                 )}
                 {submitted && !busy && (
@@ -1443,7 +1455,7 @@ function VirtualTeamWorkspace({ scopeKey }: { scopeKey: string }) {
                     </div>
                   </div>
                 )}
-                {saveError && (
+                {saveError && !submitted && (
                   <p role="alert" className="text-sm text-destructive">
                     {t("virtualTeamUx.saveFailed")}
                   </p>

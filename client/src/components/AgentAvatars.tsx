@@ -122,7 +122,7 @@ export function AgentAvatar({ avatar, size = 'md' }: { avatar: string; size?: 's
   const legacy: Record<string, AvatarKey> = { '👩‍💼': 'reception', '👨‍💼': 'sales', '👩‍💻': 'support' };
   const key = (avatar in avatarStyles ? avatar : legacy[avatar] || 'default') as AvatarKey;
   return (
-    <div className={`${sizeClass} rounded-2xl overflow-hidden shadow-lg ring-2 ring-white dark:ring-gray-800`}>
+    <div aria-hidden="true" className={`${sizeClass} rounded-2xl overflow-hidden shadow-lg ring-2 ring-white dark:ring-gray-800`}>
       {avatarStyles[key]}
     </div>
   );
