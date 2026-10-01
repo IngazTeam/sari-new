@@ -20,6 +20,9 @@
 
 import { describe, it, expect } from 'vitest';
 import * as fs from 'fs';
+import { botSettings } from '../drizzle/schema';
+import { assistantOptionInput } from '../shared/assistant-options';
+import { setupReviewInput, setupCompletionInput } from '../shared/setup-completion';
 
 // Helper: read file with cache
 const _cache = new Map<string, string>();
@@ -175,18 +178,36 @@ describe('CG-03: Webhook ↔ Polling — config source parity', () => {
 // CG-04: LanguageSettings ↔ bot_settings sync
 // ═══════════════════════════════════════════════════════════════
 describe('CG-04: LanguageSettings must sync via botSettings', () => {
-  it('LanguageSettings must call botSettings.update (single source of truth)', () => {
+  it('LanguageSettings must read and save botSettings through the reviewed option hook', () => {
     const lang = readFile('./client/src/pages/merchant/LanguageSettings.tsx');
-    expect(lang).toContain('botSettings.update');
-    // settings.update was removed — no longer exists as a router
+    const hook = readFile('./client/src/hooks/useReviewedAssistantOption.ts');
+    const router = readFile('./server/routers-bot-settings.ts');
+    expect(lang).toMatch(/import\s*\{\s*useReviewedAssistantOption\s*\}\s*from\s*["']@\/hooks\/useReviewedAssistantOption["']/);
+    expect(lang).toMatch(/useReviewedAssistantOption\(\s*["']language["'],\s*readLanguage,\s*input,\s*scope/);
+    expect(hook).toContain('trpc.botSettings.get.useQuery');
+    expect(hook).toContain('trpc.botSettings.updateOption.useMutation');
+    expect(router).toMatch(/updateOption:\s*permissionProcedure\('bot_settings.manage'\)\.input\(assistantOptionInput\)/);
+    expect(router).toContain("input.kind === 'language' ? { language: input.language } : input.draft");
+    expect(router).toContain('updateBotSettings(ctx.merchantId, patch');
+    expect(router).toContain('expectedOptionRevision: input.expectedRevision');
     expect(lang).not.toContain('settings.update');
   });
 
-  it('LanguageSettings must pass language code to botSettings.update', () => {
+  it('LanguageSettings must submit a revisioned assistant language supported by the database', () => {
     const lang = readFile('./client/src/pages/merchant/LanguageSettings.tsx');
-    expect(lang).toContain('language: selectedLanguage');
-    expect(lang).toContain('botSettings.get.useQuery');
+    const hook = readFile('./client/src/hooks/useReviewedAssistantOption.ts');
+    expect(lang).toContain('language: draft.language');
+    expect(lang).toContain('expectedRevision');
+    expect(hook).toContain('mutation.mutateAsync(input(draft, revision))');
+    const languages = assistantOptionInput.options.flatMap(option => 'language' in option.shape ? option.shape.language.options : []);
+    expect(languages.sort()).toEqual([...botSettings.language.enumValues].sort());
+    for (const language of botSettings.language.enumValues) {
+      expect(assistantOptionInput.safeParse({ kind: 'language', language, expectedRevision: 'a'.repeat(64) }).success).toBe(true);
+    }
+    expect(assistantOptionInput.safeParse({ kind: 'language', language: 'invalid', expectedRevision: 'a'.repeat(64) }).success).toBe(false);
+    expect(assistantOptionInput.safeParse({ kind: 'language', language: 'ar' }).success).toBe(false);
     expect(lang).not.toContain('changeAppLanguage');
+    expect(hook).not.toContain('changeAppLanguage');
   });
 });
 
@@ -283,8 +304,8 @@ describe('CG-07: Prompt injection defense must be present', () => {
 describe('CG-08: Group message reply routing', () => {
   it('webhook must track groupChatId for group-mode routing', () => {
     const wh = readFile('./server/webhooks/greenapi.ts');
-    expect(wh).toContain('let groupChatId');
-    expect(wh).toContain('groupChatId = payload.senderData.chatId');
+    expect(wh).toMatch(/(?:let|const)\s+groupChatId(?:\s*:\s*string\s*\|\s*null)?\s*=\s*isGroupMessage\(payload\.senderData\.chatId\)\s*\?\s*payload\.senderData\.chatId\s*:\s*null/);
+    expect(wh).toContain("return chatId.endsWith('@g.us')");
   });
 
   it('main reply send must use groupChatId when available', () => {
@@ -308,56 +329,37 @@ describe('CG-09: Setup wizard language ↔ schema parity', () => {
   // and the implementation module so moving the router cannot weaken parity.
   const liveRouter = () => readFile('./server/routers.ts');
   const standaloneWizard = () => readFile('./server/routers-setup-wizard.ts');
-  const schema = () => readFile('./drizzle/schema.ts');
 
-  it('LIVE router botLanguage enum must include all schema language values', () => {
+  it('LIVE router must validate review and completion with the shared setup inputs', () => {
     const router = liveRouter();
-    const s = schema();
-
-    // Extract schema language values
-    const schemaMatch = s.match(/language:\s*mysqlEnum\(\[([^\]]+)\]/);
-    expect(schemaMatch).not.toBeNull();
-    const schemaValues = schemaMatch![1].replace(/'/g, '').split(',').map(v => v.trim());
-
     expect(router).toContain('import { setupWizardRouter } from "./routers-setup-wizard"');
     expect(router).toContain('setupWizard: setupWizardRouter');
-    const wizardBlock = standaloneWizard();
-    
-    // Each schema value must be accepted by the live wizard router
-    for (const val of schemaValues) {
-      expect(wizardBlock).toContain(`'${val}'`);
-    }
-  });
-
-  it('standalone wizard botLanguage must also match schema (prevent drift)', () => {
     const wizard = standaloneWizard();
-    const s = schema();
+    expect(wizard).toMatch(/import\s*\{\s*setupReviewInput,\s*setupCompletionInput,\s*setupReceiptInput,?\s*\}\s*from\s*["']\.\.\/shared\/setup-completion["']/);
+    expect(wizard).toMatch(/reviewSetup:\s*protectedProcedure\s*\.input\(setupReviewInput\)/);
+    expect(wizard).toMatch(/completeSetup:\s*protectedProcedure\s*\.input\(setupCompletionInput\)/);
+  });
 
-    const schemaMatch = s.match(/language:\s*mysqlEnum\(\[([^\]]+)\]/);
-    expect(schemaMatch).not.toBeNull();
-    const schemaValues = schemaMatch![1].replace(/'/g, '').split(',').map(v => v.trim());
-
-    for (const val of schemaValues) {
-      expect(wizard).toContain(`'${val}'`);
+  it('review and completion botLanguage enums must match the bot_settings column', () => {
+    for (const input of [setupReviewInput, setupCompletionInput]) {
+      const language = input.shape.fields.shape.botLanguage;
+      expect([...language.options].sort()).toEqual([...botSettings.language.enumValues].sort());
+      for (const value of botSettings.language.enumValues) {
+        expect(language.safeParse(value).success).toBe(true);
+      }
+      expect(language.safeParse('invalid').success).toBe(false);
     }
   });
 
-  it('LIVE router botTone enum must match schema tone enum', () => {
-    const router = liveRouter();
-    const s = schema();
-
-    const schemaMatch = s.match(/tone:\s*mysqlEnum\(\[([^\]]+)\]/);
-    expect(schemaMatch).not.toBeNull();
-    const schemaValues = schemaMatch![1].replace(/'/g, '').split(',').map(v => v.trim());
-
-    expect(router).toContain('import { setupWizardRouter } from "./routers-setup-wizard"');
-    expect(router).toContain('setupWizard: setupWizardRouter');
-    const wizardBlock = standaloneWizard();
-    const toneMatch = wizardBlock.match(/botTone:\s*z\.enum\(\[([^\]]+)\]/);
-    expect(toneMatch).not.toBeNull();
-    const toneValues = toneMatch![1].replace(/'/g, '').split(',').map(v => v.trim());
-
-    expect(toneValues.sort()).toEqual(schemaValues.sort());
+  it('review and completion botTone enums must match the bot_settings column', () => {
+    for (const input of [setupReviewInput, setupCompletionInput]) {
+      const tone = input.shape.fields.shape.botTone;
+      expect([...tone.options].sort()).toEqual([...botSettings.tone.enumValues].sort());
+      for (const value of botSettings.tone.enumValues) {
+        expect(tone.safeParse(value).success).toBe(true);
+      }
+      expect(tone.safeParse('invalid').success).toBe(false);
+    }
   });
 });
 
