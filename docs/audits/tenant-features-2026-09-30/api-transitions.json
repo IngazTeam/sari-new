@@ -32,36 +32,102 @@
       ]
     },
     {
-      "routes": ["/merchant/sari-brain"],
-      "removed": ["sariBrain.getKnowledgeSections"],
-      "required": ["sariBrain.sectionWorkspace", "sariBrain.sectionReview"],
+      "routes": [
+        "/merchant/sari-brain"
+      ],
+      "removed": [
+        "sariBrain.getKnowledgeSections"
+      ],
+      "required": [
+        "sariBrain.sectionWorkspace",
+        "sariBrain.sectionReview"
+      ],
       "note": "Sales guidance and improvement suggestions now read every saved section through the scoped, paginated section workspace with verified eligibility. Full text is loaded on demand instead of displaying only the first section and parsing away paragraphs. The old API remains registered but has no rendered query consumer.",
-      "evidence": ["client/src/components/SalesKnowledgeReadout.tsx", "server/sales-knowledge-readout.test.ts", "server/knowledge/section-workspace.ts"],
-      "checks": [{"file":"client/src/pages/merchant/SariBrain.tsx","contains":"<SalesKnowledgeReadout active={brainView === 'sales'}"}]
+      "evidence": [
+        "client/src/components/SalesKnowledgeReadout.tsx",
+        "server/sales-knowledge-readout.test.ts",
+        "server/knowledge/section-workspace.ts"
+      ],
+      "checks": [
+        {
+          "file": "client/src/pages/merchant/SariBrain.tsx",
+          "contains": "<SalesKnowledgeReadout active={brainView === 'sales'}"
+        }
+      ]
     },
     {
-      "routes": ["/merchant/setup-wizard"],
-      "removed": ["setupWizard.applyTemplate"],
-      "required": ["setupWizard.previewTemplate", "setupWizard.completeSetup"],
+      "routes": [
+        "/merchant/setup-wizard"
+      ],
+      "removed": [
+        "setupWizard.applyTemplate"
+      ],
+      "required": [
+        "setupWizard.previewTemplate",
+        "setupWizard.completeSetup"
+      ],
       "note": "Templates are read-only previews with explicit local draft choices; live catalog and settings are persisted only by final setup approval.",
-      "evidence": ["server/setup-template-api.test.ts", "server/setup-template-ui.test.ts", "shared/setup-template.ts"],
-      "checks": [{ "file": "client/src/pages/setup-wizard/TemplatesStep.tsx", "contains": "setupTemplatePatch" }]
+      "evidence": [
+        "server/setup-template-api.test.ts",
+        "server/setup-template-ui.test.ts",
+        "shared/setup-template.ts"
+      ],
+      "checks": [
+        {
+          "file": "client/src/pages/setup-wizard/TemplatesStep.tsx",
+          "contains": "setupTemplatePatch"
+        }
+      ]
     },
     {
-      "routes": ["/merchant/sheets/settings"],
-      "removed": ["sheets.getReportSettings", "sheets.setupSpreadsheet"],
-      "required": ["sheets.getStatus", "sheets.updateReportSettings", "sheets.disconnect", "sheets.setup.start", "sheets.setup.read", "sheets.setup.recover", "sheets.setup.acknowledge"],
+      "routes": [
+        "/merchant/sheets/settings"
+      ],
+      "removed": [
+        "sheets.getReportSettings",
+        "sheets.setupSpreadsheet"
+      ],
+      "required": [
+        "sheets.getStatus",
+        "sheets.updateReportSettings",
+        "sheets.disconnect",
+        "sheets.setup.start",
+        "sheets.setup.read",
+        "sheets.setup.recover",
+        "sheets.setup.acknowledge"
+      ],
       "note": "The connection workspace uses one scoped settings snapshot and explicit reviewed actions. Setup now uses a durable request and recoverable receipt; the old setup API has no UI consumer and is next for retirement.",
-      "evidence": ["docs/audits/tenant-sheets-settings-workspace-2026-09-30/REPORT.md"],
-      "checks": [{"file":"client/src/pages/SheetsSettings.tsx","contains":"SheetsSettingsWorkspace"}]
+      "evidence": [
+        "docs/audits/tenant-sheets-settings-workspace-2026-09-30/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "client/src/pages/SheetsSettings.tsx",
+          "contains": "SheetsSettingsWorkspace"
+        }
+      ]
     },
     {
-      "routes": ["/merchant/sheets/settings"],
-      "removed": ["sheets.getAuthUrl", "sheets.handleCallback"],
-      "required": ["sheets.beginOAuth"],
+      "routes": [
+        "/merchant/sheets/settings"
+      ],
+      "removed": [
+        "sheets.getAuthUrl",
+        "sheets.handleCallback"
+      ],
+      "required": [
+        "sheets.beginOAuth"
+      ],
       "note": "OAuth starts explicitly as a mutation and completes only through a session-bound one-time callback. No client consumes the retired unsafe entries.",
-      "evidence": ["docs/audits/tenant-sheets-oauth-2026-09-30/REPORT.md"],
-      "checks": [{"file":"server/auth-routes.ts","contains":"router.get('/oauth/google/sheets/callback', sheetsOAuthCallback)"}]
+      "evidence": [
+        "docs/audits/tenant-sheets-oauth-2026-09-30/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "server/auth-routes.ts",
+          "contains": "router.get('/oauth/google/sheets/callback', sheetsOAuthCallback)"
+        }
+      ]
     },
     {
       "routes": [
@@ -861,6 +927,34 @@
         {
           "file": "server/routers-sheets.ts",
           "contains": "syncInventory: permissionProcedure('products.manage')"
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/virtual-team"
+      ],
+      "removed": [
+        "virtualAgents.create",
+        "virtualAgents.update"
+      ],
+      "required": [
+        "virtualAgents.saveReviewed",
+        "virtualAgents.getSaveReceipt"
+      ],
+      "note": "The complete persona editor now persists a scoped frozen request before saving and recovers the atomic server receipt. Create and update behavior remains available through saveReviewed; the prior server procedures await retirement after consumer auditing.",
+      "evidence": [
+        "docs/audits/tenant-persona-save-receipts-2026-10-01/REPORT.md",
+        "docs/audits/tenant-persona-save-workspace-2026-10-01/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "client/src/pages/merchant/VirtualTeamPage.tsx",
+          "contains": "saveReviewed.mutate(input)"
+        },
+        {
+          "file": "server/virtual-team-save.ts",
+          "contains": "triggerKeywords: JSON.stringify(d.triggerKeywords)"
         }
       ]
     }

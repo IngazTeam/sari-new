@@ -9812,6 +9812,18 @@
     "unsavedPreview": "You have an unsaved draft. The test below uses saved settings only; save to test your changes.",
     "testSavedHint": "WhatsApp testing sends the saved welcome message to the store's registered number. Save your changes first."
   },
+  "virtualTeamReceiptUx": {
+    "saved": "Persona save confirmed",
+    "savedHint": "This receipt confirms the earlier request. The team may have changed since; the list shows the current version.",
+    "reference": "Save reference:",
+    "recover": "Check save result",
+    "reading": "Reading the request result…",
+    "readFailed": "The request result could not be confirmed. Keep the draft and try reading the result again.",
+    "missing": "No receipt is available yet. You can safely retry the same request; it will not create a duplicate if it already completed.",
+    "retry": "Retry the same request",
+    "discardHint": "Deleting the local draft does not cancel the earlier save request. Keep it to check the result before creating another request.",
+    "storageRequired": "The browser could not store the request reference. A new save will not start until storage is available. Keep this page open to preserve your draft."
+  },
   "virtualTeamDraftUx": {
     "title": "Unapplied persona draft",
     "found": "A draft exists for this account and store. Restore it and review the latest version before saving, or remove only the local draft.",

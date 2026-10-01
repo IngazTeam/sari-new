@@ -12,6 +12,12 @@ import {
 } from "@/lib/virtual-team-draft";
 import { knowledgeCacheEpoch } from "@/lib/knowledge-workspace-cache";
 import {
+  virtualTeamSaveInput,
+  virtualTeamSaveReceipt,
+  type VirtualTeamSaveInput,
+  type VirtualTeamSaveReceipt,
+} from "@shared/virtual-team-save";
+import {
   AssistantReplyPreview,
   type PreviewSelection,
 } from "@/components/merchant/AssistantReplyPreview";
@@ -52,7 +58,6 @@ import {
   emptyVirtualAgent,
   parseAgentKeywords,
   validateVirtualAgent,
-  virtualAgentPayload,
   virtualAgentTones,
   type VirtualAgentDraft,
 } from "../../../../shared/virtual-agent-form";
@@ -83,6 +88,15 @@ function VirtualTeamWorkspace({ scopeKey }: { scopeKey: string }) {
   );
   const [storageFailed, setStorageFailed] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [attempt, setAttempt] = useState<VirtualTeamSaveInput | undefined>();
+  const [saveReceipt, setSaveReceipt] = useState<VirtualTeamSaveReceipt | null>(
+    null
+  );
+  const [receiptState, setReceiptState] = useState<
+    "idle" | "missing" | "error"
+  >("idle");
+  const [receiptBusy, setReceiptBusy] = useState(false);
+  const receiptLock = useRef(false);
   const [restored, setRestored] = useState(false);
   useEffect(() => {
     alive.current = true;
@@ -130,10 +144,28 @@ function VirtualTeamWorkspace({ scopeKey }: { scopeKey: string }) {
       if (alive.current) setActionError(true);
     },
   });
-  const saved = () => {
-    if (!alive.current) return;
-    discardVirtualTeamDraft(scopeKey, cacheEpoch.current);
-    setRecovery({ state: "missing" });
+  const saved = (value: unknown, submittedInput = attempt) => {
+    if (!alive.current || cacheEpoch.current !== knowledgeCacheEpoch()) return;
+    const parsed = virtualTeamSaveReceipt.safeParse(value);
+    if (
+      !submittedInput ||
+      !parsed.success ||
+      parsed.data.actorId !== Number(scopeKey.split(":")[0]) ||
+      parsed.data.merchantId !== submittedInput.merchantId ||
+      parsed.data.requestId !== submittedInput.requestId ||
+      parsed.data.reviewedRevision !== submittedInput.expectedRevision ||
+      parsed.data.operation !==
+        (submittedInput.editing === null ? "create" : "update") ||
+      (submittedInput.editing !== null &&
+        parsed.data.personaId !== submittedInput.editing)
+    ) {
+      setReceiptState("error");
+      return;
+    }
+    const removed = discardVirtualTeamDraft(scopeKey, cacheEpoch.current);
+    setRecovery(removed ? { state: "missing" } : { state: "unavailable" });
+    setSaveReceipt(parsed.data);
+    setAttempt(undefined);
     setSubmitted(false);
     void utils.virtualAgents.listReview.invalidate();
     void utils.virtualAgents.list.invalidate();
@@ -142,8 +174,10 @@ function VirtualTeamWorkspace({ scopeKey }: { scopeKey: string }) {
     toast.success(t("virtualTeamUx.saved"));
   };
   const failed = (error?: { data?: { code?: string } | null }) => {
-    if (!alive.current) return;
+    if (!alive.current || cacheEpoch.current !== knowledgeCacheEpoch()) return;
     if (error?.data?.code === "CONFLICT") {
+      cacheDraft(false);
+      setAttempt(undefined);
       setRestored(false);
       setSubmitted(false);
       setConflict(true);
@@ -154,19 +188,15 @@ function VirtualTeamWorkspace({ scopeKey }: { scopeKey: string }) {
         ["BAD_REQUEST", "FORBIDDEN", "UNAUTHORIZED", "NOT_FOUND"].includes(
           error?.data?.code ?? ""
         )
-      )
+      ) {
+        cacheDraft(false);
         setSubmitted(false);
+        setAttempt(undefined);
+      }
     }
   };
-  const create = trpc.virtualAgents.create.useMutation({
-    onSuccess: saved,
-    onError: failed,
-    onSettled: () => {
-      saveLock.current = false;
-    },
-  });
-  const update = trpc.virtualAgents.update.useMutation({
-    onSuccess: saved,
+  const saveReviewed = trpc.virtualAgents.saveReviewed.useMutation({
+    onSuccess: (result, input) => saved(result, input),
     onError: failed,
     onSettled: () => {
       saveLock.current = false;
@@ -195,7 +225,7 @@ function VirtualTeamWorkspace({ scopeKey }: { scopeKey: string }) {
       if (alive.current) setActionError(true);
     },
   });
-  const busy = create.isPending || update.isPending || reviewBusy;
+  const busy = saveReviewed.isPending || reviewBusy || receiptBusy;
   const agents = query.data?.agents || [];
   const canManage = !!query.data?.canManage && !query.isError && !actionError;
   const canPreview = !!query.data?.canManage && !query.isError;
@@ -204,7 +234,8 @@ function VirtualTeamWorkspace({ scopeKey }: { scopeKey: string }) {
   function cacheDraft(
     wasSubmitted = submitted,
     currentForm = form,
-    currentKeywords = keywords
+    currentKeywords = keywords,
+    currentAttempt = attempt
   ) {
     const ok = writeVirtualTeamDraft(
       scopeKey,
@@ -216,10 +247,12 @@ function VirtualTeamWorkspace({ scopeKey }: { scopeKey: string }) {
         keywords: currentKeywords,
         tab,
         submitted: wasSubmitted,
+        ...(wasSubmitted && currentAttempt ? { attempt: currentAttempt } : {}),
       },
       cacheEpoch.current
     );
     setStorageFailed(!ok);
+    return ok;
   }
   useEffect(() => {
     if (open && revision && (dirty || submitted)) cacheDraft();
@@ -234,16 +267,17 @@ function VirtualTeamWorkspace({ scopeKey }: { scopeKey: string }) {
     base,
     editing,
     scopeKey,
+    attempt,
   ]);
   useEffect(() => {
-    if (!open || !dirty || !storageFailed) return;
+    if (!open || (!dirty && !submitted) || !storageFailed) return;
     const warn = (event: BeforeUnloadEvent) => {
       event.preventDefault();
       event.returnValue = "";
     };
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
-  }, [open, dirty, storageFailed]);
+  }, [open, dirty, submitted, storageFailed]);
   function restoreDraft() {
     if (recovery.state !== "ready" || !canManage) return;
     const value = recovery.value;
@@ -254,11 +288,13 @@ function VirtualTeamWorkspace({ scopeKey }: { scopeKey: string }) {
     setKeywords(value.keywords);
     setTab(value.tab);
     setSubmitted(value.submitted);
+    setAttempt(value.attempt);
+    setReceiptState("idle");
     initialDraft.current = JSON.stringify(value.base);
     setErrors({});
     setSaveError(false);
     setRestored(true);
-    setConflict(true);
+    setConflict(!value.submitted);
     setReview(null);
     setReviewError(false);
     setConfirmDiscard(false);
@@ -270,6 +306,56 @@ function VirtualTeamWorkspace({ scopeKey }: { scopeKey: string }) {
     setStorageFailed(!removed);
     setRecovery(removed ? { state: "missing" } : { state: "unavailable" });
     setSubmitted(false);
+    setAttempt(undefined);
+    setReceiptState("idle");
+  }
+  async function recoverSave() {
+    if (
+      !attempt ||
+      receiptLock.current ||
+      saveLock.current ||
+      !canManage ||
+      cacheEpoch.current !== knowledgeCacheEpoch()
+    )
+      return;
+    receiptLock.current = true;
+    setReceiptBusy(true);
+    setReceiptState("idle");
+    try {
+      const result = await utils.virtualAgents.getSaveReceipt.fetch(
+        {
+          merchantId: attempt.merchantId,
+          requestId: attempt.requestId,
+        },
+        { staleTime: 0 }
+      );
+      if (!alive.current || cacheEpoch.current !== knowledgeCacheEpoch())
+        return;
+      if (result) saved(result, attempt);
+      else setReceiptState("missing");
+    } catch {
+      if (alive.current && cacheEpoch.current === knowledgeCacheEpoch())
+        setReceiptState("error");
+    } finally {
+      receiptLock.current = false;
+      if (alive.current) setReceiptBusy(false);
+    }
+  }
+  function retrySave() {
+    if (
+      !attempt ||
+      receiptState !== "missing" ||
+      busy ||
+      saveLock.current ||
+      receiptLock.current ||
+      !canManage ||
+      cacheEpoch.current !== knowledgeCacheEpoch()
+    )
+      return;
+    saveLock.current = true;
+    setReceiptState("idle");
+    setSaveError(false);
+    saveReviewed.mutate(attempt);
   }
   async function loadReview() {
     if (reviewBusy) return;
@@ -312,6 +398,8 @@ function VirtualTeamWorkspace({ scopeKey }: { scopeKey: string }) {
       return;
     }
     setSubmitted(false);
+    setAttempt(undefined);
+    setReceiptState("idle");
     setStorageFailed(false);
     setRestored(false);
     setRevision(query.data.revision);
@@ -384,33 +472,39 @@ function VirtualTeamWorkspace({ scopeKey }: { scopeKey: string }) {
       );
       return;
     }
-    const payload = virtualAgentPayload(draft);
-    setForm(draft);
+    let input: VirtualTeamSaveInput;
+    try {
+      input = virtualTeamSaveInput.parse({
+        merchantId: Number(scopeKey.split(":")[1]),
+        requestId: crypto.randomUUID(),
+        editing,
+        expectedRevision: revision,
+        draft,
+      });
+    } catch {
+      setSaveError(true);
+      return;
+    }
+    setForm(input.draft);
     setKeywords("");
-    cacheDraft(true, draft, "");
+    if (!cacheDraft(true, input.draft, "", input)) {
+      cacheDraft(false, input.draft, "");
+      setSaveError(true);
+      return;
+    }
+    setAttempt(input);
+    setReceiptState("idle");
     setSubmitted(true);
     saveLock.current = true;
-    // null explicitly removes an existing shift; undefined leaves it unchanged.
-    if (editing !== null)
-      update.mutate({
-        expectedRevision: revision,
-        id: editing,
-        ...payload,
-        isActive: draft.isActive,
-        shiftStart: draft.shiftStart || null,
-        shiftEnd: draft.shiftEnd || null,
-      });
-    else
-      create.mutate({
-        expectedRevision: revision,
-        ...payload,
-        shiftStart: draft.shiftStart || undefined,
-        shiftEnd: draft.shiftEnd || undefined,
-      });
+    saveReviewed.mutate(input);
   }
   function closeEditor() {
-    if (saveLock.current) return;
-    if (JSON.stringify(form) !== initialDraft.current || keywords.trim())
+    if (saveLock.current || receiptLock.current) return;
+    if (
+      submitted ||
+      JSON.stringify(form) !== initialDraft.current ||
+      keywords.trim()
+    )
       setConfirmDiscard(true);
     else setOpen(false);
   }
@@ -486,6 +580,19 @@ function VirtualTeamWorkspace({ scopeKey }: { scopeKey: string }) {
           {t("virtualTeamUx.new")}
         </Button>
       </header>
+      {saveReceipt && (
+        <section
+          role="status"
+          className="space-y-2 rounded-xl border bg-muted/30 p-4"
+        >
+          <h2 className="font-semibold">{t("virtualTeamReceiptUx.saved")}</h2>
+          <p className="text-sm">{t("virtualTeamReceiptUx.savedHint")}</p>
+          <p className="text-sm">
+            {t("virtualTeamReceiptUx.reference")}{" "}
+            <bdi className="break-all">{saveReceipt.requestId}</bdi>
+          </p>
+        </section>
+      )}
       {recovery.state !== "missing" && !open && (
         <section
           id="persona-draft-recovery"
@@ -1211,34 +1318,32 @@ function VirtualTeamWorkspace({ scopeKey }: { scopeKey: string }) {
                       onCheckedChange={v => set("isDefault", v)}
                     />
                   </div>
-                  {editing !== null && (
-                    <div className="flex items-start justify-between gap-4 rounded-xl border p-4">
-                      <div>
-                        <Label htmlFor="agent-active">
-                          {t("virtualTeamUx.enabled")}
-                        </Label>
-                        <p className="mt-2 text-sm text-muted-foreground">
-                          {t("virtualTeamUx.enabledHelp")}
-                        </p>
-                      </div>
-                      <Switch
-                        id="agent-active"
-                        checked={form.isActive}
-                        onCheckedChange={v => set("isActive", v)}
-                      />
+                  <div className="flex items-start justify-between gap-4 rounded-xl border p-4">
+                    <div>
+                      <Label htmlFor="agent-active">
+                        {t("virtualTeamUx.enabled")}
+                      </Label>
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        {t("virtualTeamUx.enabledHelp")}
+                      </p>
                     </div>
-                  )}
+                    <Switch
+                      id="agent-active"
+                      checked={form.isActive}
+                      onCheckedChange={v => set("isActive", v)}
+                    />
+                  </div>
                 </div>
               )}
             </fieldset>
-            <DialogFooter className="border-t bg-card p-4">
+            <DialogFooter className="max-h-[45dvh] shrink-0 overflow-y-auto border-t bg-card p-4">
               <div className="w-full space-y-3">
                 <p className="text-xs text-muted-foreground">
                   {t("virtualTeamDraftUx.retention")}
                 </p>
                 {storageFailed && (
                   <p role="alert" className="text-sm text-destructive">
-                    {t("virtualTeamDraftUx.storageFailed")}
+                    {t("virtualTeamReceiptUx.storageRequired")}
                   </p>
                 )}
                 {submitted && !busy && (
@@ -1250,21 +1355,57 @@ function VirtualTeamWorkspace({ scopeKey }: { scopeKey: string }) {
                   <Button
                     type="button"
                     variant="outline"
-                    disabled={reviewBusy}
+                    disabled={!canManage}
                     onClick={() => {
-                      setConflict(true);
-                      void loadReview();
+                      if (attempt) void recoverSave();
+                      else {
+                        setConflict(true);
+                        void loadReview();
+                      }
                     }}
                   >
-                    {t("virtualTeamDraftUx.reviewSaved")}
+                    {t(
+                      attempt
+                        ? "virtualTeamReceiptUx.recover"
+                        : "virtualTeamDraftUx.reviewSaved"
+                    )}
                   </Button>
+                )}
+                {receiptBusy && (
+                  <p role="status" className="text-sm">
+                    {t("virtualTeamReceiptUx.reading")}
+                  </p>
+                )}
+                {submitted && receiptState === "error" && (
+                  <p role="alert" className="text-sm text-destructive">
+                    {t("virtualTeamReceiptUx.readFailed")}
+                  </p>
+                )}
+                {submitted && attempt && receiptState === "missing" && (
+                  <div className="space-y-2 text-sm">
+                    <p role="status">{t("virtualTeamReceiptUx.missing")}</p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={busy || !canManage}
+                      onClick={retrySave}
+                    >
+                      {t("virtualTeamReceiptUx.retry")}
+                    </Button>
+                  </div>
                 )}
                 {confirmDiscard && (
                   <div
                     role="alert"
                     className="space-y-2 rounded-xl border bg-muted p-3 text-sm"
                   >
-                    <p>{t("personaPreviewUx.discardHint")}</p>
+                    <p>
+                      {t(
+                        submitted
+                          ? "virtualTeamReceiptUx.discardHint"
+                          : "personaPreviewUx.discardHint"
+                      )}
+                    </p>
                     <div className="flex flex-wrap gap-2">
                       <Button
                         type="button"

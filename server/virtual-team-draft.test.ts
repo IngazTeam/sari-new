@@ -45,6 +45,33 @@ it("keeps complete unfinished fields, raw keyword text and the active tab withou
   });
   expect(localStorage.length).toBe(0);
 });
+it("preserves a frozen request and rejects mismatched scope, editor or reviewed revision", () => {
+  const original = fixture();
+  const form = { ...original.form, role: "دعم" };
+  const attempt = {
+    merchantId: 20,
+    requestId: "30000000-0000-4000-8000-000000000001",
+    editing: 12,
+    expectedRevision: original.revision,
+    draft: form,
+  };
+  const value = { ...original, form, keywords: "", submitted: true, attempt };
+  expect(writeVirtualTeamDraft(scope, value, knowledgeCacheEpoch())).toBe(true);
+  expect(readVirtualTeamDraft(scope)).toMatchObject({ value: { attempt } });
+  for (const change of [
+    { merchantId: 21 },
+    { editing: 99 },
+    { expectedRevision: "b".repeat(64) },
+    { draft: { ...form, name: "Other" } },
+  ])
+    expect(
+      writeVirtualTeamDraft(
+        scope,
+        { ...value, attempt: { ...attempt, ...change } },
+        knowledgeCacheEpoch()
+      )
+    ).toBe(false);
+});
 it("reads a stored draft after a fresh page instance without relying on memory", () => {
   sessionStorage.setItem(
     prefix + scope,

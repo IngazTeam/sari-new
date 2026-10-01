@@ -12,6 +12,8 @@ const m = vi.hoisted(() => ({
   canManage: true,
   scope: "7:20:virtual-team",
   refetch: vi.fn(),
+  receipt: vi.fn(),
+  save: vi.fn(),
   updateCallbacks: {} as any,
   create: vi.fn(),
   update: vi.fn(),
@@ -25,6 +27,7 @@ vi.mock("../client/src/lib/trpc", () => ({
       virtualAgents: {
         list: { invalidate: vi.fn() },
         listReview: { invalidate: vi.fn() },
+        getSaveReceipt: { fetch: m.receipt },
       },
     }),
     ai: { chat: { useMutation: () => ({ mutateAsync: vi.fn() }) } },
@@ -39,16 +42,17 @@ vi.mock("../client/src/lib/trpc", () => ({
           refetch: m.refetch,
         }),
       },
-      create: {
+      saveReviewed: {
         useMutation: (callbacks: any) => {
           m.callbacks = callbacks;
-          return { mutate: m.create, isPending: m.pending };
-        },
-      },
-      update: {
-        useMutation: (callbacks: any) => {
           m.updateCallbacks = callbacks;
-          return { mutate: m.update, isPending: false };
+          return {
+            mutate: (input: any) => {
+              m.save(input);
+              (input.editing === null ? m.create : m.update)(input);
+            },
+            isPending: m.pending,
+          };
         },
       },
       delete: { useMutation: () => ({ mutate: vi.fn(), isPending: false }) },
@@ -127,6 +131,7 @@ beforeEach(() => {
   m.canManage = true;
   m.scope = "7:20:virtual-team";
   m.refetch.mockReset();
+  m.receipt.mockReset();
   m.data = [
     {
       id: 12,
@@ -167,6 +172,125 @@ afterEach(async () => {
   vi.unstubAllGlobals();
 });
 describe("rendered virtual team workflow", () => {
+  const result = (input: any) => ({
+    merchantId: input.merchantId,
+    actorId: 7,
+    requestId: input.requestId,
+    operation: input.editing === null ? "create" : "update",
+    personaId: input.editing ?? 55,
+    reviewedRevision: input.expectedRevision,
+    revisionAfter: "b".repeat(64),
+    savedAt: new Date().toISOString(),
+  });
+  async function uncertainSave() {
+    await render();
+    await click(`${ar.virtualTeamUx.edit} نورة`);
+    await fill("agent-name", "حفظ منقطع");
+    await click(ar.virtualTeamUx.save);
+    const input = m.save.mock.calls[0][0];
+    await act(async () => {
+      m.callbacks.onError();
+      m.callbacks.onSettled();
+    });
+    return input;
+  }
+  it("recovers the exact receipt after remount without sending another mutation", async () => {
+    const input = await uncertainSave();
+    await act(async () => root.render(null));
+    await render();
+    await click(ar.virtualTeamDraftUx.restore);
+    m.receipt.mockResolvedValue(result(input));
+    await click(ar.virtualTeamReceiptUx.recover);
+    expect(m.receipt).toHaveBeenCalledWith(
+      { merchantId: 20, requestId: input.requestId },
+      { staleTime: 0 }
+    );
+    expect(m.save).toHaveBeenCalledTimes(1);
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(document.body.textContent).toContain(ar.virtualTeamReceiptUx.saved);
+    expect(
+      sessionStorage.getItem("sary:virtual-team-draft:v1:7:20:virtual-team")
+    ).toBeNull();
+  });
+  it("retries only after an explicit missing receipt using the identical frozen request", async () => {
+    const input = await uncertainSave();
+    m.receipt.mockRejectedValueOnce(Error("offline"));
+    await click(ar.virtualTeamReceiptUx.recover);
+    expect(document.body.textContent).toContain(
+      ar.virtualTeamReceiptUx.readFailed
+    );
+    expect(document.body.textContent).not.toContain(
+      ar.virtualTeamReceiptUx.retry
+    );
+    m.receipt.mockResolvedValueOnce(null);
+    await click(ar.virtualTeamReceiptUx.recover);
+    expect(m.save).toHaveBeenCalledTimes(1);
+    await click(ar.virtualTeamReceiptUx.retry);
+    expect(m.save).toHaveBeenCalledTimes(2);
+    expect(m.save.mock.calls[1][0]).toEqual(input);
+    await act(async () => {
+      m.callbacks.onSuccess(result(input), input);
+      m.callbacks.onSettled();
+    });
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+  });
+  it.each([
+    { actorId: 8 },
+    { merchantId: 21 },
+    { requestId: "30000000-0000-4000-8000-000000000099" },
+    { personaId: 99 },
+    { reviewedRevision: "c".repeat(64) },
+  ])(
+    "rejects a receipt belonging to another request or scope: %j",
+    async change => {
+      const input = await uncertainSave();
+      m.receipt.mockResolvedValue({ ...result(input), ...change });
+      await click(ar.virtualTeamReceiptUx.recover);
+      expect(document.querySelector('[role="dialog"]')).not.toBeNull();
+      expect(document.body.textContent).toContain(
+        ar.virtualTeamReceiptUx.readFailed
+      );
+      expect(
+        (button(ar.virtualTeamUx.save) as HTMLButtonElement).disabled
+      ).toBe(true);
+      expect(m.save).toHaveBeenCalledTimes(1);
+    }
+  );
+  it("does not start a write when the browser cannot persist its request reference", async () => {
+    await render();
+    await click(`${ar.virtualTeamUx.edit} نورة`);
+    await fill("agent-name", "مسودة محلية");
+    const fail = vi
+      .spyOn(Storage.prototype, "setItem")
+      .mockImplementation(() => {
+        throw Error("quota");
+      });
+    await click(ar.virtualTeamUx.save);
+    expect(m.save).not.toHaveBeenCalled();
+    expect(document.body.textContent).toContain(
+      ar.virtualTeamReceiptUx.storageRequired
+    );
+    fail.mockRestore();
+  });
+  it("keeps a legacy submitted draft blocked without inventing an idempotency reference", async () => {
+    const input = await uncertainSave();
+    const key = "sary:virtual-team-draft:v1:7:20:virtual-team";
+    const legacy = JSON.parse(sessionStorage.getItem(key)!);
+    delete legacy.attempt;
+    await act(async () => root.render(null));
+    clearKnowledgeWorkspace();
+    sessionStorage.setItem(key, JSON.stringify(legacy));
+    await render();
+    await click(ar.virtualTeamDraftUx.restore);
+    expect(document.body.textContent).toContain(
+      ar.virtualTeamDraftUx.reviewSaved
+    );
+    expect(document.body.textContent).not.toContain(
+      ar.virtualTeamReceiptUx.retry
+    );
+    expect(m.save.mock.calls[0][0]).toEqual(input);
+    expect(m.save).toHaveBeenCalledTimes(1);
+  });
   it("recovers the unfinished editor after remount and requires a fresh review before any save", async () => {
     await render();
     await click(`${ar.virtualTeamUx.edit} نورة`);
@@ -198,8 +322,11 @@ describe("rendered virtual team workflow", () => {
     await click(ar.virtualTeamUx.save);
     expect(m.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        name: "مسودة بعد المغادرة",
-        triggerKeywords: '["كلمة معلقة"]',
+        editing: 12,
+        draft: expect.objectContaining({
+          name: "مسودة بعد المغادرة",
+          triggerKeywords: ["كلمة معلقة"],
+        }),
       })
     );
   });
@@ -245,7 +372,7 @@ describe("rendered virtual team workflow", () => {
     expect(m.update).toHaveBeenLastCalledWith(
       expect.objectContaining({
         expectedRevision: "a".repeat(64),
-        name: "تعديلي",
+        draft: expect.objectContaining({ name: "تعديلي" }),
       })
     );
     await act(async () => {
@@ -291,8 +418,7 @@ describe("rendered virtual team workflow", () => {
     expect(m.update).toHaveBeenLastCalledWith(
       expect.objectContaining({
         expectedRevision: "b".repeat(64),
-        name: "تعديلي",
-        role: "مبيعات",
+        draft: expect.objectContaining({ name: "تعديلي", role: "مبيعات" }),
       })
     );
   });
@@ -327,7 +453,10 @@ describe("rendered virtual team workflow", () => {
     await fill("agent-name", "Mine");
     await click(ar.virtualTeamUx.save);
     expect(m.update).toHaveBeenLastCalledWith(
-      expect.objectContaining({ expectedRevision: "a".repeat(64), role: "دعم" })
+      expect.objectContaining({
+        expectedRevision: "a".repeat(64),
+        draft: expect.objectContaining({ role: "دعم" }),
+      })
     );
   });
   it("discards the prior store's form on scope change and ignores its late success", async () => {

@@ -1,6 +1,10 @@
 import { z } from "zod";
 import { knowledgeCacheEpoch } from "./knowledge-workspace-cache";
 import { virtualAgentTones } from "@shared/virtual-agent-form";
+import {
+  virtualTeamSaveInput,
+  virtualTeamSaveDraft,
+} from "@shared/virtual-team-save";
 
 const draft = z
   .object({
@@ -29,8 +33,22 @@ const record = z
     keywords: z.string().max(100000),
     tab: z.enum(["identity", "routing"]),
     submitted: z.boolean(),
+    attempt: virtualTeamSaveInput.optional(),
   })
-  .strict();
+  .strict()
+  .refine(value => {
+    if (!value.attempt) return true;
+    const form = virtualTeamSaveDraft.safeParse(value.form);
+    return (
+      value.submitted &&
+      value.keywords === "" &&
+      form.success &&
+      JSON.stringify(form.data) === JSON.stringify(value.attempt.draft) &&
+      value.attempt.merchantId === Number(value.scope.split(":")[1]) &&
+      value.attempt.editing === value.editing &&
+      value.attempt.expectedRevision === value.revision
+    );
+  });
 export type VirtualTeamDraft = z.infer<typeof record>;
 export type VirtualTeamDraftRead =
   | { state: "ready"; value: VirtualTeamDraft; persisted: boolean }
