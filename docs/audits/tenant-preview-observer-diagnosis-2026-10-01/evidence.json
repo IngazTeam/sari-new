@@ -1,0 +1,12 @@
+{
+  "browser": "Codex In-app Browser",
+  "url": "http://127.0.0.1:4329/phase236-diagnostic.html",
+  "withoutIframe": { "appScripts": 0, "errorsOnOpenAndReload": [] },
+  "withStaticSrcdocIframe": {
+    "appScripts": 0,
+    "visibleHeadings": ["صفحة فحص محلية بلا JavaScript", "إطار ثابت"],
+    "error": "Uncaught TypeError: Failed to execute 'observe' on 'MutationObserver': parameter 1 is not of type 'Node'.",
+    "timestamp": "2026-10-01T15:31:48.641Z"
+  },
+  "conclusion": "Reproducible in the browser/testing environment without Sari application code; internal browser cause not identified."
+}
