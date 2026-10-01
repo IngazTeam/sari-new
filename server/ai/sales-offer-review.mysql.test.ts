@@ -31,6 +31,7 @@ import { salesOfferKey } from "./sales-offer-delivery";
 import { sendMerchantWhatsApp } from "../channels/whatsapp/service";
 import { reconcileSalesOffer } from "./sales-offer-reconciliation";
 import { listSalesOfferAttempts, reviewSalesOffer } from "./sales-offer-review";
+import {salesOfferReviewPage} from '../../shared/sales-offer-review';
 
 describe.skipIf(!process.env.DATABASE_URL)(
   "merchant sales offer review on MySQL",
@@ -173,6 +174,31 @@ describe.skipIf(!process.env.DATABASE_URL)(
       await cleanupDisposableMerchants([owner.userId, other.userId]);
     });
     afterAll(closeDb);
+
+    it('keeps the attempt revision and its latest review in one read snapshot',async()=>{
+      const pool=(await getPool())!,connection=await pool.getConnection(),original=connection.execute.bind(connection);let changed=false;
+      vi.spyOn(pool,'getConnection').mockResolvedValueOnce(connection);
+      vi.spyOn(connection,'execute').mockImplementation((async(sql:string,args:any[])=>{
+        const result=await original(sql,args);
+        if(sql.includes('ORDER BY source_message_id DESC LIMIT 11')&&!changed){changed=true;
+          await query("INSERT INTO sales_offer_reviews (merchant_id,attempt_id,actor_user_id,revision,evidence_hash,outcome,delivery_state,note) VALUES (?,?,?,1,?,'unresolved','pending','concurrent fixture review')",[owner.merchantId,attemptId,owner.userId,'a'.repeat(64)]);
+          await query('UPDATE sales_offer_attempts SET review_revision=1 WHERE id=?',[attemptId]);
+        }return result;
+      }) as any);
+      expect(salesOfferReviewPage.parse(await list()).items[0]).toMatchObject({revision:0,lastReview:null});vi.restoreAllMocks();expect(salesOfferReviewPage.parse(await list()).items[0]).toMatchObject({revision:1,lastReview:{actorUserId:owner.userId,note:'concurrent fixture review'}});
+    });
+    it('rechecks reassignment outside the snapshot before disclosing the previous customer evidence',async()=>{
+      const pool=(await getPool())!,connection=await pool.getConnection(),original=connection.execute.bind(connection);let changed=false;
+      vi.spyOn(pool,'getConnection').mockResolvedValueOnce(connection);vi.spyOn(connection,'execute').mockImplementation((async(sql:string,args:any[])=>{
+        const result=await original(sql,args);if(sql.includes('ORDER BY source_message_id DESC LIMIT 11')&&!changed){changed=true;await query("UPDATE conversations SET customerPhone='966500000099' WHERE id=?",[input.conversationId]);}return result;
+      }) as any);
+      await expect(list()).rejects.toThrow('conversation changed');vi.restoreAllMocks();expect((await list()).items).toEqual([]);
+    });
+    it('rolls back failed evidence reads and releases the connection for recovery',async()=>{
+      const pool=(await getPool())!,connection=await pool.getConnection(),original=connection.execute.bind(connection);const rollback=vi.spyOn(connection,'rollback'),release=vi.spyOn(connection,'release');
+      vi.spyOn(pool,'getConnection').mockResolvedValueOnce(connection);vi.spyOn(connection,'execute').mockImplementation(((sql:string,args:any[])=>sql.includes('ORDER BY revision DESC LIMIT 1')?Promise.reject(Error('fixture offer read failed')):original(sql,args)) as any);
+      await expect(list()).rejects.toThrow('fixture offer read failed');expect(rollback).toHaveBeenCalledOnce();expect(release).toHaveBeenCalledOnce();vi.restoreAllMocks();expect(salesOfferReviewPage.parse(await list()).items[0].id).toBe(attemptId);
+    });
 
     it("previews evidence without projecting, auditing, consuming a coupon or sending", async () => {
       expect((await list()).items[0]).toMatchObject({

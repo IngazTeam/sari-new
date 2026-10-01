@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type {PoolConnection} from 'mysql2/promise';
 import { getPool } from "../db/connection";
 import { databaseTimeEpoch } from "../db/time";
 import { privateSalesPhone } from "./sales-offer-authority";
@@ -37,6 +38,21 @@ export async function listSalesOfferAttempts(
   offerListSchema.parse({ conversationId, beforeSourceId });
   const pool = await getPool();
   if (!pool) throw new Error("Sales offer storage unavailable");
+  const connection=await pool.getConnection();
+  let snapshot:Awaited<ReturnType<typeof readSalesOfferAttempts>>;
+  try{
+    await connection.query('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
+    await connection.query('START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY');
+    snapshot=await readSalesOfferAttempts(connection,merchantId,conversationId,beforeSourceId);
+    await connection.commit();
+  }catch(error){await connection.rollback();throw error;}
+  finally{connection.release();}
+  // Recheck outside the snapshot: a reassignment must not return the previous customer's offers.
+  const [current]=await pool.execute<any[]>('SELECT customerPhone FROM conversations WHERE id=? AND merchantId=?',[conversationId,merchantId]);
+  if(current[0]?.customerPhone!==snapshot.customerPhone)throw new Error('Sales offer conversation changed');
+  return snapshot.page;
+}
+async function readSalesOfferAttempts(pool:PoolConnection,merchantId:number,conversationId:number,beforeSourceId?:number){
   const [conversations] = await pool.execute<any[]>(
     "SELECT customerPhone FROM conversations WHERE id=? AND merchantId=?",
     [conversationId, merchantId]
@@ -116,17 +132,10 @@ export async function listSalesOfferAttempts(
         : null,
     });
   }
-  // A number reassignment during reads must not disclose the previous customer's offer history.
-  const [current] = await pool.execute<any[]>(
-    "SELECT customerPhone FROM conversations WHERE id=? AND merchantId=?",
-    [conversationId, merchantId]
-  );
-  if (current[0]?.customerPhone !== conversations[0].customerPhone)
-    throw new Error("Sales offer conversation changed");
-  return {
+  return {customerPhone:conversations[0].customerPhone as string,page:{
     items,
     nextCursor: rows.length > 10 ? (rows[9].source_message_id as number) : null,
-  };
+  }};
 }
 
 export async function reviewSalesOffer(
