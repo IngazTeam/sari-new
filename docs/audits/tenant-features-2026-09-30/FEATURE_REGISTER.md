@@ -2,7 +2,7 @@
 
 هذا حصر مصدر قابل لإعادة التوليد، وليس ادعاءً بأن كل مسار عمل اختُبر أو أُعيد تصميمه. يشمل المكونات الفرعية المحلية، الحقول، الأزرار، النوافذ، التبويبات، واجهات القراءة والتعديل. العناصر الديناميكية تحتاج مراجعة إضافية.
 
-- 126 مسارًا مسجلًا، 349 ملف واجهة متصلًا، 2239 عنصر تحكم في المصدر.
+- 126 مسارًا مسجلًا، 351 ملف واجهة متصلًا، 2258 عنصر تحكم في المصدر.
 - 0 رابطًا حرفيًا غير مطابق، و0 ملف صفحة غير متصل بالمسارات المحصورة.
 
 | الصفحة | الملفات | عناصر التحكم | القراءة / التعديل | موك أب للصفحة |
@@ -13,7 +13,7 @@
 | /merchant/dashboard — نظرة عامة | 26 | 187 | 29 / 12 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/ai-hub — مركز المساعد | 1 | 1 | 0 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/analytics-hub — مركز التحليلات | 1 | 3 | 0 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/campaigns — الحملات | 2 | 16 | 5 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/campaigns — الحملات | 4 | 35 | 5 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/campaigns/new — إنشاء حملة | 2 | 13 | 2 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/campaigns/:id/edit — إنشاء حملة | 2 | 13 | 2 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/campaigns/:id — تفاصيل الحملة | 1 | 4 | 1 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -595,23 +595,42 @@
 | 132 | Link | cards. .title cards. .help | groups. .title |
 | 159 | Link | allTools | cards. .title |
 
-## client/src/pages/merchant/Campaigns.tsx
+## client/src/components/merchant/CampaignListWorkspace.tsx
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 137 | Button | حملة جديدة | الحملات التسويقية |
-| 158 | Button | مراجعة النتائج | الحملات التسويقية |
-| 220 | TabsTrigger | تسمية ديناميكية / تحتاج مراجعة | Campaigns |
-| 221 | TabsTrigger | تسمية ديناميكية / تحتاج مراجعة | Campaigns |
-| 275 | Button | تسمية ديناميكية / تحتاج مراجعة | جميع الحملات |
-| 287 | Button | تسمية ديناميكية / تحتاج مراجعة | جميع الحملات |
-| 301 | Button | تسمية ديناميكية / تحتاج مراجعة | جميع الحملات |
-| 312 | Button | تسمية ديناميكية / تحتاج مراجعة | جميع الحملات |
-| 321 | Button | تسمية ديناميكية / تحتاج مراجعة | جميع الحملات |
-| 346 | Button | إنشاء حملة جديدة | لا توجد حملات بعد |
-| 359 | AlertDialogContent | إقرار مراجعة النتائج غير المؤكدة؟ سيُغلق التنبيه دون حذف السجل أو إعادة إرسال أي رسالة، وستبقى الحصة المحجوزة محسوبة لأن نتيجة المزود غير مؤكدة. إلغاء إقرار دون إعادة إرسال | لا توجد حملات بعد |
-| 367 | AlertDialogCancel | إلغاء | إقرار مراجعة النتائج غير المؤكدة؟ |
-| 370 | AlertDialogAction | إقرار دون إعادة إرسال | إقرار مراجعة النتائج غير المؤكدة؟ |
+| 68 | Button | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
+| 69 | Button | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
+| 69 | Link | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
+| 78 | Button | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
+| 79 | Button | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
+| 79 | Button | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
+| 81 | input | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
+| 82 | select | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
+| 83 | input | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
+| 84 | Button | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
+| 87 | Button | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
+| 87 | Button | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
+| 87 | Button | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
+| 87 | Link | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
+| 89 | Link | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
+| 92 | Button | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
+| 92 | Link | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
+| 92 | Button | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
+| 92 | Link | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
+| 93 | Button | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
+| 93 | Link | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
+| 93 | Button | `${t('merchantUx.campaignWorkspace.send')}: ${row.name}` | CampaignListWorkspace |
+| 93 | Button | `${t('merchantUx.campaignWorkspace.remove')}: ${row.name}` | CampaignListWorkspace |
+| 94 | Button | `${t('merchantUx.campaignWorkspace.review')}: ${row.name}` | CampaignListWorkspace |
+| 96 | Button | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
+| 96 | Button | تسمية ديناميكية / تحتاج مراجعة | CampaignListWorkspace |
+| 98 | DialogContent | send delete review | CampaignListWorkspace |
+| 99 | Button | review | send delete |
+| 99 | Link | review | send delete |
+| 101 | input | تسمية ديناميكية / تحتاج مراجعة | send delete |
+| 102 | Button | تسمية ديناميكية / تحتاج مراجعة | send delete |
+| 102 | Button | send delete | send delete |
 
 ## client/src/components/merchant/CampaignPerformance.tsx
 

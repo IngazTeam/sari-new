@@ -59,7 +59,9 @@ export async function readCampaignWorkspace(actorId:number,merchantId:number,raw
       try{new Intl.DateTimeFormat('en',{timeZone:timezone!});}catch{timezone=null;}
       const summary=totals(one(await read(totalsQuery(merchantId)))).summary;
       const where=sql`merchantId=${merchantId} AND (${selection.status}='all' OR status=${selection.status})
-        AND (${selection.search}='' OR LOCATE(LOWER(${selection.search}),LOWER(name))>0)`;
+        AND (${selection.search}='' OR LOCATE(LOWER(${selection.search}),LOWER(name))>0)
+        AND (${selection.needsReview}=false OR EXISTS(SELECT 1 FROM campaign_delivery_outbox review
+          WHERE review.campaign_id=campaigns.id AND review.merchant_id=${merchantId} AND review.status='manual_review'))`;
       const total=integer(one(await read(sql`SELECT COUNT(*) AS total FROM campaigns WHERE ${where}`)).total);
       const source=await read(sql`SELECT id,name,status,createdAt,scheduledAt,totalRecipients,sentCount FROM campaigns
         WHERE ${where} ORDER BY createdAt DESC,id DESC LIMIT ${campaignPageSize} OFFSET ${(selection.page-1)*campaignPageSize}`);

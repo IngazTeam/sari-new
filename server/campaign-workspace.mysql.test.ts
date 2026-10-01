@@ -40,6 +40,8 @@ describe.skipIf(!process.env.DATABASE_URL)('campaign workspace read-only tenant 
     for(const [i,status] of ['pending','failed','sent','suppressed','manual_review'].entries())await q('INSERT INTO campaign_delivery_outbox (campaign_id,merchant_id,customer_phone,status) VALUES (?,?,?,?)',[mine,owner.merchantId,String(99900000000+i),status]);
     await q("INSERT INTO campaign_delivery_outbox (campaign_id,merchant_id,customer_phone,status) VALUES (?,?,'99900000009','manual_review'),(?,?,'99900000008','manual_review')",[mine,other.merchantId,theirs,other.merchantId]);
     const result=await read();expect(result.needsReview).toBe(1);expect(result.rows[0].queue).toEqual({total:5,accepted:1,awaiting:2,suppressed:1,needsReview:1});expect(result.rows).toHaveLength(1);
+    await create('No review','completed');
+    const selected=await read({needsReview:true});expect(selected.pagination.total).toBe(1);expect(selected.rows.map(row=>row.id)).toEqual([mine]);expect(selected.summary.total).toBe(2);
   });
   it('distinguishes no queue evidence, an empty filter, and a page beyond the end',async()=>{
     await create();expect((await read()).rows[0].queue).toBeNull();

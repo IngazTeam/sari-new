@@ -87,6 +87,7 @@ export type MerchantUxCopy = {
   knowledgeSections: import('./knowledge-sections').KnowledgeSectionsCopy;
   knowledgeFaq: import('./knowledge-faq').KnowledgeFaqCopy;
   campaignPerformance: import('./campaign-performance').CampaignPerformanceCopy;
+  campaignWorkspace: import('./campaign-workspace').CampaignWorkspaceCopy;
   byaanSales: Record<keyof typeof import('./byaan-sales-review').byaanSalesReviewAr, string>;
   sallaCheckout: Record<keyof typeof import('./salla-checkout-review').sallaCheckoutReviewAr,string>;
   sallaEffects: Record<keyof typeof import('./salla-effect-review').sallaEffectReviewAr, string>;

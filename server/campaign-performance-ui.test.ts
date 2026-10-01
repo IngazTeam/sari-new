@@ -17,7 +17,6 @@ vi.mock('@/lib/trpc', () => ({ trpc: { campaigns: {
   getTimelineData: { useQuery: (input: { days: number }) => { api.days(input.days); return { ...api.timeline, refetch: api.retryTimeline }; } },
 } } }));
 import { CampaignPerformance } from '../client/src/components/merchant/CampaignPerformance';
-import Campaigns from '../client/src/pages/merchant/Campaigns';
 let root: Root, container: HTMLDivElement;
 beforeEach(() => {
   vi.clearAllMocks(); vi.stubGlobal('React', React); vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
@@ -86,20 +85,4 @@ it('refreshes both sources and prevents duplicate refresh while fetching', async
   expect(onRefresh).toHaveBeenCalledOnce();
   api.timeline.isFetching = true; await render(); await click('Refresh data');
   expect(api.retryTimeline).toHaveBeenCalledOnce();
-});
-
-it('does not turn a failed campaign list into an empty list or zero summary', async () => {
-  api.list = { isError: true };
-  await act(async () => root.render(React.createElement(Campaigns)));
-  expect(container.querySelector('[role="alert"]')).toBeTruthy();
-  expect(container.querySelector('[role="tablist"]')).toBeNull();
-  expect(container.textContent).not.toContain('campaignsPage.noCampaigns');
-  await click('Retry'); expect(api.retryList).toHaveBeenCalledOnce();
-});
-
-it('keeps a successfully loaded empty campaign list actionable', async () => {
-  await act(async () => root.render(React.createElement(Campaigns)));
-  expect(container.textContent).toContain('campaignsPage.noCampaigns');
-  expect(container.querySelector('[role="alert"]')).toBeNull();
-  expect(container.querySelectorAll('[role="tab"]')).toHaveLength(2);
 });

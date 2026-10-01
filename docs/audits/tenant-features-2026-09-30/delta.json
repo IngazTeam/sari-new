@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-01T15:17:49.694Z",
+  "generatedAt": "2026-10-01T17:32:25.139Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 349,
-      "controls": 2239
+      "files": 351,
+      "controls": 2258
     }
   },
   "addedFiles": [
@@ -41,6 +41,8 @@
     "client/src/lib/sales-experiment-review.ts",
     "client/src/lib/sales-cohort-form.ts",
     "client/src/lib/sales-cohort-inspection.ts",
+    "client/src/components/merchant/CampaignListWorkspace.tsx",
+    "client/src/lib/campaign-navigation.ts",
     "client/src/components/merchant/CampaignPerformance.tsx",
     "client/src/lib/merchant-date.ts",
     "client/src/components/KnowledgeWorkspaceScope.tsx",
@@ -390,9 +392,16 @@
     {
       "route": "/merchant/campaigns",
       "controlsBefore": 11,
-      "controlsNow": 16,
-      "removedQueries": [],
+      "controlsNow": 35,
+      "removedQueries": [
+        "campaigns.list",
+        "campaigns.getSendProgress",
+        "campaigns.getManualReviewSummary"
+      ],
       "addedQueries": [
+        "auth.me",
+        "merchants.getCurrent",
+        "campaigns.workspace",
         "campaigns.getStats",
         "campaigns.getTimelineData"
       ],

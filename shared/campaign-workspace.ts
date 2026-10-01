@@ -5,6 +5,7 @@ export const campaignPageSize = 25;
 export const campaignListInput = z.object({
   search:z.string().trim().max(200).default(''),
   status:z.enum(['all',...campaignStatuses]).default('all'),
+  needsReview:z.boolean().default(false),
   page:z.number().int().min(1).max(1_000_000).default(1),
 }).strict();
 const count=z.number().int().min(0).max(Number.MAX_SAFE_INTEGER);
