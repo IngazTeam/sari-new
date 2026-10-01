@@ -11,6 +11,18 @@ const sourceDate = new Date(inventory.generatedAt).toLocaleDateString("ar-SA", {
   day: "numeric",
 });
 const specifics = {
+  "/merchant/tools": {
+    level: "تفصيلي", implemented: true,
+    sections: [
+      "مكوّن دليل التطبيق الفعلي بـ93 وجهة مع جميع الأقسام وروابط داخلية محلية في الموك أب",
+      "بحث عربي وإنجليزي يتحمل التشكيل، وفلاتر ولغة عرض محفوظة في الرابط مع الرجوع وإعادة التحميل",
+      "حالة عدم وجود نتائج ومسح الفلاتر ودعم تركيب النص، مع اتجاهين وحقول44 بكسل في عرض480",
+    ],
+    gaps: [
+      "راجع tenant-tools-directory-2026-10-01 وtenant-tools-prototype-2026-10-01؛ اكتمال الدليل لا يثبت اكتمال الوجهات أو صلاحياتها أو اتصال مزوديها.",
+      "غلاف الموك أب ما زال عربيًا عند عرض الدليل الإنجليزي. فحص Safari/iPhone الفعلي و320/390 غير مثبت في هذه المرحلة.",
+    ],
+  },
   "/merchant/setup-wizard": {
     level: "تفصيلي جزئي", implemented: true,
     sections: [

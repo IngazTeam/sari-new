@@ -30,14 +30,57 @@ function submit(type: string) { w.document.querySelector(`[data-page-form="${typ
 const text = () => w.document.getElementById('main').textContent;
 
 describe('complete tenant page prototype', () => {
-  it('renders every application route and recovery state with a single page heading and working internal links', async () => {
+  it('renders every route and recovery state with one heading or one dedicated application frame and valid links', async () => {
     const inventory = JSON.parse(readFileSync('docs/audits/tenant-pages-2026-09-27/inventory.json', 'utf8'));
     const routes = inventory.routes;
     for (const page of routes) expect(w.TenantPages.find(page.route), page.route).toBeTruthy();
     expect(w.TENANT_PAGES.length).toBe(133);
     for (const page of w.TENANT_PAGES) {
       route(page.route);
-      await vi.waitFor(() => expect(w.document.querySelectorAll('#main h1').length, page.route).toBe(1));
+      const embeddedPages = new Map([
+        ["/merchant/ai-hub", "assistant-settings.html?embed=brain&page=hub"],
+        ["/merchant/bot-settings", "assistant-settings.html?embed=brain"],
+        [
+          "/merchant/human-takeover",
+          "assistant-options.html?embed=brain&page=takeover",
+        ],
+        [
+          "/merchant/language-settings",
+          "assistant-options.html?embed=brain&page=language",
+        ],
+        ["/merchant/virtual-team", "personas.html?embed=brain"],
+      ]);
+      const destination = page.redirect || page.route;
+      if (embeddedPages.has(destination)) {
+        await vi.waitFor(() =>
+          expect(
+            w.document.querySelectorAll("#main iframe[data-brain-preview]")
+              .length,
+            page.route
+          ).toBe(1)
+        );
+        const frames = w.document.querySelectorAll(
+          "#main iframe[data-brain-preview]"
+        );
+        expect(frames, page.route).toHaveLength(1);
+        expect(frames[0].getAttribute("src")).toBe(
+          "./" + embeddedPages.get(destination)
+        );
+        expect(frames[0].getAttribute("title")).toBeTruthy();
+        expect(
+          readFileSync(
+            base + embeddedPages.get(destination)!.split("?")[0],
+            "utf8"
+          )
+        ).toContain("<script");
+        expect(w.document.querySelectorAll("#main h1")).toHaveLength(0);
+      } else
+        await vi.waitFor(() =>
+          expect(
+            w.document.querySelectorAll("#main h1").length,
+            page.route
+          ).toBe(1)
+        );
       if (page.kind === 'result' && page.route.includes('/zid/')) {
         expect(text()).toContain('التحقق من ربط زد');
         expect(text()).not.toContain('تأكيد الدفع');
