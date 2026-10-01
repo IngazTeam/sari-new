@@ -3,7 +3,6 @@ import { useTranslation } from "react-i18next";
 import { trpc } from "@/lib/trpc";
 import { QueryStateCard } from "@/components/QueryStateCard";
 import { DashboardSkeleton } from "@/components/DashboardSkeleton";
-import { useCurrency } from "@/contexts/CurrencyContext";
 import {
   Card,
   CardContent,
@@ -96,9 +95,18 @@ export default function AnalyticsDashboard() {
         onRetry={() => void query.refetch()}
       />
     );
-  return <AnalyticsContent key={query.data.id} merchant={query.data} />;
+  return (
+    <AnalyticsContent
+      key={query.data.id + ":" + query.data.currency}
+      merchant={query.data}
+    />
+  );
 }
-function AnalyticsContent({ merchant }: { merchant: { id: number } }) {
+function AnalyticsContent({
+  merchant,
+}: {
+  merchant: { id: number; currency: "SAR" | "USD" };
+}) {
   const { t, i18n } = useTranslation();
   const [dateRange, setDateRange] =
     useState<keyof typeof DATE_RANGE_DAYS>("30d");
@@ -126,32 +134,48 @@ function AnalyticsContent({ merchant }: { merchant: { id: number } }) {
   // Fetch analytics data
   const kpisQuery = trpc.analytics.getDashboardKPIs.useQuery(
     {
+      currency: merchant.currency,
       merchantId: merchant?.id || 0,
       startDate,
       endDate,
     },
-    { enabled: !!merchant }
+    {
+      staleTime: 0,
+      refetchOnMount: "always",
+      retry: false,
+      enabled: !!merchant,
+    }
   );
 
   const revenueTrendsQuery = trpc.analytics.getRevenueTrends.useQuery(
     {
+      currency: merchant.currency,
       merchantId: merchant?.id || 0,
       startDate,
       endDate,
       groupBy:
         dateRange === "7d" ? "day" : dateRange === "30d" ? "day" : "week",
     },
-    { enabled: !!merchant }
+    {
+      staleTime: 0,
+      refetchOnMount: "always",
+      retry: false,
+      enabled: !!merchant,
+    }
   );
 
   const topProductsQuery = trpc.analytics.getTopProducts.useQuery(
     {
+      currency: merchant.currency,
       merchantId: merchant?.id || 0,
       startDate,
       endDate,
       limit: 10,
     },
     {
+      staleTime: 0,
+      refetchOnMount: "always",
+      retry: false,
       enabled:
         !!merchant && (activeTab === "overview" || activeTab === "products"),
     }
@@ -163,16 +187,25 @@ function AnalyticsContent({ merchant }: { merchant: { id: number } }) {
       startDate,
       endDate,
     },
-    { enabled: !!merchant && activeTab === "campaigns" }
+    {
+      staleTime: 0,
+      refetchOnMount: "always",
+      retry: false,
+      enabled: !!merchant && activeTab === "campaigns",
+    }
   );
 
   const customerSegmentsQuery = trpc.analytics.getCustomerSegments.useQuery(
     {
+      currency: merchant.currency,
       merchantId: merchant?.id || 0,
       startDate,
       endDate,
     },
     {
+      staleTime: 0,
+      refetchOnMount: "always",
+      retry: false,
       enabled:
         !!merchant && (activeTab === "overview" || activeTab === "customers"),
     }
@@ -180,33 +213,60 @@ function AnalyticsContent({ merchant }: { merchant: { id: number } }) {
 
   const hourlyAnalyticsQuery = trpc.analytics.getHourlyAnalytics.useQuery(
     {
+      currency: merchant.currency,
       merchantId: merchant?.id || 0,
       startDate,
       endDate,
     },
-    { enabled: !!merchant && activeTab === "time" }
+    {
+      staleTime: 0,
+      refetchOnMount: "always",
+      retry: false,
+      enabled: !!merchant && activeTab === "time",
+    }
   );
 
   const weekdayAnalyticsQuery = trpc.analytics.getWeekdayAnalytics.useQuery(
     {
+      currency: merchant.currency,
       merchantId: merchant?.id || 0,
       startDate,
       endDate,
     },
-    { enabled: !!merchant && activeTab === "time" }
+    {
+      staleTime: 0,
+      refetchOnMount: "always",
+      retry: false,
+      enabled: !!merchant && activeTab === "time",
+    }
   );
 
   const discountAnalyticsQuery =
     trpc.analytics.getDiscountCodeAnalytics.useQuery(
       {
+        currency: merchant.currency,
         merchantId: merchant?.id || 0,
         startDate,
         endDate,
       },
-      { enabled: !!merchant && activeTab === "campaigns" }
+      {
+        staleTime: 0,
+        refetchOnMount: "always",
+        retry: false,
+        enabled: !!merchant && activeTab === "campaigns",
+      }
     );
 
-  const { formatCurrency } = useCurrency();
+  const formatCurrency = (minor: number | null | undefined) =>
+    typeof minor !== "number" || !Number.isFinite(minor)
+      ? t("analyticsEvidenceUx.unavailable")
+      : new Intl.NumberFormat(
+          i18n.language.startsWith("ar") ? "ar-SA" : "en-GB",
+          {
+            style: "currency",
+            currency: merchant.currency === "USD" ? "USD" : "SAR",
+          }
+        ).format(minor / 100);
   const activeQueries = [
     kpisQuery,
     revenueTrendsQuery,
@@ -260,17 +320,21 @@ function AnalyticsContent({ merchant }: { merchant: { id: number } }) {
     );
   };
 
-  const getGrowthIcon = (growth: number) => {
-    return growth >= 0 ? (
-      <TrendingUp className="h-4 w-4 text-green-600" />
+  const growth = (value: number | null | undefined) =>
+    value === null || value === undefined ? (
+      <p className="text-xs text-muted-foreground mt-2">
+        {t("analyticsEvidenceUx.noComparison")}
+      </p>
     ) : (
-      <TrendingDown className="h-4 w-4 text-red-600" />
+      <p
+        className={
+          "text-xs mt-2 " +
+          (value < 0 ? "text-destructive" : "text-muted-foreground")
+        }
+      >
+        {formatPercent(value)} {t("analyticsDashboardPage.vsPreviousPeriod")}
+      </p>
     );
-  };
-
-  const getGrowthColor = (growth: number) => {
-    return growth >= 0 ? "text-green-600" : "text-red-600";
-  };
 
   return (
     <div className="container mx-auto py-8 space-y-6">
@@ -304,82 +368,72 @@ function AnalyticsContent({ merchant }: { merchant: { id: number } }) {
         </Select>
       </div>
 
-      {/* KPIs */}
+      <section
+        className="mw-panel space-y-2 text-sm"
+        aria-label={t("analyticsEvidenceUx.scopeTitle")}
+      >
+        <p>
+          {t("analyticsEvidenceUx.orderScope", { currency: merchant.currency })}
+        </p>
+        <p className="text-muted-foreground">
+          {t("analyticsEvidenceUx.itemScope")}
+        </p>
+      </section>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              {t("analyticsDashboardPage.totalRevenue")}
+          <CardHeader>
+            <CardTitle className="text-sm">
+              {t("analyticsEvidenceUx.orderValue")}
             </CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {formatCurrency(kpis?.totalRevenue || 0)}
-            </div>
-            <div
-              className={`flex items-center gap-1 text-xs ${getGrowthColor(kpis?.revenueGrowth || 0)}`}
-            >
-              {getGrowthIcon(kpis?.revenueGrowth || 0)}
-              <span>
-                {formatPercent(Math.abs(kpis?.revenueGrowth || 0))}{" "}
-                {t("analyticsDashboardPage.vsPreviousPeriod")}
-              </span>
-            </div>
+            <strong className="text-2xl">
+              {formatCurrency(kpis?.totalRevenue)}
+            </strong>
+            {growth(kpis?.revenueGrowth)}
           </CardContent>
         </Card>
-
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+          <CardHeader>
+            <CardTitle className="text-sm">
               {t("analyticsDashboardPage.totalOrders")}
             </CardTitle>
-            <ShoppingCart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{kpis?.totalOrders || 0}</div>
-            <div
-              className={`flex items-center gap-1 text-xs ${getGrowthColor(kpis?.ordersGrowth || 0)}`}
-            >
-              {getGrowthIcon(kpis?.ordersGrowth || 0)}
-              <span>
-                {formatPercent(Math.abs(kpis?.ordersGrowth || 0))}{" "}
-                {t("analyticsDashboardPage.vsPreviousPeriod")}
-              </span>
-            </div>
+            <strong className="text-2xl">{kpis?.totalOrders}</strong>
+            {growth(kpis?.ordersGrowth)}
           </CardContent>
         </Card>
-
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+          <CardHeader>
+            <CardTitle className="text-sm">
               {t("analyticsDashboardPage.avgOrderValue")}
             </CardTitle>
-            <Target className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {formatCurrency(kpis?.averageOrderValue || 0)}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <strong className="text-2xl">
+              {formatCurrency(kpis?.averageOrderValue)}
+            </strong>
+            <p className="text-xs mt-2">
               {t("analyticsDashboardPage.perOrder")}
             </p>
           </CardContent>
         </Card>
-
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+          <CardHeader>
+            <CardTitle className="text-sm">
               {t("analyticsDashboardPage.conversionRate")}
             </CardTitle>
-            <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {formatPercent(kpis?.conversionRate || 0)}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {kpis?.totalCustomers || 0} {t("analyticsDashboardPage.customer")}
+            <strong className="text-2xl">
+              {t("analyticsEvidenceUx.unavailable")}
+            </strong>
+            <p className="text-xs mt-2">
+              {t("analyticsEvidenceUx.conversionScope")}
+            </p>
+            <p className="text-xs mt-2">
+              {kpis?.totalCustomers} {t("analyticsDashboardPage.customer")}
             </p>
           </CardContent>
         </Card>
@@ -424,21 +478,24 @@ function AnalyticsContent({ merchant }: { merchant: { id: number } }) {
                 <LineChart data={revenueTrends}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="date" tickFormatter={formatDate} />
-                  <YAxis yAxisId="left" />
+                  <YAxis
+                    yAxisId="left"
+                    tickFormatter={value => formatCurrency(Number(value))}
+                  />
                   <YAxis yAxisId="right" orientation="right" />
                   <Tooltip
                     labelFormatter={formatDate}
                     formatter={(value: number, name: string) => [
                       name === "revenue" ? formatCurrency(value) : value,
                       name === "revenue"
-                        ? t("analyticsDashboardPage.revenue")
+                        ? t("analyticsEvidenceUx.orderValue")
                         : t("analyticsDashboardPage.orders"),
                     ]}
                   />
                   <Legend
                     formatter={value =>
                       value === "revenue"
-                        ? t("analyticsDashboardPage.revenue")
+                        ? t("analyticsEvidenceUx.orderValue")
                         : t("analyticsDashboardPage.orders")
                     }
                   />
@@ -590,7 +647,7 @@ function AnalyticsContent({ merchant }: { merchant: { id: number } }) {
                       </TableHead>
                       <TableHead>{t("analyticsDashboardPage.sales")}</TableHead>
                       <TableHead>
-                        {t("analyticsDashboardPage.revenueCol")}
+                        {t("analyticsEvidenceUx.orderValue")}
                       </TableHead>
                       <TableHead>
                         {t("analyticsDashboardPage.avgPrice")}
@@ -675,7 +732,7 @@ function AnalyticsContent({ merchant }: { merchant: { id: number } }) {
                         {t("analyticsDashboardPage.conversionRateCol")}
                       </TableHead>
                       <TableHead>
-                        {t("analyticsDashboardPage.revenueCol")}
+                        {t("analyticsEvidenceUx.orderValue")}
                       </TableHead>
                       <TableHead>ROI</TableHead>
                     </TableRow>
@@ -751,7 +808,7 @@ function AnalyticsContent({ merchant }: { merchant: { id: number } }) {
                         {t("analyticsDashboardPage.usages")}
                       </TableHead>
                       <TableHead>
-                        {t("analyticsDashboardPage.revenueCol")}
+                        {t("analyticsEvidenceUx.orderValue")}
                       </TableHead>
                       <TableHead>
                         {t("analyticsDashboardPage.avgOrder")}
@@ -776,7 +833,7 @@ function AnalyticsContent({ merchant }: { merchant: { id: number } }) {
                         <TableCell>
                           {discount.type === "percentage"
                             ? `${discount.value}%`
-                            : formatCurrency(discount.value)}
+                            : formatCurrency(discount.value * 100)}
                         </TableCell>
                         <TableCell>{discount.usageCount}</TableCell>
                         <TableCell className="font-medium">
@@ -852,7 +909,7 @@ function AnalyticsContent({ merchant }: { merchant: { id: number } }) {
                         </div>
                         <div className="flex justify-between">
                           <span className="text-sm text-muted-foreground">
-                            {t("analyticsDashboardPage.revenueLabel")}
+                            {t("analyticsEvidenceUx.orderValue")}
                           </span>
                           <span className="font-bold">
                             {formatCurrency(segment.revenue)}
@@ -893,7 +950,11 @@ function AnalyticsContent({ merchant }: { merchant: { id: number } }) {
                 <BarChart data={hourlyAnalytics}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="hour" tickFormatter={hour => `${hour}:00`} />
-                  <YAxis />
+                  <YAxis
+                    yAxisId="value"
+                    tickFormatter={value => formatCurrency(Number(value))}
+                  />
+                  <YAxis yAxisId="orders" orientation="right" />
                   <Tooltip
                     labelFormatter={hour =>
                       `${t("analyticsDashboardPage.hour")} ${hour}:00`
@@ -901,19 +962,19 @@ function AnalyticsContent({ merchant }: { merchant: { id: number } }) {
                     formatter={(value: number, name: string) => [
                       name === "revenue" ? formatCurrency(value) : value,
                       name === "revenue"
-                        ? t("analyticsDashboardPage.revenue")
+                        ? t("analyticsEvidenceUx.orderValue")
                         : t("analyticsDashboardPage.orders"),
                     ]}
                   />
                   <Legend
                     formatter={value =>
                       value === "revenue"
-                        ? t("analyticsDashboardPage.revenue")
+                        ? t("analyticsEvidenceUx.orderValue")
                         : t("analyticsDashboardPage.orders")
                     }
                   />
-                  <Bar dataKey="revenue" fill="#3b82f6" />
-                  <Bar dataKey="orders" fill="#10b981" />
+                  <Bar yAxisId="value" dataKey="revenue" fill="#3b82f6" />
+                  <Bar yAxisId="orders" dataKey="orders" fill="#10b981" />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -935,24 +996,28 @@ function AnalyticsContent({ merchant }: { merchant: { id: number } }) {
                 <BarChart data={weekdayAnalytics}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="day" />
-                  <YAxis />
+                  <YAxis
+                    yAxisId="value"
+                    tickFormatter={value => formatCurrency(Number(value))}
+                  />
+                  <YAxis yAxisId="orders" orientation="right" />
                   <Tooltip
                     formatter={(value: number, name: string) => [
                       name === "revenue" ? formatCurrency(value) : value,
                       name === "revenue"
-                        ? t("analyticsDashboardPage.revenue")
+                        ? t("analyticsEvidenceUx.orderValue")
                         : t("analyticsDashboardPage.orders"),
                     ]}
                   />
                   <Legend
                     formatter={value =>
                       value === "revenue"
-                        ? t("analyticsDashboardPage.revenue")
+                        ? t("analyticsEvidenceUx.orderValue")
                         : t("analyticsDashboardPage.orders")
                     }
                   />
-                  <Bar dataKey="revenue" fill="#3b82f6" />
-                  <Bar dataKey="orders" fill="#10b981" />
+                  <Bar yAxisId="value" dataKey="revenue" fill="#3b82f6" />
+                  <Bar yAxisId="orders" dataKey="orders" fill="#10b981" />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>

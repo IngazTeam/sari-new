@@ -51,6 +51,99 @@ beforeEach(() => {
 });
 afterEach(() => vi.useRealTimers());
 describe("sales analytics boundaries and evidence", () => {
+  it("accepts only the stored currency and rejects a stale or forged requested currency", () => {
+    expect(analytics.resolveAnalyticsCurrency("USD", "USD")).toBe("USD");
+    expect(analytics.resolveAnalyticsCurrency("SAR")).toBe("SAR");
+    expect(() => analytics.resolveAnalyticsCurrency("USD", "SAR")).toThrow(
+      "currency changed"
+    );
+    expect(() => analytics.resolveAnalyticsCurrency("EUR")).toThrow(
+      "Invalid analytics currency"
+    );
+  });
+  it.each([
+    () => analytics.getDashboardKPIs(20, range(), "USD"),
+    () => analytics.getRevenueTrends(20, range(), "day", "USD"),
+    () => analytics.getTopProducts(20, range(), 10, "USD"),
+    () => analytics.getCustomerSegments(20, range(), "USD"),
+    () => analytics.getHourlyAnalytics(20, range(), "USD"),
+    () => analytics.getWeekdayAnalytics(20, range(), "USD"),
+    () => analytics.getDiscountCodeAnalytics(20, range(), "USD"),
+  ])("keeps monetary reads in the requested server currency", async read => {
+    m.codes.mockResolvedValue([{ code: "EXAMPLE", type: "fixed", value: 10 }]);
+    await read();
+    expect(m.where.mock.calls.length).toBeGreaterThan(0);
+    for (const [, condition] of m.where.mock.calls) {
+      const q = dialect.sqlToQuery(condition);
+      expect(q.params).toContain("USD");
+      expect(q.sql).toContain("currency");
+    }
+  });
+  it("keeps missing baselines, averages and conversion unknown", async () => {
+    expect(await analytics.getDashboardKPIs(20, range())).toMatchObject({
+      totalRevenue: 0,
+      totalOrders: 0,
+      averageOrderValue: null,
+      conversionRate: null,
+      revenueGrowth: null,
+      ordersGrowth: null,
+    });
+  });
+  it("keeps the per-order segment average separate from the number of customers", async () => {
+    m.rows = [
+      { customerPhone: "one", totalAmount: 100 },
+      { customerPhone: "one", totalAmount: 300 },
+    ];
+    const rows = await analytics.getCustomerSegments(20, range());
+    expect(rows.find(r => r.segment === "returning")).toMatchObject({
+      count: 1,
+      revenue: 400,
+      averageOrderValue: 200,
+    });
+    expect(rows.find(r => r.segment === "new")?.averageOrderValue).toBeNull();
+  });
+  it("does not guess item prices or quantities from ambiguous legacy JSON", async () => {
+    m.rows = [
+      {
+        items: JSON.stringify([
+          null,
+          { productId: 1, name: { untrusted: true }, quantity: 2, price: 10 },
+          { productId: 2, name: "Zero", quantity: 0, unitPriceMinor: 100 },
+          { productId: 3, name: "Known", quantity: 2, unitPriceMinor: 125 },
+        ]),
+      },
+    ];
+    const rows = await analytics.getTopProducts(20, range());
+    expect(rows).toEqual([
+      {
+        productId: 3,
+        productName: "Known",
+        totalSales: 2,
+        totalRevenue: 250,
+        averagePrice: 125,
+        stockLevel: null,
+      },
+    ]);
+  });
+  it("rejects corrupt amounts rather than producing a plausible total", async () => {
+    m.rows = [
+      {
+        customerPhone: "one",
+        createdAt: "2026-09-20 10:00:00",
+        totalAmount: -1,
+      },
+    ];
+    for (const read of [
+      analytics.getDashboardKPIs,
+      analytics.getRevenueTrends,
+      analytics.getHourlyAnalytics,
+      analytics.getWeekdayAnalytics,
+      analytics.getCustomerSegments,
+    ])
+      await expect(read(20, range())).rejects.toThrow(
+        "Invalid analytics amount"
+      );
+  });
   it.each(methods)(
     "%s rejects unavailable storage instead of empty success",
     async read => {
@@ -88,14 +181,20 @@ describe("sales analytics boundaries and evidence", () => {
     });
     const queries = m.where.mock.calls.map(([, c]) => dialect.sqlToQuery(c));
     expect(queries[0].params).toContain("2026-10-01 12:00:00");
-    expect(queries[2].params).toContain("2026-09-01 00:00:00");
-    expect(queries[2].sql).toContain(" < ");
+    expect(queries[1].params).toContain("2026-09-01 00:00:00");
+    expect(queries[1].sql).toContain(" < ");
   });
   it("does not enrich forged item IDs with another tenant catalog", async () => {
     m.rows = [
       {
         items: JSON.stringify([
-          { productId: 999, name: "Order snapshot", quantity: 2, price: 10 },
+          {
+            productId: 999,
+            name: "Order snapshot",
+            quantity: 2,
+            price: 10,
+            priceUnit: "minor",
+          },
         ]),
       },
     ];

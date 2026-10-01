@@ -2619,6 +2619,7 @@ export const appRouter = router({
           merchantId: z.number().int().positive(),
           startDate: z.string(),
           endDate: z.string(),
+          currency: z.enum(['SAR', 'USD']).optional(),
         })
       )
       .query(async ({ input, ctx }) => {
@@ -2627,11 +2628,11 @@ export const appRouter = router({
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
         }
 
-        const { getDashboardKPIs } = await import('./analytics/analytics');
+        const { getDashboardKPIs, resolveAnalyticsCurrency } = await import('./analytics/analytics');
         return await getDashboardKPIs(input.merchantId, {
           startDate: new Date(input.startDate),
           endDate: new Date(input.endDate),
-        });
+        }, resolveAnalyticsCurrency(merchant.currency, input.currency));
       }),
 
     // Revenue Trends
@@ -2641,6 +2642,7 @@ export const appRouter = router({
           merchantId: z.number().int().positive(),
           startDate: z.string(),
           endDate: z.string(),
+          currency: z.enum(['SAR', 'USD']).optional(),
           groupBy: z.enum(['day', 'week', 'month']).optional(),
         })
       )
@@ -2650,14 +2652,14 @@ export const appRouter = router({
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
         }
 
-        const { getRevenueTrends } = await import('./analytics/analytics');
+        const { getRevenueTrends, resolveAnalyticsCurrency } = await import('./analytics/analytics');
         return await getRevenueTrends(
           input.merchantId,
           {
             startDate: new Date(input.startDate),
             endDate: new Date(input.endDate),
           },
-          input.groupBy
+          input.groupBy, resolveAnalyticsCurrency(merchant.currency, input.currency)
         );
       }),
 
@@ -2668,6 +2670,7 @@ export const appRouter = router({
           merchantId: z.number().int().positive(),
           startDate: z.string(),
           endDate: z.string(),
+          currency: z.enum(['SAR', 'USD']).optional(),
           limit: z.number().optional(),
         })
       )
@@ -2677,14 +2680,14 @@ export const appRouter = router({
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
         }
 
-        const { getTopProducts } = await import('./analytics/analytics');
+        const { getTopProducts, resolveAnalyticsCurrency } = await import('./analytics/analytics');
         return await getTopProducts(
           input.merchantId,
           {
             startDate: new Date(input.startDate),
             endDate: new Date(input.endDate),
           },
-          input.limit
+          input.limit, resolveAnalyticsCurrency(merchant.currency, input.currency)
         );
       }),
 
@@ -2695,6 +2698,7 @@ export const appRouter = router({
           merchantId: z.number().int().positive(),
           startDate: z.string(),
           endDate: z.string(),
+          currency: z.enum(['SAR', 'USD']).optional(),
         })
       )
       .query(async ({ input, ctx }) => {
@@ -2717,6 +2721,7 @@ export const appRouter = router({
           merchantId: z.number().int().positive(),
           startDate: z.string(),
           endDate: z.string(),
+          currency: z.enum(['SAR', 'USD']).optional(),
         })
       )
       .query(async ({ input, ctx }) => {
@@ -2725,11 +2730,11 @@ export const appRouter = router({
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
         }
 
-        const { getCustomerSegments } = await import('./analytics/analytics');
+        const { getCustomerSegments, resolveAnalyticsCurrency } = await import('./analytics/analytics');
         return await getCustomerSegments(input.merchantId, {
           startDate: new Date(input.startDate),
           endDate: new Date(input.endDate),
-        });
+        }, resolveAnalyticsCurrency(merchant.currency, input.currency));
       }),
 
     // Hourly Analytics
@@ -2739,6 +2744,7 @@ export const appRouter = router({
           merchantId: z.number().int().positive(),
           startDate: z.string(),
           endDate: z.string(),
+          currency: z.enum(['SAR', 'USD']).optional(),
         })
       )
       .query(async ({ input, ctx }) => {
@@ -2747,11 +2753,11 @@ export const appRouter = router({
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
         }
 
-        const { getHourlyAnalytics } = await import('./analytics/analytics');
+        const { getHourlyAnalytics, resolveAnalyticsCurrency } = await import('./analytics/analytics');
         return await getHourlyAnalytics(input.merchantId, {
           startDate: new Date(input.startDate),
           endDate: new Date(input.endDate),
-        });
+        }, resolveAnalyticsCurrency(merchant.currency, input.currency));
       }),
 
     // Weekday Analytics
@@ -2761,6 +2767,7 @@ export const appRouter = router({
           merchantId: z.number().int().positive(),
           startDate: z.string(),
           endDate: z.string(),
+          currency: z.enum(['SAR', 'USD']).optional(),
         })
       )
       .query(async ({ input, ctx }) => {
@@ -2769,11 +2776,11 @@ export const appRouter = router({
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
         }
 
-        const { getWeekdayAnalytics } = await import('./analytics/analytics');
+        const { getWeekdayAnalytics, resolveAnalyticsCurrency } = await import('./analytics/analytics');
         return await getWeekdayAnalytics(input.merchantId, {
           startDate: new Date(input.startDate),
           endDate: new Date(input.endDate),
-        });
+        }, resolveAnalyticsCurrency(merchant.currency, input.currency));
       }),
 
     // Discount Code Analytics
@@ -2783,6 +2790,7 @@ export const appRouter = router({
           merchantId: z.number().int().positive(),
           startDate: z.string(),
           endDate: z.string(),
+          currency: z.enum(['SAR', 'USD']).optional(),
         })
       )
       .query(async ({ input, ctx }) => {
@@ -2791,11 +2799,11 @@ export const appRouter = router({
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
         }
 
-        const { getDiscountCodeAnalytics } = await import('./analytics/analytics');
+        const { getDiscountCodeAnalytics, resolveAnalyticsCurrency } = await import('./analytics/analytics');
         return await getDiscountCodeAnalytics(input.merchantId, {
           startDate: new Date(input.startDate),
           endDate: new Date(input.endDate),
-        });
+        }, resolveAnalyticsCurrency(merchant.currency, input.currency));
       }),
   }),
 

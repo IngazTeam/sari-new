@@ -1,29 +1,263 @@
 // @vitest-environment jsdom
-import React, {act} from 'react';
-import {createRoot,type Root} from 'react-dom/client';
-import {afterEach,beforeEach,describe,it,expect,vi} from 'vitest';
-import ar from '../client/src/locales/ar.json';
-import en from '../client/src/locales/en.json';
-import Page from '../client/src/pages/merchant/AnalyticsDashboard';
-const state=vi.hoisted(()=>({queries:{} as Record<string,any>,calls:[] as any[],language:'en'}));
-vi.mock('../client/src/lib/trpc',()=>({trpc:new Proxy({}, {get:(_,namespace:string)=>new Proxy({}, {get:(_,method:string)=>({useQuery:(input:any,options:any)=>{const name=namespace+'.'+method;state.calls.push({name,input,options});if(!state.queries[name])throw Error(name);return state.queries[name];}})})})}));
-vi.mock('../client/src/contexts/CurrencyContext',()=>({useCurrency:()=>({formatCurrency:(n:number)=>'SAR '+n.toFixed(2)})}));
-vi.mock('react-i18next',()=>({useTranslation:()=>({t:(key:string)=>key.split('.').reduce((o:any,k)=>o?.[k],state.language==='ar'?ar:en)??key,i18n:{language:state.language}})}));
-vi.mock('recharts',()=>{const block=({children}:any)=>React.createElement('div',null,children);return Object.fromEntries(['LineChart','Line','BarChart','Bar','PieChart','Pie','Cell','XAxis','YAxis','CartesianGrid','Tooltip','Legend','ResponsiveContainer'].map(k=>[k,block]));});
-let host:HTMLDivElement,root:Root;
-const query=(data:any)=>({data,isError:false,isLoading:false,isFetching:false,refetch:vi.fn(async()=>({data}))});
-const kpi=()=>({totalRevenue:100,totalOrders:1,averageOrderValue:100,totalCustomers:1,conversionRate:0,revenueGrowth:0,ordersGrowth:0});
-beforeEach(()=>{vi.stubGlobal('React',React);vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT',true);state.language='en';state.calls=[];state.queries={'merchants.getCurrent':query({id:20})};for(const name of ['getRevenueTrends','getTopProducts','getCampaignAnalytics','getCustomerSegments','getHourlyAnalytics','getWeekdayAnalytics','getDiscountCodeAnalytics'])state.queries['analytics.'+name]=query([]);state.queries['analytics.getDashboardKPIs']=query(kpi());host=document.createElement('div');document.body.append(host);root=createRoot(host);});
-afterEach(async()=>{await act(async()=>root.unmount());host.remove();vi.unstubAllGlobals();});
-const mount=()=>act(async()=>root.render(React.createElement(Page)));
-const tab=async(name:string)=>{const button=Array.from(host.querySelectorAll('[role=tab]')).find(e=>e.textContent===name)!;expect(button).toBeTruthy();await act(async()=>button.dispatchEvent(new MouseEvent('mousedown',{bubbles:true,button:0})));};
-describe('sales analytics unavailable evidence',()=>{
- it('keeps the chosen campaign tab across loading and retry',async()=>{state.queries['analytics.getCampaignAnalytics'].isFetching=true;await mount();await tab(en.analyticsDashboardPage.tabCampaigns);expect(host.querySelector('[role=tablist]')).toBeNull();state.queries['analytics.getCampaignAnalytics'].isFetching=false;await mount();expect(host.querySelector('[role=tab][data-state=active]')?.textContent).toBe(en.analyticsDashboardPage.tabCampaigns);expect(host.textContent).toContain(en.analyticsEvidenceUx.campaignScope);});
- it.each(['ar','en'])('renders a store read error without starting analytics in %s',async language=>{state.language=language;state.queries['merchants.getCurrent']={...query({id:999}),isError:true};await mount();expect(host.textContent).toContain((language==='ar'?ar:en).analyticsEvidenceUx.storeFailed);expect(state.calls.filter(c=>c.name.startsWith('analytics.'))).toHaveLength(0);});
- it('hides stale totals and retries the currently visible queries after a failed read',async()=>{state.queries['analytics.getDashboardKPIs'].isError=true;await mount();expect(host.textContent).toContain(en.analyticsEvidenceUx.failedHelp);expect(host.textContent).not.toContain('SAR 100.00');await act(async()=>host.querySelector('button')!.click());expect(state.queries['analytics.getDashboardKPIs'].refetch).toHaveBeenCalledOnce();expect(state.queries['analytics.getCampaignAnalytics'].refetch).not.toHaveBeenCalled();state.queries['analytics.getDashboardKPIs'].isError=false;await mount();expect(host.querySelector('[role=tablist]')).toBeTruthy();});
- it.each(['isFetching','isLoading'])('hides cached totals while %s',async flag=>{state.queries['analytics.getDashboardKPIs'][flag]=true;await mount();expect(host.querySelector('[role=tablist]')).toBeNull();expect(host.textContent).not.toContain('SAR 100.00');});
- it('does not treat an undefined successful-looking response as zero',async()=>{state.queries['analytics.getDashboardKPIs'].data=undefined;await mount();expect(host.textContent).toContain(en.analyticsEvidenceUx.failedHelp);});
- it('renders campaign evidence gaps neutrally without fabricated percentages',async()=>{state.queries['analytics.getCampaignAnalytics'].data=[{campaignId:1,campaignName:'Fixture campaign',sentCount:9,openRate:null,clickRate:null,conversionRate:null,revenue:null,roi:null}];await mount();await tab(en.analyticsDashboardPage.tabCampaigns);expect(host.textContent).toContain('Fixture campaign');expect(host.textContent).toContain(en.analyticsEvidenceUx.campaignScope);expect(host.textContent).toContain('Unavailable');expect(host.textContent).not.toContain('999+%');expect(host.textContent).not.toContain('65.0%');expect(host.textContent).not.toContain('25.0%');});
- it('treats campaign read failure as a retryable error instead of no campaigns',async()=>{state.queries['analytics.getCampaignAnalytics'].isError=true;await mount();await tab(en.analyticsDashboardPage.tabCampaigns);expect(host.textContent).toContain(en.analyticsEvidenceUx.failedHelp);expect(host.textContent).not.toContain(en.analyticsDashboardPage.noCampaigns);});
- it('shows unknown stock without presenting it as zero stock',async()=>{state.queries['analytics.getTopProducts'].data=[{productId:9,productName:'Recorded item',totalSales:1,totalRevenue:100,averagePrice:100,stockLevel:null}];await mount();await tab(en.analyticsDashboardPage.tabProducts);const row=Array.from(host.querySelectorAll('tbody tr')).find(r=>r.textContent?.includes('Recorded item'));expect(row?.textContent).toContain('Unavailable');});
+import React, { act } from "react";
+import { createRoot, type Root } from "react-dom/client";
+import { afterEach, beforeEach, describe, it, expect, vi } from "vitest";
+import ar from "../client/src/locales/ar.json";
+import en from "../client/src/locales/en.json";
+import Page from "../client/src/pages/merchant/AnalyticsDashboard";
+const state = vi.hoisted(() => ({
+  queries: {} as Record<string, any>,
+  calls: [] as any[],
+  language: "en",
+}));
+vi.mock("../client/src/lib/trpc", () => ({
+  trpc: new Proxy(
+    {},
+    {
+      get: (_, namespace: string) =>
+        new Proxy(
+          {},
+          {
+            get: (_, method: string) => ({
+              useQuery: (input: any, options: any) => {
+                const name = namespace + "." + method;
+                state.calls.push({ name, input, options });
+                if (!state.queries[name]) throw Error(name);
+                return state.queries[name];
+              },
+            }),
+          }
+        ),
+    }
+  ),
+}));
+vi.mock("../client/src/contexts/CurrencyContext", () => ({
+  useCurrency: () => ({ formatCurrency: (n: number) => "SAR " + n.toFixed(2) }),
+}));
+vi.mock("react-i18next", () => ({
+  useTranslation: () => ({
+    t: (key: string) =>
+      key
+        .split(".")
+        .reduce((o: any, k) => o?.[k], state.language === "ar" ? ar : en) ??
+      key,
+    i18n: { language: state.language },
+  }),
+}));
+vi.mock("recharts", () => {
+  const block = ({ children }: any) =>
+    React.createElement("div", null, children);
+  return Object.fromEntries(
+    [
+      "LineChart",
+      "Line",
+      "BarChart",
+      "Bar",
+      "PieChart",
+      "Pie",
+      "Cell",
+      "XAxis",
+      "YAxis",
+      "CartesianGrid",
+      "Tooltip",
+      "Legend",
+      "ResponsiveContainer",
+    ].map(k => [k, block])
+  );
+});
+let host: HTMLDivElement, root: Root;
+const query = (data: any) => ({
+  data,
+  isError: false,
+  isLoading: false,
+  isFetching: false,
+  refetch: vi.fn(async () => ({ data })),
+});
+const kpi = () => ({
+  totalRevenue: 10000,
+  totalOrders: 1,
+  averageOrderValue: 10000,
+  totalCustomers: 1,
+  conversionRate: null,
+  revenueGrowth: null,
+  ordersGrowth: null,
+});
+beforeEach(() => {
+  vi.stubGlobal("React", React);
+  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
+  state.language = "en";
+  state.calls = [];
+  state.queries = {
+    "merchants.getCurrent": query({ id: 20, currency: "SAR" }),
+  };
+  for (const name of [
+    "getRevenueTrends",
+    "getTopProducts",
+    "getCampaignAnalytics",
+    "getCustomerSegments",
+    "getHourlyAnalytics",
+    "getWeekdayAnalytics",
+    "getDiscountCodeAnalytics",
+  ])
+    state.queries["analytics." + name] = query([]);
+  state.queries["analytics.getDashboardKPIs"] = query(kpi());
+  host = document.createElement("div");
+  document.body.append(host);
+  root = createRoot(host);
+});
+afterEach(async () => {
+  await act(async () => root.unmount());
+  host.remove();
+  vi.unstubAllGlobals();
+});
+const mount = () => act(async () => root.render(React.createElement(Page)));
+const tab = async (name: string) => {
+  const button = Array.from(host.querySelectorAll("[role=tab]")).find(
+    e => e.textContent === name
+  )!;
+  expect(button).toBeTruthy();
+  await act(async () =>
+    button.dispatchEvent(
+      new MouseEvent("mousedown", { bubbles: true, button: 0 })
+    )
+  );
+};
+describe("sales analytics unavailable evidence", () => {
+  it("formats stored minor units and does not invent a comparison or purchase conversion", async () => {
+    await mount();
+    expect(host.textContent).toContain("SAR 100.00");
+    expect(host.textContent).not.toContain("10,000.00");
+    expect(host.textContent).toContain(en.analyticsEvidenceUx.noComparison);
+    expect(host.textContent).toContain(en.analyticsEvidenceUx.conversionScope);
+    expect(host.textContent).not.toContain("0.0%");
+  });
+  it("uses the confirmed merchant currency and preserves the major-unit coupon value", async () => {
+    state.queries["merchants.getCurrent"].data.currency = "USD";
+    state.queries["analytics.getDiscountCodeAnalytics"].data = [
+      {
+        code: "TEN",
+        type: "fixed",
+        value: 10,
+        usageCount: 1,
+        revenue: 1234,
+        averageOrderValue: 1234,
+      },
+    ];
+    await mount();
+    await tab(en.analyticsDashboardPage.tabCampaigns);
+    const row = Array.from(host.querySelectorAll("tbody tr")).find(r =>
+      r.textContent?.includes("TEN")
+    );
+    expect(row?.textContent).toContain("US$10.00");
+    expect(row?.textContent).toContain("US$12.34");
+    expect(row?.textContent).not.toContain("SAR");
+  });
+  it("keeps the chosen campaign tab across loading and retry", async () => {
+    state.queries["analytics.getCampaignAnalytics"].isFetching = true;
+    await mount();
+    await tab(en.analyticsDashboardPage.tabCampaigns);
+    expect(host.querySelector("[role=tablist]")).toBeNull();
+    state.queries["analytics.getCampaignAnalytics"].isFetching = false;
+    await mount();
+    expect(
+      host.querySelector("[role=tab][data-state=active]")?.textContent
+    ).toBe(en.analyticsDashboardPage.tabCampaigns);
+    expect(host.textContent).toContain(en.analyticsEvidenceUx.campaignScope);
+  });
+  it.each(["ar", "en"])(
+    "renders a store read error without starting analytics in %s",
+    async language => {
+      state.language = language;
+      state.queries["merchants.getCurrent"] = {
+        ...query({ id: 999 }),
+        isError: true,
+      };
+      await mount();
+      expect(host.textContent).toContain(
+        (language === "ar" ? ar : en).analyticsEvidenceUx.storeFailed
+      );
+      expect(
+        state.calls.filter(c => c.name.startsWith("analytics."))
+      ).toHaveLength(0);
+    }
+  );
+  it("hides stale totals and retries the currently visible queries after a failed read", async () => {
+    state.queries["analytics.getDashboardKPIs"].isError = true;
+    await mount();
+    expect(host.textContent).toContain(en.analyticsEvidenceUx.failedHelp);
+    expect(host.textContent).not.toContain("SAR 100.00");
+    await act(async () => host.querySelector("button")!.click());
+    expect(
+      state.queries["analytics.getDashboardKPIs"].refetch
+    ).toHaveBeenCalledOnce();
+    expect(
+      state.queries["analytics.getCampaignAnalytics"].refetch
+    ).not.toHaveBeenCalled();
+    state.queries["analytics.getDashboardKPIs"].isError = false;
+    await mount();
+    expect(host.querySelector("[role=tablist]")).toBeTruthy();
+  });
+  it.each(["isFetching", "isLoading"])(
+    "hides cached totals while %s",
+    async flag => {
+      state.queries["analytics.getDashboardKPIs"][flag] = true;
+      await mount();
+      expect(host.querySelector("[role=tablist]")).toBeNull();
+      expect(host.textContent).not.toContain("SAR 100.00");
+    }
+  );
+  it("does not treat an undefined successful-looking response as zero", async () => {
+    state.queries["analytics.getDashboardKPIs"].data = undefined;
+    await mount();
+    expect(host.textContent).toContain(en.analyticsEvidenceUx.failedHelp);
+  });
+  it("renders campaign evidence gaps neutrally without fabricated percentages", async () => {
+    state.queries["analytics.getCampaignAnalytics"].data = [
+      {
+        campaignId: 1,
+        campaignName: "Fixture campaign",
+        sentCount: 9,
+        openRate: null,
+        clickRate: null,
+        conversionRate: null,
+        revenue: null,
+        roi: null,
+      },
+    ];
+    await mount();
+    await tab(en.analyticsDashboardPage.tabCampaigns);
+    expect(host.textContent).toContain("Fixture campaign");
+    expect(host.textContent).toContain(en.analyticsEvidenceUx.campaignScope);
+    expect(host.textContent).toContain("Unavailable");
+    expect(host.textContent).not.toContain("999+%");
+    expect(host.textContent).not.toContain("65.0%");
+    expect(host.textContent).not.toContain("25.0%");
+  });
+  it("treats campaign read failure as a retryable error instead of no campaigns", async () => {
+    state.queries["analytics.getCampaignAnalytics"].isError = true;
+    await mount();
+    await tab(en.analyticsDashboardPage.tabCampaigns);
+    expect(host.textContent).toContain(en.analyticsEvidenceUx.failedHelp);
+    expect(host.textContent).not.toContain(
+      en.analyticsDashboardPage.noCampaigns
+    );
+  });
+  it("shows unknown stock without presenting it as zero stock", async () => {
+    state.queries["analytics.getTopProducts"].data = [
+      {
+        productId: 9,
+        productName: "Recorded item",
+        totalSales: 1,
+        totalRevenue: 100,
+        averagePrice: 100,
+        stockLevel: null,
+      },
+    ];
+    await mount();
+    await tab(en.analyticsDashboardPage.tabProducts);
+    const row = Array.from(host.querySelectorAll("tbody tr")).find(r =>
+      r.textContent?.includes("Recorded item")
+    );
+    expect(row?.textContent).toContain("Unavailable");
+  });
 });

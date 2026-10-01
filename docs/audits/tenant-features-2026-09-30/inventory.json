@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-01T08:48:22.152Z",
+  "generatedAt": "2026-10-01T09:02:04.148Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -6550,7 +6550,7 @@
     },
     {
       "file": "client/src/pages/merchant/AnalyticsDashboard.tsx",
-      "hash": "66b9161b2e9b",
+      "hash": "3a6f895d7006",
       "queries": [
         "merchants.getCurrent",
         "analytics.getDashboardKPIs",
@@ -6568,114 +6568,114 @@
       "sections": [
         {
           "label": "لوحة التحليلات المتقدمة",
-          "line": 280,
+          "line": 344,
           "tag": "h1"
         },
         {
-          "label": "إجمالي الإيرادات",
-          "line": 311,
+          "label": "قيمة الطلبات",
+          "line": 385,
           "tag": "CardTitle"
         },
         {
           "label": "إجمالي الطلبات",
-          "line": 334,
+          "line": 398,
           "tag": "CardTitle"
         },
         {
           "label": "متوسط قيمة الطلب",
-          "line": 355,
+          "line": 409,
           "tag": "CardTitle"
         },
         {
           "label": "معدل التحويل",
-          "line": 372,
+          "line": 424,
           "tag": "CardTitle"
         },
         {
           "label": "نظرة عامة",
-          "line": 395,
+          "line": 449,
           "tag": "TabsTrigger"
         },
         {
           "label": "المنتجات",
-          "line": 398,
+          "line": 452,
           "tag": "TabsTrigger"
         },
         {
           "label": "الحملات",
-          "line": 401,
+          "line": 455,
           "tag": "TabsTrigger"
         },
         {
           "label": "العملاء",
-          "line": 404,
+          "line": 458,
           "tag": "TabsTrigger"
         },
         {
           "label": "التحليل الزمني",
-          "line": 407,
+          "line": 461,
           "tag": "TabsTrigger"
         },
         {
-          "label": "اتجاه الإيرادات والطلبات",
-          "line": 417,
+          "label": "اتجاه قيمة الطلبات والطلبات",
+          "line": 471,
           "tag": "CardTitle"
         },
         {
           "label": "شرائح العملاء",
-          "line": 468,
+          "line": 525,
           "tag": "CardTitle"
         },
         {
           "label": "إحصائيات شرائح العملاء",
-          "line": 511,
+          "line": 568,
           "tag": "CardTitle"
         },
         {
           "label": "المنتجات الأكثر مبيعاً",
-          "line": 570,
+          "line": 627,
           "tag": "CardTitle"
         },
         {
           "label": "أداء الحملات",
-          "line": 646,
+          "line": 703,
           "tag": "CardTitle"
         },
         {
           "label": "أداء كودات الخصم",
-          "line": 729,
+          "line": 786,
           "tag": "CardTitle"
         },
         {
           "label": "تحليل العملاء",
-          "line": 801,
+          "line": 858,
           "tag": "CardTitle"
         },
         {
           "label": "",
-          "line": 834,
+          "line": 891,
           "tag": "CardTitle"
         },
         {
           "label": "التحليل حسب الساعة",
-          "line": 883,
+          "line": 940,
           "tag": "CardTitle"
         },
         {
           "label": "التحليل حسب أيام الأسبوع",
-          "line": 925,
+          "line": 986,
           "tag": "CardTitle"
         },
         {
           "label": "💡 رؤى وتوصيات",
-          "line": 964,
+          "line": 1029,
           "tag": "CardTitle"
         }
       ],
       "choices": [
         {
           "name": "COLORS",
-          "line": 72,
+          "line": 71,
           "values": [
             "#3b82f6",
             "#10b981",
@@ -6687,7 +6687,7 @@
         },
         {
           "name": "activeQueries",
-          "line": 210,
+          "line": 270,
           "values": [
             "kpisQuery",
             "revenueTrendsQuery",
@@ -6703,7 +6703,7 @@
         {
           "query": "merchants.getCurrent",
           "binding": "query",
-          "line": 83,
+          "line": 82,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
@@ -6711,23 +6711,23 @@
         {
           "query": "analytics.getDashboardKPIs",
           "binding": "kpisQuery",
-          "line": 127,
+          "line": 135,
           "errorSignal": false,
           "loadingSignal": false,
-          "enabled": "!!merchant "
+          "enabled": "!!merchant"
         },
         {
           "query": "analytics.getRevenueTrends",
           "binding": "revenueTrendsQuery",
-          "line": 136,
+          "line": 150,
           "errorSignal": false,
           "loadingSignal": false,
-          "enabled": "!!merchant "
+          "enabled": "!!merchant"
         },
         {
           "query": "analytics.getTopProducts",
           "binding": "topProductsQuery",
-          "line": 147,
+          "line": 167,
           "errorSignal": false,
           "loadingSignal": false,
           "enabled": "!!merchant && (activeTab === \"overview\" || activeTab === \"products\")"
@@ -6735,15 +6735,15 @@
         {
           "query": "analytics.getCampaignAnalytics",
           "binding": "campaignAnalyticsQuery",
-          "line": 160,
+          "line": 184,
           "errorSignal": false,
           "loadingSignal": false,
-          "enabled": "!!merchant && activeTab === \"campaigns\" "
+          "enabled": "!!merchant && activeTab === \"campaigns\""
         },
         {
           "query": "analytics.getCustomerSegments",
           "binding": "customerSegmentsQuery",
-          "line": 169,
+          "line": 198,
           "errorSignal": false,
           "loadingSignal": false,
           "enabled": "!!merchant && (activeTab === \"overview\" || activeTab === \"customers\")"
@@ -6751,49 +6751,33 @@
         {
           "query": "analytics.getHourlyAnalytics",
           "binding": "hourlyAnalyticsQuery",
-          "line": 181,
+          "line": 214,
           "errorSignal": false,
           "loadingSignal": false,
-          "enabled": "!!merchant && activeTab === \"time\" "
+          "enabled": "!!merchant && activeTab === \"time\""
         },
         {
           "query": "analytics.getWeekdayAnalytics",
           "binding": "weekdayAnalyticsQuery",
-          "line": 190,
+          "line": 229,
           "errorSignal": false,
           "loadingSignal": false,
-          "enabled": "!!merchant && activeTab === \"time\" "
+          "enabled": "!!merchant && activeTab === \"time\""
         },
         {
           "query": "analytics.getDiscountCodeAnalytics",
           "binding": "discountAnalyticsQuery",
-          "line": 200,
+          "line": 245,
           "errorSignal": false,
           "loadingSignal": false,
-          "enabled": "!!merchant && activeTab === \"campaigns\" "
+          "enabled": "!!merchant && activeTab === \"campaigns\""
         }
       ],
       "conditions": [],
       "imports": [
-        "client/src/components/DashboardSkeleton.tsx",
-        "client/src/contexts/CurrencyContext.tsx"
+        "client/src/components/DashboardSkeleton.tsx"
       ],
       "controlCount": 7
-    },
-    {
-      "file": "client/src/contexts/CurrencyContext.tsx",
-      "hash": "fdc5c432d011",
-      "queries": [],
-      "mutations": [],
-      "imperativeReads": [],
-      "browserRequests": [],
-      "sections": [],
-      "choices": [],
-      "handlers": [],
-      "queryStates": [],
-      "conditions": [],
-      "imports": [],
-      "controlCount": 0
     },
     {
       "file": "client/src/pages/merchant/Analytics.tsx",
@@ -19727,17 +19711,16 @@
       ],
       "files": [
         "client/src/pages/merchant/AnalyticsDashboard.tsx",
-        "client/src/components/DashboardSkeleton.tsx",
-        "client/src/contexts/CurrencyContext.tsx"
+        "client/src/components/DashboardSkeleton.tsx"
       ],
       "controls": [
-        "016758837579",
-        "669463a5e9f7",
-        "e3fda05d257e",
-        "e521fe7cf9cb",
-        "2b28b6ccc44b",
-        "e4642e2bfe41",
-        "e3308eb4da46"
+        "9ef36afb45f1",
+        "04213c3638be",
+        "b3f99851a327",
+        "3a344bf3c084",
+        "d926d76d91db",
+        "29cc390334dd",
+        "6bdac9a63b1a"
       ],
       "queries": [
         "merchants.getCurrent",
@@ -43152,9 +43135,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "016758837579",
+      "id": "9ef36afb45f1",
       "file": "client/src/pages/merchant/AnalyticsDashboard.tsx",
-      "line": 288,
+      "line": 352,
       "tag": "Select",
       "role": "",
       "kind": "field",
@@ -43178,9 +43161,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "669463a5e9f7",
+      "id": "04213c3638be",
       "file": "client/src/pages/merchant/AnalyticsDashboard.tsx",
-      "line": 395,
+      "line": 449,
       "tag": "TabsTrigger",
       "role": "",
       "kind": "action",
@@ -43199,9 +43182,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "e3fda05d257e",
+      "id": "b3f99851a327",
       "file": "client/src/pages/merchant/AnalyticsDashboard.tsx",
-      "line": 398,
+      "line": 452,
       "tag": "TabsTrigger",
       "role": "",
       "kind": "action",
@@ -43220,9 +43203,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "e521fe7cf9cb",
+      "id": "3a344bf3c084",
       "file": "client/src/pages/merchant/AnalyticsDashboard.tsx",
-      "line": 401,
+      "line": 455,
       "tag": "TabsTrigger",
       "role": "",
       "kind": "action",
@@ -43241,9 +43224,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "2b28b6ccc44b",
+      "id": "d926d76d91db",
       "file": "client/src/pages/merchant/AnalyticsDashboard.tsx",
-      "line": 404,
+      "line": 458,
       "tag": "TabsTrigger",
       "role": "",
       "kind": "action",
@@ -43262,9 +43245,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "e4642e2bfe41",
+      "id": "29cc390334dd",
       "file": "client/src/pages/merchant/AnalyticsDashboard.tsx",
-      "line": 407,
+      "line": 461,
       "tag": "TabsTrigger",
       "role": "",
       "kind": "action",
@@ -43283,9 +43266,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "e3308eb4da46",
+      "id": "6bdac9a63b1a",
       "file": "client/src/pages/merchant/AnalyticsDashboard.tsx",
-      "line": 926,
+      "line": 987,
       "tag": "Calendar",
       "role": "",
       "kind": "field",

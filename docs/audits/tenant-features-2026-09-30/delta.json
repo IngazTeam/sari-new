@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-01T08:48:22.152Z",
+  "generatedAt": "2026-10-01T09:02:04.148Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,7 +10,7 @@
     },
     "after": {
       "routes": 126,
-      "files": 340,
+      "files": 339,
       "controls": 2201
     }
   },
@@ -244,6 +244,10 @@
   "noLongerReachable": [
     {
       "file": "client/src/components/ProductsSkeleton.tsx",
+      "exists": true
+    },
+    {
+      "file": "client/src/contexts/CurrencyContext.tsx",
       "exists": true
     }
   ],

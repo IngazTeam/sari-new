@@ -5,13 +5,10 @@
  */
 
 import { getDb, getDiscountCodesByMerchantId } from "../db";
+import { TRPCError } from "@trpc/server";
+import { orderMinor } from "../../shared/order-workspace";
 import { eq, and, gte, lt } from "drizzle-orm";
-import {
-  orders,
-  products,
-  campaigns,
-  conversations,
-} from "../../drizzle/schema";
+import { orders, products, campaigns } from "../../drizzle/schema";
 
 // Helper function to format Date for MySQL timestamp comparison
 function formatDateForDB(date: Date): string {
@@ -42,6 +39,30 @@ function analyticsWindow(merchantId: number, range: DateRange): DateRange {
   if (from >= until) throw Error("Invalid analytics scope");
   return { startDate: new Date(from), endDate: new Date(until) };
 }
+export function resolveAnalyticsCurrency(
+  actual: string,
+  expected?: string
+): "SAR" | "USD" {
+  validateCurrency(actual);
+  if (expected !== undefined && expected !== actual)
+    throw new TRPCError({
+      code: "CONFLICT",
+      message: "Store currency changed. Reload analytics.",
+    });
+  return actual as "SAR" | "USD";
+}
+function validateCurrency(currency: string) {
+  if (currency !== "SAR" && currency !== "USD")
+    throw Error("Invalid analytics currency");
+}
+function amount(value: unknown): number {
+  const n = orderMinor(value);
+  if (n === null) throw Error("Invalid analytics amount");
+  return n;
+}
+function addAmount(a: number, b: number): number {
+  return amount(a + b);
+}
 async function analyticsDatabase() {
   const database = await getDb();
   if (!database) throw Error("Analytics storage unavailable");
@@ -57,17 +78,19 @@ const orderDate = (value: string) =>
 export interface DashboardKPIs {
   totalRevenue: number;
   totalOrders: number;
-  averageOrderValue: number;
+  averageOrderValue: number | null;
   totalCustomers: number;
-  conversionRate: number;
-  revenueGrowth: number;
-  ordersGrowth: number;
+  conversionRate: null;
+  revenueGrowth: number | null;
+  ordersGrowth: number | null;
 }
 
 export async function getDashboardKPIs(
   merchantId: number,
-  dateRange: DateRange
+  dateRange: DateRange,
+  currency: "SAR" | "USD" = "SAR"
 ): Promise<DashboardKPIs> {
+  validateCurrency(currency);
   dateRange = analyticsWindow(merchantId, dateRange);
   const database = await analyticsDatabase();
 
@@ -78,38 +101,27 @@ export async function getDashboardKPIs(
     .where(
       and(
         eq(orders.merchantId, merchantId),
+        eq(orders.currency, currency),
         gte(orders.createdAt, formatDateForDB(dateRange.startDate)),
         lt(orders.createdAt, formatDateForDB(dateRange.endDate)),
-        eq(orders.status, "paid" as any)
+        eq(orders.status, "paid")
       )
     );
 
   const totalRevenue = currentOrders.reduce(
-    (sum, order) => sum + order.totalAmount,
+    (sum, order) => addAmount(sum, amount(order.totalAmount)),
     0
   );
   const totalOrders = currentOrders.length;
-  const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+  const averageOrderValue =
+    totalOrders > 0 ? Math.round(totalRevenue / totalOrders) : null;
 
   // Unique customers
-  const uniqueCustomers = new Set(currentOrders.map(o => o.customerPhone)).size;
+  const uniqueCustomers = new Set(
+    currentOrders.map(o => o.customerPhone.trim()).filter(Boolean)
+  ).size;
 
-  // Total conversations for conversion rate
-  const totalConversations = await database
-    .select()
-    .from(conversations)
-    .where(
-      and(
-        eq(conversations.merchantId, merchantId),
-        gte(conversations.createdAt, formatDateForDB(dateRange.startDate)),
-        lt(conversations.createdAt, formatDateForDB(dateRange.endDate))
-      )
-    );
-
-  const conversionRate =
-    totalConversations.length > 0
-      ? (totalOrders / totalConversations.length) * 100
-      : 0;
+  const conversionRate = null;
 
   // Previous period for growth calculation
   const periodDuration =
@@ -125,14 +137,15 @@ export async function getDashboardKPIs(
     .where(
       and(
         eq(orders.merchantId, merchantId),
+        eq(orders.currency, currency),
         gte(orders.createdAt, formatDateForDB(previousStartDate)),
         lt(orders.createdAt, formatDateForDB(previousEndDate)),
-        eq(orders.status, "paid" as any)
+        eq(orders.status, "paid")
       )
     );
 
   const previousRevenue = previousOrders.reduce(
-    (sum, order) => sum + order.totalAmount,
+    (sum, order) => addAmount(sum, amount(order.totalAmount)),
     0
   );
   const previousOrderCount = previousOrders.length;
@@ -140,12 +153,12 @@ export async function getDashboardKPIs(
   const revenueGrowth =
     previousRevenue > 0
       ? ((totalRevenue - previousRevenue) / previousRevenue) * 100
-      : 0;
+      : null;
 
   const ordersGrowth =
     previousOrderCount > 0
       ? ((totalOrders - previousOrderCount) / previousOrderCount) * 100
-      : 0;
+      : null;
 
   return {
     totalRevenue,
@@ -171,8 +184,10 @@ export interface TrendDataPoint {
 export async function getRevenueTrends(
   merchantId: number,
   dateRange: DateRange,
-  groupBy: "day" | "week" | "month" = "day"
+  groupBy: "day" | "week" | "month" = "day",
+  currency: "SAR" | "USD" = "SAR"
 ): Promise<TrendDataPoint[]> {
+  validateCurrency(currency);
   dateRange = analyticsWindow(merchantId, dateRange);
   const database = await analyticsDatabase();
 
@@ -182,9 +197,10 @@ export async function getRevenueTrends(
     .where(
       and(
         eq(orders.merchantId, merchantId),
+        eq(orders.currency, currency),
         gte(orders.createdAt, formatDateForDB(dateRange.startDate)),
         lt(orders.createdAt, formatDateForDB(dateRange.endDate)),
-        eq(orders.status, "paid" as any)
+        eq(orders.status, "paid")
       )
     );
 
@@ -210,7 +226,7 @@ export async function getRevenueTrends(
     }
 
     const data = grouped.get(key)!;
-    data.revenue += order.totalAmount;
+    data.revenue = addAmount(data.revenue, amount(order.totalAmount));
     data.orders += 1;
   });
 
@@ -235,8 +251,10 @@ export interface ProductAnalytics {
 export async function getTopProducts(
   merchantId: number,
   dateRange: DateRange,
-  limit: number = 10
+  limit: number = 10,
+  currency: "SAR" | "USD" = "SAR"
 ): Promise<ProductAnalytics[]> {
+  validateCurrency(currency);
   if (!Number.isInteger(limit) || limit < 1 || limit > 100)
     throw Error("Invalid analytics limit");
   dateRange = analyticsWindow(merchantId, dateRange);
@@ -248,9 +266,10 @@ export async function getTopProducts(
     .where(
       and(
         eq(orders.merchantId, merchantId),
+        eq(orders.currency, currency),
         gte(orders.createdAt, formatDateForDB(dateRange.startDate)),
         lt(orders.createdAt, formatDateForDB(dateRange.endDate)),
-        eq(orders.status, "paid" as any)
+        eq(orders.status, "paid")
       )
     );
 
@@ -267,20 +286,40 @@ export async function getTopProducts(
 
       if (Array.isArray(items)) {
         items.forEach((item: any) => {
+          if (!item || typeof item !== "object" || Array.isArray(item)) return;
           const productId = item.productId ?? item.id;
           if (!Number.isSafeInteger(productId) || productId < 1) return;
 
+          const quantity = item.quantity;
+          const price =
+            item.unitPriceMinor !== undefined
+              ? orderMinor(item.unitPriceMinor)
+              : item.priceUnit === "minor"
+                ? orderMinor(item.price)
+                : null;
+          if (
+            !Number.isSafeInteger(quantity) ||
+            quantity <= 0 ||
+            price === null ||
+            !Number.isSafeInteger(quantity * price)
+          )
+            return;
           if (!productStats.has(productId)) {
             productStats.set(productId, {
-              name: item.name || item.productName || "Unknown",
+              name:
+                typeof item.name === "string"
+                  ? item.name
+                  : typeof item.productName === "string"
+                    ? item.productName
+                    : "Unknown",
               sales: 0,
               revenue: 0,
             });
           }
 
           const stats = productStats.get(productId)!;
-          stats.sales += item.quantity || 1;
-          stats.revenue += (item.price || 0) * (item.quantity || 1);
+          stats.sales = addAmount(stats.sales, quantity);
+          stats.revenue = addAmount(stats.revenue, price * quantity);
         });
       }
     } catch (error) {
@@ -305,7 +344,7 @@ export async function getTopProducts(
       productName: product?.name || stats.name,
       totalSales: stats.sales,
       totalRevenue: stats.revenue,
-      averagePrice: stats.sales > 0 ? stats.revenue / stats.sales : 0,
+      averagePrice: Math.round(stats.revenue / stats.sales),
       stockLevel: product?.stock ?? null,
     });
   }
@@ -372,13 +411,15 @@ export interface CustomerSegment {
   segment: "new" | "returning" | "vip";
   count: number;
   revenue: number;
-  averageOrderValue: number;
+  averageOrderValue: number | null;
 }
 
 export async function getCustomerSegments(
   merchantId: number,
-  dateRange: DateRange
+  dateRange: DateRange,
+  currency: "SAR" | "USD" = "SAR"
 ): Promise<CustomerSegment[]> {
+  validateCurrency(currency);
   dateRange = analyticsWindow(merchantId, dateRange);
   const database = await analyticsDatabase();
 
@@ -388,9 +429,10 @@ export async function getCustomerSegments(
     .where(
       and(
         eq(orders.merchantId, merchantId),
+        eq(orders.currency, currency),
         gte(orders.createdAt, formatDateForDB(dateRange.startDate)),
         lt(orders.createdAt, formatDateForDB(dateRange.endDate)),
-        eq(orders.status, "paid" as any)
+        eq(orders.status, "paid")
       )
     );
 
@@ -401,8 +443,9 @@ export async function getCustomerSegments(
     .where(
       and(
         eq(orders.merchantId, merchantId),
+        eq(orders.currency, currency),
         lt(orders.createdAt, formatDateForDB(dateRange.endDate)),
-        eq(orders.status, "paid" as any)
+        eq(orders.status, "paid")
       )
     );
 
@@ -415,31 +458,44 @@ export async function getCustomerSegments(
 
   // Categorize customers
   const segments = {
-    new: { count: 0, revenue: 0 },
-    returning: { count: 0, revenue: 0 },
-    vip: { count: 0, revenue: 0 },
+    new: { count: 0, revenue: 0, orders: 0 },
+    returning: { count: 0, revenue: 0, orders: 0 },
+    vip: { count: 0, revenue: 0, orders: 0 },
   };
 
   const processedCustomers = new Set<string>();
 
   ordersList.forEach(order => {
-    if (processedCustomers.has(order.customerPhone)) return;
+    if (
+      !order.customerPhone.trim() ||
+      processedCustomers.has(order.customerPhone)
+    )
+      return;
     processedCustomers.add(order.customerPhone);
 
     const totalOrders = customerOrders.get(order.customerPhone) || 1;
     const customerRevenue = ordersList
       .filter(o => o.customerPhone === order.customerPhone)
-      .reduce((sum, o) => sum + o.totalAmount, 0);
+      .reduce((sum, o) => addAmount(sum, amount(o.totalAmount)), 0);
 
+    const ordersInPeriod = ordersList.filter(
+      o => o.customerPhone === order.customerPhone
+    ).length;
     if (totalOrders === 1) {
       segments.new.count++;
-      segments.new.revenue += customerRevenue;
+      segments.new.revenue = addAmount(segments.new.revenue, customerRevenue);
+      segments.new.orders += ordersInPeriod;
     } else if (totalOrders >= 5) {
       segments.vip.count++;
-      segments.vip.revenue += customerRevenue;
+      segments.vip.revenue = addAmount(segments.vip.revenue, customerRevenue);
+      segments.vip.orders += ordersInPeriod;
     } else {
       segments.returning.count++;
-      segments.returning.revenue += customerRevenue;
+      segments.returning.revenue = addAmount(
+        segments.returning.revenue,
+        customerRevenue
+      );
+      segments.returning.orders += ordersInPeriod;
     }
   });
 
@@ -449,23 +505,27 @@ export async function getCustomerSegments(
       count: segments.new.count,
       revenue: segments.new.revenue,
       averageOrderValue:
-        segments.new.count > 0 ? segments.new.revenue / segments.new.count : 0,
+        segments.new.orders > 0
+          ? Math.round(segments.new.revenue / segments.new.orders)
+          : null,
     },
     {
       segment: "returning",
       count: segments.returning.count,
       revenue: segments.returning.revenue,
       averageOrderValue:
-        segments.returning.count > 0
-          ? segments.returning.revenue / segments.returning.count
-          : 0,
+        segments.returning.orders > 0
+          ? Math.round(segments.returning.revenue / segments.returning.orders)
+          : null,
     },
     {
       segment: "vip",
       count: segments.vip.count,
       revenue: segments.vip.revenue,
       averageOrderValue:
-        segments.vip.count > 0 ? segments.vip.revenue / segments.vip.count : 0,
+        segments.vip.orders > 0
+          ? Math.round(segments.vip.revenue / segments.vip.orders)
+          : null,
     },
   ];
 }
@@ -482,8 +542,10 @@ export interface HourlyAnalytics {
 
 export async function getHourlyAnalytics(
   merchantId: number,
-  dateRange: DateRange
+  dateRange: DateRange,
+  currency: "SAR" | "USD" = "SAR"
 ): Promise<HourlyAnalytics[]> {
+  validateCurrency(currency);
   dateRange = analyticsWindow(merchantId, dateRange);
   const database = await analyticsDatabase();
 
@@ -493,9 +555,10 @@ export async function getHourlyAnalytics(
     .where(
       and(
         eq(orders.merchantId, merchantId),
+        eq(orders.currency, currency),
         gte(orders.createdAt, formatDateForDB(dateRange.startDate)),
         lt(orders.createdAt, formatDateForDB(dateRange.endDate)),
-        eq(orders.status, "paid" as any)
+        eq(orders.status, "paid")
       )
     );
 
@@ -510,7 +573,7 @@ export async function getHourlyAnalytics(
     const hour = orderDate(order.createdAt).getUTCHours();
     const data = hourlyData.get(hour)!;
     data.orders++;
-    data.revenue += order.totalAmount;
+    data.revenue = addAmount(data.revenue, amount(order.totalAmount));
   });
 
   return Array.from(hourlyData.entries())
@@ -527,8 +590,10 @@ export interface WeekdayAnalytics {
 
 export async function getWeekdayAnalytics(
   merchantId: number,
-  dateRange: DateRange
+  dateRange: DateRange,
+  currency: "SAR" | "USD" = "SAR"
 ): Promise<WeekdayAnalytics[]> {
+  validateCurrency(currency);
   dateRange = analyticsWindow(merchantId, dateRange);
   const database = await analyticsDatabase();
 
@@ -538,9 +603,10 @@ export async function getWeekdayAnalytics(
     .where(
       and(
         eq(orders.merchantId, merchantId),
+        eq(orders.currency, currency),
         gte(orders.createdAt, formatDateForDB(dateRange.startDate)),
         lt(orders.createdAt, formatDateForDB(dateRange.endDate)),
-        eq(orders.status, "paid" as any)
+        eq(orders.status, "paid")
       )
     );
 
@@ -564,7 +630,7 @@ export async function getWeekdayAnalytics(
     const dayNumber = orderDate(order.createdAt).getUTCDay();
     const data = weekdayData.get(dayNumber)!;
     data.orders++;
-    data.revenue += order.totalAmount;
+    data.revenue = addAmount(data.revenue, amount(order.totalAmount));
   });
 
   return Array.from(weekdayData.entries())
@@ -586,13 +652,15 @@ export interface DiscountAnalytics {
   value: number;
   usageCount: number;
   revenue: number;
-  averageOrderValue: number;
+  averageOrderValue: number | null;
 }
 
 export async function getDiscountCodeAnalytics(
   merchantId: number,
-  dateRange: DateRange
+  dateRange: DateRange,
+  currency: "SAR" | "USD" = "SAR"
 ): Promise<DiscountAnalytics[]> {
+  validateCurrency(currency);
   dateRange = analyticsWindow(merchantId, dateRange);
   const database = await analyticsDatabase();
 
@@ -607,15 +675,16 @@ export async function getDiscountCodeAnalytics(
       .where(
         and(
           eq(orders.merchantId, merchantId),
+          eq(orders.currency, currency),
           eq(orders.discountCode, code.code),
           gte(orders.createdAt, formatDateForDB(dateRange.startDate)),
           lt(orders.createdAt, formatDateForDB(dateRange.endDate)),
-          eq(orders.status, "paid" as any)
+          eq(orders.status, "paid")
         )
       );
 
     const revenue = codeOrders.reduce(
-      (sum, order) => sum + order.totalAmount,
+      (sum, order) => addAmount(sum, amount(order.totalAmount)),
       0
     );
     const usageCount = codeOrders.length;
@@ -626,7 +695,8 @@ export async function getDiscountCodeAnalytics(
       value: code.value,
       usageCount,
       revenue,
-      averageOrderValue: usageCount > 0 ? revenue / usageCount : 0,
+      averageOrderValue:
+        usageCount > 0 ? Math.round(revenue / usageCount) : null,
     });
   }
 

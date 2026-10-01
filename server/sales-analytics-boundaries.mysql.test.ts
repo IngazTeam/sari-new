@@ -9,6 +9,7 @@ import {
   getCampaignAnalytics,
   getDashboardKPIs,
   getHourlyAnalytics,
+  getCustomerSegments,
 } from "./analytics/analytics";
 describe.skipIf(!process.env.DATABASE_URL)(
   "sales analytics boundaries MySQL",
@@ -27,6 +28,47 @@ describe.skipIf(!process.env.DATABASE_URL)(
       users.push(a.userId, b.userId);
       id = a.merchantId;
       foreign = b.merchantId;
+    });
+    it("separates stored currencies and keeps values in minor units", async () => {
+      await order(id, "2024-01-02 10:00:00");
+      const usd = await order(id, "2024-01-02 11:00:00");
+      await run("UPDATE orders SET currency=?,totalAmount=? WHERE id=?", [
+        "USD",
+        250,
+        usd.insertId,
+      ]);
+      expect(await getDashboardKPIs(id, range, "SAR")).toMatchObject({
+        totalRevenue: 100,
+        totalOrders: 1,
+        averageOrderValue: 100,
+        conversionRate: null,
+        revenueGrowth: null,
+        ordersGrowth: null,
+      });
+      expect(await getDashboardKPIs(id, range, "USD")).toMatchObject({
+        totalRevenue: 250,
+        totalOrders: 1,
+        averageOrderValue: 250,
+      });
+      expect((await getHourlyAnalytics(id, range, "USD"))[11]).toMatchObject({
+        orders: 1,
+        revenue: 250,
+      });
+    });
+    it("computes the customer segment average per order and excludes future lifetime orders", async () => {
+      await order(id, "2024-01-02 10:00:00");
+      await order(id, "2024-01-02 11:00:00");
+      for (let i = 0; i < 3; i++) await order(id, "2024-01-04 10:00:00");
+      const rows = await getCustomerSegments(id, range, "SAR");
+      expect(rows.find(r => r.segment === "returning")).toMatchObject({
+        count: 1,
+        revenue: 200,
+        averageOrderValue: 100,
+      });
+      expect(rows.find(r => r.segment === "vip")).toMatchObject({
+        count: 0,
+        averageOrderValue: null,
+      });
     });
     afterEach(async () => {
       await cleanupDisposableMerchants(users);
@@ -52,6 +94,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
             name: "Recorded item",
             quantity: 1,
             price: 100,
+            priceUnit: "minor",
           },
         ])
       );

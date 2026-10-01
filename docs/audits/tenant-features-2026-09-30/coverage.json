@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-01T08:48:22.152Z",
+  "generatedAt": "2026-10-01T09:02:04.148Z",
   "definition": "Every registered route is accounted for; source inventory and design completion are different statuses.",
   "routes": [
     {
@@ -21963,17 +21963,16 @@
       ],
       "files": [
         "client/src/pages/merchant/AnalyticsDashboard.tsx",
-        "client/src/components/DashboardSkeleton.tsx",
-        "client/src/contexts/CurrencyContext.tsx"
+        "client/src/components/DashboardSkeleton.tsx"
       ],
       "controls": [
-        "016758837579",
-        "669463a5e9f7",
-        "e3fda05d257e",
-        "e521fe7cf9cb",
-        "2b28b6ccc44b",
-        "e4642e2bfe41",
-        "e3308eb4da46"
+        "9ef36afb45f1",
+        "04213c3638be",
+        "b3f99851a327",
+        "3a344bf3c084",
+        "d926d76d91db",
+        "29cc390334dd",
+        "6bdac9a63b1a"
       ],
       "queries": [
         "merchants.getCurrent",
@@ -21998,9 +21997,9 @@
       ],
       "controlDetails": [
         {
-          "id": "016758837579",
+          "id": "9ef36afb45f1",
           "file": "client/src/pages/merchant/AnalyticsDashboard.tsx",
-          "line": 288,
+          "line": 352,
           "tag": "Select",
           "role": "",
           "kind": "field",
@@ -22024,9 +22023,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "669463a5e9f7",
+          "id": "04213c3638be",
           "file": "client/src/pages/merchant/AnalyticsDashboard.tsx",
-          "line": 395,
+          "line": 449,
           "tag": "TabsTrigger",
           "role": "",
           "kind": "action",
@@ -22045,9 +22044,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "e3fda05d257e",
+          "id": "b3f99851a327",
           "file": "client/src/pages/merchant/AnalyticsDashboard.tsx",
-          "line": 398,
+          "line": 452,
           "tag": "TabsTrigger",
           "role": "",
           "kind": "action",
@@ -22066,9 +22065,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "e521fe7cf9cb",
+          "id": "3a344bf3c084",
           "file": "client/src/pages/merchant/AnalyticsDashboard.tsx",
-          "line": 401,
+          "line": 455,
           "tag": "TabsTrigger",
           "role": "",
           "kind": "action",
@@ -22087,9 +22086,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "2b28b6ccc44b",
+          "id": "d926d76d91db",
           "file": "client/src/pages/merchant/AnalyticsDashboard.tsx",
-          "line": 404,
+          "line": 458,
           "tag": "TabsTrigger",
           "role": "",
           "kind": "action",
@@ -22108,9 +22107,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "e4642e2bfe41",
+          "id": "29cc390334dd",
           "file": "client/src/pages/merchant/AnalyticsDashboard.tsx",
-          "line": 407,
+          "line": 461,
           "tag": "TabsTrigger",
           "role": "",
           "kind": "action",
@@ -22129,9 +22128,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "e3308eb4da46",
+          "id": "6bdac9a63b1a",
           "file": "client/src/pages/merchant/AnalyticsDashboard.tsx",
-          "line": 926,
+          "line": 987,
           "tag": "Calendar",
           "role": "",
           "kind": "field",
