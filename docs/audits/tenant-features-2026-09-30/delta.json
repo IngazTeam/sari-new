@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-01T06:55:44.496Z",
+  "generatedAt": "2026-10-01T07:12:31.371Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -30,6 +30,7 @@
     "client/src/pages/setup-wizard/SetupDraftRecovery.tsx",
     "client/src/lib/merchant-setup-navigation.ts",
     "client/src/components/merchant/DashboardAnalytics.tsx",
+    "client/src/components/merchant/AssistantScheduleStatus.tsx",
     "client/src/lib/learning-policy-review-version.ts",
     "client/src/lib/learning-policy-evaluation-state.ts",
     "client/src/lib/sales-experiment-form.ts",
@@ -90,7 +91,6 @@
     "client/src/components/merchant/AssistantDraftReview.tsx",
     "client/src/components/merchant/AssistantPersonalityFields.tsx",
     "client/src/components/merchant/AssistantReplyPreview.tsx",
-    "client/src/components/merchant/AssistantScheduleStatus.tsx",
     "client/src/components/merchant/ReviewedSalesPolicy.tsx",
     "client/src/constants/botTemplates.ts",
     "client/src/components/merchant/AssistantOptionReview.tsx",
@@ -187,6 +187,7 @@
     "client/src/pages/setup-wizard/LanguageStep.tsx",
     "client/src/pages/setup-wizard/CompleteStep.tsx",
     "client/src/pages/merchant/Dashboard.tsx",
+    "client/src/components/LearningEvidenceCard.tsx",
     "client/src/pages/merchant/AIWhatsAppHub.tsx",
     "client/src/pages/merchant/Campaigns.tsx",
     "client/src/pages/merchant/Products.tsx",
@@ -319,12 +320,13 @@
     {
       "route": "/merchant/dashboard",
       "controlsBefore": 174,
-      "controlsNow": 178,
+      "controlsNow": 181,
       "removedQueries": [
         "dashboard.getSummary"
       ],
       "addedQueries": [
-        "dashboard.workspace"
+        "dashboard.workspace",
+        "botSettings.shouldRespond"
       ],
       "removedMutations": [],
       "addedMutations": []

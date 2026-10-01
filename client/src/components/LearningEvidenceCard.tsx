@@ -8,8 +8,8 @@ import { LearningPolicyReview } from './LearningPolicyReview';
 
 export function LearningEvidenceCard({ showManageLink = true }: { showManageLink?: boolean } = {}) {
   const { t } = useTranslation();
-  const { data, isLoading, isError, refetch } = trpc.sariBrain.getLearningDashboard.useQuery(undefined, {
-    staleTime: 60_000, retry: false,
+  const { data, isLoading, isFetching, isError, refetch } = trpc.sariBrain.getLearningDashboard.useQuery(undefined, {
+    staleTime: 0, refetchOnMount: 'always', retry: false,
   });
   const evidence = data?.learningEvidence;
   return <Card className="min-w-0">
@@ -21,12 +21,12 @@ export function LearningEvidenceCard({ showManageLink = true }: { showManageLink
       <CardDescription>{t('merchantUx.learningEvidence.description')}</CardDescription>
     </CardHeader>
     <CardContent className="space-y-4">
-      {isLoading && <p role="status" className="text-sm text-muted-foreground">{t('merchantUx.learningEvidence.loading')}</p>}
-      {isError && <div role="alert" className="space-y-2">
+      {(isLoading || isFetching) && <p role="status" className="text-sm text-muted-foreground">{t('merchantUx.learningEvidence.loading')}</p>}
+      {!isFetching && (isError || (!isLoading && (!data || !evidence))) && <div role="alert" className="space-y-2">
         <p className="text-sm">{t('merchantUx.learningEvidence.loadFailed')}</p>
         <Button className="min-h-11" variant="outline" onClick={() => void refetch()}>{t('merchantUx.learningEvidence.retry')}</Button>
       </div>}
-      {data && evidence && <>
+      {!isError && !isLoading && !isFetching && data && evidence && <>
         <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
           {([
             [t('merchantUx.learningEvidence.conversations'), data.totalConversations], [t('merchantUx.learningEvidence.signals'), data.totalSignals],

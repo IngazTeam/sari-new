@@ -123,7 +123,7 @@ export function DashboardAnalytics({
           </Button>
         </div>
         <p className="text-sm text-muted-foreground">
-          {label("scope", { days, currency: snapshot.currency })}
+          {label(days === 7 ? "scopeWeek" : "scope", { days, currency: snapshot.currency })}
         </p>
         <details>
           <summary className="min-h-11 py-3 cursor-pointer text-sm">

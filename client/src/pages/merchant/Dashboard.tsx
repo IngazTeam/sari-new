@@ -1,8 +1,10 @@
-import { useState } from "react";
-import { Link } from "wouter";
-import { ArrowLeft, MessageSquare, Plus, Sparkles } from "lucide-react";
+import { useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Link, useSearch, useLocation } from "wouter";
+import { ArrowLeft, ArrowRight, Plus } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { DashboardAnalytics } from "@/components/merchant/DashboardAnalytics";
+import { AssistantScheduleStatus } from "@/components/merchant/AssistantScheduleStatus";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -15,64 +17,114 @@ import { DashboardSkeleton } from "@/components/DashboardSkeleton";
 import { TrialBanner } from "@/components/TrialBanner";
 import { LearningEvidenceCard } from "@/components/LearningEvidenceCard";
 import { QueryStateCard } from "@/components/QueryStateCard";
-
+const freshRead = {
+  staleTime: 0,
+  refetchOnMount: "always" as const,
+  retry: false,
+};
+function useLabels() {
+  const { t, i18n } = useTranslation();
+  return {
+    label: (key: string, args: Record<string, unknown> = {}) =>
+      t(`dashboardHomeUx.${key}`, args),
+    i18n,
+  };
+}
 function PanelError({ retry }: { retry: () => void }) {
+  const { label } = useLabels();
   return (
     <div role="alert" className="mw-query-error">
-      <p>تعذر تحميل هذه البيانات. أعد المحاولة لتظهر أحدث نتيجة.</p>
+      <p>{label("failed")}</p>
       <Button type="button" variant="outline" onClick={retry}>
-        إعادة المحاولة
+        {label("retry")}
       </Button>
     </div>
   );
 }
-
 export default function MerchantDashboard() {
-  const [dateRange, setDateRange] = useState<7 | 30 | 90>(7);
-  const [chartType, setChartType] = useState<"orders" | "revenue">("orders");
-  const [quickOpen, setQuickOpen] = useState(false);
-  const merchantQuery = trpc.merchants.getCurrent.useQuery();
-  const onboarding = trpc.merchants.getOnboardingStatus.useQuery();
-  const summary = trpc.dashboard.workspace.useQuery({ days: dateRange });
-  const recent = trpc.conversations.listRecent.useQuery({ limit: 5 });
-  const count = trpc.conversations.count.useQuery();
-  const campaigns = trpc.campaigns.getStats.useQuery();
-  const reviews = trpc.reviews.getStats.useQuery(
-    { merchantId: merchantQuery.data?.id ?? 0 },
-    { enabled: !!merchantQuery.data?.id }
-  );
-  const insights = trpc.dashboard.getAiInsights.useQuery(undefined, {
-    staleTime: 6 * 60 * 60 * 1000,
-    retry: false,
-  });
-  const sync = trpc.sariBrain.getIntegrationSyncStatus.useQuery(undefined, {
-    staleTime: 5 * 60 * 1000,
-    retry: false,
-  });
-  const merchant = merchantQuery.data;
-  const onboardingStatus = onboarding.data;
-  const setupCompleted = onboardingStatus?.setupCompleted === true;
-  const channelReady = onboardingStatus?.stage === "ready";
-  // A connected channel is not proof that automatic replies are enabled.
-  const autoReplyEnabled = merchant?.autoReplyEnabled === 1;
-  const assistantRunning = channelReady && autoReplyEnabled;
-  if (merchantQuery.isLoading) return <DashboardSkeleton />;
-  if (merchantQuery.error || !merchant)
+  const { label } = useLabels();
+  const merchant = trpc.merchants.getCurrent.useQuery(undefined, freshRead);
+  if (merchant.isLoading || merchant.isFetching) return <DashboardSkeleton />;
+  if (merchant.isError || !merchant.data)
     return (
       <QueryStateCard
         kind="error"
-        title="تعذر تحميل المتجر"
-        description="تحقق من المتجر المحدد وصلاحية الوصول ثم أعد المحاولة."
-        onRetry={() => void merchantQuery.refetch()}
+        title={label("storeFailed")}
+        description={label("storeHelp")}
+        retryLabel={label("retry")}
+        onRetry={() => void merchant.refetch()}
       />
     );
-
+  return <DashboardContent key={merchant.data.id} merchant={merchant.data} />;
+}
+function DashboardContent({
+  merchant,
+}: {
+  merchant: { id: number; businessName: string };
+}) {
+  const { label, i18n } = useLabels(),
+    search = useSearch(),
+    [, navigate] = useLocation();
+  const requestedDays = Number(new URLSearchParams(search).get("days"));
+  const days: 7 | 30 | 90 =
+    requestedDays === 30 || requestedDays === 90 ? requestedDays : 7;
+  const setDays = (value: string) => {
+    const params = new URLSearchParams(search);
+    params.set("days", value);
+    navigate("/merchant/dashboard?" + params.toString());
+  };
+  const [quickOpen, setQuickOpen] = useState(false),
+    [detailsOpen, setDetailsOpen] = useState(false);
+  const opener = useRef<HTMLButtonElement>(null);
+  const onboarding = trpc.merchants.getOnboardingStatus.useQuery(
+    undefined,
+    freshRead
+  );
+  const summary = trpc.dashboard.workspace.useQuery({ days }, freshRead);
+  const recent = trpc.conversations.listRecent.useQuery(
+    { limit: 5 },
+    freshRead
+  );
+  const count = trpc.conversations.count.useQuery(undefined, freshRead);
+  const campaigns = trpc.campaigns.getStats.useQuery(undefined, freshRead);
+  const reviews = trpc.reviews.getStats.useQuery(
+    { merchantId: merchant.id },
+    freshRead
+  );
+  const response = trpc.botSettings.shouldRespond.useQuery(
+    undefined,
+    freshRead
+  );
+  const onboardingStatus =
+    !onboarding.isError && !onboarding.isFetching ? onboarding.data : undefined;
+  const setupCompleted = onboardingStatus?.setupCompleted === true;
+  const channelReady = onboardingStatus?.channelState === "connected";
+  const locale = i18n.language.startsWith("ar") ? "ar-SA" : "en-GB",
+    Arrow = i18n.dir() === "rtl" ? ArrowLeft : ArrowRight;
+  const integer = (value: unknown) =>
+    typeof value === "number" && Number.isSafeInteger(value) && value >= 0
+      ? value.toLocaleString(locale)
+      : label("unavailable");
+  const campaignsReady =
+    !campaigns.isError && !campaigns.isFetching && campaigns.data;
+  const reviewsReady = !reviews.isError && !reviews.isFetching && reviews.data;
+  const reviewAverage =
+    reviewsReady &&
+    reviewsReady.totalReviews > 0 &&
+    Number.isFinite(reviewsReady.averageRating) &&
+    reviewsReady.averageRating >= 0 &&
+    reviewsReady.averageRating <= 5
+      ? reviewsReady.averageRating.toLocaleString(locale, {
+          minimumFractionDigits: 1,
+          maximumFractionDigits: 1,
+        })
+      : label("unavailable");
   return (
-    <div className="mw-home">
+    <div className="mw-home" dir={i18n.dir()}>
       <header className="mw-page-heading">
         <div>
           <p className="mw-eyebrow">
-            {new Date().toLocaleDateString("ar-SA", {
+            {new Date().toLocaleDateString(locale, {
               calendar: "gregory",
               weekday: "long",
               day: "numeric",
@@ -80,328 +132,394 @@ export default function MerchantDashboard() {
               year: "numeric",
             })}
           </p>
-          <h1>مرحبًا، {merchant.businessName}</h1>
-          <p>هذه أبرز مستجدات متجرك. لنبدأ بما يحتاج انتباهك.</p>
+          <h1>{label("welcome", { name: merchant.businessName })}</h1>
+          <p>{label("intro")}</p>
         </div>
         <div className="mw-page-actions">
           <label htmlFor="dashboard-period" className="sr-only">
-            فترة التقرير
+            {label("period")}
           </label>
           <select
             id="dashboard-period"
-            value={dateRange}
-            onChange={event =>
-              setDateRange(Number(event.target.value) as 7 | 30 | 90)
-            }
+            value={days}
+            onChange={e => setDays(e.target.value)}
           >
-            <option value={7}>آخر 7 أيام</option>
-            <option value={30}>آخر 30 يومًا</option>
-            <option value={90}>آخر 90 يومًا</option>
+            {[7, 30, 90].map(d => (
+              <option key={d} value={d}>
+                {label(d === 7 ? "week" : "days", { count: d })}
+              </option>
+            ))}
           </select>
-          <Button type="button" onClick={() => setQuickOpen(true)}>
+          <Button ref={opener} onClick={() => setQuickOpen(true)}>
             <Plus aria-hidden="true" />
-            إجراء سريع
+            {label("quick")}
           </Button>
         </div>
       </header>
       <TrialBanner />
-      {onboarding.error ? (
+      {onboarding.isFetching ? (
+        <p role="status">{label("checkingSetup")}</p>
+      ) : onboarding.isError || !onboardingStatus ? (
         <PanelError retry={() => void onboarding.refetch()} />
       ) : (
-        onboardingStatus &&
         !setupCompleted && (
           <section role="status" className="mw-attention">
             <div>
-              <h2>أكمل إعداد نشاطك قبل الإطلاق</h2>
-              <p>
-                يمكنك استكشاف لوحة التحكم الآن. راجع بيانات النشاط وأكّد الإعداد
-                قبل بدء التشغيل.
-              </p>
+              <h2>{label("setup")}</h2>
+              <p>{label("setupHelp")}</p>
             </div>
             <Link href="/merchant/setup-wizard" className="mw-link">
-              إكمال الإعداد
-              <ArrowLeft aria-hidden="true" />
+              {label("finishSetup")}
+              <Arrow aria-hidden="true" />
             </Link>
           </section>
         )
       )}
-      <section className="mw-attention" aria-label="خطوتك التالية">
+      <section className="mw-attention" aria-label={label("next")}>
         <div>
-          <h2>خطوتك التالية</h2>
-          <p>مهام يومك، دون البحث بين الصفحات</p>
+          <h2>{label("next")}</h2>
+          <p>{label("nextHelp")}</p>
         </div>
         <div className="mw-task-links">
-          <Link href="/merchant/conversations?needs_human=1">
-            محادثات تحتاج تدخلك
-            <ArrowLeft aria-hidden="true" />
-          </Link>
-          <Link href="/merchant/products">
-            مراجعة الكتالوج والمخزون
-            <ArrowLeft aria-hidden="true" />
-          </Link>
-          <Link href="/merchant/campaigns">
-            متابعة حملاتك
-            <ArrowLeft aria-hidden="true" />
-          </Link>
+          {[
+            ["/merchant/conversations?needs_human=1", "human"],
+            ["/merchant/products", "catalog"],
+            ["/merchant/campaigns", "campaigns"],
+          ].map(([path, text]) => (
+            <Link href={path} key={path}>
+              {label(text)}
+              <Arrow aria-hidden="true" />
+            </Link>
+          ))}
+        </div>
+      </section>
+      <section className="mw-panel">
+        <div className="mw-panel-header">
+          <div>
+            <h2>{label("brain")}</h2>
+            <p>{label("brainHelp")}</p>
+          </div>
+        </div>
+        <div className="mw-home-brain-links">
+          {[
+            ["overview", "results", "resultsHelp"],
+            ["sources", "files", "filesHelp"],
+            ["knowledge&pane=conflicts", "gaps", "gapsHelp"],
+            ["sales", "sales", "salesHelp"],
+          ].map(([view, title, help]) => (
+            <Link key={view} href={"/merchant/sari-brain?view=" + view}>
+              <strong>{label(title)}</strong>
+              <span>{label(help)}</span>
+              <Arrow aria-hidden="true" />
+            </Link>
+          ))}
         </div>
       </section>
       <DashboardAnalytics
         merchantId={merchant.id}
-        days={dateRange}
+        days={days}
         data={summary.data}
         loading={summary.isFetching}
         failed={summary.isError}
         onRetry={() => void summary.refetch()}
       />
-      <section className="mw-panel mw-assistant-panel">
-        <span className="mw-state-pill">
-          {onboarding.isLoading
-            ? "جارٍ التحقق من القناة"
-            : onboarding.error
-              ? "تعذر التحقق من القناة"
-              : assistantRunning
-                ? "القناة متصلة · الرد التلقائي مفعّل"
-                : channelReady
-                  ? "القناة متصلة · الرد التلقائي متوقف"
-                  : "بانتظار إكمال الربط"}
-        </span>
-        <h2>ساري، إلى جانبك</h2>
-        <div className="mw-assistant-count">
-          {count.isLoading
-            ? "…"
-            : count.error
-              ? "—"
-              : (count.data?.toLocaleString() ?? "—")}
-          <small>محادثة في متجرك</small>
-        </div>
-        <p className="text-xs leading-6">
-          {assistantRunning
-            ? "تابع محادثات العملاء، وراجع معرفة المساعد من مكان واحد."
-            : "جهّز المعرفة، اختبر الإجابة، ثم أكمل ربط القناة وتشغيل الردود."}
-        </p>
-        {channelReady && (
-          <Link href="/merchant/bot-settings" className="mw-link">
-            إعدادات التشغيل
-            <ArrowLeft aria-hidden="true" />
-          </Link>
-        )}
-        <Button asChild>
-          <Link href="/merchant/test-sari">
-            <Sparkles aria-hidden="true" />
-            جرّب تجربة العميل
-          </Link>
-        </Button>
-      </section>
       <div className="mw-home-grid">
+        <section className="mw-panel space-y-4">
+          <div className="mw-panel-header">
+            <div>
+              <h2>{label("assistant")}</h2>
+              <p>{label("assistantHelp")}</p>
+            </div>
+            <Link href="/merchant/bot-settings" className="mw-link">
+              {label("settings")}
+            </Link>
+          </div>
+          <p role="status">
+            {onboarding.isFetching
+              ? label("checkingChannel")
+              : !onboardingStatus
+                ? label("unknownChannel")
+                : channelReady
+                  ? label("connected")
+                  : label("notConnected")}
+          </p>
+          <AssistantScheduleStatus
+            merchantId={merchant.id}
+            data={response.data}
+            loading={response.isFetching}
+            failed={response.isError}
+            onRefresh={() => void response.refetch()}
+          />
+          {count.isFetching ? (
+            <p role="status">{label("loading")}</p>
+          ) : count.isError || count.data === undefined ? (
+            <PanelError retry={() => void count.refetch()} />
+          ) : (
+            <p>{label("conversationsCount", { count: integer(count.data) })}</p>
+          )}
+          <Button asChild>
+            <Link href="/merchant/test-sari">{label("test")}</Link>
+          </Button>
+        </section>
         <section className="mw-panel">
           <div className="mw-panel-header">
             <div>
-              <h2>آخر المحادثات</h2>
-              <p>افتح الحديث بسياق العميل الكامل</p>
+              <h2>{label("recent")}</h2>
+              <p>{label("recentHelp")}</p>
             </div>
             <Link href="/merchant/conversations" className="mw-link">
-              كل المحادثات
-              <ArrowLeft aria-hidden="true" />
+              {label("allConversations")}
+              <Arrow aria-hidden="true" />
             </Link>
           </div>
-          {recent.isLoading ? (
-            <p role="status">جاري تحميل المحادثات…</p>
-          ) : recent.error ? (
+          {recent.isFetching ? (
+            <p role="status">{label("loading")}</p>
+          ) : recent.isError || !recent.data ? (
             <PanelError retry={() => void recent.refetch()} />
-          ) : recent.data?.length ? (
+          ) : recent.data.length ? (
             <div className="mw-home-list">
-              {recent.data.map(conversation => (
+              {recent.data.map(c => (
                 <Link
-                  key={conversation.id}
-                  href={`/merchant/conversations?phone=${encodeURIComponent(conversation.customerPhone)}`}
+                  key={c.id}
+                  href={`/merchant/conversations?phone=${encodeURIComponent(c.customerPhone)}`}
                 >
                   <div>
-                    <p>
-                      {conversation.customerName || conversation.customerPhone}
-                    </p>
-                    <small dir="ltr">{conversation.customerPhone}</small>
+                    <p>{c.customerName || c.customerPhone}</p>
+                    <small dir="ltr">{c.customerPhone}</small>
                   </div>
                   <span className="text-xs text-muted-foreground">
-                    {conversation.status === "active"
-                      ? "نشطة"
-                      : conversation.status === "closed"
-                        ? "مغلقة"
-                        : "مؤرشفة"}
+                    {label(
+                      c.status === "active"
+                        ? "active"
+                        : c.status === "closed"
+                          ? "closed"
+                          : c.status === "archived"
+                            ? "archived"
+                            : "unknownStatus"
+                    )}
                   </span>
-                  <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+                  <Arrow aria-hidden="true" className="h-4 w-4" />
                 </Link>
               ))}
             </div>
           ) : (
             <div className="mw-empty-inline">
-              تظهر محادثات عملائك هنا عند استقبالها.
-              <br />
-              <Link href="/merchant/whatsapp-instances" className="mw-link">
-                إعداد قناة واتساب
+              <p>{label("noConversations")}</p>
+              <Link className="mw-link" href="/merchant/whatsapp-instances">
+                {label("connect")}
               </Link>
             </div>
           )}
         </section>
-        <section className="mw-panel">
-          <div className="mw-panel-header">
-            <div>
-              <h2>نبض العلاقة</h2>
-              <p>الحملات والتقييمات من بيانات متجرك</p>
-            </div>
-            <MessageSquare className="h-5 w-5" aria-hidden="true" />
-          </div>
-          <div className="mw-home-list">
-            <Link href="/merchant/campaigns">
-              <div>
-                <p>حملاتك</p>
-                <small>إجمالي الحملات في المتجر</small>
-              </div>
-              <strong>
-                {campaigns.error
-                  ? "تعذر التحميل"
-                  : campaigns.isLoading
-                    ? "…"
-                    : (campaigns.data?.totalCampaigns ?? 0)}
-              </strong>
-            </Link>
-            <Link href="/merchant/reviews">
-              <div>
-                <p>تقييمات العملاء</p>
-                <small>
-                  {reviews.data?.totalReviews
-                    ? `${reviews.data.totalReviews} تقييمًا`
-                    : "لا توجد عينة كافية لحساب التقييم"}
-                </small>
-              </div>
-              <strong>
-                {reviews.error
-                  ? "تعذر التحميل"
-                  : reviews.isLoading
-                    ? "…"
-                    : reviews.data?.totalReviews
-                      ? reviews.data.averageRating.toFixed(1)
-                      : "—"}
-              </strong>
-            </Link>
-          </div>
-        </section>
       </div>
-      <details className="mw-panel">
-        <summary className="mw-detail-summary">
-          المعرفة والمزامنة واقتراحات ساري
-        </summary>
-        <div className="mt-4 space-y-5">
-          <section
-            role="status"
-            className="rounded-lg border p-4 text-sm leading-7"
-          >
-            <p>
-              {setupCompleted
-                ? "تمت المراجعة والتأكيد ✓"
-                : "إعداد النشاط غير مكتمل"}
-            </p>
-            <p>
-              {channelReady
-                ? "واتساب متصل ✓"
-                : "لن تبدأ الردود قبل اكتمال الربط والتحقق"}
-            </p>
-          </section>
-          <LearningEvidenceCard />
-          <section>
-            <h2 className="mb-3 font-semibold">حالة المزامنة</h2>
-            {sync.error ? (
-              <PanelError retry={() => void sync.refetch()} />
-            ) : sync.isLoading ? (
-              <p role="status">جاري تحميل المزامنة…</p>
-            ) : (
-              <>
-                <p className="text-sm text-muted-foreground">
-                  {sync.data?.lastSyncAt
-                    ? `آخر مزامنة: ${new Date(sync.data.lastSyncAt).toLocaleString("ar-SA")}`
-                    : "لم تتم المزامنة بعد"}
-                </p>
-                {sync.data?.hasData && (
-                  <dl className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-5">
-                    {[
-                      ["منتج / دورة", sync.data.products],
-                      ["سؤال شائع", sync.data.faqs],
-                      ["صفحة موقع", sync.data.discoveredPages],
-                      ["قسم معرفة", sync.data.knowledgeSections],
-                      ["عميل", sync.data.customers],
-                    ].map(([label, value]) => (
-                      <div className="rounded-lg border p-3" key={label}>
-                        <dt className="text-xs text-muted-foreground">
-                          {label}
-                        </dt>
-                        <dd className="mt-2 font-semibold">{value}</dd>
-                      </div>
-                    ))}
-                  </dl>
-                )}
-                <Link href="/merchant/sari-brain" className="mw-link">
-                  إدارة المعرفة والمصادر
-                  <ArrowLeft aria-hidden="true" />
-                </Link>
-              </>
-            )}
-          </section>
-          <section>
-            <h2 className="mb-3 font-semibold">ساري يقترح</h2>
-            {insights.isLoading ? (
-              <p role="status">جاري تحميل الاقتراحات…</p>
-            ) : insights.error ? (
-              <PanelError retry={() => void insights.refetch()} />
-            ) : insights.data?.length ? (
-              <div className="mw-tools-grid">
-                {insights.data.map((insight, index) => (
-                  <article className="rounded-lg border p-4" key={index}>
-                    <h3 className="text-sm font-semibold">{insight.title}</h3>
-                    <p className="my-3 text-xs leading-6 text-muted-foreground">
-                      {insight.body}
-                    </p>
-                    {insight.action?.href?.startsWith("/merchant/") && (
-                      <Link href={insight.action.href} className="mw-link">
-                        {insight.action.label || "عرض التفاصيل"}
-                        <ArrowLeft aria-hidden="true" />
-                      </Link>
-                    )}
-                  </article>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                لا توجد اقتراحات جديدة الآن.
-              </p>
-            )}
-          </section>
+      <section className="mw-panel">
+        <div className="mw-panel-header">
+          <div>
+            <h2>{label("relationships")}</h2>
+            <p>{label("relationshipsHelp")}</p>
+          </div>
         </div>
+        <div className="mw-home-list">
+          <Link href="/merchant/campaigns">
+            <div>
+              <p>{label("yourCampaigns")}</p>
+              <small>{label("campaignsScope")}</small>
+            </div>
+            <strong>
+              {campaigns.isFetching
+                ? label("loading")
+                : campaignsReady
+                  ? integer(campaignsReady.totalCampaigns)
+                  : label("unavailable")}
+            </strong>
+          </Link>
+          <Link href="/merchant/reviews">
+            <div>
+              <p>{label("reviews")}</p>
+              <small>
+                {reviews.isFetching
+                  ? label("loading")
+                  : reviewsReady
+                    ? reviewsReady.totalReviews
+                      ? label("reviewsCount", {
+                          count: integer(reviewsReady.totalReviews),
+                        })
+                      : label("noReviews")
+                    : label("unavailable")}
+              </small>
+            </div>
+            <strong>
+              {reviews.isFetching ? label("loading") : reviewAverage}
+            </strong>
+          </Link>
+        </div>
+        {(campaigns.isError || reviews.isError) && (
+          <PanelError
+            retry={() => {
+              void campaigns.refetch();
+              void reviews.refetch();
+            }}
+          />
+        )}
+      </section>
+      <details
+        className="mw-panel"
+        open={detailsOpen}
+        onToggle={e => setDetailsOpen(e.currentTarget.open)}
+      >
+        <summary className="mw-detail-summary">{label("details")}</summary>
+        {detailsOpen && <DashboardDetails />}
       </details>
       <Dialog open={quickOpen} onOpenChange={setQuickOpen}>
-        <DialogContent>
+        <DialogContent
+          dir={i18n.dir()}
+          closeLabel={label("close")}
+          onCloseAutoFocus={e => {
+            e.preventDefault();
+            opener.current?.focus();
+          }}
+        >
           <DialogHeader>
-            <DialogTitle>ماذا تريد أن تنجز؟</DialogTitle>
-            <DialogDescription>
-              اختصارات إلى إجراءات متجرك الحالية
-            </DialogDescription>
+            <DialogTitle>{label("quickTitle")}</DialogTitle>
+            <DialogDescription>{label("quickHelp")}</DialogDescription>
           </DialogHeader>
           <div className="grid gap-3">
             {[
-              ["/merchant/conversations", "متابعة المحادثات"],
-              ["/merchant/products", "إدارة المنتجات"],
-              ["/merchant/services/new", "إضافة خدمة"],
-              ["/merchant/sales-hub", "إعداد عرض سعر"],
-              ["/merchant/campaigns/new", "تجهيز حملة"],
-            ].map(([path, title]) => (
-              <Button asChild key={path} variant="outline">
-                <Link href={path}>
-                  {title}
-                  <ArrowLeft aria-hidden="true" />
+              ["/merchant/conversations", "allConversations"],
+              ["/merchant/products", "manageProducts"],
+              ["/merchant/services/new", "newService"],
+              ["/merchant/sales-hub", "newQuote"],
+              ["/merchant/campaigns/new", "newCampaign"],
+            ].map(([path, text]) => (
+              <Button asChild variant="outline" key={path}>
+                <Link href={path} onClick={() => setQuickOpen(false)}>
+                  {label(text)}
+                  <Arrow aria-hidden="true" />
                 </Link>
               </Button>
             ))}
           </div>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+function DashboardDetails() {
+  const { label, i18n } = useLabels();
+  const [requested, setRequested] = useState(false);
+  const sync = trpc.sariBrain.getIntegrationSyncStatus.useQuery(
+    undefined,
+    freshRead
+  );
+  // Generating suggestions may call a provider. Never start it merely by opening the dashboard.
+  const insights = trpc.dashboard.getAiInsights.useQuery(undefined, {
+    enabled: false,
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+  const syncData = !sync.isError && !sync.isFetching ? sync.data : null;
+  const syncDate = syncData?.lastSyncAt ? new Date(syncData.lastSyncAt) : null;
+  const generate = () => {
+    setRequested(true);
+    void insights.refetch();
+  };
+  return (
+    <div className="mt-5 space-y-5">
+      <LearningEvidenceCard />
+      <section className="space-y-3">
+        <h2 className="font-semibold">{label("sync")}</h2>
+        {sync.isFetching ? (
+          <p role="status">{label("loading")}</p>
+        ) : !syncData ? (
+          <PanelError retry={() => void sync.refetch()} />
+        ) : (
+          <>
+            <p className="text-sm text-muted-foreground">
+              {syncDate && Number.isFinite(syncDate.getTime())
+                ? label("lastSync", {
+                    date: syncDate.toLocaleString(
+                      i18n.language.startsWith("ar") ? "ar-SA" : "en-GB",
+                      { dateStyle: "medium", timeStyle: "short" }
+                    ),
+                  })
+                : label("noSyncTime")}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {label("syncScope")}
+            </p>
+            {syncData.hasData && (
+              <dl className="grid grid-cols-2 gap-3 md:grid-cols-5">
+                {[
+                  ["products", syncData.products],
+                  ["faqs", syncData.faqs],
+                  ["pages", syncData.discoveredPages],
+                  ["sections", syncData.knowledgeSections],
+                  ["customers", syncData.customers],
+                ].map(([key, value]) => (
+                  <div
+                    className="rounded-lg border p-3 min-w-0"
+                    key={String(key)}
+                  >
+                    <dt className="text-xs text-muted-foreground">
+                      {label(String(key))}
+                    </dt>
+                    <dd className="mt-2 font-semibold">
+                      {typeof value === "number" &&
+                      Number.isSafeInteger(value) &&
+                      value >= 0
+                        ? value.toLocaleString(i18n.language)
+                        : label("unavailable")}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            )}
+          </>
+        )}
+        <Link className="mw-link" href="/merchant/sari-brain?view=sources">
+          {label("manageKnowledge")}
+        </Link>
+      </section>
+      <section className="space-y-3">
+        <h2 className="font-semibold">{label("suggestions")}</h2>
+        <p className="text-sm text-muted-foreground">
+          {label("suggestionsHelp")}
+        </p>
+        <Button
+          variant="outline"
+          onClick={generate}
+          disabled={insights.isFetching}
+        >
+          {label(insights.isFetching ? "generating" : "generate")}
+        </Button>
+        {requested &&
+          (insights.isFetching ? (
+            <p role="status">{label("generating")}</p>
+          ) : insights.isError || !insights.data ? (
+            <PanelError retry={generate} />
+          ) : insights.data.length ? (
+            <div className="mw-tools-grid">
+              {insights.data.map((insight, index) => (
+                <article className="rounded-lg border p-4" key={index}>
+                  <h3 className="text-sm font-semibold">{insight.title}</h3>
+                  <p className="my-3 text-xs leading-6 text-muted-foreground">
+                    {insight.body}
+                  </p>
+                  {insight.action?.href?.startsWith("/merchant/") &&
+                    !/[\\\s]/.test(insight.action.href) && (
+                      <Link className="mw-link" href={insight.action.href}>
+                        {insight.action.label || label("more")}
+                      </Link>
+                    )}
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              {label("noSuggestions")}
+            </p>
+          ))}
+      </section>
     </div>
   );
 }

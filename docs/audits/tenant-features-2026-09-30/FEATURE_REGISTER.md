@@ -10,7 +10,7 @@
 | /merchant/setup-wizard — الإعداد الأولي | 25 | 106 | 4 / 8 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant — مدخل لوحة التاجر | 0 | 0 | 0 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/ — مدخل لوحة التاجر | 0 | 0 | 0 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/dashboard — نظرة عامة | 23 | 178 | 28 / 12 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/dashboard — نظرة عامة | 24 | 181 | 29 / 12 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/ai-hub — مركز المساعد | 1 | 1 | 0 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/analytics-hub — مركز التحليلات | 1 | 1 | 0 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/campaigns — الحملات | 2 | 16 | 5 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -313,27 +313,27 @@
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 23 | Button | إعادة المحاولة | Dashboard |
-| 90 | select | فترة التقرير | مرحبًا، |
-| 101 | Button | فترة التقرير | مرحبًا، |
-| 121 | Link | إكمال الإعداد | أكمل إعداد نشاطك قبل الإطلاق |
-| 134 | Link | محادثات تحتاج تدخلك | خطوتك التالية |
-| 138 | Link | مراجعة الكتالوج والمخزون | خطوتك التالية |
-| 142 | Link | متابعة حملاتك | خطوتك التالية |
-| 183 | Link | إعدادات التشغيل | ساري، إلى جانبك |
-| 188 | Button | جرّب تجربة العميل | ساري، إلى جانبك |
-| 189 | Link | جرّب تجربة العميل | ساري، إلى جانبك |
-| 202 | Link | كل المحادثات | آخر المحادثات |
-| 214 | Link | active نشطة closed مغلقة مؤرشفة | آخر المحادثات |
-| 239 | Link | إعداد قناة واتساب | آخر المحادثات |
-| 254 | Link | حملاتك إجمالي الحملات في المتجر تعذر التحميل … | نبض العلاقة |
-| 267 | Link | تقييمات العملاء لا توجد عينة كافية لحساب التقييم تعذر التحميل … — | نبض العلاقة |
-| 290 | summary | المعرفة والمزامنة واقتراحات ساري | المعرفة والمزامنة واقتراحات ساري |
-| 341 | Link | إدارة المعرفة والمصادر | حالة المزامنة |
-| 363 | Link | عرض التفاصيل | Dashboard |
-| 380 | DialogContent | ماذا تريد أن تنجز؟ اختصارات إلى إجراءات متجرك الحالية /merchant/conversations متابعة المحادثات /merchant/products إدارة المنتجات /merchant/services/new إضافة خدمة /merchant/sales-hub إعداد عرض سعر /merchant/campaigns/new | Dashboard |
-| 395 | Button | تسمية ديناميكية / تحتاج مراجعة | ماذا تريد أن تنجز؟ |
-| 396 | Link | تسمية ديناميكية / تحتاج مراجعة | ماذا تريد أن تنجز؟ |
+| 38 | Button | retry | Dashboard |
+| 142 | select | period | welcome |
+| 153 | Button | period | welcome |
+| 171 | Link | finishSetup | setup |
+| 189 | Link | تسمية ديناميكية / تحتاج مراجعة | next |
+| 210 | Link | تسمية ديناميكية / تحتاج مراجعة | brain |
+| 233 | Link | settings | assistant |
+| 260 | Button | test | assistant |
+| 261 | Link | test | assistant |
+| 270 | Link | allConversations | recent |
+| 282 | Link | active closed archived unknownStatus | recent |
+| 308 | Link | connect | recent |
+| 323 | Link | yourCampaigns campaignsScope loading unavailable | relationships |
+| 336 | Link | reviews loading reviewsCount noReviews unavailable loading | relationships |
+| 370 | summary | details | details |
+| 374 | DialogContent | quickTitle quickHelp /merchant/conversations allConversations /merchant/products manageProducts /merchant/services/new newService /merchant/sales-hub newQuote /merchant/campaigns/new newCampaign | details |
+| 394 | Button | تسمية ديناميكية / تحتاج مراجعة | quickTitle |
+| 395 | Link | تسمية ديناميكية / تحتاج مراجعة | quickTitle |
+| 479 | Link | manageKnowledge | sync |
+| 488 | Button | generating generate | suggestions |
+| 510 | Link | more | Dashboard |
 
 ## client/src/components/merchant/DashboardAnalytics.tsx
 
@@ -348,6 +348,14 @@
 | 254 | summary | table | table |
 | 295 | Link | analytics | table |
 | 305 | Link | catalog | products |
+
+## client/src/components/merchant/AssistantScheduleStatus.tsx
+
+| السطر | النوع | التسمية | القسم |
+|---:|---|---|---|
+| 48 | Button | تحديث الحالة | حالة إعدادات الرد المحفوظة |
+| 81 | Link | مراجعة اتصال واتساب | حالة إعدادات الرد المحفوظة |
+| 87 | Link | تجربة رد المساعد | حالة إعدادات الرد المحفوظة |
 
 ## client/src/components/TrialBanner.tsx
 
@@ -1672,14 +1680,6 @@
 | 165 | Button | sariPlayground.preparing sariPlayground.ask | AssistantReplyPreview |
 | 194 | Button | بدء تجربة جديدة | AssistantReplyPreview |
 | 215 | summary | عرض الحوار السابق | عرض الحوار السابق |
-
-## client/src/components/merchant/AssistantScheduleStatus.tsx
-
-| السطر | النوع | التسمية | القسم |
-|---:|---|---|---|
-| 48 | Button | تحديث الحالة | حالة إعدادات الرد المحفوظة |
-| 81 | Link | مراجعة اتصال واتساب | حالة إعدادات الرد المحفوظة |
-| 87 | Link | تجربة رد المساعد | حالة إعدادات الرد المحفوظة |
 
 ## client/src/components/merchant/ReviewedSalesPolicy.tsx
 
