@@ -9,11 +9,22 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { permissionProcedure, router } from "./_core/trpc";
 import { getMerchantById } from './db';
+import { dashboardWorkspaceInput } from '../shared/dashboard-workspace';
 
 const reportDays = z.number().int().min(1).max(366).default(30);
 const productLimit = z.number().int().min(1).max(50).default(5);
 
 export const dashboardRouter = router({
+    workspace: permissionProcedure('analytics.read')
+        .input(dashboardWorkspaceInput)
+        .query(async ({ ctx, input }) => {
+            try {
+                const { readDashboardWorkspace } = await import('./dashboard-workspace');
+                return await readDashboardWorkspace(ctx.merchantId, input);
+            } catch {
+                throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Dashboard unavailable' });
+            }
+        }),
     // Orders trend
     getOrdersTrend: permissionProcedure('analytics.read')
         .input(z.object({
