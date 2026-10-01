@@ -1069,6 +1069,41 @@
           "contains": "snapshot.actorUserId === actorUserId"
         }
       ]
+    },
+    {
+      "routes": [
+        "/merchant/conversations"
+      ],
+      "removed": [
+        "conversations.staffTeamReviewAccess",
+        "conversations.listTeamStaffAttempts",
+        "conversations.listStaffTeamReviews"
+      ],
+      "required": [
+        "conversations.staffTeamContext",
+        "conversations.staffTeamSnapshot"
+      ],
+      "note": "Team review now verifies the current account and merchant in both permission and data snapshots, including mode, message kind, conversation, author and cursor filters. Compatible access/list/audit APIs remain available unchanged. Server permissions still govern every read and check.",
+      "evidence": [
+        "shared/staff-team-review.ts",
+        "server/routers-staff-attempt-review.ts",
+        "server/staff-team-review-access-pentest.test.ts",
+        "server/staff-team-review-ui.test.ts"
+      ],
+      "checks": [
+        {
+          "file": "server/routers-staff-attempt-review.ts",
+          "contains": "listTeamStaffAttempts: permissionProcedure"
+        },
+        {
+          "file": "server/routers-staff-attempt-review.ts",
+          "contains": "listStaffTeamReviews: permissionProcedure"
+        },
+        {
+          "file": "client/src/components/StaffTeamReview.tsx",
+          "contains": "snapshot.data.actorUserId===actorUserId"
+        }
+      ]
     }
   ]
 }

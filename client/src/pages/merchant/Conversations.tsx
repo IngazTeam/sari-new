@@ -276,7 +276,7 @@ function ScopedConversations({ currentMerchant, actorId }: { currentMerchant: { 
 
   return (
     <div className="mw-inbox-page">
-      <StaffTeamReview/>
+      <StaffTeamReview merchantId={currentMerchant.id} actorUserId={actorId}/>
       {/* WhatsApp Disconnected Warning Banner */}
       {connectionHealth &&
         !connectionHealth.connected &&

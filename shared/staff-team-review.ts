@@ -18,3 +18,13 @@ function ordered(page:{items:Array<{id:number}>;nextCursor:number|null}){
 export const staffTeamPage=z.object({items:z.array(staffTeamItem).max(20),nextCursor:id.nullable()}).strict()
   .refine(p=>ordered({items:p.items.map(i=>i.attempt),nextCursor:p.nextCursor}),'Invalid page');
 export const staffTeamAuditPage=z.object({items:z.array(staffTeamAuditItem).max(20),nextCursor:id.nullable()}).strict().refine(ordered,'Invalid page');
+export const staffTeamContext=z.object({merchantId:id,actorUserId:id,canReview:z.boolean()}).strict();
+export const staffTeamSnapshotInput=staffTeamListInput.extend({mode:z.enum(['attempts','history'])}).strict();
+const scope={merchantId:id,actorUserId:id,kind:staffAttemptKind,conversationId:id.nullable(),authorUserId:id.nullable(),beforeId:id.nullable()};
+export const staffTeamSnapshot=z.discriminatedUnion('mode',[
+  z.object({...scope,mode:z.literal('attempts'),page:staffTeamPage}).strict(),
+  z.object({...scope,mode:z.literal('history'),page:staffTeamAuditPage}).strict(),
+]).superRefine((snapshot,ctx)=>{
+  const rows=snapshot.mode==='attempts'?snapshot.page.items.map(row=>({id:row.attempt.id,conversationId:row.conversationId,authorUserId:row.authorUserId,kind:snapshot.kind})):snapshot.page.items;
+  if(rows.some(row=>(snapshot.conversationId!==null&&row.conversationId!==snapshot.conversationId)||(snapshot.authorUserId!==null&&row.authorUserId!==snapshot.authorUserId)||row.kind!==snapshot.kind||(snapshot.beforeId!==null&&row.id>=snapshot.beforeId)))ctx.addIssue({code:'custom',message:'Team snapshot rows do not match its filters'});
+});

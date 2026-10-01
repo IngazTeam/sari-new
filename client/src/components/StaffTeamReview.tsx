@@ -4,13 +4,15 @@ import {z} from 'zod';
 import {trpc} from '@/lib/trpc';
 import {Button} from '@/components/ui/button';
 import {StaffAttemptGuidance} from './StaffAttemptGuidance';
-import {staffTeamCheckResult,staffTeamListInput,staffTeamPage,staffTeamAuditPage,staffTeamReviewReason,type staffTeamItem} from '@shared/staff-team-review';
+import {staffTeamCheckResult,staffTeamListInput,staffTeamPage,staffTeamAuditPage,staffTeamReviewReason,staffTeamContext,staffTeamSnapshot,type staffTeamItem} from '@shared/staff-team-review';
 
 type Kind='text'|'voice';type Reason=z.infer<typeof staffTeamReviewReason>;
 function TeamAttempt({item,kind,refreshing,revision,onChecked}:{item:z.infer<typeof staffTeamItem>;kind:Kind;refreshing:boolean;revision:number;onChecked:()=>void}){
  const {t,i18n}=useTranslation(),mutation=trpc.conversations.checkTeamStaffAttempt.useMutation({retry:false});
  const [reason,setReason]=useState<Reason|''>(''),[notice,setNotice]=useState(''),[blocked,setBlocked]=useState(false);
  const busy=useRef(false),request=useRef<{requestId:string;reason:Reason}|undefined>(undefined);
+ const live=useRef(true);
+ useEffect(()=>{live.current=true;return()=>{live.current=false;};},[]);
  useEffect(()=>setBlocked(false),[revision]);
  const a=item.attempt;
  const check=async()=>{
@@ -19,10 +21,11 @@ function TeamAttempt({item,kind,refreshing,revision,onChecked}:{item:z.infer<typ
   try{
    request.current??={requestId:crypto.randomUUID(),reason};
    const response=staffTeamCheckResult.parse(await mutation.mutateAsync({kind,sourceId:a.id,conversationId:item.conversationId,authorUserId:item.authorUserId,...request.current}));
+   if(!live.current)return;
    const outcome=response.result.success?(response.result.persisted?t('merchantUx.staffAttempts.accepted'):t('merchantUx.staffAttempts.unprojected'))
     :response.result.status==='unavailable'?t('merchantUx.staffAttempts.unavailable'):response.result.status==='pending'?t('merchantUx.staffAttempts.unresolved'):response.result.status==='suppressed'?t('merchantUx.staffAttempts.dispatchSuppressed'):t('merchantUx.staffAttempts.providerFailed');
    setNotice(`${t('merchantUx.teamAttempts.saved',{id:response.reviewId})} ${outcome}`);request.current=undefined;onChecked();
-  }catch{setBlocked(true);setNotice(t('merchantUx.teamAttempts.failed'));}
+  }catch{if(live.current){setBlocked(true);setNotice(t('merchantUx.teamAttempts.failed'));}}
   finally{busy.current=false;}
  };
  return <article data-team-attempt={a.id} data-team-state={a.state} className="space-y-2 rounded-lg border p-3 text-sm [overflow-wrap:anywhere]">
@@ -44,19 +47,21 @@ function TeamAttempt({item,kind,refreshing,revision,onChecked}:{item:z.infer<typ
   {notice&&<p role="status" data-team-notice>{notice}</p>}
  </article>;
 }
-function TeamBrowser(){
+type TeamScope={merchantId:number;actorUserId:number};
+function TeamBrowser({merchantId,actorUserId}:TeamScope){
  const {t,i18n}=useTranslation(),utils=trpc.useUtils();
  const [kind,setKind]=useState<Kind>('text'),[history,setHistory]=useState(false),[beforeId,setBeforeId]=useState<number>();
  const [conversation,setConversation]=useState(''),[author,setAuthor]=useState(''),[error,setError]=useState('');
  const [filters,setFilters]=useState<{conversationId?:number;authorUserId?:number}>({});
  const input={kind,...filters,beforeId};
- const attempts=trpc.conversations.listTeamStaffAttempts.useQuery(input,{enabled:!history,retry:false,staleTime:0});
- const audits=trpc.conversations.listStaffTeamReviews.useQuery(input,{enabled:history,retry:false,staleTime:0});
- const query=history?audits:attempts;
- const page=staffTeamPage.safeParse(attempts.data),audit=staffTeamAuditPage.safeParse(audits.data);
+ const query=trpc.conversations.staffTeamSnapshot.useQuery({...input,mode:history?'history':'attempts'},{retry:false,staleTime:0,refetchOnMount:'always'});
+ const snapshot=staffTeamSnapshot.safeParse(query.data),reading=query.isLoading||query.isFetching;
+ const matches=snapshot.success&&snapshot.data.merchantId===merchantId&&snapshot.data.actorUserId===actorUserId&&snapshot.data.kind===kind&&snapshot.data.mode===(history?'history':'attempts')&&snapshot.data.beforeId===(beforeId??null)&&snapshot.data.conversationId===(filters.conversationId??null)&&snapshot.data.authorUserId===(filters.authorUserId??null);
+ const data=snapshot.success&&matches&&!reading&&!query.isError?snapshot.data:null;
+ const page=staffTeamPage.safeParse(data?.mode==='attempts'?data.page:undefined),audit=staffTeamAuditPage.safeParse(data?.mode==='history'?data.page:undefined);
  const parsed=history?audit.success:page.success,cursor=history?(audit.success?audit.data.nextCursor:null):(page.success?page.data.nextCursor:null);
  const refresh=()=>{if(beforeId!==undefined)setBeforeId(undefined);else void query.refetch();};
- const checked=(conversationId:number)=>{void utils.conversations.listTeamStaffAttempts.invalidate({kind,...filters});void utils.conversations.listStaffTeamReviews.invalidate();void utils.conversations.getMessages.invalidate({conversationId});void utils.conversations.messageHistory.invalidate({conversationId});void utils.conversations.listStaffAttempts.invalidate({conversationId});void utils.conversations.staffAttemptSnapshot.invalidate({conversationId});};
+ const checked=(conversationId:number)=>{void utils.conversations.staffTeamSnapshot.invalidate();void utils.conversations.listTeamStaffAttempts.invalidate({kind,...filters});void utils.conversations.listStaffTeamReviews.invalidate();void utils.conversations.getMessages.invalidate({conversationId});void utils.conversations.messageHistory.invalidate({conversationId});void utils.conversations.listStaffAttempts.invalidate({conversationId});void utils.conversations.staffAttemptSnapshot.invalidate({conversationId});};
  const reasons={delivery_check:t('merchantUx.teamAttempts.delivery'),departed_employee:t('merchantUx.teamAttempts.departed'),incident_review:t('merchantUx.teamAttempts.incident')};
  return <section className="min-w-0 space-y-3 p-3 text-sm" aria-label={t('merchantUx.teamAttempts.title')}>
   <p>{t('merchantUx.teamAttempts.scope')}</p>
@@ -76,7 +81,7 @@ function TeamBrowser(){
    <Button data-team-apply type="submit" className="h-auto min-h-11 whitespace-normal">{t('merchantUx.teamAttempts.apply')}</Button>
   </form>
   {error&&<p role="alert">{error}</p>}
-  {query.isLoading?<p role="status">{t('merchantUx.teamAttempts.loading')}</p>:query.isError?<p role="alert">{t('merchantUx.teamAttempts.loadFailed')}</p>:!parsed?<p role="alert">{t('merchantUx.teamAttempts.invalid')}</p>:
+  {query.isError?<p role="alert">{t('merchantUx.teamAttempts.loadFailed')}</p>:reading?<p role="status">{t('merchantUx.teamAttempts.loading')}</p>:!parsed?<p role="alert">{t('merchantUx.teamAttempts.invalid')}</p>:
    <div data-team-list key={`${history}:${kind}:${filters.conversationId}:${filters.authorUserId}:${beforeId}`} className="max-h-96 space-y-3 overflow-y-auto overscroll-contain" tabIndex={0}>
     {history&&audit.success?audit.data.items.length?audit.data.items.map(v=><article data-team-audit={v.id} key={v.id} className="space-y-2 rounded-lg border p-3 [overflow-wrap:anywhere]">
      <h4>{t('merchantUx.teamAttempts.review',{id:v.id})} · {t('merchantUx.staffAttempts.attempt',{id:v.sourceId})}</h4>
@@ -91,11 +96,17 @@ function TeamBrowser(){
   <p className="text-xs text-muted-foreground">{t('merchantUx.teamAttempts.auditScope')}</p>
  </section>;
 }
-export function StaffTeamReview(){
+export function StaffTeamReview(props:TeamScope){
+ return <ScopedTeamReview key={`${props.actorUserId}:${props.merchantId}`} {...props}/>;
+}
+function ScopedTeamReview({merchantId,actorUserId}:TeamScope){
  const {t}=useTranslation(),[open,setOpen]=useState(false);
- const access=trpc.conversations.staffTeamReviewAccess.useQuery(undefined,{retry:false,staleTime:0});
- if(access.isError||!access.data?.canReview)return null;
- return <details data-team-review className="min-w-0 rounded-lg border bg-background" onToggle={e=>setOpen(e.currentTarget.open)}>
-  <summary className="min-h-11 cursor-pointer p-3">{t('merchantUx.teamAttempts.title')}</summary>{open&&<TeamBrowser/>}
+ const access=trpc.conversations.staffTeamContext.useQuery(undefined,{retry:false,staleTime:0,refetchOnMount:'always'});
+ const parsed=staffTeamContext.safeParse(access.data),matches=parsed.success&&parsed.data.merchantId===merchantId&&parsed.data.actorUserId===actorUserId;
+ if(access.isLoading||access.isFetching)return <p role="status">{t('merchantUx.teamAttempts.loading')}</p>;
+ if(access.isError||!matches)return <section role="alert" className="space-y-2 rounded-lg border p-3"><p>{t('merchantUx.teamAttempts.loadFailed')}</p><Button type="button" variant="outline" onClick={()=>void access.refetch()}>{t('merchantUx.teamAttempts.refresh')}</Button></section>;
+ if(!parsed.data.canReview)return null;
+ return <details data-team-review open={open} className="min-w-0 rounded-lg border bg-background" onToggle={e=>setOpen(e.currentTarget.open)}>
+  <summary className="min-h-11 cursor-pointer p-3">{t('merchantUx.teamAttempts.title')}</summary>{open&&<TeamBrowser merchantId={merchantId} actorUserId={actorUserId}/>}
  </details>;
 }

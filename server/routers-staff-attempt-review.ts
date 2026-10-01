@@ -3,10 +3,18 @@ import { permissionProcedure } from './_core/trpc';
 import { staffAttemptListInput, staffAttemptCheckInput, staffAttemptPage, staffAttemptCheckResult, staffAttemptSnapshot } from '../shared/staff-attempt-review';
 import { listStaffAttempts, checkStaffAttempt } from './ai/staff-attempt-review';
 import {hasPermission} from './_core/permissions';
-import {staffTeamListInput,staffTeamCheckInput,staffTeamPage,staffTeamAuditPage,staffTeamCheckResult} from '../shared/staff-team-review';
+import {staffTeamListInput,staffTeamCheckInput,staffTeamPage,staffTeamAuditPage,staffTeamCheckResult,staffTeamContext,staffTeamSnapshotInput,staffTeamSnapshot} from '../shared/staff-team-review';
 import {listTeamStaffAttempts,listStaffTeamReviews,checkTeamStaffAttempt} from './ai/staff-team-review';
 
 export const staffAttemptReviewProcedures = {
+  staffTeamContext: permissionProcedure('conversations.read').query(({ctx})=>staffTeamContext.parse({merchantId:ctx.merchantId,actorUserId:ctx.user.id,canReview:hasPermission(ctx.merchantRole,'conversations.review')})),
+  staffTeamSnapshot: permissionProcedure('conversations.review').input(staffTeamSnapshotInput).query(async({ctx,input})=>{
+    const {mode,...filters}=input;
+    try { return staffTeamSnapshot.parse({merchantId:ctx.merchantId,actorUserId:ctx.user.id,mode,kind:filters.kind,
+      conversationId:filters.conversationId??null,authorUserId:filters.authorUserId??null,beforeId:filters.beforeId??null,
+      page:await (mode==='history'?listStaffTeamReviews:listTeamStaffAttempts)(ctx.merchantId,ctx.user.id,filters)}); }
+    catch { throw new TRPCError({code:'NOT_FOUND',message:'Team review unavailable'}); }
+  }),
   staffAttemptSnapshot: permissionProcedure('conversations.reply').input(staffAttemptListInput).query(async ({ ctx, input }) => {
     try {
       return staffAttemptSnapshot.parse({ merchantId: ctx.merchantId, actorUserId: ctx.user.id,
