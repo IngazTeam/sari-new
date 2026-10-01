@@ -128,7 +128,7 @@
     if(message.action==='inboxTool' && isInbox(url) && inboxDestinations.has(message.route))location.hash='#/page'+message.route;
     if(message.action==='campaignTool' && isCampaign(url) && messagesDestinations.has(message.route))location.hash='#/page'+message.route;
     if(message.action==='campaignState' && isCampaign(url) && /^#\/page\/merchant\/campaigns(?:\/|\?|$)/.test(location.hash)){
-      const route=campaignState(message.search);if(route!==null)history.replaceState(null,'','#/page'+route);
+      const route=campaignState(message.search);if(route!==null){history.replaceState(null,'','#/page'+route);window.syncCampaignPreviewContext?.(route);}
     }
     if(message.action==='inboxState' && isInbox(url) && location.hash.split('?')[0]==='#/page/merchant/conversations'){
       const search=inboxState(message.search);

@@ -1,6 +1,6 @@
 export const campaignDetailsWorkspaceAr={
   title:'تفاصيل الحملة',description:'راجع رسالتك وجمهورك، ثم تابع التنفيذ من التقرير.',allCampaigns:'جميع الحملات',report:'تقرير الحملة',refresh:'تحديث',edit:'تعديل الحملة',
-  created:'تاريخ الإنشاء',scheduled:'موعد الإرسال',notScheduled:'مسودة دون موعد',unknownDate:'التاريخ غير متاح',checkedAt:'آخر قراءة: {{date}}',status:'الحالة',
+  created:'تاريخ الإنشاء',scheduled:'موعد الإرسال',notScheduled:'لم يُحدد موعد',unknownDate:'التاريخ غير متاح',checkedAt:'آخر قراءة: {{date}}',status:'الحالة',
   recordedRecipients:'عدد المستلمين المحفوظ',recordedAccepted:'القبول المسجل',basis:'القبول المسجل لا يثبت الوصول أو القراءة أو حدوث مبيعات.',
   queueTitle:'متابعة المستلمين',queueHint:'هذه حالات طابور الإرسال الحالي؛ قد تختلف عن العدادات القديمة المحفوظة.',queueMissing:'لا يتوفر سجل تقدم لهذه الحملة.',
   queued:'مدرجون في الطابور',accepted:'قبول مسجل',awaiting:'بانتظار الإرسال أو المحاولة',suppressed:'مستبعدون',needsReview:'تحتاج مراجعة',
@@ -19,7 +19,7 @@ export const campaignDetailsWorkspaceAr={
 export type CampaignDetailsWorkspaceCopy={[K in keyof typeof campaignDetailsWorkspaceAr]:string};
 export const campaignDetailsWorkspaceEn:CampaignDetailsWorkspaceCopy={
   title:'Campaign details',description:'Review the message and audience, then follow execution in the report.',allCampaigns:'All campaigns',report:'Campaign report',refresh:'Refresh',edit:'Edit campaign',
-  created:'Created',scheduled:'Scheduled for',notScheduled:'Draft without a schedule',unknownDate:'Date unavailable',checkedAt:'Last checked: {{date}}',status:'Status',
+  created:'Created',scheduled:'Scheduled for',notScheduled:'No schedule set',unknownDate:'Date unavailable',checkedAt:'Last checked: {{date}}',status:'Status',
   recordedRecipients:'Stored recipient count',recordedAccepted:'Recorded acceptance',basis:'Recorded acceptance does not confirm delivery, reading, or sales.',
   queueTitle:'Recipient progress',queueHint:'Current queue states may differ from older stored campaign counters.',queueMissing:'Progress records are unavailable for this campaign.',
   queued:'Queued recipients',accepted:'Recorded acceptance',awaiting:'Awaiting dispatch or retry',suppressed:'Excluded',needsReview:'Needs review',
