@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-01T07:12:31.371Z",
+  "generatedAt": "2026-10-01T07:22:17.325Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -986,7 +986,7 @@
     },
     {
       "file": "client/src/pages/merchant/Dashboard.tsx",
-      "hash": "25b12c4393e4",
+      "hash": "a9f6aeb58c54",
       "queries": [
         "merchants.getCurrent",
         "merchants.getOnboardingStatus",
@@ -1050,17 +1050,17 @@
         },
         {
           "label": "sync",
-          "line": 430,
+          "line": 432,
           "tag": "h2"
         },
         {
           "label": "suggestions",
-          "line": 484,
+          "line": 486,
           "tag": "h2"
         },
         {
           "label": "",
-          "line": 504,
+          "line": 507,
           "tag": "h3"
         }
       ],
@@ -1134,7 +1134,7 @@
         {
           "query": "sariBrain.getIntegrationSyncStatus",
           "binding": "sync",
-          "line": 410,
+          "line": 412,
           "errorSignal": true,
           "loadingSignal": false,
           "enabled": null
@@ -1142,7 +1142,7 @@
         {
           "query": "dashboard.getAiInsights",
           "binding": "insights",
-          "line": 415,
+          "line": 417,
           "errorSignal": true,
           "loadingSignal": false,
           "enabled": "false"
@@ -17999,9 +17999,9 @@
         "3ff40dbd8dd9",
         "8144c27a4a23",
         "e923836e7182",
-        "6e439285edb2",
-        "eec8ecdbde8a",
-        "91154ba0d95d",
+        "549661198da1",
+        "a49ba35f5132",
+        "f51c67b4197b",
         "dad91762be70",
         "6a4fcb6764e8",
         "97b2d54bee9c",
@@ -27203,9 +27203,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "6e439285edb2",
+      "id": "549661198da1",
       "file": "client/src/pages/merchant/Dashboard.tsx",
-      "line": 479,
+      "line": 481,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -27224,9 +27224,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "eec8ecdbde8a",
+      "id": "a49ba35f5132",
       "file": "client/src/pages/merchant/Dashboard.tsx",
-      "line": 488,
+      "line": 491,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -27245,9 +27245,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "91154ba0d95d",
+      "id": "f51c67b4197b",
       "file": "client/src/pages/merchant/Dashboard.tsx",
-      "line": 510,
+      "line": 513,
       "tag": "Link",
       "role": "",
       "kind": "action",

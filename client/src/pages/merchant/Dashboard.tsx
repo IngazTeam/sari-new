@@ -406,13 +406,15 @@ function DashboardContent({
 }
 function DashboardDetails() {
   const { label, i18n } = useLabels();
-  const [requested, setRequested] = useState(false);
+  const language = i18n.language.startsWith('ar') ? 'ar' : 'en';
+  const [requestedLanguage, setRequestedLanguage] = useState<string | null>(null);
+  const requested = requestedLanguage === language;
   const sync = trpc.sariBrain.getIntegrationSyncStatus.useQuery(
     undefined,
     freshRead
   );
   // Generating suggestions may call a provider. Never start it merely by opening the dashboard.
-  const insights = trpc.dashboard.getAiInsights.useQuery(undefined, {
+  const insights = trpc.dashboard.getAiInsights.useQuery({ language }, {
     enabled: false,
     retry: false,
     refetchOnWindowFocus: false,
@@ -420,7 +422,7 @@ function DashboardDetails() {
   const syncData = !sync.isError && !sync.isFetching ? sync.data : null;
   const syncDate = syncData?.lastSyncAt ? new Date(syncData.lastSyncAt) : null;
   const generate = () => {
-    setRequested(true);
+    setRequestedLanguage(language);
     void insights.refetch();
   };
   return (
@@ -485,6 +487,7 @@ function DashboardDetails() {
         <p className="text-sm text-muted-foreground">
           {label("suggestionsHelp")}
         </p>
+        <p className="text-xs text-muted-foreground">{label('suggestionsCache')}</p>
         <Button
           variant="outline"
           onClick={generate}

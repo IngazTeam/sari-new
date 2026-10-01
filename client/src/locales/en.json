@@ -12304,6 +12304,7 @@
     "noDelivered": "No delivered orders in this period."
   },
   "dashboardHomeUx": {
+    "suggestionsCache": "Results may be reused for up to 6 hours for the same store and language.",
     "failed": "These details could not be loaded. Retry for the latest result.",
     "retry": "Retry",
     "storeFailed": "Store unavailable",

@@ -115,14 +115,14 @@ export const dashboardRouter = router({
 
     // AI Opportunity Engine — "ساري يقترح"
     getAiInsights: permissionProcedure('analytics.read')
-        .query(async ({ ctx }) => {
-            const merchant = await getMerchantById(ctx.merchantId);
-            if (!merchant) {
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'لم يتم العثور على المتجر' });
+        .input(z.object({ language: z.enum(['ar', 'en']).default('ar') }).strict().optional())
+        .query(async ({ ctx, input }) => {
+            try {
+                const { generateMerchantInsights } = await import('./ai/insights');
+                return await generateMerchantInsights(ctx.merchantId, input?.language ?? 'ar');
+            } catch {
+                throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Suggestions unavailable' });
             }
-
-            const { generateMerchantInsights } = await import('./ai/insights');
-            return await generateMerchantInsights(merchant.id);
         }),
 });
 

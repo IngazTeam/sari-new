@@ -331,9 +331,9 @@
 | 374 | DialogContent | quickTitle quickHelp /merchant/conversations allConversations /merchant/products manageProducts /merchant/services/new newService /merchant/sales-hub newQuote /merchant/campaigns/new newCampaign | details |
 | 394 | Button | تسمية ديناميكية / تحتاج مراجعة | quickTitle |
 | 395 | Link | تسمية ديناميكية / تحتاج مراجعة | quickTitle |
-| 479 | Link | manageKnowledge | sync |
-| 488 | Button | generating generate | suggestions |
-| 510 | Link | more | Dashboard |
+| 481 | Link | manageKnowledge | sync |
+| 491 | Button | generating generate | suggestions |
+| 513 | Link | more | Dashboard |
 
 ## client/src/components/merchant/DashboardAnalytics.tsx
 

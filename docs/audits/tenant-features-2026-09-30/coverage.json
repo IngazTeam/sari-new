@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-01T07:12:31.371Z",
+  "generatedAt": "2026-10-01T07:22:17.325Z",
   "definition": "Every registered route is accounted for; source inventory and design completion are different statuses.",
   "routes": [
     {
@@ -2723,9 +2723,9 @@
         "3ff40dbd8dd9",
         "8144c27a4a23",
         "e923836e7182",
-        "6e439285edb2",
-        "eec8ecdbde8a",
-        "91154ba0d95d",
+        "549661198da1",
+        "a49ba35f5132",
+        "f51c67b4197b",
         "dad91762be70",
         "6a4fcb6764e8",
         "97b2d54bee9c",
@@ -3338,9 +3338,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "6e439285edb2",
+          "id": "549661198da1",
           "file": "client/src/pages/merchant/Dashboard.tsx",
-          "line": 479,
+          "line": 481,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -3359,9 +3359,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "eec8ecdbde8a",
+          "id": "a49ba35f5132",
           "file": "client/src/pages/merchant/Dashboard.tsx",
-          "line": 488,
+          "line": 491,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -3380,9 +3380,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "91154ba0d95d",
+          "id": "f51c67b4197b",
           "file": "client/src/pages/merchant/Dashboard.tsx",
-          "line": 510,
+          "line": 513,
           "tag": "Link",
           "role": "",
           "kind": "action",
