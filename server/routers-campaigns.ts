@@ -1,3 +1,6 @@
+import { campaignListInput } from '../shared/campaign-workspace';
+import { hasPermission } from './_core/permissions';
+import { readCampaignWorkspace, readCampaignStatistics, CampaignWorkspaceUnavailableError } from './campaign-workspace';
 /**
  * Campaigns Router Module — Fixed & Hardened
  * Handles marketing campaign management, sending, and analytics
@@ -76,6 +79,10 @@ const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
 });
 
 export const campaignsRouter = router({
+    workspace: permissionProcedure('analytics.read').input(campaignListInput).query(async ({ctx,input}) => {
+        try { return {...await readCampaignWorkspace(ctx.user.id,ctx.merchantId,input),canManage:hasPermission(ctx.merchantRole,'campaigns.manage')}; }
+        catch(error) { if(error instanceof CampaignWorkspaceUnavailableError) throw new TRPCError({code:'SERVICE_UNAVAILABLE',message:'تعذر تحميل الحملات. حاول مجددًا.'}); throw error; }
+    }),
     // Get all campaigns for current merchant
     list: permissionProcedure('analytics.read').query(async ({ ctx }) => {
         const merchant = await getMerchantById(ctx.merchantId);
@@ -378,24 +385,8 @@ export const campaignsRouter = router({
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
 
-        const campaigns = await getCampaignsByMerchantId(merchant.id);
-        const totalCampaigns = campaigns.length;
-        const completedCampaigns = campaigns.filter(c => c.status === 'completed');
-        const totalSent = completedCampaigns.reduce((sum, c) => sum + (c.sentCount || 0), 0);
-        const totalRecipients = completedCampaigns.reduce((sum, c) => sum + (c.totalRecipients || 0), 0);
-
-        const providerAcceptanceRate = totalRecipients > 0 ? (totalSent / totalRecipients) * 100 : 0;
-        const unconfirmedCount = Math.max(0, totalRecipients - totalSent);
-
-        return {
-            totalCampaigns,
-            completedCampaigns: completedCampaigns.length,
-            activeCampaigns: campaigns.filter(c => c.status === 'sending' || c.status === 'scheduled').length,
-            draftCampaigns: campaigns.filter(c => c.status === 'draft').length,
-            totalAcceptedByProvider: totalSent,
-            totalUnconfirmed: unconfirmedCount,
-            providerAcceptanceRate: Math.round(providerAcceptanceRate * 10) / 10,
-        };
+        try { return await readCampaignStatistics(merchant.id); }
+        catch(error) { if(error instanceof CampaignWorkspaceUnavailableError) throw new TRPCError({code:'SERVICE_UNAVAILABLE',message:'تعذر تحميل إحصاءات الحملات. حاول مجددًا.'}); throw error; }
     }),
 
     // Get campaign report with logs
