@@ -17,7 +17,7 @@ import authRoutes from "../auth-routes";
 import { initializeSallaCronJobs } from "../jobs/salla-sync";
 import { startOrderTrackingJob } from "../jobs/order-tracking";
 import { startAbandonedCartJob } from "../jobs/abandoned-cart";
-import { runOccasionCampaignsCron } from "../jobs/occasion-campaigns";
+import { startOccasionCampaignsJob } from "../jobs/occasion-campaigns";
 import { startReviewRequestJob } from "../jobs/review-request";
 import { startScheduledCampaignsJob } from "../jobs/scheduled-campaigns";
 import { startScheduledMessagesJob } from "../jobs/scheduled-messages";
@@ -520,15 +520,8 @@ async function startServer() {
       // Initialize Supervisor Recovery job (runs every 5min — re-engages silent customers with supervisor persona)
       startSupervisorRecoveryJob();
 
-      // Initialize Occasion Campaigns cron job (runs daily at 9:00 AM)
-      cron.schedule('0 9 * * *', async () => {
-        try {
-          console.log('[Cron] Running occasion campaigns check...');
-          await runOccasionCampaignsCron();
-        } catch (error) {
-          logError('[Cron] Occasion campaigns failed', error);
-        }
-      });
+      // Retry explicitly enabled occasions within their Riyadh calendar day.
+      startOccasionCampaignsJob();
 
       // Instance Expiry Check (runs daily at 8 AM)
       cron.schedule('0 8 * * *', async () => {

@@ -1,5 +1,5 @@
 /**
- * Occasion campaigns are opt-in definitions. The daily job only admits an
+ * Occasion campaigns are opt-in definitions. The recurring job only admits an
  * already-enabled definition to the canonical campaign outbox; it never
  * creates or enables marketing on behalf of a merchant and never calls a
  * provider directly.
@@ -333,12 +333,12 @@ async function admitOccasionCampaign(
   merchantId: number,
   occasion: DetectedOccasion,
   now: Date,
-): Promise<void> {
+): Promise<'queued' | 'completed' | 'deferred'> {
   const merchant = await getMerchantById(merchantId);
-  if (!merchant || merchant.status !== 'active') return;
+  if (!merchant || merchant.status !== 'active') return 'deferred';
   const instance = await getPrimaryWhatsAppInstance(merchantId);
-  if (!instance || instance.status !== 'active') return;
-  if (!await getActiveSubscriptionByMerchantId(merchantId)) return;
+  if (!instance || instance.status !== 'active') return 'deferred';
+  if (!await getActiveSubscriptionByMerchantId(merchantId)) return 'deferred';
 
   const { campaignId } = await prepareOccasionCampaignEnvelope({
     occasionCampaignId,
@@ -359,23 +359,26 @@ async function admitOccasionCampaign(
   }
   const guard = await filterCampaignRecipients(merchantId, Array.from(unique.keys()));
   // A temporary block must leave the entire occasion pending for a later run.
-  if (guard.blocked.some(row => row.reason === 'quiet_hours' || row.reason === 'rate_limit')) return;
+  if (guard.blocked.some(row => row.reason === 'quiet_hours' || row.reason === 'rate_limit')) return 'deferred';
   const recipients = guard.allowed.flatMap(phone => {
     const recipient = unique.get(phone);
     return recipient ? [recipient] : [];
   });
 
   if (recipients.length === 0) {
-    await completeCampaignWithoutRecipients(campaignId, merchantId, expectedDefinition);
-    return;
+    return await completeCampaignWithoutRecipients(campaignId, merchantId, expectedDefinition) ? 'completed' : 'deferred';
   }
   await enqueueCampaignDeliveries({ campaignId, merchantId, recipients, expectedDefinition });
+  return 'queued';
 }
 
-/** Daily admission job. It processes only explicit, enabled merchant choices. */
-export async function checkAndSendOccasionCampaigns(at: Date = new Date()): Promise<void> {
+export type OccasionAdmissionResult = { checked: number; queued: number; completed: number; deferred: number; failed: number; limited: boolean };
+
+/** Repeated admission within today's occasion; processes only explicit, enabled choices. */
+export async function checkAndSendOccasionCampaigns(at: Date = new Date()): Promise<OccasionAdmissionResult> {
+  const result: OccasionAdmissionResult = { checked: 0, queued: 0, completed: 0, deferred: 0, failed: 0, limited: false };
   const occasions = detectCurrentOccasions(at);
-  if (occasions.length === 0) return;
+  if (occasions.length === 0) return result;
   await ensureOccasionOutboxSchema();
   for (const occasion of occasions) {
     let afterId = 0;
@@ -384,15 +387,18 @@ export async function checkAndSendOccasionCampaigns(at: Date = new Date()): Prom
       if (campaigns.length === 0) break;
       for (const campaign of campaigns) {
         afterId = Math.max(afterId, campaign.id);
+        result.checked++;
         try {
-          await admitOccasionCampaign(campaign.id, campaign.merchantId, occasion, at);
+          const outcome = await admitOccasionCampaign(campaign.id, campaign.merchantId, occasion, at);
+          result[outcome]++;
         } catch (error) {
-          if (!(error instanceof CampaignDispatchConflictError)) {
-            console.error('[Occasion Campaigns] Admission deferred after a safe failure');
-          }
+          if (error instanceof CampaignDispatchConflictError) result.deferred++;
+          else result.failed++;
         }
       }
       if (campaigns.length < 100) break;
+      if (page === 99) result.limited = true;
     }
   }
+  return result;
 }
