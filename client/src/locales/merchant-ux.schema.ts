@@ -96,6 +96,7 @@ export type MerchantUxCopy = {
   conversationMessage: Record<keyof typeof import('./conversation-message').conversationMessageAr, string>;
   conversationTools: Record<keyof typeof import('./conversation-tools').conversationToolsAr, string>;
   conversationPreview: Record<keyof typeof import('./conversation-preview').conversationPreviewAr, string>;
+  conversationInbox: Record<keyof typeof import('./conversation-inbox').conversationInboxAr, string>;
   staffAttempts: Record<keyof typeof import('./staff-attempt-review').staffAttemptReviewAr, string>;
   experimentLaunch: SalesExperimentLaunchCopy;
   experimentReview: SalesExperimentReviewCopy;

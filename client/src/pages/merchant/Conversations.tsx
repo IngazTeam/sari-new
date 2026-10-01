@@ -22,6 +22,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import {
   ArrowRight,
+  ArrowLeft,
   MessageSquare,
   User,
 
@@ -36,7 +37,7 @@ import {
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatDistanceToNow } from 'date-fns';
-import { ar } from 'date-fns/locale';
+import { ar, enUS } from 'date-fns/locale';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { VoiceRecorder } from '@/components/VoiceRecorder';
@@ -49,13 +50,13 @@ import { parseMerchantDate } from '@/lib/merchant-date';
 import { WorkspaceState, workspaceFailureKind } from '@/components/merchant/WorkspaceState';
 import { useConversationScroll } from '@/lib/use-conversation-scroll';
 
-function activityTime(value: string | Date | null) {
-  if (!value) return 'لم تصل رسالة بعد';
+function activityTime(value: string | Date | null, language: string, noActivity: string, unavailable: string) {
+  if (!value) return noActivity;
   // Drizzle returns UTC strings; the filtered mysql query returns Date objects.
   const date = parseMerchantDate(value);
   return Number.isNaN(date.getTime())
-    ? 'وقت غير متاح'
-    : formatDistanceToNow(date, { addSuffix: true, locale: ar });
+    ? unavailable
+    : formatDistanceToNow(date, { addSuffix: true, locale: language.startsWith('ar') ? ar : enUS });
 }
 
 export default function Conversations() {
@@ -75,12 +76,12 @@ export default function Conversations() {
 }
 
 function ScopedConversations({ currentMerchant, actorId }: { currentMerchant: { id: number; timezone?: string | null }; actorId: number }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const live = useRef(true), sendLock = useRef(false);
   useEffect(() => { live.current = true; return () => { live.current = false; }; }, []);
   const search = useSearch(), [pathname, navigate] = useLocation();
   const navigation = conversationNavigation(search);
-  const { conversationId: selectedConversationId, search: debouncedSearch, page: currentPage, stage: stageFilter, needsHuman: needsHumanFilter } = navigation;
+  const { conversationId: selectedConversationId, search: debouncedSearch, page: currentPage, stage: stageFilter, needsHuman: needsHumanFilter, historyTrail } = navigation;
   const [searchEdit, setSearchEdit] = useState<{ source: string; value: string } | null>(null);
   const searchQuery = searchEdit?.source === search ? searchEdit.value : debouncedSearch;
   useEffect(() => { setSearchEdit(null); }, [search]);
@@ -98,12 +99,7 @@ function ScopedConversations({ currentMerchant, actorId }: { currentMerchant: { 
     refreshDraft(version => version + 1);
     return saved;
   };
-  const [historyState, setHistoryState] = useState<{ conversationId: number | null; trail: number[] }>({ conversationId: null, trail: [] });
-  const historyTrail = historyState.conversationId === selectedConversationId ? historyState.trail : [];
-  const setHistoryTrail = (value: number[] | ((current: number[]) => number[])) => setHistoryState(current => ({
-    conversationId: selectedConversationId,
-    trail: typeof value === 'function' ? value(current.conversationId === selectedConversationId ? current.trail : []) : value,
-  }));
+  const setHistoryTrail = (trail: number[]) => changeRoute({ history: trail.length ? trail.slice(-100).join(',') : null });
   const beforeId = historyTrail.at(-1);
   const viewingLatest = beforeId === undefined;
   const [isSending, setIsSending] = useState(false);
@@ -113,7 +109,6 @@ function ScopedConversations({ currentMerchant, actorId }: { currentMerchant: { 
   const updateReplyText = (text: string) => { if (selectedConversationId && !draftReview && !draftInvalid) saveDraft(selectedConversationId, text); };
   const selectConversation = (id: number | null) => {
     if (isSending || voiceBusy) return;
-    setHistoryTrail([]);
     changeRoute({ conversationId: id });
   };
   useEffect(() => {
@@ -125,16 +120,16 @@ function ScopedConversations({ currentMerchant, actorId }: { currentMerchant: { 
   }, [searchQuery, debouncedSearch, pathname, search, navigate, isSending, voiceBusy]);
 
   const STAGE_LABELS: Record<string, string> = {
-    ready: '🔥 جاهزون للدفع',
-    payment_link_sent: '💳 دفع لم يكتمل',
-    stalled: '⏸️ متوقفة',
-    new: 'جديد',
-    interested: 'مهتم',
-    qualified: 'مؤهل',
-    paid: 'مدفوع',
-    purchased: 'تم الشراء',
-    payment_failed: 'تعذر الدفع',
-    lost: 'خسارة',
+    ready: t('merchantUx.conversationInbox.ready'),
+    payment_link_sent: t('merchantUx.conversationInbox.payment_link_sent'),
+    stalled: t('merchantUx.conversationInbox.stalled'),
+    new: t('merchantUx.conversationInbox.new'),
+    interested: t('merchantUx.conversationInbox.interested'),
+    qualified: t('merchantUx.conversationInbox.qualified'),
+    paid: t('merchantUx.conversationInbox.paid'),
+    purchased: t('merchantUx.conversationInbox.purchased'),
+    payment_failed: t('merchantUx.conversationInbox.payment_failed'),
+    lost: t('merchantUx.conversationInbox.lost'),
   };
 
   const {
@@ -273,18 +268,18 @@ function ScopedConversations({ currentMerchant, actorId }: { currentMerchant: { 
         </div>
         {hasActiveFilter && (
           <div className="flex flex-wrap items-center gap-2 mt-3">
-            {needsHumanFilter && <Badge variant="secondary" className="text-sm py-1 px-3">⚠️ تحتاج تدخل بشري</Badge>}
+            {needsHumanFilter && <Badge variant="secondary" className="text-sm py-1 px-3">{t('merchantUx.conversationInbox.needsHuman')}</Badge>}
             {stageFilter && <Badge variant="secondary" className="text-sm py-1 px-3">{STAGE_LABELS[stageFilter] || stageFilter}</Badge>}
             <Button
               size="sm"
               variant="ghost"
-              className="h-7 text-xs"
+              className="h-auto min-h-11 text-xs"
               disabled={voiceBusy || isSending}
               onClick={() => {
                 changeRoute({ page: null, stage: null, needs_human: null });
               }}
             >
-              ✕ إزالة الفلتر
+              {t('merchantUx.conversationInbox.clearFilter')}
             </Button>
           </div>
         )}
@@ -292,10 +287,10 @@ function ScopedConversations({ currentMerchant, actorId }: { currentMerchant: { 
 
       <div className="mw-inbox-stats" role="status">
         <span>
-          {debouncedSearch || hasActiveFilter ? 'نتائج مطابقة' : 'كل المحادثات'}{' '}
+          {debouncedSearch || hasActiveFilter ? t('merchantUx.conversationInbox.matches') : t('merchantUx.conversationInbox.all')}{' '}
           <strong>{listError ? '—' : (conversationsData?.total ?? '…')}</strong>
         </span>
-        <span>ابحث باسم العميل أو رقم هاتفه في جميع المحادثات</span>
+        <span>{t('merchantUx.conversationInbox.searchHelp')}</span>
       </div>
 
       {/* Main Content — 5-col grid: 2 for list, 3 for chat */}
@@ -310,15 +305,15 @@ function ScopedConversations({ currentMerchant, actorId }: { currentMerchant: { 
               {t('conversationsPage.selectConversation')}
             </CardDescription>
             <div className="relative mt-2">
-              <Search className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute start-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder={t('conversationsPage.searchPlaceholder')}
-                aria-label="البحث في جميع المحادثات"
+                aria-label={t('merchantUx.conversationInbox.search')}
                 maxLength={200}
                 disabled={voiceBusy || isSending}
                 value={searchQuery}
                 onChange={e => setSearchEdit({ source: search, value: e.target.value })}
-                className="pr-10 h-9 text-sm"
+                className="ps-10 h-11 text-base"
               />
             </div>
           </CardHeader>
@@ -327,13 +322,13 @@ function ScopedConversations({ currentMerchant, actorId }: { currentMerchant: { 
               {listError ? (
                 <QueryStateCard
                   kind="error"
-                  title="تعذر تحميل المحادثات"
-                  description="أعد المحاولة لاستعادة قائمة العملاء."
+                  title={t('merchantUx.conversationInbox.listFailed')}
+                  description={t('merchantUx.conversationInbox.listRetry')}
                   onRetry={() => void refetchList()}
                 />
               ) : isLoading ? (
                 <p className="p-8 text-center" role="status">
-                  جارٍ تحميل المحادثات…
+                  {t('merchantUx.conversationInbox.listLoading')}
                 </p>
               ) : filteredConversations && filteredConversations.length > 0 ? (
                 <div className="space-y-0">
@@ -402,7 +397,7 @@ function ScopedConversations({ currentMerchant, actorId }: { currentMerchant: { 
                           <div className="flex items-center gap-1 mt-0.5 text-[10px] text-muted-foreground">
                             <Clock className="h-3 w-3" />
                             <span>
-                              {activityTime(conversation.lastMessageAt)}
+                              {activityTime(conversation.lastMessageAt, i18n.language, t('merchantUx.conversationInbox.noActivity'), t('merchantUx.conversationInbox.timeUnavailable'))}
                             </span>
                           </div>
                         </div>
@@ -427,12 +422,12 @@ function ScopedConversations({ currentMerchant, actorId }: { currentMerchant: { 
                   changeRoute({ conversationId: null, page: currentPage - 1 });
                 }}
               >
-                السابق
+                {t('merchantUx.conversationInbox.previous')}
               </Button>
               <span>
                 {isLoading
-                  ? 'جارٍ التحميل…'
-                  : `صفحة ${currentPage} من ${Math.max(1, conversationsData?.totalPages ?? 1)}`}
+                  ? t('merchantUx.conversationInbox.loading')
+                  : t('merchantUx.conversationInbox.page', { page: currentPage, total: Math.max(1, conversationsData?.totalPages ?? 1) })}
               </span>
               <Button
                 type="button"
@@ -447,7 +442,7 @@ function ScopedConversations({ currentMerchant, actorId }: { currentMerchant: { 
                   changeRoute({ conversationId: null, page: currentPage + 1 });
                 }}
               >
-                التالي
+                {t('merchantUx.conversationInbox.next')}
               </Button>
             </div>
           </CardContent>
@@ -464,11 +459,11 @@ function ScopedConversations({ currentMerchant, actorId }: { currentMerchant: { 
                       type="button"
                       variant="ghost"
                       className="mw-chat-back"
-                      aria-label="العودة إلى قائمة المحادثات"
+                      aria-label={t('merchantUx.conversationInbox.back')}
                       disabled={isSending || voiceBusy}
                       onClick={() => selectConversation(null)}
                     >
-                      <ArrowRight />
+                      {i18n.language.startsWith('ar') ? <ArrowRight /> : <ArrowLeft />}
                     </Button>
                     <Avatar className="h-10 w-10">
                       <AvatarFallback>
@@ -526,14 +521,15 @@ function ScopedConversations({ currentMerchant, actorId }: { currentMerchant: { 
                   {viewingLatest ? t('merchantUx.conversationTools.latest') : t('merchantUx.conversationTools.older')}
                 </p>
                 <Button type="button" variant="outline" className="min-h-11" disabled={historyFetching || messagesLoading || !!messagesError || !historySnapshot?.hasMore || !historySnapshot.nextBeforeId || isSending || voiceBusy}
-                  onClick={() => { const next=historySnapshot?.nextBeforeId;if(next)setHistoryTrail(current => current.at(-1)===next?current:[...current,next]); }}>
+                  onClick={() => { const next=historySnapshot?.nextBeforeId;if(next && (!beforeId || next < beforeId))setHistoryTrail([...historyTrail,next]); }}>
                   {t('conversationHistory.older')}
                 </Button>
                 {!viewingLatest && <>
-                  <Button type="button" variant="outline" className="min-h-11" disabled={isSending || voiceBusy} onClick={() => setHistoryTrail(current => current.slice(0,-1))}>{t('conversationHistory.newer')}</Button>
+                  {historyTrail.length > 1 && <Button type="button" variant="outline" className="min-h-11" disabled={isSending || voiceBusy} onClick={() => setHistoryTrail(historyTrail.slice(0,-1))}>{t('conversationHistory.newer')}</Button>}
                   <Button type="button" className="min-h-11" disabled={isSending || voiceBusy} onClick={() => setHistoryTrail([])}>{t('conversationHistory.latest')}</Button>
                 </>}
                 {viewingLatest && messageScroll.unseen && <Button type="button" className="min-h-11" onClick={messageScroll.jump}>{t('conversationHistory.newMessages')}</Button>}
+                {navigation.invalidHistory && <p role="status" className="w-full text-xs text-muted-foreground">{t('merchantUx.conversationInbox.invalidHistory')}</p>}
               </nav>
               <CardContent className="p-0 mw-chat-messages">
                 <ScrollArea className="mw-chat-scroll p-4">
@@ -555,7 +551,7 @@ function ScopedConversations({ currentMerchant, actorId }: { currentMerchant: { 
                     <div className="flex items-center justify-center h-full text-muted-foreground">
                       <div className="text-center">
                         <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                        <p>{t('conversationsPage.noMessages')}</p>
+                        <p>{viewingLatest ? t('conversationsPage.noMessages') : t('merchantUx.conversationInbox.emptyHistory')}</p>
                       </div>
                     </div>
                   )}
@@ -568,7 +564,7 @@ function ScopedConversations({ currentMerchant, actorId }: { currentMerchant: { 
                 className="mw-chat-extras"
                 key={`extras-${selectedConversation.id}`}
               >
-                <summary>اقتراحات ساري والإجراءات السريعة</summary>
+                <summary>{t('merchantUx.conversationInbox.extras')}</summary>
                 <Separator />
                 <CardContent className="p-3">
                   {viewingLatest && !draftReview && !draftInvalid && messages && messages.length > 0 && (
@@ -635,8 +631,8 @@ function ScopedConversations({ currentMerchant, actorId }: { currentMerchant: { 
                   <div className="flex-1">
                     <Textarea
                       data-staff-draft
-                      placeholder="اكتب رسالتك هنا..."
-                      aria-label="رسالتك للعميل"
+                      placeholder={t('merchantUx.conversationInbox.placeholder')}
+                      aria-label={t('merchantUx.conversationInbox.reply')}
                       disabled={draftReview || draftInvalid || !viewingLatest || isSending || voiceBusy}
                       value={replyText}
                       maxLength={4096}

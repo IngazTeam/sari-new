@@ -17,6 +17,7 @@ import {conversationConnectionAr} from './conversation-connection';
 import {conversationMessageAr} from './conversation-message';
 import {conversationToolsAr} from './conversation-tools';
 import {conversationPreviewAr} from './conversation-preview';
+import {conversationInboxAr} from './conversation-inbox';
 import {sallaEffectReviewAr} from './salla-effect-review';
 import {sallaCheckoutReviewAr} from './salla-checkout-review';
 import { salesExperimentLaunchAr } from './sales-experiment-launch';
@@ -61,6 +62,7 @@ const merchantUxAr: MerchantUxCopy = {
   conversationMessage: conversationMessageAr,
   conversationTools: conversationToolsAr,
   conversationPreview: conversationPreviewAr,
+  conversationInbox: conversationInboxAr,
   staffAttempts: staffAttemptReviewAr,
   replyReview: salesReplyReviewAr,
   replySend: salesReplySendAr,

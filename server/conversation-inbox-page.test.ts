@@ -5,9 +5,11 @@ import { Router } from 'wouter';
 import { memoryLocation } from 'wouter/memory-location';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import ar from '../client/src/locales/ar.json';
+import en from '../client/src/locales/en.json';
 import merchantAr from '../client/src/locales/merchant-ux.ar';
+import merchantEn from '../client/src/locales/merchant-ux.en';
 import { clearConversationDrafts, CONVERSATION_DRAFT_PREFIX, conversationDraftScope, conversationDraftEpoch, saveConversationDraft, readConversationDraft } from '../client/src/lib/conversation-draft';
-const m=vi.hoisted(()=>({queries:{} as Record<string,any>,suggestionProps:null as any,calls:vi.fn(),send:vi.fn(),voice:vi.fn(),attempt:vi.fn(),voiceAttempt:vi.fn(),complete:vi.fn(),invalidate:vi.fn(),success:vi.fn(),error:vi.fn(),warning:vi.fn()}));
+const m=vi.hoisted(()=>({language:'ar',queries:{} as Record<string,any>,suggestionProps:null as any,calls:vi.fn(),send:vi.fn(),voice:vi.fn(),attempt:vi.fn(),voiceAttempt:vi.fn(),complete:vi.fn(),invalidate:vi.fn(),success:vi.fn(),error:vi.fn(),warning:vi.fn()}));
 vi.mock('@/lib/trpc',()=>{
   const query=(name:string)=>({useQuery:(input:any,options:any)=>{
     m.calls(name,input,options);return options?.enabled===false?{data:undefined,isLoading:false,isFetching:false,error:null,refetch:vi.fn()}:typeof m.queries[name]==='function'?m.queries[name](input,options):m.queries[name];
@@ -88,8 +90,8 @@ describe('saved reply drafts and interrupted send recovery',()=>{
 vi.mock('@/lib/staff-dashboard-attempt',()=>({staffDashboardAttempt:m.attempt}));
 vi.mock('@/lib/staff-voice-attempt',()=>({staffVoiceAttempt:m.voiceAttempt}));
 vi.mock('sonner',()=>({toast:{success:m.success,error:m.error,warning:m.warning,info:vi.fn()}}));
-vi.mock('react-i18next',()=>({useTranslation:()=>({i18n:{language:'ar',dir:()=> 'rtl'},t:(key:string)=>{
-  const source={...ar,merchantUx:merchantAr};return key.split('.').reduce((v:any,k)=>v?.[k],source)??key;
+vi.mock('react-i18next',()=>({useTranslation:()=>({i18n:{language:m.language,dir:()=>m.language==='ar'?'rtl':'ltr'},t:(key:string,args:Record<string,unknown>={})=>{
+  const source=m.language==='ar'?{...ar,merchantUx:merchantAr}:{...en,merchantUx:merchantEn};const value=key.split('.').reduce((v:any,k)=>v?.[k],source)??key;return typeof value==='string'?value.replace(/\{\{(\w+)\}\}/g,(_:string,k:string)=>String(args[k]??'')):value;
 }})}));
 vi.mock('@/components/StaffTeamReview',()=>({StaffTeamReview:()=>null}));
 vi.mock('@/components/ConversationConnection',()=>({ConversationConnection:()=>null}));
@@ -111,6 +113,7 @@ const draft=()=>container.querySelector('[data-staff-draft]') as HTMLTextAreaEle
 const send=()=>container.querySelector('[data-staff-send]') as HTMLButtonElement;
 const fill=(value:string)=>act(async()=>{Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value')!.set!.call(draft(),value);draft().dispatchEvent(new Event('input',{bubbles:true}));});
 beforeEach(()=>{
+  m.language='ar';
   m.suggestionProps=null;
   clearConversationDrafts();sessionStorage.clear();
   memory=memoryLocation({path:'/merchant/conversations',record:true});
@@ -123,6 +126,15 @@ beforeEach(()=>{
 });
 afterEach(async()=>{await act(async()=>root.unmount());container.remove();vi.restoreAllMocks();clearConversationDrafts();vi.unstubAllGlobals();vi.useRealTimers();});
 describe('verified inbox scope and draft lifetime',()=>{
+  it.each(['ar','en'])('localizes navigation, activity, filters, errors and composer in %s',async language=>{
+    m.language=language;const texts=language==='ar'?merchantAr.conversationInbox:merchantEn.conversationInbox;
+    memory.navigate('/merchant/conversations?conversationId=4&stage=ready&needs_human=1');await render();
+    expect(container.textContent).toContain(texts.ready);expect(container.textContent).toContain(texts.needsHuman);expect(container.textContent).toContain(texts.extras);expect(container.querySelector('input')?.getAttribute('aria-label')).toBe(texts.search);expect(draft().getAttribute('aria-label')).toBe(texts.reply);
+    expect(container.textContent).not.toMatch(/merchantUx\.|\{\{page\}\}/);expect(container.textContent).toContain(language==='ar'?'صفحة 1 من 1':'Page 1 of 1');
+    if(language==='en')expect(container.textContent).not.toMatch(/[\u0600-\u06ff]/);
+    m.queries.list.data.items[0].lastMessageAt=null;m.queries.list.data.items[1].lastMessageAt='invalid';await render();expect(container.textContent).toContain(texts.noActivity);expect(container.textContent).toContain(texts.timeUnavailable);
+    m.queries.list.error=Error('failed');await render();expect(container.textContent).toContain(texts.listFailed);expect(container.textContent).toContain(texts.listRetry);
+  });
   it('binds suggestions to the account and merchant and preserves a concurrent saved draft',async()=>{
     await render();await choose();await fill('Existing draft');expect(m.suggestionProps).toMatchObject({merchantId:20,actorUserId:7,conversationId:4,draftText:'Existing draft'});
     const apply=m.suggestionProps.onSelectSuggestion;saveConversationDraft(conversationDraftScope(7,20,4),'Newer saved draft',false,conversationDraftEpoch());
@@ -206,5 +218,28 @@ describe('verified inbox scope and draft lifetime',()=>{
     const named=(text:string)=>Array.from(container.querySelectorAll('button')).find(b=>b.textContent===text)!;
     await render();await choose();await fill('Read failure draft');await click(named(ar.conversationHistory.older));expect(container.textContent).toContain('تعذر تحميل الرسائل');expect(send().disabled).toBe(true);
     await click(named(ar.conversationHistory.latest));expect(draft().value).toBe('Read failure draft');expect(send().disabled).toBe(false);
+  });
+  it('restores the older window from the URL after remounting and browser navigation',async()=>{
+    const base=m.queries.history.data;m.queries.history=({beforeId}:any)=>query({...base,items:[{...base.items[0],id:beforeId?1:8,content:beforeId?'Window '+beforeId:'Latest example'}],hasMore:false});
+    saveConversationDraft(conversationDraftScope(7,20,4),'Saved while browsing',false,conversationDraftEpoch());
+    memory.navigate('/merchant/conversations?conversationId=4&history=8,3&phone=local&lang=en');await render();
+    expect(container.textContent).toContain('Window 3');expect(draft().value).toBe('Saved while browsing');expect(draft().disabled).toBe(true);
+    await act(async()=>root.render(null));await render();expect(container.textContent).toContain('Window 3');
+    const newer=Array.from(container.querySelectorAll('button')).find(b=>b.textContent===ar.conversationHistory.newer)!;await click(newer);expect(container.textContent).toContain('Window 8');
+    expect(new URL(memory.history!.at(-1)!,'https://local.test').searchParams.get('history')).toBe('8');
+    await act(async()=>memory.navigate('/merchant/conversations?conversationId=4&history=8,3'));expect(container.textContent).toContain('Window 3');expect(m.send).not.toHaveBeenCalled();
+  });
+  it('discloses invalid history links and does not send invalid cursors to the API',async()=>{
+    memory.navigate('/merchant/conversations?conversationId=4&history=3,8');await render();expect(container.textContent).toContain(merchantAr.conversationInbox.invalidHistory);
+    expect(m.calls).toHaveBeenCalledWith('history',expect.objectContaining({beforeId:undefined}),expect.objectContaining({refetchInterval:5000}));
+  });
+  it('describes an empty earlier window without claiming the conversation has no messages',async()=>{
+    memory.navigate('/merchant/conversations?conversationId=4&history=8');m.queries.history.data.items=[];await render();expect(container.textContent).toContain(merchantAr.conversationInbox.emptyHistory);expect(container.textContent).not.toContain(ar.conversationsPage.noMessages);expect(send().disabled).toBe(true);
+  });
+  it('can continue beyond 100 windows while keeping the URL bounded and the latest return available',async()=>{
+    const trail=Array.from({length:100},(_,i)=>201-i);memory.navigate('/merchant/conversations?conversationId=4&history='+trail.join(','));
+    const base=m.queries.history.data;m.queries.history=({beforeId}:any)=>query({...base,items:[{...base.items[0],id:beforeId-1}],hasMore:true,nextBeforeId:beforeId-1});await render();
+    const older=Array.from(container.querySelectorAll('button')).find(b=>b.textContent===ar.conversationHistory.older)!;await click(older);
+    const saved=new URL(memory.history!.at(-1)!,'https://local.test').searchParams.get('history')!.split(',');expect(saved).toHaveLength(100);expect(saved[0]).toBe('200');expect(saved.at(-1)).toBe('101');expect(container.textContent).toContain(ar.conversationHistory.latest);
   });
 });
