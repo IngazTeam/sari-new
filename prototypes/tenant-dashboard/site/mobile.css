@@ -1,4 +1,10 @@
 /* The preview follows the tenant's mobile spacing and touch-target rules. */
+dialog[data-tool-search] .search-result { text-align: start; }
+dialog[data-tool-search] .search-result .icon:last-child { margin: 0; margin-inline-start: auto; }
+dialog[data-tool-search] .search-result:focus-visible { outline: 2px solid var(--forest); outline-offset: -2px; }
+dialog[data-tool-search] .search-field { margin-block: 16px; }
+dialog[data-tool-search] .global-search-clear { margin-top: 12px; width: 100%; }
+dialog[data-tool-search] .global-search-clear[hidden] { display: none; }
 @media (max-width: 900px), (hover: none) and (pointer: coarse) {
   input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea {
     font-size: 16px !important;

@@ -66,7 +66,7 @@ let data;
 try { data = JSON.parse(localStorage.getItem(key)) || initialData(); } catch { data = initialData(); }
 let ui={section:'overview',tab:'',query:'',filter:'all',period:'7',demo:'normal',chat:null,toolGroup:'all'};
 let wizard={step:1,title:'',audience:'repeat',message:'',date:'',consent:false,id:null};
-let toastTimer, dialogOpener, loadingTimer;
+let toastTimer, dialogOpener, navOpener, loadingTimer, globalSearchComposing=false;
 const persist = () => {try {localStorage.setItem(key, JSON.stringify(data));} catch {toast('تعذر الحفظ في المتصفح؛ ستبقى التغييرات لهذه الجلسة.');}};
 function toast(text) {const el=$('#toast');el.textContent=text;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),3500);}
 function status(text,kind=''){return `<span class="status ${kind}">${esc(text)}</span>`;}
@@ -157,11 +157,6 @@ function settings(){
   if(ui.tab==='billing')content=`<div class="setting-layout"><section class="panel panel-pad"><div class="row between"><h2>باقة النمو</h2>${status('مثال توضيحي','gray')}</div><div class="plan-price">199 <small>ر.س / شهريًا</small></div><p class="hint">قيمة افتراضية لمعاينة العرض وليست تسعيرًا معتمدًا.</p><div class="list-row"><div><h3>رسائل هذه الدورة</h3><p>من 1 إلى 30 سبتمبر</p></div><strong class="spacer">1,140 / 3,000</strong></div><div class="meter"><span style="width:38%"></span></div><div class="list-row"><div><h3>حد العملاء</h3><p>65 عميلًا في السجل المحلي</p></div><strong class="spacer">65 / 1,000</strong></div></section><aside class="info-box"><h3>اشتراك ساري ومدفوعات العملاء</h3><p>تُعرض فواتير المنصة هنا. معاملات مشتريات عملائك وروابط الدفع تجدها في المبيعات، حتى يبقى سياق كل مبلغ واضحًا.</p><a href="#/sales/links" class="text-link">روابط دفع العملاء ${icon('left')}</a></aside></div>`;
   return heading('الإعدادات','حسابك وقنواتك وفريقك، دون تكرار أو تعقيد.')+tabs([['store','المتجر'],['integrations','التكاملات'],['team','الفريق والصلاحيات'],['billing','الباقة والاستخدام']])+content;
 }
-function toolsPage(){
-  const group=ui.tab||'all';
-  const list=window.FEATURES.map((f,i)=>({...f,index:i})).filter(f=>(group==='all'||f.group===group)&&(f.title+' '+f.routes.join(' ')).toLowerCase().includes(ui.query.toLowerCase()));
-  return heading('جميع الأدوات','102 واجهة حالية، موزعة على أقسام واضحة. اختر أداة لمراجعة موضعها ومقترح تحسينها.',`<a class="button" href="report-latest.html">${icon('file')}تقرير الفحص</a>`)+`<div class="toolbar">${searchField('ابحث باسم أداة أو مسار…')}<label class="sr-only" for="tools-filter">قسم الأداة</label><select id="tools-filter" class="control" data-change="tool-group"><option value="all">كل الأقسام</option>${groups.slice(0,9).map(g=>`<option value="${g[0]}" ${group===g[0]?'selected':''}>${g[1]}</option>`).join('')}</select></div><div class="tool-count">${list.length} أداة · خريطة تنظيم، مع معاينة تفاصيل المقترح</div><div class="tool-grid">${list.map(f=>`<button class="tool-card" data-action="feature" data-id="${f.index}">${icon(groups.find(g=>g[0]===f.group)?.[2])}<span><strong>${esc(f.title)}</strong><small>${labels[f.group]} · ${f.routes.length} ${f.routes.length>1?'مسارات':'مسار'}</small></span></button>`).join('')||'<p>لا توجد أداة تطابق بحثك.</p>'}</div>`;
-}
 function empty(title,desc,action='',i='box'){return `<div class="empty">${icon(i)}<h2>${title}</h2><p>${desc}</p>${action}</div>`;}
 function demoState(){
   const title=labels[ui.section];
@@ -170,7 +165,7 @@ function demoState(){
   if(ui.demo==='error')return head+`<section class="panel">${empty('تعذر تحميل البيانات','لم نتمكن من تحديث البيانات. تحقق من الاتصال ثم أعد المحاولة؛ لم تتغير بياناتك.',button(icon('refresh')+'إعادة المحاولة','retry','primary'),'alert')}</section>`;
   return head+`<section class="panel panel-pad" aria-busy="true" aria-label="جاري تحميل البيانات"><p role="status">جاري تحميل البيانات…</p><div class="skeleton skeleton-title" style="margin-top:25px"></div>${[1,2,3,4].map(()=>'<div class="skeleton skeleton-row"></div>').join('')}</section>`;
 }
-const renderers={overview,inbox,sales,catalog,customers,ai,marketing,analytics,settings,tools:toolsPage};
+const renderers={overview,inbox,sales,catalog,customers,ai,marketing,analytics,settings};
 function render(keepFocus=false){
   window.SetupPreview?.unmount();
   window.ImportPreview?.unmount();
@@ -198,13 +193,18 @@ function render(keepFocus=false){
   if(ui.section==='inbox'&&ui.chat){const body=$('.chat-body');if(body)body.scrollTop=body.scrollHeight;}
 }
 function onRoute(){
+  if(location.hash==='#/tools'||location.hash.startsWith('#/tools/')) {
+    const section=location.hash.split('/')[2];
+    const query=groups.slice(0,9).some(g=>g[0]===section)?'?section='+section:'';
+    history.replaceState(null,'','#/page/merchant/tools'+query);
+  }
   if(location.hash.startsWith('#/page/')) {
     const rawPath=location.hash.slice(6), queryAt=rawPath.indexOf('?');
     const routeQuery=new URLSearchParams(queryAt<0?'':rawPath.slice(queryAt+1));
     let path; try { path=decodeURIComponent(queryAt<0?rawPath:rawPath.slice(0,queryAt)); } catch { path='/merchant/preview-state/missing'; }
     ui.page=TenantPages.find(path)||TenantPages.find('/merchant/preview-state/missing');
     if(ui.page.redirect)ui.page=TenantPages.find(ui.page.redirect);
-    ui.section=ui.page.group;ui.tab='';ui.demo='normal';ui.query='';ui.filter='all';
+    ui.section=ui.page.route==='/merchant/tools'?'tools':ui.page.group;ui.tab='';ui.demo='normal';ui.query='';ui.filter='all';
     if(ui.page.kind==='inbox'){
       ui.chat=null;const phone=routeQuery.get('phone');
       if(phone){ui.query=phone;const linked=window.PipelinePreview?.linkedContact(phone);if(linked&&!data.contacts.some(c=>c.ref===linked.ref))data.contacts.push(linked);}
@@ -225,6 +225,7 @@ function onRoute(){
 }
 function openDialog(title,body){
   const d=$('#dialog');if(!d.open)dialogOpener=document.activeElement;
+  d.removeAttribute('data-tool-search');d.removeAttribute('dir');d.removeAttribute('lang');globalSearchComposing=false;
   d.innerHTML=`<div class="dialog-head"><h2 id="dialog-title">${title}</h2><button class="icon-button" data-action="close" aria-label="إغلاق النافذة">${icon('close')}</button></div><div class="dialog-body">${body}</div>`;
   if(!d.open)d.showModal();
   const input=d.querySelector('[autofocus]');if(input)input.focus();
@@ -247,8 +248,20 @@ function campaignDialog(){
 function saveCampaign(state){const id=wizard.id||Date.now(),c={id,title:wizard.title,audience:wizard.audience,message:wizard.message,status:state,date:wizard.date};const index=data.campaigns.findIndex(x=>x.id===id);if(index>=0)data.campaigns[index]=c;else data.campaigns.unshift(c);persist();$('#dialog').close();render();toast(state==='draft'?'تم حفظ مسودة الحملة محليًا.':'تم حفظ الجدولة في النموذج؛ لا يوجد إرسال فعلي.');}
 function featureDialog(index){const f=window.FEATURES[index];if(!f)return;location.hash=TenantPages.href(f.routes[0]);}
 
-function searchDialog(){openDialog('إلى أين تريد الذهاب؟',`<div class="search-field">${icon('search')}<label class="sr-only" for="global-search">البحث في الأقسام والأدوات</label><input id="global-search" class="control dialog-search" data-input="global-search" autofocus placeholder="مثال: الحجوزات، الولاء، إعدادات واتساب…" autocomplete="off"></div><div class="search-results" id="search-results"></div><p class="hint">ابحث في جميع الصفحات والأدوات · Esc للإغلاق</p>`);updateSearch('');}
-function updateSearch(q){const matches=window.FEATURES.map((f,i)=>({...f,index:i})).filter(f=>(f.title+' '+f.routes.join(' ')).toLowerCase().includes(q.toLowerCase())).slice(0,15);$('#search-results').innerHTML=matches.map(f=>`<button class="search-result" data-action="feature" data-id="${f.index}">${icon(groups.find(g=>g[0]===f.group)?.[2])}<span><strong>${esc(f.title)}</strong><small>${labels[f.group]}</small></span>${icon('left')}</button>`).join('')||'<div class="no-results">لا توجد أداة بهذا الاسم. جرّب كلمة أخرى.</div>';}
+function searchDialog(){
+  const lang=new URLSearchParams(location.hash.split('?')[1]||'').get('lang')==='en'?'en':'ar';
+  const copy=window.ToolsPreview.discovery('',lang);
+  openDialog(esc(copy.title),`<p class="hint">${esc(copy.help)}</p><div class="search-field"><label class="sr-only" for="global-search">${esc(copy.label)}</label><input type="search" maxlength="100" id="global-search" class="control dialog-search" data-input="global-search" autofocus placeholder="${esc(copy.placeholder)}" autocomplete="off" aria-controls="search-results"></div><p id="global-search-count" class="hint" role="status" aria-live="polite" aria-atomic="true"></p><button class="button global-search-clear" data-action="clear-global-search" hidden>${esc(copy.clear)}</button><nav class="search-results" id="search-results" aria-label="${esc(copy.resultsLabel)}"></nav>`);
+  const dialog=$('#dialog');dialog.dataset.toolSearch='true';dialog.dir=lang==='ar'?'rtl':'ltr';dialog.lang=lang;
+  dialog.querySelector('[data-action="close"]').setAttribute('aria-label',copy.close);
+  updateSearch('');
+}
+function updateSearch(q){
+  const copy=window.ToolsPreview.discovery(q,$('#dialog').lang==='en'?'en':'ar');
+  $('#global-search-count').textContent=copy.count;
+  $('.global-search-clear').hidden=!q;
+  $('#search-results').innerHTML=copy.matches.map(f=>`<a class="search-result" href="${TenantPages.href(f.path)}">${icon(groups.find(g=>g[0]===f.group)?.[2])}<span><strong>${esc(f.title)}</strong><small>${esc(f.section)}</small></span>${icon($('#dialog').dir==='rtl'?'left':'right')}</a>`).join('')||`<p class="no-results" role="status">${esc(copy.empty)}</p>`;
+}
 function prototypeDialog(){openDialog('خيارات تجربة الموك أب',`<div class="prototype-section"><h3>جرّب حالة الصفحة الحالية</h3><p>يمكنك معاينة الفراغ والخطأ والتحميل، ثم العودة إلى البيانات.</p><div class="segmented">${[['normal','البيانات'],['empty','فارغة'],['loading','تحميل'],['error','خطأ']].map(([id,t])=>`<button data-action="demo-state" data-id="${id}" aria-pressed="${ui.demo===id}">${t}</button>`).join('')}</div></div><div class="prototype-section"><h3>نطاق هذا التصور</h3><p>صفحات داخلية كاملة وحالات خطأ موحدة. افتح أي أداة من البحث للوصول إلى تصميمها التفاعلي. البيانات توضيحية وتُحفظ محليًا في متصفحك. الاتصال والدفع والذكاء الاصطناعي الفعلي تحتاج ربط الخادم.</p><a class="report-link" href="report-latest.html"><span>تقرير فحص جميع الصفحات · سبتمبر 2026</span>${icon('left')}</a></div>${button('إعادة ضبط بيانات النموذج','reset-confirm','danger')}`);}
 function commercialDialog(type){openDialog(type==='quote'?'عرض سعر جديد':'إنشاء رابط دفع تجريبي',`<form data-form="commercial" class="form-stack"><input type="hidden" name="type" value="${type}"><div class="field"><label for="commercial-title">${type==='quote'?'عنوان العرض':'غرض الدفع'}</label><input id="commercial-title" name="title" required maxlength="80" autofocus></div><div class="field"><label for="commercial-customer">اسم العميل</label><input id="commercial-customer" name="customer" required maxlength="60"></div><div class="field"><label for="commercial-amount">المبلغ بالريال</label><input id="commercial-amount" name="amount" type="number" required min="1" step="0.01" max="1000000"></div><p class="hint">سيُنشأ سجل محلي للمراجعة. لا يرسل عرضًا ولا ينشئ رابط تحصيل فعليًا.</p><div class="dialog-foot"><button class="button" type="button" data-action="close">إلغاء</button><button class="button primary" type="submit">إنشاء المسودة</button></div></form>`);}
 let csvUrl;
@@ -265,10 +278,11 @@ document.addEventListener('click',e=>{
   if(link?.getAttribute('href')===location.hash){if($('#dialog').open)$('#dialog').close();if($('#nav-dialog').open)$('#nav-dialog').close();}
   const el=e.target.closest('[data-action]');if(!el)return;const a=el.dataset.action,id=el.dataset.id;
   if(a==='close')$('#dialog').close();
-  else if(a==='menu'){$('#nav-dialog').innerHTML=`<button class="icon-button nav-close" data-action="nav-close" aria-label="إغلاق القائمة">${icon('close')}</button>`+brand+`<nav aria-label="أقسام المتجر">${navLinks()}</nav><a class="text-link" href="report-latest.html" style="margin:20px 12px">${icon('file')} تقرير الفحص</a>`;$('#nav-dialog').showModal();}
+  else if(a==='menu'){navOpener=el;$('#nav-dialog').innerHTML=`<button class="icon-button nav-close" data-action="nav-close" aria-label="إغلاق القائمة">${icon('close')}</button>`+brand+`<nav aria-label="أقسام المتجر">${navLinks()}</nav><a class="text-link" href="report-latest.html" style="margin:20px 12px">${icon('file')} تقرير الفحص</a>`;$('#nav-dialog').showModal();}
   else if(a==='nav-close')$('#nav-dialog').close();
   else if(a==='tab')go(ui.section,id);
   else if(a==='search')searchDialog();
+  else if(a==='clear-global-search'){$('#global-search').value='';updateSearch('');$('#global-search').focus();}
   else if(a==='prototype'){if(ui.page){document.querySelector('[data-page-action=states]')?.click();if(ui.page.kind==='state')location.hash=TenantPages.href('/merchant/tools');}else prototypeDialog();}
   else if(a==='retry'){ui.demo='normal';render();toast('تم عرض البيانات التوضيحية.');}
   else if(a==='demo-state'){ui.demo=id;$('#dialog').close();render();clearTimeout(loadingTimer);if(id==='loading')loadingTimer=setTimeout(()=>{ui.demo='normal';render();toast('اكتمل التحميل التجريبي.');},2200);}
@@ -299,7 +313,7 @@ document.addEventListener('click',e=>{
   else if(a==='permissions')openDialog('صلاحيات خدمة العملاء',`<div class="form-stack"><div class="review-row"><span>المحادثات وملفات العملاء</span>${status('قراءة ورد')}</div><div class="review-row"><span>الطلبات</span>${status('قراءة فقط','blue')}</div><div class="review-row"><span>الفواتير والتكاملات والفريق</span>${status('لا يوجد وصول','gray')}</div><p class="hint">معاينة لدور مقترح. يلزم تطبيق حدود الصلاحيات في الخادم وليس الواجهة وحدها.</p></div>`);
   else if(a==='booking')openDialog('تفاصيل الحجز',`<span class="status">مؤكد · مثال توضيحي</span><div class="detail-kpis"><div><small>اليوم</small><strong>23 سبتمبر</strong></div><div><small>الوقت</small><strong>${id==='0'?'11:00':'16:00'}</strong></div><div><small>المدة</small><strong>${id==='0'?'60':'120'} د</strong></div></div><p>${id==='0'?'جلسة تذوق القهوة · نورة السالم':'ورشة التحضير المنزلي · عبدالله الحربي'}</p><p class="hint" style="margin-top:12px">بتوقيت الرياض. هذا مثال لعرض تفاصيل الحجز؛ تعديل التوفر والإلغاء يحتاجان ربط خدمة الحجوزات.</p>`);
 });
-document.addEventListener('input',e=>{if(e.target.dataset.input==='query'){ui.query=e.target.value;render(true);}else if(e.target.dataset.input==='global-search')updateSearch(e.target.value);});
+document.addEventListener('input',e=>{if(e.target.dataset.input==='query'){ui.query=e.target.value;render(true);}else if(e.target.dataset.input==='global-search'&&!e.isComposing&&!globalSearchComposing)updateSearch(e.target.value);});
 document.addEventListener('change',e=>{const kind=e.target.dataset.change;if(kind==='filter'){ui.filter=e.target.value;render(true);}else if(kind==='period'){ui.period=e.target.value;render(true);}else if(kind==='tool-group')go('tools',e.target.value);});
 document.addEventListener('submit',e=>{
   const form=e.target;if(!form.dataset.form)return;e.preventDefault();if(!form.reportValidity())return;
@@ -314,7 +328,23 @@ document.addEventListener('submit',e=>{
   else if(type==='campaign'){if(wizard.step===1){wizard.title=v.title.trim();wizard.audience=v.audience;wizard.consent=!!v.consent;if(!wizard.title){toast('اكتب اسم الحملة.');return;}wizard.step=2;campaignDialog();}else if(wizard.step===2){wizard.message=v.message.trim();if(wizard.message.length<10){toast('اكتب رسالة من 10 أحرف على الأقل.');return;}wizard.step=3;campaignDialog();}else{wizard.date=v.date;saveCampaign('scheduled');}}
   else if(type==='commercial'){if(!v.title.trim()||!v.customer.trim()){toast('اكتب اسم العميل والغرض بوضوح.');return;}const item={id:Date.now(),title:v.title.trim(),customer:v.customer.trim(),amount:Number(v.amount)};if(v.type==='quote')data.quotes.unshift(item);else data.paymentLinks.unshift(item);persist();$('#dialog').close();go('sales',v.type==='quote'?'quotes':'links');toast('تم إنشاء مسودة محلية للمراجعة.');}
 });
-document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();searchDialog();}});
+document.addEventListener('compositionstart',e=>{if(e.target.id==='global-search')globalSearchComposing=true;});
+document.addEventListener('compositionend',e=>{if(e.target.id==='global-search'){globalSearchComposing=false;updateSearch(e.target.value);}});
+document.addEventListener('keydown',e=>{
+  if(e.isComposing||globalSearchComposing)return;
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){
+    e.preventDefault();if($('#dialog').open&&$('#dialog').dataset.toolSearch)$('#dialog').close();else searchDialog();return;
+  }
+  if(!$('#dialog').open||!$('#dialog').dataset.toolSearch)return;
+  if(e.key==='Escape'){e.preventDefault();$('#dialog').close();return;}
+  const input=$('#global-search'),links=[...document.querySelectorAll('#search-results a')];
+  if(e.target===input&&e.key==='ArrowDown'&&links.length){e.preventDefault();links[0].focus();return;}
+  const index=links.indexOf(e.target);if(index<0||!['ArrowDown','ArrowUp','Home','End'].includes(e.key))return;
+  e.preventDefault();if(e.key==='ArrowUp'&&index===0){input.focus();return;}
+  const next=e.key==='Home'?0:e.key==='End'?links.length-1:Math.min(links.length-1,index+(e.key==='ArrowDown'?1:-1));links[next]?.focus();
+});
+$('#dialog').addEventListener('cancel',e=>{if(globalSearchComposing)e.preventDefault();});
+$('#nav-dialog').addEventListener('close',()=>{if(navOpener?.isConnected)navOpener.focus({preventScroll:true});});
 $('#dialog').addEventListener('close',()=>{if(dialogOpener?.isConnected)dialogOpener.focus({preventScroll:true});});
 $('#nav-dialog').addEventListener('click',e=>{if(e.target.closest('a'))$('#nav-dialog').close();});
 window.addEventListener('hashchange',onRoute);

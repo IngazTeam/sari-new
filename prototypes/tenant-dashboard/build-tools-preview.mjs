@@ -7,6 +7,7 @@ import { loadPreviewLocales } from "./preview-locales.mjs";
 const copy = await loadPreviewLocales([
   "merchantToolsUx",
   "merchantNavigationUx",
+  "merchantShellUx",
 ]);
 await build({
   entryPoints: ["prototypes/tenant-dashboard/src/tools-preview.tsx"],

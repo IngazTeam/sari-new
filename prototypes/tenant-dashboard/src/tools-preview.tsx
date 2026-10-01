@@ -4,9 +4,23 @@ import { MerchantToolsDirectory } from "../../../client/src/components/merchant/
 import {
   readToolFilters,
   toolsLocation,
+  searchMerchantTools,
+  toolTranslationKey,
   type ToolFilters,
 } from "../../../client/src/lib/merchant-tools-search";
-import { setToolsPreviewLanguage } from "./tools-preview-i18n";
+import { setToolsPreviewLanguage, translateToolsPreview } from "./tools-preview-i18n";
+import { navigableMerchantTools } from '../../../client/src/components/merchant/navigation';
+
+export function discovery(query: string, lang: 'ar' | 'en' = 'ar') {
+  const label = (path: string, lng: 'ar' | 'en') => translateToolsPreview(toolTranslationKey(path), { lng });
+  const section = (id: string, lng: 'ar' | 'en') => translateToolsPreview(`merchantNavigationUx.sections.${id}`, { lng });
+  const matches = searchMerchantTools({ query: query.slice(0,100), section: 'all' }, label, section);
+  const copy = (key: string) => translateToolsPreview('merchantShellUx.' + key, { lng: lang });
+  return { title: copy('searchTitle'), help: copy('searchHelp'), label: copy('searchLabel'), placeholder: copy('searchPlaceholder'), empty: copy('searchEmpty'), clear: copy('clearSearch'), close: copy('close'),
+    count: translateToolsPreview('merchantToolsUx.results', { lng: lang, shown: matches.length, total: navigableMerchantTools.length }),
+    resultsLabel: translateToolsPreview('merchantToolsUx.resultsLabel', { lng: lang }),
+    matches: matches.map(tool => ({ path: tool.path, group: tool.section, title: label(tool.paths[0], lang), section: section(tool.section, lang) })) };
+}
 declare global {
   interface Window {
     render(keep?: boolean): void;

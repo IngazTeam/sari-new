@@ -37,6 +37,8 @@ beforeEach(() => {
   w.TextDecoder = TextDecoder;
   w.structuredClone = structuredClone;
   w.scrollTo = () => {};
+  w.HTMLDialogElement.prototype.showModal = function () { this.setAttribute('open', ''); };
+  w.HTMLDialogElement.prototype.close = function () { this.removeAttribute('open'); this.dispatchEvent(new w.Event('close')); };
   w.MessageChannel = class extends MessageChannel {
     constructor() {
       super();
@@ -143,5 +145,55 @@ describe("built interactive tool directory", () => {
     expect(w.document.querySelector(".tools-prototype input").value).toBe(
       "مُسَاعِد"
     );
+  });
+});
+
+describe('prototype shared tool discovery',()=>{
+  const dialog=()=>w.document.querySelector('#dialog');
+  const open=()=>{const button=w.document.querySelector('[data-action=search]');button.focus();button.click();};
+  const searchInput=()=>w.document.querySelector('#global-search');
+  const links=()=>[...w.document.querySelectorAll('#search-results a')];
+  const type=(value:string)=>{searchInput().value=value;searchInput().dispatchEvent(new w.Event('input',{bubbles:true}));};
+  const key=(element:any,key:string,extra={})=>element.dispatchEvent(new w.KeyboardEvent('keydown',{key,bubbles:true,cancelable:true,...extra}));
+  it('shows all real navigable tools instead of truncating at 15 or offering parameter placeholders',()=>{
+    open();expect(links().map((a:any)=>a.getAttribute('href'))).toEqual(navigableMerchantTools.map(t=>'#/page'+t.path));
+    expect(w.document.querySelector('#global-search-count').textContent).toContain('93 من 93');
+    expect(dialog().querySelectorAll('[data-action=feature]')).toHaveLength(0);
+    expect(w.document.querySelectorAll('#sidebar a[aria-current=page]')).toHaveLength(1);
+    expect(w.document.querySelector('#sidebar a[aria-current=page]').getAttribute('href')).toBe('#/page/merchant/tools');
+  });
+  it('matches multilingual names and clears empty results without replacing the focused input',()=>{
+    open();const el=searchInput();type('assistant language');expect(links()).toHaveLength(1);expect(links()[0].getAttribute('href')).toBe('#/page/merchant/language-settings');
+    type('مُسَاعِد');expect(links()).toHaveLength(9);
+    type('<img src=x>');expect(links()).toHaveLength(0);expect(dialog().querySelector('img')).toBeNull();
+    dialog().querySelector('[data-action=clear-global-search]').click();expect(searchInput()).toBe(el);expect(w.document.activeElement).toBe(el);expect(links()).toHaveLength(93);
+  });
+  it('uses the same English labels when the directory language is English and resets dialog direction for other actions',()=>{
+    route('?lang=en');open();expect(dialog().dir).toBe('ltr');expect(dialog().querySelector('h2').textContent).toBe('Where would you like to go?');
+    expect(links()[0].textContent).toContain('Initial setup');expect(dialog().querySelector('[data-action=close]').getAttribute('aria-label')).toBe('Close');
+    dialog().close();w.openDialog('عنوان','<p>تجربة</p>');expect(dialog().hasAttribute('dir')).toBe(false);expect(dialog().hasAttribute('data-tool-search')).toBe(false);
+  });
+  it('supports arrows, Home/End, composition and shortcut toggling without triggering navigation',()=>{
+    open();searchInput().focus();key(searchInput(),'ArrowDown',{isComposing:true});expect(w.document.activeElement).toBe(searchInput());
+    key(searchInput(),'ArrowDown');expect(w.document.activeElement).toBe(links()[0]);key(links()[0],'End');expect(w.document.activeElement).toBe(links().at(-1));
+    key(links().at(-1),'Home');key(links()[0],'ArrowUp');expect(w.document.activeElement).toBe(searchInput());
+    searchInput().dispatchEvent(new w.CompositionEvent('compositionstart',{bubbles:true}));type('مُسَاعِد');expect(links()).toHaveLength(93);
+    const cancel=new w.Event('cancel',{cancelable:true});dialog().dispatchEvent(cancel);expect(cancel.defaultPrevented).toBe(true);
+    searchInput().dispatchEvent(new w.CompositionEvent('compositionend',{bubbles:true}));expect(links()).toHaveLength(9);
+    key(searchInput(),'k',{ctrlKey:true});expect(dialog().open).toBe(false);expect(w.document.activeElement).toBe(w.document.querySelector('[data-action=search]'));
+    open();type('assistant');key(searchInput(),'Escape');expect(dialog().open).toBe(false);expect(w.document.activeElement).toBe(w.document.querySelector('[data-action=search]'));
+  });
+  it('opens a real local page from its result and restores the prior directory through history',async()=>{
+    route('?section=ai');open();type('assistant language');links()[0].click();
+    await vi.waitFor(()=>expect(w.location.hash).toBe('#/page/merchant/language-settings'));await vi.waitFor(()=>expect(dialog().open).toBe(false));
+    expect(w.document.querySelector('#main iframe').getAttribute('src')).toContain('assistant-options.html');
+    w.history.back();await vi.waitFor(()=>expect(w.location.hash).toBe('#/page/merchant/tools?section=ai'));
+    await vi.waitFor(()=>expect(w.document.querySelector('.mw-tools-section select')?.value).toBe('ai'));
+  });
+  it('redirects legacy tool filters to the new directory and returns mobile menu focus to its opener',()=>{
+    w.history.replaceState(null,'','#/tools/ai');w.dispatchEvent(new w.HashChangeEvent('hashchange'));
+    expect(w.location.hash).toBe('#/page/merchant/tools?section=ai');expect(w.document.querySelector('.mw-tools-section select').value).toBe('ai');
+    const more=w.document.querySelector('#bottom-nav [data-action=menu]');more.focus();more.click();
+    w.document.querySelector('[data-action=nav-close]').click();expect(w.document.activeElement).toBe(more);
   });
 });
