@@ -7008,6 +7008,8 @@
     "text7": "12:00 PM ✓✓"
   },
   "compAISuggestionsPage": {
+    "collapse": "Collapse suggestions",
+    "copyFailed": "Could not copy the reply. Try again.",
     "text0": "Reply copied",
     "text1": "Reply selected",
     "text2": "AI Suggestions",
@@ -7275,6 +7277,12 @@
     "text2": "Recording ready"
   },
   "compWhatsAppPreviewPage": {
+    "voicePreview": "Voice message preview",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "lastSeen": "Last seen {{value}}",
+    "file": "File",
+    "dateUnavailable": "Date unavailable",
     "text0": "Customer",
     "text1": "Typing...",
     "text2": "Photo",

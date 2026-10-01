@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-01T00:59:40.321Z",
+  "generatedAt": "2026-10-01T01:14:44.975Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -11,7 +11,7 @@
     "after": {
       "routes": 126,
       "files": 328,
-      "controls": 2183
+      "controls": 2176
     }
   },
   "addedFiles": [
@@ -179,6 +179,8 @@
     "client/src/pages/merchant/Campaigns.tsx",
     "client/src/pages/merchant/Products.tsx",
     "client/src/pages/merchant/UploadProducts.tsx",
+    "client/src/components/WhatsAppPreview.tsx",
+    "client/src/components/AISuggestions.tsx",
     "client/src/pages/merchant/WhatsAppInstancesPage.tsx",
     "client/src/pages/ByaanDashboard.tsx",
     "client/src/pages/merchant/Analytics.tsx",
@@ -441,7 +443,7 @@
     {
       "route": "/merchant/conversations",
       "controlsBefore": 85,
-      "controlsNow": 87,
+      "controlsNow": 80,
       "removedQueries": [],
       "addedQueries": [],
       "removedMutations": [],

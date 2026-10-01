@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Bot, User, CheckCircle2, Mic, Image, File, MapPin, Clock, Phone, MoreVertical, Search, ArrowLeft, Send, Paperclip, Smile, Camera } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import AudioWaveAnimation from './AudioWaveAnimation';
 import { useTranslation } from 'react-i18next';
 
@@ -39,7 +37,7 @@ interface WhatsAppPreviewProps {
 
 export function WhatsAppPreview({
   messages,
-  customerName = 'عميل',
+  customerName,
   customerPhone = '',
   isOnline = false,
   lastSeen,
@@ -47,14 +45,15 @@ export function WhatsAppPreview({
   showHeader = true,
   showFooter = true,
   showTypingIndicator = false,
-  typingText = 'يكتب...',
+  typingText,
   onSendMessage,
   onBack,
   compact = false,
   darkMode = false,
   autoScroll = true,
 }: WhatsAppPreviewProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language.startsWith('ar') ? 'ar-SA' : 'en-US';
   const [inputValue, setInputValue] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -67,21 +66,22 @@ export function WhatsAppPreview({
 
   const formatTime = (timestamp: Date | string) => {
     const date = typeof timestamp === 'string' ? new Date(timestamp) : timestamp;
-    return date.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
+    return Number.isFinite(date.getTime()) ? date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }) : t('compWhatsAppPreviewPage.dateUnavailable');
   };
 
   const formatDate = (timestamp: Date | string) => {
     const date = typeof timestamp === 'string' ? new Date(timestamp) : timestamp;
+    if (!Number.isFinite(date.getTime())) return t('compWhatsAppPreviewPage.dateUnavailable');
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
 
     if (date.toDateString() === today.toDateString()) {
-      return 'اليوم';
+      return t('compWhatsAppPreviewPage.today');
     } else if (date.toDateString() === yesterday.toDateString()) {
-      return 'أمس';
+      return t('compWhatsAppPreviewPage.yesterday');
     } else {
-      return date.toLocaleDateString('ar-SA', { weekday: 'long', day: 'numeric', month: 'long' });
+      return date.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' });
     }
   };
 
@@ -178,16 +178,16 @@ export function WhatsAppPreview({
             )}>
               {/* Voice Message */}
               {message.type === 'voice' && (
-                <div className="flex items-center gap-3 min-w-[200px]">
-                  <button className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                <div className="flex items-center gap-3" role="group" aria-label={t('compWhatsAppPreviewPage.voicePreview')}>
+                  <span aria-hidden="true" className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
                     <Mic className="w-4 h-4 text-white" />
-                  </button>
+                  </span>
                   <AudioWaveAnimation isPlaying={false} className="flex-1" />
                   <span className={cn(
                     "text-xs font-medium",
                     darkMode ? "text-gray-400" : "text-gray-600"
                   )}>
-                    {message.duration ? `0:${String(message.duration).padStart(2, '0')}` : '0:00'}
+                    {Number.isFinite(message.duration) && message.duration! >= 0 ? `${Math.floor(message.duration! / 60)}:${String(Math.floor(message.duration! % 60)).padStart(2, '0')}` : '0:00'}
                   </span>
                 </div>
               )}
@@ -197,7 +197,7 @@ export function WhatsAppPreview({
                 <div className="space-y-2">
                   <img 
                     src={message.mediaUrl} 
-                    alt={t('compWhatsAppPreviewPage.text0')} 
+                    alt={t('compWhatsAppPreviewPage.text2')}
                     className="rounded-lg max-w-full h-auto max-h-[300px] object-cover"
                   />
                   {message.content && (
@@ -216,7 +216,7 @@ export function WhatsAppPreview({
                     <File className="w-5 h-5 text-primary" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{message.fileName || 'ملف'}</p>
+                    <p className="text-sm font-medium truncate">{message.fileName || t('compWhatsAppPreviewPage.file')}</p>
                     <p className={cn(
                       "text-xs",
                       darkMode ? "text-gray-400" : "text-gray-500"
@@ -288,7 +288,7 @@ export function WhatsAppPreview({
       {showHeader && (
         <div className="bg-[#075E54] p-3 flex items-center gap-3 flex-shrink-0">
           {onBack && (
-            <button onClick={onBack} className="text-white hover:bg-white/10 p-1 rounded-full">
+            <button type="button" aria-label={t('common.back')} onClick={onBack} className="text-white hover:bg-white/10 min-h-11 min-w-11 shrink-0 inline-flex items-center justify-center rounded-full focus-visible:ring-2 focus-visible:ring-white">
               <ArrowLeft className="w-5 h-5" />
             </button>
           )}
@@ -296,26 +296,26 @@ export function WhatsAppPreview({
             <User className="w-6 h-6 text-gray-600" />
           </div>
           <div className="flex-1 min-w-0">
-            <div className="font-semibold text-white truncate">{customerName}</div>
+            <div className="font-semibold text-white truncate">{customerName || t('compWhatsAppPreviewPage.text0')}</div>
             <div className="text-xs text-white/80 flex items-center gap-1">
               {isOnline ? (
                 <>
                   <span className="w-2 h-2 bg-green-400 rounded-full"></span>{t('whatsAppPreview.auto_0')}</>
               ) : lastSeen ? (
-                `آخر ظهور ${lastSeen}`
+                t('compWhatsAppPreviewPage.lastSeen', { value: lastSeen })
               ) : customerPhone}
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button className="text-white hover:bg-white/10 p-2 rounded-full">
+            <span aria-hidden="true" className="text-white p-2">
               <Phone className="w-5 h-5" />
-            </button>
-            <button className="text-white hover:bg-white/10 p-2 rounded-full">
+            </span>
+            <span aria-hidden="true" className="text-white p-2">
               <Search className="w-5 h-5" />
-            </button>
-            <button className="text-white hover:bg-white/10 p-2 rounded-full">
+            </span>
+            <span aria-hidden="true" className="text-white p-2">
               <MoreVertical className="w-5 h-5" />
-            </button>
+            </span>
           </div>
         </div>
       )}
@@ -357,7 +357,7 @@ export function WhatsAppPreview({
                   "text-xs",
                   darkMode ? "text-gray-400" : "text-gray-500"
                 )}>
-                  {typingText}
+                  {typingText || t('compWhatsAppPreviewPage.text1')}
                 </span>
               </div>
             </div>
@@ -371,60 +371,60 @@ export function WhatsAppPreview({
           "p-2 flex items-center gap-2 flex-shrink-0 border-t",
           darkMode ? "bg-[#1F2C33] border-[#2A3942]" : "bg-white border-gray-200"
         )}>
-          <button className={cn(
-            "p-2 rounded-full hover:bg-gray-100",
-            darkMode && "hover:bg-[#2A3942]"
-          )}>
+          <span aria-hidden="true" className="p-2 shrink-0">
             <Smile className={cn(
               "w-5 h-5",
               darkMode ? "text-gray-400" : "text-gray-500"
             )} />
-          </button>
-          <button className={cn(
-            "p-2 rounded-full hover:bg-gray-100",
-            darkMode && "hover:bg-[#2A3942]"
-          )}>
+          </span>
+          <span aria-hidden="true" className="p-2 shrink-0">
             <Paperclip className={cn(
               "w-5 h-5",
               darkMode ? "text-gray-400" : "text-gray-500"
             )} />
-          </button>
-          <div className="flex-1">
+          </span>
+          <div className="flex-1 min-w-0">
             <input
               type="text"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-              placeholder={t('compWhatsAppPreviewPage.text1')}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
+              disabled={!onSendMessage}
+              aria-label={t('compWhatsAppPreviewPage.text3')}
+              placeholder={t('compWhatsAppPreviewPage.text3')}
               className={cn(
-                "w-full px-4 py-2 rounded-full text-sm focus:outline-none",
+                "w-full min-h-11 px-4 py-2 rounded-full text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#075E54] disabled:opacity-60",
                 darkMode 
                   ? "bg-[#2A3942] text-white placeholder-gray-400"
                   : "bg-gray-100 text-gray-900 placeholder-gray-500"
               )}
-              dir="rtl"
+              dir="auto"
             />
           </div>
-          <button className={cn(
-            "p-2 rounded-full hover:bg-gray-100",
-            darkMode && "hover:bg-[#2A3942]"
-          )}>
+          <span aria-hidden="true" className="p-2 shrink-0">
             <Camera className={cn(
               "w-5 h-5",
               darkMode ? "text-gray-400" : "text-gray-500"
             )} />
-          </button>
-          {inputValue.trim() ? (
+          </span>
+          {inputValue.trim() && onSendMessage ? (
             <button 
+              type="button"
+              aria-label={t('merchantUx.actions.sendMessage')}
               onClick={handleSend}
-              className="w-10 h-10 rounded-full bg-[#075E54] flex items-center justify-center hover:bg-[#064E46] transition-colors"
+              className="w-11 h-11 shrink-0 rounded-full bg-[#075E54] flex items-center justify-center hover:bg-[#064E46] transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#075E54]"
             >
               <Send className="w-5 h-5 text-white" />
             </button>
           ) : (
-            <button className="w-10 h-10 rounded-full bg-[#075E54] flex items-center justify-center hover:bg-[#064E46] transition-colors">
+            <span aria-hidden="true" className="w-11 h-11 shrink-0 rounded-full bg-[#075E54] flex items-center justify-center">
               <Mic className="w-5 h-5 text-white" />
-            </button>
+            </span>
           )}
         </div>
       )}

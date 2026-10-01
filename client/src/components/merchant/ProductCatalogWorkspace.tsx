@@ -553,6 +553,7 @@ export function ProductCatalogWorkspace({
                       <button
                         type="button"
                         disabled={!ready || storageError}
+                        aria-label={`${t("detailUx.title")}: ${row.name}`}
                         onClick={() =>
                           open({ kind: "details", productId: row.id })
                         }
@@ -562,6 +563,7 @@ export function ProductCatalogWorkspace({
                       <button
                         type="button"
                         onClick={() => open({ kind: "editor", target: row.id })}
+                        aria-label={`${canManage && unlocked ? t("productWorkspaceUx.edit") : t("productWorkspaceUx.view")}: ${row.name}`}
                       >
                         {canManage && unlocked
                           ? t("productWorkspaceUx.edit")
@@ -571,6 +573,7 @@ export function ProductCatalogWorkspace({
                         type="button"
                         disabled={!canManage || !unlocked || storageError}
                         onClick={() => open({ kind: "delete", ids: [row.id] })}
+                        aria-label={`${t("productWorkspaceUx.deleteReview")}: ${row.name}`}
                       >
                         {t("productWorkspaceUx.deleteReview")}
                       </button>

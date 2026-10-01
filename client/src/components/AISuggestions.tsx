@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -87,10 +87,14 @@ export function AISuggestions({
   };
 
   const handleCopy = async (text: string, id: number) => {
-    await navigator.clipboard.writeText(text);
-    setCopiedId(id);
-    toast.success(t('compAISuggestionsPage.text0'));
-    setTimeout(() => setCopiedId(null), 2000);
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedId(id);
+      toast.success(t('compAISuggestionsPage.text0'));
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch {
+      toast.error(t('compAISuggestionsPage.copyFailed'));
+    }
   };
 
   const handleSelect = (text: string) => {
@@ -101,6 +105,7 @@ export function AISuggestions({
   if (compact && !isExpanded) {
     return (
       <Button
+        type="button"
         variant="outline"
         size="sm"
         onClick={() => setIsExpanded(true)}
@@ -130,9 +135,11 @@ export function AISuggestions({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
+                    type="button"
+                    aria-label={t('compAISuggestionsPage.text4')}
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8"
+                    className="h-11 w-11 shrink-0"
                     onClick={handleGenerate}
                     disabled={generateMutation.isPending}
                   >
@@ -148,9 +155,11 @@ export function AISuggestions({
             </TooltipProvider>
             {compact && (
               <Button
+                type="button"
+                aria-label={t('compAISuggestionsPage.collapse')}
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8"
+                className="h-11 w-11 shrink-0"
                 onClick={() => setIsExpanded(false)}
               >
                 <ChevronUp className="w-4 h-4" />
@@ -177,9 +186,13 @@ export function AISuggestions({
             generateMutation.data.suggestions.map((suggestion) => (
               <div
                 key={suggestion.id}
-                className="group flex items-start gap-2 p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors cursor-pointer"
-                onClick={() => handleSelect(suggestion.text)}
+                className="flex items-start gap-2 p-2 rounded-lg bg-muted/50"
               >
+                <button
+                  type="button"
+                  className="flex min-h-11 min-w-0 flex-1 flex-wrap items-start gap-2 rounded text-start hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  onClick={() => handleSelect(suggestion.text)}
+                >
                 <Badge 
                   variant="secondary" 
                   className={cn(
@@ -190,19 +203,19 @@ export function AISuggestions({
                   {typeIcons[suggestion.type]}
                   {suggestion.label}
                 </Badge>
-                <p className="text-sm flex-1 leading-relaxed">{suggestion.text}</p>
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <span className="text-sm min-w-0 flex-1 break-words leading-relaxed">{suggestion.text}</span>
+                </button>
+                <div className="flex shrink-0 items-center gap-1">
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
+                          type="button"
+                          aria-label={t('merchantUx.actions.copyNamed', { name: suggestion.label })}
                           variant="ghost"
                           size="icon"
-                          className="h-6 w-6"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleCopy(suggestion.text, suggestion.id);
-                          }}
+                          className="h-11 w-11"
+                          onClick={() => handleCopy(suggestion.text, suggestion.id)}
                         >
                           {copiedId === suggestion.id ? (
                             <Check className="w-3 h-3 text-green-500" />
@@ -223,6 +236,7 @@ export function AISuggestions({
               <Sparkles className="w-8 h-8 mx-auto mb-2 text-muted-foreground/50" />
               <p className="text-sm text-muted-foreground">{t('aISuggestions.auto_1')}</p>
               <Button
+                type="button"
                 variant="outline"
                 size="sm"
                 className="mt-2 gap-2"
@@ -261,6 +275,7 @@ export function QuickReplies({ messageType, onSelect, className }: QuickRepliesP
     <div className={cn("flex gap-2 flex-wrap", className)}>
       {data?.suggestions.map((suggestion, index) => (
         <Button
+          type="button"
           key={index}
           variant="outline"
           size="sm"

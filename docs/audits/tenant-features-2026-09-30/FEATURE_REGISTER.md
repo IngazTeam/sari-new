@@ -2,7 +2,7 @@
 
 هذا حصر مصدر قابل لإعادة التوليد، وليس ادعاءً بأن كل مسار عمل اختُبر أو أُعيد تصميمه. يشمل المكونات الفرعية المحلية، الحقول، الأزرار، النوافذ، التبويبات، واجهات القراءة والتعديل. العناصر الديناميكية تحتاج مراجعة إضافية.
 
-- 126 مسارًا مسجلًا، 328 ملف واجهة متصلًا، 2183 عنصر تحكم في المصدر.
+- 126 مسارًا مسجلًا، 328 ملف واجهة متصلًا، 2176 عنصر تحكم في المصدر.
 - 0 رابطًا حرفيًا غير مطابق، و0 ملف صفحة غير متصل بالمسارات المحصورة.
 
 | الصفحة | الملفات | عناصر التحكم | القراءة / التعديل | موك أب للصفحة |
@@ -20,7 +20,7 @@
 | /merchant/campaigns/:id/report — تقرير الحملة | 2 | 3 | 1 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/products — المنتجات | 15 | 103 | 12 / 4 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/products/upload — استيراد المنتجات | 11 | 75 | 10 / 7 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/conversations — المحادثات | 17 | 87 | 13 / 10 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/conversations — المحادثات | 17 | 80 | 13 / 10 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/whatsapp — أرقام واتساب | 2 | 23 | 8 / 6 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/salla — ربط سلة | 2 | 22 | 5 / 4 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/integrations/byaan — ربط بيان | 1 | 9 | 1 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -652,11 +652,11 @@
 | 453 | button | تحديد الصفحة الحالية | الفلاتر · {{count}} مفعلة |
 | 476 | button | إظهار كل المنتجات | ابدأ بأول منتج لا توجد منتجات في هذه النتائج |
 | 495 | input | t("productWorkspaceUx.selectProduct", {                             name: row.name,                           }) | ابدأ بأول منتج لا توجد منتجات في هذه النتائج |
-| 553 | button | الخيارات والنسخ | ProductCatalogWorkspace |
-| 562 | button | مراجعة وتعديل عرض المنتج | ProductCatalogWorkspace |
-| 570 | button | مراجعة الحذف | ProductCatalogWorkspace |
-| 595 | button | السابق | ProductCatalogWorkspace |
-| 602 | button | التالي | ProductCatalogWorkspace |
+| 553 | button | `${t("detailUx.title")}: ${row.name}` | ProductCatalogWorkspace |
+| 563 | button | `${canManage && unlocked ? t("productWorkspaceUx.edit") : t("productWorkspaceUx.view")}: ${row.name}` | ProductCatalogWorkspace |
+| 572 | button | `${t("productWorkspaceUx.deleteReview")}: ${row.name}` | ProductCatalogWorkspace |
+| 598 | button | السابق | ProductCatalogWorkspace |
+| 605 | button | التالي | ProductCatalogWorkspace |
 
 ## client/src/components/merchant/ProductWorkspaceView.tsx
 
@@ -977,28 +977,21 @@
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 182 | button | تسمية ديناميكية / تحتاج مراجعة | WhatsAppPreview |
-| 291 | button | تسمية ديناميكية / تحتاج مراجعة | WhatsAppPreview |
-| 310 | button | تسمية ديناميكية / تحتاج مراجعة | WhatsAppPreview |
-| 313 | button | تسمية ديناميكية / تحتاج مراجعة | WhatsAppPreview |
-| 316 | button | تسمية ديناميكية / تحتاج مراجعة | WhatsAppPreview |
-| 374 | button | تسمية ديناميكية / تحتاج مراجعة | WhatsAppPreview |
-| 383 | button | تسمية ديناميكية / تحتاج مراجعة | WhatsAppPreview |
-| 393 | input | يكتب... | WhatsAppPreview |
-| 408 | button | تسمية ديناميكية / تحتاج مراجعة | WhatsAppPreview |
-| 418 | button | تسمية ديناميكية / تحتاج مراجعة | WhatsAppPreview |
-| 425 | button | تسمية ديناميكية / تحتاج مراجعة | WhatsAppPreview |
+| 291 | button | رجوع | WhatsAppPreview |
+| 387 | input | اكتب رسالة... | WhatsAppPreview |
+| 416 | button | تسمية ديناميكية / تحتاج مراجعة | WhatsAppPreview |
 
 ## client/src/components/AISuggestions.tsx
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 103 | Button | اقتراحات AI | AISuggestions |
-| 132 | Button | تسمية ديناميكية / تحتاج مراجعة | AISuggestions |
-| 150 | Button | تسمية ديناميكية / تحتاج مراجعة | AISuggestions |
-| 198 | Button | تسمية ديناميكية / تحتاج مراجعة | AISuggestions |
-| 225 | Button | توليد اقتراحات | AISuggestions |
-| 263 | Button | تسمية ديناميكية / تحتاج مراجعة | AISuggestions |
+| 107 | Button | اقتراحات AI | AISuggestions |
+| 137 | Button | توليد اقتراحات جديدة | AISuggestions |
+| 157 | Button | طي الاقتراحات | AISuggestions |
+| 191 | button | تسمية ديناميكية / تحتاج مراجعة | AISuggestions |
+| 212 | Button | تسمية ديناميكية / تحتاج مراجعة | AISuggestions |
+| 238 | Button | توليد اقتراحات | AISuggestions |
+| 277 | Button | تسمية ديناميكية / تحتاج مراجعة | AISuggestions |
 
 ## client/src/components/QuickActions.tsx
 
@@ -1936,27 +1929,27 @@
 | 515 | Button | تسمية ديناميكية / تحتاج مراجعة | KnowledgeSectionWorkspace |
 | 518 | Button | تسمية ديناميكية / تحتاج مراجعة | KnowledgeSectionWorkspace |
 | 529 | Button | تسمية ديناميكية / تحتاج مراجعة | KnowledgeSectionWorkspace |
-| 574 | Button | تسمية ديناميكية / تحتاج مراجعة | KnowledgeSectionWorkspace |
-| 586 | Button | تسمية ديناميكية / تحتاج مراجعة | KnowledgeSectionWorkspace |
-| 597 | Button | تسمية ديناميكية / تحتاج مراجعة | KnowledgeSectionWorkspace |
-| 646 | Button | تسمية ديناميكية / تحتاج مراجعة | KnowledgeSectionWorkspace |
-| 741 | select | sales_intel opportunities | KnowledgeSectionWorkspace |
-| 760 | Input | (500) | KnowledgeSectionWorkspace |
-| 769 | Textarea | (50000) | KnowledgeSectionWorkspace |
-| 778 | input | (500) | KnowledgeSectionWorkspace |
-| 796 | summary | تسمية ديناميكية / تحتاج مراجعة | KnowledgeSectionWorkspace |
-| 812 | input | تسمية ديناميكية / تحتاج مراجعة | KnowledgeSectionWorkspace |
-| 830 | Button | تسمية ديناميكية / تحتاج مراجعة | KnowledgeSectionWorkspace |
-| 852 | Button | تسمية ديناميكية / تحتاج مراجعة | KnowledgeSectionWorkspace |
-| 862 | Button | تسمية ديناميكية / تحتاج مراجعة | KnowledgeSectionWorkspace |
-| 871 | Button | تسمية ديناميكية / تحتاج مراجعة | KnowledgeSectionWorkspace |
-| 883 | Button | تسمية ديناميكية / تحتاج مراجعة | KnowledgeSectionWorkspace |
-| 898 | Button | تسمية ديناميكية / تحتاج مراجعة | KnowledgeSectionWorkspace |
-| 909 | Button | تسمية ديناميكية / تحتاج مراجعة | KnowledgeSectionWorkspace |
-| 924 | AlertDialogContent | تسمية ديناميكية / تحتاج مراجعة | KnowledgeSectionWorkspace |
-| 932 | Button | تسمية ديناميكية / تحتاج مراجعة | KnowledgeSectionWorkspace |
-| 935 | Button | تسمية ديناميكية / تحتاج مراجعة | KnowledgeSectionWorkspace |
-| 956 | Button | تسمية ديناميكية / تحتاج مراجعة | KnowledgeSectionWorkspace |
+| 574 | Button | `${c.open}: ${row.title}` | KnowledgeSectionWorkspace |
+| 587 | Button | تسمية ديناميكية / تحتاج مراجعة | KnowledgeSectionWorkspace |
+| 598 | Button | تسمية ديناميكية / تحتاج مراجعة | KnowledgeSectionWorkspace |
+| 647 | Button | تسمية ديناميكية / تحتاج مراجعة | KnowledgeSectionWorkspace |
+| 742 | select | sales_intel opportunities | KnowledgeSectionWorkspace |
+| 761 | Input | (500) | KnowledgeSectionWorkspace |
+| 770 | Textarea | (50000) | KnowledgeSectionWorkspace |
+| 779 | input | (500) | KnowledgeSectionWorkspace |
+| 797 | summary | تسمية ديناميكية / تحتاج مراجعة | KnowledgeSectionWorkspace |
+| 813 | input | تسمية ديناميكية / تحتاج مراجعة | KnowledgeSectionWorkspace |
+| 831 | Button | تسمية ديناميكية / تحتاج مراجعة | KnowledgeSectionWorkspace |
+| 853 | Button | تسمية ديناميكية / تحتاج مراجعة | KnowledgeSectionWorkspace |
+| 863 | Button | تسمية ديناميكية / تحتاج مراجعة | KnowledgeSectionWorkspace |
+| 872 | Button | تسمية ديناميكية / تحتاج مراجعة | KnowledgeSectionWorkspace |
+| 884 | Button | تسمية ديناميكية / تحتاج مراجعة | KnowledgeSectionWorkspace |
+| 899 | Button | تسمية ديناميكية / تحتاج مراجعة | KnowledgeSectionWorkspace |
+| 910 | Button | تسمية ديناميكية / تحتاج مراجعة | KnowledgeSectionWorkspace |
+| 925 | AlertDialogContent | تسمية ديناميكية / تحتاج مراجعة | KnowledgeSectionWorkspace |
+| 933 | Button | تسمية ديناميكية / تحتاج مراجعة | KnowledgeSectionWorkspace |
+| 936 | Button | تسمية ديناميكية / تحتاج مراجعة | KnowledgeSectionWorkspace |
+| 957 | Button | تسمية ديناميكية / تحتاج مراجعة | KnowledgeSectionWorkspace |
 
 ## client/src/components/KnowledgeConflictWorkspace.tsx
 
@@ -1997,16 +1990,16 @@
 | 430 | input | approve | editTitle newTitle |
 | 441 | Button | question | editTitle newTitle |
 | 460 | Button | question | editTitle newTitle |
-| 523 | Button | edit | KnowledgeFaqWorkspace |
-| 530 | Button | remove | KnowledgeFaqWorkspace |
-| 547 | Button | previous | KnowledgeFaqWorkspace |
-| 554 | Button | next | KnowledgeFaqWorkspace |
-| 570 | AlertDialogContent | discardTitle uncertainDiscard discardDescription keep discard | KnowledgeFaqWorkspace |
-| 580 | Button | keep | discardTitle |
-| 583 | Button | discard | discardTitle |
-| 591 | AlertDialogContent | deleteTitle deleteDescription cancelDelete saving confirmDelete | discardTitle |
-| 603 | Button | cancelDelete | deleteTitle |
-| 610 | Button | saving confirmDelete | deleteTitle |
+| 523 | Button | `${copy("edit")}: ${row.question}` | KnowledgeFaqWorkspace |
+| 531 | Button | `${copy("remove")}: ${row.question}` | KnowledgeFaqWorkspace |
+| 549 | Button | previous | KnowledgeFaqWorkspace |
+| 556 | Button | next | KnowledgeFaqWorkspace |
+| 572 | AlertDialogContent | discardTitle uncertainDiscard discardDescription keep discard | KnowledgeFaqWorkspace |
+| 582 | Button | keep | discardTitle |
+| 585 | Button | discard | discardTitle |
+| 593 | AlertDialogContent | deleteTitle deleteDescription cancelDelete saving confirmDelete | discardTitle |
+| 605 | Button | cancelDelete | deleteTitle |
+| 612 | Button | saving confirmDelete | deleteTitle |
 
 ## client/src/components/KnowledgeIntake.tsx
 

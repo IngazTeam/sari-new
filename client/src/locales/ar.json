@@ -7009,6 +7009,8 @@
     "text7": "12:00 م ✓✓"
   },
   "compAISuggestionsPage": {
+    "collapse": "طي الاقتراحات",
+    "copyFailed": "تعذر نسخ الرد. حاول مرة أخرى.",
     "text0": "تم نسخ الرد",
     "text1": "تم اختيار الرد",
     "text2": "اقتراحات الذكاء الاصطناعي",
@@ -7276,6 +7278,12 @@
     "text2": "تسجيل جاهز"
   },
   "compWhatsAppPreviewPage": {
+    "voicePreview": "معاينة رسالة صوتية",
+    "today": "اليوم",
+    "yesterday": "أمس",
+    "lastSeen": "آخر ظهور {{value}}",
+    "file": "ملف",
+    "dateUnavailable": "التاريخ غير متاح",
     "text0": "عميل",
     "text1": "يكتب...",
     "text2": "صورة",

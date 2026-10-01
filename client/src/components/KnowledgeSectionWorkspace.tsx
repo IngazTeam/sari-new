@@ -575,6 +575,7 @@ function Workspace({ scope }: { scope: string }) {
                           variant="outline"
                           disabled={loading || !!restorable}
                           onClick={() => void open(row.id)}
+                          aria-label={`${c.open}: ${row.title}`}
                         >
                           {c.open}
                         </Button>

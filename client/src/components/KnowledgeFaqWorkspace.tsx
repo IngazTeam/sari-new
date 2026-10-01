@@ -524,6 +524,7 @@ function FaqWorkspace({ cacheKey }: { cacheKey: string }) {
                           variant="outline"
                           disabled={busy || !!draft}
                           onClick={() => start(row)}
+                          aria-label={`${copy("edit")}: ${row.question}`}
                         >
                           {copy("edit")}
                         </Button>
@@ -534,6 +535,7 @@ function FaqWorkspace({ cacheKey }: { cacheKey: string }) {
                             setDeleting(row);
                             setError("");
                           }}
+                          aria-label={`${copy("remove")}: ${row.question}`}
                         >
                           {copy("remove")}
                         </Button>
