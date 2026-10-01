@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-01T17:32:25.139Z",
+  "generatedAt": "2026-10-01T17:52:52.999Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -402,8 +402,7 @@
         "auth.me",
         "merchants.getCurrent",
         "campaigns.workspace",
-        "campaigns.getStats",
-        "campaigns.getTimelineData"
+        "campaigns.performanceSnapshot"
       ],
       "removedMutations": [],
       "addedMutations": []

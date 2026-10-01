@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-01T17:32:25.139Z",
+  "generatedAt": "2026-10-01T17:52:52.999Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -2472,7 +2472,7 @@
     },
     {
       "file": "client/src/components/merchant/CampaignListWorkspace.tsx",
-      "hash": "97dd4f04e5cd",
+      "hash": "d04d0260861c",
       "queries": [
         "campaigns.workspace"
       ],
@@ -2567,10 +2567,9 @@
     },
     {
       "file": "client/src/components/merchant/CampaignPerformance.tsx",
-      "hash": "0a6b8e69ca95",
+      "hash": "41fc97903113",
       "queries": [
-        "campaigns.getStats",
-        "campaigns.getTimelineData"
+        "campaigns.performanceSnapshot"
       ],
       "mutations": [],
       "imperativeReads": [],
@@ -2578,27 +2577,27 @@
       "sections": [
         {
           "label": "",
-          "line": 32,
+          "line": 41,
           "tag": "h2"
         },
         {
           "label": "",
-          "line": 40,
+          "line": 50,
           "tag": "CardTitle"
         },
         {
           "label": "",
-          "line": 55,
+          "line": 65,
           "tag": "CardTitle"
         },
         {
           "label": "",
-          "line": 67,
+          "line": 77,
           "tag": "h3"
         },
         {
           "label": "",
-          "line": 78,
+          "line": 88,
           "tag": "summary"
         }
       ],
@@ -2606,24 +2605,18 @@
       "handlers": [],
       "queryStates": [
         {
-          "query": "campaigns.getStats",
-          "binding": "stats",
-          "line": 12,
+          "query": "campaigns.performanceSnapshot",
+          "binding": "query",
+          "line": 18,
           "errorSignal": true,
-          "loadingSignal": false,
-          "enabled": null
-        },
-        {
-          "query": "campaigns.getTimelineData",
-          "binding": "timeline",
-          "line": 13,
-          "errorSignal": true,
-          "loadingSignal": false,
+          "loadingSignal": true,
           "enabled": null
         }
       ],
       "conditions": [],
-      "imports": [],
+      "imports": [
+        "client/src/lib/campaign-navigation.ts"
+      ],
       "controlCount": 3
     },
     {
@@ -18544,16 +18537,15 @@
         "d522df9ef66d",
         "04aa9494edf8",
         "063bc9ae5950",
-        "23494e97dc39",
-        "1e79c8f6736e",
-        "ba0894828f3d"
+        "f8ec833f2ef7",
+        "c5587236260b",
+        "8bb8525a2fa2"
       ],
       "queries": [
         "auth.me",
         "merchants.getCurrent",
         "campaigns.workspace",
-        "campaigns.getStats",
-        "campaigns.getTimelineData"
+        "campaigns.performanceSnapshot"
       ],
       "mutations": [
         "campaigns.send",
@@ -32316,30 +32308,30 @@
       "review": "source-inventoried"
     },
     {
-      "id": "23494e97dc39",
+      "id": "f8ec833f2ef7",
       "file": "client/src/components/merchant/CampaignPerformance.tsx",
-      "line": 35,
+      "line": 45,
       "tag": "Button",
       "role": "",
       "kind": "action",
       "label": "",
       "section": "CampaignPerformance",
-      "binding": "() => { void stats.refetch(); void timeline.refetch(); onRefresh?.(); }",
+      "binding": "refresh",
       "type": "button",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": true,
+      "conditional": false,
       "conditions": [],
-      "disabled": "stats.isFetching || timeline.isFetching",
+      "disabled": "query.isFetching",
       "review": "source-inventoried"
     },
     {
-      "id": "1e79c8f6736e",
+      "id": "c5587236260b",
       "file": "client/src/components/merchant/CampaignPerformance.tsx",
-      "line": 58,
+      "line": 68,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -32358,9 +32350,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ba0894828f3d",
+      "id": "8bb8525a2fa2",
       "file": "client/src/components/merchant/CampaignPerformance.tsx",
-      "line": 78,
+      "line": 88,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -32375,9 +32367,7 @@
       "required": false,
       "conditional": true,
       "conditions": [
-        "rows.length > 0",
-        "!timeline.data",
-        "timeline.isError"
+        "rows.length > 0"
       ],
       "disabled": "",
       "review": "source-inventoried"

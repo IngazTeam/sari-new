@@ -13,7 +13,7 @@
 | /merchant/dashboard — نظرة عامة | 26 | 187 | 29 / 12 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/ai-hub — مركز المساعد | 1 | 1 | 0 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/analytics-hub — مركز التحليلات | 1 | 3 | 0 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/campaigns — الحملات | 4 | 35 | 5 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/campaigns — الحملات | 4 | 35 | 4 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/campaigns/new — إنشاء حملة | 2 | 13 | 2 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/campaigns/:id/edit — إنشاء حملة | 2 | 13 | 2 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/campaigns/:id — تفاصيل الحملة | 1 | 4 | 1 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -636,9 +636,9 @@
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 35 | Button | تسمية ديناميكية / تحتاج مراجعة | CampaignPerformance |
-| 58 | Button | تسمية ديناميكية / تحتاج مراجعة | CampaignPerformance |
-| 78 | summary | تسمية ديناميكية / تحتاج مراجعة | CampaignPerformance |
+| 45 | Button | تسمية ديناميكية / تحتاج مراجعة | CampaignPerformance |
+| 68 | Button | تسمية ديناميكية / تحتاج مراجعة | CampaignPerformance |
+| 88 | summary | تسمية ديناميكية / تحتاج مراجعة | CampaignPerformance |
 
 ## client/src/pages/merchant/NewCampaign.tsx
 

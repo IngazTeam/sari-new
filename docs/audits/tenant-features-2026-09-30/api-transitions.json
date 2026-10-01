@@ -1230,6 +1230,36 @@
           "contains": "getManualReviewSummary:"
         }
       ]
+    },
+    {
+      "routes": [
+        "/merchant/campaigns"
+      ],
+      "removed": [
+        "campaigns.getStats",
+        "campaigns.getTimelineData"
+      ],
+      "required": [
+        "campaigns.performanceSnapshot"
+      ],
+      "note": "Campaign performance now reads all-time completed counters and bounded UTC success logs in one repeatable-read snapshot. The client checks actor, tenant, period, contiguous days and totals; copy explicitly distinguishes stored records from verified receipts. The original aggregate and timeline APIs remain compatible.",
+      "evidence": [
+        "shared/campaign-performance.ts",
+        "server/campaign-performance.test.ts",
+        "server/campaign-performance.mysql.test.ts",
+        "server/campaign-performance-ui.test.ts",
+        "server/campaign-router-canonical-pentest.test.ts"
+      ],
+      "checks": [
+        {
+          "file": "server/routers-campaigns.ts",
+          "contains": "performanceSnapshot: permissionProcedure('analytics.read')"
+        },
+        {
+          "file": "client/src/components/merchant/CampaignPerformance.tsx",
+          "contains": "parsed.data.actorId===actorId&&parsed.data.merchantId===merchantId&&parsed.data.days===days"
+        }
+      ]
     }
   ]
 }

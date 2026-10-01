@@ -2,6 +2,7 @@ import { sql, type SQL } from 'drizzle-orm';
 import { getDb } from './db/connection';
 import { databaseTimeEpoch } from './db/time';
 import { campaignListInput,campaignPageSize,campaignWorkspaceSchema,type CampaignWorkspace } from '../shared/campaign-workspace';
+import { campaignPerformanceInput,campaignPerformanceSchema,type CampaignPerformanceSnapshot } from '../shared/campaign-performance';
 
 export class CampaignWorkspaceUnavailableError extends Error {
   constructor(){super('Campaign workspace is unavailable');this.name='CampaignWorkspaceUnavailableError';}
@@ -41,6 +42,34 @@ export async function readCampaignStatistics(merchantId:number) {
   identity(merchantId);
   try {const db=await getDb();if(!db)throw new CampaignWorkspaceUnavailableError();
     const result=await db.execute(totalsQuery(merchantId));return totals(one(result[0] as unknown as Row[])).legacy;
+  }catch{throw new CampaignWorkspaceUnavailableError();}
+}
+
+/** All-time counters and the UTC log window are read together. Neither source
+ * re-proves historical provider receipts or customer delivery. */
+export async function readCampaignPerformance(actorId:number,merchantId:number,raw:unknown,now=new Date()):Promise<CampaignPerformanceSnapshot> {
+  identity(actorId);identity(merchantId);const {days}=campaignPerformanceInput.parse(raw);
+  if(!Number.isFinite(now.getTime()))throw new CampaignWorkspaceUnavailableError();
+  const end=now.toISOString().slice(0,10),startDate=new Date(`${end}T00:00:00Z`);
+  startDate.setUTCDate(startDate.getUTCDate()-days+1);const start=startDate.toISOString().slice(0,10);
+  const cutoff=now.toISOString().slice(0,23).replace('T',' ');
+  try {
+    const db=await getDb();if(!db)throw new CampaignWorkspaceUnavailableError();
+    return await db.transaction(async tx=>{
+      const read:Read=async query=>{const result=await tx.execute(query);if(!Array.isArray(result[0]))throw new CampaignWorkspaceUnavailableError();return result[0] as Row[];};
+      if(integer(one(await read(sql`SELECT id FROM merchants WHERE id=${merchantId}`)).id)!==merchantId)throw new CampaignWorkspaceUnavailableError();
+      const stored=totals(one(await read(totalsQuery(merchantId)))).legacy;
+      const buckets=await read(sql`SELECT DATE_FORMAT(l.sentAt,'%Y-%m-%d') AS day,COUNT(*) AS accepted
+        FROM campaignLogs l INNER JOIN campaigns c ON c.id=l.campaignId
+        WHERE c.merchantId=${merchantId} AND l.status='success' AND l.sentAt>=${`${start} 00:00:00`} AND l.sentAt<=${cutoff}
+        GROUP BY DATE_FORMAT(l.sentAt,'%Y-%m-%d')`);
+      const byDay=new Map(buckets.map(row=>[String(row.day),integer(row.accepted)]));
+      const rows=Array.from({length:days},(_,index)=>{const day=new Date(startDate);day.setUTCDate(day.getUTCDate()+index);const date=day.toISOString().slice(0,10);return {date,acceptedByProvider:byDay.get(date)??0};});
+      return campaignPerformanceSchema.parse({actorId,merchantId,days,checkedAt:now.toISOString(),timezone:'UTC',
+        stats:{completed:stored.completedCampaigns,accepted:stored.totalAcceptedByProvider,recipients:stored.totalAcceptedByProvider+stored.totalUnconfirmed,
+          unconfirmed:stored.totalUnconfirmed,acceptanceRate:stored.providerAcceptanceRate,basis:'stored_campaign_counters'},
+        timeline:{start,end,total:rows.reduce((sum,row)=>sum+row.acceptedByProvider,0),rows,basis:'campaign_success_logs'}});
+    },{isolationLevel:'repeatable read',accessMode:'read only'});
   }catch{throw new CampaignWorkspaceUnavailableError();}
 }
 

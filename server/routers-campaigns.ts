@@ -1,6 +1,7 @@
 import { campaignListInput } from '../shared/campaign-workspace';
+import { campaignPerformanceInput } from '../shared/campaign-performance';
 import { hasPermission } from './_core/permissions';
-import { readCampaignWorkspace, readCampaignStatistics, CampaignWorkspaceUnavailableError } from './campaign-workspace';
+import { readCampaignWorkspace, readCampaignStatistics, readCampaignPerformance, CampaignWorkspaceUnavailableError } from './campaign-workspace';
 /**
  * Campaigns Router Module — Fixed & Hardened
  * Handles marketing campaign management, sending, and analytics
@@ -79,6 +80,10 @@ const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
 });
 
 export const campaignsRouter = router({
+    performanceSnapshot: permissionProcedure('analytics.read').input(campaignPerformanceInput).query(async ({ctx,input}) => {
+        try { return await readCampaignPerformance(ctx.user.id,ctx.merchantId,input); }
+        catch(error) { if(error instanceof CampaignWorkspaceUnavailableError) throw new TRPCError({code:'SERVICE_UNAVAILABLE',message:'تعذر تحميل أداء الحملات. حاول مجددًا.'}); throw error; }
+    }),
     workspace: permissionProcedure('analytics.read').input(campaignListInput).query(async ({ctx,input}) => {
         try { return {...await readCampaignWorkspace(ctx.user.id,ctx.merchantId,input),canManage:hasPermission(ctx.merchantRole,'campaigns.manage')}; }
         catch(error) { if(error instanceof CampaignWorkspaceUnavailableError) throw new TRPCError({code:'SERVICE_UNAVAILABLE',message:'تعذر تحميل الحملات. حاول مجددًا.'}); throw error; }

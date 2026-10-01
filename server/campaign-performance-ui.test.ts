@@ -1,88 +1,33 @@
 // @vitest-environment jsdom
-import React, { act } from 'react';
-import { createRoot, type Root } from 'react-dom/client';
-import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { campaignPerformanceEn } from '../client/src/locales/campaign-performance';
-const api = vi.hoisted(() => ({ stats: {} as any, timeline: {} as any, list: {} as any, days: vi.fn(), retryStats: vi.fn(), retryTimeline: vi.fn(), retryList: vi.fn() }));
-vi.mock('react-i18next', () => ({ useTranslation: () => ({ i18n: { language: 'en' }, t: (key: string, values: Record<string, unknown> = {}) => {
-  const text = campaignPerformanceEn[key.split('.').at(-1) as keyof typeof campaignPerformanceEn] ?? key;
-  return text.replace(/{{(\w+)}}/g, (_, name) => String(values[name] ?? ''));
-} }) }));
-vi.mock('@/lib/trpc', () => ({ trpc: { campaigns: {
-  list: { useQuery: () => ({ ...api.list, refetch: api.retryList }) },
-  delete: { useMutation: () => ({}) }, send: { useMutation: () => ({}) },
-  getSendProgress: { useQuery: () => ({}) }, getManualReviewSummary: { useQuery: () => ({}) },
-  acknowledgeManualReview: { useMutation: () => ({}) },
-  getStats: { useQuery: () => ({ ...api.stats, refetch: api.retryStats }) },
-  getTimelineData: { useQuery: (input: { days: number }) => { api.days(input.days); return { ...api.timeline, refetch: api.retryTimeline }; } },
-} } }));
-import { CampaignPerformance } from '../client/src/components/merchant/CampaignPerformance';
-let root: Root, container: HTMLDivElement;
-beforeEach(() => {
-  vi.clearAllMocks(); vi.stubGlobal('React', React); vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
-  api.stats = { data: { completedCampaigns: 2, totalAcceptedByProvider: 80, totalUnconfirmed: 20, providerAcceptanceRate: 80 } };
-  api.timeline = { data: [{ date: '2026-09-27', acceptedByProvider: 2 }, { date: '2026-09-28', acceptedByProvider: 3 }] };
-  api.list = { data: [] };
-  container = document.createElement('div'); document.body.append(container); root = createRoot(container);
-});
-afterEach(async () => { await act(async () => root.unmount()); container.remove(); vi.unstubAllGlobals(); });
-const render = () => act(async () => root.render(React.createElement(CampaignPerformance)));
-const click = (label: string) => act(async () => { const button = Array.from(container.querySelectorAll('button')).find(el => el.textContent === label); expect(button).toBeTruthy(); button!.click(); });
-
-it('distinguishes the all-time completed cohort from selected-period logs and delivery', async () => {
-  await render();
-  expect(container.textContent).toContain('Completed campaigns · all time');
-  expect(container.textContent).toContain('Out of 100 recipients in completed campaigns');
-  expect(container.textContent).toContain('5 messages with confirmed acceptance in this period');
-  expect(container.textContent).toContain('do not confirm delivery, reading, or sales');
-  expect(container.querySelectorAll('tbody tr')).toHaveLength(2);
-  expect(container.querySelector('tbody time')?.getAttribute('datetime')).toBe('2026-09-28');
-});
-it('changes the queried window with accessible period controls', async () => {
-  await render();
-  for (const days of [7, 90, 30]) {
-    await click(`${days} days`);
-    expect(api.days).toHaveBeenLastCalledWith(days);
-    expect(container.querySelector('[aria-pressed="true"]')?.textContent).toBe(`${days} days`);
-  }
-});
-it('shows a missing sample as unknown instead of a zero-percent performance result', async () => {
-  api.stats.data = { completedCampaigns: 0, totalAcceptedByProvider: 0, totalUnconfirmed: 0, providerAcceptanceRate: 0 };
-  api.timeline.data = [{ date: '2026-09-28', acceptedByProvider: 0 }];
-  await render();
-  expect(container.textContent).toContain('No sample to calculate a rate');
-  expect(container.textContent).not.toContain('0%');
-  expect(container.querySelector('svg[role="img"]')).toBeNull();
-  expect(container.querySelector('tbody td')?.textContent).toBe('0');
-});
-it('hides stale statistics on failure while keeping the independent timeline usable', async () => {
-  api.stats.isError = true;
-  await render();
-  expect(container.textContent).not.toContain('80%');
-  expect(container.textContent).toContain('5 messages with confirmed acceptance');
-  await click('Retry');
-  expect(api.retryStats).toHaveBeenCalledOnce(); expect(api.retryTimeline).not.toHaveBeenCalled();
-});
-it('hides a failed timeline rather than displaying cached figures as current', async () => {
-  api.timeline.isError = true;
-  await render();
-  expect(container.textContent).toContain('80%');
-  expect(container.textContent).not.toContain('5 messages with confirmed acceptance');
-  expect(container.querySelector('table')).toBeNull();
-  await click('Retry'); expect(api.retryTimeline).toHaveBeenCalledOnce();
-});
-it('keeps pending data distinct from an empty period', async () => {
-  api.stats = {}; api.timeline = {};
-  await render();
-  expect(container.querySelectorAll('[role="status"]')).toHaveLength(2);
-  expect(container.textContent).not.toContain('No messages');
-  expect(container.querySelector('dl')).toBeNull();
-});
-it('refreshes both sources and prevents duplicate refresh while fetching', async () => {
-  const onRefresh = vi.fn();
-  await act(async () => root.render(React.createElement(CampaignPerformance, { onRefresh }))); await click('Refresh data');
-  expect(api.retryStats).toHaveBeenCalledOnce(); expect(api.retryTimeline).toHaveBeenCalledOnce();
-  expect(onRefresh).toHaveBeenCalledOnce();
-  api.timeline.isFetching = true; await render(); await click('Refresh data');
-  expect(api.retryTimeline).toHaveBeenCalledOnce();
-});
+import React,{act} from 'react';
+import {createRoot,type Root} from 'react-dom/client';
+import {Router} from 'wouter';
+import {memoryLocation} from 'wouter/memory-location';
+import {afterEach,beforeEach,expect,it,vi} from 'vitest';
+import {campaignPerformanceEn as en,campaignPerformanceAr as ar} from '../client/src/locales/campaign-performance';
+const api=vi.hoisted(()=>({query:{} as any,input:vi.fn(),retry:vi.fn(),language:'en'}));
+vi.mock('react-i18next',()=>({useTranslation:()=>({i18n:{language:api.language},t:(key:string,values:Record<string,unknown>={})=>{
+ const copy=api.language==='ar'?ar:en,text=copy[key.split('.').at(-1) as keyof typeof en]??key;
+ return text.replace(/{{(\w+)}}/g,(_,name)=>String(values[name]??''));
+}})}));
+vi.mock('@/lib/trpc',()=>({trpc:{campaigns:{performanceSnapshot:{useQuery:(input:any,options:any)=>{api.input(input,options);return {...api.query,data:typeof api.query.data==='function'?api.query.data(input.days):api.query.data,refetch:api.retry};}}}}}));
+import {CampaignPerformance} from '../client/src/components/merchant/CampaignPerformance';
+const fixture=(days=30)=>{
+ const rows=Array.from({length:days},(_,index)=>{const date=new Date('2026-10-01T00:00:00Z');date.setUTCDate(date.getUTCDate()-days+1+index);return {date:date.toISOString().slice(0,10),acceptedByProvider:index===days-1?5:0};});
+ return {actorId:7,merchantId:20,days,checkedAt:'2026-10-01T12:00:00.000Z',timezone:'UTC',stats:{completed:2,accepted:80,recipients:100,unconfirmed:20,acceptanceRate:80,basis:'stored_campaign_counters'},timeline:{start:rows[0].date,end:rows.at(-1)!.date,total:5,basis:'campaign_success_logs',rows}};
+};
+let root:Root,container:HTMLDivElement,memory:ReturnType<typeof memoryLocation>;
+beforeEach(()=>{vi.clearAllMocks();vi.stubGlobal('React',React);vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT',true);api.language='en';api.query={data:fixture,error:null,isLoading:false,isFetching:false};memory=memoryLocation({path:'/merchant/campaigns?tab=performance&status=sending',record:true});container=document.createElement('div');document.body.append(container);root=createRoot(container);});
+afterEach(async()=>{await act(async()=>root.unmount());container.remove();vi.unstubAllGlobals();});
+const render=(onRefresh?:()=>void,actorId=7)=>act(async()=>root.render(React.createElement(Router,{hook:memory.hook,searchHook:memory.searchHook},React.createElement(CampaignPerformance,{actorId,merchantId:20,onRefresh}))));
+const click=(label:string)=>act(async()=>{const button=Array.from(container.querySelectorAll('button')).find(el=>el.textContent===label);expect(button).toBeTruthy();button!.click();});
+it('distinguishes all-time stored counters from the bounded UTC logs without claiming delivery',async()=>{await render();expect(container.textContent).toContain(en.allTime);expect(container.textContent).toContain('Out of 100 recipients');expect(container.textContent).toContain('5 success records');expect(container.textContent).toContain(en.scope);expect(container.querySelectorAll('tbody tr')).toHaveLength(30);expect(container.querySelector('tbody time')?.getAttribute('datetime')).toBe('2026-10-01');});
+it('restores period controls from the URL and preserves the list selection when switching',async()=>{memory.navigate('/merchant/campaigns?tab=performance&days=7&status=sending');await render();expect(api.input.mock.calls.at(-1)?.[0]).toEqual({days:7});for(const days of [90,30,7]){await click(`${days} days`);expect(api.input.mock.calls.at(-1)?.[0]).toEqual({days});expect(container.querySelector('[aria-pressed=true]')?.textContent).toBe(`${days} days`);expect(memory.history?.at(-1)).toContain('status=sending');}await act(async()=>memory.navigate('/merchant/campaigns?tab=performance&days=90'));expect(container.querySelector('[aria-pressed=true]')?.textContent).toBe('90 days');});
+it('normalizes a partial numeric window without querying a fabricated period',async()=>{memory.navigate('/merchant/campaigns?tab=performance&days=7x');await render();expect(api.input.mock.calls.at(-1)?.[0]).toEqual({days:30});});
+it('shows missing sample as unknown and a real empty log window as zero',async()=>{api.query.data=(days:number)=>{const data=fixture(days);return {...data,stats:{...data.stats,completed:0,accepted:0,recipients:0,unconfirmed:0,acceptanceRate:0},timeline:{...data.timeline,total:0,rows:data.timeline.rows.map(row=>({...row,acceptedByProvider:0}))}};};await render();expect(container.textContent).toContain(en.noSample);expect(container.textContent).not.toContain('0%');expect(container.textContent).toContain(en.empty);expect(container.querySelector('svg[role=img]')).toBeNull();expect(container.querySelector('tbody td')?.textContent).toBe('0');});
+it('hides both cached sources when a snapshot fails and retries only the snapshot',async()=>{api.query.error=Error('Private storage error');await render();expect(container.textContent).not.toContain('80%');expect(container.querySelector('table')).toBeNull();expect(container.textContent).toContain(en.loadFailed);expect(container.textContent).not.toContain('Private');await click(en.retry);expect(api.retry).toHaveBeenCalledOnce();});
+it('keeps loading distinct from empty success',async()=>{api.query={isLoading:true};await render();expect(container.querySelectorAll('[role=status]')).toHaveLength(1);expect(container.textContent).not.toContain(en.empty);expect(container.querySelector('dl')).toBeNull();});
+it.each(['actor','tenant','period','duplicate-day','gap','total','rate','basis'])('rejects a mismatched or contradictory %s snapshot',async mode=>{api.query.data=(days:number)=>{const data=fixture(days);if(mode==='actor')data.actorId=8;if(mode==='tenant')data.merchantId=99;if(mode==='period')return fixture(7);if(mode==='duplicate-day')data.timeline.rows[1].date=data.timeline.rows[0].date;if(mode==='gap')data.timeline.rows.pop();if(mode==='total')data.timeline.total=9;if(mode==='rate')data.stats.acceptanceRate=70;if(mode==='basis')data.stats.basis='verified_receipts';return data;};await render();expect(container.textContent).toContain(en.loadFailed);expect(container.querySelector('dl')).toBeNull();expect(container.querySelector('table')).toBeNull();});
+it('hides the prior account immediately after a scope switch',async()=>{await render();await render(undefined,9);expect(container.textContent).toContain(en.loadFailed);expect(container.textContent).not.toContain('80%');});
+it('refreshes the coherent snapshot and prevents repeated refresh while fetching',async()=>{const refresh=vi.fn();await render(refresh);await click(en.refresh);expect(api.retry).toHaveBeenCalledOnce();expect(refresh).toHaveBeenCalledOnce();api.query.isFetching=true;await render(refresh);await click(en.refresh);expect(api.retry).toHaveBeenCalledOnce();});
+it('renders Arabic copy without missing translation keys',async()=>{api.language='ar';await render();expect(container.textContent).toContain(ar.scope);expect(container.textContent).not.toContain('merchantUx.');});

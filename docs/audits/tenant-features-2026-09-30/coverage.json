@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-01T17:32:25.139Z",
+  "generatedAt": "2026-10-01T17:52:52.999Z",
   "definition": "Every registered route is accounted for; source inventory and design completion are different statuses.",
   "routes": [
     {
@@ -7479,16 +7479,15 @@
         "d522df9ef66d",
         "04aa9494edf8",
         "063bc9ae5950",
-        "23494e97dc39",
-        "1e79c8f6736e",
-        "ba0894828f3d"
+        "f8ec833f2ef7",
+        "c5587236260b",
+        "8bb8525a2fa2"
       ],
       "queries": [
         "auth.me",
         "merchants.getCurrent",
         "campaigns.workspace",
-        "campaigns.getStats",
-        "campaigns.getTimelineData"
+        "campaigns.performanceSnapshot"
       ],
       "mutations": [
         "campaigns.send",
@@ -8255,30 +8254,30 @@
           "review": "source-inventoried"
         },
         {
-          "id": "23494e97dc39",
+          "id": "f8ec833f2ef7",
           "file": "client/src/components/merchant/CampaignPerformance.tsx",
-          "line": 35,
+          "line": 45,
           "tag": "Button",
           "role": "",
           "kind": "action",
           "label": "",
           "section": "CampaignPerformance",
-          "binding": "() => { void stats.refetch(); void timeline.refetch(); onRefresh?.(); }",
+          "binding": "refresh",
           "type": "button",
           "options": [],
           "min": "",
           "max": "",
           "maxLength": "",
           "required": false,
-          "conditional": true,
+          "conditional": false,
           "conditions": [],
-          "disabled": "stats.isFetching || timeline.isFetching",
+          "disabled": "query.isFetching",
           "review": "source-inventoried"
         },
         {
-          "id": "1e79c8f6736e",
+          "id": "c5587236260b",
           "file": "client/src/components/merchant/CampaignPerformance.tsx",
-          "line": 58,
+          "line": 68,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -8297,9 +8296,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "ba0894828f3d",
+          "id": "8bb8525a2fa2",
           "file": "client/src/components/merchant/CampaignPerformance.tsx",
-          "line": 78,
+          "line": 88,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -8314,9 +8313,7 @@
           "required": false,
           "conditional": true,
           "conditions": [
-            "rows.length > 0",
-            "!timeline.data",
-            "timeline.isError"
+            "rows.length > 0"
           ],
           "disabled": "",
           "review": "source-inventoried"

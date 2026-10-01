@@ -35,7 +35,7 @@ export function CampaignListWorkspace({actorId,merchantId}:{actorId:number;merch
   const matches=parsed.success&&parsed.data.actorId===actorId&&parsed.data.merchantId===merchantId&&campaignSelectionKey(parsed.data.selection)===selectionKey;
   const data=!query.error&&matches?parsed.data:undefined;
   const send=trpc.campaigns.send.useMutation(),remove=trpc.campaigns.delete.useMutation(),review=trpc.campaigns.acknowledgeManualReview.useMutation();
-  const utils=trpc.useUtils(),refresh=()=>{void query.refetch();void utils.campaigns.getStats.invalidate();};
+  const utils=trpc.useUtils(),refresh=()=>{void query.refetch();void utils.campaigns.performanceSnapshot.invalidate();};
   const names={draft:t('merchantUx.campaignWorkspace.draft'),scheduled:t('merchantUx.campaignWorkspace.scheduledStatus'),sending:t('merchantUx.campaignWorkspace.sending'),completed:t('merchantUx.campaignWorkspace.completedStatus'),failed:t('merchantUx.campaignWorkspace.failed')};
   const locale=i18n.language.startsWith('ar')?'ar-SA':'en-US',number=(value:number)=>value.toLocaleString(locale);
   const date=(value:string|null)=>{
@@ -77,7 +77,7 @@ export function CampaignListWorkspace({actorId,merchantId}:{actorId:number;merch
     </dl>
     {data.needsReview>0&&<aside className="cw-review"><AlertCircle aria-hidden="true" /><div><h2>{t('merchantUx.campaignWorkspace.reviewTitle')}</h2><p>{t('merchantUx.campaignWorkspace.reviewHint',{count:data.needsReview})}</p></div><Button variant="outline" onClick={()=>change({review:1,status:null,page:null,tab:'list'})}>{t('merchantUx.campaignWorkspace.showReview')}</Button></aside>}
     <nav className="cw-tabs" aria-label={t('merchantUx.campaignWorkspace.title')}><Button variant={tab==='list'?'default':'ghost'} aria-current={tab==='list'?'page':undefined} onClick={()=>change({tab:'list'})}>{t('merchantUx.campaignWorkspace.list')}</Button><Button variant={tab==='performance'?'default':'ghost'} aria-current={tab==='performance'?'page':undefined} onClick={()=>change({tab:'performance'})}>{t('merchantUx.campaignWorkspace.performance')}</Button></nav>
-    {tab==='performance'?<CampaignPerformance onRefresh={refresh}/>:<section className="cw-list" aria-busy={query.isFetching}>
+    {tab==='performance'?<CampaignPerformance actorId={actorId} merchantId={merchantId} onRefresh={()=>{void query.refetch();}}/>:<section className="cw-list" aria-busy={query.isFetching}>
       <div className="cw-filters"><label className="cw-search"><span>{t('merchantUx.campaignWorkspace.search')}</span><div><Search aria-hidden="true" /><input maxLength={200} value={searchValue} placeholder={t('merchantUx.campaignWorkspace.searchHint')} onChange={event=>setSearchEdit({source:search,value:event.target.value})}/></div></label>
         <label><span>{t('merchantUx.campaignWorkspace.status')}</span><select value={selection.status} onChange={event=>change({status:event.target.value,page:null})}><option value="all">{t('merchantUx.campaignWorkspace.allStatuses')}</option>{Object.entries(names).map(([value,name])=><option key={value} value={value}>{name}</option>)}</select></label>
         <label className="cw-check"><input type="checkbox" checked={selection.needsReview} onChange={event=>change({review:event.target.checked?1:null,page:null})}/>{t('merchantUx.campaignWorkspace.reviewOnly')}</label>

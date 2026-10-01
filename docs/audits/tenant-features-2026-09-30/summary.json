@@ -5,7 +5,7 @@
   "browserRequests": 4,
   "imperativeReads": 39,
   "unresolvedReads": 0,
-  "queryCalls": 308,
+  "queryCalls": 307,
   "errorSignalMissing": 116,
   "choices": 62,
   "conditions": 1160
