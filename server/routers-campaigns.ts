@@ -57,6 +57,8 @@ const campaignImageUrlSchema = z.string().url().max(500).refine(value => {
     }
 }, { message: 'Campaign images must use a public HTTPS URL' });
 
+const campaignIdSchema = z.number().int().positive().max(Number.MAX_SAFE_INTEGER);
+
 // Validate at the server boundary as API clients can bypass the campaign form.
 const campaignScheduleSchema = z.date()
     .max(new Date('2038-01-19T03:14:07Z'), { message: 'موعد الحملة خارج النطاق المدعوم' })
@@ -87,7 +89,7 @@ export const campaignsRouter = router({
 
     // Get single campaign
     getById: permissionProcedure('analytics.read')
-        .input(z.object({ id: z.number() }))
+        .input(z.object({ id: campaignIdSchema }).strict())
         .query(async ({ input, ctx }) => {
             const campaign = await getCampaignById(input.id);
             if (!campaign) {
@@ -139,7 +141,7 @@ export const campaignsRouter = router({
     // Update campaign
     update: permissionProcedure('campaigns.manage')
         .input(z.object({
-            id: z.number().int().positive(),
+            id: campaignIdSchema,
             name: z.string().trim().min(1).max(255).optional(),
             message: z.string().trim().min(1).max(3800).optional(),
             imageUrl: campaignImageUrlSchema.nullable().optional(),
@@ -177,7 +179,7 @@ export const campaignsRouter = router({
 
     // FIX #4: Delete campaign — real DELETE instead of soft-delete to failed
     delete: permissionProcedure('campaigns.manage')
-        .input(z.object({ id: z.number() }))
+        .input(z.object({ id: campaignIdSchema }).strict())
         .mutation(async ({ input, ctx }) => {
             const campaign = await getCampaignById(input.id);
             if (!campaign) {
@@ -195,14 +197,15 @@ export const campaignsRouter = router({
             }
 
             // Real delete — removes campaign and its logs
-            await deleteCampaign(input.id);
+            const removed = await deleteCampaign(input.id, merchant.id);
+            if (!removed) throw new TRPCError({ code: 'CONFLICT', message: 'تغيرت حالة الحملة أو لديها إرسال غير محسوم. حدّث الصفحة وراجع حالتها قبل حذفها.' });
             return { success: true };
         }),
 
     // Durable send: consent-gated recipients are committed to an outbox in the
     // same transaction that claims the campaign. Provider I/O never runs here.
     send: permissionProcedure('campaigns.manage')
-        .input(z.object({ id: z.number() }))
+        .input(z.object({ id: campaignIdSchema }).strict())
         .mutation(async ({ input, ctx }) => {
             const campaign = await getCampaignById(input.id);
             if (!campaign) {
@@ -314,7 +317,7 @@ export const campaignsRouter = router({
 
     // FIX #9: Get send progress for live tracking
     getSendProgress: permissionProcedure('analytics.read')
-        .input(z.object({ id: z.number() }))
+        .input(z.object({ id: campaignIdSchema }).strict())
         .query(async ({ input, ctx }) => {
             const campaign = await getCampaignById(input.id);
             if (!campaign) {
@@ -343,7 +346,7 @@ export const campaignsRouter = router({
 
     // Acknowledgement closes uncertain outcomes without deleting or resending.
     acknowledgeManualReview: permissionProcedure('campaigns.manage')
-        .input(z.object({ id: z.number().int().positive() }).strict())
+        .input(z.object({ id: campaignIdSchema }).strict())
         .mutation(async ({ input, ctx }) => {
             const campaign = await getCampaignById(input.id);
             if (!campaign) {
@@ -394,7 +397,7 @@ export const campaignsRouter = router({
 
     // Get campaign report with logs
     getReport: permissionProcedure('analytics.read')
-        .input(z.object({ id: z.number() }))
+        .input(z.object({ id: campaignIdSchema }).strict())
         .query(async ({ input, ctx }) => {
             const campaign = await getCampaignById(input.id);
             if (!campaign) {

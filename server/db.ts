@@ -1,4 +1,5 @@
 import { normalizeProductMoneyWrite } from '../shared/product-money';
+import { deleteTenantCampaign } from './campaign-delete';
 import {
   eq, ne, and, or, desc, gte, lte, lt, gt, sql, like, isNull, inArray, notInArray, type InferSelectModel, type InferInsertModel
 } from "drizzle-orm";
@@ -1405,7 +1406,7 @@ export async function updateMessage(id: number, data: Partial<InsertMessage>): P
 
 export async function createCampaign(campaign: InsertCampaign): Promise<Campaign | undefined> {
   const db = await getDb();
-  if (!db) return undefined;
+  if (!db) throw new Error('Database not available');
 
   const result = await db.insert(campaigns).values(campaign);
   const insertedId = Number((result[0] as any).insertId);
@@ -1415,7 +1416,7 @@ export async function createCampaign(campaign: InsertCampaign): Promise<Campaign
 
 export async function getCampaignById(id: number): Promise<Campaign | undefined> {
   const db = await getDb();
-  if (!db) return undefined;
+  if (!db) throw new Error('Database not available');
 
   const result = await db.select().from(campaigns).where(eq(campaigns.id, id)).limit(1);
   return result.length > 0 ? result[0] : undefined;
@@ -1426,7 +1427,7 @@ export async function getCampaignsByMerchantId(
   opts?: { limit?: number; offset?: number }
 ): Promise<Campaign[]> {
   const db = await getDb();
-  if (!db) return [];
+  if (!db) throw new Error('Database not available');
 
   let query = db
     .select()
@@ -1444,14 +1445,14 @@ export async function getCampaignsByMerchantId(
 
 export async function getAllCampaigns(): Promise<Campaign[]> {
   const db = await getDb();
-  if (!db) return [];
+  if (!db) throw new Error('Database not available');
 
   return db.select().from(campaigns).orderBy(desc(campaigns.createdAt));
 }
 
 export async function getAllCampaignsWithMerchants() {
   const db = await getDb();
-  if (!db) return [];
+  if (!db) throw new Error('Database not available');
 
   return db
     .select({
@@ -1475,7 +1476,7 @@ export async function getAllCampaignsWithMerchants() {
 
 export async function updateCampaign(id: number, data: Partial<InsertCampaign>): Promise<void> {
   const db = await getDb();
-  if (!db) return;
+  if (!db) throw new Error('Database not available');
 
   await db.update(campaigns).set(data).where(eq(campaigns.id, id));
 }
@@ -1492,18 +1493,13 @@ export async function updateEditableCampaign(id: number, merchantId: number, dat
   return result.affectedRows > 0;
 }
 
-export async function deleteCampaign(id: number): Promise<void> {
-  const db = await getDb();
-  if (!db) return;
-
-  // Delete logs first (foreign key cascade may not be set)
-  await deleteCampaignLogsByCampaignId(id);
-  await db.delete(campaigns).where(eq(campaigns.id, id));
+export async function deleteCampaign(id: number, merchantId: number): Promise<boolean> {
+  return deleteTenantCampaign(id, merchantId);
 }
 
 export async function deleteCampaignLogsByCampaignId(campaignId: number): Promise<void> {
   const db = await getDb();
-  if (!db) return;
+  if (!db) throw new Error('Database not available');
 
   await db.delete(campaignLogs).where(eq(campaignLogs.campaignId, campaignId));
 }
@@ -1517,7 +1513,7 @@ export async function deleteCampaignLogsByCampaignId(campaignId: number): Promis
  */
 export async function createCampaignLog(log: InsertCampaignLog): Promise<CampaignLog | undefined> {
   const db = await getDb();
-  if (!db) return undefined;
+  if (!db) throw new Error('Database not available');
 
   const result = await db.insert(campaignLogs).values(log);
   const insertedId = Number((result[0] as any).insertId);
@@ -1530,7 +1526,7 @@ export async function createCampaignLog(log: InsertCampaignLog): Promise<Campaig
  */
 export async function getCampaignLogById(id: number): Promise<CampaignLog | undefined> {
   const db = await getDb();
-  if (!db) return undefined;
+  if (!db) throw new Error('Database not available');
 
   const result = await db.select().from(campaignLogs).where(eq(campaignLogs.id, id)).limit(1);
   return result.length > 0 ? result[0] : undefined;
@@ -1541,7 +1537,7 @@ export async function getCampaignLogById(id: number): Promise<CampaignLog | unde
  */
 export async function getCampaignLogsByCampaignId(campaignId: number): Promise<CampaignLog[]> {
   const db = await getDb();
-  if (!db) return [];
+  if (!db) throw new Error('Database not available');
 
   return db
     .select()
@@ -1555,7 +1551,7 @@ export async function getCampaignLogsByCampaignId(campaignId: number): Promise<C
  */
 export async function getCampaignLogsWithStats(campaignId: number) {
   const db = await getDb();
-  if (!db) return { logs: [], stats: { total: 0, success: 0, failed: 0, pending: 0, successRate: 0 } };
+  if (!db) throw new Error('Database not available');
 
   const logs = await getCampaignLogsByCampaignId(campaignId);
 
@@ -1575,7 +1571,7 @@ export async function getCampaignLogsWithStats(campaignId: number) {
  */
 export async function updateCampaignLog(id: number, data: Partial<InsertCampaignLog>): Promise<void> {
   const db = await getDb();
-  if (!db) return;
+  if (!db) throw new Error('Database not available');
 
   await db.update(campaignLogs).set(data).where(eq(campaignLogs.id, id));
 }

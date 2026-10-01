@@ -1,142 +1,15 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { appRouter } from './routers';
-import * as db from './db';
-
-describe('Campaign Send API', () => {
-  let testMerchantId: number;
-  let testCampaignId: number;
-
-  beforeAll(async () => {
-    // Create test merchant (userId 1 should exist from other tests)
-    const merchant = await db.createMerchant({
-      userId: 1,
-      businessName: 'Test Store for Campaign Send',
-      ownerName: 'Test Owner',
-      email: 'campaignsend@test.com',
-      phone: '966500000099',
-      status: 'active',
-    });
-    testMerchantId = merchant.id;
-
-    // Create test campaign with proper targetAudience format
-    const campaign = await db.createCampaign({
-      merchantId: testMerchantId,
-      name: 'Test Campaign to Send',
-      message: 'Hello from test campaign',
-      targetAudience: JSON.stringify(['966500000001', '966500000002']),
-      totalRecipients: 2,
-      status: 'draft',
-    });
-    testCampaignId = campaign.id;
-  });
-
-  afterAll(async () => {
-    // Cleanup
-    if (testCampaignId) {
-      await db.updateCampaign(testCampaignId, { status: 'failed' });
-    }
-  });
-
-  it('should verify campaign exists', async () => {
-    const campaign = await db.getCampaignById(testCampaignId);
-    expect(campaign).toBeDefined();
-    expect(campaign?.merchantId).toBe(testMerchantId);
-  });
-
-  it('should reject sending already sent campaign', async () => {
-    // Update to completed manually
-    await db.updateCampaign(testCampaignId, { status: 'completed' });
-    
-    // Get merchant to find userId
-    const merchant = await db.getMerchantById(testMerchantId);
-    if (!merchant) throw new Error('Merchant not found');
-
-    const caller = appRouter.createCaller({
-      user: {
-        id: merchant.userId.toString(),
-        openId: 'test-open-id-campaign-send',
-        name: 'Test Owner',
-        email: 'campaignsend@test.com',
-        role: 'user',
-      },
-    });
-
-    // Should fail because already completed
-    await expect(
-      caller.campaigns.send({ id: testCampaignId })
-    ).rejects.toThrow();
-
-    // Reset to draft for other tests
-    await db.updateCampaign(testCampaignId, { status: 'draft' });
-  });
-
-  it('should reject sending campaign with invalid target audience', async () => {
-    // Update existing campaign with invalid JSON temporarily
-    const originalAudience = (await db.getCampaignById(testCampaignId))?.targetAudience;
-    await db.updateCampaign(testCampaignId, { targetAudience: 'invalid-json', status: 'draft' });
-
-    // Get merchant to find userId
-    const merchant = await db.getMerchantById(testMerchantId);
-    if (!merchant) throw new Error('Merchant not found');
-
-    const caller = appRouter.createCaller({
-      user: {
-        id: merchant.userId.toString(),
-        openId: 'test-open-id-campaign-send',
-        name: 'Test Owner',
-        email: 'campaignsend@test.com',
-        role: 'user',
-      },
-    });
-
-    await expect(
-      caller.campaigns.send({ id: testCampaignId })
-    ).rejects.toThrow();
-
-    // Restore original
-    await db.updateCampaign(testCampaignId, { targetAudience: originalAudience || '', status: 'draft' });
-  });
-
-  it('should reject sending campaign with no recipients', async () => {
-    // Update existing campaign with empty recipients temporarily
-    const originalAudience = (await db.getCampaignById(testCampaignId))?.targetAudience;
-    await db.updateCampaign(testCampaignId, { targetAudience: JSON.stringify([]), status: 'draft' });
-
-    // Get merchant to find userId
-    const merchant = await db.getMerchantById(testMerchantId);
-    if (!merchant) throw new Error('Merchant not found');
-
-    const caller = appRouter.createCaller({
-      user: {
-        id: merchant.userId.toString(),
-        openId: 'test-open-id-campaign-send',
-        name: 'Test Owner',
-        email: 'campaignsend@test.com',
-        role: 'user',
-      },
-    });
-
-    await expect(
-      caller.campaigns.send({ id: testCampaignId })
-    ).rejects.toThrow();
-
-    // Restore original
-    await db.updateCampaign(testCampaignId, { targetAudience: originalAudience || '', status: 'draft' });
-  });
-
-  it('should reject unauthorized merchant from sending campaign', async () => {
-    const caller = appRouter.createCaller({
-      user: {
-        id: '99999',
-        openId: 'unauthorized-open-id',
-        name: 'Unauthorized User',
-        email: 'unauthorized@test.com',
-        role: 'user',
-      },
-    });
-
-    await expect(
-      caller.campaigns.send({ id: testCampaignId })
-    ).rejects.toThrow('FORBIDDEN');
-  });
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+const mocks=vi.hoisted(()=>({merchant:vi.fn(),campaign:vi.fn(),instance:vi.fn(),subscription:vi.fn(),customers:vi.fn(),enqueue:vi.fn()}));
+vi.mock('./accounts/merchant-access',()=>({resolveMerchantAccess:vi.fn().mockResolvedValue({merchantId:73,role:'owner',memberId:1})}));
+vi.mock('./db',async original=>({...await original<typeof import('./db')>(),getMerchantById:mocks.merchant,getCampaignById:mocks.campaign,getPrimaryWhatsAppInstance:mocks.instance,getActiveSubscriptionByMerchantId:mocks.subscription,getConversationsByMerchantId:mocks.customers}));
+vi.mock('./automation/campaign-delivery-outbox',async original=>({...await original<typeof import('./automation/campaign-delivery-outbox')>(),enqueueCampaignDeliveries:mocks.enqueue}));
+import {campaignsRouter} from './routers-campaigns';
+const caller=()=>campaignsRouter.createCaller({user:{id:21,role:'user'}} as any);
+beforeEach(()=>{for(const mock of Object.values(mocks))mock.mockReset();mocks.merchant.mockResolvedValue({id:73,status:'active'});mocks.campaign.mockResolvedValue({id:7,merchantId:73,status:'draft',message:'Fixture',targetAudience:'{}'});mocks.instance.mockResolvedValue({id:5,status:'active'});mocks.subscription.mockResolvedValue({id:6});mocks.customers.mockResolvedValue([]);});
+describe('campaign send boundaries without database or provider side effects',()=>{
+  it('returns the requested campaign of the verified tenant',async()=>{expect(await caller().getById({id:7})).toMatchObject({id:7,merchantId:73});expect(mocks.campaign).toHaveBeenCalledWith(7);});
+  it('rejects a completed campaign before reading recipients or dispatching',async()=>{mocks.campaign.mockResolvedValue({id:7,merchantId:73,status:'completed'});await expect(caller().send({id:7})).rejects.toMatchObject({code:'BAD_REQUEST',message:'Campaign already sent or in progress'});expect(mocks.customers).not.toHaveBeenCalled();expect(mocks.enqueue).not.toHaveBeenCalled();});
+  it('rejects an invalid audience for its targeting error rather than an unrelated access failure',async()=>{mocks.campaign.mockResolvedValue({id:7,merchantId:73,status:'draft',targetAudience:'invalid-json'});await expect(caller().send({id:7})).rejects.toMatchObject({code:'BAD_REQUEST',message:'Campaign targeting must be reviewed before sending'});expect(mocks.enqueue).not.toHaveBeenCalled();});
+  it('rejects an empty matched audience before any dispatch',async()=>{await expect(caller().send({id:7})).rejects.toMatchObject({code:'BAD_REQUEST',message:'No customers match the targeting criteria'});expect(mocks.enqueue).not.toHaveBeenCalled();});
+  it('rejects a different tenant before looking up its channel or recipients',async()=>{mocks.campaign.mockResolvedValue({id:7,merchantId:99,status:'draft'});await expect(caller().send({id:7})).rejects.toMatchObject({code:'FORBIDDEN'});expect(mocks.instance).not.toHaveBeenCalled();expect(mocks.customers).not.toHaveBeenCalled();expect(mocks.enqueue).not.toHaveBeenCalled();});
 });
