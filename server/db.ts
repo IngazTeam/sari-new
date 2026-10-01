@@ -5583,7 +5583,9 @@ export async function createService(service: InsertService) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const result = await db.insert(services).values(service);
-  return Number((result[0] as { insertId?: number | bigint }).insertId || 0);
+  const id = Number(result[0].insertId);
+  if (!Number.isSafeInteger(id) || id <= 0) throw new Error('Service creation result unavailable');
+  return id;
 }
 
 export async function getServicesByMerchant(merchantId: number) {
@@ -5621,7 +5623,9 @@ export async function createServicePackage(pkg: InsertServicePackage) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const result = await db.insert(servicePackages).values(pkg);
-  return (result as any).insertId;
+  const id = Number(result[0].insertId);
+  if (!Number.isSafeInteger(id) || id <= 0) throw new Error('Package creation result unavailable');
+  return id;
 }
 
 export async function getServicePackagesByMerchant(merchantId: number) {
@@ -5997,7 +6001,9 @@ export async function createServiceCategory(category: {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const result = await db.insert(serviceCategories).values(category);
-  return (result as any).insertId;
+  const id = Number(result[0].insertId);
+  if (!Number.isSafeInteger(id) || id <= 0) throw new Error('Category creation result unavailable');
+  return id;
 }
 
 export async function getServiceCategoriesByMerchant(merchantId: number) {
@@ -6202,15 +6208,18 @@ export async function getBookingsByMerchant(merchantId: number, filters?: {
   return results;
 }
 
-export async function getBookingsByService(serviceId: number, filters?: {
+export async function getBookingsByService(serviceId: number, merchantId: number, filters?: {
   status?: string;
   startDate?: string;
   endDate?: string;
+  limit?: number;
 }) {
+  if (!Number.isSafeInteger(merchantId) || merchantId <= 0 || !Number.isSafeInteger(serviceId) || serviceId <= 0
+    || filters?.limit !== undefined && (!Number.isInteger(filters.limit) || filters.limit < 1 || filters.limit > 100)) throw new Error('Invalid service booking scope');
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const conditions = [eq(bookings.serviceId, serviceId)];
+  const conditions = [eq(bookings.serviceId, serviceId), eq(bookings.merchantId, merchantId)];
 
   if (filters?.status) {
     conditions.push(eq(bookings.status, filters.status as any));
@@ -6222,9 +6231,10 @@ export async function getBookingsByService(serviceId: number, filters?: {
     conditions.push(sql`${bookings.bookingDate} <= ${filters.endDate}`);
   }
 
-  return await db.select().from(bookings)
+  const query = db.select().from(bookings)
     .where(and(...conditions))
-    .orderBy(desc(bookings.bookingDate));
+    .orderBy(desc(bookings.bookingDate), desc(bookings.id)).$dynamic();
+  return filters?.limit === undefined ? await query : await query.limit(filters.limit);
 }
 
 export async function getBookingsByCustomer(merchantId: number, customerPhone: string) {
@@ -6541,36 +6551,27 @@ export async function replyToReview(reviewId: number, reply: string) {
     .where(eq(bookingReviews.id, reviewId));
 }
 
-export async function getServiceRatingStats(serviceId: number) {
+export async function getServiceRatingStats(serviceId: number, merchantId: number) {
+  if (!Number.isSafeInteger(merchantId) || merchantId <= 0 || !Number.isSafeInteger(serviceId) || serviceId <= 0) throw new Error('Invalid service rating scope');
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-
-  const reviews = await db.select().from(bookingReviews)
-    .where(and(
-      eq(bookingReviews.serviceId, serviceId),
-      eq(bookingReviews.isPublic, 1)
-    ));
-
-  if (reviews.length === 0) {
-    return {
-      averageRating: 0,
-      totalReviews: 0,
-      ratingDistribution: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 }
-    };
-  }
-
-  const totalRating = reviews.reduce((sum, r) => sum + r.overallRating, 0);
-  const distribution = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
-
-  reviews.forEach(r => {
-    distribution[r.overallRating as keyof typeof distribution]++;
-  });
-
-  return {
-    averageRating: totalRating / reviews.length,
-    totalReviews: reviews.length,
-    ratingDistribution: distribution
-  };
+  // A rating needs a matching tenant, service and booking; legacy contradictory rows are excluded.
+  const valid = sql`${bookings.id} IS NOT NULL AND ${bookingReviews.overallRating} BETWEEN 1 AND 5`;
+  const [row] = await db.select({
+    total: sql<number>`COALESCE(SUM(CASE WHEN ${valid} THEN 1 ELSE 0 END),0)`,
+    sum: sql<number>`COALESCE(SUM(CASE WHEN ${valid} THEN ${bookingReviews.overallRating} ELSE 0 END),0)`,
+    excluded: sql<number>`COALESCE(SUM(CASE WHEN ${valid} THEN 0 ELSE 1 END),0)`,
+    one: sql<number>`COALESCE(SUM(CASE WHEN ${valid} AND ${bookingReviews.overallRating}=1 THEN 1 ELSE 0 END),0)`,
+    two: sql<number>`COALESCE(SUM(CASE WHEN ${valid} AND ${bookingReviews.overallRating}=2 THEN 1 ELSE 0 END),0)`,
+    three: sql<number>`COALESCE(SUM(CASE WHEN ${valid} AND ${bookingReviews.overallRating}=3 THEN 1 ELSE 0 END),0)`,
+    four: sql<number>`COALESCE(SUM(CASE WHEN ${valid} AND ${bookingReviews.overallRating}=4 THEN 1 ELSE 0 END),0)`,
+    five: sql<number>`COALESCE(SUM(CASE WHEN ${valid} AND ${bookingReviews.overallRating}=5 THEN 1 ELSE 0 END),0)`,
+  }).from(bookingReviews).leftJoin(bookings,and(eq(bookings.id,bookingReviews.bookingId),eq(bookings.merchantId,merchantId),eq(bookings.serviceId,serviceId)))
+    .where(and(eq(bookingReviews.serviceId,serviceId),eq(bookingReviews.merchantId,merchantId),eq(bookingReviews.isPublic,1)));
+  if (!row) throw new Error('Service rating result unavailable');
+  const totalReviews=Number(row.total);
+  return {averageRating:totalReviews ? Number(row.sum)/totalReviews : 0,totalReviews,excludedReviews:Number(row.excluded),
+    ratingDistribution:{1:Number(row.one),2:Number(row.two),3:Number(row.three),4:Number(row.four),5:Number(row.five)}};
 }
 
 

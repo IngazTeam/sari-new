@@ -128,7 +128,7 @@ export const bookingReviewsRouter = router({
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
 
-            const stats = await getServiceRatingStats(input.serviceId);
+            const stats = await getServiceRatingStats(input.serviceId, merchant.id);
             return { stats };
         }),
 });

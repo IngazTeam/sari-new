@@ -4126,7 +4126,7 @@ export const appRouter = router({
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Service not found' });
         }
 
-        const bookings = await getBookingsByService(input.serviceId, input);
+        const bookings = await getBookingsByService(input.serviceId, merchant.id, input);
         return { bookings };
       }),
 
@@ -4336,7 +4336,7 @@ export const appRouter = router({
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Service not found' });
         }
 
-        const stats = await getServiceRatingStats(input.serviceId);
+        const stats = await getServiceRatingStats(input.serviceId, merchant.id);
         return { stats };
       }),
   }),

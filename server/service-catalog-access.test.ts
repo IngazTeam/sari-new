@@ -39,6 +39,12 @@ for(const surface of ['mounted','module'])describe('service catalog '+surface,()
     expect(m.db[{services:'getServicesByMerchant',serviceCategories:'getServiceCategoriesByMerchant',servicePackages:'getServicePackagesByMerchant'}[group]!]).toHaveBeenCalledWith(20);
     m.access.mockResolvedValue(null);await expect((caller() as any)[group].list()).rejects.toMatchObject({code:'FORBIDDEN'});
   });
+  it('scopes related details reads and applies a real ten-booking limit',async()=>{
+    await caller().services.getById({serviceId:11});
+    expect(m.db.getBookingsByService).toHaveBeenCalledExactlyOnceWith(11,20,{limit:10});
+    expect(m.db.getServiceRatingStats).toHaveBeenCalledExactlyOnceWith(11,20);
+    expect(m.db.getBookingStats).toHaveBeenCalledExactlyOnceWith(20,{serviceId:11});
+  });
   it.each([0,-1,1.5,2147483648,NaN])('rejects invalid record identifier %s',async serviceId=>{
     await expect(caller().services.getById({serviceId})).rejects.toMatchObject({code:'BAD_REQUEST'});expect(m.db.getServiceById).not.toHaveBeenCalled();
   });

@@ -85,7 +85,7 @@ export const bookingsRouter = router({
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
 
-            const bookings = await getBookingsByService(input.serviceId, input);
+            const bookings = await getBookingsByService(input.serviceId, merchant.id, input);
             return { bookings };
         }),
 
