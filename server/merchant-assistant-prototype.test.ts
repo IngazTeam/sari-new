@@ -21,6 +21,31 @@ const input=(name:string,value:string|boolean)=>{const el=w.document.getElementB
 const submit=(type:string)=>w.document.querySelector(`[data-as-form="${type}"]`).dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));
 const data=()=>JSON.parse(w.localStorage.getItem('sary-assistant-preview-v1'));
 describe('assistant feature workflows',()=>{
+  it('retains settings and policy history from legacy fixtures without loading the retired team',()=>{
+    const saved={agents:[{id:99,name:'legacy'}],settings:{language:'fr',takeoverTimeoutMinutes:90,brandVoice:'صوت محفوظ'},history:[{kind:'discount',text:'قرار محفوظ'}]};
+    w.localStorage.setItem('sary-assistant-preview-v1',JSON.stringify(saved));
+    runInContext(readFileSync(base+'assistant.js','utf8'),dom.getInternalVMContext());
+    expect(w.AssistantPreview.handles({route:'/merchant/virtual-team'})).toBe(false);
+    route('bot-settings');
+    expect(w.document.getElementById('as-brandVoice').value).toBe('صوت محفوظ');
+    expect(w.document.getElementById('as-language').value).toBe('fr');
+    // Reading the migrated fixture must not overwrite any saved settings or history.
+    const content=w.AssistantPreview.render({route:'/merchant/human-takeover'});
+    expect(content).toContain('value="90"');
+    expect(w.localStorage.getItem('sary-assistant-preview-v1')).toBe(JSON.stringify(saved));
+  });
+  it('preserves the store example question on failure and escapes it on success',()=>{
+    route('bot-settings');click('section','[data-value="preview"]');click('preview-store');
+    const question='<img src=x onerror=alert(1)> سؤال';
+    w.document.getElementById('as-preview-question').value=question;click('preview-failure');
+    expect(w.document.getElementById('as-preview-question').value).toBe(question);
+    expect(w.document.getElementById('as-preview-result').textContent).toContain('تعذر الرد');
+    click('preview-send');
+    expect(w.document.getElementById('as-preview-result').textContent).toContain(question);
+    expect(w.document.getElementById('dialog').querySelector('img')).toBeNull();
+    expect(w.document.getElementById('as-preview-result').textContent).toContain('لا يثبت جودة الرد');
+    expect(data()).toBeNull();
+  });
   it('preserves every legacy personality option in the settings draft and save',()=>{
     route('bot-settings');
     expect(w.document.getElementById('as-tone').options).toHaveLength(4);
