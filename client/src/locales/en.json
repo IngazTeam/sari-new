@@ -11893,7 +11893,7 @@
   "jumpLabel": "Go to page",
   "jump": "Go",
   "jumpError": "Enter a whole page number from 1 to {{total}}.",
-  "scope": "This feed shows currently available activity; it does not measure answer accuracy or sales proficiency. Older descriptions retain their original language. Times use your browser’s time zone.",
+  "scope": "The activity policy is 90 days; scheduled maintenance gradually removes older events. This feed shows available activity, not answer accuracy or sales proficiency. Older descriptions retain their original language. Times use your browser’s time zone.",
   "unknownDate": "Date unavailable",
   "noDescription": "No description is saved for this activity.",
   "otherType": "Other type: {{action}}",

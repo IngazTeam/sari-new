@@ -110,6 +110,18 @@ export function startCronJobs() {
     }
   });
 
+  // Preserve the existing 90-day summary-feed policy outside all page reads.
+  // Bounded to 500 records per run; only the primary worker starts these jobs.
+  cron.schedule("23,53 * * * *", async () => {
+    try {
+      const { runKnowledgeActivityRetention } = await import("./knowledge/activity-retention");
+      const count = await runKnowledgeActivityRetention();
+      if (count > 0) console.log("[Cron] Expired Sari activity removed", { count });
+    } catch {
+      console.error("[Cron] Sari activity retention failed; next scheduled batch will retry");
+    }
+  });
+
   console.log("[Cron] Cron jobs started successfully");
   console.log("[Cron] - Appointment reminders: Every hour at minute 0");
   console.log("[Cron] - Trial expiry check: Every day at 9:00 AM");
@@ -120,6 +132,7 @@ export function startCronJobs() {
   console.log("[Cron] - AI Health Monitor: Every 15 minutes");
   console.log("[Cron] - AI Daily Report: Every day at 8:00 AM (Riyadh)");
   console.log("[Cron] - Memory Cleanup: Every 30 minutes");
+  console.log("[Cron] - Sari activity retention: Every 30 minutes, 90 days, max 500 records");
 }
 
 /**
