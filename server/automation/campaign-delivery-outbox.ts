@@ -70,6 +70,39 @@ type CampaignManualReviewSummaryRow = RowDataPacket & {
   needsReview: number | string;
 };
 
+export class CampaignReviewScopeError extends Error {
+  constructor() { super('Campaign review scope not found'); this.name = 'CampaignReviewScopeError'; }
+}
+
+type LockedCampaign = RowDataPacket & { id: number; merchantId: number; status: string };
+
+// Call only after locking the parent. Lock current recipient rows before counting:
+// a consistent-read aggregate taken before that lock can overwrite newer totals.
+async function reconcileLockedCampaignState(connection: PoolConnection, campaign: LockedCampaign): Promise<void> {
+  const [rows] = await connection.execute<RowDataPacket[]>(
+    `SELECT id, merchant_id, status FROM campaign_delivery_outbox
+      WHERE campaign_id = ? ORDER BY id FOR UPDATE`, [campaign.id],
+  );
+  if (rows.some(row => Number(row.merchant_id) !== Number(campaign.merchantId))) {
+    throw new Error('Campaign recipient ownership is inconsistent');
+  }
+  if (!rows.length || !['sending', 'failed'].includes(campaign.status)) return;
+  const sent = rows.filter(row => row.status === 'sent').length;
+  const active = rows.some(row => ['pending', 'processing', 'failed'].includes(row.status));
+  const status = active ? 'sending' : rows.some(row => row.status === 'manual_review') ? 'failed' : 'completed';
+  await connection.execute(
+    `UPDATE campaigns SET sentCount = ?, totalRecipients = ?, status = ?, updatedAt = NOW()
+      WHERE id = ? AND merchantId = ? AND status IN ('sending', 'failed')`,
+    [sent, rows.length, status, campaign.id, campaign.merchantId],
+  );
+  await connection.execute(
+    `UPDATE occasion_campaigns SET recipientCount = ?, status = ?,
+      sentAt = IF(? = 'sending', NULL, COALESCE(sentAt, NOW())), updatedAt = NOW()
+      WHERE campaign_id = ? AND merchantId = ? AND status IN ('pending','sending','failed')`,
+    [sent, status, status, campaign.id, campaign.merchantId],
+  );
+}
+
 export class CampaignDispatchConflictError extends Error {
   constructor() {
     super('Campaign is already claimed or cannot be sent from its current state');
@@ -257,37 +290,14 @@ async function reconcileCampaignState(campaignId: number): Promise<void> {
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
-    const [rows] = await connection.execute<CampaignState[]>(
-      `SELECT COUNT(*) AS total,
-              SUM(status = 'sent') AS sent,
-              SUM(status IN ('pending','processing','failed')) AS active,
-              SUM(status = 'suppressed') AS suppressed,
-              SUM(status = 'manual_review') AS manualReview
-         FROM campaign_delivery_outbox WHERE campaign_id = ?`,
-      [campaignId],
+    const [campaigns] = await connection.execute<LockedCampaign[]>(
+      'SELECT id, merchantId, status FROM campaigns WHERE id = ? FOR UPDATE', [campaignId],
     );
-    const state = rows[0];
-    const total = Number(state?.total || 0);
-    if (total === 0) {
+    if (!campaigns[0]) {
       await connection.rollback();
       return;
     }
-    const sent = Number(state?.sent || 0);
-    const active = Number(state?.active || 0);
-    const manualReview = Number(state?.manualReview || 0);
-    const status = active > 0 ? 'sending' : manualReview > 0 ? 'failed' : 'completed';
-    await connection.execute(
-      `UPDATE campaigns SET sentCount = ?, totalRecipients = ?, status = ?, updatedAt = NOW()
-        WHERE id = ? AND status IN ('sending', 'failed')`,
-      [sent, total, status, campaignId],
-    );
-    await connection.execute(
-      `UPDATE occasion_campaigns
-          SET recipientCount = ?, status = ?,
-              sentAt = IF(? = 'sending', NULL, COALESCE(sentAt, NOW())), updatedAt = NOW()
-        WHERE campaign_id = ? AND status IN ('pending','sending','failed')`,
-      [sent, status, status, campaignId],
-    );
+    await reconcileLockedCampaignState(connection, campaigns[0]);
     await connection.commit();
   } catch (error) {
     try { await connection.rollback(); } catch { /* preserve original */ }
@@ -303,7 +313,7 @@ async function reconcileActiveCampaigns(): Promise<void> {
   const [rows] = await pool.execute<RowDataPacket[]>(
     `SELECT DISTINCT o.campaign_id AS campaignId
        FROM campaign_delivery_outbox o
-       INNER JOIN campaigns c ON c.id = o.campaign_id
+       INNER JOIN campaigns c ON c.id = o.campaign_id AND c.merchantId = o.merchant_id
       WHERE c.status IN ('sending','failed')
       ORDER BY o.campaign_id ASC LIMIT 100`,
   );
@@ -625,9 +635,21 @@ export async function acknowledgeCampaignManualReviews(
   let acknowledged = 0;
   try {
     await connection.beginTransaction();
+    const [campaigns] = await connection.execute<LockedCampaign[]>(
+      'SELECT id, merchantId, status FROM campaigns WHERE id = ? AND merchantId = ? FOR UPDATE',
+      [campaignId, merchantId],
+    );
+    if (!campaigns[0]) throw new CampaignReviewScopeError();
+    // Same parent -> recipient -> log order as state reconciliation. In-flight
+    // terminal writes finish before the current manual-review set is selected.
+    await connection.execute<RowDataPacket[]>(
+      `SELECT id FROM campaign_delivery_outbox
+        WHERE campaign_id = ? AND merchant_id = ? ORDER BY id FOR UPDATE`, [campaignId, merchantId],
+    );
     await connection.execute(
       `UPDATE campaignLogs l
         INNER JOIN campaign_delivery_outbox o ON o.id = l.campaign_outbox_id
+          AND l.campaignId = o.campaign_id AND BINARY l.customerPhone = BINARY o.customer_phone
           SET l.errorMessage = 'merchant_acknowledged'
         WHERE o.campaign_id = ? AND o.merchant_id = ? AND o.status = 'manual_review'`,
       [campaignId, merchantId],
@@ -639,6 +661,7 @@ export async function acknowledgeCampaignManualReviews(
       [campaignId, merchantId],
     );
     acknowledged = Number((result as { affectedRows?: number }).affectedRows || 0);
+    await reconcileLockedCampaignState(connection, campaigns[0]);
     await connection.commit();
   } catch (error) {
     try { await connection.rollback(); } catch { /* preserve original */ }
@@ -646,7 +669,6 @@ export async function acknowledgeCampaignManualReviews(
   } finally {
     connection.release();
   }
-  await reconcileCampaignState(campaignId);
   return { acknowledged };
 }
 

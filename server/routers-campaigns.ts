@@ -43,6 +43,7 @@ import {
 } from './automation/campaign-guard';
 import {
   acknowledgeCampaignManualReviews,
+  CampaignReviewScopeError,
   CampaignDispatchConflictError,
   CampaignTargetingError,
   enqueueCampaignDeliveries,
@@ -373,15 +374,14 @@ export const campaignsRouter = router({
     acknowledgeManualReview: permissionProcedure('campaigns.manage')
         .input(z.object({ id: campaignIdSchema }).strict())
         .mutation(async ({ input, ctx }) => {
-            const campaign = await getCampaignById(input.id);
-            if (!campaign) {
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'Campaign not found' });
+            try {
+                return await acknowledgeCampaignManualReviews(input.id, ctx.merchantId);
+            } catch (error) {
+                if (error instanceof CampaignReviewScopeError) {
+                    throw new TRPCError({ code: 'NOT_FOUND', message: 'Campaign not found' });
+                }
+                throw new TRPCError({ code: 'SERVICE_UNAVAILABLE', message: 'Campaign review unavailable' });
             }
-            const merchant = await getMerchantById(ctx.merchantId);
-            if (!merchant || campaign.merchantId !== merchant.id) {
-                throw new TRPCError({ code: 'FORBIDDEN' });
-            }
-            return acknowledgeCampaignManualReviews(campaign.id, merchant.id);
         }),
 
     getManualReviewSummary: permissionProcedure('analytics.read').query(async ({ ctx }) => {
