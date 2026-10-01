@@ -1354,7 +1354,8 @@ export async function createMessage(message: InsertMessage): Promise<Message | u
   } catch (err: any) {
     // FIX-3: Atomic dedup — if uniqueIndex on externalId blocks a concurrent insert,
     // throw DuplicateMessageError so the caller aborts AI + send.
-    if (err?.code === 'ER_DUP_ENTRY' && (message as any).externalId) {
+    // Drizzle wraps mysql2 errors in cause; a duplicate must still stop downstream effects.
+    if ((err?.code === 'ER_DUP_ENTRY' || err?.cause?.code === 'ER_DUP_ENTRY') && (message as any).externalId) {
       console.log(`[DB] Duplicate externalId detected (ER_DUP_ENTRY) — aborting processing for: ${(message as any).externalId}`);
       let existing: Message | undefined;
       try {

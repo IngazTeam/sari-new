@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({ instance: vi.fn(), settings: vi.fn(), relay: vi.fn(), notify: vi.fn(), conversations: vi.fn(), send: vi.fn(), ownership: vi.fn(),
-  update: vi.fn(), message: vi.fn(), messages: vi.fn(), resolve: vi.fn(), correction: vi.fn(), feedback: vi.fn(), command: vi.fn() }));
+  update: vi.fn(), message: vi.fn(), messages: vi.fn(), resolve: vi.fn(), correction: vi.fn(), feedback: vi.fn(), command: vi.fn(), receiptId: vi.fn() }));
+vi.mock('../messaging/manual-message-identity', () => ({ manualMessageExternalId: mocks.receiptId }));
 vi.mock('../ai/whatsapp-ownership-command', async original => ({ ...await original<typeof import('../ai/whatsapp-ownership-command')>(), applyWhatsAppOwnershipCommand: mocks.command }));
 vi.mock('../db', async original => ({ ...await original<typeof import('../db')>(),
   getWhatsAppInstanceByInstanceId: mocks.instance, getBotSettings: mocks.settings, getConversationsByMerchantId: mocks.conversations,
@@ -21,6 +22,7 @@ beforeEach(() => {
   vi.clearAllMocks(); mocks.instance.mockResolvedValue({ id: 8, merchantId: 12 }); mocks.settings.mockResolvedValue({ takeoverCommandsEnabled: true });
   mocks.notify.mockResolvedValue(undefined); mocks.relay.mockResolvedValue({ handled: true, accepted: true, status: 'accepted' });
   mocks.update.mockResolvedValue(undefined); mocks.message.mockResolvedValue(99); mocks.resolve.mockResolvedValue(null);
+  mocks.receiptId.mockReset().mockResolvedValue('history:v1:test-receipt');
   mocks.feedback.mockResolvedValue('تمت مراجعة الرد للاطلاع فقط');
   mocks.command.mockReset().mockResolvedValue({ changed: true, duplicate: false, action: 'resume', conversationId: 9, version: 2 });
   mocks.conversations.mockResolvedValue([{ id: 9, customerPhone: '966500000082' }]);
@@ -36,6 +38,8 @@ describe('Green API escalation ingress', () => {
       expect(mocks.command).not.toHaveBeenCalled(); expect(mocks.ownership).not.toHaveBeenCalled();
       expect(mocks.update).toHaveBeenCalledWith(9, expect.objectContaining({ humanExpiresAt: expect.any(Date) }));
       expect(mocks.message).toHaveBeenCalledWith(expect.objectContaining({ content: text, senderType: 'merchant' }));
+      expect(mocks.receiptId).toHaveBeenCalledWith(12, 9, '123', 'manual-receipt');
+      expect(mocks.message).toHaveBeenCalledWith(expect.objectContaining({ externalId: 'history:v1:test-receipt' }));
       expect(mocks.correction).not.toHaveBeenCalled(); expect(mocks.send).not.toHaveBeenCalled();
     });
   it.each(['#stop', ' #STOP ', '#start', '\n#START\n'])('dispatches only a standalone control with its source receipt: %s', async text => {

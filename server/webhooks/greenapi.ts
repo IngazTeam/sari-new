@@ -6,6 +6,7 @@ import { applyWhatsAppOwnershipCommand, explicitOwnershipCommand, isUnquotedManu
  * Receives incoming WhatsApp messages and processes them with Sari AI
  */
 
+import { manualMessageExternalId } from '../messaging/manual-message-identity';
 import {
   createConversation,
   createMessage,
@@ -582,8 +583,9 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
         console.log(`[Takeover] Human took over conv ${conv.id} for 24 hours (sliding window — resets on each merchant msg)`);
 
         if (outText && payload.idMessage) {
-          try { await createMessage({ conversationId: conv.id, direction: 'outgoing', senderType: 'merchant', messageType: 'text',
-            content: outText, externalId: payload.idMessage, isProcessed: 1 }); }
+          const externalId = await manualMessageExternalId(instance.merchantId, conv.id, instanceId, payload.idMessage);
+          try { if (externalId) await createMessage({ conversationId: conv.id, direction: 'outgoing', senderType: 'merchant', messageType: 'text',
+            content: outText, externalId, isProcessed: 1 }); }
           catch (error) { if (!(error instanceof DuplicateMessageError)) throw error; }
         }
 
