@@ -1,3 +1,4 @@
+import { campaignReportWorkspaceAr } from './campaign-report-workspace';
 import { campaignWorkspaceAr } from './campaign-workspace';
 import { websiteImportAr } from './website-import';
 import { groupConversationAr } from './group-conversation';
@@ -55,6 +56,7 @@ const merchantUxAr: MerchantUxCopy = {
   knowledgeFaq: knowledgeFaqAr,
   campaignPerformance: campaignPerformanceAr,
   campaignWorkspace: campaignWorkspaceAr,
+  campaignReportWorkspace: campaignReportWorkspaceAr,
   byaanSales: byaanSalesReviewAr,
   sallaEffects: sallaEffectReviewAr,
   sallaCheckout: sallaCheckoutReviewAr,

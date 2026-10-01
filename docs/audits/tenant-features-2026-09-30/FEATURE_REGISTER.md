@@ -2,7 +2,7 @@
 
 هذا حصر مصدر قابل لإعادة التوليد، وليس ادعاءً بأن كل مسار عمل اختُبر أو أُعيد تصميمه. يشمل المكونات الفرعية المحلية، الحقول، الأزرار، النوافذ، التبويبات، واجهات القراءة والتعديل. العناصر الديناميكية تحتاج مراجعة إضافية.
 
-- 126 مسارًا مسجلًا، 351 ملف واجهة متصلًا، 2258 عنصر تحكم في المصدر.
+- 126 مسارًا مسجلًا، 355 ملف واجهة متصلًا، 2271 عنصر تحكم في المصدر.
 - 0 رابطًا حرفيًا غير مطابق، و0 ملف صفحة غير متصل بالمسارات المحصورة.
 
 | الصفحة | الملفات | عناصر التحكم | القراءة / التعديل | موك أب للصفحة |
@@ -17,7 +17,7 @@
 | /merchant/campaigns/new — إنشاء حملة | 2 | 13 | 2 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/campaigns/:id/edit — إنشاء حملة | 2 | 13 | 2 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/campaigns/:id — تفاصيل الحملة | 1 | 4 | 1 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/campaigns/:id/report — تقرير الحملة | 2 | 3 | 1 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/campaigns/:id/report — تقرير الحملة | 8 | 16 | 4 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/products — المنتجات | 17 | 103 | 12 / 4 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/products/upload — استيراد المنتجات | 13 | 75 | 10 / 7 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/conversations — المحادثات | 25 | 109 | 13 / 10 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -667,13 +667,26 @@
 | 64 | Button | العودة | CampaignDetails |
 | 80 | Button | إرسال الحملة الآن | CampaignDetails |
 
-## client/src/pages/merchant/CampaignReport.tsx
+## client/src/components/merchant/CampaignReportWorkspace.tsx
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 33 | Button | العودة للحملات | CampaignReport |
-| 65 | Button | رجوع | CampaignReport |
-| 80 | Button | تصدير CSV | CampaignReport |
+| 57 | Link | allCampaigns | CampaignReportWorkspace |
+| 57 | Link | details | CampaignReportWorkspace |
+| 58 | Button | refresh | CampaignReportWorkspace |
+| 58 | Button | exporting export | CampaignReportWorkspace |
+| 62 | Button | showReviews | reviewTitle |
+| 64 | summary | message | message |
+| 65 | Button | recipients | message |
+| 65 | Button | results | message |
+| 68 | input | search searchResults | message |
+| 68 | select | status allStatuses | message |
+| 68 | Button | search searchResults | message |
+| 70 | Button | first | outOfRange noMatches emptyRecipients emptyResults |
+| 70 | Button | clear | outOfRange noMatches emptyRecipients emptyResults |
+| 70 | Button | results recipients | outOfRange noMatches emptyRecipients emptyResults |
+| 72 | Button | previous | outOfRange noMatches emptyRecipients emptyResults |
+| 72 | Button | next | outOfRange noMatches emptyRecipients emptyResults |
 
 ## client/src/components/KnowledgeWorkspaceScope.tsx
 

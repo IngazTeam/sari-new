@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-01T17:52:52.999Z",
+  "generatedAt": "2026-10-01T18:28:28.487Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 351,
-      "controls": 2258
+      "files": 355,
+      "controls": 2271
     }
   },
   "addedFiles": [
@@ -45,6 +45,11 @@
     "client/src/lib/campaign-navigation.ts",
     "client/src/components/merchant/CampaignPerformance.tsx",
     "client/src/lib/merchant-date.ts",
+    "client/src/lib/campaign-report-navigation.ts",
+    "client/src/components/merchant/CampaignReportWorkspace.tsx",
+    "client/src/lib/campaign-report-labels.ts",
+    "client/src/lib/campaign-report-csv.ts",
+    "client/src/lib/conversation-message.ts",
     "client/src/components/KnowledgeWorkspaceScope.tsx",
     "client/src/components/merchant/ProductCatalogWorkspace.tsx",
     "client/src/lib/product-workspace-cache.ts",
@@ -67,7 +72,6 @@
     "client/src/lib/product-file-advice-workspace.ts",
     "client/src/components/ConversationTools.tsx",
     "client/src/components/ConversationMessage.tsx",
-    "client/src/lib/conversation-message.ts",
     "client/src/components/ConversationConnection.tsx",
     "client/src/lib/staff-team-review-attempt.ts",
     "client/src/lib/staff-voice-attempt.ts",
@@ -208,6 +212,7 @@
     "client/src/pages/merchant/AIWhatsAppHub.tsx",
     "client/src/pages/merchant/AnalyticsHub.tsx",
     "client/src/pages/merchant/Campaigns.tsx",
+    "client/src/pages/merchant/CampaignReport.tsx",
     "client/src/pages/merchant/Products.tsx",
     "client/src/pages/merchant/UploadProducts.tsx",
     "client/src/pages/merchant/Conversations.tsx",
@@ -437,9 +442,16 @@
     {
       "route": "/merchant/campaigns/:id/report",
       "controlsBefore": 3,
-      "controlsNow": 3,
-      "removedQueries": [],
-      "addedQueries": [],
+      "controlsNow": 16,
+      "removedQueries": [
+        "campaigns.getReport"
+      ],
+      "addedQueries": [
+        "auth.me",
+        "merchants.getCurrent",
+        "campaigns.reportWorkspace",
+        "campaigns.reportExport"
+      ],
       "removedMutations": [],
       "addedMutations": []
     },

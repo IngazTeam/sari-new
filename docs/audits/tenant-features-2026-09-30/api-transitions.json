@@ -1260,6 +1260,34 @@
           "contains": "parsed.data.actorId===actorId&&parsed.data.merchantId===merchantId&&parsed.data.days===days"
         }
       ]
+    },
+    {
+      "routes": [
+        "/merchant/campaigns/:id/report"
+      ],
+      "removed": [
+        "campaigns.getReport"
+      ],
+      "required": [
+        "campaigns.reportWorkspace",
+        "campaigns.reportExport"
+      ],
+      "note": "The actual report now reads a scoped, consistent paginated snapshot and exports all matching rows from a separately verified complete snapshot. Result history and recipient queue remain distinct; legacy getReport stays compatible.",
+      "evidence": [
+        "server/campaign-report-page.test.tsx",
+        "server/campaign-report.mysql.test.ts",
+        "server/campaign-report-csv.test.ts"
+      ],
+      "checks": [
+        {
+          "file": "client/src/components/merchant/CampaignReportWorkspace.tsx",
+          "contains": "trpc.campaigns.reportWorkspace.useQuery"
+        },
+        {
+          "file": "client/src/components/merchant/CampaignReportWorkspace.tsx",
+          "contains": "utils.campaigns.reportExport.fetch"
+        }
+      ]
     }
   ]
 }

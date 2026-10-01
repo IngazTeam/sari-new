@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-01T17:52:52.999Z",
+  "generatedAt": "2026-10-01T18:28:28.487Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -2793,84 +2793,195 @@
     },
     {
       "file": "client/src/pages/merchant/CampaignReport.tsx",
-      "hash": "9521594a3286",
+      "hash": "e57f5d16bda0",
       "queries": [
-        "campaigns.getReport"
+        "auth.me",
+        "merchants.getCurrent"
       ],
       "mutations": [],
       "imperativeReads": [],
       "browserRequests": [],
-      "sections": [
-        {
-          "label": "",
-          "line": 74,
-          "tag": "h1"
-        },
-        {
-          "label": "إجمالي الرسائل",
-          "line": 90,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "نجح الإرسال",
-          "line": 101,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "فشل الإرسال",
-          "line": 112,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "نسبة النجاح",
-          "line": 123,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "معلومات الحملة",
-          "line": 136,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "سجل الإرسال التفصيلي",
-          "line": 192,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "ملخص الأخطاء",
-          "line": 262,
-          "tag": "CardTitle"
-        }
-      ],
-      "choices": [
-        {
-          "name": "headers",
-          "line": 39,
-          "values": [
-            "رقم الهاتف",
-            "اسم العميل",
-            "الحالة",
-            "رسالة الخطأ",
-            "وقت الإرسال"
-          ]
-        }
-      ],
+      "sections": [],
+      "choices": [],
       "handlers": [],
       "queryStates": [
         {
-          "query": "campaigns.getReport",
-          "binding": "{ data, isLoading, isError, error, refetch }",
-          "line": 25,
+          "query": "auth.me",
+          "binding": "user",
+          "line": 9,
           "errorSignal": true,
           "loadingSignal": true,
-          "enabled": "campaignId > 0 "
+          "enabled": "!!id"
+        },
+        {
+          "query": "merchants.getCurrent",
+          "binding": "merchant",
+          "line": 10,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": "!!id&&!!user.data?.id&&!user.error&&!user.isFetching"
         }
       ],
       "conditions": [],
       "imports": [
-        "client/src/lib/i18n.ts"
+        "client/src/lib/campaign-report-navigation.ts",
+        "client/src/components/merchant/CampaignReportWorkspace.tsx"
       ],
-      "controlCount": 3
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/lib/campaign-report-navigation.ts",
+      "hash": "94bd58ce4412",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [
+        {
+          "name": "campaignReportSelectionKey",
+          "line": 11,
+          "calls": []
+        }
+      ],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/components/merchant/CampaignReportWorkspace.tsx",
+      "hash": "5aa4d453019e",
+      "queries": [
+        "campaigns.reportWorkspace",
+        "campaigns.reportExport"
+      ],
+      "mutations": [],
+      "imperativeReads": [
+        {
+          "procedure": "campaigns.reportExport",
+          "method": "fetch",
+          "expression": "utils.campaigns.reportExport.fetch",
+          "line": 43,
+          "provenance": "trpc-utility-static"
+        }
+      ],
+      "browserRequests": [],
+      "sections": [
+        {
+          "label": "",
+          "line": 58,
+          "tag": "h1"
+        },
+        {
+          "label": "reviewTitle",
+          "line": 62,
+          "tag": "h2"
+        },
+        {
+          "label": "message",
+          "line": 64,
+          "tag": "summary"
+        },
+        {
+          "label": "outOfRange noMatches emptyRecipients emptyResults",
+          "line": 70,
+          "tag": "h2"
+        }
+      ],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [
+        {
+          "query": "campaigns.reportWorkspace",
+          "binding": "query",
+          "line": 29,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        }
+      ],
+      "conditions": [],
+      "imports": [
+        "client/src/lib/campaign-report-navigation.ts",
+        "client/src/lib/campaign-navigation.ts",
+        "client/src/lib/campaign-report-labels.ts",
+        "client/src/lib/campaign-report-csv.ts",
+        "client/src/lib/conversation-message.ts"
+      ],
+      "controlCount": 16
+    },
+    {
+      "file": "client/src/lib/campaign-report-labels.ts",
+      "hash": "215471df9979",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/lib/campaign-report-csv.ts",
+      "hash": "4c3d94bc0471",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [
+        {
+          "name": "headers",
+          "line": 20,
+          "values": [
+            "labels.phone",
+            "labels.name",
+            "labels.status",
+            "labels.reason",
+            "`${labels.recordedAt} (UTC)`",
+            "...(recipient?[labels.attempts,labels.quotaHeld,`${labels.acceptedAt} (UTC)`]:[])"
+          ]
+        },
+        {
+          "name": "values",
+          "line": 22,
+          "values": [
+            "row.phone",
+            "row.name??''",
+            "labels.statusLabel(row.status)",
+            "labels.reasonLabel(row.reason)",
+            "row.recordedAt"
+          ]
+        }
+      ],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/lib/conversation-message.ts",
+      "hash": "2931645f2626",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [
+        "client/src/lib/merchant-date.ts"
+      ],
+      "controlCount": 0
     },
     {
       "file": "client/src/pages/merchant/Products.tsx",
@@ -4161,23 +4272,6 @@
         "client/src/lib/conversation-message.ts"
       ],
       "controlCount": 6
-    },
-    {
-      "file": "client/src/lib/conversation-message.ts",
-      "hash": "2931645f2626",
-      "queries": [],
-      "mutations": [],
-      "imperativeReads": [],
-      "browserRequests": [],
-      "sections": [],
-      "choices": [],
-      "handlers": [],
-      "queryStates": [],
-      "conditions": [],
-      "imports": [
-        "client/src/lib/merchant-date.ts"
-      ],
-      "controlCount": 0
     },
     {
       "file": "client/src/components/ConversationConnection.tsx",
@@ -18663,18 +18757,49 @@
       ],
       "files": [
         "client/src/pages/merchant/CampaignReport.tsx",
-        "client/src/lib/i18n.ts"
+        "client/src/lib/campaign-report-navigation.ts",
+        "client/src/components/merchant/CampaignReportWorkspace.tsx",
+        "client/src/lib/campaign-navigation.ts",
+        "client/src/lib/campaign-report-labels.ts",
+        "client/src/lib/campaign-report-csv.ts",
+        "client/src/lib/conversation-message.ts",
+        "client/src/lib/merchant-date.ts"
       ],
       "controls": [
-        "8048596f593c",
-        "e0e95ad3baec",
-        "8eee64bab357"
+        "28a02f024107",
+        "6e30dcaca7d3",
+        "15d981cd214f",
+        "c3ee73daac35",
+        "371a8a639004",
+        "2c78f3219b8d",
+        "15d7d1191e1a",
+        "58c8eea8fb4f",
+        "71030712f701",
+        "b19b15984894",
+        "1b5f9fad42a9",
+        "dba06423ea2e",
+        "d535bcc01e73",
+        "bc9ce5b3404f",
+        "597d9b3fbad1",
+        "1e11653b28dd"
       ],
       "queries": [
-        "campaigns.getReport"
+        "auth.me",
+        "merchants.getCurrent",
+        "campaigns.reportWorkspace",
+        "campaigns.reportExport"
       ],
       "mutations": [],
-      "imperativeReads": [],
+      "imperativeReads": [
+        {
+          "file": "client/src/components/merchant/CampaignReportWorkspace.tsx",
+          "procedure": "campaigns.reportExport",
+          "method": "fetch",
+          "expression": "utils.campaigns.reportExport.fetch",
+          "line": 43,
+          "provenance": "trpc-utility-static"
+        }
+      ],
       "browserRequests": []
     },
     {
@@ -32789,15 +32914,15 @@
       "review": "source-inventoried"
     },
     {
-      "id": "8048596f593c",
-      "file": "client/src/pages/merchant/CampaignReport.tsx",
-      "line": 33,
-      "tag": "Button",
+      "id": "28a02f024107",
+      "file": "client/src/components/merchant/CampaignReportWorkspace.tsx",
+      "line": 57,
+      "tag": "Link",
       "role": "",
       "kind": "action",
-      "label": "العودة للحملات",
-      "section": "CampaignReport",
-      "binding": "() => setLocation('/merchant/campaigns')",
+      "label": "allCampaigns",
+      "section": "CampaignReportWorkspace",
+      "binding": "/merchant/campaigns",
       "type": "text",
       "options": [],
       "min": "",
@@ -32810,36 +32935,312 @@
       "review": "source-inventoried"
     },
     {
-      "id": "e0e95ad3baec",
-      "file": "client/src/pages/merchant/CampaignReport.tsx",
+      "id": "6e30dcaca7d3",
+      "file": "client/src/components/merchant/CampaignReportWorkspace.tsx",
+      "line": 57,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "details",
+      "section": "CampaignReportWorkspace",
+      "binding": "`/merchant/campaigns/${campaignId}`",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "15d981cd214f",
+      "file": "client/src/components/merchant/CampaignReportWorkspace.tsx",
+      "line": 58,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "refresh",
+      "section": "CampaignReportWorkspace",
+      "binding": "()=>{void query.refetch();}",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "query.isFetching||busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "c3ee73daac35",
+      "file": "client/src/components/merchant/CampaignReportWorkspace.tsx",
+      "line": 58,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "exporting export",
+      "section": "CampaignReportWorkspace",
+      "binding": "()=>{void exportReport();}",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "query.isFetching||busy||pagination.total>campaignReportExportLimit",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "371a8a639004",
+      "file": "client/src/components/merchant/CampaignReportWorkspace.tsx",
+      "line": 62,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "showReviews",
+      "section": "reviewTitle",
+      "binding": "()=>change({view:'recipients',status:'manual_review',q:null,page:null})",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "summary.recipients.manualReview>0"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "2c78f3219b8d",
+      "file": "client/src/components/merchant/CampaignReportWorkspace.tsx",
+      "line": 64,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "message",
+      "section": "message",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "15d7d1191e1a",
+      "file": "client/src/components/merchant/CampaignReportWorkspace.tsx",
       "line": 65,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "رجوع",
-      "section": "CampaignReport",
-      "binding": "() => setLocation('/merchant/campaigns')",
+      "label": "recipients",
+      "section": "message",
+      "binding": "()=>change({view:'recipients',q:null,status:null,page:null})",
       "type": "text",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": false,
+      "conditional": true,
       "conditions": [],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "8eee64bab357",
-      "file": "client/src/pages/merchant/CampaignReport.tsx",
-      "line": 80,
+      "id": "58c8eea8fb4f",
+      "file": "client/src/components/merchant/CampaignReportWorkspace.tsx",
+      "line": 65,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "تصدير CSV",
-      "section": "CampaignReport",
-      "binding": "exportToCSV",
+      "label": "results",
+      "section": "message",
+      "binding": "()=>change({view:'results',q:null,status:null,page:null})",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "71030712f701",
+      "file": "client/src/components/merchant/CampaignReportWorkspace.tsx",
+      "line": 68,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "search searchResults",
+      "section": "message",
+      "binding": "searchValue",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "200",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "b19b15984894",
+      "file": "client/src/components/merchant/CampaignReportWorkspace.tsx",
+      "line": 68,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "status allStatuses",
+      "section": "message",
+      "binding": "selection.status",
+      "type": "text",
+      "options": [
+        {
+          "value": "all",
+          "label": "allStatuses"
+        },
+        {
+          "value": "status",
+          "label": ""
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "1b5f9fad42a9",
+      "file": "client/src/components/merchant/CampaignReportWorkspace.tsx",
+      "line": 68,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "search searchResults",
+      "section": "message",
+      "binding": "reset",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "filtered"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "dba06423ea2e",
+      "file": "client/src/components/merchant/CampaignReportWorkspace.tsx",
+      "line": 70,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "first",
+      "section": "outOfRange noMatches emptyRecipients emptyResults",
+      "binding": "()=>change({page:null})",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "selection.page>1",
+        "!rows.length"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "d535bcc01e73",
+      "file": "client/src/components/merchant/CampaignReportWorkspace.tsx",
+      "line": 70,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "clear",
+      "section": "outOfRange noMatches emptyRecipients emptyResults",
+      "binding": "reset",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "filtered",
+        "selection.page>1",
+        "!rows.length"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "bc9ce5b3404f",
+      "file": "client/src/components/merchant/CampaignReportWorkspace.tsx",
+      "line": 70,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "results recipients",
+      "section": "outOfRange noMatches emptyRecipients emptyResults",
+      "binding": "()=>change({view:recipient?'results':'recipients',q:null,status:null,page:null})",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "filtered",
+        "selection.page>1",
+        "!rows.length"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "597d9b3fbad1",
+      "file": "client/src/components/merchant/CampaignReportWorkspace.tsx",
+      "line": 72,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "previous",
+      "section": "outOfRange noMatches emptyRecipients emptyResults",
+      "binding": "()=>change({page:selection.page-1})",
       "type": "text",
       "options": [],
       "min": "",
@@ -32847,8 +33248,33 @@
       "maxLength": "",
       "required": false,
       "conditional": false,
-      "conditions": [],
-      "disabled": "",
+      "conditions": [
+        "pagination.pages>0"
+      ],
+      "disabled": "selection.page<=1",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "1e11653b28dd",
+      "file": "client/src/components/merchant/CampaignReportWorkspace.tsx",
+      "line": 72,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "next",
+      "section": "outOfRange noMatches emptyRecipients emptyResults",
+      "binding": "()=>change({page:selection.page+1})",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "pagination.pages>0"
+      ],
+      "disabled": "selection.page>=pagination.pages",
       "review": "source-inventoried"
     },
     {
