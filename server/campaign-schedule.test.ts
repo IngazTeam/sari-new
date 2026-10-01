@@ -18,8 +18,11 @@ describe('campaign wall clock scheduling in the merchant timezone', () => {
   ])('rejects %s in %s as %s rather than silently shifting it', (value, zone, issue) => {
     expect(resolveCampaignSchedule(value, zone, now)).toEqual({ status: 'invalid', issue });
   });
-  it.each(['2026-02-30T12:00', '2026-13-01T12:00', '2026-10-01T24:00', '2026-10-01T12:61', '2026-10-01', '2026-10-01T12:00Z', ' 2026-10-01T12:00', '2026-10-01T12:00:00.000'])('rejects malformed wall clock %s', value => {
+  it.each(['2026-02-30T12:00', '2026-13-01T12:00', '2026-10-01T24:00', '2026-10-01T12:61', '2026-10-01', '2026-10-01T12:00Z', ' 2026-10-01T12:00', '2026-10-01T12:00:00.001'])('rejects malformed wall clock %s', value => {
     expect(resolveCampaignSchedule(value, 'UTC', now)).toEqual({ status: 'invalid', issue: 'invalid_schedule' });
+  });
+  it.each(['.0', '.00', '.000'])('accepts browser normalization of an exact second with %s', fraction => {
+    expect(resolveCampaignSchedule(`2026-10-01T15:00:27${fraction}`, 'Asia/Riyadh', now)).toEqual({ status: 'valid', iso: '2026-10-01T12:00:27.000Z' });
   });
   it('allows removal of a schedule without requiring a timezone', () => {
     expect(resolveCampaignSchedule('', null, now)).toEqual({ status: 'empty' }); expect(campaignScheduleField(null, null)).toBe('');

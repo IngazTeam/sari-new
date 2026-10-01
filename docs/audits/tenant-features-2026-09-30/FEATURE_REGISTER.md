@@ -2,7 +2,7 @@
 
 هذا حصر مصدر قابل لإعادة التوليد، وليس ادعاءً بأن كل مسار عمل اختُبر أو أُعيد تصميمه. يشمل المكونات الفرعية المحلية، الحقول، الأزرار، النوافذ، التبويبات، واجهات القراءة والتعديل. العناصر الديناميكية تحتاج مراجعة إضافية.
 
-- 126 مسارًا مسجلًا، 357 ملف واجهة متصلًا، 2280 عنصر تحكم في المصدر.
+- 126 مسارًا مسجلًا، 360 ملف واجهة متصلًا، 2286 عنصر تحكم في المصدر.
 - 0 رابطًا حرفيًا غير مطابق، و0 ملف صفحة غير متصل بالمسارات المحصورة.
 
 | الصفحة | الملفات | عناصر التحكم | القراءة / التعديل | موك أب للصفحة |
@@ -14,8 +14,8 @@
 | /merchant/ai-hub — مركز المساعد | 1 | 1 | 0 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/analytics-hub — مركز التحليلات | 1 | 3 | 0 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/campaigns — الحملات | 4 | 36 | 4 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/campaigns/new — إنشاء حملة | 2 | 13 | 2 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/campaigns/:id/edit — إنشاء حملة | 2 | 13 | 2 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/campaigns/new — إنشاء حملة | 7 | 19 | 4 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/campaigns/:id/edit — إنشاء حملة | 7 | 19 | 4 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/campaigns/:id — تفاصيل الحملة | 6 | 12 | 3 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/campaigns/:id/report — تقرير الحملة | 8 | 16 | 4 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/products — المنتجات | 17 | 103 | 12 / 4 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -641,23 +641,29 @@
 | 68 | Button | تسمية ديناميكية / تحتاج مراجعة | CampaignPerformance |
 | 88 | summary | تسمية ديناميكية / تحتاج مراجعة | CampaignPerformance |
 
-## client/src/pages/merchant/NewCampaign.tsx
+## client/src/components/merchant/CampaignEditorWorkspace.tsx
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 163 | Link | العودة إلى تفاصيل الحملة | الحملة غير قابلة للتعديل |
-| 173 | Link | الحملات | الحملة غير قابلة للتعديل |
-| 222 | Input | اسم الحملة | NewCampaign |
-| 239 | select | آخر تفاعل | NewCampaign |
-| 260 | select | عدد المشتريات | NewCampaign |
-| 319 | Button | إعادة المحاولة | NewCampaign |
-| 336 | Textarea | نص الرسالة | NewCampaign |
-| 356 | Input | رابط الصورة (اختياري) | NewCampaign |
-| 373 | Input | موعد الإرسال (اختياري) | NewCampaign |
-| 411 | Button | تعديل الجمهور | NewCampaign |
-| 428 | Button | تعديل الرسالة والموعد | NewCampaign |
-| 456 | Button | السابق إلغاء | NewCampaign |
-| 466 | Button | جارٍ الحفظ… التالي تأكيد الجدولة حفظ التعديلات حفظ كمسودة | NewCampaign |
+| 109 | Link | back | editTitle title |
+| 110 | Link | details | editTitle |
+| 114 | Link | back | editTitle |
+| 115 | Button | refresh | editTitle title |
+| 117 | Button | reload | editTitle title |
+| 118 | Link | back | editTitle title |
+| 122 | Input | name | messageSection |
+| 123 | Textarea | message | messageSection |
+| 124 | Input | image | messageSection |
+| 127 | Button | resetAudience | audience |
+| 128 | Button | تسمية ديناميكية / تحتاج مراجعة | audience |
+| 129 | Input | activity minimum maximum | audience |
+| 130 | Button | refresh | previewAudience |
+| 132 | input | scheduleMode draftMode | schedule |
+| 133 | Input | scheduleTime | schedule |
+| 137 | Button | review | preview |
+| 139 | DialogContent | reload reloadTitle reviewTitle reload reloadHint scheduleWarning draftHint review scheduleMode draftMode : T · lastActivityDays purchaseCountMin purchaseCountMax activity minimum maximum stale cancel busy reload reloadCo | preview |
+| 141 | Button | cancel | CampaignEditorWorkspace |
+| 141 | Button | busy reload reloadConfirm confirmSchedule confirmDraft | CampaignEditorWorkspace |
 
 ## client/src/components/merchant/CampaignDetailsWorkspace.tsx
 

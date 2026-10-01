@@ -18,8 +18,11 @@ export function resolveCampaignSchedule(value: string, timezone: string | null, 
   if (!Number.isFinite(now.getTime())) return { status: 'invalid', issue: 'invalid_schedule' };
   if (!timezone) return { status: 'invalid', issue: 'invalid_timezone' };
   try { zonedWallTime(now, timezone); } catch { return { status: 'invalid', issue: 'invalid_timezone' }; }
-  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?$/.test(value)) return { status: 'invalid', issue: 'invalid_schedule' };
-  const canonical = value.length === 16 ? `${value}:00` : value, wall = new Date(`${canonical}Z`);
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.0{1,3})?)?$/.test(value)) return { status: 'invalid', issue: 'invalid_schedule' };
+  // datetime-local may serialize exact seconds as :ss.000. Accept that
+  // normalization without silently truncating a non-zero fractional second.
+  const seconds = value.replace(/\.0{1,3}$/, '');
+  const canonical = seconds.length === 16 ? `${seconds}:00` : seconds, wall = new Date(`${canonical}Z`);
   if (!Number.isFinite(wall.getTime()) || wall.toISOString().slice(0, 19) !== canonical) return { status: 'invalid', issue: 'invalid_schedule' };
   const matches = resolveZonedWallTime(wall, timezone);
   if (!matches.length) return { status: 'invalid', issue: 'nonexistent' };

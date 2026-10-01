@@ -1340,6 +1340,39 @@
           "api": "campaigns.detailsWorkspace"
         }
       ]
+    },
+    {
+      "routes": [
+        "/merchant/campaigns/new",
+        "/merchant/campaigns/:id/edit"
+      ],
+      "removed": [
+        "campaigns.getById",
+        "campaigns.filterCustomers"
+      ],
+      "required": [
+        "campaigns.editorWorkspace",
+        "campaigns.audiencePreview",
+        "campaigns.create",
+        "campaigns.update"
+      ],
+      "note": "Actual editor uses an actor- and tenant-bound seed, count-only exact-filter audience preview, merchant-zone scheduling and explicit save review. Updates carry the reviewed definition; invalid saved targeting requires explicit repair. Legacy reads remain compatible.",
+      "evidence": [
+        "server/campaign-editor-page.test.tsx",
+        "server/campaign-editor.mysql.test.ts",
+        "server/campaign-edit.mysql.test.ts",
+        "server/campaign-schedule.test.ts"
+      ],
+      "checks": [
+        {
+          "file": "client/src/components/merchant/CampaignEditorWorkspace.tsx",
+          "contains": "expectedDefinition: campaign!.definitionKey"
+        },
+        {
+          "file": "client/src/components/merchant/CampaignEditorWorkspace.tsx",
+          "contains": "resolveCampaignSchedule"
+        }
+      ]
     }
   ]
 }

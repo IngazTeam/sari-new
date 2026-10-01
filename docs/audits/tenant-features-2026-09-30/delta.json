@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-01T19:20:54.973Z",
+  "generatedAt": "2026-10-01T19:55:31.018Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 357,
-      "controls": 2280
+      "files": 360,
+      "controls": 2286
     }
   },
   "addedFiles": [
@@ -44,11 +44,14 @@
     "client/src/components/merchant/CampaignListWorkspace.tsx",
     "client/src/lib/campaign-navigation.ts",
     "client/src/components/merchant/CampaignPerformance.tsx",
-    "client/src/lib/merchant-date.ts",
     "client/src/lib/campaign-report-navigation.ts",
+    "client/src/components/merchant/CampaignEditorWorkspace.tsx",
+    "client/src/lib/campaign-editor-labels.ts",
+    "client/src/lib/campaign-editor-form.ts",
+    "client/src/lib/conversation-message.ts",
+    "client/src/lib/merchant-date.ts",
     "client/src/components/merchant/CampaignDetailsWorkspace.tsx",
     "client/src/lib/campaign-details-labels.ts",
-    "client/src/lib/conversation-message.ts",
     "client/src/components/merchant/CampaignReportWorkspace.tsx",
     "client/src/lib/campaign-report-labels.ts",
     "client/src/lib/campaign-report-csv.ts",
@@ -214,6 +217,7 @@
     "client/src/pages/merchant/AIWhatsAppHub.tsx",
     "client/src/pages/merchant/AnalyticsHub.tsx",
     "client/src/pages/merchant/Campaigns.tsx",
+    "client/src/pages/merchant/NewCampaign.tsx",
     "client/src/pages/merchant/CampaignDetails.tsx",
     "client/src/pages/merchant/CampaignReport.tsx",
     "client/src/pages/merchant/Products.tsx",
@@ -420,18 +424,34 @@
     {
       "route": "/merchant/campaigns/new",
       "controlsBefore": 13,
-      "controlsNow": 13,
-      "removedQueries": [],
-      "addedQueries": [],
+      "controlsNow": 19,
+      "removedQueries": [
+        "campaigns.getById",
+        "campaigns.filterCustomers"
+      ],
+      "addedQueries": [
+        "auth.me",
+        "merchants.getCurrent",
+        "campaigns.editorWorkspace",
+        "campaigns.audiencePreview"
+      ],
       "removedMutations": [],
       "addedMutations": []
     },
     {
       "route": "/merchant/campaigns/:id/edit",
       "controlsBefore": 13,
-      "controlsNow": 13,
-      "removedQueries": [],
-      "addedQueries": [],
+      "controlsNow": 19,
+      "removedQueries": [
+        "campaigns.getById",
+        "campaigns.filterCustomers"
+      ],
+      "addedQueries": [
+        "auth.me",
+        "merchants.getCurrent",
+        "campaigns.editorWorkspace",
+        "campaigns.audiencePreview"
+      ],
       "removedMutations": [],
       "addedMutations": []
     },
