@@ -2,28 +2,18 @@ import { build } from "esbuild";
 import { readFileSync, writeFileSync, readdirSync } from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
-const copy = Object.fromEntries(
-  ["ar", "en"].map(lang => {
-    const all = JSON.parse(
-      readFileSync(`client/src/locales/${lang}.json`, "utf8")
-    );
-    return [
-      lang,
-      Object.fromEntries(
-        [
-          "virtualTeamUx",
-          "virtualTeamReview",
-          "virtualTeamDraftUx",
-          "virtualTeamReceiptUx",
-          "personaPreviewUx",
-          "testSariPage",
-          "sariPlayground",
-          "merchantUx",
-        ].map(key => [key, all[key]])
-      ),
-    ];
-  })
-);
+import { loadPreviewLocales } from './preview-locales.mjs';
+export const previewNamespaces = [
+  "virtualTeamUx",
+  "virtualTeamReview",
+  "virtualTeamDraftUx",
+  "virtualTeamReceiptUx",
+  "personaPreviewUx",
+  "testSariPage",
+  "sariPlayground",
+  "merchantUx"
+];
+const copy = await loadPreviewLocales(previewNamespaces);
 await build({
   entryPoints: ["prototypes/tenant-dashboard/src/persona-preview.tsx"],
   outfile: "prototypes/tenant-dashboard/site/persona-preview.js",
