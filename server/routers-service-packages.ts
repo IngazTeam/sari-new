@@ -2,36 +2,36 @@
  * Service Packages Router Module
  * Handles service package management
  * 
- * This is a standalone module following the "Parallel Coexistence" pattern.
+ * Shared by the main router and direct module consumers.
  */
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { protectedProcedure, router } from "./_core/trpc";
+import { merchantProcedure, permissionProcedure, router } from "./_core/trpc";
 import {
   createServicePackage,
   deleteServicePackage,
-  getMerchantByUserId,
   getServicePackageById,
   getServicePackagesByMerchant,
   updateServicePackage,
 } from './db';
+import {assertServiceReferences,serviceReferenceId,serviceReferenceIds} from './service-reference-access';
 
 export const servicePackagesRouter = router({
     // Create package
-    create: protectedProcedure
+    create: permissionProcedure('products.manage')
         .input(z.object({
             name: z.string(),
             description: z.string().optional(),
-            serviceIds: z.array(z.number()),
+            serviceIds: serviceReferenceIds,
             originalPrice: z.number(),
             packagePrice: z.number(),
             discountPercentage: z.number().optional(),
-        }))
+        }).strict())
         .mutation(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
-            if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+            const merchant = {id:ctx.merchantId};
 
+            await assertServiceReferences(merchant.id,input);
             const packageId = await createServicePackage({
                 merchantId: merchant.id,
                 name: input.name,
@@ -47,20 +47,18 @@ export const servicePackagesRouter = router({
         }),
 
     // List packages
-    list: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+    list: merchantProcedure.query(async ({ ctx }) => {
+        const merchant = {id:ctx.merchantId};
 
         const packages = await getServicePackagesByMerchant(merchant.id);
         return { packages };
     }),
 
     // Get package by ID
-    getById: protectedProcedure
-        .input(z.object({ packageId: z.number() }))
+    getById: merchantProcedure
+        .input(z.object({ packageId: serviceReferenceId }).strict())
         .query(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
-            if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+            const merchant = {id:ctx.merchantId};
 
             const pkg = await getServicePackageById(input.packageId);
             if (!pkg || pkg.merchantId !== merchant.id) {
@@ -71,26 +69,26 @@ export const servicePackagesRouter = router({
         }),
 
     // Update package
-    update: protectedProcedure
+    update: permissionProcedure('products.manage')
         .input(z.object({
-            packageId: z.number(),
+            packageId: serviceReferenceId,
             name: z.string().optional(),
             description: z.string().optional(),
-            serviceIds: z.array(z.number()).optional(),
+            serviceIds: serviceReferenceIds.optional(),
             originalPrice: z.number().optional(),
             packagePrice: z.number().optional(),
             discountPercentage: z.number().optional(),
             isActive: z.boolean().optional(),
-        }))
+        }).strict())
         .mutation(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
-            if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+            const merchant = {id:ctx.merchantId};
 
             const pkg = await getServicePackageById(input.packageId);
             if (!pkg || pkg.merchantId !== merchant.id) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Package not found' });
             }
 
+            await assertServiceReferences(merchant.id,input);
             const updateData: any = {};
             if (input.name !== undefined) updateData.name = input.name;
             if (input.description !== undefined) updateData.description = input.description;
@@ -106,11 +104,10 @@ export const servicePackagesRouter = router({
         }),
 
     // Delete package
-    delete: protectedProcedure
-        .input(z.object({ packageId: z.number() }))
+    delete: permissionProcedure('products.manage')
+        .input(z.object({ packageId: serviceReferenceId }).strict())
         .mutation(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
-            if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+            const merchant = {id:ctx.merchantId};
 
             const pkg = await getServicePackageById(input.packageId);
             if (!pkg || pkg.merchantId !== merchant.id) {

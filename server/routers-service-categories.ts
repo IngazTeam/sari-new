@@ -2,24 +2,24 @@
  * Service Categories Router Module
  * Handles service category management
  * 
- * This is a standalone module following the "Parallel Coexistence" pattern.
+ * Shared by the main router and direct module consumers.
  */
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { protectedProcedure, router } from "./_core/trpc";
+import { merchantProcedure, permissionProcedure, router } from "./_core/trpc";
 import {
   createServiceCategory,
   deleteServiceCategory,
-  getMerchantByUserId,
   getServiceCategoriesByMerchant,
   getServiceCategoryById,
   updateServiceCategory,
 } from './db';
+import {serviceReferenceId} from './service-reference-access';
 
 export const serviceCategoriesRouter = router({
     // Create category
-    create: protectedProcedure
+    create: permissionProcedure('products.manage')
         .input(z.object({
             name: z.string(),
             nameEn: z.string().optional(),
@@ -27,10 +27,9 @@ export const serviceCategoriesRouter = router({
             icon: z.string().optional(),
             color: z.string().optional(),
             displayOrder: z.number().optional(),
-        }))
+        }).strict())
         .mutation(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
-            if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+            const merchant = {id:ctx.merchantId};
 
             const categoryId = await createServiceCategory({
                 merchantId: merchant.id,
@@ -46,18 +45,17 @@ export const serviceCategoriesRouter = router({
         }),
 
     // List categories
-    list: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+    list: merchantProcedure.query(async ({ ctx }) => {
+        const merchant = {id:ctx.merchantId};
 
         const categories = await getServiceCategoriesByMerchant(merchant.id);
         return { categories };
     }),
 
     // Update category
-    update: protectedProcedure
+    update: permissionProcedure('products.manage')
         .input(z.object({
-            categoryId: z.number(),
+            categoryId: serviceReferenceId,
             name: z.string().optional(),
             nameEn: z.string().optional(),
             description: z.string().optional(),
@@ -65,10 +63,9 @@ export const serviceCategoriesRouter = router({
             color: z.string().optional(),
             displayOrder: z.number().optional(),
             isActive: z.boolean().optional(),
-        }))
+        }).strict())
         .mutation(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
-            if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+            const merchant = {id:ctx.merchantId};
 
             const category = await getServiceCategoryById(input.categoryId);
             if (!category || category.merchantId !== merchant.id) {
@@ -90,11 +87,10 @@ export const serviceCategoriesRouter = router({
         }),
 
     // Delete category
-    delete: protectedProcedure
-        .input(z.object({ categoryId: z.number() }))
+    delete: permissionProcedure('products.manage')
+        .input(z.object({ categoryId: serviceReferenceId }).strict())
         .mutation(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
-            if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+            const merchant = {id:ctx.merchantId};
 
             const category = await getServiceCategoryById(input.categoryId);
             if (!category || category.merchantId !== merchant.id) {

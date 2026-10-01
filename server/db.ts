@@ -6038,12 +6038,13 @@ export async function deleteServiceCategory(id: number) {
   await db.update(serviceCategories).set({ isActive: 0 }).where(eq(serviceCategories.id, id));
 }
 
-export async function getServicesByCategory(categoryId: number) {
+export async function getServicesByCategory(categoryId: number, merchantId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   return await db.select().from(services)
     .where(and(
       eq(services.categoryId, categoryId),
+      merchantId === undefined ? undefined : eq(services.merchantId, merchantId),
       eq(services.isActive, 1)
     ))
     .orderBy(services.displayOrder, services.name);

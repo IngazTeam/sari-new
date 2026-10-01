@@ -2,33 +2,33 @@
  * Services Router Module
  * Handles service management for booking-based businesses
  * 
- * This is a standalone module following the "Parallel Coexistence" pattern.
+ * Shared by the main router and direct module consumers.
  */
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { protectedProcedure, router } from "./_core/trpc";
+import { merchantProcedure, permissionProcedure, router } from "./_core/trpc";
 import {
   createService,
   deleteService,
   getBookingStats,
   getBookingsByService,
-  getMerchantByUserId,
   getServiceById,
   getServiceRatingStats,
   getServicesByCategory,
   getServicesByMerchant,
   updateService,
 } from './db';
+import {assertServiceReferences,serviceReferenceId,serviceReferenceIds} from './service-reference-access';
 
 export const servicesRouter = router({
     // Create service
-    create: protectedProcedure
+    create: permissionProcedure('products.manage')
         .input(z.object({
             name: z.string(),
             description: z.string().optional(),
             category: z.string().optional(),
-            categoryId: z.number().optional(),
+            categoryId: serviceReferenceId.optional(),
             priceType: z.enum(['fixed', 'variable', 'custom']),
             basePrice: z.number().optional(),
             minPrice: z.number().optional(),
@@ -38,13 +38,13 @@ export const servicesRouter = router({
             requiresAppointment: z.boolean().optional(),
             maxBookingsPerDay: z.number().optional(),
             advanceBookingDays: z.number().optional(),
-            staffIds: z.array(z.number()).optional(),
+            staffIds: serviceReferenceIds.optional(),
             displayOrder: z.number().optional(),
-        }))
+        }).strict())
         .mutation(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
-            if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+            const merchant = {id:ctx.merchantId};
 
+            await assertServiceReferences(merchant.id,input);
             const serviceId = await createService({
                 merchantId: merchant.id,
                 name: input.name,
@@ -69,20 +69,18 @@ export const servicesRouter = router({
         }),
 
     // List services
-    list: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+    list: merchantProcedure.query(async ({ ctx }) => {
+        const merchant = {id:ctx.merchantId};
 
         const services = await getServicesByMerchant(merchant.id);
         return { services };
     }),
 
     // Get service by ID with booking stats
-    getById: protectedProcedure
-        .input(z.object({ serviceId: z.number() }))
+    getById: merchantProcedure
+        .input(z.object({ serviceId: serviceReferenceId }).strict())
         .query(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
-            if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+            const merchant = {id:ctx.merchantId};
 
             const service = await getServiceById(input.serviceId);
             if (!service || service.merchantId !== merchant.id) {
@@ -102,13 +100,13 @@ export const servicesRouter = router({
         }),
 
     // Update service
-    update: protectedProcedure
+    update: permissionProcedure('products.manage')
         .input(z.object({
-            serviceId: z.number(),
+            serviceId: serviceReferenceId,
             name: z.string().optional(),
             description: z.string().optional(),
             category: z.string().optional(),
-            categoryId: z.number().optional(),
+            categoryId: serviceReferenceId.optional(),
             priceType: z.enum(['fixed', 'variable', 'custom']).optional(),
             basePrice: z.number().optional(),
             minPrice: z.number().optional(),
@@ -118,19 +116,19 @@ export const servicesRouter = router({
             requiresAppointment: z.boolean().optional(),
             maxBookingsPerDay: z.number().optional(),
             advanceBookingDays: z.number().optional(),
-            staffIds: z.array(z.number()).optional(),
+            staffIds: serviceReferenceIds.optional(),
             displayOrder: z.number().optional(),
             isActive: z.boolean().optional(),
-        }))
+        }).strict())
         .mutation(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
-            if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+            const merchant = {id:ctx.merchantId};
 
             const service = await getServiceById(input.serviceId);
             if (!service || service.merchantId !== merchant.id) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Service not found' });
             }
 
+            await assertServiceReferences(merchant.id,input);
             const updateData: any = {};
             if (input.name !== undefined) updateData.name = input.name;
             if (input.description !== undefined) updateData.description = input.description;
@@ -155,11 +153,10 @@ export const servicesRouter = router({
         }),
 
     // Delete service
-    delete: protectedProcedure
-        .input(z.object({ serviceId: z.number() }))
+    delete: permissionProcedure('products.manage')
+        .input(z.object({ serviceId: serviceReferenceId }).strict())
         .mutation(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
-            if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+            const merchant = {id:ctx.merchantId};
 
             const service = await getServiceById(input.serviceId);
             if (!service || service.merchantId !== merchant.id) {
@@ -172,13 +169,13 @@ export const servicesRouter = router({
         }),
 
     // Get services by category
-    getByCategory: protectedProcedure
-        .input(z.object({ categoryId: z.number() }))
+    getByCategory: merchantProcedure
+        .input(z.object({ categoryId: serviceReferenceId }).strict())
         .query(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
-            if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+            const merchant = {id:ctx.merchantId};
 
-            const allServices = await getServicesByCategory(input.categoryId);
+            await assertServiceReferences(merchant.id,{categoryId:input.categoryId});
+            const allServices = await getServicesByCategory(input.categoryId,merchant.id);
             // Filter to only return services belonging to this merchant
             const services = allServices.filter((s: any) => s.merchantId === merchant.id);
             return { services };
