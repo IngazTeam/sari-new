@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-01T04:12:14.632Z",
+  "generatedAt": "2026-10-01T04:49:37.639Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -2053,7 +2053,7 @@
     },
     {
       "file": "client/src/pages/merchant/AIWhatsAppHub.tsx",
-      "hash": "2a01efcb0aae",
+      "hash": "235084403003",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
@@ -2061,116 +2061,101 @@
       "sections": [
         {
           "label": "مركز المساعد الذكي",
-          "line": 120,
+          "line": 136,
           "tag": "h1"
         },
         {
           "label": "",
-          "line": 144,
+          "line": 171,
           "tag": "CardTitle"
         }
       ],
       "choices": [
         {
           "name": "cards",
-          "line": 35,
+          "line": 39,
           "values": [
             {
               "icon": "Brain",
               "title": "عقل ساري",
               "description": "راجع نتائج المعرفة ومصادرها والفجوات التي تحتاج معالجة.",
-              "path": "/merchant/sari-brain",
-              "color": "bg-primary/10 text-primary"
+              "path": "/merchant/sari-brain"
             },
             {
               "icon": "Users",
               "title": "شخصيات الفريق",
               "description": "الأدوار والأسلوب وكلمات التحويل والدوام.",
-              "path": "/merchant/virtual-team",
-              "color": "bg-primary/10 text-primary"
+              "path": "/merchant/virtual-team"
             },
             {
               "icon": "UserCheck",
               "title": "التدخل البشري",
               "description": "مدة صمت المساعد وعبارات الإيقاف والاستئناف.",
-              "path": "/merchant/human-takeover",
-              "color": "bg-primary/10 text-primary"
+              "path": "/merchant/human-takeover"
             },
             {
               "icon": "Globe",
               "title": "لغة المساعد",
               "description": "اختر لغة المحادثة وراجع مثالًا للرد.",
-              "path": "/merchant/language-settings",
-              "color": "bg-primary/10 text-primary"
+              "path": "/merchant/language-settings"
             },
             {
               "icon": "Bot",
               "title": "إعدادات المساعد",
               "description": "الرد التلقائي، الأوقات، المجموعات، التعليمات وصلاحيات البيع.",
               "path": "/merchant/bot-settings",
-              "badge": "مهم",
-              "badgeVariant": "default",
-              "color": "bg-violet-500/10 text-violet-600 dark:text-violet-400"
+              "badge": "أساسي",
+              "badgeVariant": "default"
             },
             {
               "icon": "TestTube",
-              "title": "تجربة ساري",
-              "description": "اختبر كيف يرد ساري على أسئلة عملائك قبل التفعيل الفعلي.",
-              "path": "/merchant/test-sari",
-              "color": "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+              "title": "جرّب ساري",
+              "description": "اختبر أسئلة محددة وراجع الرد ومصدره قبل الاعتماد على النتيجة.",
+              "path": "/merchant/test-sari"
             },
             {
               "icon": "Sparkles",
-              "title": "ساحة التجربة",
-              "description": "جرب سيناريوهات محادثة متقدمة مع إعدادات مخصصة.",
+              "title": "مختبر ساري",
+              "description": "جرّب سيناريوهات المحادثة وراجع نتائج كل تجربة وحدودها.",
               "path": "/merchant/sari-playground",
               "badge": "تجريبي",
-              "badgeVariant": "secondary",
-              "color": "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+              "badgeVariant": "secondary"
             },
             {
               "icon": "Key",
               "title": "الردود السريعة والكلمات",
-              "description": "أضف كلمات مفتاحية ليتعرف عليها ساري ويرد بردود محددة.",
-              "path": "/merchant/quick-responses",
-              "color": "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+              "description": "اضبط الكلمات المفتاحية والردود المرتبطة بها.",
+              "path": "/merchant/quick-responses"
             },
             {
               "icon": "Lightbulb",
-              "title": "اقتراحات الذكاء الاصطناعي",
-              "description": "اطلع على اقتراحات ساري لتحسين ردودك ومنتجاتك.",
-              "path": "/merchant/ai-suggestions",
-              "badge": "جديد",
-              "badgeVariant": "default",
-              "color": "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400"
+              "title": "اقتراحات التحسين",
+              "description": "راجع الاقتراحات وأدلتها قبل اعتماد أي تغيير.",
+              "path": "/merchant/ai-suggestions"
             },
             {
               "icon": "Mic",
               "title": "الرسائل الصوتية",
-              "description": "تحليلات استخدام الرسائل الصوتية وأدائها.",
-              "path": "/merchant/voice-messages",
-              "color": "bg-rose-500/10 text-rose-600 dark:text-rose-400"
+              "description": "راجع الاستخدام المسجل للرسائل الصوتية وحدود البيانات المتاحة.",
+              "path": "/merchant/voice-messages"
             },
             {
               "icon": "Calendar",
               "title": "الرسائل المجدولة",
-              "description": "جدول رسائل واتساب لإرسالها تلقائياً في أوقات محددة.",
-              "path": "/merchant/scheduled-messages",
-              "color": "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400"
+              "description": "حدّد المستلم والموعد، ثم تابع حالة الإرسال المسجلة.",
+              "path": "/merchant/scheduled-messages"
             },
             {
               "icon": "BellRing",
-              "title": "الإشعارات التلقائية",
-              "description": "أعد رسائل تذكير الحجز وتنبيهات المتابعة التلقائية.",
-              "path": "/merchant/whatsapp-auto-notifications",
-              "color": "bg-orange-500/10 text-orange-600 dark:text-orange-400"
+              "title": "قوالب إشعارات واتساب",
+              "description": "احفظ قوالب التذكير وراجع نصها. حفظ القالب لا يفعّل الإرسال التلقائي.",
+              "path": "/merchant/whatsapp-auto-notifications"
             },
             {
               "icon": "BarChart3",
               "title": "تحليلات ساري",
-              "description": "تابع أداء البوت — معدل الرد، رضا العملاء، والمحادثات.",
-              "path": "/merchant/sari-analytics",
-              "color": "bg-teal-500/10 text-teal-600 dark:text-teal-400"
+              "description": "راجع المقاييس المسجلة وحجم العينة؛ الأرقام وحدها لا تثبت جودة المعرفة أو احتراف المبيعات.",
+              "path": "/merchant/sari-analytics"
             }
           ]
         }
@@ -18093,7 +18078,7 @@
         "client/src/pages/merchant/AIWhatsAppHub.tsx"
       ],
       "controls": [
-        "34f0bbf44946"
+        "8628b316e1e6"
       ],
       "queries": [],
       "mutations": [],
@@ -30710,9 +30695,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "34f0bbf44946",
+      "id": "8628b316e1e6",
       "file": "client/src/pages/merchant/AIWhatsAppHub.tsx",
-      "line": 131,
+      "line": 151,
       "tag": "Link",
       "role": "",
       "kind": "action",

@@ -1,6 +1,8 @@
 // Same-origin, allowlisted communication between the central mockup and its actual-component previews.
 (() => {
   const pages = new Set(['knowledge-groups.html','sales-knowledge.html','brain-preview.html','reply-quality.html','knowledge-activity.html','personas.html','assistant-options.html','assistant-settings.html']);
+  const assistantTools = new Set(['sari-brain','virtual-team','human-takeover','language-settings','bot-settings','test-sari','sari-playground','quick-responses','ai-suggestions','voice-messages','scheduled-messages','whatsapp-auto-notifications','sari-analytics'].map(page=>'/merchant/'+page));
+  const isAssistantHub = url => url.pathname==='/assistant-settings.html' && url.search==='?embed=brain&page=hub';
   const embedded = parent !== window && new URLSearchParams(location.search).get('embed') === 'brain' && pages.has(location.pathname.split('/').pop());
   if (embedded) {
     document.documentElement.dataset.brainEmbedded = 'true';
@@ -8,6 +10,10 @@
       const anchor=event.target.closest?.('a[href]');
       if(!anchor || event.defaultPrevented || event.button!==0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey)return;
       const url=new URL(anchor.getAttribute('href'),location.href);
+      const tool = url.hash.startsWith('#/page') ? url.hash.slice(6) : '';
+      if(isAssistantHub(location) && url.origin===location.origin && url.pathname==='/' && !url.search && assistantTools.has(tool)){
+        event.preventDefault();parent.postMessage({type:'sary-brain-preview',action:'assistantTool',route:tool},location.origin);return;
+      }
       const destination = {'#/page/merchant/test-sari':'testSession','#/page/merchant/bot-settings':'assistantSettings','#/page/merchant/ai-hub':'assistantHub','#/page/merchant/whatsapp':'whatsapp'}[url.hash];
       const conversation = /^#\/page\/merchant\/conversations\?phone=(ux-customer-0(?:5[1-9]|6[0-2]))$/.exec(url.hash);
       if(url.origin===location.origin && conversation){event.preventDefault();parent.postMessage({type:'sary-brain-preview',action:'conversation',phone:conversation[1]},location.origin);return;}
@@ -67,6 +73,7 @@
     if (url.origin !== location.origin || !pages.has(url.pathname.split('/').pop()) || url.searchParams.get('embed') !== 'brain') return;
     const message=event.data;
     if (!message || typeof message !== 'object' || message.type!=='sary-brain-preview') return;
+    if(message.action==='assistantTool' && isAssistantHub(url) && assistantTools.has(message.route))location.hash='#/page'+message.route;
     if(message.action==='conversation' && typeof message.phone==='string' && /^ux-customer-0(?:5[1-9]|6[0-2])$/.test(message.phone) && url.pathname==='/assistant-options.html')location.hash='#/page/merchant/conversations?phone='+encodeURIComponent(message.phone);
     if(message.action==='resize' && Number.isFinite(message.height) && message.height>=0 && message.height<=20000){
       frame.dataset.contentHeight=String(Math.max(640,Math.ceil(message.height)));

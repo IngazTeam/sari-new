@@ -12,7 +12,7 @@ beforeEach(()=>{
   w.structuredClone=structuredClone;w.scrollTo=()=>{};
   w.HTMLDialogElement.prototype.showModal=function(){this.setAttribute('open','');};
   w.HTMLDialogElement.prototype.close=function(){this.removeAttribute('open');};
-  for(const name of ['features.js','page-catalog.js','brain.js','brain-workbench.js','assistant.js','notifications.js','pages.js','app.js'])runInContext(readFileSync(base+name,'utf8'),dom.getInternalVMContext());
+  for(const name of ['features.js','page-catalog.js','brain.js','brain-workbench.js','notifications.js','pages.js','app.js'])runInContext(readFileSync(base+name,'utf8'),dom.getInternalVMContext());
 });
 afterEach(()=>{expect(errors).toEqual([]);dom.window.close();});
 const route=(page:string)=>{w.history.replaceState(null,'',`#/page/merchant/${page}`);w.dispatchEvent(new w.HashChangeEvent('hashchange'));};
@@ -22,7 +22,7 @@ const submit=(type:string)=>w.document.querySelector(`[data-as-form="${type}"]`)
 const data=()=>JSON.parse(w.localStorage.getItem('sary-assistant-preview-v1'));
 describe('assistant feature workflows',()=>{
   it('opens the actual settings, policies and review component instead of the retired manual form',()=>{route('bot-settings');expect(w.document.querySelector('iframe[data-brain-preview]')?.getAttribute('src')).toBe('./assistant-settings.html?embed=brain');expect(w.document.querySelector('[data-as-form="settings"]')).toBeNull();});
-  it('links brain, personas and all assistant tools from the hub',()=>{route('ai-hub');expect(w.document.querySelectorAll('.as-hub-card')).toHaveLength(13);for(const a of w.document.querySelectorAll('.as-hub-card'))expect(w.TenantPages.find(a.getAttribute('href').slice(6))).toBeTruthy();});
+  it('opens the actual assistant hub without the retired editor',()=>{route('ai-hub');expect(w.document.querySelector('iframe[data-brain-preview]')?.getAttribute('src')).toBe('./assistant-settings.html?embed=brain&page=hub');expect(w.AssistantPreview).toBeUndefined();});
 });
 describe('production persona form contract',()=>{
   it('rejects whitespace, incomplete/equal shifts and oversized instructions; accepts overnight shifts',()=>{

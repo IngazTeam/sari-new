@@ -63,7 +63,6 @@ beforeEach(() => {
     "page-catalog.js",
     "brain.js",
     "brain-workbench.js",
-    "assistant.js",
     "notifications.js",
     "test-metrics-preview.js",
     "pages.js",

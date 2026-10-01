@@ -8366,12 +8366,12 @@
   "advancedAnalytics": {},
   "advancedAnalyticsDashboard": {},
   "aIWhatsAppHub": {
-    "auto_0": "مركز المساعد الذكي",
-    "auto_1": "إعدادات متقدمة لتخصيص ساري وقنوات التواصل التلقائية",
-    "auto_2": "أدوات ذكية",
-    "auto_3": "مدعوم بالذكاء",
-    "auto_4": "رد تلقائي",
-    "auto_5": "واتساب"
+    "auto_0": "Assistant hub",
+    "auto_1": "Manage Sari’s knowledge, replies and conversation tools",
+    "auto_2": "Assistant tools",
+    "auto_3": "AI assisted",
+    "auto_4": "Automatic replies",
+    "auto_5": "WhatsApp"
   },
   "analyticsHub": {
     "auto_0": "مركز التحليلات",
@@ -12047,5 +12047,26 @@
   "scope": "This checks the saved reply switch and working schedule at the displayed time. It excludes your draft and does not confirm WhatsApp connection, message delivery, knowledge quality, or sales proficiency. Human takeover or conversation rules may prevent a reply.",
   "connection": "Review WhatsApp connection",
   "preview": "Try an assistant reply"
+}
+,
+  "assistantHubUx": {
+  "essential": "Essential",
+  "experimental": "Experimental",
+  "test": "Test Sari",
+  "testDescription": "Test specific questions and review the reply and its source before relying on the result.",
+  "playground": "Sari playground",
+  "playgroundDescription": "Try conversation scenarios and review each result and its limitations.",
+  "quickResponses": "Quick replies and keywords",
+  "quickResponsesDescription": "Set up keywords and their associated replies.",
+  "suggestions": "Improvement suggestions",
+  "suggestionsDescription": "Review suggestions and their evidence before accepting a change.",
+  "voice": "Voice messages",
+  "voiceDescription": "Review recorded voice message usage and the limits of available data.",
+  "scheduled": "Scheduled messages",
+  "scheduledDescription": "Choose the recipient and time, then follow the recorded sending status.",
+  "notifications": "WhatsApp notification templates",
+  "notificationsDescription": "Save and review reminder templates. Saving a template does not enable automatic sending.",
+  "analytics": "Sari analytics",
+  "analyticsDescription": "Review recorded metrics and sample size; numbers alone do not prove knowledge quality or sales proficiency."
 }
 }

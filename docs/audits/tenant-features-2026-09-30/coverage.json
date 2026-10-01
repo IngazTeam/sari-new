@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-01T04:12:14.632Z",
+  "generatedAt": "2026-10-01T04:49:37.639Z",
   "definition": "Every registered route is accounted for; source inventory and design completion are different statuses.",
   "routes": [
     {
@@ -7015,7 +7015,7 @@
         "client/src/pages/merchant/AIWhatsAppHub.tsx"
       ],
       "controls": [
-        "34f0bbf44946"
+        "8628b316e1e6"
       ],
       "queries": [],
       "mutations": [],
@@ -7031,9 +7031,9 @@
       "gaps": [],
       "controlDetails": [
         {
-          "id": "34f0bbf44946",
+          "id": "8628b316e1e6",
           "file": "client/src/pages/merchant/AIWhatsAppHub.tsx",
-          "line": 131,
+          "line": 151,
           "tag": "Link",
           "role": "",
           "kind": "action",

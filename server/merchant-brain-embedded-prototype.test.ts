@@ -13,6 +13,19 @@ beforeEach(()=>{
 });
 afterEach(()=>dom.window.close());
 const send=(data:any,origin='http://127.0.0.1:4329',source=frame.contentWindow)=>w.dispatchEvent(new w.MessageEvent('message',{origin,source,data}));
+it.each(['sari-brain','virtual-team','human-takeover','language-settings','bot-settings','test-sari','sari-playground','quick-responses','ai-suggestions','voice-messages','scheduled-messages','whatsapp-auto-notifications','sari-analytics'])('opens %s only through the owned assistant hub frame',route=>{
+  frame.setAttribute('src','./assistant-settings.html?embed=brain&page=hub');
+  send({type:'sary-brain-preview',action:'assistantTool',route:'/merchant/'+route});
+  expect(w.location.hash).toBe('#/page/merchant/'+route);
+});
+it('rejects arbitrary routes and assistant navigation from unrelated or altered frames',()=>{
+  const message={type:'sary-brain-preview',action:'assistantTool',route:'/merchant/virtual-team'};
+  frame.setAttribute('src','./assistant-settings.html?embed=brain&page=hub');
+  send(message,'https://example.com');send(message,undefined,w);
+  for(const route of ['/merchant/virtual-team?token=secret','/merchant/virtual-team#evil','/merchant/unknown','https://example.com','javascript:alert(1)',null])send({...message,route});
+  for(const src of ['./assistant-settings.html?embed=brain','./personas.html?embed=brain&page=hub','./assistant-settings.html?embed=brain&page=hub&extra=true']){frame.setAttribute('src',src);send(message);}
+  expect(w.location.hash).toBe('');
+});
 it('accepts only bounded measured height from an owned same-origin preview',()=>{
   send({type:'sary-brain-preview',action:'resize',height:900});expect(frame.style.height).toBe('900px');
   for(const height of [-1,NaN,Infinity,'800',20001]) send({type:'sary-brain-preview',action:'resize',height});
