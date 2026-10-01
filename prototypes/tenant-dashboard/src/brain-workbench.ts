@@ -1282,12 +1282,6 @@ window.SaryBrainWorkbench = (() => {
     alert,
     refresh,
     manualButton: () => btn("مراجعة يدوية مختصرة", "intake", dis()),
-    sources: () => ({
-      ...window.SaryBrainPreview.sourceCounts(),
-      website: data.pages.length,
-      faqs: data.faqs.length,
-      sections: data.sections.length,
-    }),
     ingest(d, mode) {
       data.sections.unshift({
         id: Math.max(0, ...data.sections.map(s => s.id)) + 1,
@@ -1298,21 +1292,6 @@ window.SaryBrainWorkbench = (() => {
         source: d.type === "document" ? "document" : "manual",
         intakeState: mode,
       });
-      data.candidate = false;
-      data.run = null;
-    },
-    remove(kind) {
-      window.SaryBrainPreview.removeSourceExamples(kind);
-      if (kind === "all") {
-        data.sections = [];
-        data.pages = [];
-        data.faqs = [];
-      } else {
-        if (kind === "website") data.pages = [];
-        if (kind === "faqs") data.faqs = [];
-        if (["document", "website"].includes(kind))
-          data.sections = data.sections.filter(s => s.source !== kind);
-      }
       data.candidate = false;
       data.run = null;
     },

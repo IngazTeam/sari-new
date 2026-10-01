@@ -57,23 +57,6 @@ export const learningStates: Record<
 const sample =
   "سياسة متجر نواة التجريبي: يمكن استرجاع المنتج غير المفتوح خلال 7 أيام من الاستلام. مدة تجهيز الطلب يوم عمل واحد. يجب مراجعة حالة المنتج قبل قبول الاسترجاع.";
 const clone = x => JSON.parse(JSON.stringify(x));
-const sourceNames = {
-  document: "الملفات التعريفية",
-  products: "قائمة المنتجات",
-  website: "معرفة الموقع",
-  faqs: "الأسئلة الشائعة",
-  all: "عقل ساري",
-};
-const impacts = {
-  document:
-    "في التطبيق يُحذف مصدر الملف النشط والملفات السابقة وأقسام معرفة المستند وفروعها وسجل تغييراتها. لا يعود ملف قديم تلقائيًا.",
-  products:
-    "في التطبيق تُحذف جميع سجلات منتجات التاجر نفسها، وليس استخدامها في الردود فقط. راجع نسخة الكتالوج قبل تنفيذ ذلك.",
-  website:
-    "في التطبيق تُحذف تحليلات الموقع وصفحاته وأقسام معرفة الموقع وفروعها وسجل تغييراتها، وتعود حالة تحليل الموقع إلى الانتظار.",
-  faqs: "في التطبيق تُحذف جميع الأسئلة الشائعة المستخرجة والمخصصة لهذه المجموعة.",
-  all: "في التطبيق تُحذف الملفات والمنتجات وتحليلات الموقع وصفحاته والأسئلة الشائعة وجميع أقسام المعرفة وسجلات تغييراتها. تبقى الحسابات والمحادثات والطلبات والإعدادات خارج نطاق إعادة الضبط.",
-};
 export function createBrainKnowledge(host) {
   const library = createKnowledgeLibrary(host);
   const key = "sary-brain-knowledge-v1",
@@ -84,7 +67,6 @@ export function createBrainKnowledge(host) {
     receipt: null,
     state: "idle",
     proposals: 0,
-    website: { step: -1, state: "idle" },
   });
   let data = initial();
   try {
@@ -100,15 +82,9 @@ export function createBrainKnowledge(host) {
     issue = "",
     fields = {},
     attested = false,
-    phrase = "",
-    target = null,
-    sourceSnapshot = "",
-    read = "success",
     analysis = "none",
     resultMode = "success",
     statusRead = "success",
-    websiteRead = "success",
-    websiteFault = "success",
     busy = false,
     readToken = 0,
     generation = 0,
@@ -139,7 +115,6 @@ export function createBrainKnowledge(host) {
   const note =
     '<p class="bw-note">معاينة محلية: قراءة النص في هذا المتصفح فقط. لا تحليل آلي أو طلب مزود أو تغيير بيانات التيننت.</p>';
   const fingerprint = () => JSON.stringify(data.draft);
-  const counts = () => host.sources();
   function persist() {
     try {
       localStorage.setItem(key, JSON.stringify(data));
@@ -234,67 +209,9 @@ export function createBrainKnowledge(host) {
     const next = ["budget_wait", "retry_scheduled"].includes(data.state);
     return `<section class="panel panel-pad bk-status"><div class="panel-head"><div><h2>حالة تحليل التعلّم</h2><p>افهم ما حُفظ وما يحتاج متابعة قبل الاعتماد عليه.</p></div>${btn("تحديث الحالة", "status-refresh", off(statusRead === "loading"))}</div>${statusRead === "loading" ? `<p role="status">جارٍ تحميل الحالة…</p>${btn("إكمال قراءة المثال", "status-ready")}` : statusRead === "failure" ? `<p role="alert" class="bw-warning">تعذر جلب الحالة الحالية. لا نعرض آخر نجاح بوصفه الحالة الحالية.</p>${btn("إعادة قراءة الحالة", "status-ready")}` : `<div role="status" data-bk-state="${data.state}"><h3>${title}</h3><p>${hint}</p></div>${data.state !== "idle" ? '<p>آخر تحديث توضيحي: <time datetime="2026-09-28T09:00:00Z">28 سبتمبر 2026، 12:00 بتوقيت الرياض</time></p>' : ""}${next ? "<p>أهلية المحاولة التالية في المثال: 12:30 بتوقيت الرياض؛ ليست وعدًا بالتنفيذ.</p>" : ""}${data.state === "applied" ? `<p data-bk-proposals>مقترحات الدورة: ${data.proposals}</p>` : ""}`}<p class="bw-note">تحديث الحالة للقراءة فقط؛ لا يبدأ تحليلًا أو يعيد طلب النموذج. جميع الحالات والتواريخ هنا أمثلة.</p><details><summary>جرّب حالات التحليل</summary>${select("status", "الحالة التوضيحية", Object.fromEntries(Object.entries(learningStates).map(([k, v]) => [k, v[0]])), data.state)}${select("status-read", "قراءة الحالة", { success: "بيانات", loading: "تحميل", failure: "تعذر القراءة" }, statusRead)}${select("proposals", "عدد المقترحات في المثال", { "0": "صفر — دورة صحيحة دون مقترحات", "3": "3 مقترحات للمراجعة" }, data.proposals)}</details></section>`;
   }
-  function sources() {
-    const rows = counts();
-    return `<section class="panel panel-pad"><div class="panel-head"><div><h2>مصادر المعرفة وأثر حذفها</h2><p>حذف المصدر يختلف عن إيقاف استخدام ملف في الردود.</p></div>${btn("مراجعة إعادة ضبط العقل", "reset", off(locked() || read !== "success"), false)}</div>${select("sources-read", "حالة قراءة المصادر", { success: "بيانات", loading: "تحميل", failure: "تعذر القراءة", empty: "لا توجد مصادر" }, read)}${
-      read === "failure"
-        ? '<p role="alert">تعذر جلب المصادر. الحذف غير متاح حتى إعادة القراءة.</p>'
-        : read === "loading"
-          ? '<p role="status">جارٍ قراءة مصادر المثال…</p>'
-          : `<div class="bw-cards">${
-              read === "empty"
-                ? "<p>لا توجد مصادر ضمن هذا المثال.</p>"
-                : Object.keys(sourceNames)
-                    .filter(k => k !== "all" && rows[k] > 0)
-                    .map(
-                      k =>
-                        `<article class="bw-card"><h3>${sourceNames[k]}</h3><p>${rows[k]} عنصرًا محليًا</p><p>${impacts[k]}</p>${btn("مراجعة حذف المصدر", "remove", `data-kind="${k}" ${off(locked())}`)}</article>`
-                    )
-                    .join("") ||
-                  "<p>لا توجد مصادر محتوى؛ أضف معرفة من مصدر موثوق.</p>"
-            }<article class="bw-card"><h3>إعدادات المتجر</h3><p>تبقى محفوظة؛ لا تُحذف من شاشة المصادر.</p></article></div>`
-    }<p>الحذف في الموك أب يزيل أمثلة هذا القسم فقط، ولا يغيّر كتالوج صفحات الموك أب الأخرى أو التيننت.</p></section>${documents.render()}${library.render()}`;
-  }
-  function destructive() {
-    const stale = sourceSnapshot !== JSON.stringify(counts());
-    modal(
-      target === "all" ? "راجع أثر إعادة ضبط العقل" : "راجع أثر حذف المصدر",
-      `<h3>${sourceNames[target]}</h3><p class="bw-warning">${impacts[target]}</p><div class="bk-counts">${Object.entries(
-        counts()
-      )
-        .map(
-          ([k, n]) =>
-            `<span>${sourceNames[k] || "أقسام المعرفة"}: <strong>${n}</strong></span>`
-        )
-        .join(
-          ""
-        )}</div><p>الإجراء الحقيقي نهائي. هذه المعاينة تخص بيانات المثال فقط ويمكن استعادتها من «إعادة ضبط بيانات الموك أب».</p>${stale ? '<p role="alert">تغيرت المصادر منذ فتح التأكيد. أغلق النافذة وراجع الأعداد من جديد.</p>' : ""}<label class="field">اكتب «${sourceNames[target]}» للتأكيد<input data-bk-phrase value="${esc(phrase)}" autocomplete="off" ${off(locked())}></label>${check("فهمت العناصر التي ستُحذف وأثر ذلك، وأوافق على تطبيقه في بيانات المثال فقط.")}`,
-      btn(
-        target === "all" ? "إعادة ضبط المثال" : "حذف مصدر المثال",
-        "confirm-remove",
-        off(locked() || stale || !attested || phrase !== sourceNames[target]),
-        true
-      )
-    );
-  }
-  const webSteps = [
-    "قراءة الموقع",
-    "معالجة المحتوى",
-    "بناء المعرفة",
-    "الفهرسة",
-    "اكتمال المعالجة",
-  ];
-  function website() {
-    const s = data.website;
-    modal(
-      "متابعة تحليل الموقع",
-      `<p>الرابط في المثال: <bdi>https://example.test</bdi> — لا يُطلب فعليًا.</p>${select("website-read", "قراءة حالة الموقع", { success: "بيانات", failure: "تعذر جلب الحالة", missing: "رابط الموقع غير مسجل" }, websiteRead)}${websiteRead === "missing" ? '<p role="alert">أضف رابط الموقع في إعدادات المتجر قبل بدء التحليل الفعلي.</p><a href="#/page/merchant/settings">فتح إعدادات المتجر</a>' : websiteRead === "failure" ? '<p role="alert">تعذر التحقق من تقدم التحليل. لا تعتبره متوقفًا ولا تبدأ طلبًا بديلًا.</p>' : `<ol class="bk-progress">${webSteps.map((label, i) => `<li ${i === s.step ? 'aria-current="step"' : ""}>${i + 1}. ${label}${s.step > i || s.state === "completed" ? " · اكتملت في المثال" : ""}</li>`).join("")}</ol><p role="status">${s.state === "completed" ? "انتهت المعالجة التوضيحية؛ راجع النتيجة والمصادر." : s.state === "error" ? "تعثر المثال. بقي آخر تقدم محفوظًا." : s.state === "running" ? `المرحلة الحالية: ${webSteps[s.step]}. التقدم هنا يدوي.` : "لم يبدأ مثال المعالجة."}</p>${s.state === "completed" ? '<div class="bw-summary"><p>نتيجة مثال: صفحتان، قسم واحد جديد، وتعارض واحد للمراجعة.</p><p>الاكتمال لا يعني حل كل الفجوات أو زيادة المبيعات. لا تُعدّل بطاقات المصادر تلقائيًا في هذه المحاكاة.</p></div>' : ""}<details><summary>حالات المعالجة التوضيحية</summary>${select("website-fault", "الخطوة التالية", { success: "المرحلة التالية", failure: "تعذر المعالجة" }, websiteFault, locked())}</details>${check("راجعت أن البدء أو إعادة المحاولة في التطبيق يتطلب اتصالًا وتكلفة؛ هنا مثال محلي فقط.")}<div class="bw-actions">${btn(s.state === "error" ? "إعادة محاولة المثال" : "بدء مثال المعالجة", "website-start", off(locked() || !attested || ["running", "completed"].includes(s.state)), true)}${btn("عرض المرحلة التالية", "website-next", off(locked() || s.state !== "running"))}${btn("تحديث حالة المثال", "website-refresh")}</div>`}<p>إغلاق النافذة لا يلغي المهمة. افتحها مجددًا لمتابعة آخر حالة محفوظة؛ لا يوجد مؤقت أو تقدم مختلق للخادم.</p>`
-    );
-  }
+  const sources = () => documents.render()+library.render();
   function paint() {
     if (view === "intake") intake();
-    if (view === "remove") destructive();
-    if (view === "website") website();
   }
   function validate() {
     fields = {};
@@ -312,19 +229,6 @@ export function createBrainKnowledge(host) {
     if (b)
       b.disabled =
         locked() || busy || !attested || data.receipt?.input === fingerprint() || (data.draft.content === sample && analysis !== 'ready');
-    const d = document.querySelector('[data-bk-action="confirm-remove"]');
-    if (d)
-      d.disabled =
-        locked() ||
-        !attested ||
-        phrase !== sourceNames[target] ||
-        sourceSnapshot !== JSON.stringify(counts());
-    const start = document.querySelector('[data-bk-action="website-start"]');
-    if (start)
-      start.disabled =
-        locked() ||
-        !attested ||
-        ["running", "completed"].includes(data.website.state);
   }
   document.addEventListener("input", event => {
     const el = event.target;
@@ -340,11 +244,6 @@ export function createBrainKnowledge(host) {
         count.textContent = `${data.draft.content.length} / ${KNOWLEDGE_PREVIEW_LIMIT} حرف`;
       const analyze = document.querySelector('[data-bk-action="analyze"]');
       if (analyze) analyze.disabled = data.draft.content !== sample;
-      syncButtons();
-    }
-    if (el.hasAttribute("data-bk-phrase")) {
-      phrase = el.value;
-      clearConsent();
       syncButtons();
     }
   });
@@ -400,8 +299,7 @@ export function createBrainKnowledge(host) {
       data.proposals = Number(v);
       persist();
     }
-    if (name === "sources-read") read = v;
-    if (["status", "status-read", "proposals", "sources-read"].includes(name)) {
+    if (["status", "status-read", "proposals"].includes(name)) {
       host.refresh();
       return;
     }
@@ -414,8 +312,6 @@ export function createBrainKnowledge(host) {
     }
     if (name === "analysis") analysis = v;
     if (name === "result") resultMode = v;
-    if (name === "website-read") websiteRead = v;
-    if (name === "website-fault") websiteFault = v;
     paint();
   });
   document.addEventListener("click", event => {
@@ -441,48 +337,7 @@ export function createBrainKnowledge(host) {
       paint();
       return;
     }
-    if (a === "website") {
-      view = "website";
-      clearConsent();
-      issue = "";
-      paint();
-      return;
-    }
     if (host.blocked() || locked() || busy) return;
-    if (a === "remove" || a === "reset") {
-      if (read !== "success") return;
-      target = a === "reset" ? "all" : el.dataset.kind;
-      if (!sourceNames[target]) return;
-      sourceSnapshot = JSON.stringify(counts());
-      phrase = "";
-      clearConsent();
-      issue = "";
-      view = "remove";
-      paint();
-      return;
-    }
-    if (
-      a === "confirm-remove" &&
-      attested &&
-      phrase === sourceNames[target] &&
-      sourceSnapshot === JSON.stringify(counts())
-    ) {
-      const selected = target;
-      clearConsent();
-      return write(() => {
-        host.remove(selected);
-        data.state = "stale";
-        data.receipt = null;
-        if (selected === "all") {
-          data.draft = initial().draft;
-          data.website = initial().website;
-        }
-        issue =
-          "أُزيلت بيانات المثال المطلوبة. سجل التقييم والإعدادات محفوظان؛ يحتاج المرشح مراجعة جديدة.";
-        phrase = "";
-        sourceSnapshot = "";
-      }, "حذف محلي: " + sourceNames[selected]);
-    }
     if (a === "sample") {
       data.draft = {
         name: "سياسة متجر نواة — مثال.txt",
@@ -524,27 +379,6 @@ export function createBrainKnowledge(host) {
         };
       }, "مراجعة وإضافة محتوى محلي");
     }
-    if (
-      a === "website-start" &&
-      attested &&
-      !["running", "completed"].includes(data.website.state)
-    ) {
-      clearConsent();
-      return write(() => {
-        data.website = { step: 0, state: "running" };
-      }, "بدء مثال معالجة الموقع");
-    }
-    if (a === "website-next" && data.website.state === "running") {
-      const fault = websiteFault;
-      return write(() => {
-        if (fault === "failure") data.website.state = "error";
-        else {
-          data.website.step++;
-          if (data.website.step === 4) data.website.state = "completed";
-        }
-      }, "تقدم مثال معالجة الموقع");
-    }
-    if (a === "website-refresh") websiteRead = "success";
     paint();
   });
   document.getElementById("dialog")?.addEventListener("close", () => {
@@ -558,7 +392,7 @@ export function createBrainKnowledge(host) {
     sources,
     intakeSummary: () =>
       `<section class="panel panel-pad"><h2>محتوى واضح قبل اعتماده</h2><p>اقرأ TXT/CSV محليًا أو الصق النص، راجع المحتوى والأثر ثم احفظ قسمًا معلّقًا للمراجعة.</p>${btn(data.draft.content ? "استئناف مراجعة المحتوى" : "فحص محتوى جديد", "intake", off(locked()), true)}${host.manualButton()}<p>الفحص الآلي معروض بأمثلة محددة؛ النص الذي تدخله لا يُرسل لأي خدمة.</p></section>`,
-    websiteButton: () => btn("متابعة تحليل الموقع", "website"),
+    websiteButton: () => '<a class="button" href="./website-analysis.html">نتائج تحليل الموقع</a>',
     refreshBasis() {
       clearConsent();
       paint();
@@ -571,11 +405,8 @@ export function createBrainKnowledge(host) {
       view = "";
       issue = "";
       busy = false;
-      read = "success";
       statusRead = "success";
       analysis = "none";
-      websiteRead = "success";
-      websiteFault = "success";
       resultMode = "success";
       persist();
     },

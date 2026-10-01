@@ -2,9 +2,9 @@
 window.SaryBrainPreview = (() => {
   const storageKey='sary-brain-preview-v1';
   const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const seed={version:1,files:[{id:'policy'},{id:'catalog'},{id:'guide'},{id:'legacy'},{id:'scan'}],gaps:[]};
+  const seed={version:1};
   let data=JSON.parse(JSON.stringify(seed)),section='overview',salesPanel='operations';
-  try { const stored=JSON.parse(localStorage.getItem(storageKey)||'null');if(stored?.version===1&&Array.isArray(stored.files)&&stored.files.every(f=>typeof f.id==='string'))data=stored; } catch {}
+  try { const stored=JSON.parse(localStorage.getItem(storageKey)||'null');if(stored?.version===1&&stored.review?.cases?.length===8&&typeof stored.review.outcome==='string'&&stored.review.cases.every(r=>r&&['baseline','candidate','baselineVerdict','candidateVerdict','reason'].every(k=>typeof r[k]==='string')))data={version:1,review:stored.review}; } catch {}
   const persist=()=>{try{localStorage.setItem(storageKey,JSON.stringify(data));}catch{toast('تعذر الحفظ في المتصفح. بقيت تغييرات المثال خلال الجلسة.');}};
   const button=(text,action,id='',primary=false,extra='')=>'<button type="button" class="button '+(primary?'primary':'')+'" data-brain-action="'+action+'" data-id="'+escape(id)+'" '+extra+'>'+escape(text)+'</button>';
   const close=()=>document.getElementById('dialog').close();
@@ -52,6 +52,5 @@ window.SaryBrainPreview = (() => {
 
   document.addEventListener('click',event=>{const target=event.target.closest('[data-brain-action]');if(!target||target.disabled)return;const {brainAction:action,id}=target.dataset;if(action==='navigate')navigate(id);if(action==='review-open')reviewDialog();if(action==='review-prev'||action==='review-next'){reviewStep=Math.max(0,Math.min(7,reviewStep+(action==='review-prev'?-1:1)));reviewDialog();}});
   function reset(){data=JSON.parse(JSON.stringify(seed));section='overview';salesPanel='operations';reviewStep=0;reviewDraft=reviewCases.map(()=>({baseline:'',candidate:'',baselineVerdict:'',candidateVerdict:'',reason:''}));window.SaryBrainWorkbench?.reset();persist();}
-  function removeSourceExamples(kind){if(kind==='all')data.files=[];else if(kind==='document')data.files=data.files.filter(f=>f.id==='catalog');else if(kind==='products')data.files=data.files.filter(f=>f.id!=='catalog');delete data.review;reviewStep=0;reviewDraft=reviewCases.map(()=>({baseline:'',candidate:'',baselineVerdict:'',candidateVerdict:'',reason:''}));persist();}
-  return {render,refresh,navigate,openAdd,reset,reviewResult:()=>data.review,sourceCounts:()=>({document:data.files.filter(f=>f.id!=='catalog').length,products:data.files.filter(f=>f.id==='catalog').length}),removeSourceExamples};
+  return {render,refresh,navigate,openAdd,reset,reviewResult:()=>data.review};
 })();

@@ -118,3 +118,4 @@
 .brain-embedded-card>header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:20px}
 .brain-embedded-card>header h2{margin:0}
 .brain-embedded-card iframe{display:block;border:0;width:100%;min-height:640px;height:760px;background:var(--surface,#fff)}
+.brain-embedded-card iframe[data-modal="true"]{min-height:0;scroll-margin-block-start:80px}

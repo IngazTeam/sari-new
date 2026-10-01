@@ -46,6 +46,13 @@ it('retains independent question drafts across iframe replacement without persis
 it('opens the full test-session workspace outside the iframe',()=>{
   send({type:'sary-brain-preview',action:'navigate',destination:'testSession'});expect(w.location.hash).toBe('#/page/merchant/test-sari');
 });
+it('fits an embedded modal to the parent viewport and restores content height after close',()=>{
+  frame.scrollIntoView=vi.fn();send({type:'sary-brain-preview',action:'resize',height:3400});
+  send({type:'sary-brain-preview',action:'modal',open:true});expect(frame.dataset.modal).toBe('true');expect(parseInt(frame.style.height)).toBeLessThan(w.innerHeight);expect(frame.scrollIntoView).toHaveBeenCalledTimes(1);
+  send({type:'sary-brain-preview',action:'resize',height:3600});expect(parseInt(frame.style.height)).toBeLessThan(w.innerHeight);
+  send({type:'sary-brain-preview',action:'modal',open:'false'});expect(frame.dataset.modal).toBe('true');
+  send({type:'sary-brain-preview',action:'modal',open:false});expect(frame.style.height).toBe('3600px');expect(frame.scrollIntoView).toHaveBeenCalledTimes(1);
+});
 it.each(['knowledge-groups','sales-knowledge','brain-preview','reply-quality','knowledge-activity'])('allows only same-origin embedding for the explicit %s preview',page=>{
   expect(previewPolicy('/'+page+'.html',new URLSearchParams('embed=brain'))).toContain("frame-ancestors 'self'");
   expect(previewPolicy('/'+page+'.html',new URLSearchParams())).toContain("frame-ancestors 'none'");

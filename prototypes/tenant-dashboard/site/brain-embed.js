@@ -12,11 +12,13 @@
         event.preventDefault(); parent.postMessage({type:'sary-brain-preview',action:'navigate',destination:'testSession'},location.origin);
       }
     });
-    let previous = -1, scheduled = false;
+    let previous = -1, previousModal = false, scheduled = false;
     const measure = () => {
       scheduled = false;
       const main = document.querySelector('main');
       if (!main) return;
+      const modal=Boolean(document.querySelector('[role="dialog"][data-state="open"],dialog[open]'));
+      if(modal!==previousModal){previousModal=modal;parent.postMessage({type:'sary-brain-preview',action:'modal',open:modal},location.origin);}
       const height = Math.ceil(main.getBoundingClientRect().height + 24);
       if (height === previous) return;
       previous = height;
@@ -49,6 +51,8 @@
     sections:()=>window.SaryBrainPreview?.navigate('knowledge','sections'), conflicts:()=>window.SaryBrainPreview?.navigate('knowledge','conflicts'),
     sales:()=>window.SaryBrainPreview?.navigate('sales'), products:()=>{location.hash='#/page/merchant/products';}, settings:()=>{location.hash='#/page/merchant/settings';}, testSession:()=>{location.hash='#/page/merchant/test-sari';}
   };
+  const modalHeight=()=>Math.max(320,Math.min(900,window.innerHeight-164));
+  addEventListener('resize',()=>document.querySelectorAll('iframe[data-brain-preview][data-modal="true"]').forEach(frame=>{frame.style.height=modalHeight()+'px';}));
   addEventListener('message',event=>{
     if (event.origin !== location.origin || !event.source) return;
     const frame = [...document.querySelectorAll('iframe[data-brain-preview]')].find(frame=>frame.contentWindow===event.source);
@@ -58,8 +62,14 @@
     const message=event.data;
     if (!message || typeof message !== 'object' || message.type!=='sary-brain-preview') return;
     if(message.action==='resize' && Number.isFinite(message.height) && message.height>=0 && message.height<=20000){
-      frame.style.height=Math.max(640,Math.ceil(message.height))+'px';
+      frame.dataset.contentHeight=String(Math.max(640,Math.ceil(message.height)));
+      if(frame.dataset.modal!=='true')frame.style.height=frame.dataset.contentHeight+'px';
       frame.dataset.ready='true';
+    }
+    if(message.action==='modal' && typeof message.open==='boolean' && String(message.open)!==frame.dataset.modal){
+      frame.dataset.modal=String(message.open);
+      frame.style.height=(message.open?modalHeight():Number(frame.dataset.contentHeight)||760)+'px';
+      if(message.open)frame.scrollIntoView?.({block:'start',behavior:'instant'});
     }
     if(message.action==='navigate' && Object.hasOwn(destinations,message.destination)) destinations[message.destination]();
   });

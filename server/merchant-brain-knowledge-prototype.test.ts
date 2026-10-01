@@ -359,110 +359,27 @@ it("keeps the intake draft on failure, refreshes its own stale editor and reconc
   click("intake");
   expect(node('[data-bk-action="ingest"]').disabled).toBe(true);
 });
-it("explains product deletion and removes the local source without generating a fabricated answer", () => {
+it('replaces retired source cards and deletion handlers with the actual reviewed-removal component', () => {
   sources();
-  click("remove", '[data-kind="products"]');
-  expect(body()).toContain("جميع سجلات منتجات التاجر");
-  set("[data-bk-phrase]", "قائمة المنتجات");
-  check();
-  set("[data-bk-phrase]", "قائمة المنتجات");
-  expect(node("[data-bk-check]").checked).toBe(false);
-  check();
-  click("confirm-remove");
-  expect(w.SaryBrainPreview.sourceCounts().products).toBe(0);
-  click("close");
-  sources();
-  expect(w.document.querySelector('[data-bk-action="remove"][data-kind="products"]')).toBeNull();
-  nav('testing');
-  expect(w.document.querySelector('[data-brain-form="test"]')).toBeNull();
-  expect(node('a[href="./brain-preview.html"]')).toBeTruthy();
+  expect(node('iframe[src="./knowledge-groups.html?embed=brain"]')).toBeTruthy();
+  expect(node('a[href="./knowledge-removal.html"]')).toBeTruthy();
+  expect(w.document.querySelector('[data-bk-action="remove"],[data-bk-action="reset"],[data-bk-action="confirm-remove"],[data-bk-option="sources-read"]')).toBeNull();
+  const before=snapshot();
+  for(const action of ['remove','reset','confirm-remove']) {
+    const button=w.document.createElement('button');button.dataset.bkAction=action;button.dataset.kind='products';w.document.body.append(button);button.click();button.remove();
+  }
+  expect(snapshot()).toEqual(before);expect(w.document.querySelector('.bk-workspace')).toBeNull();
+  expect(w.SaryBrainPreview.sourceCounts).toBeUndefined();expect(w.SaryBrainPreview.removeSourceExamples).toBeUndefined();
 });
-it("resets only knowledge examples, retains experiment history and settings, and requires a new candidate", () => {
-  openIntake();
-  field("name", "قسم جديد");
-  field("content", content);
-  check();
-  click("ingest");
-  click("close");
-  const saved = snapshot(),
-    p = JSON.parse(saved["sary-brain-workbench-v1"]);
-  p.protocols = [
-    {
-      id: 7,
-      state: "withdrawn",
-      design: { title: "سجل سابق", sample: { minimumCustomersPerArm: 100 } },
-    },
-  ];
-  p.candidate = true;
-  p.run = { id: "evaluation:1", status: "reviewed" };
-  saved["sary-brain-workbench-v1"] = JSON.stringify(p);
-  dom.window.close();
-  boot(saved);
-  sources();
-  click("reset");
-  expect(body()).toContain("المحادثات والطلبات والإعدادات");
-  set("[data-bk-phrase]", "عقل ساري");
-  check();
-  click("confirm-remove");
-  expect(parent()).toMatchObject({
-    sections: [],
-    pages: [],
-    faqs: [],
-    candidate: false,
-    run: null,
-  });
-  expect(parent().protocols).toHaveLength(1);
-  expect(parent().followup).toEqual(p.followup);
-  expect(w.SaryBrainPreview.sourceCounts()).toEqual({
-    document: 0,
-    products: 0,
-  });
-  expect(state()).toMatchObject({
-    state: "stale",
-    receipt: null,
-    draft: { content: "" },
-  });
-  click("close");
-  sources();
-  expect(w.document.querySelector('[data-bk-action="remove"]')).toBeNull();
+it('preserves read-only restrictions for extraction and intake after retiring duplicate cards', () => {
+  sources();set('[data-bw-lab="role"]','viewer','change');
+  expect(node('[data-bk-action="intake"]').disabled).toBe(true);expect(node('[data-kd-action="extract"]').disabled).toBe(true);
 });
-it("blocks destructive actions on unread sources and for read-only users", () => {
-  sources();
-  option("sources-read", "failure");
-  click("reset");
-  expect(w.document.querySelector(".bk-workspace")).toBeNull();
-  option("sources-read", "success");
-  set('[data-bw-lab="role"]', "viewer", "change");
-  expect(node('[data-bk-action="reset"]').disabled).toBe(true);
-  expect(node('[data-bk-action="remove"]').disabled).toBe(true);
-  nav("sources");
-  expect(node('[data-bk-action="intake"]').disabled).toBe(true);
-});
-it("keeps website progress on close, disallows parallel start and distinguishes read failure from job failure", () => {
-  web();
-  check();
-  click("website-start");
-  expect(state().website).toMatchObject({ state: "running", step: 0 });
-  expect(node('[data-bk-action="website-start"]').disabled).toBe(true);
-  click("website-next");
-  click("close");
-  web();
-  expect(state().website.step).toBe(1);
-  option("website-read", "failure");
-  expect(body()).toContain("لا تبدأ طلبًا بديلًا");
-  expect(
-    w.document.querySelector('[data-bk-action="website-start"]')
-  ).toBeNull();
-  option("website-read", "success");
-  option("website-fault", "failure");
-  click("website-next");
-  expect(state().website.state).toBe("error");
-  option("website-fault", "success");
-  check();
-  click("website-start");
-  for (let i = 0; i < 4; i++) click("website-next");
-  expect(state().website.state).toBe("completed");
-  expect(body()).toContain("لا يعني حل كل الفجوات");
+it('replaces the old manual website progress dialog with the actual outcome preview', () => {
+  nav('knowledge');bw('knowledge-tab','[data-value="website"]');
+  expect(node('a[href="./website-analysis.html"]')).toBeTruthy();expect(w.document.querySelector('[data-bk-action="website"]')).toBeNull();
+  const before=snapshot();for(const action of ['website','website-start','website-next']) {const button=w.document.createElement('button');button.dataset.bkAction=action;w.document.body.append(button);button.click();button.remove();}
+  expect(snapshot()).toEqual(before);expect(w.document.querySelector('.bk-workspace')).toBeNull();
 });
 
 it('restores an extraction reference without a file or a replay after the simulated reload', () => {
