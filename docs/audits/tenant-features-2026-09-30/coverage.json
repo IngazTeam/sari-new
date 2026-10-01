@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-01T03:22:25.695Z",
+  "generatedAt": "2026-10-01T03:39:34.436Z",
   "definition": "Every registered route is accounted for; source inventory and design completion are different statuses.",
   "routes": [
     {
@@ -28222,11 +28222,11 @@
         "d32142e4562e",
         "149f010e1e0d",
         "d78b69fc3975",
-        "ebdf41aa9871",
-        "368a94cac45c",
-        "eab56f32a451",
-        "ef837a473f82",
-        "35a2ed13ce75",
+        "f994c9e027a5",
+        "e0f56e43f63c",
+        "8ac876dd3b1b",
+        "ae223cc0abfd",
+        "84aaae9298bd",
         "77ce5300e6f7",
         "03a912a88aad",
         "75d02c53dd7e",
@@ -28367,9 +28367,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "ebdf41aa9871",
+          "id": "f994c9e027a5",
           "file": "client/src/pages/merchant/HumanTakeoverSettings.tsx",
-          "line": 307,
+          "line": 311,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -28388,9 +28388,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "368a94cac45c",
+          "id": "e0f56e43f63c",
           "file": "client/src/pages/merchant/HumanTakeoverSettings.tsx",
-          "line": 321,
+          "line": 325,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -28409,9 +28409,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "eab56f32a451",
+          "id": "8ac876dd3b1b",
           "file": "client/src/pages/merchant/HumanTakeoverSettings.tsx",
-          "line": 387,
+          "line": 391,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -28432,9 +28432,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "ef837a473f82",
+          "id": "ae223cc0abfd",
           "file": "client/src/pages/merchant/HumanTakeoverSettings.tsx",
-          "line": 399,
+          "line": 403,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -28456,9 +28456,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "35a2ed13ce75",
+          "id": "84aaae9298bd",
           "file": "client/src/pages/merchant/HumanTakeoverSettings.tsx",
-          "line": 413,
+          "line": 417,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -49822,7 +49822,7 @@
       "controls": [
         "e5cabb02d07c",
         "bde80326a3c4",
-        "aeebcc5d98b8",
+        "6a24ee33bb39",
         "77ce5300e6f7",
         "03a912a88aad",
         "75d02c53dd7e",
@@ -49898,9 +49898,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "aeebcc5d98b8",
+          "id": "6a24ee33bb39",
           "file": "client/src/pages/merchant/LanguageSettings.tsx",
-          "line": 228,
+          "line": 232,
           "tag": "Button",
           "role": "",
           "kind": "action",

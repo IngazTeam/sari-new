@@ -299,7 +299,11 @@ function TakeoverWorkspace({ scope }: { scope: string }) {
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card p-4">
           <p role="status" className="text-sm text-muted-foreground">
             {t(
-              form.dirty
+              form.busy
+                ? "common.loading"
+                : form.submitted
+                ? "assistantOptionDraftUx.statusUnconfirmed"
+                : form.dirty
                 ? "assistantOptionUx.unsaved"
                 : "assistantSectionsUx.saved"
             )}

@@ -12012,6 +12012,7 @@
 }
 ,
 "assistantOptionDraftUx": {
+  "statusUnconfirmed": "Save outcome unconfirmed; review required.",
   "title": "Assistant options draft",
   "found": "An unsaved local draft is available. Restore it, then review the current settings before saving.",
   "pendingFound": "A save request has an unconfirmed outcome. Restore the draft and fetch the current settings for review. It will not be sent again automatically.",

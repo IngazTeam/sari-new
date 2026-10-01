@@ -30,8 +30,6 @@ describe('assistant feature workflows',()=>{
     expect(w.document.getElementById('as-brandVoice').value).toBe('صوت محفوظ');
     expect(w.document.getElementById('as-language').value).toBe('fr');
     // Reading the migrated fixture must not overwrite any saved settings or history.
-    const content=w.AssistantPreview.render({route:'/merchant/human-takeover'});
-    expect(content).toContain('value="90"');
     expect(w.localStorage.getItem('sary-assistant-preview-v1')).toBe(JSON.stringify(saved));
   });
   it('preserves the store example question on failure and escapes it on success',()=>{
@@ -71,7 +69,7 @@ describe('assistant feature workflows',()=>{
   });
   it('restores a draft after another settings page changes the saved language and reviews conflicting values',()=>{
     route('bot-settings');input('language','fr');click('section','[data-value="schedule"]');input('welcomeMessage','مسودتي');
-    route('language-settings');input('language','en');submit('language');
+    route('ai-hub');const external=data()||{settings:{},history:[]};external.settings.language='en';w.localStorage.setItem('sary-assistant-preview-v1',JSON.stringify(external));
     route('bot-settings');expect(w.document.body.textContent).toContain('لديك مسودة إعدادات');click('restore-reply');
     expect(w.document.getElementById('as-welcomeMessage').value).toBe('مسودتي');
     click('review-reply');const latest=w.document.querySelector('input[name="language"][value="latest"]');latest.checked=true;submit('reply-review');
@@ -96,20 +94,6 @@ describe('assistant feature workflows',()=>{
     click('section','[data-value="basics"]');submit('settings');expect(data().settings.maxPercent).toBe(10);
     click('section','[data-value="sales"]');w.document.getElementById('as-review-discount').checked=true;click('policy','[data-kind="discount"]');expect(data().settings.maxPercent).toBe(20);expect(data().history).toHaveLength(1);
   });
-  it('exposes all group modes, templates and takeover controls with independent language saving',()=>{
-    route('bot-settings');expect(w.document.querySelectorAll('[data-as-action="bot-template"]')).toHaveLength(9);
-    click('section','[data-value="groups"]');expect(w.document.getElementById('as-groupMode').options).toHaveLength(4);
-    input('groupMode','private_redirect');input('groupRedirectMessage','تابع في الخاص');submit('settings');
-    route('human-takeover');input('takeoverTimeoutMinutes','90');expect(w.document.getElementById('as-takeoverResumeMessage')).toBeNull();input('takeoverCommandsEnabled',false);submit('takeover');
-    route('language-settings');expect(w.document.querySelectorAll('input[type="radio"][name="language"]')).toHaveLength(7);input('language','both');expect(w.document.querySelectorAll('p[lang="ar"]')).toHaveLength(4);expect(w.document.querySelectorAll('[lang="en"]')).toHaveLength(4);submit('language');expect(data().settings).toMatchObject({language:'both',groupRedirectMessage:'تابع في الخاص',takeoverTimeoutMinutes:90,takeoverCommandsEnabled:false,takeoverResumeMessage:'مرحبًا! عدت لخدمتك.'});
-  });
-  it('reviews option conflicts, merges unedited fields, and requires a separate save',()=>{
-    route('human-takeover');input('takeoverTimeoutMinutes','90');click('option-external');submit('takeover');expect(data().settings.takeoverTimeoutMinutes).toBe(60);
-    click('option-review');const review=w.document.querySelector('[data-as-form="option-review"]');expect(review.reportValidity()).toBe(false);review.querySelector('input[value="mine"]').checked=true;submit('option-review');
-    expect(w.document.getElementById('as-takeoverTimeoutMinutes').value).toBe('90');expect(w.document.getElementById('as-takeoverCommandsEnabled').checked).toBe(false);expect(data().settings.takeoverTimeoutMinutes).toBe(60);
-    submit('takeover');expect(data().settings.takeoverTimeoutMinutes).toBe(90);
-    route('language-settings');input('language','fr');click('option-failure');expect(w.document.querySelector('input[name="language"]:checked').value).toBe('fr');expect(data().settings.language).toBe('ar');submit('language');expect(data().settings.language).toBe('fr');
-  });
   it('links brain, personas and all assistant tools from the hub',()=>{route('ai-hub');expect(w.document.querySelectorAll('.as-hub-card')).toHaveLength(13);for(const a of w.document.querySelectorAll('.as-hub-card'))expect(w.TenantPages.find(a.getAttribute('href').slice(6))).toBeTruthy();});
 });
 describe('production persona form contract',()=>{
@@ -127,3 +111,5 @@ describe('production persona form contract',()=>{
 });
 
 it('opens the actual persona component preview in the central route',()=>{route('virtual-team');const frame=w.document.querySelector('iframe[data-brain-preview]');expect(frame?.getAttribute('src')).toBe('./personas.html?embed=brain');expect(w.document.querySelector('[data-as-form="agent"]')).toBeNull();});
+
+it.each([['human-takeover','takeover'],['language-settings','language']])('opens the actual %s option page in the central preview',(routeName,pane)=>{route(routeName);const frame=w.document.querySelector('iframe[data-brain-preview]');expect(frame?.getAttribute('src')).toBe('./assistant-options.html?embed=brain&page='+pane);expect(w.document.querySelector('[data-as-form="language"],[data-as-form="takeover"]')).toBeNull();});

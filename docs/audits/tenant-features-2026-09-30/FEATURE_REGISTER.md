@@ -1697,11 +1697,11 @@
 | 216 | Switch | تسمية ديناميكية / تحتاج مراجعة | الرد مباشرة من واتساب |
 | 256 | summary | رسالة الاستئناف القديمة · للقراءة | رسالة الاستئناف القديمة · للقراءة |
 | 271 | Button | عرض التغييرات الجديدة | رسالة الاستئناف القديمة · للقراءة |
-| 307 | Button | common.loading humanTakeoverPage.saveSettings | رسالة الاستئناف القديمة · للقراءة |
-| 321 | Button | تحديث المحادثات | المحادثات النشطة (بشري) |
-| 387 | Link | عرض محادثات العميل | المحادثات النشطة (بشري) |
-| 399 | Button | السابق | المحادثات النشطة (بشري) |
-| 413 | Button | التالي | المحادثات النشطة (بشري) |
+| 311 | Button | common.loading humanTakeoverPage.saveSettings | رسالة الاستئناف القديمة · للقراءة |
+| 325 | Button | تحديث المحادثات | المحادثات النشطة (بشري) |
+| 391 | Link | عرض محادثات العميل | المحادثات النشطة (بشري) |
+| 403 | Button | السابق | المحادثات النشطة (بشري) |
+| 417 | Button | التالي | المحادثات النشطة (بشري) |
 
 ## client/src/components/merchant/AssistantOptionReview.tsx
 
@@ -2579,7 +2579,7 @@
 |---:|---|---|---|
 | 172 | input | تسمية ديناميكية / تحتاج مراجعة | إعدادات اللغة |
 | 192 | Button | عرض التغييرات الجديدة | إعدادات اللغة |
-| 228 | Button | common.loading languageSettingsPage.text7 | إعدادات اللغة |
+| 232 | Button | common.loading languageSettingsPage.text7 | إعدادات اللغة |
 
 ## client/src/pages/CalendarSettings.tsx
 

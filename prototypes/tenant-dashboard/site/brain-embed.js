@@ -1,6 +1,6 @@
 // Same-origin, allowlisted communication between the central mockup and its actual-component previews.
 (() => {
-  const pages = new Set(['knowledge-groups.html','sales-knowledge.html','brain-preview.html','reply-quality.html','knowledge-activity.html','personas.html']);
+  const pages = new Set(['knowledge-groups.html','sales-knowledge.html','brain-preview.html','reply-quality.html','knowledge-activity.html','personas.html','assistant-options.html']);
   const embedded = parent !== window && new URLSearchParams(location.search).get('embed') === 'brain' && pages.has(location.pathname.split('/').pop());
   if (embedded) {
     document.documentElement.dataset.brainEmbedded = 'true';
@@ -8,7 +8,9 @@
       const anchor=event.target.closest?.('a[href]');
       if(!anchor || event.defaultPrevented || event.button!==0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey)return;
       const url=new URL(anchor.getAttribute('href'),location.href);
-      const destination = {'#/page/merchant/test-sari':'testSession','#/page/merchant/bot-settings':'assistantSettings'}[url.hash];
+      const destination = {'#/page/merchant/test-sari':'testSession','#/page/merchant/bot-settings':'assistantSettings','#/page/merchant/ai-hub':'assistantHub'}[url.hash];
+      const conversation = /^#\/page\/merchant\/conversations\?phone=(ux-customer-0(?:5[1-9]|6[0-2]))$/.exec(url.hash);
+      if(url.origin===location.origin && conversation){event.preventDefault();parent.postMessage({type:'sary-brain-preview',action:'conversation',phone:conversation[1]},location.origin);return;}
       if(url.origin===location.origin && destination){
         event.preventDefault(); parent.postMessage({type:'sary-brain-preview',action:'navigate',destination},location.origin);
       }
@@ -47,6 +49,7 @@
     clear:()=>{epoch++;drafts.clear();removeEventListener('beforeunload',warn);}
   };
   const destinations = {
+    assistantHub:()=>{location.hash='#/page/merchant/ai-hub';},
     assistantSettings:()=>{location.hash='#/page/merchant/bot-settings';},
     documents:()=>window.SaryBrainPreview?.openAdd(), upload:()=>window.SaryBrainPreview?.openAdd(),
     pages:()=>window.SaryBrainPreview?.navigate('knowledge','pages'), faqs:()=>window.SaryBrainPreview?.navigate('knowledge','faq'),
@@ -63,6 +66,7 @@
     if (url.origin !== location.origin || !pages.has(url.pathname.split('/').pop()) || url.searchParams.get('embed') !== 'brain') return;
     const message=event.data;
     if (!message || typeof message !== 'object' || message.type!=='sary-brain-preview') return;
+    if(message.action==='conversation' && typeof message.phone==='string' && /^ux-customer-0(?:5[1-9]|6[0-2])$/.test(message.phone) && url.pathname==='/assistant-options.html')location.hash='#/page/merchant/conversations?phone='+encodeURIComponent(message.phone);
     if(message.action==='resize' && Number.isFinite(message.height) && message.height>=0 && message.height<=20000){
       frame.dataset.contentHeight=String(Math.max(640,Math.ceil(message.height)));
       if(frame.dataset.modal!=='true')frame.style.height=frame.dataset.contentHeight+'px';

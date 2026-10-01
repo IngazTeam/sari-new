@@ -250,6 +250,8 @@ describe("reviewed assistant options UI", () => {
     expect(container.textContent).toContain(
       ar.assistantOptionDraftUx.uncertain
     );
+    expect(container.textContent).toContain(ar.assistantOptionDraftUx.statusUnconfirmed);
+    expect(container.textContent).not.toContain(ar.assistantOptionUx.unsaved);
     expect(button(ar.languageSettingsPage.text7).disabled).toBe(true);
   });
   it("does not restore a previous tenant draft into the next tenant", async () => {

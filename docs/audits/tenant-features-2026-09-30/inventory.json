@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-01T03:22:25.695Z",
+  "generatedAt": "2026-10-01T03:39:34.436Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -8722,7 +8722,7 @@
     },
     {
       "file": "client/src/pages/merchant/HumanTakeoverSettings.tsx",
-      "hash": "245ac513685e",
+      "hash": "45a8af1a6e83",
       "queries": [
         "botSettings.takeoverWorkspace"
       ],
@@ -8762,7 +8762,7 @@
         },
         {
           "label": "المحادثات النشطة (بشري)",
-          "line": 318,
+          "line": 322,
           "tag": "h2"
         }
       ],
@@ -12961,7 +12961,7 @@
     },
     {
       "file": "client/src/pages/merchant/LanguageSettings.tsx",
-      "hash": "2ac273c47038",
+      "hash": "da532ac91528",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
@@ -12974,17 +12974,17 @@
         },
         {
           "label": "معاينة رسائل البوت",
-          "line": 238,
+          "line": 242,
           "tag": "h2"
         },
         {
           "label": "",
-          "line": 247,
+          "line": 251,
           "tag": "CardTitle"
         },
         {
           "label": "",
-          "line": 255,
+          "line": 259,
           "tag": "h3"
         }
       ],
@@ -20163,11 +20163,11 @@
         "d32142e4562e",
         "149f010e1e0d",
         "d78b69fc3975",
-        "ebdf41aa9871",
-        "368a94cac45c",
-        "eab56f32a451",
-        "ef837a473f82",
-        "35a2ed13ce75",
+        "f994c9e027a5",
+        "e0f56e43f63c",
+        "8ac876dd3b1b",
+        "ae223cc0abfd",
+        "84aaae9298bd",
         "77ce5300e6f7",
         "03a912a88aad",
         "75d02c53dd7e",
@@ -21990,7 +21990,7 @@
       "controls": [
         "e5cabb02d07c",
         "bde80326a3c4",
-        "aeebcc5d98b8",
+        "6a24ee33bb39",
         "77ce5300e6f7",
         "03a912a88aad",
         "75d02c53dd7e",
@@ -47843,9 +47843,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ebdf41aa9871",
+      "id": "f994c9e027a5",
       "file": "client/src/pages/merchant/HumanTakeoverSettings.tsx",
-      "line": 307,
+      "line": 311,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -47864,9 +47864,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "368a94cac45c",
+      "id": "e0f56e43f63c",
       "file": "client/src/pages/merchant/HumanTakeoverSettings.tsx",
-      "line": 321,
+      "line": 325,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -47885,9 +47885,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "eab56f32a451",
+      "id": "8ac876dd3b1b",
       "file": "client/src/pages/merchant/HumanTakeoverSettings.tsx",
-      "line": 387,
+      "line": 391,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -47908,9 +47908,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ef837a473f82",
+      "id": "ae223cc0abfd",
       "file": "client/src/pages/merchant/HumanTakeoverSettings.tsx",
-      "line": 399,
+      "line": 403,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -47932,9 +47932,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "35a2ed13ce75",
+      "id": "84aaae9298bd",
       "file": "client/src/pages/merchant/HumanTakeoverSettings.tsx",
-      "line": 413,
+      "line": 417,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -61685,9 +61685,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "aeebcc5d98b8",
+      "id": "6a24ee33bb39",
       "file": "client/src/pages/merchant/LanguageSettings.tsx",
-      "line": 228,
+      "line": 232,
       "tag": "Button",
       "role": "",
       "kind": "action",
