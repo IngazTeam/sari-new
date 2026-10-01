@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-01T11:06:18.938Z",
+  "generatedAt": "2026-10-01T11:16:50.370Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 343,
-      "controls": 2216
+      "files": 344,
+      "controls": 2219
     }
   },
   "addedFiles": [
@@ -22,6 +22,7 @@
     "client/src/pages/setup-wizard/WorkingHoursFields.tsx",
     "client/src/lib/knowledge-workspace-cache.ts",
     "client/src/lib/sales-policy-draft.ts",
+    "client/src/lib/conversation-draft.ts",
     "client/src/lib/setup-website-draft.ts",
     "client/src/lib/setup-website-product.ts",
     "client/src/lib/test-sari-session.ts",
@@ -483,7 +484,7 @@
     {
       "route": "/merchant/conversations",
       "controlsBefore": 85,
-      "controlsNow": 86,
+      "controlsNow": 89,
       "removedQueries": [
         "conversations.getMessages"
       ],

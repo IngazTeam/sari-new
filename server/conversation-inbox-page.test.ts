@@ -6,6 +6,7 @@ import { memoryLocation } from 'wouter/memory-location';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import ar from '../client/src/locales/ar.json';
 import merchantAr from '../client/src/locales/merchant-ux.ar';
+import { clearConversationDrafts, CONVERSATION_DRAFT_PREFIX, conversationDraftScope, conversationDraftEpoch, saveConversationDraft, readConversationDraft } from '../client/src/lib/conversation-draft';
 const m=vi.hoisted(()=>({queries:{} as Record<string,any>,calls:vi.fn(),send:vi.fn(),voice:vi.fn(),attempt:vi.fn(),voiceAttempt:vi.fn(),complete:vi.fn(),invalidate:vi.fn(),success:vi.fn(),error:vi.fn(),warning:vi.fn()}));
 vi.mock('@/lib/trpc',()=>{
   const query=(name:string)=>({useQuery:(input:any,options:any)=>{
@@ -58,6 +59,32 @@ describe('restorable conversation navigation',()=>{
     expect(draft().value).toBe('Keep 5');expect(m.success).not.toHaveBeenCalled();expect(m.complete).toHaveBeenCalledOnce();await go('/merchant/conversations?conversationId=4');expect(draft().value).toBe('');
   });
 });
+describe('saved reply drafts and interrupted send recovery',()=>{
+  const scope=()=>conversationDraftScope(7,20,4);
+  const button=(text:string)=>Array.from(container.querySelectorAll('button')).find(b=>b.textContent?.trim()===text)!;
+  it('restores a stored draft only after confirming its account and store',async()=>{
+    sessionStorage.setItem(CONVERSATION_DRAFT_PREFIX+scope(),JSON.stringify({version:1,scope:scope(),savedAt:Date.now(),text:'Stored exact reply',review:false}));memory.navigate('/merchant/conversations?conversationId=4');await render();expect(draft().value).toBe('Stored exact reply');expect(container.textContent).toContain(ar.conversationDraft.saved);
+    m.queries.user.data={id:8};await render();expect(draft().value).toBe('');
+  });
+  it('does not send when the draft review marker cannot be saved and retains typed text',async()=>{
+    vi.spyOn(Storage.prototype,'setItem').mockImplementation(()=>{throw Error('quota');});await render();await choose();await fill('Do not lose me');expect(container.querySelector('[data-draft-storage-error]')).toBeTruthy();await click(send());expect(m.send).not.toHaveBeenCalled();expect(draft().value).toBe('Do not lose me');
+  });
+  it('persists a review marker before the request and blocks a blind retry after failure',async()=>{
+    m.send.mockImplementation(async()=>{expect(readConversationDraft(scope())).toMatchObject({state:'ready',record:{review:true}});throw Error('connection dropped');});
+    await render();await choose();await fill('Uncertain reply');await click(send());expect(container.querySelector('[data-draft-review]')).toBeTruthy();expect(send().disabled).toBe(true);expect(draft().disabled).toBe(true);
+    await click(button(ar.conversationDraft.reviewed));expect(m.send).toHaveBeenCalledTimes(1);expect(draft().disabled).toBe(false);expect(draft().value).toBe('Uncertain reply');
+  });
+  it('restores a possibly sent reply for review instead of permitting an immediate resend',async()=>{
+    saveConversationDraft(scope(),'Review first',true,conversationDraftEpoch());memory.navigate('/merchant/conversations?conversationId=4');await render();expect(draft().value).toBe('Review first');expect(send().disabled).toBe(true);expect(container.querySelector('[data-draft-review]')).toBeTruthy();expect(m.send).not.toHaveBeenCalled();
+  });
+  it('shows invalid saved data without restoring it and allows an explicit empty draft',async()=>{
+    sessionStorage.setItem(CONVERSATION_DRAFT_PREFIX+scope(),'{malformed');memory.navigate('/merchant/conversations?conversationId=4');await render();expect(draft().value).toBe('');expect(draft().disabled).toBe(true);expect(container.textContent).toContain(ar.conversationDraft.invalid);
+    await click(button(ar.conversationDraft.startEmpty));expect(draft().disabled).toBe(false);
+  });
+  it('restores text after a storage retry without sending it',async()=>{
+    const failure=vi.spyOn(Storage.prototype,'setItem').mockImplementation(()=>{throw Error('quota');});await render();await choose();await fill('Recover this');failure.mockRestore();await click(button(ar.conversationDraft.retry));expect(container.querySelector('[data-draft-storage-error]')).toBeNull();expect(draft().value).toBe('Recover this');expect(m.send).not.toHaveBeenCalled();
+  });
+});
 vi.mock('@/lib/staff-dashboard-attempt',()=>({staffDashboardAttempt:m.attempt}));
 vi.mock('@/lib/staff-voice-attempt',()=>({staffVoiceAttempt:m.voiceAttempt}));
 vi.mock('sonner',()=>({toast:{success:m.success,error:m.error,warning:m.warning,info:vi.fn()}}));
@@ -83,6 +110,7 @@ const draft=()=>container.querySelector('[data-staff-draft]') as HTMLTextAreaEle
 const send=()=>container.querySelector('[data-staff-send]') as HTMLButtonElement;
 const fill=(value:string)=>act(async()=>{Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value')!.set!.call(draft(),value);draft().dispatchEvent(new Event('input',{bubbles:true}));});
 beforeEach(()=>{
+  clearConversationDrafts();sessionStorage.clear();
   memory=memoryLocation({path:'/merchant/conversations',record:true});
   vi.resetAllMocks();vi.stubGlobal('React',React);vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT',true);vi.stubGlobal('ResizeObserver',class{observe(){}unobserve(){}disconnect(){}});
   const items=[4,5].map(id=>({id,merchantId:20,customerName:`Customer ${id}`,customerPhone:`local-${id}`,status:'active',lastMessageAt:'2026-10-01 10:00:00'}));
@@ -91,7 +119,7 @@ beforeEach(()=>{
   m.voiceAttempt.mockResolvedValue({input:{conversationId:4,requestId:'00000000-0000-4000-8000-000000000002'},complete:m.complete});m.voice.mockResolvedValue({success:true,persisted:true});
   container=document.createElement('div');document.body.append(container);root=createRoot(container);
 });
-afterEach(async()=>{await act(async()=>root.unmount());container.remove();vi.unstubAllGlobals();vi.useRealTimers();});
+afterEach(async()=>{await act(async()=>root.unmount());container.remove();vi.restoreAllMocks();clearConversationDrafts();vi.unstubAllGlobals();vi.useRealTimers();});
 describe('verified inbox scope and draft lifetime',()=>{
   it.each(['user','merchant'])('does not mount inbox reads while %s is being reverified',async name=>{
     m.queries[name].isFetching=true;await render();expect(container.querySelector('[data-state=loading]')).toBeTruthy();expect(m.calls.mock.calls.some(c=>c[0]==='list')).toBe(false);

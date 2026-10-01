@@ -8,6 +8,7 @@ import { SalesOfferReview } from '@/components/SalesOfferReview';
 import { StaffAttemptReview } from '@/components/StaffAttemptReview';
 import { useLocation, useSearch } from 'wouter';
 import { conversationHref, conversationNavigation } from '@/lib/conversation-navigation';
+import { conversationDraftEpoch, conversationDraftScope, readConversationDraft, saveConversationDraft } from '@/lib/conversation-draft';
 import {
   Card,
   CardContent,
@@ -68,7 +69,6 @@ function activityTime(value: string | Date | null) {
 }
 
 export default function Conversations() {
-  const drafts = useRef(new Map<string, Record<number, string>>());
   const user = trpc.auth.me.useQuery(undefined, { retry: false, staleTime: 0, refetchOnMount: 'always' });
   const merchant = trpc.merchants.getCurrent.useQuery(undefined, {
     retry: false, staleTime: 0, refetchOnMount: 'always',
@@ -81,11 +81,10 @@ export default function Conversations() {
   if (!user.data?.id || !merchant.data?.id)
     return <WorkspaceState kind={!user.data?.id ? 'session' : 'missing'} onRetry={() => { void user.refetch(); void merchant.refetch(); }} />;
   const key = `${user.data.id}:${merchant.data.id}`;
-  if (!drafts.current.has(key)) drafts.current.set(key, {});
-  return <ScopedConversations key={key} currentMerchant={merchant.data} draftStore={drafts.current.get(key)!} />;
+  return <ScopedConversations key={key} currentMerchant={merchant.data} actorId={user.data.id} />;
 }
 
-function ScopedConversations({ currentMerchant, draftStore }: { currentMerchant: { id: number; timezone?: string | null }; draftStore: Record<number, string> }) {
+function ScopedConversations({ currentMerchant, actorId }: { currentMerchant: { id: number; timezone?: string | null }; actorId: number }) {
   const { t } = useTranslation();
   const live = useRef(true), sendLock = useRef(false);
   useEffect(() => { live.current = true; return () => { live.current = false; }; }, []);
@@ -96,14 +95,18 @@ function ScopedConversations({ currentMerchant, draftStore }: { currentMerchant:
   const searchQuery = searchEdit?.source === search ? searchEdit.value : debouncedSearch;
   useEffect(() => { setSearchEdit(null); }, [search]);
   const changeRoute = (patch: Record<string, string | number | null>) => navigate(conversationHref(pathname, search, patch));
-  const drafts = useRef(draftStore);
+  const draftEpoch = useRef(conversationDraftEpoch());
   const [, refreshDraft] = useState(0);
-  const replyText = selectedConversationId ? drafts.current[selectedConversationId] || '' : '';
-  const setReplyText = (value: string | ((current: string) => string)) => {
-    if (!selectedConversationId) return;
-    const current = drafts.current[selectedConversationId] || '';
-    drafts.current[selectedConversationId] = typeof value === 'function' ? value(current) : value;
+  const draftScope = (id: number) => conversationDraftScope(actorId, currentMerchant.id, id);
+  const draft = selectedConversationId ? readConversationDraft(draftScope(selectedConversationId)) : { state: 'missing' as const };
+  const replyText = draft.state === 'ready' ? draft.record.text : '';
+  const draftReview = draft.state === 'ready' && draft.record.review;
+  const draftUnavailable = draft.state === 'unavailable' || (draft.state === 'ready' && !draft.persisted);
+  const draftInvalid = draft.state === 'invalid';
+  const saveDraft = (id: number, text: string, review = false) => {
+    const saved = saveConversationDraft(draftScope(id), text, review, draftEpoch.current);
     refreshDraft(version => version + 1);
+    return saved;
   };
   const [historyState, setHistoryState] = useState<{ conversationId: number | null; trail: number[] }>({ conversationId: null, trail: [] });
   const historyTrail = historyState.conversationId === selectedConversationId ? historyState.trail : [];
@@ -118,7 +121,7 @@ function ScopedConversations({ currentMerchant, draftStore }: { currentMerchant:
   const selectedReplyConversation=useRef(selectedConversationId);
   selectedReplyConversation.current=selectedConversationId;
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
-  const updateReplyText = (text: string) => setReplyText(text);
+  const updateReplyText = (text: string) => { if (selectedConversationId && !draftReview && !draftInvalid) saveDraft(selectedConversationId, text); };
   const selectConversation = (id: number | null) => {
     if (isSending || voiceBusy) return;
     setHistoryTrail([]);
@@ -214,7 +217,7 @@ function ScopedConversations({ currentMerchant, draftStore }: { currentMerchant:
 
   // Send text reply
   const handleSendReply = async () => {
-    if (!viewingLatest || !live.current || !replyText.trim() || !selectedConversationId || !selectedConversation || messagesError || messagesLoading || !historySnapshot || isSending || voiceBusy || sendLock.current) return;
+    if (draftReview || draftInvalid || replyText.trim().length > 4096 || !viewingLatest || !live.current || !replyText.trim() || !selectedConversationId || !selectedConversation || messagesError || messagesLoading || !historySnapshot || isSending || voiceBusy || sendLock.current) return;
 
     sendLock.current = true;
     setIsSending(true);
@@ -222,8 +225,8 @@ function ScopedConversations({ currentMerchant, draftStore }: { currentMerchant:
       const text=replyText.trim(),conversationId=selectedConversationId;
       const accepted=await sendDashboardText(conversationId,text);
       if(!accepted || !live.current)return;
-      if(drafts.current[conversationId]?.trim()===text)drafts.current[conversationId]='';
-      refreshDraft(version => version + 1);
+      const latestDraft = readConversationDraft(draftScope(conversationId));
+      if(latestDraft.state === 'ready' && latestDraft.record.text.trim() === text)saveDraft(conversationId, '');
       // Refresh messages
       utils.conversations.getMessages.invalidate({
         conversationId: selectedConversationId,
@@ -240,6 +243,12 @@ function ScopedConversations({ currentMerchant, draftStore }: { currentMerchant:
   const sendDashboardText=async(conversationId:number,message:string)=>{
     const attempt=await staffDashboardAttempt(currentMerchant?.id??0,conversationId,message);
     if(!live.current || selectedReplyConversation.current!==conversationId)return false;
+    // Persist a review marker before contacting the provider. A crash or a failed
+    // post-send cleanup must not restore this text as an ordinary unsent draft.
+    if (!saveDraft(conversationId, message, true)) {
+      saveDraft(conversationId, message, false);
+      throw Error('Draft storage unavailable');
+    }
     const result=await sendReplyMutation.mutateAsync({conversationId,message,requestId:attempt.requestId});
     if(!live.current)return false;
     if(result.success)attempt.complete();
@@ -256,7 +265,7 @@ function ScopedConversations({ currentMerchant, draftStore }: { currentMerchant:
 
   // A shortcut prepares a draft; only the explicit send action contacts the customer.
   const handleQuickAction = (_action: string, data: QuickActionDraft) => {
-    if (!viewingLatest || !selectedConversationId || !data?.message || isSending || voiceBusy) return;
+    if (draftReview || draftInvalid || !viewingLatest || !selectedConversationId || !data?.message || isSending || voiceBusy) return;
     if (replyText.trim()) {
       toast.warning(t('quickDrafts.existingDraft'), { position: 'top-center' });
       return;
@@ -902,7 +911,7 @@ function ScopedConversations({ currentMerchant, draftStore }: { currentMerchant:
                 <summary>اقتراحات ساري والإجراءات السريعة</summary>
                 <Separator />
                 <CardContent className="p-3">
-                  {viewingLatest && messages && messages.length > 0 && (
+                  {viewingLatest && !draftReview && !draftInvalid && messages && messages.length > 0 && (
                     <AISuggestions
                       conversationId={selectedConversationId!}
                       messages={messages.map(m => ({
@@ -928,13 +937,28 @@ function ScopedConversations({ currentMerchant, draftStore }: { currentMerchant:
                     conversationId={selectedConversationId!}
                     customerPhone={selectedConversation.customerPhone}
                     onActionComplete={handleQuickAction}
-                    disabled={!viewingLatest || isSending || voiceBusy}
+                    disabled={draftReview || draftInvalid || !viewingLatest || isSending || voiceBusy}
                   />
                 </CardContent>
               </details>
               {/* Text Input + Voice */}
               <Separator />
               <CardContent className="mw-chat-composer">
+                {draftReview && !isSending && <div role="status" className="mb-3 space-y-2 text-sm" data-draft-review>
+                  <p>{t('conversationDraft.review')}</p>
+                  <Button type="button" variant="outline" className="h-auto min-h-11 whitespace-normal" disabled={voiceBusy} onClick={() => saveDraft(selectedConversationId!, replyText)}>{t('conversationDraft.reviewed')}</Button>
+                </div>}
+                {draftInvalid && <div role="alert" className="mb-3 space-y-2 text-sm">
+                  <p>{t('conversationDraft.invalid')}</p>
+                  <Button type="button" variant="outline" disabled={isSending || voiceBusy} onClick={() => saveDraft(selectedConversationId!, '')}>{t('conversationDraft.startEmpty')}</Button>
+                </div>}
+                {draft.state === 'expired' && <p role="status" className="mb-2 text-sm">{t('conversationDraft.expired')}</p>}
+                {draftUnavailable && <div role="alert" className="mb-3 space-y-2 text-sm" data-draft-storage-error>
+                  <p>{t('conversationDraft.storageFailed')}</p>
+                  <Button type="button" variant="outline" disabled={isSending || voiceBusy} onClick={() => saveDraft(selectedConversationId!, replyText, draftReview)}>{t('conversationDraft.retry')}</Button>
+                </div>}
+                {replyText.trim().length > 4096 && <p role="alert" className="mb-2 text-sm">{t('conversationDraft.tooLong')}</p>}
+                {replyText && !draftReview && !draftUnavailable && <p role="status" className="mb-2 text-xs text-muted-foreground">{t('conversationDraft.saved')}</p>}
                 {!viewingLatest && <p className="mb-2 text-sm text-muted-foreground">{t('conversationHistory.replyFromLatest')}</p>}
                 <div className="flex items-end gap-2">
                   <div className="flex-1">
@@ -942,7 +966,7 @@ function ScopedConversations({ currentMerchant, draftStore }: { currentMerchant:
                       data-staff-draft
                       placeholder="اكتب رسالتك هنا..."
                       aria-label="رسالتك للعميل"
-                      disabled={!viewingLatest || isSending || voiceBusy}
+                      disabled={draftReview || draftInvalid || !viewingLatest || isSending || voiceBusy}
                       value={replyText}
                       maxLength={4096}
                       style={{fontSize:16}}
@@ -967,7 +991,7 @@ function ScopedConversations({ currentMerchant, draftStore }: { currentMerchant:
                     size="icon"
                     data-staff-send
                     onClick={handleSendReply}
-                    disabled={!viewingLatest || !replyText.trim() || isSending || voiceBusy || !!messagesError || messagesLoading || !historySnapshot}
+                    disabled={draftReview || draftInvalid || replyText.trim().length > 4096 || !viewingLatest || !replyText.trim() || isSending || voiceBusy || !!messagesError || messagesLoading || !historySnapshot}
                     className="shrink-0 h-[44px] w-[44px]"
                     aria-label={t('merchantUx.actions.sendMessage')}
                   >

@@ -12618,5 +12618,16 @@
     "loading": "Opening conversation…",
     "unavailable": "Could not open this conversation",
     "tryAgain": "This conversation may be unavailable for this store, or could not be loaded. Try again or return to the list."
+  },
+  "conversationDraft": {
+    "saved": "Draft saved in this tab for 24 hours after the last edit. Cleared on sign-out.",
+    "storageFailed": "Your browser could not save this draft. Keep a copy before reloading; sending will not start until saving succeeds.",
+    "retry": "Retry saving draft",
+    "review": "This draft may already have been sent. Check “My replies and delivery review” before editing or sending again.",
+    "reviewed": "I reviewed my replies; continue editing",
+    "invalid": "The saved draft could not be read safely. Its content was not used.",
+    "startEmpty": "Start an empty draft",
+    "expired": "The previous draft expired. You can write a new reply.",
+    "tooLong": "Shorten the reply to at most 4096 characters before sending."
   }
 }
