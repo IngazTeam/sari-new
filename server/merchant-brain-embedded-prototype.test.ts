@@ -53,10 +53,15 @@ it('fits an embedded modal to the parent viewport and restores content height af
   send({type:'sary-brain-preview',action:'modal',open:'false'});expect(frame.dataset.modal).toBe('true');
   send({type:'sary-brain-preview',action:'modal',open:false});expect(frame.style.height).toBe('3600px');expect(frame.scrollIntoView).toHaveBeenCalledTimes(1);
 });
-it.each(['knowledge-groups','sales-knowledge','brain-preview','reply-quality','knowledge-activity','personas','assistant-options'])('allows only same-origin embedding for the explicit %s preview',page=>{
+it.each(['knowledge-groups','sales-knowledge','brain-preview','reply-quality','knowledge-activity','personas','assistant-options','assistant-settings'])('allows only same-origin embedding for the explicit %s preview',page=>{
   expect(previewPolicy('/'+page+'.html',new URLSearchParams('embed=brain'))).toContain("frame-ancestors 'self'");
   expect(previewPolicy('/'+page+'.html',new URLSearchParams())).toContain("frame-ancestors 'none'");
   const html=readFileSync('prototypes/tenant-dashboard/site/'+page+'.html','utf8');expect(html).toContain('brain-embed.js');expect(html).toContain('brain-embed.css');
+});
+it('routes the settings preview connection link into the central dashboard',()=>{
+  frame.setAttribute('src','./assistant-settings.html?embed=brain');
+  send({type:'sary-brain-preview',action:'navigate',destination:'whatsapp'});
+  expect(w.location.hash).toBe('#/page/merchant/whatsapp');
 });
 it('routes persona settings from its owned frame into the central dashboard',()=>{
   frame.setAttribute('src','./personas.html?embed=brain');

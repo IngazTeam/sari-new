@@ -1,0 +1,27 @@
+import { createContext, useContext } from "react";
+import merchantAr from "../../../client/src/locales/merchant-ux.ar";
+import merchantEn from "../../../client/src/locales/merchant-ux.en";
+declare const ASSISTANT_SETTINGS_PREVIEW_COPY: Record<string, any>;
+export const AssistantSettingsPreviewLanguage = createContext<"ar" | "en">(
+  "ar"
+);
+export function useTranslation() {
+  const language = useContext(AssistantSettingsPreviewLanguage);
+  return {
+    i18n: {
+      language,
+      dir: () => (language === "ar" ? ("rtl" as const) : ("ltr" as const)),
+    },
+    t: (key: string, args: Record<string, unknown> = {}) => {
+      const value = key
+        .split(".")
+        .reduce((node, key) => node?.[key], {
+          ...ASSISTANT_SETTINGS_PREVIEW_COPY[language],
+          merchantUx: language === "ar" ? merchantAr : merchantEn,
+        });
+      return typeof value === "string"
+        ? value.replace(/\{\{(\w+)\}\}/g, (_, k) => String(args[k] ?? ""))
+        : key;
+    },
+  };
+}
