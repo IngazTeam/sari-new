@@ -4,6 +4,7 @@ import { getPool } from '../db/connection';
 import { checkoutTransaction } from './checkout-agreements';
 import { destroySession } from './session-context';
 import { normalizeCampaignPhone } from '../automation/campaign-guard';
+import { readVerifiedCustomerMemory } from './customer-memory-reader';
 
 export const ownershipInputSchema = z.object({ conversationId: z.number().int().positive(), expectedVersion: z.number().int().nonnegative(),
   expectedLastMessageId: z.number().int().nonnegative(), reviewed: z.boolean(), action: z.enum(['takeover', 'resume']) }).strict()
@@ -102,13 +103,26 @@ export async function canSendConversationReply(pool: Pick<Pool, 'execute'>, merc
 }
 
 export async function conversationHandoffSummary(merchantId: number, conversationId: number, throughMessageId?: number, afterMessageId = 0) {
+  for (const id of [merchantId, conversationId, ...(throughMessageId === undefined ? [] : [throughMessageId])]) z.number().int().positive().safe().parse(id);
+  z.number().int().nonnegative().safe().parse(afterMessageId);
   const pool = await getPool(); if (!pool) throw new Error('Handoff storage unavailable');
+  const connection = await pool.getConnection();
+  try {
+    await connection.query('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
+    await connection.query('START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY');
+    const result = await readHandoffSummary(connection, merchantId, conversationId, throughMessageId, afterMessageId);
+    await connection.commit();
+    return result;
+  } catch (error) { await connection.rollback(); throw error; }
+  finally { connection.release(); }
+}
+
+async function readHandoffSummary(pool: PoolConnection, merchantId: number, conversationId: number, throughMessageId: number | undefined, afterMessageId: number) {
   const [rows] = await pool.execute<any[]>(`SELECT customerPhone,handoff_version,human_takeover,human_expires_at,deal_stage,loss_reason,
     (SELECT COALESCE(MAX(id),0) FROM messages WHERE conversationId=c.id) AS last_message_id FROM conversations c WHERE id=? AND merchantId=?`, [conversationId, merchantId]);
   if (rows.length !== 1) throw new Error('Conversation unavailable');
-  const { readCustomerMemory } = await import('./customer-memory');
   const memory = rows[0].customerPhone.startsWith('group_') ? { facts: [], forgetBeforeMessageId: 0 }
-    : await readCustomerMemory(merchantId, rows[0].customerPhone);
+    : await readVerifiedCustomerMemory(pool, merchantId, rows[0].customerPhone);
   afterMessageId = Math.max(afterMessageId, memory.forgetBeforeMessageId);
   const [messages] = await pool.execute<any[]>(`SELECT id,direction,sender_type,content,createdAt FROM messages
     WHERE conversationId=? AND id>? AND (? IS NULL OR id<?) ORDER BY id DESC LIMIT 20`, [conversationId, afterMessageId, throughMessageId ?? null, throughMessageId ?? null]);
@@ -118,11 +132,11 @@ export async function conversationHandoffSummary(merchantId: number, conversatio
     WHERE q.merchant_id=? AND q.conversation_id=? AND q.source_message_id>? AND (? IS NULL OR q.source_message_id<?)
     ORDER BY q.id DESC LIMIT 3`, [merchantId, conversationId, afterMessageId, throughMessageId ?? null, throughMessageId ?? null]);
   return { conversationId, version: Number(rows[0].handoff_version), lastMessageId: Number(rows[0].last_message_id), humanOwned: Boolean(rows[0].human_takeover),
-    expiresAt: rows[0].human_expires_at ? new Date(rows[0].human_expires_at).toISOString() : null,
+    expiresAt: instant(rows[0].human_expires_at)?.toISOString() ?? null,
     dealStage: rows[0].deal_stage, lossReason: rows[0].loss_reason,
     facts: memory.facts.filter(f => f.conversationId === conversationId && f.sourceMessageId > afterMessageId && (!throughMessageId || f.sourceMessageId < throughMessageId)),
     messages: messages.reverse().map(m => ({ id: m.id, role: m.direction === 'incoming' ? 'customer' : m.sender_type,
-      text: String(m.content || '').slice(0, 600), at: new Date(m.createdAt).toISOString() })),
+      text: String(m.content || '').slice(0, 600), at: instant(m.createdAt)!.toISOString() })),
     offers: offers.map(q => ({ id: q.id, number: q.quotation_number, status: q.status, sourceMessageId: q.source_message_id,
       consentMessageId: q.consent_message_id, orderId: q.order_id, provider: q.external_provider,
       current: Boolean(q.current_offer) && ['sent', 'viewed'].includes(q.status) && !q.order_id && !q.consent_message_id,
@@ -149,5 +163,5 @@ export async function conversationHandoffSource(merchantId: number, conversation
   if (rows.length !== 1) throw new Error('Conversation source unavailable');
   const row = rows[0];
   return { id: Number(row.id), role: row.direction === 'incoming' ? 'customer' : String(row.sender_type),
-    text: String(row.content || ''), at: new Date(row.createdAt).toISOString() };
+    text: String(row.content || ''), at: instant(row.createdAt)!.toISOString() };
 }

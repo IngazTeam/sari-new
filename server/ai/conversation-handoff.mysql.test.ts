@@ -14,6 +14,7 @@ import { updateConversation, createMessage } from '../db';
 import { captureDirectCustomerMemory, captureContextualCustomerMemory } from './customer-memory';
 import {understandConversation} from './conversation-understanding';
 import {memoryUnderstandingFixture} from '../tests/helpers/memory-understanding-fixture';
+import {handoffSummary} from '../../shared/conversation-handoff';
 
 describe.skipIf(!process.env.DATABASE_URL)('human handoff source and ownership lifecycle', () => {
   let fixture: Awaited<ReturnType<typeof createDisposableMerchant>>, conversationId: number, sourceId: number, instanceId: number;
@@ -181,5 +182,25 @@ describe.skipIf(!process.env.DATABASE_URL)('human handoff source and ownership l
     expect(await canSendConversationReply((await getPool())!, fixture.merchantId, guard(), '12345@g.us')).toBe(true);
     expect(await canSendConversationReply((await getPool())!, fixture.merchantId, guard(), '54321@g.us')).toBe(false);
     expect((await conversationHandoffSummary(fixture.merchantId, conversationId)).facts).toEqual([]);
+  });
+  it('keeps ownership, cutoff and message evidence in the same read-only snapshot', async () => {
+    const pool=(await getPool())!, connection=await pool.getConnection(), original=connection.execute.bind(connection);
+    let later=0, changed=false;
+    vi.spyOn(pool,'getConnection').mockResolvedValueOnce(connection);
+    vi.spyOn(connection,'execute').mockImplementation((async(sql:string,args:any[])=>{
+      const result=await original(sql,args);
+      if(sql.includes('AS last_message_id')&&!changed){changed=true;later=await incoming('arrived after ownership read');await query('UPDATE conversations SET handoff_version=1,human_takeover=1 WHERE id=?',[conversationId]);}
+      return result;
+    }) as any);
+    const before=conversationHandoffSummary(fixture.merchantId,conversationId);
+    expect(handoffSummary.parse(await before)).toMatchObject({version:0,humanOwned:false,lastMessageId:sourceId,messages:[{id:sourceId}]});
+    vi.restoreAllMocks();
+    expect(handoffSummary.parse(await conversationHandoffSummary(fixture.merchantId,conversationId))).toMatchObject({version:1,humanOwned:true,lastMessageId:later});
+  });
+  it('rolls back and releases a failed summary read so the next read can recover',async()=>{
+    const pool=(await getPool())!,connection=await pool.getConnection(),original=connection.execute.bind(connection);
+    const rollback=vi.spyOn(connection,'rollback'),release=vi.spyOn(connection,'release');vi.spyOn(pool,'getConnection').mockResolvedValueOnce(connection);
+    vi.spyOn(connection,'execute').mockImplementation(((sql:string,args:any[])=>sql.includes('ORDER BY id DESC LIMIT 20')?Promise.reject(Error('fixture summary read failed')):original(sql,args)) as any);
+    await expect(conversationHandoffSummary(fixture.merchantId,conversationId)).rejects.toThrow('fixture summary read failed');expect(rollback).toHaveBeenCalledOnce();expect(release).toHaveBeenCalledOnce();vi.restoreAllMocks();expect(handoffSummary.parse(await conversationHandoffSummary(fixture.merchantId,conversationId)).conversationId).toBe(conversationId);
   });
 });
