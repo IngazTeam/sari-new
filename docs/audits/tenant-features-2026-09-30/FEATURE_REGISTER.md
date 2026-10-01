@@ -2,7 +2,7 @@
 
 هذا حصر مصدر قابل لإعادة التوليد، وليس ادعاءً بأن كل مسار عمل اختُبر أو أُعيد تصميمه. يشمل المكونات الفرعية المحلية، الحقول، الأزرار، النوافذ، التبويبات، واجهات القراءة والتعديل. العناصر الديناميكية تحتاج مراجعة إضافية.
 
-- 126 مسارًا مسجلًا، 362 ملف واجهة متصلًا، 2302 عنصر تحكم في المصدر.
+- 126 مسارًا مسجلًا، 367 ملف واجهة متصلًا، 2307 عنصر تحكم في المصدر.
 - 0 رابطًا حرفيًا غير مطابق، و0 ملف صفحة غير متصل بالمسارات المحصورة.
 
 | الصفحة | الملفات | عناصر التحكم | القراءة / التعديل | موك أب للصفحة |
@@ -82,9 +82,9 @@
 | /merchant/calendar — التقويم | 3 | 16 | 4 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/staff — مقدمو الخدمات | 1 | 11 | 1 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/team — الفريق والصلاحيات | 1 | 8 | 1 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/services — الخدمات | 3 | 26 | 3 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/services/new — إضافة وتعديل خدمة | 1 | 17 | 2 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/services/:id/edit — إضافة وتعديل خدمة | 1 | 17 | 2 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/services — الخدمات | 4 | 26 | 3 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/services/new — إضافة وتعديل خدمة | 5 | 22 | 4 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/services/:id/edit — إضافة وتعديل خدمة | 5 | 22 | 4 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/services/:id — تفاصيل الخدمة | 1 | 5 | 1 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/bookings — الحجوزات | 11 | 65 | 11 / 9 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/service-categories — تصنيفات الخدمات | 1 | 16 | 1 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -2772,54 +2772,64 @@
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 42 | Button | refresh | title |
-| 42 | Button | create | title |
-| 42 | Link | create | title |
-| 43 | Link | categories | title |
-| 43 | Link | packages | title |
-| 44 | Button | reviewState | title |
-| 48 | input | search | title |
-| 48 | Button | search | title |
-| 48 | select | status all active inactive unknown | title |
-| 48 | Button | search | title |
-| 50 | Button | first | outOfRange noResults empty |
-| 50 | Button | clear | outOfRange noResults empty |
-| 50 | Button | create | outOfRange noResults empty |
-| 50 | Link | create | outOfRange noResults empty |
-| 52 | Link | تسمية ديناميكية / تحتاج مراجعة | outOfRange noResults empty |
-| 56 | Button | details | ServiceCatalogList |
-| 56 | Link | details | ServiceCatalogList |
-| 56 | Button | edit | ServiceCatalogList |
-| 56 | Link | edit | ServiceCatalogList |
-| 56 | Button | text('archiveNamed',{name:name(row)}) | ServiceCatalogList |
-| 58 | Button | previous | ServiceCatalogList |
-| 58 | Button | next | ServiceCatalogList |
-| 60 | DialogContent | archiveTitle archiveHint changed reviewState cancel confirmArchive | ServiceCatalogList |
-| 60 | Button | reviewState | archiveTitle |
-| 60 | Button | cancel | archiveTitle |
-| 60 | Button | confirmArchive | archiveTitle |
+| 43 | Button | refresh | title |
+| 43 | Button | create | title |
+| 43 | Link | create | title |
+| 44 | Link | categories | title |
+| 44 | Link | packages | title |
+| 45 | Button | reviewState | title |
+| 49 | input | search | title |
+| 49 | Button | search | title |
+| 49 | select | status all active inactive unknown | title |
+| 49 | Button | search | title |
+| 51 | Button | first | outOfRange noResults empty |
+| 51 | Button | clear | outOfRange noResults empty |
+| 51 | Button | create | outOfRange noResults empty |
+| 51 | Link | create | outOfRange noResults empty |
+| 53 | Link | تسمية ديناميكية / تحتاج مراجعة | outOfRange noResults empty |
+| 57 | Button | details | ServiceCatalogList |
+| 57 | Link | details | ServiceCatalogList |
+| 57 | Button | edit | ServiceCatalogList |
+| 57 | Link | edit | ServiceCatalogList |
+| 57 | Button | text('archiveNamed',{name:name(row)}) | ServiceCatalogList |
+| 59 | Button | previous | ServiceCatalogList |
+| 59 | Button | next | ServiceCatalogList |
+| 61 | DialogContent | archiveTitle archiveHint changed reviewState cancel confirmArchive | ServiceCatalogList |
+| 61 | Button | reviewState | archiveTitle |
+| 61 | Button | cancel | archiveTitle |
+| 61 | Button | confirmArchive | archiveTitle |
 
-## client/src/pages/merchant/ServiceForm.tsx
+## client/src/components/merchant/ServiceEditorWorkspace.tsx
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 140 | Button | تسمية ديناميكية / تحتاج مراجعة | ServiceForm |
-| 146 | Button | تسمية ديناميكية / تحتاج مراجعة | ServiceForm |
-| 172 | Input | تسمية ديناميكية / تحتاج مراجعة | ServiceForm |
-| 183 | Textarea | تسمية ديناميكية / تحتاج مراجعة | ServiceForm |
-| 194 | Select | تسمية ديناميكية / تحتاج مراجعة | ServiceForm |
-| 223 | Select | تسمية ديناميكية / تحتاج مراجعة | ServiceForm |
-| 241 | Input | 100.00 | ServiceForm |
-| 257 | Input | 50.00 | ServiceForm |
-| 269 | Input | 200.00 | ServiceForm |
-| 294 | Input | 60 | ServiceForm |
-| 305 | Input | 0 | ServiceForm |
-| 331 | Switch | تسمية ديناميكية / تحتاج مراجعة | ServiceForm |
-| 343 | Input | تسمية ديناميكية / تحتاج مراجعة | ServiceForm |
-| 356 | Input | 30 | ServiceForm |
-| 383 | Input | 0 | ServiceForm |
-| 399 | Button | تسمية ديناميكية / تحتاج مراجعة | ServiceForm |
-| 407 | Button | تسمية ديناميكية / تحتاج مراجعة | ServiceForm |
+| 47 | textarea | description descriptionField * | ServiceEditorWorkspace |
+| 47 | input | description descriptionField * | ServiceEditorWorkspace |
+| 49 | select | تسمية ديناميكية / تحتاج مراجعة | ServiceEditorWorkspace |
+| 66 | Link | back | ServiceEditorWorkspace |
+| 66 | Button | refresh | editTitle title |
+| 67 | Button | reload | editTitle title |
+| 67 | Button | viewList | editTitle title |
+| 67 | Link | viewList | editTitle title |
+| 68 | select | priceType | basics |
+| 69 | summary | advanced advancedHint | advanced advancedHint |
+| 70 | Button | review | advanced advancedHint |
+| 71 | DialogContent | reload reloadTitle reviewTitle reload reloadHint reviewHint review descriptionField — categoryId noSelection staffIds ، noSelection requiresAppointment yes no bufferTimeMinutes maxBookingsPerDay advanceBookingDays displa | preview |
+| 71 | Button | cancel | reload reloadTitle reviewTitle |
+| 71 | Button | reload confirm | reload reloadTitle reviewTitle |
+
+## client/src/components/merchant/CatalogChoicePicker.tsx
+
+| السطر | النوع | التسمية | القسم |
+|---:|---|---|---|
+| 15 | Button | resetSelection | CatalogChoicePicker |
+| 15 | Button | label('removeSelection',{name:names[id]??label('unavailableSelection',{id})}) | CatalogChoicePicker |
+| 16 | Button | cancel choose | CatalogChoicePicker |
+| 17 | input | searchChoices | CatalogChoicePicker |
+| 17 | Button | searchChoices | CatalogChoicePicker |
+| 18 | Button | label('chooseNamed',{name:row.name}) | CatalogChoicePicker |
+| 18 | Button | previous | CatalogChoicePicker |
+| 18 | Button | next | CatalogChoicePicker |
 
 ## client/src/pages/ServiceDetails.tsx
 

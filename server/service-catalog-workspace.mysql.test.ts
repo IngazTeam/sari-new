@@ -1,7 +1,7 @@
 import {afterAll,afterEach,beforeEach,describe,expect,it} from 'vitest';
 import {getPool,closeDb} from './db/connection';
 import {createDisposableMerchant,cleanupDisposableMerchants} from './tests/helpers/disposable-merchant';
-import {readCatalogWorkspace,readCatalogRecord,readCatalogChoices} from './service-catalog-workspace';
+import {readCatalogWorkspace,readCatalogRecord,readCatalogEditor,readCatalogChoices} from './service-catalog-workspace';
 import {createService,createServiceCategory,createServicePackage,updateService,updateServiceCategory,updateServicePackage} from './db';
 import {servicesRouter} from './routers-services';
 
@@ -59,5 +59,14 @@ describe.skipIf(!process.env.DATABASE_URL)('tenant catalog workspace on MySQL',(
   await service();const caller=servicesRouter.createCaller({user:{id:owner.userId,role:'user'},merchantId:other.merchantId,req:{headers:{'x-merchant-id':String(owner.merchantId)}},res:{}} as any);
   expect(await caller.catalogWorkspace({entity:'service'})).toMatchObject({actorId:owner.userId,merchantId:owner.merchantId,canManage:true,summary:{total:1}});
   const forged=servicesRouter.createCaller({user:{id:other.userId,role:'user'},req:{headers:{'x-merchant-id':String(owner.merchantId)}},res:{}} as any);await expect(forged.catalogWorkspace({entity:'service'})).rejects.toMatchObject({code:'FORBIDDEN'});
+ });
+ it('scopes the create editor and selected reference labels without leaking staff contact details',async()=>{
+  const categoryId=await createServiceCategory({merchantId:owner.merchantId,name:'Selected category'});
+  const staffId=Number((await q("INSERT INTO staff_members (merchant_id,name,email) VALUES (?,'Selected staff','private@example.test')",[owner.merchantId])).insertId);
+  const foreignId=Number((await q("INSERT INTO staff_members (merchant_id,name) VALUES (?,'Secret foreign staff')",[other.merchantId])).insertId);
+  const id=await service({categoryId,staffIds:JSON.stringify([staffId])});
+  expect(await readCatalogEditor(...scope(),{entity:'service'})).toMatchObject({actorId:owner.userId,merchantId:owner.merchantId,record:null,selection:{entity:'service'}});
+  const editor=await readCatalogEditor(...scope(),{entity:'service',id});expect(editor.record?.references).toEqual([{kind:'category',id:categoryId,name:'Selected category'},{kind:'staff',id:staffId,name:'Selected staff'}]);expect(JSON.stringify(editor)).not.toContain('private@example.test');
+  await q('UPDATE services SET staff_ids=? WHERE id=?',[JSON.stringify([foreignId]),id]);const invalid=await readCatalogEditor(...scope(),{entity:'service',id});expect(invalid.record?.unavailableReferences).toBe(1);expect(JSON.stringify(invalid)).not.toContain('Secret foreign');
  });
 });

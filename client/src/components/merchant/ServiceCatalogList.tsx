@@ -1,3 +1,4 @@
+import {serviceCatalogLabels} from '@/lib/service-catalog-labels';
 import {useEffect,useRef,useState} from 'react';
 import {Link,useLocation,useSearch} from 'wouter';
 import {useTranslation} from 'react-i18next';
@@ -14,7 +15,7 @@ import '@/styles/service-catalog-workspace.css';
 type Service=Extract<CatalogRecord,{entity:'service'}>;
 export function ServiceCatalogList({actorId,merchantId}:{actorId:number;merchantId:number}){
  const {t,i18n}=useTranslation(),[path,navigate]=useLocation(),search=useSearch(),selection=catalogNavigation(search);
- const text=(key:string,variables?:Record<string,unknown>)=>t(`merchantUx.serviceCatalog.${key}`,variables);
+ const text=serviceCatalogLabels(t);
  const [searchEdit,setSearchEdit]=useState<{source:string;value:string}|null>(null),[action,setAction]=useState<{row:Service;view:string}|null>(null),[busy,setBusy]=useState(false),[notice,setNotice]=useState(''),[failure,setFailure]=useState(''),[needsRefresh,setNeedsRefresh]=useState(false);
  const view=useRef(''),live=useRef(true),lock=useRef(false),opener=useRef<HTMLElement|null>(null);view.current=`${actorId}:${merchantId}:${path}:${search}`;
  useEffect(()=>{live.current=true;return()=>{live.current=false;};},[]);

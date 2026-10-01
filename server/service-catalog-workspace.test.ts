@@ -1,12 +1,12 @@
 import {beforeEach,describe,expect,it,vi} from 'vitest';
 import {catalogListInput,catalogRecordInput,catalogChoicesInput,catalogWorkspaceSchema,catalogEditorSchema} from '../shared/service-catalog-workspace';
-const m=vi.hoisted(()=>({access:vi.fn(),list:vi.fn(),record:vi.fn(),choices:vi.fn()}));
+const m=vi.hoisted(()=>({access:vi.fn(),list:vi.fn(),record:vi.fn(),editor:vi.fn(),choices:vi.fn()}));
 vi.mock('./accounts/merchant-access',()=>({resolveMerchantAccess:m.access}));
-vi.mock('./service-catalog-workspace',async original=>({...await original<typeof import('./service-catalog-workspace')>(),readCatalogWorkspace:m.list,readCatalogRecord:m.record,readCatalogChoices:m.choices}));
+vi.mock('./service-catalog-workspace',async original=>({...await original<typeof import('./service-catalog-workspace')>(),readCatalogWorkspace:m.list,readCatalogRecord:m.record,readCatalogEditor:m.editor,readCatalogChoices:m.choices}));
 import {servicesRouter} from './routers-services';
 import {CatalogRecordMissingError,CatalogWorkspaceUnavailableError} from './service-catalog-workspace';
 const caller=(user:any={id:5,role:'user'})=>servicesRouter.createCaller({user,merchantId:99,merchantRole:'owner',req:{headers:{'x-merchant-id':'20'}},res:{}} as any);
-const operations=[['catalogWorkspace',{entity:'service'},m.list],['catalogRecord',{entity:'service',id:10},m.record],['catalogChoices',{kind:'staff'},m.choices]] as const;
+const operations=[['catalogWorkspace',{entity:'service'},m.list],['catalogRecord',{entity:'service',id:10},m.record],['catalogEditor',{entity:'service'},m.editor],['catalogChoices',{kind:'staff'},m.choices]] as const;
 beforeEach(()=>{vi.resetAllMocks();m.access.mockResolvedValue({merchantId:20,role:'viewer'});for(const [, ,mock] of operations)mock.mockResolvedValue({actorId:5,merchantId:20,canManage:false});});
 describe('catalog source boundary',()=>{
  it.each(operations)('uses current member identity in %s',async(action,input,mock)=>{expect(await (caller()[action] as any)(input)).toMatchObject({merchantId:20,canManage:false});expect(mock.mock.calls[0].slice(0,2)).toEqual([5,20]);});

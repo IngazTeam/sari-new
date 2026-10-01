@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-01T21:29:28.295Z",
+  "generatedAt": "2026-10-01T21:54:40.741Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 362,
-      "controls": 2302
+      "files": 367,
+      "controls": 2307
     }
   },
   "addedFiles": [
@@ -180,7 +180,12 @@
     "client/src/components/merchant/DataSyncWorkspace.tsx",
     "client/src/lib/inventory-export-attempt.ts",
     "client/src/components/merchant/ServiceCatalogList.tsx",
+    "client/src/lib/service-catalog-labels.ts",
     "client/src/lib/service-catalog-navigation.ts",
+    "client/src/lib/service-editor-form.ts",
+    "client/src/components/merchant/ServiceEditorWorkspace.tsx",
+    "client/src/lib/service-editor-labels.ts",
+    "client/src/components/merchant/CatalogChoicePicker.tsx",
     "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
     "client/src/components/merchant/InventorySheetWorkspace.tsx",
     "client/src/lib/inventory-sheet-workspace.ts",
@@ -264,6 +269,7 @@
     "client/src/components/SetupWizardReset.tsx",
     "client/src/pages/merchant/LanguageSettings.tsx",
     "client/src/pages/merchant/ServicesManagement.tsx",
+    "client/src/pages/merchant/ServiceForm.tsx",
     "client/src/pages/SheetsSettings.tsx",
     "client/src/pages/SheetsInventory.tsx",
     "client/src/pages/PlatformIntegrations.tsx",
@@ -1451,18 +1457,34 @@
     {
       "route": "/merchant/services/new",
       "controlsBefore": 17,
-      "controlsNow": 17,
-      "removedQueries": [],
-      "addedQueries": [],
+      "controlsNow": 22,
+      "removedQueries": [
+        "serviceCategories.list",
+        "services.getById"
+      ],
+      "addedQueries": [
+        "auth.me",
+        "merchants.getCurrent",
+        "services.catalogEditor",
+        "services.catalogChoices"
+      ],
       "removedMutations": [],
       "addedMutations": []
     },
     {
       "route": "/merchant/services/:id/edit",
       "controlsBefore": 17,
-      "controlsNow": 17,
-      "removedQueries": [],
-      "addedQueries": [],
+      "controlsNow": 22,
+      "removedQueries": [
+        "serviceCategories.list",
+        "services.getById"
+      ],
+      "addedQueries": [
+        "auth.me",
+        "merchants.getCurrent",
+        "services.catalogEditor",
+        "services.catalogChoices"
+      ],
       "removedMutations": [],
       "addedMutations": []
     },

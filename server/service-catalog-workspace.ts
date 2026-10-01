@@ -3,7 +3,7 @@ import {z} from 'zod';
 import {getDb} from './db/connection';
 import {serviceCatalogColumns,serviceCatalogTables,serviceCatalogDefinitionKey,type ServiceCatalogEntity} from './service-catalog-write';
 import {serviceCatalogId,serviceCatalogIds,normalizeCatalogService,normalizeCatalogCategory,normalizeCatalogPackage} from '../shared/service-catalog-write';
-import {catalogListInput,catalogRecordInput,catalogChoicesInput,catalogWorkspaceSchema,catalogEditorSchema,catalogChoicesSchema,catalogRecordSchema,catalogPageSize,type CatalogRecord} from '../shared/service-catalog-workspace';
+import {catalogListInput,catalogRecordInput,catalogEditorInput,catalogChoicesInput,catalogWorkspaceSchema,catalogEditorSchema,catalogEditorContextSchema,catalogChoicesSchema,catalogRecordSchema,catalogPageSize,type CatalogRecord} from '../shared/service-catalog-workspace';
 
 export class CatalogWorkspaceUnavailableError extends Error{constructor(){super('Catalog workspace unavailable');}}
 export class CatalogRecordMissingError extends Error{constructor(){super('Catalog record not found');}}
@@ -36,7 +36,7 @@ async function records(read:Read,entity:ServiceCatalogEntity,merchantId:number,r
  for(const group of groups){
   const ids=Array.from(new Set(result.flatMap(row=>references(row,group.kind))));if(!ids.length)continue;
   const available=new Map((await read(sql`SELECT id,name FROM ${sql.raw(group.table)} WHERE merchant_id=${merchantId} AND is_active=1 AND id IN (${sql.join(ids.map(id=>sql`${id}`),sql`,`)})`)).map(row=>[integer(row.id),String(row.name)]));
-  for(const record of result){record.unavailableReferences+=references(record,group.kind).filter(id=>!available.has(id)).length;if(group.kind==='category'&&record.entity==='service')record.categoryName=available.get(record.fields.categoryId??0)??null;}
+  for(const record of result){record.unavailableReferences+=references(record,group.kind).filter(id=>!available.has(id)).length;if(group.kind==='category'&&record.entity==='service')record.categoryName=available.get(record.fields.categoryId??0)??null;record.references.push(...references(record,group.kind).filter(id=>available.has(id)).map(id=>({kind:group.kind,id,name:available.get(id)!})));}
  }
  return result;
 }
@@ -68,4 +68,9 @@ export async function readCatalogChoices(actorId:number,merchantId:number,input:
   const rows=await read(sql`SELECT id,name FROM ${sql.raw(name)} WHERE ${where} ORDER BY id DESC LIMIT ${catalogPageSize} OFFSET ${(selection.page-1)*catalogPageSize}`);
   return catalogChoicesSchema.parse({...scope,selection,pagination:{page:selection.page,pageSize:catalogPageSize,total,pages:Math.ceil(total/catalogPageSize)},rows});
  });
+}
+export async function readCatalogEditor(actorId:number,merchantId:number,input:unknown,now=new Date()){
+ const selection=catalogEditorInput.parse(input);
+ if(selection.id!==undefined){const data=await readCatalogRecord(actorId,merchantId,selection,now);return catalogEditorContextSchema.parse(data);}
+ return snapshot(actorId,merchantId,now,async(_read,scope)=>catalogEditorContextSchema.parse({...scope,selection,record:null}));
 }
