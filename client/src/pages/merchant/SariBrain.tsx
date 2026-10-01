@@ -1,3 +1,4 @@
+import { KnowledgeSourceGroupsWorkspace, type KnowledgeGroupDestination } from '@/components/KnowledgeSourceGroupsWorkspace';
 import {KnowledgeActivityWorkspace} from '@/components/KnowledgeActivityWorkspace';
 import { KnowledgeRemovalWorkspace } from '@/components/KnowledgeRemovalWorkspace';
 import type { KnowledgeRemovalTarget } from '@shared/knowledge-source-removal';
@@ -14,7 +15,6 @@ import { KnowledgeFaqWorkspace } from '@/components/KnowledgeFaqWorkspace';
 import { KnowledgeIntake } from '@/components/KnowledgeIntake';
 import { KnowledgeLibrary } from '@/components/KnowledgeLibrary';
 import { KnowledgeDocumentUpload } from '@/components/KnowledgeDocumentUpload';
-import { parseMerchantDate } from '@/lib/merchant-date';
 import { QueryStateCard } from '@/components/QueryStateCard';
 import { CheckoutMarginPolicySettings } from '@/components/CheckoutMarginPolicySettings';
 import { DiscountPolicySettings } from '@/components/DiscountPolicySettings';
@@ -45,13 +45,6 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTranslation } from 'react-i18next';
 
-const SOURCE_ICONS: Record<string, React.ReactNode> = {
-  document: <FileText className="h-5 w-5 text-blue-500" />,
-  products: <Package className="h-5 w-5 text-green-500" />,
-  website: <Globe className="h-5 w-5 text-purple-500" />,
-  settings: <Settings className="h-5 w-5 text-gray-500" />,
-  faqs: <HelpCircle className="h-5 w-5 text-orange-500" />,
-};
 
 export default function SariBrain() {
   const { t } = useTranslation();
@@ -73,11 +66,20 @@ export default function SariBrain() {
     const url = new URL(window.location.href); url.searchParams.set('view',next);
     window.history.replaceState(window.history.state,'',url);
   };
+  const focusSourceElement = (id: string) => {
+    changeBrainView('sources');
+    requestAnimationFrame(() => { const element = document.getElementById(id); element?.scrollIntoView({block:'start'}); element?.querySelector<HTMLElement>('button,input')?.focus({preventScroll:true}); });
+  };
+  const focusUpload = () => focusSourceElement('brain-document-upload');
+  const manageGroup = (destination: KnowledgeGroupDestination) => {
+    if (destination === 'documents') focusSourceElement('brain-document-library');
+    else if (destination === 'products') setLocation('/merchant/products');
+    else if (destination === 'settings') setLocation('/merchant/settings');
+    else { setKnowledgePane(destination === 'faqs' ? 'faq' : destination); changeBrainView('knowledge'); }
+  };
   const utils = trpc.useUtils();
   const [knowledgePane, setKnowledgePane] = useState('sections');
   const [removalTarget,setRemovalTarget] = useState<KnowledgeRemovalTarget|null>(null);
-  const sourcesQuery = trpc.sariBrain.getSources.useQuery();
-  const { data: sources, isLoading } = sourcesQuery;
   // Reanalyze progress modal
   const [analysisDialogOpen, setAnalysisDialogOpen] = useState(false);
   const [analysisStep, setAnalysisStep] = useState('');
@@ -141,7 +143,6 @@ export default function SariBrain() {
   };
 
 
-  const totalSources = sourcesQuery.isError || isLoading ? '—' : sources?.filter((s: any) => s.hasContent && s.type !== 'settings').length || 0;
 
   // Integration awareness
   const { term } = useIntegration();
@@ -306,60 +307,10 @@ export default function SariBrain() {
       </section>
 
       <section hidden={brainView !== 'sources'} className="space-y-6" data-brain-section="sources">
-{/* Knowledge Sources */}
-      <Card>
-        <CardHeader>
-          <CardTitle>📦 مصادر المعرفة</CardTitle>
-          <CardDescription>{t('merchantUx.knowledgeLibrary.sourcesDescription')}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {sourcesQuery.isError ? <QueryStateCard kind="error" title={t('merchantUx.knowledgeIntake.sourcesError')} retryLabel={t('merchantUx.knowledgeIntake.retry')} onRetry={() => { void sourcesQuery.refetch(); }} /> : isLoading ? (
-            <div className="text-center py-8 text-muted-foreground">جاري التحميل...</div>
-          ) : sources && sources.length > 0 ? (
-            <div className="space-y-3">
-              {sources.map((source: any) => (
-                <div key={source.id} className="flex min-w-0 items-center justify-between gap-3 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
-                  <div className="flex min-w-0 items-center gap-4">
-                    <div className="flex shrink-0 items-center justify-center w-10 h-10 rounded-lg bg-muted">
-                      {SOURCE_ICONS[source.type] || <FileText className="h-5 w-5" />}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="font-medium flex flex-wrap items-center gap-2 break-words [overflow-wrap:anywhere]">
-                        {source.type === 'document' ? t('merchantUx.knowledgeLibrary.group') : source.name}
-                        <Badge variant={source.status === 'active' || source.status === 'completed' ? 'default' : source.status === 'failed' ? 'destructive' : 'secondary'} className="text-[10px]">
-                          {source.type === 'settings' ? t('merchantUx.knowledgeSources.configured') : t('merchantUx.knowledgeSources.stored')}
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {source.type === 'products' ? `${source.contentLength} ${term('item')}` : source.type === 'document' ? t('merchantUx.knowledgeLibrary.groupCount', { count: source.documentCount }) : ''}
-                        {source.date && ` • ${parseMerchantDate(source.date).toLocaleDateString('ar-SA')}`}
-                      </p>
-                    </div>
-                  </div>
-                  {source.deletable ? (
-                    <Button type="button" variant="outline" size="sm" className="shrink-0" onClick={()=>setRemovalTarget(source.type==='document'||source.type==='website' ? {kind:source.type,sourceId:Number(source.id.split('-').at(-1))} : {kind:source.type})} aria-label={t('knowledgeRemovalUx.launchNamed',{name:source.type==='document'?t('merchantUx.knowledgeLibrary.group'):source.name})}>{t('knowledgeRemovalUx.launch')}</Button>
-                  ) : (
-                    <Badge variant="outline" className="text-xs">أساسي</Badge>
-                  )}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <Brain className="mx-auto h-12 w-12 text-muted-foreground/50" />
-              <p className="mt-4 text-lg font-medium">لا توجد مصادر معرفة</p>
-              <p className="text-sm text-muted-foreground mt-1">ارفع ملف تعريفي أو أضف منتجات ليتعلم ساري عن نشاطك التجاري</p>
-              <Button className="mt-4" onClick={() => setLocation('/merchant/settings')}>
-                <Upload className="h-4 w-4 ml-2" />
-                رفع ملف تعريفي
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+<KnowledgeSourceGroupsWorkspace active={brainView==='sources'} onRemove={setRemovalTarget} onUpload={focusUpload} onManage={manageGroup} />
 
       <div id="brain-document-upload" className="scroll-mt-6"><KnowledgeDocumentUpload /></div>
-      <KnowledgeLibrary />
+      <div id="brain-document-library" className="scroll-mt-6"><KnowledgeLibrary /></div>
 
       </section>
       <section hidden={brainView !== 'knowledge' || knowledgePane !== 'pages'} className="space-y-6" data-brain-section="knowledge">

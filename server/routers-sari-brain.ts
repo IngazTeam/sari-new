@@ -1,3 +1,4 @@
+import { readKnowledgeSourceGroups } from './knowledge/source-groups';
 import {knowledgeActivityInput} from '../shared/knowledge-activity';
 import {readKnowledgeActivity} from './knowledge/activity-readout';
 import { brainPreviewInput } from "../shared/brain-preview";
@@ -29,7 +30,6 @@ import { ingestReviewedKnowledge } from './knowledge/intake-receipts';
 import { saveKnowledgeReview } from './knowledge/intake-reviews';
 import { capturePlanBasis, planContext, buildKnowledgePlan } from './knowledge/intake-plan';
 import { knowledgeIntakeInput, knowledgeIngestInput, knowledgeReceiptInput, knowledgeRecoveryInput, knowledgeAnalysisSchema, prepareKnowledgeText } from '../shared/knowledge-intake';
-import { getKnowledgeDocumentSummary } from './knowledge/document-library';
 import { readWebsiteAnalysisStatus, cleanupWebsiteAnalysisStatus, ANALYSIS_RUNNING_TTL_MS, type WebsiteAnalysisStatus } from './knowledge/website-analysis-status';
 import { persistCrawledKnowledge } from './knowledge/crawled-snapshot';
 /**
@@ -550,109 +550,10 @@ export const sariBrainRouter = router({
     catch { throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Source inventory unavailable' }); }
   }),
 
-  // Get all knowledge sources for the merchant
+  // One coherent read of stored groups; a failure must not look like no sources.
   getSources: merchantProcedure.query(async ({ ctx }) => {
-    const merchant = await getMerchantById(ctx.merchantId);
-    if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-
-    const sources: any[] = [];
-
-    // Document deletion affects the entire group; summarize every stored record.
-    let knowledgeDoc: Awaited<ReturnType<typeof getKnowledgeDocumentSummary>>;
-    try { knowledgeDoc = await getKnowledgeDocumentSummary(merchant.id); }
+    try { return await readKnowledgeSourceGroups(ctx.merchantId); }
     catch { throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Knowledge sources are temporarily unavailable' }); }
-    if (knowledgeDoc) {
-      sources.push({
-        id: `doc-${knowledgeDoc.id}`,
-        type: 'document',
-        icon: '📄',
-        name: 'الملفات المحفوظة',
-        status: 'stored',
-        documentCount: knowledgeDoc.documentCount,
-        hasContent: knowledgeDoc.contentLength > 0,
-        contentLength: knowledgeDoc.contentLength,
-        date: knowledgeDoc.date,
-        deletable: true,
-      });
-    }
-
-    // 2. Products — PERF-02 FIX: use COUNT instead of fetching all rows
-    const productCount = await getProductCountByMerchantId(merchant.id);
-    if (productCount > 0) {
-      sources.push({
-        id: `products-${merchant.id}`,
-        type: 'products',
-        icon: '🛍️',
-        name: `قائمة المنتجات (${productCount} منتج)`,
-        status: 'stored',
-        hasContent: true,
-        contentLength: productCount,
-        date: new Date().toISOString(),
-        deletable: true,
-      });
-    }
-
-    // 3. Website Analysis
-    try {
-      const dbConn = await getRawPool();
-      if (!dbConn) throw new Error('Source database unavailable');
-      {
-        const [analyses] = await (dbConn as any).execute(
-          `SELECT id, url, title, industry, analyzed_at, overall_score FROM website_analyses WHERE merchant_id = ? ORDER BY analyzed_at DESC LIMIT 1`,
-          [merchant.id]
-        );
-        if (analyses && (analyses as any[]).length > 0) {
-          const analysis = (analyses as any[])[0];
-          sources.push({
-            id: `website-${analysis.id}`,
-            type: 'website',
-            icon: '🌐',
-            name: analysis.title || analysis.url || 'تحليل الموقع',
-            status: 'stored',
-            hasContent: true,
-            contentLength: 1,
-            date: analysis.analyzed_at,
-            deletable: true,
-            meta: { url: analysis.url, industry: analysis.industry, score: analysis.overall_score },
-          });
-        }
-      }
-    } catch (e) {
-      throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Knowledge sources are temporarily unavailable' });
-    }
-
-    // 4. FAQs (custom Q&A)
-    try {
-      const faqs = await getExtractedFaqsByMerchantId(merchant.id);
-      if (faqs.length > 0) {
-        sources.push({
-          id: `faqs-${merchant.id}`,
-          type: 'faqs',
-          icon: '❓',
-          name: `أسئلة شائعة (${faqs.length} سجل محفوظ)`,
-          status: 'stored',
-          hasContent: true,
-          contentLength: faqs.length,
-          date: faqs[0]?.extractedAt || new Date().toISOString(),
-          deletable: true,
-        });
-      }
-    } catch { throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Knowledge sources are temporarily unavailable' }); }
-
-    // 5. Merchant Settings (non-deletable)
-    sources.push({
-      id: `settings-${merchant.id}`,
-      type: 'settings',
-      icon: '⚙️',
-      name: `إعدادات المتجر (${merchant.businessName})`,
-      status: 'stored',
-      hasContent: true,
-      contentLength: 1,
-      date: merchant.createdAt,
-      deletable: false,
-    });
-
-    return sanitizeForTRPC(sources);
   }),
 
   reviewSourceRemoval: permissionProcedure('bot_settings.manage').input(knowledgeRemovalTarget).query(async ({ctx,input}) => {

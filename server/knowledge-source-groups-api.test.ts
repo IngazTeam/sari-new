@@ -1,0 +1,10 @@
+import { beforeEach, expect, it, vi } from "vitest";
+const m=vi.hoisted(()=>({access:vi.fn(),read:vi.fn()}));
+vi.mock('./accounts/merchant-access',()=>({resolveMerchantAccess:m.access}));
+vi.mock('./knowledge/source-groups',()=>({readKnowledgeSourceGroups:m.read}));
+import { sariBrainRouter } from './routers-sari-brain';
+const caller=()=>sariBrainRouter.createCaller({user:{id:7,role:'user'},req:{headers:{'x-merchant-id':'20'}},res:{},merchantId:999} as any);
+beforeEach(()=>{vi.clearAllMocks();m.access.mockResolvedValue({merchantId:20,role:'viewer'});m.read.mockResolvedValue({merchantId:20});});
+it('uses verified tenant scope even when the incoming context has a stale identity',async()=>{expect(await caller().getSources()).toEqual({merchantId:20});expect(m.read).toHaveBeenCalledWith(20);});
+it('blocks a revoked membership before reading',async()=>{m.access.mockResolvedValue(null);await expect(caller().getSources()).rejects.toMatchObject({code:'FORBIDDEN'});expect(m.read).not.toHaveBeenCalled();});
+it('masks storage details and never manufactures empty groups on failure',async()=>{m.read.mockRejectedValue(Error('private database info'));await expect(caller().getSources()).rejects.toMatchObject({code:'INTERNAL_SERVER_ERROR',message:'Knowledge sources are temporarily unavailable'});});

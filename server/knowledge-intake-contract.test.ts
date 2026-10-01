@@ -1,3 +1,5 @@
+const groups = vi.hoisted(() => ({ read: vi.fn() }));
+vi.mock('./knowledge/source-groups', () => ({ readKnowledgeSourceGroups: groups.read }));
 import { beforeEach, expect, it, vi } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { TRPCError } from '@trpc/server';
@@ -121,15 +123,15 @@ it('reads the saved receipt without provider work and scopes it to the resolved 
   expect(store.read).toHaveBeenCalledWith(api.merchantId, requestId); expect(api.ingest).not.toHaveBeenCalled();
 });
 it('rejects a source read failure instead of returning an empty source collection', async () => {
-  api.execute.mockRejectedValue(new Error('private database failure'));
+  groups.read.mockRejectedValueOnce(new Error('private database failure'));
   await expect(caller().getSources()).rejects.toMatchObject({ code: 'INTERNAL_SERVER_ERROR', message: 'Knowledge sources are temporarily unavailable' });
 });
-it('rejects an FAQ read failure after a successful website read', async () => {
-  api.faqs.mockRejectedValue(new Error('private failure'));
+it('rejects a partial source summary failure', async () => {
+  groups.read.mockRejectedValueOnce(new Error('private failure'));
   await expect(caller().getSources()).rejects.toMatchObject({ code: 'INTERNAL_SERVER_ERROR' });
 });
 it('rejects missing database and activity errors instead of returning an empty history', async () => {
-  api.pool.mockResolvedValue(null); await expect(caller().getSources()).rejects.toMatchObject({ code: 'INTERNAL_SERVER_ERROR' });
+  groups.read.mockRejectedValueOnce(new Error('database unavailable')); api.pool.mockResolvedValue(null); await expect(caller().getSources()).rejects.toMatchObject({ code: 'INTERNAL_SERVER_ERROR' });
   await expect(caller().getActivityLog()).rejects.toMatchObject({ code: 'INTERNAL_SERVER_ERROR' });
 });
 it('requires explicit recovery acknowledgement and a valid reference before touching the store', async () => {

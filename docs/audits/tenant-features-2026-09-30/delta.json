@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-01T00:22:07.716Z",
+  "generatedAt": "2026-10-01T00:49:08.727Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 326,
-      "controls": 2180
+      "files": 327,
+      "controls": 2183
     }
   },
   "addedFiles": [
@@ -92,6 +92,7 @@
     "client/src/components/merchant/AssistantOptionReview.tsx",
     "client/src/hooks/useReviewedAssistantOption.ts",
     "client/src/components/merchant/VirtualAgentReview.tsx",
+    "client/src/components/KnowledgeSourceGroupsWorkspace.tsx",
     "client/src/components/KnowledgeActivityWorkspace.tsx",
     "client/src/components/KnowledgeRemovalWorkspace.tsx",
     "client/src/lib/knowledge-removal-attempt.ts",
@@ -862,7 +863,7 @@
     {
       "route": "/merchant/sari-brain",
       "controlsBefore": 275,
-      "controlsNow": 412,
+      "controlsNow": 415,
       "removedQueries": [
         "sariBrain.getFaqs",
         "sariBrain.getKnowledgeSections",
