@@ -1,6 +1,7 @@
 import { messageLabels } from "@/lib/message-labels";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useLocation, useSearch } from "wouter";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -20,35 +21,79 @@ export function MessageWorkspace() {
     language = rtl ? "ar-SA" : "en-GB";
   const labels = messageLabels(t);
   const label = (key: keyof typeof labels) => labels[key];
-  const [period, setPeriod] = useState<MessageWorkspaceInput["period"]>("30d"),
-    [format, setFormat] = useState<"csv" | "xlsx" | "pdf">("xlsx"),
+  const search = useSearch(),
+    [pathname, navigate] = useLocation();
+  const params = new URLSearchParams(search);
+  const requestedPeriod = params.get("range"),
+    requestedTab = params.get("tab");
+  const period: MessageWorkspaceInput["period"] =
+    requestedPeriod === "7d" || requestedPeriod === "90d"
+      ? requestedPeriod
+      : "30d";
+  const tab =
+    requestedTab === "sentiment" || requestedTab === "products"
+      ? requestedTab
+      : "messages";
+  const select = (key: "range" | "tab", value: string) => {
+    const next = new URLSearchParams(search);
+    next.set(key, value);
+    navigate(pathname + "?" + next.toString());
+  };
+  const [format, setFormat] = useState<"csv" | "xlsx" | "pdf">("xlsx"),
     [busy, setBusy] = useState(false),
     [refreshing, setRefreshing] = useState(false);
-  const merchant = trpc.merchants.getCurrent.useQuery();
+  const merchant = trpc.merchants.getCurrent.useQuery(undefined, {
+    retry: false,
+    staleTime: 0,
+    refetchOnMount: "always",
+  });
   const query = trpc.messageWorkspace.read.useQuery(
     { period },
-    { staleTime: 0, refetchOnMount: "always" }
+    {
+      retry: false,
+      staleTime: 0,
+      refetchOnMount: "always",
+      enabled:
+        Boolean(merchant.data?.id) && !merchant.error && !merchant.isFetching,
+    }
   );
   const live = useRef(true),
     exportLock = useRef(false),
     refreshLock = useRef(false),
     displayed = useRef<MessageSnapshot | undefined>(undefined),
     selection = useRef("");
-  selection.current = JSON.stringify([merchant.data?.id, period]);
+  selection.current = JSON.stringify([merchant.data?.id, period, language]);
   useEffect(() => {
     live.current = true;
     return () => {
       live.current = false;
     };
   }, []);
+  const reading = merchant.isFetching || query.isFetching || refreshing;
   const data =
+    !reading &&
     query.data?.merchantId === merchant.data?.id &&
     query.data?.period === period
       ? query.data
       : undefined;
   const failed = query.error || merchant.error;
-  displayed.current =
-    !failed && !query.isFetching && !refreshing ? data : undefined;
+  displayed.current = !failed ? data : undefined;
+  // A context that changes away and back still invalidates an in-flight file.
+  const review = useRef({
+    snapshot: displayed.current,
+    selection: selection.current,
+    version: 0,
+  });
+  if (
+    review.current.snapshot !== displayed.current ||
+    review.current.selection !== selection.current
+  ) {
+    review.current = {
+      snapshot: displayed.current,
+      selection: selection.current,
+      version: review.current.version + 1,
+    };
+  }
   const number = (value: number) =>
     new Intl.NumberFormat(language, { maximumFractionDigits: 1 }).format(value);
   const ratio = (value: number | null) =>
@@ -87,6 +132,7 @@ export function MessageWorkspace() {
     const snapshot = displayed.current;
     if (!snapshot || exportLock.current) return;
     exportLock.current = true;
+    const revision = review.current.version;
     setBusy(true);
     try {
       const blob = await messageExportBlob(
@@ -94,7 +140,12 @@ export function MessageWorkspace() {
         format,
         rtl
       );
-      if (!live.current || displayed.current !== snapshot) return;
+      if (
+        !live.current ||
+        displayed.current !== snapshot ||
+        review.current.version !== revision
+      )
+        return;
       const url = URL.createObjectURL(blob),
         anchor = document.createElement("a");
       anchor.href = url;
@@ -109,7 +160,11 @@ export function MessageWorkspace() {
       }
       toast.success(label("exportReady"));
     } catch {
-      if (live.current && displayed.current === snapshot)
+      if (
+        live.current &&
+        displayed.current === snapshot &&
+        review.current.version === revision
+      )
         toast.error(label("exportFailed"));
     } finally {
       exportLock.current = false;
@@ -182,10 +237,10 @@ export function MessageWorkspace() {
               <caption className="sr-only">{title}</caption>
               <thead>
                 <tr className="border-b bg-muted/50">
-                  <th className="p-3 text-start">
+                  <th scope="col" className="p-3 text-start">
                     {title === label("daily") ? label("date") : label("hour")}
                   </th>
-                  <th className="p-3 text-end">{label("count")}</th>
+                  <th scope="col" className="p-3 text-end">{label("count")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -225,7 +280,7 @@ export function MessageWorkspace() {
             {label("period")}
             <select
               value={period}
-              onChange={event => setPeriod(event.target.value as typeof period)}
+              onChange={event => select("range", event.target.value)}
               className="mt-1 block min-h-11 w-full rounded-lg border bg-background px-3 text-base sm:w-44"
             >
               {(["7d", "30d", "90d"] as const).map(p => (
@@ -240,7 +295,7 @@ export function MessageWorkspace() {
           <Button
             variant="outline"
             className="min-h-11"
-            disabled={query.isFetching || refreshing}
+            disabled={Boolean(reading)}
             onClick={() => void refresh()}
           >
             {label("refresh")}
@@ -266,9 +321,6 @@ export function MessageWorkspace() {
               {date(data.through)} UTC
             </p>
             <p className="text-muted-foreground">{label("windowNote")}</p>
-            {(query.isFetching || refreshing) && (
-              <p role="status">{label("loading")}</p>
-            )}
           </section>
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             {card(label("total"), data.messages.total)}
@@ -287,7 +339,11 @@ export function MessageWorkspace() {
               {label("empty")}
             </p>
           )}
-          <Tabs defaultValue="messages" dir={rtl ? "rtl" : "ltr"}>
+          <Tabs
+            value={tab}
+            onValueChange={value => select("tab", value)}
+            dir={rtl ? "rtl" : "ltr"}
+          >
             <TabsList
               aria-label={label("tabs")}
               className="grid h-auto w-full grid-cols-3 gap-1 bg-muted/50 p-1"

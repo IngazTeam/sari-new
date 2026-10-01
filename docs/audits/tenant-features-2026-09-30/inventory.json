@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-01T09:20:19.706Z",
+  "generatedAt": "2026-10-01T09:38:15.312Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -6777,7 +6777,7 @@
     },
     {
       "file": "client/src/components/merchant/MessageWorkspace.tsx",
-      "hash": "a3037186dca8",
+      "hash": "ec5431ce48cb",
       "queries": [
         "merchants.getCurrent",
         "messageWorkspace.read"
@@ -6788,72 +6788,78 @@
       "sections": [
         {
           "label": "",
-          "line": 160,
+          "line": 215,
           "tag": "h2"
         },
         {
           "label": "table ·",
-          "line": 177,
+          "line": 232,
           "tag": "summary"
         },
         {
           "label": "title",
-          "line": 218,
+          "line": 273,
           "tag": "h1"
         },
         {
           "label": "messages",
-          "line": 295,
+          "line": 351,
           "tag": "TabsTrigger"
         },
         {
           "label": "sentiment",
-          "line": 301,
+          "line": 357,
           "tag": "TabsTrigger"
         },
         {
           "label": "productsOrders",
-          "line": 307,
+          "line": 363,
           "tag": "TabsTrigger"
         },
         {
           "label": "types",
-          "line": 316,
+          "line": 372,
           "tag": "h2"
         },
         {
           "label": "confidence",
-          "line": 368,
+          "line": 424,
           "tag": "summary"
         },
         {
           "label": "products",
-          "line": 402,
+          "line": 458,
           "tag": "h2"
         },
         {
           "label": "",
-          "line": 413,
+          "line": 469,
           "tag": "h3"
         },
         {
           "label": "orders",
-          "line": 433,
+          "line": 489,
           "tag": "h2"
         },
         {
           "label": "export",
-          "line": 457,
+          "line": 513,
           "tag": "h2"
         }
       ],
       "choices": [],
-      "handlers": [],
+      "handlers": [
+        {
+          "name": "select",
+          "line": 37,
+          "calls": []
+        }
+      ],
       "queryStates": [
         {
           "query": "merchants.getCurrent",
           "binding": "merchant",
-          "line": 27,
+          "line": 45,
           "errorSignal": true,
           "loadingSignal": false,
           "enabled": null
@@ -6861,10 +6867,10 @@
         {
           "query": "messageWorkspace.read",
           "binding": "query",
-          "line": 28,
+          "line": 50,
           "errorSignal": true,
           "loadingSignal": false,
-          "enabled": null
+          "enabled": "Boolean(merchant.data?.id) && !merchant.error && !merchant.isFetching"
         }
       ],
       "conditions": [],
@@ -19744,15 +19750,15 @@
       ],
       "controls": [
         "77ce5300e6f7",
-        "63075ecdf241",
-        "7d86ad862101",
-        "fa4d931d538d",
-        "d1447a5e9593",
-        "11111254ec96",
-        "513e84f9182b",
-        "420f3032a9cf",
-        "520ff002c6a0",
-        "09204f1bddb7"
+        "c5ce060fd338",
+        "1b846e10a68e",
+        "c326b0c36aec",
+        "374c0c88214f",
+        "570b7a313409",
+        "0469b5d775ef",
+        "83713c1516c1",
+        "bcba3afcb61b",
+        "3568a574738f"
       ],
       "queries": [
         "auth.me",
@@ -21226,15 +21232,15 @@
       ],
       "controls": [
         "77ce5300e6f7",
-        "63075ecdf241",
-        "7d86ad862101",
-        "fa4d931d538d",
-        "d1447a5e9593",
-        "11111254ec96",
-        "513e84f9182b",
-        "420f3032a9cf",
-        "520ff002c6a0",
-        "09204f1bddb7"
+        "c5ce060fd338",
+        "1b846e10a68e",
+        "c326b0c36aec",
+        "374c0c88214f",
+        "570b7a313409",
+        "0469b5d775ef",
+        "83713c1516c1",
+        "bcba3afcb61b",
+        "3568a574738f"
       ],
       "queries": [
         "auth.me",
@@ -21763,15 +21769,15 @@
       ],
       "controls": [
         "77ce5300e6f7",
-        "63075ecdf241",
-        "7d86ad862101",
-        "fa4d931d538d",
-        "d1447a5e9593",
-        "11111254ec96",
-        "513e84f9182b",
-        "420f3032a9cf",
-        "520ff002c6a0",
-        "09204f1bddb7"
+        "c5ce060fd338",
+        "1b846e10a68e",
+        "c326b0c36aec",
+        "374c0c88214f",
+        "570b7a313409",
+        "0469b5d775ef",
+        "83713c1516c1",
+        "bcba3afcb61b",
+        "3568a574738f"
       ],
       "queries": [
         "auth.me",
@@ -21809,15 +21815,15 @@
       ],
       "controls": [
         "77ce5300e6f7",
-        "63075ecdf241",
-        "7d86ad862101",
-        "fa4d931d538d",
-        "d1447a5e9593",
-        "11111254ec96",
-        "513e84f9182b",
-        "420f3032a9cf",
-        "520ff002c6a0",
-        "09204f1bddb7"
+        "c5ce060fd338",
+        "1b846e10a68e",
+        "c326b0c36aec",
+        "374c0c88214f",
+        "570b7a313409",
+        "0469b5d775ef",
+        "83713c1516c1",
+        "bcba3afcb61b",
+        "3568a574738f"
       ],
       "queries": [
         "auth.me",
@@ -24157,15 +24163,15 @@
       ],
       "controls": [
         "77ce5300e6f7",
-        "63075ecdf241",
-        "7d86ad862101",
-        "fa4d931d538d",
-        "d1447a5e9593",
-        "11111254ec96",
-        "513e84f9182b",
-        "420f3032a9cf",
-        "520ff002c6a0",
-        "09204f1bddb7"
+        "c5ce060fd338",
+        "1b846e10a68e",
+        "c326b0c36aec",
+        "374c0c88214f",
+        "570b7a313409",
+        "0469b5d775ef",
+        "83713c1516c1",
+        "bcba3afcb61b",
+        "3568a574738f"
       ],
       "queries": [
         "auth.me",
@@ -24203,15 +24209,15 @@
       ],
       "controls": [
         "77ce5300e6f7",
-        "63075ecdf241",
-        "7d86ad862101",
-        "fa4d931d538d",
-        "d1447a5e9593",
-        "11111254ec96",
-        "513e84f9182b",
-        "420f3032a9cf",
-        "520ff002c6a0",
-        "09204f1bddb7"
+        "c5ce060fd338",
+        "1b846e10a68e",
+        "c326b0c36aec",
+        "374c0c88214f",
+        "570b7a313409",
+        "0469b5d775ef",
+        "83713c1516c1",
+        "bcba3afcb61b",
+        "3568a574738f"
       ],
       "queries": [
         "auth.me",
@@ -43479,9 +43485,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "63075ecdf241",
+      "id": "c5ce060fd338",
       "file": "client/src/components/merchant/MessageWorkspace.tsx",
-      "line": 177,
+      "line": 232,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -43500,9 +43506,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "7d86ad862101",
+      "id": "1b846e10a68e",
       "file": "client/src/components/merchant/MessageWorkspace.tsx",
-      "line": 226,
+      "line": 281,
       "tag": "select",
       "role": "",
       "kind": "field",
@@ -43526,9 +43532,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "fa4d931d538d",
+      "id": "c326b0c36aec",
       "file": "client/src/components/merchant/MessageWorkspace.tsx",
-      "line": 240,
+      "line": 295,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -43543,13 +43549,13 @@
       "required": false,
       "conditional": true,
       "conditions": [],
-      "disabled": "query.isFetching || refreshing",
+      "disabled": "Boolean(reading)",
       "review": "source-inventoried"
     },
     {
-      "id": "d1447a5e9593",
+      "id": "374c0c88214f",
       "file": "client/src/components/merchant/MessageWorkspace.tsx",
-      "line": 295,
+      "line": 351,
       "tag": "TabsTrigger",
       "role": "",
       "kind": "action",
@@ -43571,9 +43577,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "11111254ec96",
+      "id": "570b7a313409",
       "file": "client/src/components/merchant/MessageWorkspace.tsx",
-      "line": 301,
+      "line": 357,
       "tag": "TabsTrigger",
       "role": "",
       "kind": "action",
@@ -43595,9 +43601,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "513e84f9182b",
+      "id": "0469b5d775ef",
       "file": "client/src/components/merchant/MessageWorkspace.tsx",
-      "line": 307,
+      "line": 363,
       "tag": "TabsTrigger",
       "role": "",
       "kind": "action",
@@ -43619,9 +43625,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "420f3032a9cf",
+      "id": "83713c1516c1",
       "file": "client/src/components/merchant/MessageWorkspace.tsx",
-      "line": 368,
+      "line": 424,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -43643,9 +43649,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "520ff002c6a0",
+      "id": "bcba3afcb61b",
       "file": "client/src/components/merchant/MessageWorkspace.tsx",
-      "line": 465,
+      "line": 521,
       "tag": "select",
       "role": "",
       "kind": "field",
@@ -43680,9 +43686,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "09204f1bddb7",
+      "id": "3568a574738f",
       "file": "client/src/components/merchant/MessageWorkspace.tsx",
-      "line": 478,
+      "line": 534,
       "tag": "Button",
       "role": "",
       "kind": "action",
