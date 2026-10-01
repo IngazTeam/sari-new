@@ -11772,4 +11772,82 @@
   "page": "Page {{page}} of {{total}}",
   "manage": "Open knowledge section management"
 }
+,
+"knowledgeRemovalUx": {
+  "storageRetry": "Check browser storage again",
+  "title": "Review knowledge removal",
+  "intro": "Check the exact impact before removing a source group. Nothing is removed when you open this review.",
+  "launchReset": "Review full reset",
+  "launch": "Review removal",
+  "launchNamed": "Review removal: {{name}}",
+  "close": "Close",
+  "pendingNotice": "A previous removal request needs its receipt checked before starting another.",
+  "openRecovery": "Review previous request",
+  "storageError": "The browser could not safely read or save this request reference. Removal is blocked. Keep this page open and restore browser storage access; do not clear a pending request.",
+  "busy": {
+    "review": "Reading the current impact…",
+    "send": "Saving the reviewed removal…",
+    "receipt": "Checking the saved receipt…"
+  },
+  "issue": {
+    "read": "The impact could not be verified. Reload the review before continuing.",
+    "uncertain": "The request result is unknown. Check its saved receipt. Repeating this same request uses the same reference and cannot delete twice.",
+    "missing": "No receipt was found at the time of this check. The request may still be running. Check again, or explicitly resume this same request after confirming its original review.",
+    "conflict": "The data changed since this review. No new removal was accepted for this request. Load the current impact and review it again.",
+    "blocked": "The server did not accept this removal. Refresh the review to check its current requirements.",
+    "forbidden": "Your current account cannot perform this action. Keep the request reference and have an authorized manager verify the result."
+  },
+  "completed": "Removal confirmed",
+  "receiptSaved": "The server saved this receipt with the operation. These are the removed source counts.",
+  "target": {
+    "all": "All knowledge sources and all knowledge sections",
+    "document": "The entire uploaded-file group and all its descendant sections",
+    "website": "All website analyses, discovered pages and their descendant sections",
+    "products": "All local catalog products, including hidden products",
+    "faqs": "All saved extracted questions and answers"
+  },
+  "previousReview": "This is the original review for the saved request, not a new reading of the current data.",
+  "permanent": "This removal cannot be undone here. All rows in the selected group are affected, including sections derived from it.",
+  "relatedTitle": "Related records affected",
+  "cacheEffect": "Cached answers are cleared and session knowledge is invalidated. Historical conversation messages remain. A full reset also clears all knowledge change history.",
+  "preserved": "The account, settings, conversations and orders are retained. Removing products also removes their options and variants and unlinks related rewards and comparisons.",
+  "recoveryHelp": "This tab saves the request reference and reviewed counts for recovery. Approval is never restored. Check the receipt first; closing this review does not cancel a request already sent.",
+  "checkReceipt": "Check receipt",
+  "confirmName": "Type the store name",
+  "nameHelp": "Enter exactly: {{name}}",
+  "acknowledge": "I reviewed the counts and related effects and authorize this permanent removal.",
+  "confirmError": "Enter the matching store name and confirm that you reviewed the impact.",
+  "resume": "Resume the same reviewed request",
+  "approve": "Confirm reviewed removal",
+  "refresh": "Reload current impact",
+  "count": {
+    "documents": "Uploaded files",
+    "products": "Catalog products",
+    "analyses": "Website analyses",
+    "pages": "Website pages",
+    "faqs": "Questions and answers",
+    "sections": "Knowledge sections"
+  },
+  "related": {
+    "documentReviews": "File reviews removed",
+    "documentReceipts": "Intake receipt details cleared",
+    "websitePreviews": "Unconsumed page previews removed",
+    "websiteImportReviews": "Unconsumed website import reviews removed",
+    "sectionHistory": "Section history entries removed",
+    "productOptions": "Product options removed",
+    "productVariants": "Product variants removed",
+    "loyaltyLinks": "Reward product links cleared",
+    "competitorLinks": "Comparison product links cleared",
+    "websiteInsights": "Website insight records removed",
+    "extractedProducts": "Products extracted from analyses removed",
+    "faqPageLinks": "FAQ page links cleared; answers retained"
+  },
+  "blocker": {
+    "running_intake": "Knowledge processing is still in progress. Review its outcome in the file library before removing anything.",
+    "external_catalog": "This group includes products managed by an integration. Manage the catalog through its connected source first.",
+    "missing_source": "This source no longer exists. Close the review and refresh the source list.",
+    "empty": "There are no records in this group to remove.",
+    "foreign_relationship": "An inconsistent relationship needs repair before removal. Contact support with this store reference."
+  }
+}
 }

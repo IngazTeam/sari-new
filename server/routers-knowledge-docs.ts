@@ -12,7 +12,7 @@ import {
   getMerchantById,
 } from './db';
 
-import { removeKnowledgeSource } from './knowledge/source-lifecycle';
+import { retiredSourceRemoval } from './knowledge/retired-source-removal';
 import { extractKnowledgeDocument } from './knowledge/document-extraction';
 import { getDocumentReviewSource } from './knowledge/document-source';
 import { knowledgeDocumentReprocess } from '../shared/knowledge-document';
@@ -62,15 +62,8 @@ export const knowledgeDocsRouter = router({
     return { ...metadata, hasText: !!extractedText };
   }),
 
-  // Delete knowledge doc
-  delete: permissionProcedure('bot_settings.manage').mutation(async ({ ctx }) => {
-    const merchant = await getMerchantById(ctx.merchantId);
-    if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-
-    try { await removeKnowledgeSource(merchant.id, 'document'); }
-    catch (error) { if (error instanceof TRPCError) throw error; throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'تعذر حذف مصدر المعرفة. لم يتم اعتماد عملية جزئية.' }); }
-    return { success: true };
-  }),
+  // Group removal requires a current impact review and durable receipt.
+  delete: permissionProcedure('bot_settings.manage').mutation(()=>retiredSourceRemoval()),
 
   reviewSource: permissionProcedure('bot_settings.manage').input(knowledgeDocumentReprocess.pick({ id: true })).query(async ({ ctx, input }) => {
     try { return await getDocumentReviewSource(ctx.merchantId, input.id); }

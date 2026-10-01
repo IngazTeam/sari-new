@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-30T23:19:18.495Z",
+  "generatedAt": "2026-09-30T23:58:45.242Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -443,7 +443,7 @@
     },
     {
       "file": "client/src/lib/knowledge-workspace-cache.ts",
-      "hash": "49fa3c7412af",
+      "hash": "51914606961e",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
@@ -8981,7 +8981,7 @@
     },
     {
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "hash": "cac192476a0b",
+      "hash": "376784c40ffc",
       "queries": [
         "sariBrain.getSources",
         "sariBrain.getActivityLog",
@@ -8989,8 +8989,6 @@
         "sariBrain.getWebsiteKnowledge"
       ],
       "mutations": [
-        "sariBrain.deleteSource",
-        "sariBrain.resetBrain",
         "sariBrain.reanalyzeWebsite"
       ],
       "imperativeReads": [],
@@ -8998,64 +8996,54 @@
       "sections": [
         {
           "label": "عقل ساري",
-          "line": 195,
+          "line": 178,
           "tag": "h1"
         },
         {
-          "label": "⚠️ إعادة ضبط عقل ساري بالكامل",
-          "line": 217,
-          "tag": "AlertDialogTitle"
-        },
-        {
           "label": "مؤشر احتراف المبيعات",
-          "line": 255,
+          "line": 217,
           "tag": "h2"
         },
         {
           "label": "تجارب البيع وتقييم النتائج",
-          "line": 261,
+          "line": 223,
           "tag": "summary"
         },
         {
           "label": "مراجعة الرد واعتماد إرساله",
-          "line": 262,
+          "line": 224,
           "tag": "summary"
         },
         {
           "label": "سياسة المتابعة",
-          "line": 263,
+          "line": 225,
           "tag": "summary"
         },
         {
           "label": "صلاحيات الخصم وهامش الربح",
-          "line": 264,
+          "line": 226,
           "tag": "summary"
         },
         {
           "label": "تحليل الموقع",
-          "line": 289,
+          "line": 251,
           "tag": "AlertDialogTitle"
         },
         {
           "label": "📦 مصادر المعرفة",
-          "line": 368,
+          "line": 330,
           "tag": "CardTitle"
         },
         {
-          "label": "document",
-          "line": 411,
-          "tag": "AlertDialogTitle"
-        },
-        {
           "label": "📋 مسار ساري",
-          "line": 490,
+          "line": 425,
           "tag": "CardTitle"
         }
       ],
       "choices": [
         {
           "name": "brainViews",
-          "line": 67,
+          "line": 69,
           "values": [
             {
               "id": "overview",
@@ -9091,7 +9079,7 @@
         },
         {
           "name": "FILTER_OPTIONS",
-          "line": 476,
+          "line": 411,
           "values": [
             {
               "value": "all",
@@ -9131,7 +9119,7 @@
         {
           "query": "sariBrain.getSources",
           "binding": "sourcesQuery",
-          "line": 86,
+          "line": 89,
           "errorSignal": true,
           "loadingSignal": false,
           "enabled": null
@@ -9139,7 +9127,7 @@
         {
           "query": "sariBrain.getActivityLog",
           "binding": "activityQuery",
-          "line": 90,
+          "line": 93,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
@@ -9147,7 +9135,7 @@
         {
           "query": "sariBrain.getAnalysisStatus",
           "binding": "statusQuery",
-          "line": 135,
+          "line": 118,
           "errorSignal": true,
           "loadingSignal": false,
           "enabled": "polling"
@@ -9155,7 +9143,7 @@
         {
           "query": "sariBrain.getWebsiteKnowledge",
           "binding": "websiteKnowledgeQuery",
-          "line": 185,
+          "line": 168,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
@@ -9163,6 +9151,7 @@
       ],
       "conditions": [],
       "imports": [
+        "client/src/components/KnowledgeRemovalWorkspace.tsx",
         "client/src/components/SalesKnowledgeReadout.tsx",
         "client/src/components/BrainQuickPreview.tsx",
         "client/src/components/ReplyQualityReadout.tsx",
@@ -9187,7 +9176,85 @@
         "client/src/components/FollowupPolicySettings.tsx",
         "client/src/hooks/useIntegration.tsx"
       ],
-      "controlCount": 32
+      "controlCount": 26
+    },
+    {
+      "file": "client/src/components/KnowledgeRemovalWorkspace.tsx",
+      "hash": "760a260b9b1d",
+      "queries": [
+        "sariBrain.reviewSourceRemoval",
+        "sariBrain.sourceRemovalReceipt"
+      ],
+      "mutations": [
+        "sariBrain.removeSources"
+      ],
+      "imperativeReads": [
+        {
+          "procedure": "sariBrain.reviewSourceRemoval",
+          "method": "fetch",
+          "expression": "utils.sariBrain.reviewSourceRemoval.fetch",
+          "line": 60,
+          "provenance": "trpc-utility-static"
+        },
+        {
+          "procedure": "sariBrain.sourceRemovalReceipt",
+          "method": "fetch",
+          "expression": "utils.sariBrain.sourceRemovalReceipt.fetch",
+          "line": 66,
+          "provenance": "trpc-utility-static"
+        }
+      ],
+      "browserRequests": [],
+      "sections": [
+        {
+          "label": "مراجعة حذف المعرفة",
+          "line": 330,
+          "tag": "DialogTitle"
+        },
+        {
+          "label": "تأكد الحذف",
+          "line": 380,
+          "tag": "h3"
+        },
+        {
+          "label": "السجلات المرتبطة المتأثرة",
+          "line": 415,
+          "tag": "summary"
+        }
+      ],
+      "choices": [],
+      "handlers": [
+        {
+          "name": "close",
+          "line": 295,
+          "calls": []
+        }
+      ],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [
+        "client/src/lib/knowledge-workspace-cache.ts",
+        "client/src/lib/knowledge-removal-attempt.ts",
+        "client/src/components/KnowledgeWorkspaceScope.tsx"
+      ],
+      "controlCount": 11
+    },
+    {
+      "file": "client/src/lib/knowledge-removal-attempt.ts",
+      "hash": "73e8acee438f",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [
+        "client/src/lib/knowledge-workspace-cache.ts"
+      ],
+      "controlCount": 0
     },
     {
       "file": "client/src/components/SalesKnowledgeReadout.tsx",
@@ -20058,9 +20125,11 @@
       ],
       "files": [
         "client/src/pages/merchant/SariBrain.tsx",
-        "client/src/components/SalesKnowledgeReadout.tsx",
-        "client/src/components/KnowledgeWorkspaceScope.tsx",
+        "client/src/components/KnowledgeRemovalWorkspace.tsx",
         "client/src/lib/knowledge-workspace-cache.ts",
+        "client/src/lib/knowledge-removal-attempt.ts",
+        "client/src/components/KnowledgeWorkspaceScope.tsx",
+        "client/src/components/SalesKnowledgeReadout.tsx",
         "client/src/components/BrainQuickPreview.tsx",
         "client/src/components/ReplyQualityReadout.tsx",
         "client/src/components/WebsiteAnalysisDialog.tsx",
@@ -20116,38 +20185,44 @@
         "client/src/hooks/useIntegration.tsx"
       ],
       "controls": [
-        "b65fb0792708",
-        "b729dd0f96ab",
-        "ca4d77ac3142",
-        "8dd58834a85b",
-        "7c17b07e01d4",
-        "6aff36588821",
-        "9d95f1ace9d1",
-        "ef0051958092",
-        "5d2381a667de",
-        "e8dcbae4b445",
-        "12c3fca5dd2a",
-        "881b9b65f449",
-        "cf2dd0dcbc24",
-        "96c2693e88d1",
-        "f2c1742bda3a",
-        "fbb2af53b9ac",
-        "df5ee6f676bc",
-        "ce723996bf1a",
-        "0ede40a0a3ac",
-        "f19b6f843631",
-        "78ada6e441df",
-        "1e1d5b99f3a2",
-        "27f6ffa71da8",
-        "0d61b10c7285",
-        "21dc4cf17bec",
-        "87b00893dc98",
-        "cc6b188780b0",
-        "ade3b4af0d2b",
-        "f0921e2c9abe",
-        "60c5fce7db91",
-        "0f283c732204",
-        "2e05a69192aa",
+        "55728835441b",
+        "3698c9801f5d",
+        "b53d93488d20",
+        "4f4dae381e4a",
+        "44658d15eff1",
+        "f45d31e061c8",
+        "278c64ba98a1",
+        "539b86597481",
+        "1d9a9825373a",
+        "7b9555f18a0b",
+        "055f09a8a82c",
+        "35c1e5656e88",
+        "405ce0dc871d",
+        "d0152bc42ac5",
+        "02d7131d3201",
+        "43c7472103e7",
+        "3b43c1f137c2",
+        "63da9671345a",
+        "c553c4590acf",
+        "c7191f915b4d",
+        "e25fb2a7a632",
+        "75295f3e7afb",
+        "060142f643a1",
+        "dadf7fd5e5ce",
+        "248aac38caa1",
+        "2e37088186c9",
+        "5c61fcb73936",
+        "959d9dbb958a",
+        "e6d4e8ed90c3",
+        "f0e03a4fb6eb",
+        "c74edc7a5439",
+        "08d656343fff",
+        "8ca70a01523c",
+        "49a626502fbc",
+        "fbdc7a1ce181",
+        "06b5faa2081c",
+        "72c1298d9e21",
+        "77ce5300e6f7",
         "aea17166cf10",
         "ce79642b792c",
         "61ff4afab788",
@@ -20155,7 +20230,6 @@
         "942c291b8907",
         "5936ee53e177",
         "5e0b4ca9dbe5",
-        "77ce5300e6f7",
         "b0a55e82d7e6",
         "fbf976d76053",
         "4e75f5069f85",
@@ -20524,10 +20598,12 @@
         "sariBrain.getActivityLog",
         "sariBrain.getAnalysisStatus",
         "sariBrain.getWebsiteKnowledge",
-        "sariBrain.sectionWorkspace",
-        "sariBrain.sectionReview",
+        "sariBrain.reviewSourceRemoval",
+        "sariBrain.sourceRemovalReceipt",
         "auth.me",
         "merchants.getCurrent",
+        "sariBrain.sectionWorkspace",
+        "sariBrain.sectionReview",
         "sariBrain.getQualityDashboard",
         "sariBrain.pageWorkspace",
         "sariBrain.pageIntakeReceipt",
@@ -20571,9 +20647,8 @@
         "sariBrain.getFollowupPolicy"
       ],
       "mutations": [
-        "sariBrain.deleteSource",
-        "sariBrain.resetBrain",
         "sariBrain.reanalyzeWebsite",
+        "sariBrain.removeSources",
         "sariBrain.testSari",
         "sariBrain.previewUrl",
         "sariBrain.savePreviewedPage",
@@ -20610,6 +20685,22 @@
         "sariBrain.updateFollowupPolicy"
       ],
       "imperativeReads": [
+        {
+          "file": "client/src/components/KnowledgeRemovalWorkspace.tsx",
+          "procedure": "sariBrain.reviewSourceRemoval",
+          "method": "fetch",
+          "expression": "utils.sariBrain.reviewSourceRemoval.fetch",
+          "line": 60,
+          "provenance": "trpc-utility-static"
+        },
+        {
+          "file": "client/src/components/KnowledgeRemovalWorkspace.tsx",
+          "procedure": "sariBrain.sourceRemovalReceipt",
+          "method": "fetch",
+          "expression": "utils.sariBrain.sourceRemovalReceipt.fetch",
+          "line": 66,
+          "provenance": "trpc-utility-static"
+        },
         {
           "file": "client/src/components/KnowledgeWebsiteIntake.tsx",
           "procedure": "sariBrain.pageIntakeReceipt",
@@ -48822,9 +48913,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "b65fb0792708",
+      "id": "55728835441b",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 204,
+      "line": 187,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -48843,36 +48934,15 @@
       "review": "source-inventoried"
     },
     {
-      "id": "b729dd0f96ab",
+      "id": "3698c9801f5d",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 210,
+      "line": 191,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "إعادة ضبط كاملة",
+      "label": "مراجعة إعادة الضبط",
       "section": "عقل ساري",
-      "binding": "",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "sourcesQuery.isError || isLoading || totalSources === 0",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "ca4d77ac3142",
-      "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 215,
-      "tag": "AlertDialogContent",
-      "role": "",
-      "kind": "dialog",
-      "label": "⚠️ إعادة ضبط عقل ساري بالكامل سيتم حذف جميع مصادر المعرفة (الملفات، المنتجات، تحليل الموقع). هذا الإجراء لا يمكن التراجع عنه! إلغاء جاري الحذف... نعم، أعد الضبط",
-      "section": "عقل ساري",
-      "binding": "",
+      "binding": "()=>setRemovalTarget({kind:'all'})",
       "type": "text",
       "options": [],
       "min": "",
@@ -48885,56 +48955,14 @@
       "review": "source-inventoried"
     },
     {
-      "id": "8dd58834a85b",
+      "id": "b53d93488d20",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 225,
-      "tag": "AlertDialogCancel",
-      "role": "",
-      "kind": "action",
-      "label": "إلغاء",
-      "section": "⚠️ إعادة ضبط عقل ساري بالكامل",
-      "binding": "",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "7c17b07e01d4",
-      "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 226,
-      "tag": "AlertDialogAction",
-      "role": "",
-      "kind": "action",
-      "label": "جاري الحذف... نعم، أعد الضبط",
-      "section": "⚠️ إعادة ضبط عقل ساري بالكامل",
-      "binding": "() => resetBrainMutation.mutate()",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "sourcesQuery.isError || isLoading || resetBrainMutation.isPending",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "6aff36588821",
-      "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 236,
+      "line": 198,
       "tag": "Button",
       "role": "",
       "kind": "action",
       "label": "عرض تقدم التحليل",
-      "section": "⚠️ إعادة ضبط عقل ساري بالكامل",
+      "section": "عقل ساري",
       "binding": "()=>setAnalysisDialogOpen(true)",
       "type": "text",
       "options": [],
@@ -48950,14 +48978,14 @@
       "review": "source-inventoried"
     },
     {
-      "id": "9d95f1ace9d1",
+      "id": "4f4dae381e4a",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 238,
+      "line": 200,
       "tag": "Button",
       "role": "",
       "kind": "action",
       "label": "",
-      "section": "⚠️ إعادة ضبط عقل ساري بالكامل",
+      "section": "عقل ساري",
       "binding": "()=>changeBrainView(view.id)",
       "type": "button",
       "options": [],
@@ -48971,14 +48999,14 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ef0051958092",
+      "id": "44658d15eff1",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 247,
+      "line": 209,
       "tag": "Button",
       "role": "",
       "kind": "action",
       "label": "",
-      "section": "⚠️ إعادة ضبط عقل ساري بالكامل",
+      "section": "عقل ساري",
       "binding": "()=>setKnowledgePane(pane.id)",
       "type": "button",
       "options": [],
@@ -48994,9 +49022,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "5d2381a667de",
+      "id": "f45d31e061c8",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 258,
+      "line": 220,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -49015,9 +49043,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "e8dcbae4b445",
+      "id": "278c64ba98a1",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 258,
+      "line": 220,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -49036,9 +49064,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "12c3fca5dd2a",
+      "id": "539b86597481",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 261,
+      "line": 223,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -49057,9 +49085,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "881b9b65f449",
+      "id": "1d9a9825373a",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 262,
+      "line": 224,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -49078,9 +49106,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "cf2dd0dcbc24",
+      "id": "7b9555f18a0b",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 263,
+      "line": 225,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -49099,9 +49127,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "96c2693e88d1",
+      "id": "055f09a8a82c",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 264,
+      "line": 226,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -49120,9 +49148,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "f2c1742bda3a",
+      "id": "35c1e5656e88",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 278,
+      "line": 240,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -49144,9 +49172,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "fbb2af53b9ac",
+      "id": "405ce0dc871d",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 282,
+      "line": 244,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -49169,9 +49197,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "df5ee6f676bc",
+      "id": "d0152bc42ac5",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 287,
+      "line": 249,
       "tag": "AlertDialogContent",
       "role": "",
       "kind": "dialog",
@@ -49194,9 +49222,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ce723996bf1a",
+      "id": "02d7131d3201",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 298,
+      "line": 260,
       "tag": "AlertDialogCancel",
       "role": "",
       "kind": "action",
@@ -49219,9 +49247,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "0ede40a0a3ac",
+      "id": "43c7472103e7",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 299,
+      "line": 261,
       "tag": "AlertDialogAction",
       "role": "",
       "kind": "action",
@@ -49244,9 +49272,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "f19b6f843631",
+      "id": "3b43c1f137c2",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 307,
+      "line": 269,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -49269,9 +49297,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "78ada6e441df",
+      "id": "63da9671345a",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 312,
+      "line": 274,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -49290,9 +49318,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "1e1d5b99f3a2",
+      "id": "c553c4590acf",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 316,
+      "line": 278,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -49311,15 +49339,15 @@
       "review": "source-inventoried"
     },
     {
-      "id": "27f6ffa71da8",
+      "id": "c7191f915b4d",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 398,
+      "line": 358,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "source.type === 'document' ? t('merchantUx.knowledgeLibrary.deleteGroup') : t('merchantUx.actions.deleteNamed', { name: source.name })",
+      "label": "مراجعة حذف: {{name}}",
       "section": "📦 مصادر المعرفة",
-      "binding": "",
+      "binding": "()=>setRemovalTarget(source.type==='document'||source.type==='website' ? {kind:source.type,sourceId:Number(source.id.split('-').at(-1))} : {kind:source.type})",
       "type": "button",
       "options": [],
       "min": "",
@@ -49330,87 +49358,18 @@
       "conditions": [
         "source.deletable"
       ],
-      "disabled": "deleteSourceMutation.isPending",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "0d61b10c7285",
-      "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 409,
-      "tag": "AlertDialogContent",
-      "role": "",
-      "kind": "dialog",
-      "label": "document إلغاء حذف",
-      "section": "📦 مصادر المعرفة",
-      "binding": "",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [
-        "source.deletable"
-      ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "21dc4cf17bec",
+      "id": "e25fb2a7a632",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 417,
-      "tag": "AlertDialogCancel",
-      "role": "",
-      "kind": "action",
-      "label": "إلغاء",
-      "section": "document",
-      "binding": "",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [
-        "source.deletable"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "87b00893dc98",
-      "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 418,
-      "tag": "AlertDialogAction",
-      "role": "",
-      "kind": "action",
-      "label": "حذف",
-      "section": "document",
-      "binding": "() => deleteSourceMutation.mutate({ sourceId: source.id, sourceType: source.type })",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [
-        "source.deletable"
-      ],
-      "disabled": "deleteSourceMutation.isPending",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "cc6b188780b0",
-      "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 435,
+      "line": 370,
       "tag": "Button",
       "role": "",
       "kind": "action",
       "label": "رفع ملف تعريفي",
-      "section": "document",
+      "section": "📦 مصادر المعرفة",
       "binding": "() => setLocation('/merchant/settings')",
       "type": "text",
       "options": [],
@@ -49428,9 +49387,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ade3b4af0d2b",
+      "id": "75295f3e7afb",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 508,
+      "line": 443,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -49451,9 +49410,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "f0921e2c9abe",
+      "id": "060142f643a1",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 571,
+      "line": 506,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -49475,9 +49434,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "60c5fce7db91",
+      "id": "dadf7fd5e5ce",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 590,
+      "line": 525,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -49498,9 +49457,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "0f283c732204",
+      "id": "248aac38caa1",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 603,
+      "line": 538,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -49522,9 +49481,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "2e05a69192aa",
+      "id": "2e37088186c9",
       "file": "client/src/pages/merchant/SariBrain.tsx",
-      "line": 619,
+      "line": 554,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -49543,6 +49502,263 @@
         "logItems.length > 0"
       ],
       "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "5c61fcb73936",
+      "file": "client/src/components/KnowledgeRemovalWorkspace.tsx",
+      "line": 312,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "مراجعة الطلب السابق",
+      "section": "KnowledgeRemovalWorkspace",
+      "binding": "() => setOpen(true)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "(attempt || storageError) && !open"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "959d9dbb958a",
+      "file": "client/src/components/KnowledgeRemovalWorkspace.tsx",
+      "line": 323,
+      "tag": "DialogContent",
+      "role": "",
+      "kind": "dialog",
+      "label": "مراجعة حذف المعرفة راجع الأثر الفعلي قبل حذف مجموعة المصادر. فتح هذه المراجعة لا يحذف شيئًا. تعذرت قراءة مرجع الطلب أو حفظه بأمان في المتصفح، ولذلك أُوقف الحذف. أبقِ الصفحة مفتوحة وأعد إتاحة تخزين المتصفح؛ لا تمسح طلبًا ",
+      "section": "KnowledgeRemovalWorkspace",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "e6d4e8ed90c3",
+      "file": "client/src/components/KnowledgeRemovalWorkspace.tsx",
+      "line": 343,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "التحقق من تخزين المتصفح مجددًا",
+      "section": "مراجعة حذف المعرفة",
+      "binding": "() => {\n                  if (!active()) return;\n                  try {\n                    const restored = readRemovalAttempt(scopeKey);\n                    setAttempt(restored);\n                    if (restored) lastTarget.current = restored.review.target;\n                    setStorageError(false);\n                    resetConsent();\n                  } catch {\n                    setStorageError(true);\n                  }\n                }",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "storageError"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "f0e03a4fb6eb",
+      "file": "client/src/components/KnowledgeRemovalWorkspace.tsx",
+      "line": 391,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "إغلاق",
+      "section": "تأكد الحذف",
+      "binding": "close",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "result"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "c74edc7a5439",
+      "file": "client/src/components/KnowledgeRemovalWorkspace.tsx",
+      "line": 415,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "السجلات المرتبطة المتأثرة",
+      "section": "السجلات المرتبطة المتأثرة",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "Object.values(basis.related).some(n => n > 0)",
+        "basis"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "08d656343fff",
+      "file": "client/src/components/KnowledgeRemovalWorkspace.tsx",
+      "line": 458,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "التحقق من الإيصال",
+      "section": "السجلات المرتبطة المتأثرة",
+      "binding": "() => void checkReceipt()",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "attempt",
+        "basis"
+      ],
+      "disabled": "Boolean(busy)",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "8ca70a01523c",
+      "file": "client/src/components/KnowledgeRemovalWorkspace.tsx",
+      "line": 473,
+      "tag": "Input",
+      "role": "",
+      "kind": "field",
+      "label": "اكتب اسم المتجر",
+      "section": "السجلات المرتبطة المتأثرة",
+      "binding": "confirmation",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "basis.blockers.length === 0",
+        "basis"
+      ],
+      "disabled": "Boolean(busy) || storageError",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "49a626502fbc",
+      "file": "client/src/components/KnowledgeRemovalWorkspace.tsx",
+      "line": 495,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "راجعت الأعداد والآثار المرتبطة وأوافق على هذا الحذف النهائي.",
+      "section": "السجلات المرتبطة المتأثرة",
+      "binding": "ack",
+      "type": "checkbox",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "basis.blockers.length === 0",
+        "basis"
+      ],
+      "disabled": "Boolean(busy) || storageError",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "fbdc7a1ce181",
+      "file": "client/src/components/KnowledgeRemovalWorkspace.tsx",
+      "line": 511,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "راجعت الأعداد والآثار المرتبطة وأوافق على هذا الحذف النهائي.",
+      "section": "السجلات المرتبطة المتأثرة",
+      "binding": "() => void send()",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "basis.blockers.length === 0",
+        "basis"
+      ],
+      "disabled": "Boolean(busy) || storageError",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "06b5faa2081c",
+      "file": "client/src/components/KnowledgeRemovalWorkspace.tsx",
+      "line": 527,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "تحميل الأثر الحالي مجددًا",
+      "section": "السجلات المرتبطة المتأثرة",
+      "binding": "() => void refresh()",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "!attempt && !storageError && !busy",
+        "result"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "72c1298d9e21",
+      "file": "client/src/components/KnowledgeRemovalWorkspace.tsx",
+      "line": 531,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "إغلاق",
+      "section": "السجلات المرتبطة المتأثرة",
+      "binding": "close",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "result"
+      ],
+      "disabled": "busy === \"send\" || busy === \"receipt\"",
       "review": "source-inventoried"
     },
     {

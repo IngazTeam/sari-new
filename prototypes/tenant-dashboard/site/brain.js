@@ -73,6 +73,7 @@ window.SaryBrainPreview = (() => {
       <a class="button" href="./website-analysis.html">معاينة شاشة نتائج تحليل الموقع · 11 حالة</a>
       <a class="button" href="./brain-preview.html">معاينة الاختبار السريع · 6 حالات</a>
       <a class="button" href="./sales-knowledge.html">معاينة أقسام معرفة المبيعات · 6 حالات</a>
+      <a class="button" href="./knowledge-removal.html">مراجعة حذف المعرفة واستعادة الإيصال · 10 حالات</a>
       <a class="button" href="./reply-quality.html">معاينة سجل توليد الردود · 6 حالات</a>
       <div class="brain-metrics">${metric(`${score()}<small>%</small>`, 'احتراف المبيعات', 'آخر تقييم توضيحي · 40 محادثة', 'sales')}${metric(data.files.length, 'ملفات المعرفة', `${active} معتمدة ومفعّلة في المعاينة`, 'files')}${metric(remaining().length, 'فجوات تحتاج متابعة', 'تعارض أو معلومة ناقصة أو غير واضحة', 'gaps')}</div>
       <div id="brain-section">${['knowledge','operations','history'].includes(section)?window.SaryBrainWorkbench.render(section):({ results, files, gaps, sales, learning })[section]()}</div>

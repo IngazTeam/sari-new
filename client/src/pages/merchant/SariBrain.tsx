@@ -1,3 +1,5 @@
+import { KnowledgeRemovalWorkspace } from '@/components/KnowledgeRemovalWorkspace';
+import type { KnowledgeRemovalTarget } from '@shared/knowledge-source-removal';
 import { SalesKnowledgeReadout } from "@/components/SalesKnowledgeReadout";
 import { BrainQuickPreview } from "@/components/BrainQuickPreview";
 import { ReplyQualityReadout } from '@/components/ReplyQualityReadout';
@@ -83,6 +85,7 @@ export default function SariBrain() {
   };
   const utils = trpc.useUtils();
   const [knowledgePane, setKnowledgePane] = useState('sections');
+  const [removalTarget,setRemovalTarget] = useState<KnowledgeRemovalTarget|null>(null);
   const sourcesQuery = trpc.sariBrain.getSources.useQuery();
   const { data: sources, isLoading } = sourcesQuery;
   const [logPage, setLogPage] = useState(1);
@@ -99,26 +102,6 @@ export default function SariBrain() {
   const [analysisResults, setAnalysisResults] = useState<unknown | null>(null);
   const [analysisError, setAnalysisError] = useState<WebsiteAnalysisIssue>(null);
   const [reportedProgress, setReportedProgress] = useState(0);
-  const deleteSourceMutation = trpc.sariBrain.deleteSource.useMutation({
-    onSuccess: () => {
-      toast.success('تم حذف المصدر بنجاح');
-      void utils.knowledgeDocs.invalidate();
-      utils.sariBrain.getSources.invalidate();
-      utils.sariBrain.getActivityLog.invalidate();
-    },
-    onError: (error: any) => toast.error('فشل الحذف: ' + error.message),
-  });
-
-  const resetBrainMutation = trpc.sariBrain.resetBrain.useMutation({
-    onSuccess: (data: any) => {
-      toast.success(`تم إعادة ضبط عقل ساري — حذف ${data.deletedSources.length} مصادر`);
-      void utils.knowledgeDocs.invalidate();
-      utils.sariBrain.getSources.invalidate();
-      utils.sariBrain.getActivityLog.invalidate();
-    },
-    onError: (error: any) => toast.error('فشل إعادة الضبط: ' + error.message),
-  });
-
   const reanalyzeMutation = trpc.sariBrain.reanalyzeWebsite.useMutation({
     onSuccess: () => {
       // Mutation returns immediately — start polling for results
@@ -205,32 +188,11 @@ export default function SariBrain() {
             <Upload className="h-4 w-4 ml-2" />
             {t('websiteAnalysisUx.upload')}
           </Button>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive" disabled={sourcesQuery.isError || isLoading || totalSources === 0}>
-                <RotateCcw className="h-4 w-4 ml-2" />
-                إعادة ضبط كاملة
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle className="text-right">⚠️ إعادة ضبط عقل ساري بالكامل</AlertDialogTitle>
-                <AlertDialogDescription className="text-right">
-                  سيتم حذف جميع مصادر المعرفة (الملفات، المنتجات، تحليل الموقع).
-                  <br />
-                  <strong className="text-destructive">هذا الإجراء لا يمكن التراجع عنه!</strong>
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter className="flex-row-reverse gap-2">
-                <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                <AlertDialogAction disabled={sourcesQuery.isError || isLoading || resetBrainMutation.isPending} onClick={() => resetBrainMutation.mutate()} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                  {resetBrainMutation.isPending ? 'جاري الحذف...' : 'نعم، أعد الضبط'}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          <Button variant="outline" onClick={()=>setRemovalTarget({kind:'all'})}><RotateCcw className="h-4 w-4 me-2"/>{t('knowledgeRemovalUx.launchReset')}</Button>
         </div>
       </div>
+
+      <KnowledgeRemovalWorkspace target={removalTarget} onClose={()=>setRemovalTarget(null)}/>
 
       {/* Stats Cards */}
       {(polling || reanalyzeMutation.isPending || analysisResults !== null || analysisError) && !analysisDialogOpen && <Button variant="outline" onClick={()=>setAnalysisDialogOpen(true)}>{t('brainWorkspaceUx.showProgress')}</Button>}
@@ -393,34 +355,7 @@ export default function SariBrain() {
                     </div>
                   </div>
                   {source.deletable ? (
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="shrink-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                          disabled={deleteSourceMutation.isPending}
-                          aria-label={source.type === 'document' ? t('merchantUx.knowledgeLibrary.deleteGroup') : t('merchantUx.actions.deleteNamed', { name: source.name })}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle className="text-right">{source.type === 'document' ? t('merchantUx.knowledgeLibrary.deleteGroup') : `حذف "${source.name}"`}</AlertDialogTitle>
-                          <AlertDialogDescription className="text-right">
-                            {source.type === 'document' ? t('merchantUx.knowledgeLibrary.deleteGroupHint') : t('merchantUx.knowledgeLibrary.deleteSourceHint')}
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter className="flex-row-reverse gap-2">
-                          <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                          <AlertDialogAction disabled={deleteSourceMutation.isPending} onClick={() => deleteSourceMutation.mutate({ sourceId: source.id, sourceType: source.type })} className="bg-destructive text-destructive-foreground">
-                            حذف
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                    <Button type="button" variant="outline" size="sm" className="shrink-0" onClick={()=>setRemovalTarget(source.type==='document'||source.type==='website' ? {kind:source.type,sourceId:Number(source.id.split('-').at(-1))} : {kind:source.type})} aria-label={t('knowledgeRemovalUx.launchNamed',{name:source.type==='document'?t('merchantUx.knowledgeLibrary.group'):source.name})}>{t('knowledgeRemovalUx.launch')}</Button>
                   ) : (
                     <Badge variant="outline" className="text-xs">أساسي</Badge>
                   )}

@@ -74,7 +74,7 @@ describe.skipIf(!process.env.DATABASE_URL)('knowledge lifecycle atomicity and te
     const fixture = await seed();
     const older = await query("INSERT INTO merchant_knowledge_docs (merchant_id,file_name,file_type,file_size,uploaded_at) VALUES (?,'Older.pdf','pdf',5,'2020-01-01 00:00:00')", [owner.merchantId]);
     await expect(removeKnowledgeSource(owner.merchantId, 'document', `doc-${older.insertId}`)).rejects.toMatchObject({ name: 'KnowledgeSourceNotFoundError' });
-    await caller().sariBrain.deleteSource({ sourceType: 'document', sourceId: `doc-${fixture.docId}` });
+    await removeKnowledgeSource(owner.merchantId, 'document', `doc-${fixture.docId}`);
     expect(await caller().knowledgeDocs.getCurrent()).toBeNull();
   });
 
@@ -83,7 +83,7 @@ describe.skipIf(!process.env.DATABASE_URL)('knowledge lifecycle atomicity and te
     const constraint = `knowledge_${randomUUID().replaceAll('-', '')}`;
     await (await getPool())!.query(`ALTER TABLE session_contexts ADD CONSTRAINT ${constraint} CHECK (session_key <> '${fixture.sessionKey}' OR version = 1)`);
     try {
-      await expect(caller().sariBrain.resetBrain()).rejects.toMatchObject({ code: 'INTERNAL_SERVER_ERROR' });
+      await expect(resetKnowledgeSources(owner.merchantId)).rejects.toThrow();
       expect(await snapshot(owner.merchantId)).toEqual(before);
     } finally { await (await getPool())!.query(`ALTER TABLE session_contexts DROP CHECK ${constraint}`); }
   });
@@ -96,8 +96,7 @@ describe.skipIf(!process.env.DATABASE_URL)('knowledge lifecycle atomicity and te
     const ordersBefore = await query('SELECT * FROM orders WHERE merchantId=?', [owner.merchantId]);
     const keysBefore = await query('SELECT * FROM sari_api_keys WHERE merchant_id=?', [owner.merchantId]);
     const foreignBefore = await snapshot(other.merchantId);
-    const result = await caller().sariBrain.resetBrain();
-    expect(result.success).toBe(true);
+    const result = await resetKnowledgeSources(owner.merchantId);
     expect(result.deletedSources).toEqual(['document','products','website','faqs','knowledge_sections']);
     for (const table of tables.filter(t => !['session_contexts','sari_activity_log'].includes(t))) expect(await query(`SELECT id FROM ${table} WHERE merchant_id=?`, [owner.merchantId])).toEqual([]);
     expect(await query('SELECT id FROM products WHERE merchantId=?', [owner.merchantId])).toEqual([]);
@@ -126,10 +125,15 @@ describe.skipIf(!process.env.DATABASE_URL)('knowledge lifecycle atomicity and te
   });
 
   it('routes document deletion through the same transaction for an authorized manager', async () => {
-    await seed();
+    const fixture = await seed();
     const manager = await account();
     await query("INSERT INTO merchant_members (merchant_id,user_id,role,is_active) VALUES (?,?,'manager',1)", [owner.merchantId, manager.userId]);
-    await caller(manager.userId).knowledgeDocs.delete();
+    await expect(caller(manager.userId).knowledgeDocs.delete()).rejects.toMatchObject({ code:'PRECONDITION_FAILED' });
+    const target = {kind:'document' as const,sourceId:fixture.docId};
+    const review = await caller(manager.userId).sariBrain.reviewSourceRemoval(target);
+    const receipt = await caller(manager.userId).sariBrain.removeSources({target,requestId:randomUUID(),expectedRevision:review.revision,confirmation:review.businessName,acknowledged:true});
+    expect(receipt.counts.documents).toBe(1);
+    expect(await caller(manager.userId).sariBrain.sourceRemovalReceipt({requestId:receipt.requestId})).toEqual(receipt);
     expect(await caller().knowledgeDocs.getCurrent()).toBeNull();
     expect(await query("SELECT id FROM knowledge_sections WHERE merchant_id=? AND source='document'", [owner.merchantId])).toEqual([]);
     await query("UPDATE merchant_members SET role='viewer' WHERE merchant_id=? AND user_id=?", [owner.merchantId, manager.userId]);

@@ -58,7 +58,7 @@ import {
   getProductsByMerchantId,
   updateWebsiteAnalysis,
 } from './db';
-import { removeKnowledgeSource, resetKnowledgeSources, KnowledgeSourceNotFoundError } from './knowledge/source-lifecycle';
+import { retiredSourceRemoval } from './knowledge/retired-source-removal';
 import { knowledgeRemovalTarget, knowledgeRemovalWrite, knowledgeRemovalReceiptInput } from '../shared/knowledge-source-removal';
 import { reviewKnowledgeRemoval, removeReviewedKnowledge, readKnowledgeRemovalReceipt, KnowledgeRemovalForbidden, KnowledgeRemovalConflict, KnowledgeRemovalBlocked } from './knowledge/source-removal';
 import { assertRuntimeSchema } from './db/schema-readiness';
@@ -666,46 +666,9 @@ export const sariBrainRouter = router({
     catch (error) { throw sourceRemovalError(error); }
   }),
 
-  // Delete a specific knowledge source
-  deleteSource: permissionProcedure('bot_settings.manage')
-    .input(z.object({
-      sourceId: z.string(),
-      sourceType: z.enum(['document', 'products', 'website', 'faqs']),
-    }))
-    .mutation(async ({ ctx, input }) => {
-      const merchant = await getMerchantById(ctx.merchantId);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-
-      // PEN-BRAIN-05: Rate limit destructive operations (10s cooldown)
-      checkDestructiveRateLimit(merchant.id, 10_000);
-
-      try {
-        await removeKnowledgeSource(merchant.id, input.sourceType, input.sourceId);
-      } catch (error) {
-        if (error instanceof KnowledgeSourceNotFoundError) throw new TRPCError({ code: 'NOT_FOUND', message: 'المصدر غير موجود' });
-        if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'تعذر حذف مصدر المعرفة. لم يتم اعتماد عملية جزئية.' });
-      }
-
-      return { success: true };
-    }),
-
-  // Full brain reset
-  resetBrain: permissionProcedure('bot_settings.manage').mutation(async ({ ctx }) => {
-    const merchant = await getMerchantById(ctx.merchantId);
-    if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-
-    // PEN-BRAIN-05: Rate limit — 60s cooldown for full reset
-    checkDestructiveRateLimit(merchant.id, 60_000);
-
-    try {
-      const result = await resetKnowledgeSources(merchant.id);
-      return { success: true, ...result };
-    } catch (error) {
-      if (error instanceof TRPCError) throw error;
-      throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'تعذر إعادة ضبط المعرفة. لم يتم اعتماد عملية جزئية.' });
-    }
-  }),
+  // Old clients must refresh and review the actual impact before deleting.
+  deleteSource: permissionProcedure('bot_settings.manage').input(z.object({sourceId:z.string(),sourceType:z.enum(['document','products','website','faqs'])})).mutation(()=>retiredSourceRemoval()),
+  resetBrain: permissionProcedure('bot_settings.manage').mutation(()=>retiredSourceRemoval()),
 
   // Get activity log
   getActivityLog: merchantProcedure

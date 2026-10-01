@@ -3,6 +3,35 @@
   "scope": "Reviewed API substitutions and moved controls. Evidence of intentional implementation changes, not a claim that every workflow passed runtime testing.",
   "transitions": [
     {
+      "routes": [
+        "/merchant/sari-brain"
+      ],
+      "removed": [
+        "sariBrain.deleteSource",
+        "sariBrain.resetBrain"
+      ],
+      "required": [
+        "sariBrain.reviewSourceRemoval",
+        "sariBrain.removeSources",
+        "sariBrain.sourceRemovalReceipt"
+      ],
+      "note": "Source-group removal now requires a scoped current impact review, a matching store name, renewed consent and a durable receipt. Legacy direct deletion endpoints reject old clients before any write.",
+      "evidence": [
+        "docs/audits/tenant-source-removal-store-2026-10-01/REPORT.md",
+        "docs/audits/tenant-source-removal-workspace-2026-10-01/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "client/src/pages/merchant/SariBrain.tsx",
+          "contains": "<KnowledgeRemovalWorkspace"
+        },
+        {
+          "file": "server/knowledge/retired-source-removal.ts",
+          "contains": "PRECONDITION_FAILED"
+        }
+      ]
+    },
+    {
       "routes": ["/merchant/sari-brain"],
       "removed": ["sariBrain.getKnowledgeSections"],
       "required": ["sariBrain.sectionWorkspace", "sariBrain.sectionReview"],
@@ -450,7 +479,7 @@
         },
         {
           "route": "/merchant/sari-brain",
-          "api": "sariBrain.deleteSource"
+          "api": "sariBrain.removeSources"
         },
         {
           "route": "/merchant/sari-brain",

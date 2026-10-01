@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-09-30T23:19:18.495Z",
+  "generatedAt": "2026-09-30T23:58:45.242Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 323,
-      "controls": 2170
+      "files": 325,
+      "controls": 2175
     }
   },
   "addedFiles": [
@@ -92,6 +92,8 @@
     "client/src/components/merchant/AssistantOptionReview.tsx",
     "client/src/hooks/useReviewedAssistantOption.ts",
     "client/src/components/merchant/VirtualAgentReview.tsx",
+    "client/src/components/KnowledgeRemovalWorkspace.tsx",
+    "client/src/lib/knowledge-removal-attempt.ts",
     "client/src/components/SalesKnowledgeReadout.tsx",
     "client/src/components/BrainQuickPreview.tsx",
     "client/src/components/ReplyQualityReadout.tsx",
@@ -859,7 +861,7 @@
     {
       "route": "/merchant/sari-brain",
       "controlsBefore": 275,
-      "controlsNow": 402,
+      "controlsNow": 407,
       "removedQueries": [
         "sariBrain.getFaqs",
         "sariBrain.getKnowledgeSections",
@@ -867,10 +869,12 @@
         "sariBrain.getPageContent"
       ],
       "addedQueries": [
-        "sariBrain.sectionWorkspace",
-        "sariBrain.sectionReview",
+        "sariBrain.reviewSourceRemoval",
+        "sariBrain.sourceRemovalReceipt",
         "auth.me",
         "merchants.getCurrent",
+        "sariBrain.sectionWorkspace",
+        "sariBrain.sectionReview",
         "sariBrain.pageWorkspace",
         "sariBrain.pageIntakeReceipt",
         "sariBrain.pageReview",
@@ -887,6 +891,8 @@
         "knowledgeDocs.copies"
       ],
       "removedMutations": [
+        "sariBrain.deleteSource",
+        "sariBrain.resetBrain",
         "sariBrain.createSection",
         "sariBrain.deleteSection",
         "sariBrain.addCustomUrl",
@@ -894,6 +900,7 @@
         "sariBrain.deleteDiscoveredPage"
       ],
       "addedMutations": [
+        "sariBrain.removeSources",
         "sariBrain.savePreviewedPage",
         "sariBrain.changeWorkspacePage",
         "sariBrain.createWorkspaceSection",
