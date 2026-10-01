@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-01T14:31:02.122Z",
+  "generatedAt": "2026-10-01T14:43:02.486Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 350,
-      "controls": 2241
+      "files": 348,
+      "controls": 2239
     }
   },
   "addedFiles": [
@@ -213,7 +213,7 @@
     "client/src/components/SalesOfferReview.tsx",
     "client/src/components/StaffAttemptReview.tsx",
     "client/src/components/StaffTeamReview.tsx",
-    "client/src/components/WhatsAppPreview.tsx",
+    "client/src/components/ConversationPreviewMode.tsx",
     "client/src/components/AISuggestions.tsx",
     "client/src/pages/merchant/WhatsAppInstancesPage.tsx",
     "client/src/pages/ByaanDashboard.tsx",
@@ -261,6 +261,14 @@
   "noLongerReachable": [
     {
       "file": "client/src/components/ProductsSkeleton.tsx",
+      "exists": true
+    },
+    {
+      "file": "client/src/components/WhatsAppPreview.tsx",
+      "exists": true
+    },
+    {
+      "file": "client/src/components/AudioWaveAnimation.tsx",
       "exists": true
     },
     {
@@ -493,7 +501,7 @@
     {
       "route": "/merchant/conversations",
       "controlsBefore": 85,
-      "controlsNow": 111,
+      "controlsNow": 109,
       "removedQueries": [
         "conversations.getMessages",
         "conversations.listTeamStaffAttempts",

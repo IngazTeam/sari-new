@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
 import { conversationMediaUrl, conversationTimestamp } from '@/lib/conversation-message';
 
-type Message = { id: number; direction: string; senderType?: string | null; messageType: string; content: string | null; createdAt: string | Date | null; imageUrl?: string | null; mediaUrl?: string | null; voiceUrl?: string | null };
+export type ConversationMessageData = { id: number; direction: string; senderType?: string | null; messageType: string; content: string | null; createdAt: string | Date | null; imageUrl?: string | null; mediaUrl?: string | null; voiceUrl?: string | null };
 function PreviewImage({ url }: { url: string }) {
   const { t } = useTranslation();
   const [failed, setFailed] = useState(false), [attempt, setAttempt] = useState(0);
@@ -25,7 +25,7 @@ function Attachment({ kind, source }: { kind: 'image' | 'voice' | 'document'; so
   </button></DialogTrigger><DialogContent className="max-h-[90dvh] min-w-0 max-w-4xl overflow-y-auto" showCloseButton={false}><DialogHeader className="text-start"><DialogTitle>{t('merchantUx.conversationMessage.preview')}</DialogTitle><DialogDescription>{t('merchantUx.conversationMessage.previewDescription')}</DialogDescription></DialogHeader><PreviewImage url={url}/><DialogClose asChild><Button type="button" variant="outline" className="min-h-11">{t('merchantUx.conversationMessage.close')}</Button></DialogClose></DialogContent></Dialog>;
 }
 
-export function ConversationMessage({ message, timezone }: { message: Message; timezone: string }) {
+export function ConversationMessage({ message, timezone, idPrefix = 'conversation-message' }: { message: ConversationMessageData; timezone: string; idPrefix?: string }) {
   const { t, i18n } = useTranslation();
   const incoming = message.direction === 'incoming';
   const sender = incoming ? 'customer' : message.senderType === 'merchant' ? 'employee' : message.senderType === 'assistant' ? 'assistant' : 'unknown';
@@ -33,7 +33,7 @@ export function ConversationMessage({ message, timezone }: { message: Message; t
   const at = conversationTimestamp(message.createdAt, i18n.language, timezone);
   const kind = ['image', 'voice', 'document'].includes(message.messageType) ? message.messageType as 'image' | 'voice' | 'document' : null;
   const source = kind === 'image' ? message.imageUrl || message.mediaUrl || message.voiceUrl : kind === 'voice' ? message.voiceUrl || message.mediaUrl : message.mediaUrl;
-  return <article id={`conversation-message-${message.id}`} data-message-sender={sender} dir={i18n.language.startsWith('ar') ? 'rtl' : 'ltr'} className="flex min-w-0 gap-2" style={{ flexDirection: incoming ? 'row' : 'row-reverse' }} aria-label={authors[sender]}>
+  return <article id={`${idPrefix}-${message.id}`} data-message-sender={sender} dir={i18n.language.startsWith('ar') ? 'rtl' : 'ltr'} className="flex min-w-0 gap-2" style={{ flexDirection: incoming ? 'row' : 'row-reverse' }} aria-label={authors[sender]}>
     <Avatar className="h-8 w-8 shrink-0" aria-hidden="true"><AvatarFallback>{sender === 'assistant' ? <Bot className="h-4 w-4"/> : sender === 'unknown' ? <CircleHelp className="h-4 w-4"/> : <User className="h-4 w-4"/>}</AvatarFallback></Avatar>
     <div className="mw-chat-bubble min-w-0"><div className={`min-w-0 space-y-2 rounded-lg p-3 ${incoming ? 'bg-muted' : 'bg-primary text-primary-foreground'}`}>
       {kind && <Attachment key={`${message.id}:${kind}:${String(source)}`} kind={kind} source={source}/>}

@@ -488,14 +488,16 @@ function ScopedConversations({ currentMerchant, actorId }: { currentMerchant: { 
                   <div className="flex items-center gap-2">
                     {messages && messages.length > 0 && (
                       <ConversationPreviewMode
-                        // @ts-ignore
+                        actorUserId={actorId}
+                        merchantId={currentMerchant.id}
+                        conversationId={selectedConversation.id}
+                        timezone={merchantTimezone}
                         messages={messages}
                         customerName={
                           selectedConversation.customerName ||
                           t('conversationsPage.customer')
                         }
                         customerPhone={selectedConversation.customerPhone}
-                        isOnline={selectedConversation.status === 'active'}
                       />
                     )}
                     <Badge
