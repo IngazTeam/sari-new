@@ -1,3 +1,4 @@
+import { conversationHistoryProcedures } from "./routers-conversation-history";
 import { conversationInboxProcedure } from "./routers-conversation-inbox";
 import { orderWorkspaceRouter } from "./routers-order-workspace";
 import { testMetricsWorkspaceRouter } from "./routers-test-metrics-workspace";
@@ -1444,23 +1445,7 @@ export const appRouter = router({
       return getConversationCountByMerchantId(merchant.id);
     }),
 
-    // Get messages for a conversation
-    getMessages: permissionProcedure('conversations.read')
-      .input(z.object({ conversationId: z.number() }))
-      .query(async ({ input, ctx }) => {
-        const conversation = await getConversationById(input.conversationId);
-        if (!conversation) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Conversation not found' });
-        }
-
-        // Check ownership
-        const merchant = await getMerchantById(ctx.merchantId);
-        if (!merchant || conversation.merchantId !== merchant.id) {
-          throw new TRPCError({ code: 'FORBIDDEN' });
-        }
-
-        return getMessagesByConversationId(input.conversationId);
-      }),
+    ...conversationHistoryProcedures,
 
     // Send reply from merchant dashboard
     sendReply: permissionProcedure('conversations.reply')

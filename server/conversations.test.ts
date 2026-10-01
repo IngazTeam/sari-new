@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-const mocks = vi.hoisted(() => ({ inbox: vi.fn(), access: vi.fn(), merchant: vi.fn(), conversations: vi.fn(), count: vi.fn(), conversation: vi.fn(), messages: vi.fn(), pool: vi.fn(), execute: vi.fn() }));
+const mocks = vi.hoisted(() => ({ history:vi.fn(), inbox: vi.fn(), access: vi.fn(), merchant: vi.fn(), conversations: vi.fn(), count: vi.fn(), conversation: vi.fn(), messages: vi.fn(), pool: vi.fn(), execute: vi.fn() }));
+vi.mock('./conversation-history', async original => ({...await original<typeof import('./conversation-history')>(), readConversationHistory:mocks.history}));
+import {ConversationHistoryNotFound} from './conversation-history';
 vi.mock('./conversation-inbox', () => ({ readConversationInbox: mocks.inbox }));
 vi.mock('./accounts/merchant-access', () => ({ resolveMerchantAccess: mocks.access }));
 vi.mock('./db', async original => ({ ...await original<typeof import('./db')>(),
@@ -15,6 +17,7 @@ beforeEach(() => {
   mocks.merchant.mockResolvedValue({ id: 20 });
   mocks.conversations.mockResolvedValue([{ id: 4, merchantId: 20 }]);
   mocks.count.mockResolvedValue(1);
+  mocks.history.mockResolvedValue({items:[{id:8,conversationId:4,content:'fixture'}],merchantId:20,conversationId:4,hasMore:false,nextBeforeId:null});
   mocks.inbox.mockResolvedValue({merchantId:20,items:[{id:4,merchantId:20}],total:1,page:1,pageSize:50,totalPages:1});
   mocks.conversation.mockResolvedValue({ id: 4, merchantId: 20 });
   mocks.messages.mockResolvedValue([{ id: 8, conversationId: 4, content: 'fixture' }]);
@@ -59,16 +62,16 @@ describe('conversations router', () => {
   describe('conversations.getMessages', () => {
     it('should return messages for valid conversation', async () => {
       expect(await caller().conversations.getMessages({ conversationId: 4 })).toEqual([{ id: 8, conversationId: 4, content: 'fixture' }]);
-      expect(mocks.messages).toHaveBeenCalledWith(4);
+      expect(mocks.history).toHaveBeenCalledWith(20,{conversationId:4,limit:500});
     });
     it("should reject access to other merchant's conversations", async () => {
-      mocks.conversation.mockResolvedValue({ id: 999999, merchantId: 30 });
-      await expect(caller().conversations.getMessages({ conversationId: 999999 })).rejects.toMatchObject({ code: 'FORBIDDEN' });
+      mocks.history.mockRejectedValue(new ConversationHistoryNotFound());
+      await expect(caller().conversations.getMessages({ conversationId: 999999 })).rejects.toMatchObject({ code: 'NOT_FOUND' });
       expect(mocks.messages).not.toHaveBeenCalled();
     });
     it('should reject unauthenticated requests', async () => {
       await expect(caller(false).conversations.getMessages({ conversationId: 4 })).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
-      expect(mocks.messages).not.toHaveBeenCalled();
+      expect(mocks.history).not.toHaveBeenCalled();
     });
   });
 });

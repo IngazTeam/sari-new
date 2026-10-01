@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-const mocks = vi.hoisted(() => ({ inbox: vi.fn(), access: vi.fn(), merchant: vi.fn(), conversations: vi.fn(), count: vi.fn(), conversation: vi.fn(), messages: vi.fn(),
+const mocks = vi.hoisted(() => ({ history:vi.fn(), inbox: vi.fn(), access: vi.fn(), merchant: vi.fn(), conversations: vi.fn(), count: vi.fn(), conversation: vi.fn(), messages: vi.fn(),
   bookingRenewalRead:vi.fn(),bookingRenewalWrite:vi.fn(),
   bookingCheckoutRead:vi.fn(),bookingCheckoutReview:vi.fn(),couponReleaseRead:vi.fn(),couponReleaseWrite:vi.fn(),checkoutReconcile: vi.fn(),checkoutAttempts: vi.fn(), marginRead: vi.fn(), marginWrite: vi.fn(), marginPreview: vi.fn(), marginAudit: vi.fn(), invoiceApprove: vi.fn(), invoiceLink: vi.fn(),
   zidList: vi.fn(), zidReconcile: vi.fn(), sectorRead: vi.fn(), sectorWrite: vi.fn(), followupRead: vi.fn(), followupWrite: vi.fn(), handoffRead: vi.fn(), handoffWrite: vi.fn(), handoffSource: vi.fn(), relayList: vi.fn(), relayReview: vi.fn(), offerList: vi.fn(), offerReview: vi.fn(), discountRead: vi.fn(), discountWrite: vi.fn(), botWrite: vi.fn() }));
@@ -25,6 +25,8 @@ vi.mock('./ai/followup-policy', async original => ({ ...await original<typeof im
 vi.mock('./ai/zid-checkout-reconciliation', () => ({ listZidReconciliations: mocks.zidList, reconcileZidCheckout: mocks.zidReconcile }));
 vi.mock('./ai/sales-sector-settings', async original => ({ ...await original<typeof import('./ai/sales-sector-settings')>(),
   getSalesSectorSettings: mocks.sectorRead, updateSalesSectorSettings: mocks.sectorWrite }));
+vi.mock('./conversation-history', async original => ({...await original<typeof import('./conversation-history')>(), readConversationHistory:mocks.history}));
+import {ConversationHistoryNotFound} from './conversation-history';
 vi.mock('./conversation-inbox', () => ({readConversationInbox:mocks.inbox}));
 vi.mock('./accounts/merchant-access', () => ({ resolveMerchantAccess: mocks.access }));
 vi.mock('./db', async original => ({ ...await original<typeof import('./db')>(),
@@ -40,6 +42,7 @@ beforeEach(() => {
   mocks.merchant.mockResolvedValue({ id: 20 });
   mocks.conversations.mockResolvedValue([{ id: 4, merchantId: 20 }]);
   mocks.count.mockResolvedValue(1);
+  mocks.history.mockResolvedValue({items:[{id:8,conversationId:4,content:'fixture'}],merchantId:20,conversationId:4,hasMore:false,nextBeforeId:null});
   mocks.inbox.mockResolvedValue({items:[{id:4,merchantId:20}],total:1});
   mocks.zidList.mockResolvedValue({ items: [], nextCursor: null }); mocks.zidReconcile.mockResolvedValue({ verified: true });
   mocks.sectorRead.mockResolvedValue({ revision: 0, playbook: { id: 'general' } }); mocks.sectorWrite.mockResolvedValue({ revision: 1 });
@@ -398,8 +401,8 @@ describe('real app router team boundaries', () => {
     expect(mocks.inbox).toHaveBeenCalledWith(20, expect.any(Object));
   });
   it('does not expose foreign conversation messages', async () => {
-    mocks.conversation.mockResolvedValue({ id: 80, merchantId: 30 });
-    await expect(caller().conversations.getMessages({ conversationId: 80 })).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    mocks.history.mockRejectedValue(new ConversationHistoryNotFound());
+    await expect(caller().conversations.getMessages({ conversationId: 80 })).rejects.toMatchObject({ code: 'NOT_FOUND' });
     expect(mocks.messages).not.toHaveBeenCalled();
   });
   it('blocks viewer sends, sync and order mutations before handlers run', async () => {
