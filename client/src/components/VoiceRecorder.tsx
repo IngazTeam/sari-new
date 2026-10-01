@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Mic, Square, X, Send, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
+import { voiceRecording } from '@/lib/voice-recording';
 
 interface VoiceRecorderProps {
   onRecordingComplete: (audio: Blob, duration: number) => Promise<boolean>;
@@ -32,11 +33,11 @@ export function VoiceRecorder({onRecordingComplete,onCancel,onBusyChange,maxDura
   const start=async()=>{
     if(disabled||locked.current||phase!=='idle')return;locked.current=true;setPhase('permission');busyCallback.current?.(true);const own=++generation.current;
     try{
-      const captured=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});
+      const captured=await voiceRecording.capture();
       if(!mounted.current||own!==generation.current){captured.getTracks().forEach(track=>track.stop());return;}stream.current=captured;
-      const mimeType=['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus','audio/mp4'].find(type=>MediaRecorder.isTypeSupported(type));
+      const mimeType=['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus','audio/mp4','audio/wav'].find(type=>voiceRecording.supports(type));
       if(!mimeType)throw Error('Unsupported recorder');
-      const active=new MediaRecorder(captured,{mimeType});recorder.current=active;chunks.current=[];
+      const active=voiceRecording.create(captured,mimeType);recorder.current=active;chunks.current=[];
       active.ondataavailable=event=>{if(mounted.current&&own===generation.current&&event.data.size)chunks.current.push(event.data);};
       active.onstop=()=>{stopTracks();clearTimer();if(!mounted.current||own!==generation.current)return;
         const blob=new Blob(chunks.current,{type:mimeType});locked.current=false;

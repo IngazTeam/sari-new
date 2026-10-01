@@ -81,7 +81,7 @@ function route(s,t=''){
   return `#/page/merchant/${destinations[`${s}/${t}`]||destinations[s]||'tools'}`;
 }
 function go(s,t=''){if(location.hash===route(s,t)){ui.demo='normal';render();}else location.hash=route(s,t);}
-function navLinks(){return groups.slice(0,8).map(([id,title,i])=>`<a class="nav-link" href="${route(id)}" ${ui.section===id?'aria-current="page"':''}>${icon(i)}<span>${title}</span>${id==='inbox'?`<span class="nav-count">${data.contacts.filter(c=>c.needs).length}</span>`:''}</a>`).join('')+`<div class="nav-secondary">${groups.slice(8).map(([id,title,i])=>`<a class="nav-link" href="${route(id)}" ${ui.section===id?'aria-current="page"':''}>${icon(i)}${title}</a>`).join('')}</div>`;}
+function navLinks(){return groups.slice(0,8).map(([id,title,i])=>`<a class="nav-link" href="${route(id)}" ${ui.section===id?'aria-current="page"':''}>${icon(i)}<span>${title}</span></a>`).join('')+`<div class="nav-secondary">${groups.slice(8).map(([id,title,i])=>`<a class="nav-link" href="${route(id)}" ${ui.section===id?'aria-current="page"':''}>${icon(i)}${title}</a>`).join('')}</div>`;}
 const brand = `<a class="brand" href="#/overview"><span class="brand-mark">✦</span><div><div class="brand-name">ساري</div><small>شريك يومك</small></div></a>`;
 function shell(){
   $('#sidebar').innerHTML=brand+`<div class="nav-label">مساحة العمل</div><nav aria-label="أقسام المتجر">${navLinks()}</nav><div class="sidebar-end"><a href="#/settings/billing" class="usage-mini" style="display:block"><div class="row between"><strong>باقة النمو</strong><span>هذا الشهر</span></div><div class="meter"><span style="width:38%"></span></div><div class="row between"><small>1,140 / 3,000 رسالة</small>${icon('left')}</div></a><div class="side-user">${avatar({name:'أحمد',id:1})}<div><strong>أحمد · مالك المتجر</strong><small>مساحة تجريبية</small></div></div>`;
@@ -100,13 +100,7 @@ function scopedOrders(){return data.orders.filter(o=>o.day>23-Number(ui.period))
 
 const orderStatus={pending:['بانتظار الدفع','amber'],paid:['مدفوع','blue'],processing:['قيد التجهيز','amber'],shipped:['تم الشحن','blue'],delivered:['تم التسليم','']};
 function orderTable(orders,compact=false){return `<div class="table-scroll responsive-table"><table><thead><tr><th>الطلب</th><th>العميل</th><th>المبلغ</th><th>الحالة</th><th class="hide-mobile">التاريخ</th><th>التفاصيل</th></tr></thead><tbody>${orders.map(o=>`<tr><td><strong dir="ltr">#${o.id}</strong><small>${o.items===1?'منتج واحد':o.items===2?'منتجان':o.items+' منتجات'}</small></td><td>${esc(customer(o.customer).name)}</td><td><strong>${money(o.amount)}</strong> <small style="display:inline">ر.س</small></td><td>${status(...orderStatus[o.status])}</td><td class="hide-mobile">${o.day} سبتمبر 2026</td><td><button class="table-row-button" data-action="order" data-id="${o.id}" aria-label="عرض الطلب ${o.id}">${compact?icon('left'):'عرض الطلب'}</button></td></tr>`).join('')}</tbody></table></div>`;}
-function inbox(){
-  const list=data.contacts.filter(c=>(ui.filter!=='needs'||c.needs)&&(c.name+' '+c.ref+' '+c.messages.map(m=>m.text).join(' ')).includes(ui.query));
-  const c=data.contacts.find(c=>c.id===ui.chat);
-  return heading('المحادثات','كل العملاء في مكان واحد. ابحث في كامل السجل، وتابع الحديث بسياقه.',`<span class="status gray">${data.contacts.length} محادثة في السجل</span>`)+
-  `<section class="panel inbox ${c?'chat-selected':''}"><div class="conversation-list"><div class="conversation-search">${searchField('ابحث بالاسم أو مرجع العميل')}<div class="row between"><label for="inbox-filter">عرض</label><select id="inbox-filter" class="control" data-change="filter"><option value="all">كل المحادثات</option><option value="needs" ${ui.filter==='needs'?'selected':''}>تحتاج ردًا</option></select><span>${list.length} نتيجة</span></div></div><div class="conversation-items">${list.length?list.map(x=>`<button class="conversation-item ${x.id===ui.chat?'selected':''}" data-action="chat" data-id="${x.id}" ${x.id===ui.chat?'aria-current="true"':''}>${avatar(x)}<div class="conversation-snippet"><strong>${esc(x.name)}</strong><p>${esc(x.messages.at(-1).text)}</p></div><span class="conversation-time">${esc(x.messages.at(-1).time)}${x.needs?'<span class="unread">1</span>':''}</span></button>`).join(''):'<div class="no-results">لا توجد نتائج لهذا البحث.<br>جرّب اسمًا أو مرجعًا آخر.</div>'}</div><div class="table-bottom">البحث يشمل جميع المحادثات الـ${data.contacts.length}</div></div><div class="chat">${c?chatView(c):`<div class="empty-chat">${icon('chat')}<h2>اختر محادثة للبدء</h2><p>سياق العميل وإجراءاتك، بجانب الحديث.</p></div>`}</div></section>`;
-}
-function chatView(c){return `<div class="chat-head"><button class="icon-button mobile-only chat-back" data-action="chat-back" aria-label="العودة لقائمة المحادثات">${icon('right')}</button>${avatar(c)}<div><h2>${esc(c.name)}</h2><small>${c.needs?'تحتاج ردًا منك':'تمت المتابعة'} · محادثة توضيحية</small></div><button class="button small spacer" data-action="customer" data-id="${c.id}">ملف العميل</button></div><div class="chat-body"><div class="chat-date">اليوم · 23 سبتمبر</div>${c.messages.map(m=>`<div class="bubble ${m.me?'me':''}">${esc(m.text)}<small>${m.me?'أنت · ':''}${esc(m.time)}</small></div>`).join('')}<div class="chat-note">أنت تدير هذه المحادثة الآن</div></div><form class="composer" data-form="message"><div class="row"><div class="field"><label class="sr-only" for="message">رسالتك للعميل</label><input id="message" name="message" required maxlength="1500" placeholder="اكتب ردك هنا…" autocomplete="off"></div><button class="button primary" type="submit" aria-label="إضافة الرد للمحادثة">${icon('send')} رد</button></div><small>تجربة محلية؛ الرسالة تضاف إلى النموذج فقط.</small></form>`;}
+function inbox(){return TenantPages.render(TenantPages.find('/merchant/conversations'));}
 function sales(){
   const list=scopedOrders().filter(o=>(ui.filter==='all'||o.status===ui.filter)&&(`${o.id} ${customer(o.customer).name}`).includes(ui.query));
   const tab=ui.tab;
@@ -181,9 +175,10 @@ function render(keepFocus=false){
   }
   document.title=`${ui.page?.title || labels[ui.section]} · ساري`;
   if(id){const el=document.getElementById(id);el?.focus({preventScroll:true});if(typeof start==='number'&&el?.setSelectionRange)el.setSelectionRange(start,end);}
-  if(ui.section==='inbox'&&ui.chat){const body=$('.chat-body');if(body)body.scrollTop=body.scrollHeight;}
 }
 function onRoute(){
+  const legacyInbox=location.hash.match(/^#\/inbox(?:\/[^?]*)?(\?.*)?$/);
+  if(legacyInbox)history.replaceState(null,'','#/page/merchant/conversations'+(legacyInbox[1]||''));
   const legacyAnalytics = location.hash.match(/^#\/analytics(?:\/[^?]*)?(\?.*)?$/);
   if(legacyAnalytics)history.replaceState(null,'','#/page/merchant/analytics-hub'+(legacyAnalytics[1]||''));
   if(['','#','#/','#/overview'].includes(location.hash))history.replaceState(null,'','#/page/merchant/dashboard');
@@ -199,10 +194,6 @@ function onRoute(){
     ui.page=TenantPages.find(path)||TenantPages.find('/merchant/preview-state/missing');
     if(ui.page.redirect)ui.page=TenantPages.find(ui.page.redirect);
     ui.section=ui.page.route==='/merchant/tools'?'tools':ui.page.group;ui.tab='';ui.demo='normal';ui.query='';ui.filter='all';
-    if(ui.page.kind==='inbox'){
-      ui.chat=null;const phone=routeQuery.get('phone');
-      if(phone){ui.query=phone;const linked=window.PipelinePreview?.linkedContact(phone);if(linked&&!data.contacts.some(c=>c.ref===linked.ref))data.contacts.push(linked);}
-    }
     TenantPages.reset(ui.page);
     if($('#dialog').open)$('#dialog').close();if($('#nav-dialog').open)$('#nav-dialog').close();
     clearTimeout(loadingTimer);render();window.scrollTo(0,0);$('#main').focus({preventScroll:true});return;
@@ -280,12 +271,10 @@ document.addEventListener('click',e=>{
   else if(a==='prototype'){if(ui.page){document.querySelector('[data-page-action=states]')?.click();if(ui.page.kind==='state')location.hash=TenantPages.href('/merchant/tools');}else prototypeDialog();}
   else if(a==='retry'){ui.demo='normal';render();toast('تم عرض البيانات التوضيحية.');}
   else if(a==='demo-state'){ui.demo=id;$('#dialog').close();render();clearTimeout(loadingTimer);if(id==='loading')loadingTimer=setTimeout(()=>{ui.demo='normal';render();toast('اكتمل التحميل التجريبي.');},2200);}
-  else if(a==='notifications')openDialog('يحتاج انتباهك',data.notifications?`<div class="form-stack">${button(`${data.contacts.filter(c=>c.needs).length} محادثات تحتاج ردًا`,'needs')}<a class="button" href="#/catalog">مراجعة المنتجات غير المتوفرة ${icon('left')}</a><a class="button" href="#/marketing">أكمل مسودات الحملات ${icon('left')}</a></div>`:'<p>إشعارات المهام متوقفة وفق تفضيلاتك. يمكنك تفعيلها من الإعدادات.</p>');
-  else if(a==='needs'){if(ui.section!=='inbox'){location.hash=route('inbox');setTimeout(()=>{ui.filter='needs';render();},0);}else{ui.filter='needs';render();}$('#dialog').close();}
-  else if(a==='chat'){ui.chat=Number(id);render();}
-  else if(a==='chat-back'){ui.chat=null;render();}
+  else if(a==='notifications')openDialog('يحتاج انتباهك',data.notifications?`<div class="form-stack">${button('محادثات تحتاج تدخل الفريق','needs')}<a class="button" href="#/catalog">مراجعة المنتجات غير المتوفرة ${icon('left')}</a><a class="button" href="#/marketing">أكمل مسودات الحملات ${icon('left')}</a></div>`:'<p>إشعارات المهام متوقفة وفق تفضيلاتك. يمكنك تفعيلها من الإعدادات.</p>');
+  else if(a==='needs'){location.hash=route('inbox')+'?needs_human=1';$('#dialog').close();}
   else if(a==='customer')openCustomer(id);
-  else if(a==='customer-chat'){$('#dialog').close();if(ui.section!=='inbox'){location.hash=route('inbox');setTimeout(()=>{ui.chat=Number(id);render();},0);}else{ui.chat=Number(id);render();}}
+  else if(a==='customer-chat'){$('#dialog').close();const c=customer(Number(id));location.hash=route('inbox')+'?phone='+encodeURIComponent(c.ref);}
   else if(a==='order')openOrder(id);
   else if(a==='new-product')openProduct(null,el.dataset.type||'product');
   else if(a==='product')openProduct(id);
@@ -311,8 +300,7 @@ document.addEventListener('change',e=>{const kind=e.target.dataset.change;if(kin
 document.addEventListener('submit',e=>{
   const form=e.target;if(!form.dataset.form)return;e.preventDefault();if(!form.reportValidity())return;
   const v=Object.fromEntries(new FormData(form)),type=form.dataset.form;
-  if(type==='message'){const c=customer(ui.chat);const text=v.message.trim();if(!text){form.elements.message.setCustomValidity('اكتب رسالة قبل الإضافة.');form.elements.message.reportValidity();form.elements.message.addEventListener('input',()=>form.elements.message.setCustomValidity(''),{once:true});return;}c.messages.push({text,me:true,time:'الآن'});c.needs=false;persist();render();$('#message')?.focus();toast('أُضيف الرد إلى المحادثة التجريبية.');}
-  else if(type==='product'){if(!v.name.trim()||!v.description.trim()){toast('اكتب اسمًا ووصفًا واضحين.');return;}const old=data.products.find(p=>p.id===Number(v.id));const p={id:old?.id||Date.now(),name:v.name.trim(),description:v.description.trim(),type:v.type,price:Number(v.price),stock:Number(v.stock),source:'محلي',art:v.type==='service'?'calendar':'coffee',tone:old?.tone||'sage'};if(old)Object.assign(old,p);else data.products.unshift(p);persist();$('#dialog').close();if(ui.section!=='catalog'||ui.tab!==(v.type==='service'?'services':'products'))go('catalog',v.type==='service'?'services':'products');else render();toast(old?'تم حفظ التغييرات محليًا.':'تمت الإضافة إلى الكتالوج المحلي.');}
+  if(type==='product'){if(!v.name.trim()||!v.description.trim()){toast('اكتب اسمًا ووصفًا واضحين.');return;}const old=data.products.find(p=>p.id===Number(v.id));const p={id:old?.id||Date.now(),name:v.name.trim(),description:v.description.trim(),type:v.type,price:Number(v.price),stock:Number(v.stock),source:'محلي',art:v.type==='service'?'calendar':'coffee',tone:old?.tone||'sage'};if(old)Object.assign(old,p);else data.products.unshift(p);persist();$('#dialog').close();if(ui.section!=='catalog'||ui.tab!==(v.type==='service'?'services':'products'))go('catalog',v.type==='service'?'services':'products');else render();toast(old?'تم حفظ التغييرات محليًا.':'تمت الإضافة إلى الكتالوج المحلي.');}
   else if(type==='order'){data.orders.find(o=>o.id===Number(v.id)).status=v.status;persist();$('#dialog').close();render();toast('تم تحديث حالة الطلب التجريبي.');}
   else if(type==='note'){data.notes[v.id]=v.note.trim();persist();toast('تم حفظ الملاحظة الداخلية.');}
   else if(type==='ai'){data.ai={tone:v.tone,hours:v.hours,handoff:!!v.handoff};persist();$('#save-indicator').textContent='تم الحفظ الآن';toast('تم حفظ تفضيلات المساعد في النموذج.');}

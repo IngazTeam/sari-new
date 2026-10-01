@@ -13,6 +13,25 @@ beforeEach(()=>{
 });
 afterEach(()=>dom.window.close());
 const send=(data:any,origin='http://127.0.0.1:4329',source=frame.contentWindow)=>w.dispatchEvent(new w.MessageEvent('message',{origin,source,data}));
+it('allows the actual inbox frame and local audio previews while continuing to block connections and foreign frames',()=>{
+  const policy=previewPolicy('/inbox.html',new URLSearchParams('embed=brain'));
+  expect(policy).toContain("frame-ancestors 'self'");expect(policy).toContain("media-src 'self' blob:");expect(policy).toContain("connect-src 'none'");
+  expect(previewPolicy('/inbox.html',new URLSearchParams())).toContain("frame-ancestors 'none'");
+  expect(previewPolicy('/unknown.html',new URLSearchParams('embed=brain'))).not.toContain('blob:');
+});
+it('syncs only an owned inbox query without replacing its live frame or accepting unrelated parameters',()=>{
+  frame.setAttribute('src','./inbox.html?embed=brain');w.history.replaceState(null,'','#/page/merchant/conversations');
+  const msg={type:'sary-brain-preview',action:'inboxState',search:'lang=en&tenant=235&conversationId=51&history=51016&phone=ux-customer-051'};
+  for(const query of ['token=secret','tenant=999','phone=x&phone=y','conversationId=9007199254740992','page=100001','phone='+ 'x'.repeat(201)])send({...msg,search:query});
+  send(msg,'https://example.com');send(msg,undefined,w);expect(w.location.hash).toBe('#/page/merchant/conversations');
+  send(msg);expect(w.location.hash).toBe('#/page/merchant/conversations?'+msg.search);expect(frame.isConnected).toBe(true);
+  frame.setAttribute('src','./dashboard.html?embed=brain');send({...msg,search:'tenant=236'});expect(w.location.hash).toContain('tenant=235');
+});
+it('allows inbox recovery navigation only from its owned frame and a fixed destination',()=>{
+  frame.setAttribute('src','./inbox.html?embed=brain');const msg={type:'sary-brain-preview',action:'inboxTool',route:'/merchant/whatsapp-instances'};
+  send(msg,'https://example.com');send(msg,undefined,w);send({...msg,route:'/merchant/settings'});send({...msg,route:'/merchant/whatsapp-instances?token=x'});expect(w.location.hash).toBe('');
+  send(msg);expect(w.location.hash).toBe('#/page/merchant/whatsapp-instances');
+});
 it('waits for the document body before attaching embedded layout observers',()=>{
   const child=new JSDOM('<html><head></head><body></body></html>',{url:'http://127.0.0.1:4329/messages-analytics.html?embed=brain',runScripts:'outside-only',pretendToBeVisual:true});
   Object.defineProperty(child.window,'parent',{value:{postMessage:vi.fn()}});child.window.document.body.remove();

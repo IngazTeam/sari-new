@@ -110,6 +110,7 @@ window.TenantPages = (() => {
   }
   function renderPage(p) {
     if(current?.route!==p.route)reset(p);
+    if(p.route==='/merchant/conversations'){const query=new URLSearchParams(location.hash.split('?')[1]),target=new URLSearchParams({embed:'brain'});for(const key of ['lang','tenant','scenario','phone','page','conversationId','history','stage','needs_human'])if(query.has(key))target.set(key,query.get(key));return '<section><p class="page-local-note">المحادثات من شاشة التطبيق الفعلية · <a href="./inbox.html?'+e(target.toString().replace('embed=brain&','').replace('embed=brain',''))+'">فتح المعاينة المستقلة</a></p><iframe data-brain-preview title="موك أب المحادثات" src="./inbox.html?'+e(target.toString())+'" style="width:100%;height:1100px;border:0;display:block;scroll-margin-top:80px"></iframe></section>';}
     if(mode!=='normal')return state(p,mode);
     if(p.kind==='state')return state(p,p.state);
     if(p.redirect)return renderPage(find(p.redirect));

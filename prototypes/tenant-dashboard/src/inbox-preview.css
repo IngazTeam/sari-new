@@ -1,0 +1,6 @@
+/* The shell normally bounds the inbox. Give the standalone preview the same
+   flex constraints; an embedded frame must not resize against its own dvh. */
+.inbox-preview-workspace { display: flex; flex-direction: column; min-width: 0; height: 760px; }
+.inbox-preview-workspace > .mw-inbox-page { flex: 1; min-height: 0; }
+.inbox-preview-workspace .mw-inbox-grid { flex: 1; height: auto; min-height: 0; }
+@media (max-width: 620px) { .inbox-preview-workspace { height: 680px; } }

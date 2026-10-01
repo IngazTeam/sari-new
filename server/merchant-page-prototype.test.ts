@@ -30,6 +30,11 @@ function submit(type: string) { w.document.querySelector(`[data-page-form="${typ
 const text = () => w.document.getElementById('main').textContent;
 
 describe('complete tenant page prototype', () => {
+  it.each(['#/inbox','#/inbox?lang=en&conversationId=51','#/inbox/old?phone=ux-customer-051'])('retires the manual inbox at %s without losing its query',hash=>{
+    w.history.replaceState(null,'','/'+hash);w.dispatchEvent(new w.HashChangeEvent('hashchange'));
+    expect(w.location.hash).toBe('#/page/merchant/conversations'+(hash.includes('?')?hash.slice(hash.indexOf('?')):''));
+    const frame=w.document.querySelector('#main iframe');expect(frame.getAttribute('src')).toContain('./inbox.html?embed=brain');expect(w.document.querySelector('[data-form="message"]')).toBeNull();expect(w.document.querySelector('.chat-body')).toBeNull();expect(errors).toEqual([]);
+  });
   it.each(['#/analytics', '#/analytics/', '#/analytics?lang=en', '#/analytics/overview?lang=ar'])('opens the actual analytics hub for the legacy URL %s', async hash => {
     w.history.replaceState(null, '', '/' + hash); w.dispatchEvent(new w.HashChangeEvent('hashchange'));
     expect(w.location.hash).toBe('#/page/merchant/analytics-hub' + (hash.includes('?') ? hash.slice(hash.indexOf('?')) : ''));
@@ -52,6 +57,7 @@ describe('complete tenant page prototype', () => {
       route(page.route);
       const embeddedPages = new Map([
         ["/merchant/dashboard", "dashboard.html?embed=brain"],
+        ["/merchant/conversations", "inbox.html?embed=brain"],
         ["/merchant/analytics", "sales-analytics.html?embed=brain"],
         ...["message-analytics","sari-analytics","advanced-analytics","analytics-dashboard","voice-messages","analysis"].map(name=>["/merchant/"+name,"messages-analytics.html?embed=brain"] as const),
         ["/merchant/ai-hub", "assistant-settings.html?embed=brain&page=hub"],

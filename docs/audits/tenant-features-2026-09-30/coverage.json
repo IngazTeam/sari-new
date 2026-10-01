@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-01T14:52:46.144Z",
+  "generatedAt": "2026-10-01T15:17:49.694Z",
   "definition": "Every registered route is accounted for; source inventory and design completion are different statuses.",
   "routes": [
     {
@@ -13561,6 +13561,7 @@
         "client/src/lib/conversation-navigation.ts",
         "client/src/lib/conversation-draft.ts",
         "client/src/components/VoiceRecorder.tsx",
+        "client/src/lib/voice-recording.ts",
         "client/src/components/ConversationPreviewMode.tsx",
         "client/src/lib/utils.ts",
         "client/src/components/AISuggestions.tsx",
@@ -13656,10 +13657,10 @@
         "fee9e9314abe",
         "71d6c8932321",
         "e45ae5888a2b",
-        "b8a20dae0238",
-        "43f178d75807",
-        "efac10ccd695",
-        "047a8f3dd806",
+        "6a30f5ea16ff",
+        "f5ee41d5f623",
+        "b657ce8fef9c",
+        "23d3cb846926",
         "a56bda5ee937",
         "0fbbb9bd8f71",
         "585b6fde60db",
@@ -13707,12 +13708,17 @@
       ],
       "imperativeReads": [],
       "browserRequests": [],
-      "design": "موك أب عام",
-      "productionChanged": false,
-      "designSections": [],
+      "design": "تفصيلي",
+      "productionChanged": true,
+      "designSections": [
+        "شاشة المحادثات الفعلية: القائمة والبحث والفلاتر وصفحات السجل المحفوظة في الرابط والرسائل والصوت والمرفقات والمعاينة",
+        "أدوات التسليم ومصادر الأدلة والتصعيد والعروض ومحاولات الموظف والفريق واقتراحات الرد واتصال واتساب والإصلاح والاستيراد",
+        "موك أب بتيننتين ولغتين و18 حالة، يطابق13 قراءة و10 إجراءات محلية، مع تقاعد صندوق المحادثات اليدوي"
+      ],
       "acceptancePlan": "البحث والتصفية والترقيم؛ تفاصيل العميل وسجل المحادثة؛ الرد النصي والصوتي والمراجعة؛ التعيين والصلاحيات والملاحظات والوسوم.",
       "gaps": [
-        "التصميم العام موجود. لا يوجد إثبات تطابق جميع الحقول والأزرار والنوافذ أدناه مع الموك أب."
+        "راجع tenant-conversation-inbox-prototype-2026-10-01 وتقارير209–234. المحاكاة ليست إرسالًا حقيقيًا أو اختبار مزود؛ التسجيل يولد صوتًا صامتًا بلا ميكروفون.",
+        "الاستيراد الكبير يحتاج وظيفة خلفية مستديمة. Safari/iPhone الفعلي و320/390 لم يُختبروا هنا؛ غلاف الموك أب عربي."
       ],
       "controlDetails": [
         {
@@ -15720,9 +15726,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "b8a20dae0238",
+          "id": "6a30f5ea16ff",
           "file": "client/src/components/VoiceRecorder.tsx",
-          "line": 61,
+          "line": 62,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -15743,9 +15749,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "43f178d75807",
+          "id": "f5ee41d5f623",
           "file": "client/src/components/VoiceRecorder.tsx",
-          "line": 65,
+          "line": 66,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -15766,9 +15772,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "efac10ccd695",
+          "id": "b657ce8fef9c",
           "file": "client/src/components/VoiceRecorder.tsx",
-          "line": 66,
+          "line": 67,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -15789,9 +15795,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "047a8f3dd806",
+          "id": "23d3cb846926",
           "file": "client/src/components/VoiceRecorder.tsx",
-          "line": 67,
+          "line": 68,
           "tag": "Button",
           "role": "",
           "kind": "action",

@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-01T14:52:46.144Z",
+  "generatedAt": "2026-10-01T15:17:49.694Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,7 +10,7 @@
     },
     "after": {
       "routes": 126,
-      "files": 348,
+      "files": 349,
       "controls": 2239
     }
   },
@@ -72,6 +72,7 @@
     "client/src/lib/staff-attempt-identity.ts",
     "client/src/lib/staff-dashboard-attempt.ts",
     "client/src/lib/conversation-navigation.ts",
+    "client/src/lib/voice-recording.ts",
     "client/src/lib/use-conversation-scroll.ts",
     "client/src/lib/meta-embedded-signup.ts",
     "client/src/hooks/use-toast.ts",
@@ -213,6 +214,7 @@
     "client/src/components/SalesOfferReview.tsx",
     "client/src/components/StaffAttemptReview.tsx",
     "client/src/components/StaffTeamReview.tsx",
+    "client/src/components/VoiceRecorder.tsx",
     "client/src/components/ConversationPreviewMode.tsx",
     "client/src/components/AISuggestions.tsx",
     "client/src/pages/merchant/WhatsAppInstancesPage.tsx",
