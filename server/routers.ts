@@ -1,3 +1,4 @@
+import { conversationInboxProcedure } from "./routers-conversation-inbox";
 import { orderWorkspaceRouter } from "./routers-order-workspace";
 import { testMetricsWorkspaceRouter } from "./routers-test-metrics-workspace";
 import { overviewWorkspaceRouter } from "./routers-overview-workspace";
@@ -1421,82 +1422,7 @@ export const appRouter = router({
     ...escalationReconciliationProcedures,
     ...salesOfferReviewProcedures,
     ...conversationHandoffProcedures,
-    // Get all conversations for current merchant (with optional pipeline filters)
-    list: permissionProcedure('conversations.read')
-      .input(z.object({
-        page: z.number().int().min(1).max(100000).default(1),
-        pageSize: z.number().int().min(1).max(100).default(50),
-        search: z.string().trim().max(200).optional(),
-        // Pipeline filters (from SalesPipeline deep-links)
-        stage: z.string().optional(),
-        needsHuman: z.boolean().optional(),
-      }).optional())
-      .query(async ({ ctx, input }) => {
-        const merchant = await getMerchantById(ctx.merchantId);
-        if (!merchant) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        }
-
-        const page = input?.page ?? 1;
-        const pageSize = input?.pageSize ?? 50;
-        const offset = (page - 1) * pageSize;
-        const stage = input?.stage;
-        const needsHuman = input?.needsHuman;
-        const search = input?.search;
-
-        // Whitelist of valid deal stages — invalid values fall through to unfiltered default
-        const { isValidDealStage } = await import('@shared/const');
-        const isValidFilter = needsHuman || (stage && isValidDealStage(stage));
-
-        // If pipeline filters are active, use targeted SQL query
-        if (isValidFilter || search) {
-          const { getPool } = await import('./db');
-          const pool = await getPool();
-          if (!pool) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Conversation data is temporarily unavailable' });
-
-          let where = 'c.merchantId = ?';
-          const params: any[] = [merchant.id];
-
-          // Literal, parameterized search across this merchant's entire inbox.
-          if (search) {
-            where += ' AND (LOCATE(?, c.customerName) > 0 OR LOCATE(?, c.customerPhone) > 0)';
-            params.push(search, search);
-          }
-
-          if (needsHuman) {
-            where += ` AND c.id IN (SELECT DISTINCT conversation_id FROM sari_escalation_queue WHERE merchant_id = ? AND status IN ('pending', 'notified'))`;
-            params.push(merchant.id);
-          } else if (stage === 'stalled') {
-            where += ` AND c.deal_stage IN ('interested', 'qualified') AND c.lastMessageAt < DATE_SUB(NOW(), INTERVAL 48 HOUR) AND c.loss_reason IS NULL`;
-          } else if (stage === 'ready') {
-            // Match pipeline card: only show ready leads active in last 48h
-            where += ` AND c.deal_stage = 'ready' AND c.lastMessageAt > DATE_SUB(NOW(), INTERVAL 48 HOUR)`;
-          } else if (stage && isValidDealStage(stage)) {
-            where += ` AND c.deal_stage = ?`;
-            params.push(stage);
-          }
-
-          const [countRows] = await pool.execute(
-            `SELECT COUNT(*) as total FROM conversations c WHERE ${where}`, params
-          );
-          const total = Number((countRows as any[])[0]?.total || 0);
-
-          const [rows] = await pool.execute(
-            `SELECT c.* FROM conversations c WHERE ${where} ORDER BY c.lastMessageAt DESC LIMIT ? OFFSET ?`,
-            [...params, pageSize, offset]
-          );
-
-          return { items: rows as any[], total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
-        }
-
-        // Default: no filter (also reached if stage is invalid)
-        const [items, total] = await Promise.all([
-          getConversationsByMerchantId(merchant.id, { limit: pageSize, offset }),
-          getConversationCountByMerchantId(merchant.id),
-        ]);
-
-        return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
-      }),
+    list: conversationInboxProcedure,
 
     // Lightweight: get only recent conversations (for Dashboard)
     listRecent: permissionProcedure('conversations.read')

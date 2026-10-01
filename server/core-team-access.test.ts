@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-const mocks = vi.hoisted(() => ({ access: vi.fn(), merchant: vi.fn(), conversations: vi.fn(), count: vi.fn(), conversation: vi.fn(), messages: vi.fn(),
+const mocks = vi.hoisted(() => ({ inbox: vi.fn(), access: vi.fn(), merchant: vi.fn(), conversations: vi.fn(), count: vi.fn(), conversation: vi.fn(), messages: vi.fn(),
   bookingRenewalRead:vi.fn(),bookingRenewalWrite:vi.fn(),
   bookingCheckoutRead:vi.fn(),bookingCheckoutReview:vi.fn(),couponReleaseRead:vi.fn(),couponReleaseWrite:vi.fn(),checkoutReconcile: vi.fn(),checkoutAttempts: vi.fn(), marginRead: vi.fn(), marginWrite: vi.fn(), marginPreview: vi.fn(), marginAudit: vi.fn(), invoiceApprove: vi.fn(), invoiceLink: vi.fn(),
   zidList: vi.fn(), zidReconcile: vi.fn(), sectorRead: vi.fn(), sectorWrite: vi.fn(), followupRead: vi.fn(), followupWrite: vi.fn(), handoffRead: vi.fn(), handoffWrite: vi.fn(), handoffSource: vi.fn(), relayList: vi.fn(), relayReview: vi.fn(), offerList: vi.fn(), offerReview: vi.fn(), discountRead: vi.fn(), discountWrite: vi.fn(), botWrite: vi.fn() }));
@@ -25,6 +25,7 @@ vi.mock('./ai/followup-policy', async original => ({ ...await original<typeof im
 vi.mock('./ai/zid-checkout-reconciliation', () => ({ listZidReconciliations: mocks.zidList, reconcileZidCheckout: mocks.zidReconcile }));
 vi.mock('./ai/sales-sector-settings', async original => ({ ...await original<typeof import('./ai/sales-sector-settings')>(),
   getSalesSectorSettings: mocks.sectorRead, updateSalesSectorSettings: mocks.sectorWrite }));
+vi.mock('./conversation-inbox', () => ({readConversationInbox:mocks.inbox}));
 vi.mock('./accounts/merchant-access', () => ({ resolveMerchantAccess: mocks.access }));
 vi.mock('./db', async original => ({ ...await original<typeof import('./db')>(),
   updateBotSettings: mocks.botWrite,
@@ -39,6 +40,7 @@ beforeEach(() => {
   mocks.merchant.mockResolvedValue({ id: 20 });
   mocks.conversations.mockResolvedValue([{ id: 4, merchantId: 20 }]);
   mocks.count.mockResolvedValue(1);
+  mocks.inbox.mockResolvedValue({items:[{id:4,merchantId:20}],total:1});
   mocks.zidList.mockResolvedValue({ items: [], nextCursor: null }); mocks.zidReconcile.mockResolvedValue({ verified: true });
   mocks.sectorRead.mockResolvedValue({ revision: 0, playbook: { id: 'general' } }); mocks.sectorWrite.mockResolvedValue({ revision: 1 });
   mocks.followupRead.mockResolvedValue({ revision: 0 }); mocks.followupWrite.mockResolvedValue({ revision: 1 });
@@ -393,7 +395,7 @@ describe('real app router team boundaries', () => {
     const result = await caller().conversations.list();
     expect(result.items).toHaveLength(1);
     expect(mocks.merchant).toHaveBeenCalledWith(20);
-    expect(mocks.conversations).toHaveBeenCalledWith(20, expect.any(Object));
+    expect(mocks.inbox).toHaveBeenCalledWith(20, expect.any(Object));
   });
   it('does not expose foreign conversation messages', async () => {
     mocks.conversation.mockResolvedValue({ id: 80, merchantId: 30 });
