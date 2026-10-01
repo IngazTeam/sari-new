@@ -29,6 +29,8 @@ try {
          SUM(o.status <> 'processing' AND o.processing_token IS NOT NULL) AS leakedProcessingTokens,
          SUM(o.status = 'sent' AND o.sent_at IS NULL) AS incompleteSends,
          SUM(o.quota_reserved NOT IN (0,1) OR (o.quota_reserved = 1 AND o.quota_subscription_id IS NULL)) AS invalidQuotaReservations,
+         SUM(o.quota_reserved = 0 AND o.quota_period_start IS NOT NULL) AS orphanedQuotaPeriods,
+         SUM(o.quota_reserved = 1 AND o.quota_period_start IS NULL) AS legacyQuotaReservations,
          SUM(o.attempts < 0 OR o.attempts > 8) AS invalidAttempts
        FROM campaign_delivery_outbox o
        LEFT JOIN campaigns c ON c.id = o.campaign_id
@@ -41,7 +43,7 @@ try {
 
   console.log(JSON.stringify(result));
   const failures = Object.entries(result)
-    .filter(([key, value]) => key !== 'mode' && Number(value) !== 0);
+    .filter(([key, value]) => !['mode','legacyQuotaReservations'].includes(key) && Number(value) !== 0);
   if (failures.length) process.exitCode = 1;
 } finally {
   await connection.end();

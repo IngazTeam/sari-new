@@ -5,6 +5,7 @@ export { CampaignTargetingError, filterCampaignAudience, isValidCampaignTargetAu
 import { getPool } from '../db';
 import { assertRuntimeSchema } from '../db/schema-readiness';
 import { campaignDefinitionKey, type CampaignDefinition } from '../campaign-definition';
+import { reserveCampaignQuota as reserveDispatchCapacity, releaseCampaignQuota as releaseQuotaReservation, CampaignQuotaEvidenceError } from '../campaign-quota';
 import {
   sendMerchantWhatsApp,
   WhatsAppDeliveryStateError,
@@ -18,8 +19,6 @@ import {
 
 const MAX_ATTEMPTS = 8;
 const STALE_LEASE_MINUTES = 5;
-const PROVIDER_WINDOW_LIMIT = 10;
-const PROVIDER_WINDOW_MICROSECONDS = 1_000_000;
 const MAX_RECIPIENTS = campaignRecipientLimit;
 
 let workerTimer: NodeJS.Timeout | null = null;
@@ -99,7 +98,7 @@ async function ensureCampaignOutboxSchema(): Promise<void> {
       table: 'campaign_delivery_outbox',
       columns: [
         'campaign_id', 'merchant_id', 'customer_phone', 'status', 'processing_token',
-        'quota_subscription_id', 'quota_reserved', 'available_at', 'claimed_at',
+        'quota_subscription_id', 'quota_reserved', 'quota_period_start', 'available_at', 'claimed_at',
       ],
     },
     { table: 'campaign_dispatch_rate_limits', columns: ['merchant_id', 'window_started_at', 'reserved_count'] },
@@ -349,120 +348,6 @@ async function writeTerminalState(
   return true;
 }
 
-async function releaseQuotaReservation(row: CampaignDeliveryRow): Promise<void> {
-  const pool = await getPool();
-  if (!pool) return;
-  const connection = await pool.getConnection();
-  try {
-    await connection.beginTransaction();
-    const [rows] = await connection.execute<RowDataPacket[]>(
-      `SELECT quota_subscription_id AS subscriptionId, quota_reserved AS reserved
-         FROM campaign_delivery_outbox WHERE id = ? LIMIT 1 FOR UPDATE`,
-      [row.id],
-    );
-    const reservation = rows[0];
-    if (Number(reservation?.reserved || 0) === 1 && Number(reservation?.subscriptionId || 0) > 0) {
-      await connection.execute(
-        `UPDATE merchant_subscriptions SET messages_used = GREATEST(messages_used - 1, 0)
-          WHERE id = ?`,
-        [reservation.subscriptionId],
-      );
-      await connection.execute(
-        `UPDATE campaign_delivery_outbox
-            SET quota_reserved = 0, quota_subscription_id = NULL
-          WHERE id = ? AND quota_reserved = 1`,
-        [row.id],
-      );
-    }
-    await connection.commit();
-  } catch (error) {
-    try { await connection.rollback(); } catch { /* preserve original */ }
-    throw error;
-  } finally {
-    connection.release();
-  }
-}
-
-async function reserveDispatchCapacity(
-  row: CampaignDeliveryRow,
-): Promise<{ accepted: true } | { accepted: false; reason: 'inactive_subscription' | 'message_limit' | 'provider_rate' }> {
-  const pool = await getPool();
-  if (!pool) throw new RetriableCampaignDeliveryError('database_unavailable');
-  const connection = await pool.getConnection();
-  try {
-    await connection.beginTransaction();
-    const [subscriptions] = await connection.execute<RowDataPacket[]>(
-      `SELECT ms.id AS subscriptionId, ms.messages_used AS messagesUsed, sp.message_limit AS messageLimit
-         FROM merchant_subscriptions ms
-         INNER JOIN subscription_plans sp ON sp.id = ms.plan_id AND sp.is_active = 1
-        WHERE ms.merchant_id = ?
-          AND ms.status IN ('trial','active')
-          AND ms.end_date >= NOW()
-          AND (ms.status <> 'trial' OR ms.trial_ends_at IS NULL OR ms.trial_ends_at >= NOW())
-        ORDER BY ms.created_at DESC LIMIT 1 FOR UPDATE`,
-      [row.merchant_id],
-    );
-    const subscription = subscriptions[0];
-    if (!subscription) {
-      await connection.rollback();
-      return { accepted: false, reason: 'inactive_subscription' };
-    }
-    const messageLimit = Number(subscription.messageLimit);
-    const messagesUsed = Number(subscription.messagesUsed || 0);
-    if (messageLimit !== -1 && messagesUsed >= messageLimit) {
-      await connection.rollback();
-      return { accepted: false, reason: 'message_limit' };
-    }
-    await connection.execute(
-      `INSERT INTO campaign_dispatch_rate_limits (merchant_id, window_started_at, reserved_count)
-       VALUES (?, NOW(3), 0)
-       ON DUPLICATE KEY UPDATE merchant_id = VALUES(merchant_id)`,
-      [row.merchant_id],
-    );
-    const [windows] = await connection.execute<RowDataPacket[]>(
-      `SELECT reserved_count AS reservedCount,
-              TIMESTAMPDIFF(MICROSECOND, window_started_at, NOW(3)) AS windowAge
-         FROM campaign_dispatch_rate_limits WHERE merchant_id = ? FOR UPDATE`,
-      [row.merchant_id],
-    );
-    const window = windows[0];
-    const expired = Number(window?.windowAge || 0) >= PROVIDER_WINDOW_MICROSECONDS;
-    if (!expired && Number(window?.reservedCount || 0) >= PROVIDER_WINDOW_LIMIT) {
-      await connection.rollback();
-      return { accepted: false, reason: 'provider_rate' };
-    }
-    await connection.execute(
-      `UPDATE campaign_dispatch_rate_limits
-          SET window_started_at = IF(? = 1, NOW(3), window_started_at),
-              reserved_count = IF(? = 1, 1, reserved_count + 1)
-        WHERE merchant_id = ?`,
-      [expired ? 1 : 0, expired ? 1 : 0, row.merchant_id],
-    );
-    await connection.execute(
-      `UPDATE merchant_subscriptions SET messages_used = messages_used + 1 WHERE id = ?`,
-      [subscription.subscriptionId],
-    );
-    const [reserved] = await connection.execute(
-      `UPDATE campaign_delivery_outbox
-          SET quota_subscription_id = ?, quota_reserved = 1
-        WHERE id = ? AND status = 'processing' AND processing_token = ? AND quota_reserved = 0`,
-      [subscription.subscriptionId, row.id, row.processing_token],
-    );
-    if (Number((reserved as { affectedRows?: number }).affectedRows || 0) !== 1) {
-      throw new Error('campaign_delivery_lease_lost');
-    }
-    await connection.commit();
-    row.quota_subscription_id = Number(subscription.subscriptionId);
-    row.quota_reserved = 1;
-    return { accepted: true };
-  } catch (error) {
-    try { await connection.rollback(); } catch { /* preserve original */ }
-    throw error;
-  } finally {
-    connection.release();
-  }
-}
-
 async function scheduleRetry(row: CampaignDeliveryRow, errorCode: string): Promise<void> {
   if (Number(row.attempts || 0) >= MAX_ATTEMPTS) {
     await writeTerminalState(row, 'manual_review', 'retry_exhausted');
@@ -515,7 +400,17 @@ async function recoverStaleLeases(): Promise<void> {
       await writeTerminalState(row, 'manual_review', 'ambiguous_provider_outcome');
       continue;
     }
-    await releaseQuotaReservation(row);
+    if (!ledger && Number(row.quota_reserved) === 1) {
+      // A charged lease without a receipt may have paused immediately before transport.
+      // Recovery cannot prove that an old execution will never enter provider I/O.
+      await writeTerminalState(row, 'manual_review', 'quota_without_delivery_receipt');
+      continue;
+    }
+    try { await releaseQuotaReservation(row); } catch (error) {
+      if (!(error instanceof CampaignQuotaEvidenceError)) throw error;
+      await writeTerminalState(row, 'manual_review', 'quota_evidence_unavailable');
+      continue;
+    }
     await scheduleRetry(row, ledger ? 'recovered_provider_rejection' : 'recovered_before_dispatch');
   }
 }
@@ -801,6 +696,10 @@ export async function runCampaignDeliveryBatch(limit = 10): Promise<number> {
         await dispatchDelivery(row);
       } catch (error) {
         if (error instanceof CampaignPostDispatchStateError) continue;
+        if (error instanceof CampaignQuotaEvidenceError) {
+          await writeTerminalState(row, 'manual_review', 'quota_evidence_unavailable');
+          continue;
+        }
         const code = error instanceof RetriableCampaignDeliveryError ? error.code : 'campaign_delivery_failed';
         await scheduleRetry(row, code);
       }

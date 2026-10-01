@@ -225,6 +225,7 @@ export const campaignDeliveryOutbox = mysqlTable("campaign_delivery_outbox", {
 	processingToken: varchar("processing_token", { length: 64 }),
 	quotaSubscriptionId: int("quota_subscription_id"),
 	quotaReserved: tinyint("quota_reserved").default(0).notNull(),
+	quotaPeriodStart: datetime("quota_period_start", { mode: 'string', fsp: 3 }),
 	availableAt: timestamp("available_at", { mode: 'string', fsp: 3 }).defaultNow().notNull(),
 	claimedAt: timestamp("claimed_at", { mode: 'string', fsp: 3 }),
 	sentAt: timestamp("sent_at", { mode: 'string', fsp: 3 }),
@@ -237,6 +238,7 @@ export const campaignDeliveryOutbox = mysqlTable("campaign_delivery_outbox", {
 	index("campaign_delivery_outbox_campaign_status_idx").on(table.campaignId, table.status),
 	index("campaign_delivery_outbox_merchant_created_idx").on(table.merchantId, table.createdAt),
 	check("campaign_delivery_outbox_attempts_check", sql`${table.attempts} >= 0 AND ${table.attempts} <= 8`),
+	check("campaign_delivery_outbox_quota_period_check", sql`${table.quotaReserved} = 1 OR ${table.quotaPeriodStart} IS NULL`),
 	check("campaign_delivery_outbox_quota_check", sql`${table.quotaReserved} IN (0, 1) AND (${table.quotaReserved} = 0 OR ${table.quotaSubscriptionId} IS NOT NULL)`),
 	check("campaign_delivery_outbox_processing_check", sql`(${table.status} = 'processing' AND ${table.processingToken} IS NOT NULL AND ${table.claimedAt} IS NOT NULL) OR (${table.status} <> 'processing' AND ${table.processingToken} IS NULL)`),
 ]);

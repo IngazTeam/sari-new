@@ -111,7 +111,7 @@ export const CRITICAL_SCHEMA_REQUIREMENTS: readonly SchemaRequirement[] = [
   { table: 'campaign_optouts' },
   { table: 'campaign_consent_receipts', columns: ['merchant_id', 'customer_phone', 'decision', 'provider_event_digest', 'decided_at'] },
   { table: 'campaign_consent_state', columns: ['merchant_id', 'customer_phone', 'status', 'last_decided_at', 'last_receipt_id'] },
-  { table: 'campaign_delivery_outbox', columns: ['campaign_id', 'merchant_id', 'customer_phone', 'status', 'processing_token', 'quota_subscription_id', 'quota_reserved', 'available_at', 'claimed_at'] },
+  { table: 'campaign_delivery_outbox', columns: ['campaign_id', 'merchant_id', 'customer_phone', 'status', 'processing_token', 'quota_subscription_id', 'quota_reserved', 'quota_period_start', 'available_at', 'claimed_at'] },
   { table: 'campaign_dispatch_rate_limits', columns: ['merchant_id', 'window_started_at', 'reserved_count'] },
   { table: 'occasion_campaigns', columns: ['campaign_id', 'merchantId', 'occasionType', 'year', 'enabled', 'status'] },
   { table: 'merchant_onboarding_answers' },

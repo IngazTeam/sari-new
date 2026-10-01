@@ -1296,6 +1296,13 @@
       "when": 1795392000046,
       "tag": "0184_virtual_team_save_receipts",
       "breakpoints": true
+    },
+    {
+      "idx": 185,
+      "version": "5",
+      "when": 1795392000047,
+      "tag": "0185_campaign_quota_period",
+      "breakpoints": true
     }
   ]
 }
