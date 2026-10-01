@@ -64,6 +64,8 @@ export async function readKnowledgeActivity(
     const actionTypes = types.slice(0, 200).map(row => String(row.action_type));
     if (action && !actionTypes.includes(action)) actionTypes.push(action);
     const result = knowledgeActivityPage.parse({
+      merchantId,
+      filter: action,
       items: rows.map(row => ({
         id: Number(row.id),
         actionType: row.action_type,

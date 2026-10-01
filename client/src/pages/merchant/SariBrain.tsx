@@ -1,3 +1,4 @@
+import {KnowledgeActivityWorkspace} from '@/components/KnowledgeActivityWorkspace';
 import { KnowledgeRemovalWorkspace } from '@/components/KnowledgeRemovalWorkspace';
 import type { KnowledgeRemovalTarget } from '@shared/knowledge-source-removal';
 import { SalesKnowledgeReadout } from "@/components/SalesKnowledgeReadout";
@@ -44,17 +45,6 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTranslation } from 'react-i18next';
 
-const ACTION_ICONS: Record<string, string> = {
-  document_deleted: '🗑️', products_deleted: '🗑️', website_deleted: '🗑️',
-  brain_reset: '⚠️', file_uploaded: '📁', file_approved: '✅',
-  website_analyzed: '🌐', products_imported: '🛍️', settings_changed: '⚙️',
-  content_analyzed: '🔬',
-  faq_created: '➕',
-  faq_updated: '✏️',
-  faq_deleted: '🗑️',
-  faqs_deleted: '🗑️',
-};
-
 const SOURCE_ICONS: Record<string, React.ReactNode> = {
   document: <FileText className="h-5 w-5 text-blue-500" />,
   products: <Package className="h-5 w-5 text-green-500" />,
@@ -88,14 +78,6 @@ export default function SariBrain() {
   const [removalTarget,setRemovalTarget] = useState<KnowledgeRemovalTarget|null>(null);
   const sourcesQuery = trpc.sariBrain.getSources.useQuery();
   const { data: sources, isLoading } = sourcesQuery;
-  const [logPage, setLogPage] = useState(1);
-  const [logFilter, setLogFilter] = useState<string>('all');
-  const activityQuery = trpc.sariBrain.getActivityLog.useQuery({ page: logPage, pageSize: 10, actionType: logFilter === 'all' ? undefined : logFilter });
-  const { data: activityLogData } = activityQuery;
-
-
-
-
   // Reanalyze progress modal
   const [analysisDialogOpen, setAnalysisDialogOpen] = useState(false);
   const [analysisStep, setAnalysisStep] = useState('');
@@ -401,172 +383,7 @@ export default function SariBrain() {
       </section>
 
       <section hidden={brainView !== 'history'} className="space-y-6" data-brain-section="history">
-      {/* Activity Log — with filter + pagination */}
-      {(() => {
-        if (activityQuery.isError) return <QueryStateCard kind="error" title={t('merchantUx.knowledgeIntake.activityError')} retryLabel={t('merchantUx.knowledgeIntake.retry')} onRetry={() => { void activityQuery.refetch(); }} />;
-        if (activityQuery.isLoading) return <p role="status">{t('common.loading')}</p>;
-        const logItems = activityLogData?.items || [];
-        const logTotal = activityLogData?.total || 0;
-        const logTotalPages = activityLogData?.totalPages || 0;
-        const FILTER_OPTIONS = [
-          { value: 'all', label: 'الكل', icon: '📋' },
-          { value: 'knowledge_ingested', label: 'اعتماد', icon: '✅' },
-          { value: 'content_analyzed', label: 'فحص', icon: '🔬' },
-          { value: 'file_uploaded', label: 'رفع', icon: '📁' },
-          { value: 'website_analyzed', label: 'موقع', icon: '🌐' },
-          { value: 'document_deleted', label: 'حذف', icon: '🗑️' },
-        ];
-
-        return (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between flex-wrap gap-3">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-primary" />
-                  📋 مسار ساري
-                </CardTitle>
-                <CardDescription className="mt-1">
-                  {logTotal > 0 ? `${logTotal} سجل` : 'سجل بكل التغييرات التي أثرت على ذاكرة ساري'}
-                </CardDescription>
-              </div>
-              {logTotal > 0 && (
-                <Badge variant="secondary" className="text-xs">
-                  صفحة {logPage} من {logTotalPages}
-                </Badge>
-              )}
-            </div>
-            {/* Filter Tabs */}
-            {logTotal > 0 && (
-              <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t">
-                {FILTER_OPTIONS.map(opt => (
-                  <button
-                    key={opt.value}
-                    onClick={() => { setLogFilter(opt.value); setLogPage(1); }}
-                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
-                      logFilter === opt.value
-                        ? 'bg-primary text-primary-foreground shadow-sm'
-                        : 'bg-muted/60 text-muted-foreground hover:bg-muted'
-                    }`}
-                  >
-                    <span>{opt.icon}</span>
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </CardHeader>
-          <CardContent>
-            {logItems.length > 0 ? (
-              <div className="space-y-0">
-                {logItems.map((entry: any) => {
-                  const isIngested = entry.actionType === 'knowledge_ingested';
-                  const isAnalyzed = entry.actionType === 'content_analyzed';
-                  const isDeleted = entry.actionType?.includes('delete') || entry.description?.includes('حذف');
-                  const isWebsite = entry.actionType?.includes('website') || entry.actionType?.includes('scrape');
-
-                  return (
-                  <div key={entry.id} className={`flex items-start gap-3 p-3 rounded-lg transition-colors hover:bg-muted/50 border-b border-border/50 last:border-0 ${isIngested ? 'bg-green-50/50 dark:bg-green-950/10' : ''}`}>
-                    <div className={`flex items-center justify-center w-9 h-9 rounded-full border-2 border-background text-base shrink-0 ${
-                      isIngested ? 'bg-green-100 dark:bg-green-900/30' :
-                      isDeleted ? 'bg-red-100 dark:bg-red-900/30' :
-                      isWebsite ? 'bg-blue-100 dark:bg-blue-900/30' :
-                      'bg-muted'
-                    }`}>
-                      {ACTION_ICONS[entry.actionType] || '📝'}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium leading-snug">{entry.description}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${
-                          isIngested ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' :
-                          isDeleted ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' :
-                          isAnalyzed ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' :
-                          isWebsite ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' :
-                          'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
-                        }`}>
-                          {isIngested ? 'اعتماد' : isDeleted ? 'حذف' : isAnalyzed ? 'فحص' : isWebsite ? 'موقع' : 'تحديث'}
-                        </span>
-                        <span className="text-[11px] text-muted-foreground">
-                          {parseMerchantDate(entry.createdAt).toLocaleDateString('ar-SA', {
-                            day: 'numeric', month: 'short', year: 'numeric',
-                          })} — {parseMerchantDate(entry.createdAt).toLocaleTimeString('ar-SA', {
-                            hour: '2-digit', minute: '2-digit',
-                          })}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  );
-                })}
-
-                {/* Pagination Controls */}
-                {logTotalPages > 1 && (
-                  <div className="flex items-center justify-center gap-1 pt-4 mt-2 border-t">
-                    <button
-                      onClick={() => setLogPage(p => Math.max(1, p - 1))}
-                      disabled={logPage <= 1}
-                      className="px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed hover:bg-muted"
-                    >
-                      ← السابق
-                    </button>
-                    {Array.from({ length: Math.min(logTotalPages, 7) }, (_, i) => {
-                      let pageNum: number;
-                      if (logTotalPages <= 7) {
-                        pageNum = i + 1;
-                      } else if (logPage <= 4) {
-                        pageNum = i + 1;
-                      } else if (logPage >= logTotalPages - 3) {
-                        pageNum = logTotalPages - 6 + i;
-                      } else {
-                        pageNum = logPage - 3 + i;
-                      }
-                      return (
-                        <button
-                          key={pageNum}
-                          onClick={() => setLogPage(pageNum)}
-                          className={`w-8 h-8 rounded-md text-xs font-medium transition-all ${
-                            logPage === pageNum
-                              ? 'bg-primary text-primary-foreground shadow-sm'
-                              : 'hover:bg-muted text-muted-foreground'
-                          }`}
-                        >
-                          {pageNum}
-                        </button>
-                      );
-                    })}
-                    <button
-                      onClick={() => setLogPage(p => Math.min(logTotalPages, p + 1))}
-                      disabled={logPage >= logTotalPages}
-                      className="px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed hover:bg-muted"
-                    >
-                      التالي →
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <Clock className="mx-auto h-8 w-8 mb-2 opacity-50" />
-                {logFilter !== 'all' ? (
-                  <>
-                    <p>لا توجد أنشطة من نوع "{FILTER_OPTIONS.find(o => o.value === logFilter)?.label}"</p>
-                    <button onClick={() => { setLogFilter('all'); setLogPage(1); }} className="text-xs text-primary hover:underline mt-2">
-                      عرض كل الأنشطة
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <p>لا توجد أنشطة مسجلة بعد</p>
-                    <p className="text-xs mt-1">ستظهر هنا كل التغييرات على مصادر معرفة ساري</p>
-                  </>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-        );
-      })()}
+      <KnowledgeActivityWorkspace active={brainView==='history'}/>
       </section>
     </div>
   );

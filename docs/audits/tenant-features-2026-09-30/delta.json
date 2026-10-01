@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-09-30T23:58:45.242Z",
+  "generatedAt": "2026-10-01T00:22:07.716Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 325,
-      "controls": 2175
+      "files": 326,
+      "controls": 2180
     }
   },
   "addedFiles": [
@@ -92,6 +92,7 @@
     "client/src/components/merchant/AssistantOptionReview.tsx",
     "client/src/hooks/useReviewedAssistantOption.ts",
     "client/src/components/merchant/VirtualAgentReview.tsx",
+    "client/src/components/KnowledgeActivityWorkspace.tsx",
     "client/src/components/KnowledgeRemovalWorkspace.tsx",
     "client/src/lib/knowledge-removal-attempt.ts",
     "client/src/components/SalesKnowledgeReadout.tsx",
@@ -861,7 +862,7 @@
     {
       "route": "/merchant/sari-brain",
       "controlsBefore": 275,
-      "controlsNow": 407,
+      "controlsNow": 412,
       "removedQueries": [
         "sariBrain.getFaqs",
         "sariBrain.getKnowledgeSections",
@@ -869,10 +870,10 @@
         "sariBrain.getPageContent"
       ],
       "addedQueries": [
-        "sariBrain.reviewSourceRemoval",
-        "sariBrain.sourceRemovalReceipt",
         "auth.me",
         "merchants.getCurrent",
+        "sariBrain.reviewSourceRemoval",
+        "sariBrain.sourceRemovalReceipt",
         "sariBrain.sectionWorkspace",
         "sariBrain.sectionReview",
         "sariBrain.pageWorkspace",

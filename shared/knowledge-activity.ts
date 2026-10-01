@@ -23,6 +23,8 @@ export const knowledgeActivityItem = z
   .strict();
 export const knowledgeActivityPage = z
   .object({
+    merchantId: z.number().int().positive(),
+    filter: z.string().max(100).nullable(),
     items: z.array(knowledgeActivityItem).max(50),
     total: z.number().int().nonnegative(),
     page: z.number().int().positive(),
