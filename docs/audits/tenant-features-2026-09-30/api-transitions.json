@@ -985,6 +985,34 @@
           "contains": "dashboardWorkspaceSchema.safeParse(data)"
         }
       ]
+    },
+    {
+      "routes": [
+        "/merchant/dashboard"
+      ],
+      "removed": [
+        "sariBrain.getIntegrationSyncStatus"
+      ],
+      "required": [
+        "dashboard.sources"
+      ],
+      "note": "Home source and sync details now read one tenant-scoped snapshot with stored group counts, explicit file extraction states, current audience definition and platform-specific sync records. Customer and source totals and integration-management links remain available. The legacy API is retained for compatibility but no longer drives this page.",
+      "evidence": [
+        "server/dashboard-sources.ts",
+        "client/src/components/merchant/DashboardSources.tsx",
+        "server/dashboard-sources.mysql.test.ts",
+        "server/dashboard-sources-ui.test.ts"
+      ],
+      "checks": [
+        {
+          "file": "client/src/pages/merchant/Dashboard.tsx",
+          "contains": "<DashboardSources"
+        },
+        {
+          "file": "server/dashboard-sources.ts",
+          "contains": "withKnowledgeSourceGroupsSnapshot"
+        }
+      ]
     }
   ]
 }

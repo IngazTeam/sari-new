@@ -1,4 +1,5 @@
 import { getPool } from "../db/connection";
+import type { PoolConnection } from "mysql2/promise";
 import { catalogVisibleSql } from "../integrations/catalog-scope";
 import { knowledgeSourceGroups, type KnowledgeSourceGroups } from "../../shared/knowledge-source-groups";
 
@@ -11,6 +12,11 @@ function date(value: unknown): string | null {
 /** One tenant, one read-only snapshot. Counts represent stored rows/switches, not
  * successful retrieval or sales quality. No source text, credentials or URLs. */
 export async function readKnowledgeSourceGroups(merchantId: number): Promise<KnowledgeSourceGroups> {
+  return withKnowledgeSourceGroupsSnapshot(merchantId, async groups => groups);
+}
+
+/** Add small related reads before committing the same read-only snapshot. */
+export async function withKnowledgeSourceGroupsSnapshot<T>(merchantId: number, read: (groups: KnowledgeSourceGroups, connection: PoolConnection) => Promise<T>): Promise<T> {
   if (!Number.isInteger(merchantId) || merchantId < 1 || merchantId > 2147483647) throw Error("Invalid source scope");
   const pool = await getPool();
   if (!pool) throw Error("Source groups unavailable");
@@ -57,8 +63,9 @@ export async function readKnowledgeSourceGroups(merchantId: number): Promise<Kno
       sections: { total: Number(sections.total), switchedOn: Number(sections.switchedOn), latestModifiedAt: date(sections.modified) },
       settings: { createdAt: date(merchant.createdAt), modifiedAt: date(merchant.updatedAt) },
     });
+    const value = await read(result, c);
     await c.commit();
-    return result;
+    return value;
   } catch (error) {
     try { await c.rollback(); } catch { reusable = false; }
     throw error;

@@ -2,7 +2,7 @@
 
 هذا حصر مصدر قابل لإعادة التوليد، وليس ادعاءً بأن كل مسار عمل اختُبر أو أُعيد تصميمه. يشمل المكونات الفرعية المحلية، الحقول، الأزرار، النوافذ، التبويبات، واجهات القراءة والتعديل. العناصر الديناميكية تحتاج مراجعة إضافية.
 
-- 126 مسارًا مسجلًا، 338 ملف واجهة متصلًا، 2193 عنصر تحكم في المصدر.
+- 126 مسارًا مسجلًا، 339 ملف واجهة متصلًا، 2198 عنصر تحكم في المصدر.
 - 0 رابطًا حرفيًا غير مطابق، و0 ملف صفحة غير متصل بالمسارات المحصورة.
 
 | الصفحة | الملفات | عناصر التحكم | القراءة / التعديل | موك أب للصفحة |
@@ -10,7 +10,7 @@
 | /merchant/setup-wizard — الإعداد الأولي | 25 | 106 | 4 / 8 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant — مدخل لوحة التاجر | 0 | 0 | 0 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/ — مدخل لوحة التاجر | 0 | 0 | 0 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/dashboard — نظرة عامة | 24 | 181 | 29 / 12 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/dashboard — نظرة عامة | 25 | 186 | 29 / 12 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/ai-hub — مركز المساعد | 1 | 1 | 0 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/analytics-hub — مركز التحليلات | 1 | 1 | 0 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/campaigns — الحملات | 2 | 16 | 5 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -313,27 +313,37 @@
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 38 | Button | retry | Dashboard |
-| 142 | select | period | welcome |
-| 153 | Button | period | welcome |
-| 171 | Link | finishSetup | setup |
-| 189 | Link | تسمية ديناميكية / تحتاج مراجعة | next |
-| 210 | Link | تسمية ديناميكية / تحتاج مراجعة | brain |
-| 233 | Link | settings | assistant |
-| 260 | Button | test | assistant |
-| 261 | Link | test | assistant |
-| 270 | Link | allConversations | recent |
-| 282 | Link | active closed archived unknownStatus | recent |
-| 308 | Link | connect | recent |
-| 323 | Link | yourCampaigns campaignsScope loading unavailable | relationships |
-| 336 | Link | reviews loading reviewsCount noReviews unavailable loading | relationships |
-| 370 | summary | details | details |
-| 374 | DialogContent | quickTitle quickHelp /merchant/conversations allConversations /merchant/products manageProducts /merchant/services/new newService /merchant/sales-hub newQuote /merchant/campaigns/new newCampaign | details |
-| 394 | Button | تسمية ديناميكية / تحتاج مراجعة | quickTitle |
-| 395 | Link | تسمية ديناميكية / تحتاج مراجعة | quickTitle |
-| 481 | Link | manageKnowledge | sync |
-| 491 | Button | generating generate | suggestions |
-| 513 | Link | more | Dashboard |
+| 39 | Button | retry | Dashboard |
+| 143 | select | period | welcome |
+| 154 | Button | period | welcome |
+| 172 | Link | finishSetup | setup |
+| 190 | Link | تسمية ديناميكية / تحتاج مراجعة | next |
+| 211 | Link | تسمية ديناميكية / تحتاج مراجعة | brain |
+| 234 | Link | settings | assistant |
+| 261 | Button | test | assistant |
+| 262 | Link | test | assistant |
+| 271 | Link | allConversations | recent |
+| 283 | Link | active closed archived unknownStatus | recent |
+| 309 | Link | connect | recent |
+| 324 | Link | yourCampaigns campaignsScope loading unavailable | relationships |
+| 337 | Link | reviews loading reviewsCount noReviews unavailable loading | relationships |
+| 371 | summary | details | details |
+| 375 | DialogContent | quickTitle quickHelp /merchant/conversations allConversations /merchant/products manageProducts /merchant/services/new newService /merchant/sales-hub newQuote /merchant/campaigns/new newCampaign | details |
+| 395 | Button | تسمية ديناميكية / تحتاج مراجعة | quickTitle |
+| 396 | Link | تسمية ديناميكية / تحتاج مراجعة | quickTitle |
+| 437 | Button | generating generate | suggestions |
+| 459 | Link | more | Dashboard |
+
+## client/src/components/merchant/DashboardSources.tsx
+
+| السطر | النوع | التسمية | القسم |
+|---:|---|---|---|
+| 48 | Button | refresh | title |
+| 57 | Button | retry | title |
+| 95 | Link | openDocuments | documents · |
+| 153 | Link | تسمية ديناميكية / تحتاج مراجعة | · |
+| 168 | Link | integrations | DashboardSources |
+| 194 | Link | integrations | integration |
 
 ## client/src/components/merchant/DashboardAnalytics.tsx
 

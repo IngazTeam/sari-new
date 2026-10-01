@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { DashboardSources } from '@/components/merchant/DashboardSources';
 import { useTranslation } from "react-i18next";
 import { Link, useSearch, useLocation } from "wouter";
 import { ArrowLeft, ArrowRight, Plus } from "lucide-react";
@@ -368,7 +369,7 @@ function DashboardContent({
         onToggle={e => setDetailsOpen(e.currentTarget.open)}
       >
         <summary className="mw-detail-summary">{label("details")}</summary>
-        {detailsOpen && <DashboardDetails />}
+        {detailsOpen && <DashboardDetails merchantId={merchant.id} />}
       </details>
       <Dialog open={quickOpen} onOpenChange={setQuickOpen}>
         <DialogContent
@@ -404,12 +405,12 @@ function DashboardContent({
     </div>
   );
 }
-function DashboardDetails() {
+function DashboardDetails({merchantId}:{merchantId:number}) {
   const { label, i18n } = useLabels();
   const language = i18n.language.startsWith('ar') ? 'ar' : 'en';
   const [requestedLanguage, setRequestedLanguage] = useState<string | null>(null);
   const requested = requestedLanguage === language;
-  const sync = trpc.sariBrain.getIntegrationSyncStatus.useQuery(
+  const sync = trpc.dashboard.sources.useQuery(
     undefined,
     freshRead
   );
@@ -419,8 +420,6 @@ function DashboardDetails() {
     retry: false,
     refetchOnWindowFocus: false,
   });
-  const syncData = !sync.isError && !sync.isFetching ? sync.data : null;
-  const syncDate = syncData?.lastSyncAt ? new Date(syncData.lastSyncAt) : null;
   const generate = () => {
     setRequestedLanguage(language);
     void insights.refetch();
@@ -428,60 +427,7 @@ function DashboardDetails() {
   return (
     <div className="mt-5 space-y-5">
       <LearningEvidenceCard />
-      <section className="space-y-3">
-        <h2 className="font-semibold">{label("sync")}</h2>
-        {sync.isFetching ? (
-          <p role="status">{label("loading")}</p>
-        ) : !syncData ? (
-          <PanelError retry={() => void sync.refetch()} />
-        ) : (
-          <>
-            <p className="text-sm text-muted-foreground">
-              {syncDate && Number.isFinite(syncDate.getTime())
-                ? label("lastSync", {
-                    date: syncDate.toLocaleString(
-                      i18n.language.startsWith("ar") ? "ar-SA" : "en-GB",
-                      { dateStyle: "medium", timeStyle: "short" }
-                    ),
-                  })
-                : label("noSyncTime")}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {label("syncScope")}
-            </p>
-            {syncData.hasData && (
-              <dl className="grid grid-cols-2 gap-3 md:grid-cols-5">
-                {[
-                  ["products", syncData.products],
-                  ["faqs", syncData.faqs],
-                  ["pages", syncData.discoveredPages],
-                  ["sections", syncData.knowledgeSections],
-                  ["customers", syncData.customers],
-                ].map(([key, value]) => (
-                  <div
-                    className="rounded-lg border p-3 min-w-0"
-                    key={String(key)}
-                  >
-                    <dt className="text-xs text-muted-foreground">
-                      {label(String(key))}
-                    </dt>
-                    <dd className="mt-2 font-semibold">
-                      {typeof value === "number" &&
-                      Number.isSafeInteger(value) &&
-                      value >= 0
-                        ? value.toLocaleString(i18n.language)
-                        : label("unavailable")}
-                    </dd>
-                  </div>
-                ))}
-              </dl>
-            )}
-          </>
-        )}
-        <Link className="mw-link" href="/merchant/sari-brain?view=sources">
-          {label("manageKnowledge")}
-        </Link>
-      </section>
+      <DashboardSources merchantId={merchantId} data={sync.data} loading={sync.isFetching} failed={sync.isError} onRefresh={()=>void sync.refetch()} />
       <section className="space-y-3">
         <h2 className="font-semibold">{label("suggestions")}</h2>
         <p className="text-sm text-muted-foreground">

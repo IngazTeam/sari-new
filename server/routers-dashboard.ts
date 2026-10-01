@@ -7,7 +7,7 @@
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { permissionProcedure, router } from "./_core/trpc";
+import { permissionProcedure, merchantProcedure, router } from "./_core/trpc";
 import { getMerchantById } from './db';
 import { dashboardWorkspaceInput } from '../shared/dashboard-workspace';
 
@@ -15,6 +15,14 @@ const reportDays = z.number().int().min(1).max(366).default(30);
 const productLimit = z.number().int().min(1).max(50).default(5);
 
 export const dashboardRouter = router({
+    sources: merchantProcedure.query(async ({ ctx }) => {
+        try {
+            const { readDashboardSources } = await import('./dashboard-sources');
+            return await readDashboardSources(ctx.merchantId);
+        } catch {
+            throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Source summary unavailable' });
+        }
+    }),
     workspace: permissionProcedure('analytics.read')
         .input(dashboardWorkspaceInput)
         .query(async ({ ctx, input }) => {

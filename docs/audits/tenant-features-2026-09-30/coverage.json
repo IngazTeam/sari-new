@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-01T07:22:17.325Z",
+  "generatedAt": "2026-10-01T07:37:27.779Z",
   "definition": "Every registered route is accounted for; source inventory and design completion are different statuses.",
   "routes": [
     {
@@ -2680,6 +2680,7 @@
       ],
       "files": [
         "client/src/pages/merchant/Dashboard.tsx",
+        "client/src/components/merchant/DashboardSources.tsx",
         "client/src/components/merchant/DashboardAnalytics.tsx",
         "client/src/components/merchant/AssistantScheduleStatus.tsx",
         "client/src/components/DashboardSkeleton.tsx",
@@ -2705,27 +2706,32 @@
         "client/src/components/SalesExperimentReview.tsx"
       ],
       "controls": [
-        "20f9152d0010",
-        "36923e6e26ff",
-        "cf63b0b62096",
-        "9ae629d54c41",
-        "0cc0b591009f",
-        "b00890d45240",
-        "ba9b15228f15",
-        "d3d7a0607e1d",
-        "70d2f6ea3662",
-        "477a1fc4537d",
-        "39ed61e375d7",
-        "7e7fa4813cb0",
-        "323843196d3f",
-        "52f34fccfb99",
-        "5debce32d9ec",
-        "3ff40dbd8dd9",
-        "8144c27a4a23",
-        "e923836e7182",
-        "549661198da1",
-        "a49ba35f5132",
-        "f51c67b4197b",
+        "d7d190370c79",
+        "77ce6bd86926",
+        "e1ac0c644272",
+        "cfa21f3cb846",
+        "b38ecdfefd9b",
+        "07be1b768e9c",
+        "0b54b7eaf057",
+        "660a3ef8d6e3",
+        "7ddd8029f204",
+        "a4f4fbfa2406",
+        "c5cb5052b7c3",
+        "677289bb53c2",
+        "94b6fa646d6c",
+        "0595141933b1",
+        "3f9a8fcd8107",
+        "9373eb5a03cb",
+        "305c08d1e772",
+        "96053e9e4fac",
+        "27a267431d97",
+        "4d735011bdbf",
+        "8de0b23dbf42",
+        "4e1e4bb866bb",
+        "0db8edd75fa7",
+        "e8dd5f4281d8",
+        "5cbbff77754b",
+        "799de776bd81",
         "dad91762be70",
         "6a4fcb6764e8",
         "97b2d54bee9c",
@@ -2896,7 +2902,7 @@
         "campaigns.getStats",
         "reviews.getStats",
         "botSettings.shouldRespond",
-        "sariBrain.getIntegrationSyncStatus",
+        "dashboard.sources",
         "dashboard.getAiInsights",
         "merchantSubscription.getCurrentSubscription",
         "sariBrain.getLearningDashboard",
@@ -2943,9 +2949,9 @@
       ],
       "controlDetails": [
         {
-          "id": "20f9152d0010",
+          "id": "d7d190370c79",
           "file": "client/src/pages/merchant/Dashboard.tsx",
-          "line": 38,
+          "line": 39,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -2964,9 +2970,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "36923e6e26ff",
+          "id": "77ce6bd86926",
           "file": "client/src/pages/merchant/Dashboard.tsx",
-          "line": 142,
+          "line": 143,
           "tag": "select",
           "role": "",
           "kind": "field",
@@ -2990,9 +2996,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "cf63b0b62096",
+          "id": "e1ac0c644272",
           "file": "client/src/pages/merchant/Dashboard.tsx",
-          "line": 153,
+          "line": 154,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -3011,9 +3017,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "9ae629d54c41",
+          "id": "cfa21f3cb846",
           "file": "client/src/pages/merchant/Dashboard.tsx",
-          "line": 171,
+          "line": 172,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -3036,9 +3042,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "0cc0b591009f",
+          "id": "b38ecdfefd9b",
           "file": "client/src/pages/merchant/Dashboard.tsx",
-          "line": 189,
+          "line": 190,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -3057,9 +3063,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "b00890d45240",
+          "id": "07be1b768e9c",
           "file": "client/src/pages/merchant/Dashboard.tsx",
-          "line": 210,
+          "line": 211,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -3078,9 +3084,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "ba9b15228f15",
+          "id": "0b54b7eaf057",
           "file": "client/src/pages/merchant/Dashboard.tsx",
-          "line": 233,
+          "line": 234,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -3099,9 +3105,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "d3d7a0607e1d",
+          "id": "660a3ef8d6e3",
           "file": "client/src/pages/merchant/Dashboard.tsx",
-          "line": 260,
+          "line": 261,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -3120,9 +3126,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "70d2f6ea3662",
+          "id": "7ddd8029f204",
           "file": "client/src/pages/merchant/Dashboard.tsx",
-          "line": 261,
+          "line": 262,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -3141,9 +3147,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "477a1fc4537d",
+          "id": "a4f4fbfa2406",
           "file": "client/src/pages/merchant/Dashboard.tsx",
-          "line": 270,
+          "line": 271,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -3162,9 +3168,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "39ed61e375d7",
+          "id": "c5cb5052b7c3",
           "file": "client/src/pages/merchant/Dashboard.tsx",
-          "line": 282,
+          "line": 283,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -3187,9 +3193,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "7e7fa4813cb0",
+          "id": "677289bb53c2",
           "file": "client/src/pages/merchant/Dashboard.tsx",
-          "line": 308,
+          "line": 309,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -3212,9 +3218,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "323843196d3f",
+          "id": "94b6fa646d6c",
           "file": "client/src/pages/merchant/Dashboard.tsx",
-          "line": 323,
+          "line": 324,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -3233,9 +3239,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "52f34fccfb99",
+          "id": "0595141933b1",
           "file": "client/src/pages/merchant/Dashboard.tsx",
-          "line": 336,
+          "line": 337,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -3254,9 +3260,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "5debce32d9ec",
+          "id": "3f9a8fcd8107",
           "file": "client/src/pages/merchant/Dashboard.tsx",
-          "line": 370,
+          "line": 371,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -3275,9 +3281,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "3ff40dbd8dd9",
+          "id": "9373eb5a03cb",
           "file": "client/src/pages/merchant/Dashboard.tsx",
-          "line": 374,
+          "line": 375,
           "tag": "DialogContent",
           "role": "",
           "kind": "dialog",
@@ -3296,9 +3302,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "8144c27a4a23",
+          "id": "305c08d1e772",
           "file": "client/src/pages/merchant/Dashboard.tsx",
-          "line": 394,
+          "line": 395,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -3317,9 +3323,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "e923836e7182",
+          "id": "96053e9e4fac",
           "file": "client/src/pages/merchant/Dashboard.tsx",
-          "line": 395,
+          "line": 396,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -3338,30 +3344,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "549661198da1",
+          "id": "27a267431d97",
           "file": "client/src/pages/merchant/Dashboard.tsx",
-          "line": 481,
-          "tag": "Link",
-          "role": "",
-          "kind": "action",
-          "label": "manageKnowledge",
-          "section": "sync",
-          "binding": "/merchant/sari-brain?view=sources",
-          "type": "text",
-          "options": [],
-          "min": "",
-          "max": "",
-          "maxLength": "",
-          "required": false,
-          "conditional": true,
-          "conditions": [],
-          "disabled": "",
-          "review": "source-inventoried"
-        },
-        {
-          "id": "a49ba35f5132",
-          "file": "client/src/pages/merchant/Dashboard.tsx",
-          "line": 491,
+          "line": 437,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -3380,9 +3365,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "f51c67b4197b",
+          "id": "4d735011bdbf",
           "file": "client/src/pages/merchant/Dashboard.tsx",
-          "line": 513,
+          "line": 459,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -3398,6 +3383,147 @@
           "conditional": false,
           "conditions": [
             "insight.action?.href?.startsWith(\"/merchant/\") &&\n                    !/[\\\\\\s]/.test(insight.action.href)"
+          ],
+          "disabled": "",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "8de0b23dbf42",
+          "file": "client/src/components/merchant/DashboardSources.tsx",
+          "line": 48,
+          "tag": "Button",
+          "role": "",
+          "kind": "action",
+          "label": "refresh",
+          "section": "title",
+          "binding": "onRefresh",
+          "type": "text",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": false,
+          "conditions": [],
+          "disabled": "loading",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "4e1e4bb866bb",
+          "file": "client/src/components/merchant/DashboardSources.tsx",
+          "line": 57,
+          "tag": "Button",
+          "role": "",
+          "kind": "action",
+          "label": "retry",
+          "section": "title",
+          "binding": "onRefresh",
+          "type": "text",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": false,
+          "conditions": [
+            "!snapshot",
+            "loading"
+          ],
+          "disabled": "",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "0db8edd75fa7",
+          "file": "client/src/components/merchant/DashboardSources.tsx",
+          "line": 95,
+          "tag": "Link",
+          "role": "",
+          "kind": "action",
+          "label": "openDocuments",
+          "section": "documents ·",
+          "binding": "/merchant/sari-brain?view=sources",
+          "type": "text",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": true,
+          "conditions": [
+            "!snapshot",
+            "loading"
+          ],
+          "disabled": "",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "e8dd5f4281d8",
+          "file": "client/src/components/merchant/DashboardSources.tsx",
+          "line": 153,
+          "tag": "Link",
+          "role": "",
+          "kind": "action",
+          "label": "",
+          "section": "·",
+          "binding": "item.path",
+          "type": "text",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": false,
+          "conditions": [
+            "!snapshot",
+            "loading"
+          ],
+          "disabled": "",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "5cbbff77754b",
+          "file": "client/src/components/merchant/DashboardSources.tsx",
+          "line": 168,
+          "tag": "Link",
+          "role": "",
+          "kind": "action",
+          "label": "integrations",
+          "section": "DashboardSources",
+          "binding": "/merchant/platform-integrations",
+          "type": "text",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": true,
+          "conditions": [
+            "!snapshot",
+            "loading"
+          ],
+          "disabled": "",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "799de776bd81",
+          "file": "client/src/components/merchant/DashboardSources.tsx",
+          "line": 194,
+          "tag": "Link",
+          "role": "",
+          "kind": "action",
+          "label": "integrations",
+          "section": "integration",
+          "binding": "/merchant/platform-integrations",
+          "type": "text",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": true,
+          "conditions": [
+            "!snapshot",
+            "loading"
           ],
           "disabled": "",
           "review": "source-inventoried"
