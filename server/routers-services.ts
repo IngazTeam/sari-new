@@ -1,4 +1,7 @@
 import {serviceCatalogCreateService,serviceCatalogUpdateService,serviceCatalogDefinition} from '../shared/service-catalog-write';
+import {catalogListInput,catalogRecordInput,catalogChoicesInput} from '../shared/service-catalog-workspace';
+import {readCatalogWorkspace,readCatalogRecord,readCatalogChoices,CatalogRecordMissingError,CatalogWorkspaceUnavailableError} from './service-catalog-workspace';
+import {hasPermission} from './_core/permissions';
 /**
  * Services Router Module
  * Handles service management for booking-based businesses
@@ -23,6 +26,15 @@ import {
 import {assertServiceReferences,serviceReferenceId} from './service-reference-access';
 
 export const servicesRouter = router({
+    catalogWorkspace: merchantProcedure.input(catalogListInput).query(async ({ctx,input})=>{
+        try{return {...await readCatalogWorkspace(ctx.user.id,ctx.merchantId,input),canManage:hasPermission(ctx.merchantRole,'products.manage')};}catch(error){catalogReadError(error);}
+    }),
+    catalogRecord: merchantProcedure.input(catalogRecordInput).query(async ({ctx,input})=>{
+        try{return {...await readCatalogRecord(ctx.user.id,ctx.merchantId,input),canManage:hasPermission(ctx.merchantRole,'products.manage')};}catch(error){catalogReadError(error);}
+    }),
+    catalogChoices: merchantProcedure.input(catalogChoicesInput).query(async ({ctx,input})=>{
+        try{return {...await readCatalogChoices(ctx.user.id,ctx.merchantId,input),canManage:hasPermission(ctx.merchantRole,'products.manage')};}catch(error){catalogReadError(error);}
+    }),
     // Create service
     create: permissionProcedure('products.manage')
         .input(serviceCatalogCreateService)
@@ -150,3 +162,9 @@ export const servicesRouter = router({
 });
 
 export type ServicesRouter = typeof servicesRouter;
+
+function catalogReadError(error:unknown):never{
+    if(error instanceof CatalogRecordMissingError)throw new TRPCError({code:'NOT_FOUND',message:'Catalog record not found'});
+    if(error instanceof CatalogWorkspaceUnavailableError)throw new TRPCError({code:'SERVICE_UNAVAILABLE',message:'Catalog workspace unavailable'});
+    throw error;
+}

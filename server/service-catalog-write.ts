@@ -5,13 +5,15 @@ import {TRPCError} from '@trpc/server';
 import {withBookingCapacityTransaction} from './booking-capacity';
 import {serviceCatalogId,serviceCatalogDefinition,normalizeCatalogService,normalizeCatalogCategory,normalizeCatalogPackage} from '../shared/service-catalog-write';
 
-const columns={
+export const serviceCatalogColumns={
   service:{name:'name',description:'description',category:'category',categoryId:'category_id',priceType:'price_type',basePrice:'base_price',minPrice:'min_price',maxPrice:'max_price',durationMinutes:'duration_minutes',bufferTimeMinutes:'buffer_time_minutes',requiresAppointment:'requires_appointment',maxBookingsPerDay:'max_bookings_per_day',advanceBookingDays:'advance_booking_days',staffIds:'staff_ids',displayOrder:'display_order',isActive:'is_active'},
   category:{name:'name',nameEn:'name_en',description:'description',icon:'icon',color:'color',displayOrder:'display_order',isActive:'is_active'},
   package:{name:'name',description:'description',serviceIds:'service_ids',originalPrice:'original_price',packagePrice:'package_price',discountPercentage:'discount_percentage',isActive:'is_active'},
 } as const;
+const columns=serviceCatalogColumns;
 export type ServiceCatalogEntity=keyof typeof columns;
-const tables={service:'services',category:'service_categories',package:'service_packages'} as const;
+export const serviceCatalogTables={service:'services',category:'service_categories',package:'service_packages'} as const;
+const tables=serviceCatalogTables;
 export class ServiceCatalogWriteError extends TRPCError {
   constructor(public readonly reason:'missing'|'conflict'|'invalid'){super({code:reason==='missing'?'NOT_FOUND':reason==='conflict'?'CONFLICT':'BAD_REQUEST',message:'Service catalog '+reason});}
 }
