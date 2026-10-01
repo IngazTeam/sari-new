@@ -632,6 +632,8 @@ function ScopedConversations({ currentMerchant, actorId }: { currentMerchant: { 
                   <EscalationReconciliation
                     key={selectedConversation.id}
                     conversationId={selectedConversation.id}
+                    merchantId={currentMerchant.id}
+                    actorUserId={actorId}
                   />
                 </div>
                 <div className="px-4 pb-4">

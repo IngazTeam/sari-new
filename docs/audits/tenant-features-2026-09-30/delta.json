@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-01T12:12:59.381Z",
+  "generatedAt": "2026-10-01T12:26:45.082Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -206,6 +206,7 @@
     "client/src/pages/merchant/Conversations.tsx",
     "client/src/components/StaffTeamReview.tsx",
     "client/src/components/ConversationHandoff.tsx",
+    "client/src/components/EscalationReconciliation.tsx",
     "client/src/components/StaffAttemptReview.tsx",
     "client/src/components/WhatsAppPreview.tsx",
     "client/src/components/AISuggestions.tsx",
@@ -495,6 +496,7 @@
         "conversations.staffTeamReviewAccess",
         "conversations.getHandoff",
         "conversations.getHandoffSource",
+        "conversations.listEscalationRelays",
         "conversations.listStaffAttempts"
       ],
       "addedQueries": [
@@ -504,6 +506,7 @@
         "conversations.staffTeamContext",
         "conversations.handoffSnapshot",
         "conversations.handoffSourceSnapshot",
+        "conversations.escalationReviewSnapshot",
         "conversations.staffAttemptSnapshot"
       ],
       "removedMutations": [],

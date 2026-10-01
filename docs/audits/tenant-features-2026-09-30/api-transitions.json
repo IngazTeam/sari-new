@@ -1139,6 +1139,35 @@
           "contains": "parsed.data.actorUserId === actorUserId"
         }
       ]
+    },
+    {
+      "routes": [
+        "/merchant/conversations"
+      ],
+      "removed": [
+        "conversations.listEscalationRelays"
+      ],
+      "required": [
+        "conversations.escalationReviewSnapshot"
+      ],
+      "note": "Escalation review now validates actor, merchant, conversation, cursor and current permission before showing rows. The original list and review write are retained. Notes survive page navigation and transient read failures within the active workspace, and writes require current evidence and a fresh read after failure.",
+      "evidence": [
+        "shared/escalation-review.ts",
+        "server/routers-escalation-reconciliation.ts",
+        "server/escalation-review-access-pentest.test.ts",
+        "server/escalation-review-ui.test.ts",
+        "server/ai/escalation-reconciliation.mysql.test.ts"
+      ],
+      "checks": [
+        {
+          "file": "server/routers-escalation-reconciliation.ts",
+          "contains": "listEscalationRelays: permissionProcedure('conversations.read')"
+        },
+        {
+          "file": "client/src/components/EscalationReconciliation.tsx",
+          "contains": "parsed.data.actorUserId===actorUserId"
+        }
+      ]
     }
   ]
 }

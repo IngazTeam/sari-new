@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-01T12:12:59.381Z",
+  "generatedAt": "2026-10-01T12:26:45.082Z",
   "definition": "Every registered route is accounted for; source inventory and design completion are different statuses.",
   "routes": [
     {
@@ -13576,21 +13576,21 @@
         "34053cf9106e",
         "2833b8103a5a",
         "db3e677a1ab5",
-        "248a55a5eeb4",
-        "364dd95ced2a",
-        "45ebe0af34ce",
-        "acb02a7a1e85",
-        "2df69baf763b",
-        "23571051b2a4",
-        "7a681c48a433",
-        "e3ae1c8cb632",
-        "880f810f3724",
-        "732934369074",
-        "1e5a7963dc78",
-        "660f6088226a",
-        "b55cce49ed8f",
-        "571f8c0dba6c",
-        "005338584459",
+        "0fb59774e60a",
+        "ab3b2b671890",
+        "769172be8229",
+        "63ccd5f7358b",
+        "173ed4eff6dd",
+        "cd18dae8cf4e",
+        "ad4df67c1d1b",
+        "7119271de5b0",
+        "18f20d1bfbea",
+        "efcef74bcd71",
+        "8e71eb9cdf58",
+        "798df30f29b2",
+        "d6bf763f648b",
+        "7350edf4d5cb",
+        "5eba1e25f973",
         "7c19f144b1df",
         "442de96c6f21",
         "ec8e32f4091f",
@@ -13615,14 +13615,14 @@
         "53473f7376e6",
         "1d57b581b518",
         "88b7c0dcbe3b",
-        "a6cc356ee4ef",
-        "1edb6a6a8d6a",
-        "e5fea90a8842",
-        "f9565aec5ae2",
-        "0f675f3e0755",
-        "7fca1f56d791",
-        "7b565ebe2989",
-        "dd339068a69e",
+        "a8be0f1edecf",
+        "eecff9deaa93",
+        "54abfac8cc2b",
+        "28d5bcdf114e",
+        "a02628ac5515",
+        "3ccadd366428",
+        "7ead4443ecfe",
+        "cd83c9713a56",
         "a2db9df3ed5c",
         "26aeecc5ffda",
         "51289c5019c8",
@@ -13669,7 +13669,7 @@
         "conversations.staffTeamContext",
         "conversations.handoffSnapshot",
         "conversations.handoffSourceSnapshot",
-        "conversations.listEscalationRelays",
+        "conversations.escalationReviewSnapshot",
         "conversations.listSalesOfferAttempts",
         "conversations.staffAttemptSnapshot",
         "aiSuggestions.getQuickSuggestions"
@@ -13921,9 +13921,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "248a55a5eeb4",
+          "id": "0fb59774e60a",
           "file": "client/src/pages/merchant/Conversations.tsx",
-          "line": 649,
+          "line": 651,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -13944,9 +13944,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "364dd95ced2a",
+          "id": "ab3b2b671890",
           "file": "client/src/pages/merchant/Conversations.tsx",
-          "line": 654,
+          "line": 656,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -13968,9 +13968,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "45ebe0af34ce",
+          "id": "769172be8229",
           "file": "client/src/pages/merchant/Conversations.tsx",
-          "line": 655,
+          "line": 657,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -13992,9 +13992,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "acb02a7a1e85",
+          "id": "63ccd5f7358b",
           "file": "client/src/pages/merchant/Conversations.tsx",
-          "line": 657,
+          "line": 659,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -14016,9 +14016,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "2df69baf763b",
+          "id": "173ed4eff6dd",
           "file": "client/src/pages/merchant/Conversations.tsx",
-          "line": 744,
+          "line": 746,
           "tag": "div",
           "role": "button",
           "kind": "action",
@@ -14039,9 +14039,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "23571051b2a4",
+          "id": "cd18dae8cf4e",
           "file": "client/src/pages/merchant/Conversations.tsx",
-          "line": 794,
+          "line": 796,
           "tag": "a",
           "role": "",
           "kind": "action",
@@ -14062,9 +14062,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "7a681c48a433",
+          "id": "ad4df67c1d1b",
           "file": "client/src/pages/merchant/Conversations.tsx",
-          "line": 887,
+          "line": 889,
           "tag": "DialogContent",
           "role": "",
           "kind": "dialog",
@@ -14085,9 +14085,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "e3ae1c8cb632",
+          "id": "7119271de5b0",
           "file": "client/src/pages/merchant/Conversations.tsx",
-          "line": 914,
+          "line": 916,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -14108,9 +14108,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "880f810f3724",
+          "id": "18f20d1bfbea",
           "file": "client/src/pages/merchant/Conversations.tsx",
-          "line": 952,
+          "line": 954,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -14132,9 +14132,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "732934369074",
+          "id": "efcef74bcd71",
           "file": "client/src/pages/merchant/Conversations.tsx",
-          "line": 956,
+          "line": 958,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -14156,9 +14156,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "1e5a7963dc78",
+          "id": "8e71eb9cdf58",
           "file": "client/src/pages/merchant/Conversations.tsx",
-          "line": 961,
+          "line": 963,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -14180,9 +14180,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "660f6088226a",
+          "id": "798df30f29b2",
           "file": "client/src/pages/merchant/Conversations.tsx",
-          "line": 968,
+          "line": 970,
           "tag": "Textarea",
           "role": "",
           "kind": "field",
@@ -14203,9 +14203,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "b55cce49ed8f",
+          "id": "d6bf763f648b",
           "file": "client/src/pages/merchant/Conversations.tsx",
-          "line": 992,
+          "line": 994,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -14226,9 +14226,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "571f8c0dba6c",
+          "id": "7350edf4d5cb",
           "file": "client/src/pages/merchant/Conversations.tsx",
-          "line": 1012,
+          "line": 1014,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -14249,9 +14249,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "005338584459",
+          "id": "5eba1e25f973",
           "file": "client/src/pages/merchant/Conversations.tsx",
-          "line": 1054,
+          "line": 1056,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -14829,9 +14829,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "a6cc356ee4ef",
+          "id": "a8be0f1edecf",
           "file": "client/src/components/EscalationReconciliation.tsx",
-          "line": 24,
+          "line": 40,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -14850,9 +14850,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "1edb6a6a8d6a",
+          "id": "eecff9deaa93",
           "file": "client/src/components/EscalationReconciliation.tsx",
-          "line": 37,
+          "line": 53,
           "tag": "textarea",
           "role": "",
           "kind": "field",
@@ -14869,13 +14869,13 @@
           "conditions": [
             "canManage"
           ],
-          "disabled": "mutation.isPending",
+          "disabled": "saving",
           "review": "source-inventoried"
         },
         {
-          "id": "e5fea90a8842",
+          "id": "54abfac8cc2b",
           "file": "client/src/components/EscalationReconciliation.tsx",
-          "line": 41,
+          "line": 57,
           "tag": "input",
           "role": "",
           "kind": "field",
@@ -14888,23 +14888,23 @@
           "max": "",
           "maxLength": "",
           "required": false,
-          "conditional": false,
+          "conditional": true,
           "conditions": [
             "canManage"
           ],
-          "disabled": "mutation.isPending || refreshing",
+          "disabled": "saving || refreshing || blocked",
           "review": "source-inventoried"
         },
         {
-          "id": "f9565aec5ae2",
+          "id": "28d5bcdf114e",
           "file": "client/src/components/EscalationReconciliation.tsx",
-          "line": 44,
+          "line": 60,
           "tag": "Button",
           "role": "",
           "kind": "action",
           "label": "",
           "section": "EscalationReconciliation",
-          "binding": "() => mutation.mutate({ conversationId, relayId: item.id, expectedRevision: item.revision, evidence: item.evidence, reviewed: true, note: note.trim() })",
+          "binding": "() => void save()",
           "type": "text",
           "options": [],
           "min": "",
@@ -14915,67 +14915,19 @@
           "conditions": [
             "canManage"
           ],
-          "disabled": "!reviewed || note.trim().length < 3 || refreshing || mutation.isPending",
+          "disabled": "!reviewed || note.trim().length < 3 || refreshing || saving || blocked",
           "review": "source-inventoried"
         },
         {
-          "id": "0f675f3e0755",
+          "id": "a02628ac5515",
           "file": "client/src/components/EscalationReconciliation.tsx",
-          "line": 48,
+          "line": 64,
           "tag": "Button",
           "role": "",
           "kind": "action",
           "label": "",
           "section": "EscalationReconciliation",
-          "binding": "() => { setReviewed(false); mutation.reset(); onSaved(); }",
-          "type": "text",
-          "options": [],
-          "min": "",
-          "max": "",
-          "maxLength": "",
-          "required": false,
-          "conditional": false,
-          "conditions": [
-            "mutation.isError",
-            "canManage"
-          ],
-          "disabled": "",
-          "review": "source-inventoried"
-        },
-        {
-          "id": "7fca1f56d791",
-          "file": "client/src/components/EscalationReconciliation.tsx",
-          "line": 61,
-          "tag": "Button",
-          "role": "",
-          "kind": "action",
-          "label": "",
-          "section": "EscalationReconciliation",
-          "binding": "() => query.refetch()",
-          "type": "text",
-          "options": [],
-          "min": "",
-          "max": "",
-          "maxLength": "",
-          "required": false,
-          "conditional": false,
-          "conditions": [
-            "query.isError",
-            "query.isLoading"
-          ],
-          "disabled": "",
-          "review": "source-inventoried"
-        },
-        {
-          "id": "7b565ebe2989",
-          "file": "client/src/components/EscalationReconciliation.tsx",
-          "line": 67,
-          "tag": "Button",
-          "role": "",
-          "kind": "action",
-          "label": "",
-          "section": "EscalationReconciliation",
-          "binding": "() => { setBeforeId(undefined); void query.refetch(); }",
+          "binding": "() => {setReviewBasis(null);onRefresh();}",
           "type": "text",
           "options": [],
           "min": "",
@@ -14984,23 +14936,70 @@
           "required": false,
           "conditional": true,
           "conditions": [
-            "query.data",
-            "query.isError",
-            "query.isLoading"
+            "blocked",
+            "canManage"
+          ],
+          "disabled": "refreshing||saving",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "3ccadd366428",
+          "file": "client/src/components/EscalationReconciliation.tsx",
+          "line": 89,
+          "tag": "Button",
+          "role": "",
+          "kind": "action",
+          "label": "",
+          "section": "EscalationReconciliation",
+          "binding": "()=>void query.refetch()",
+          "type": "text",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": false,
+          "conditions": [
+            "!data",
+            "query.isLoading||(!query.isFetchedAfterMount&&query.isFetching)"
+          ],
+          "disabled": "",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "7ead4443ecfe",
+          "file": "client/src/components/EscalationReconciliation.tsx",
+          "line": 96,
+          "tag": "Button",
+          "role": "",
+          "kind": "action",
+          "label": "",
+          "section": "EscalationReconciliation",
+          "binding": "refresh",
+          "type": "text",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": true,
+          "conditions": [
+            "!data",
+            "query.isLoading||(!query.isFetchedAfterMount&&query.isFetching)"
           ],
           "disabled": "query.isFetching",
           "review": "source-inventoried"
         },
         {
-          "id": "dd339068a69e",
+          "id": "cd83c9713a56",
           "file": "client/src/components/EscalationReconciliation.tsx",
-          "line": 68,
+          "line": 97,
           "tag": "Button",
           "role": "",
           "kind": "action",
           "label": "",
           "section": "EscalationReconciliation",
-          "binding": "() => setBeforeId(query.data!.nextCursor!)",
+          "binding": "()=>setBeforeId(data.page.nextCursor!)",
           "type": "text",
           "options": [],
           "min": "",
@@ -15009,12 +15008,11 @@
           "required": false,
           "conditional": true,
           "conditions": [
-            "query.data.nextCursor",
-            "query.data",
-            "query.isError",
-            "query.isLoading"
+            "data.page.nextCursor",
+            "!data",
+            "query.isLoading||(!query.isFetchedAfterMount&&query.isFetching)"
           ],
-          "disabled": "",
+          "disabled": "query.isFetching",
           "review": "source-inventoried"
         },
         {
