@@ -52,6 +52,7 @@ export function StaffAttemptReview({ conversationId }: { conversationId: number 
   const checked = () => {
     void utils.conversations.listStaffAttempts.invalidate({ conversationId, kind });
     void utils.conversations.getMessages.invalidate({ conversationId });
+    void utils.conversations.messageHistory.invalidate({ conversationId });
   };
   return <details data-staff-attempt-review className="mw-chat-actions" onToggle={event => setOpen(event.currentTarget.open)}>
     <summary style={{ minHeight: 44 }} className="cursor-pointer">{t('merchantUx.staffAttempts.title')}</summary>

@@ -56,7 +56,7 @@ function TeamBrowser(){
  const page=staffTeamPage.safeParse(attempts.data),audit=staffTeamAuditPage.safeParse(audits.data);
  const parsed=history?audit.success:page.success,cursor=history?(audit.success?audit.data.nextCursor:null):(page.success?page.data.nextCursor:null);
  const refresh=()=>{if(beforeId!==undefined)setBeforeId(undefined);else void query.refetch();};
- const checked=(conversationId:number)=>{void utils.conversations.listTeamStaffAttempts.invalidate({kind,...filters});void utils.conversations.listStaffTeamReviews.invalidate();void utils.conversations.getMessages.invalidate({conversationId});void utils.conversations.listStaffAttempts.invalidate({conversationId});};
+ const checked=(conversationId:number)=>{void utils.conversations.listTeamStaffAttempts.invalidate({kind,...filters});void utils.conversations.listStaffTeamReviews.invalidate();void utils.conversations.getMessages.invalidate({conversationId});void utils.conversations.messageHistory.invalidate({conversationId});void utils.conversations.listStaffAttempts.invalidate({conversationId});};
  const reasons={delivery_check:t('merchantUx.teamAttempts.delivery'),departed_employee:t('merchantUx.teamAttempts.departed'),incident_review:t('merchantUx.teamAttempts.incident')};
  return <section className="min-w-0 space-y-3 p-3 text-sm" aria-label={t('merchantUx.teamAttempts.title')}>
   <p>{t('merchantUx.teamAttempts.scope')}</p>

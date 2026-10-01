@@ -54,6 +54,7 @@ import { QuickActionsBar, type QuickActionDraft } from '@/components/QuickAction
 import { toast } from 'sonner';
 import { QueryStateCard } from '@/components/QueryStateCard';
 import { parseMerchantDate } from '@/lib/merchant-date';
+import { WorkspaceState, workspaceFailureKind } from '@/components/merchant/WorkspaceState';
 
 function activityTime(value: string | Date | null) {
   if (!value) return 'لم تصل رسالة بعد';
@@ -65,7 +66,27 @@ function activityTime(value: string | Date | null) {
 }
 
 export default function Conversations() {
+  const drafts = useRef(new Map<string, Record<number, string>>());
+  const user = trpc.auth.me.useQuery(undefined, { retry: false, staleTime: 0, refetchOnMount: 'always' });
+  const merchant = trpc.merchants.getCurrent.useQuery(undefined, {
+    retry: false, staleTime: 0, refetchOnMount: 'always',
+    enabled: Boolean(user.data?.id) && !user.error && !user.isFetching,
+  });
+  const error = user.error || merchant.error;
+  if (error) return <WorkspaceState kind={workspaceFailureKind(error)} onRetry={() => { void user.refetch(); void merchant.refetch(); }} />;
+  if (user.isLoading || user.isFetching || merchant.isLoading || merchant.isFetching)
+    return <WorkspaceState kind="loading" />;
+  if (!user.data?.id || !merchant.data?.id)
+    return <WorkspaceState kind={!user.data?.id ? 'session' : 'missing'} onRetry={() => { void user.refetch(); void merchant.refetch(); }} />;
+  const key = `${user.data.id}:${merchant.data.id}`;
+  if (!drafts.current.has(key)) drafts.current.set(key, {});
+  return <ScopedConversations key={key} currentMerchant={merchant.data} draftStore={drafts.current.get(key)!} />;
+}
+
+function ScopedConversations({ currentMerchant, draftStore }: { currentMerchant: { id: number; timezone?: string | null }; draftStore: Record<number, string> }) {
   const { t } = useTranslation();
+  const live = useRef(true), sendLock = useRef(false);
+  useEffect(() => { live.current = true; return () => { live.current = false; }; }, []);
   const [selectedConversationId, setSelectedConversationId] = useState<
     number | null
   >(null);
@@ -84,12 +105,17 @@ export default function Conversations() {
   const [needsHumanFilter, setNeedsHumanFilter] = useState<
     boolean | undefined
   >();
-  const drafts = useRef<Record<number, string>>({});
+  const drafts = useRef(draftStore);
+  const updateReplyText = (text: string) => {
+    if (selectedConversationId) drafts.current[selectedConversationId] = text;
+    setReplyText(text);
+  };
   const selectConversation = (id: number | null) => {
     if (isSending || voiceBusy) return;
     if (selectedConversationId)
       drafts.current[selectedConversationId] = replyText;
     setReplyText(id ? drafts.current[id] || '' : '');
+    selectedReplyConversation.current = id;
     setSelectedConversationId(id);
   };
   useEffect(() => {
@@ -123,9 +149,9 @@ export default function Conversations() {
   };
 
   const {
-    data: conversationsData,
+    data: listSnapshot,
     isLoading,
-    error: listError,
+    error: listQueryError,
     refetch: refetchList,
   } = trpc.conversations.list.useQuery(
     {
@@ -136,10 +162,12 @@ export default function Conversations() {
       search: debouncedSearch || undefined,
     },
     {
+      retry: false, staleTime: 0, refetchOnMount: 'always',
       refetchInterval: 10_000, // تحديث قائمة المحادثات كل 10 ثواني
     }
   );
-  const { data: currentMerchant } = trpc.merchants.getCurrent.useQuery();
+  const listError = listQueryError || (listSnapshot && (listSnapshot.merchantId !== currentMerchant.id || listSnapshot.items.some(c => c.merchantId !== currentMerchant.id)) ? new Error('Inbox context mismatch') : null);
+  const conversationsData = !listError ? listSnapshot : undefined;
   const merchantTimezone = (currentMerchant as any)?.timezone || 'Asia/Riyadh';
 
   const sendReplyMutation = trpc.conversations.sendReply.useMutation();
@@ -155,17 +183,20 @@ export default function Conversations() {
   const utils = trpc.useUtils();
 
   const {
-    data: messages,
+    data: historySnapshot,
     isLoading: messagesLoading,
-    error: messagesError,
+    error: historyError,
     refetch: refetchMessages,
-  } = trpc.conversations.getMessages.useQuery(
-    { conversationId: selectedConversationId! },
+  } = trpc.conversations.messageHistory.useQuery(
+    { conversationId: selectedConversationId!, limit: 500 },
     {
+      retry: false, staleTime: 0, refetchOnMount: 'always',
       enabled: selectedConversationId !== null,
       refetchInterval: 5_000, // تحديث الرسائل كل 5 ثواني — يضمن التحديث اللحظي
     }
   );
+  const messagesError = historyError || (historySnapshot && (historySnapshot.merchantId !== currentMerchant.id || historySnapshot.conversationId !== selectedConversationId || historySnapshot.items.some(m => m.conversationId !== selectedConversationId)) ? new Error('Message context mismatch') : null);
+  const messages = !messagesError ? historySnapshot?.items : undefined;
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -187,32 +218,40 @@ export default function Conversations() {
   );
   const voiceConversationSnapshot=useRef<typeof listedSelectedConversation>(undefined);
   if(listedSelectedConversation)voiceConversationSnapshot.current=listedSelectedConversation;
-  const selectedConversation=listedSelectedConversation || (voiceBusy&&voiceConversationSnapshot.current?.id===selectedConversationId?voiceConversationSnapshot.current:undefined);
+  const selectedConversation=!listError ? listedSelectedConversation || (voiceBusy&&voiceConversationSnapshot.current?.id===selectedConversationId?voiceConversationSnapshot.current:undefined) : undefined;
 
   // Send text reply
   const handleSendReply = async () => {
-    if (!replyText.trim() || !selectedConversationId || isSending || voiceBusy) return;
+    if (!live.current || !replyText.trim() || !selectedConversationId || !selectedConversation || messagesError || messagesLoading || !historySnapshot || isSending || voiceBusy || sendLock.current) return;
 
+    sendLock.current = true;
     setIsSending(true);
     try {
       const text=replyText.trim(),conversationId=selectedConversationId;
       const accepted=await sendDashboardText(conversationId,text);
-      if(!accepted)return;
-      if(selectedReplyConversation.current===conversationId)setReplyText(current=>current.trim()===text?'':current);
+      if(!accepted || !live.current)return;
+      if(selectedReplyConversation.current===conversationId){
+        if(drafts.current[conversationId]?.trim()===text)drafts.current[conversationId]='';
+        setReplyText(current=>current.trim()===text?'':current);
+      }
       // Refresh messages
       utils.conversations.getMessages.invalidate({
         conversationId: selectedConversationId,
       });
+      void utils.conversations.messageHistory.invalidate({ conversationId });
     } catch (error: any) {
-      toast.error(t('staffDashboardReply.unavailable'), { position: 'top-center' });
+      if(live.current)toast.error(t('staffDashboardReply.unavailable'), { position: 'top-center' });
     } finally {
-      setIsSending(false);
+      sendLock.current = false;
+      if(live.current)setIsSending(false);
     }
   };
 
   const sendDashboardText=async(conversationId:number,message:string)=>{
     const attempt=await staffDashboardAttempt(currentMerchant?.id??0,conversationId,message);
+    if(!live.current || selectedReplyConversation.current!==conversationId)return false;
     const result=await sendReplyMutation.mutateAsync({conversationId,message,requestId:attempt.requestId});
+    if(!live.current)return false;
     if(!result.success){
       if('status' in result&&result.status!=='pending')toast.warning(t('staffDashboardReply.failed'), { position: 'top-center' });
       else toast.warning(t('staffDashboardReply.pending'), { position: 'top-center' });
@@ -231,7 +270,7 @@ export default function Conversations() {
       toast.warning(t('quickDrafts.existingDraft'), { position: 'top-center' });
       return;
     }
-    setReplyText(data.message);
+    updateReplyText(data.message);
   };
 
   return (
@@ -878,7 +917,7 @@ export default function Conversations() {
                       }
                       onSelectSuggestion={text => {
                         if(isSending || voiceBusy)return;
-                        setReplyText(text);
+                        updateReplyText(text);
                       }}
                       compact
                     />
@@ -909,7 +948,7 @@ export default function Conversations() {
                       value={replyText}
                       maxLength={4096}
                       style={{fontSize:16}}
-                      onChange={e => setReplyText(e.target.value)}
+                      onChange={e => updateReplyText(e.target.value)}
                       onKeyDown={e => {
                         if (
                           e.key === 'Enter' &&
@@ -930,7 +969,7 @@ export default function Conversations() {
                     size="icon"
                     data-staff-send
                     onClick={handleSendReply}
-                    disabled={!replyText.trim() || isSending || voiceBusy}
+                    disabled={!replyText.trim() || isSending || voiceBusy || !!messagesError || messagesLoading || !historySnapshot}
                     className="shrink-0 h-[44px] w-[44px]"
                     aria-label={t('merchantUx.actions.sendMessage')}
                   >
@@ -949,15 +988,18 @@ export default function Conversations() {
                     {t('staffVoice.title')}
                   </summary>
                   <VoiceRecorder
-                    disabled={isSending}
+                    disabled={isSending || !!messagesError || messagesLoading || !historySnapshot}
                     onBusyChange={setVoiceBusy}
                     onRecordingComplete={async (audioBlob, duration) => {
-                      if(!selectedConversationId||isSending)return false;
+                      if(!live.current||!selectedConversationId||isSending||messagesError||messagesLoading||!historySnapshot||sendLock.current)return false;
                       const conversationId=selectedConversationId;
+                      sendLock.current=true;
                       setIsSending(true);
                       try{
                         const attempt=await staffVoiceAttempt(currentMerchant?.id??0,conversationId,audioBlob,duration);
+                        if(!live.current||selectedReplyConversation.current!==conversationId)return false;
                         const result=await sendVoiceReplyMutation.mutateAsync(attempt.input);
+                        if(!live.current)return false;
                         if(!result.success){
                           toast.warning(t('staffVoice.pending'),{position:'top-center'});
                           return false;
@@ -966,11 +1008,12 @@ export default function Conversations() {
                         if(result.persisted)toast.success(t('staffVoice.accepted'),{position:'top-center'});
                         else toast.warning(t('staffDashboardReply.projectionPending'),{position:'top-center'});
                         utils.conversations.getMessages.invalidate({conversationId});
+                        void utils.conversations.messageHistory.invalidate({conversationId});
                         return true;
                       }catch{
-                        toast.error(t('staffVoice.unavailable'),{position:'top-center'});
+                        if(live.current)toast.error(t('staffVoice.unavailable'),{position:'top-center'});
                         return false;
-                      }finally{setIsSending(false);}
+                      }finally{sendLock.current=false;if(live.current)setIsSending(false);}
                     }}
                     onCancel={() => {
                       toast.info(t('toast.conversations.msg3'));

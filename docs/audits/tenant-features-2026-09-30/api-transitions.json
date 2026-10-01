@@ -1013,6 +1013,34 @@
           "contains": "withKnowledgeSourceGroupsSnapshot"
         }
       ]
+    },
+    {
+      "routes": [
+        "/merchant/conversations"
+      ],
+      "removed": [
+        "conversations.getMessages"
+      ],
+      "required": [
+        "conversations.messageHistory"
+      ],
+      "note": "The inbox now validates the merchant and conversation identity included in the history snapshot before displaying message content, previews or suggestions. Legacy getMessages remains compatible and returns the latest500 records. The new history API preserves message authors, media fields and the chronological window and exposes an older cursor for the next UI phase.",
+      "evidence": [
+        "server/conversation-history.ts",
+        "server/conversation-history.mysql.test.ts",
+        "server/conversation-inbox-page.test.ts",
+        "docs/audits/tenant-conversation-history-2026-10-01/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "server/routers-conversation-history.ts",
+          "contains": "getMessages:"
+        },
+        {
+          "file": "client/src/pages/merchant/Conversations.tsx",
+          "contains": "historySnapshot.merchantId !== currentMerchant.id"
+        }
+      ]
     }
   ]
 }
