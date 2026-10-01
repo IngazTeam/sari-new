@@ -1900,16 +1900,16 @@
     "templateRealEstateDesc": "Customized for real estate offices",
     "templateServices": "Services",
     "templateServicesDesc": "Customized for service providers",
-    "botActive": "Bot Active",
-    "botActiveDesc": "Auto-replying to incoming messages",
-    "botStopped": "Bot Stopped",
+    "botActive": "Settings allowed replies when checked",
+    "botActiveDesc": "The reply switch and schedule allow replies; this does not prove delivery.",
+    "botStopped": "Settings blocked replies when checked",
     "reasonDisabled": "Auto-reply is disabled",
     "reasonOutsideHours": "Outside working hours",
     "reasonOutsideDays": "Outside working days",
     "autoReplyTitle": "Auto Reply",
     "autoReplyDesc": "Enable or disable auto-reply for WhatsApp messages",
     "enableAutoReply": "Enable Auto Reply",
-    "enableAutoReplyDesc": "When enabled, Sari will automatically reply to all incoming messages",
+    "enableAutoReplyDesc": "Allows automatic replies after saving, subject to the schedule, conversation rules, human takeover, and service availability.",
     "workingHoursTitle": "Working Hours",
     "workingHoursDesc": "Set working hours and days for auto-reply",
     "enableWorkingHours": "Enable Working Hours",
@@ -1954,7 +1954,7 @@
     "toneModernLabel": "Modern",
     "responseDelayLabel": "Response Delay:",
     "seconds": "seconds",
-    "infoNote": "Changes will apply immediately to all new messages. They won't affect ongoing conversations.",
+    "infoNote": "Changes enter the saved settings after a successful save. Processing already in progress may use an older version; refresh the status and try a reply after saving.",
     "note": "Note:",
     "sendingTest": "Sending...",
     "sendTestMessage": "Send Test Message",
@@ -12035,5 +12035,17 @@
   "issueTitle": "Assistant draft unavailable",
   "unavailable": "The local copy is invalid, expired, or inaccessible. Saved settings have not changed. Remove the local copy to start from the current settings.",
   "discardLocal": "Remove local copy only"
+}
+,
+"assistantScheduleStatusUx":{
+  "title": "Saved reply settings status",
+  "refresh": "Refresh status",
+  "loading": "Checking reply settings…",
+  "unavailable": "The settings status could not be confirmed. Refresh to retry.",
+  "unknownReason": "No specific reason is available; review the settings.",
+  "checked": "Checked at:",
+  "scope": "This checks the saved reply switch and working schedule at the displayed time. It excludes your draft and does not confirm WhatsApp connection, message delivery, knowledge quality, or sales proficiency. Human takeover or conversation rules may prevent a reply.",
+  "connection": "Review WhatsApp connection",
+  "preview": "Try an assistant reply"
 }
 }

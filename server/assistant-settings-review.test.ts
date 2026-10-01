@@ -20,6 +20,11 @@ const m = vi.hoisted(() => ({
   user: 7,
   isError: false,
   responseMerchant: 20,
+  responseError: false,
+  responseLoading: false,
+  responseAllowed: true,
+  responseReason: undefined as string | undefined,
+  responseRefresh: vi.fn(),
 }));
 vi.mock("../client/src/lib/trpc", () => ({
   trpc: {
@@ -44,7 +49,15 @@ vi.mock("../client/src/lib/trpc", () => ({
       },
       shouldRespond: {
         useQuery: () => ({
-          data: { shouldRespond: true, merchantId: m.responseMerchant },
+          data: {
+            shouldRespond: m.responseAllowed,
+            merchantId: m.responseMerchant,
+            checkedAt: "2026-10-01T10:00:00.000Z",
+            reason: m.responseReason,
+          },
+          isError: m.responseError,
+          isFetching: m.responseLoading,
+          refetch: m.responseRefresh,
         }),
       },
       update: {
@@ -122,6 +135,10 @@ beforeEach(() => {
   m.user = 7;
   m.isError = false;
   m.responseMerchant = 20;
+  m.responseError = false;
+  m.responseLoading = false;
+  m.responseAllowed = true;
+  m.responseReason = undefined;
   vi.stubGlobal("React", React);
   vi.stubGlobal(
     "ResizeObserver",
@@ -165,6 +182,53 @@ afterEach(async () => {
   vi.restoreAllMocks();
 });
 describe("assistant settings review", () => {
+  it("labels only the saved schedule decision and does not infer operation from a local switch", async () => {
+    await render();
+    expect(container.textContent).toContain(ar.assistantScheduleStatusUx.scope);
+    expect(container.querySelector("time")?.getAttribute("datetime")).toBe(
+      "2026-10-01T10:00:00.000Z"
+    );
+    await act(async () =>
+      container.querySelector<HTMLButtonElement>("#autoReply")!.click()
+    );
+    expect(container.textContent).toContain(ar.botSettingsPage.botActive);
+    await click(ar.assistantScheduleStatusUx.refresh);
+    expect(m.responseRefresh).toHaveBeenCalledTimes(1);
+    expect(m.update).not.toHaveBeenCalled();
+  });
+  it.each(["error", "loading", "foreign"])(
+    "hides cached schedule success when the current read is %s",
+    async mode => {
+      m.responseError = mode === "error";
+      m.responseLoading = mode === "loading";
+      m.responseMerchant = mode === "foreign" ? 21 : 20;
+      await render();
+      expect(container.textContent).not.toContain(ar.botSettingsPage.botActive);
+      expect(container.querySelector("time")).toBeNull();
+      expect(container.textContent).toContain(
+        mode === "loading"
+          ? ar.assistantScheduleStatusUx.loading
+          : ar.assistantScheduleStatusUx.unavailable
+      );
+    }
+  );
+  it.each([
+    ["Auto-reply is disabled", ar.botSettingsPage.reasonDisabled],
+    ["Outside working hours", ar.botSettingsPage.reasonOutsideHours],
+    ["Outside working days", ar.botSettingsPage.reasonOutsideDays],
+    ["Unexpected reason", "unknown"],
+  ])(
+    "uses the explicit scheduling reason instead of inventing a day restriction: %s",
+    async (reason, label) => {
+      m.responseAllowed = false;
+      m.responseReason = reason;
+      await render();
+      expect(container.textContent).toContain(
+        label === "unknown" ? ar.assistantScheduleStatusUx.unknownReason : label
+      );
+      expect(container.textContent).not.toContain(ar.botSettingsPage.botActive);
+    }
+  );
   it("restores persisted text and empty numeric fields after a reload without sending", async () => {
     await render();
     await fill("welcomeMessage", "durable draft");

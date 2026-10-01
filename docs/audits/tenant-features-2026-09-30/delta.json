@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-01T04:04:25.773Z",
+  "generatedAt": "2026-10-01T04:12:14.632Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 332,
-      "controls": 2185
+      "files": 333,
+      "controls": 2188
     }
   },
   "addedFiles": [
@@ -88,6 +88,7 @@
     "client/src/components/merchant/AssistantDraftReview.tsx",
     "client/src/components/merchant/AssistantPersonalityFields.tsx",
     "client/src/components/merchant/AssistantReplyPreview.tsx",
+    "client/src/components/merchant/AssistantScheduleStatus.tsx",
     "client/src/constants/botTemplates.ts",
     "client/src/components/merchant/AssistantOptionReview.tsx",
     "client/src/components/merchant/AssistantOptionRecovery.tsx",
@@ -820,7 +821,7 @@
     {
       "route": "/merchant/bot-settings",
       "controlsBefore": 37,
-      "controlsNow": 55,
+      "controlsNow": 58,
       "removedQueries": [],
       "addedQueries": [
         "auth.me",

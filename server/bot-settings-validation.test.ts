@@ -3,6 +3,7 @@ const mocks = vi.hoisted(() => ({
   access: vi.fn(),
   update: vi.fn(),
   merchant: vi.fn(),
+  shouldRespond: vi.fn(),
 }));
 vi.mock("./accounts/merchant-access", () => ({
   resolveMerchantAccess: mocks.access,
@@ -11,6 +12,7 @@ vi.mock("./db", async original => ({
   ...(await original<typeof import("./db")>()),
   getMerchantById: mocks.merchant,
   updateBotSettings: mocks.update,
+  shouldBotRespond: mocks.shouldRespond,
 }));
 import { botSettingsRouter } from "./routers-bot-settings";
 import { InvalidWorkingScheduleError } from "../shared/bot-working-schedule";
@@ -32,6 +34,21 @@ beforeEach(() => {
   mocks.update.mockResolvedValue({ workingDays: "" });
 });
 describe("bot settings validation at the API boundary", () => {
+  it("returns a tenant-bound timestamped schedule sample without a delivery claim", async () => {
+    mocks.shouldRespond.mockResolvedValue({
+      shouldRespond: false,
+      reason: "Outside working hours",
+    });
+    const result = await caller().shouldRespond();
+    expect(mocks.shouldRespond).toHaveBeenCalledWith(20);
+    expect(result).toEqual({
+      merchantId: 20,
+      shouldRespond: false,
+      reason: "Outside working hours",
+      checkedAt: expect.any(String),
+    });
+    expect(Number.isFinite(Date.parse(result.checkedAt))).toBe(true);
+  });
   it("binds the revision to a scoped atomic write and reports stale drafts safely", async () => {
     mocks.update.mockRejectedValueOnce(new AssistantSettingsConflictError());
     await expect(

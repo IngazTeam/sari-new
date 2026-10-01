@@ -15,6 +15,7 @@ import {
   assistantDraftEpoch,
 } from "@/lib/assistant-draft-cache";
 import { AssistantReplyPreview } from "@/components/merchant/AssistantReplyPreview";
+import { AssistantScheduleStatus } from "@/components/merchant/AssistantScheduleStatus";
 import { parseWorkingDays, toggleWorkingDay } from "@shared/bot-working-days";
 import { getWorkingScheduleErrors } from "@shared/bot-working-schedule";
 import { CheckoutMarginPolicySettings } from "@/components/CheckoutMarginPolicySettings";
@@ -131,9 +132,10 @@ export function BotSettingsWorkspace({ scope }: { scope: string }) {
     !authQuery.isError &&
     settings.merchantId === scopeMerchantId &&
     authQuery.data?.id === scopeUserId;
-  const { data: responseStatus } = trpc.botSettings.shouldRespond.useQuery();
-  const shouldRespond =
-    responseStatus?.merchantId === scopeMerchantId ? responseStatus : undefined;
+  const responseQuery = trpc.botSettings.shouldRespond.useQuery(undefined, {
+    refetchOnMount: "always",
+    staleTime: 0,
+  });
   const draftKey =
     settings?.merchantId === scopeMerchantId &&
     authQuery.data?.id === scopeUserId
@@ -784,32 +786,15 @@ export function BotSettingsWorkspace({ scope }: { scope: string }) {
       </details>
 
       {/* Status Alert */}
-      {shouldRespond && (
-        <Alert
-          className="mb-6"
-          variant={shouldRespond.shouldRespond ? "default" : "destructive"}
-        >
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            {shouldRespond.shouldRespond ? (
-              <span className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-green-600" />
-                <strong>{t("botSettingsPage.botActive")}</strong> -{" "}
-                {t("botSettingsPage.botActiveDesc")}
-              </span>
-            ) : (
-              <span>
-                <strong>{t("botSettingsPage.botStopped")}</strong> -{" "}
-                {shouldRespond.reason === "Auto-reply is disabled"
-                  ? t("botSettingsPage.reasonDisabled")
-                  : shouldRespond.reason === "Outside working hours"
-                    ? t("botSettingsPage.reasonOutsideHours")
-                    : t("botSettingsPage.reasonOutsideDays")}
-              </span>
-            )}
-          </AlertDescription>
-        </Alert>
-      )}
+      <AssistantScheduleStatus
+        merchantId={scopeMerchantId}
+        data={responseQuery.data}
+        failed={responseQuery.isError}
+        loading={responseQuery.isFetching || responseQuery.isLoading}
+        onRefresh={() => {
+          if (current()) void responseQuery.refetch();
+        }}
+      />
 
       <p className="text-sm text-muted-foreground" role="status">
         {pending

@@ -137,7 +137,9 @@ export const botSettingsRouter = router({
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
 
-        return { ...await shouldBotRespond(merchant.id), merchantId: merchant.id };
+        const decision = await shouldBotRespond(merchant.id);
+        // This checks saved reply flags and schedule, not provider delivery or AI quality.
+        return { ...decision, merchantId: merchant.id, checkedAt: new Date().toISOString() };
     }),
 
     // Send test message
