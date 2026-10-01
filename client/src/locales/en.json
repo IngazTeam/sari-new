@@ -12506,5 +12506,13 @@
         "help": "Import website content and review its analysis, pages and questions before approval."
       }
     }
+  },
+  "analyticsEvidenceUx": {
+    "unavailable": "Unavailable",
+    "campaignScope": "Campaigns created during the period, with their recorded lifetime send counts. Verified opens, clicks, attributed sales and campaign costs are unavailable here, so return on investment is not calculated.",
+    "failed": "Analytics could not be loaded",
+    "failedHelp": "The data could not be read. Retry; unavailable data does not mean zero activity.",
+    "storeFailed": "Your store could not be identified. Retry to load the correct account.",
+    "retry": "Try again"
   }
 }

@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-01T08:31:07.615Z",
+  "generatedAt": "2026-10-01T08:48:22.152Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -200,6 +200,7 @@
     "client/src/components/AISuggestions.tsx",
     "client/src/pages/merchant/WhatsAppInstancesPage.tsx",
     "client/src/pages/ByaanDashboard.tsx",
+    "client/src/pages/merchant/AnalyticsDashboard.tsx",
     "client/src/pages/merchant/Analytics.tsx",
     "client/src/pages/merchant/OverviewAnalytics.tsx",
     "client/src/pages/merchant/Orders.tsx",
@@ -679,13 +680,9 @@
       "controlsBefore": 7,
       "controlsNow": 7,
       "removedQueries": [],
-      "addedQueries": [
-        "auth.me"
-      ],
+      "addedQueries": [],
       "removedMutations": [],
-      "addedMutations": [
-        "auth.logout"
-      ]
+      "addedMutations": []
     },
     {
       "route": "/merchant/message-analytics",

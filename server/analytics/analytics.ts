@@ -1,22 +1,54 @@
 /**
  * Advanced Analytics System
- * 
+ *
  * Provides comprehensive analytics for campaigns, products, customers, and trends
  */
 
-import { getDb, getDiscountCodesByMerchantId, getProductById } from '../db';
-import { eq, and, gte, lte, sql, desc } from 'drizzle-orm';
-import { orders, products, campaigns, conversations, messages, discountCodes } from '../../drizzle/schema';
+import { getDb, getDiscountCodesByMerchantId } from "../db";
+import { eq, and, gte, lt } from "drizzle-orm";
+import {
+  orders,
+  products,
+  campaigns,
+  conversations,
+} from "../../drizzle/schema";
 
 // Helper function to format Date for MySQL timestamp comparison
 function formatDateForDB(date: Date): string {
-  return date.toISOString().slice(0, 19).replace('T', ' ');
+  return date.toISOString().slice(0, 19).replace("T", " ");
 }
 
 export interface DateRange {
   startDate: Date;
   endDate: Date;
 }
+
+/** Validate before touching storage. Windows are [start, end) in UTC. */
+function analyticsWindow(merchantId: number, range: DateRange): DateRange {
+  const start = range.startDate?.getTime(),
+    end = range.endDate?.getTime();
+  if (
+    !Number.isSafeInteger(merchantId) ||
+    merchantId < 1 ||
+    !Number.isFinite(start) ||
+    !Number.isFinite(end) ||
+    start >= end ||
+    end - start > 366 * 86400000
+  )
+    throw Error("Invalid analytics scope");
+  const through = Math.min(end, Date.now());
+  const from = Math.floor(start / 1000) * 1000,
+    until = Math.floor(through / 1000) * 1000;
+  if (from >= until) throw Error("Invalid analytics scope");
+  return { startDate: new Date(from), endDate: new Date(until) };
+}
+async function analyticsDatabase() {
+  const database = await getDb();
+  if (!database) throw Error("Analytics storage unavailable");
+  return database;
+}
+const orderDate = (value: string) =>
+  new Date(value.includes("T") ? value : value.replace(" ", "T") + "Z");
 
 // ============================================
 // Dashboard KPIs
@@ -32,19 +64,12 @@ export interface DashboardKPIs {
   ordersGrowth: number;
 }
 
-export async function getDashboardKPIs(merchantId: number, dateRange: DateRange): Promise<DashboardKPIs> {
-  const database = await getDb();
-  if (!database) {
-    return {
-      totalRevenue: 0,
-      totalOrders: 0,
-      averageOrderValue: 0,
-      totalCustomers: 0,
-      conversionRate: 0,
-      revenueGrowth: 0,
-      ordersGrowth: 0,
-    };
-  }
+export async function getDashboardKPIs(
+  merchantId: number,
+  dateRange: DateRange
+): Promise<DashboardKPIs> {
+  dateRange = analyticsWindow(merchantId, dateRange);
+  const database = await analyticsDatabase();
 
   // Current period orders
   const currentOrders = await database
@@ -54,12 +79,15 @@ export async function getDashboardKPIs(merchantId: number, dateRange: DateRange)
       and(
         eq(orders.merchantId, merchantId),
         gte(orders.createdAt, formatDateForDB(dateRange.startDate)),
-        lte(orders.createdAt, formatDateForDB(dateRange.endDate)),
-        eq(orders.status, 'paid' as any)
+        lt(orders.createdAt, formatDateForDB(dateRange.endDate)),
+        eq(orders.status, "paid" as any)
       )
     );
 
-  const totalRevenue = currentOrders.reduce((sum, order) => sum + order.totalAmount, 0);
+  const totalRevenue = currentOrders.reduce(
+    (sum, order) => sum + order.totalAmount,
+    0
+  );
   const totalOrders = currentOrders.length;
   const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
@@ -74,17 +102,21 @@ export async function getDashboardKPIs(merchantId: number, dateRange: DateRange)
       and(
         eq(conversations.merchantId, merchantId),
         gte(conversations.createdAt, formatDateForDB(dateRange.startDate)),
-        lte(conversations.createdAt, formatDateForDB(dateRange.endDate))
+        lt(conversations.createdAt, formatDateForDB(dateRange.endDate))
       )
     );
 
-  const conversionRate = totalConversations.length > 0 
-    ? (totalOrders / totalConversations.length) * 100 
-    : 0;
+  const conversionRate =
+    totalConversations.length > 0
+      ? (totalOrders / totalConversations.length) * 100
+      : 0;
 
   // Previous period for growth calculation
-  const periodDuration = dateRange.endDate.getTime() - dateRange.startDate.getTime();
-  const previousStartDate = new Date(dateRange.startDate.getTime() - periodDuration);
+  const periodDuration =
+    dateRange.endDate.getTime() - dateRange.startDate.getTime();
+  const previousStartDate = new Date(
+    dateRange.startDate.getTime() - periodDuration
+  );
   const previousEndDate = dateRange.startDate;
 
   const previousOrders = await database
@@ -94,21 +126,26 @@ export async function getDashboardKPIs(merchantId: number, dateRange: DateRange)
       and(
         eq(orders.merchantId, merchantId),
         gte(orders.createdAt, formatDateForDB(previousStartDate)),
-        lte(orders.createdAt, formatDateForDB(previousEndDate)),
-        eq(orders.status, 'paid' as any)
+        lt(orders.createdAt, formatDateForDB(previousEndDate)),
+        eq(orders.status, "paid" as any)
       )
     );
 
-  const previousRevenue = previousOrders.reduce((sum, order) => sum + order.totalAmount, 0);
+  const previousRevenue = previousOrders.reduce(
+    (sum, order) => sum + order.totalAmount,
+    0
+  );
   const previousOrderCount = previousOrders.length;
 
-  const revenueGrowth = previousRevenue > 0 
-    ? ((totalRevenue - previousRevenue) / previousRevenue) * 100 
-    : 0;
+  const revenueGrowth =
+    previousRevenue > 0
+      ? ((totalRevenue - previousRevenue) / previousRevenue) * 100
+      : 0;
 
-  const ordersGrowth = previousOrderCount > 0 
-    ? ((totalOrders - previousOrderCount) / previousOrderCount) * 100 
-    : 0;
+  const ordersGrowth =
+    previousOrderCount > 0
+      ? ((totalOrders - previousOrderCount) / previousOrderCount) * 100
+      : 0;
 
   return {
     totalRevenue,
@@ -134,10 +171,10 @@ export interface TrendDataPoint {
 export async function getRevenueTrends(
   merchantId: number,
   dateRange: DateRange,
-  groupBy: 'day' | 'week' | 'month' = 'day'
+  groupBy: "day" | "week" | "month" = "day"
 ): Promise<TrendDataPoint[]> {
-  const database = await getDb();
-  if (!database) return [];
+  dateRange = analyticsWindow(merchantId, dateRange);
+  const database = await analyticsDatabase();
 
   const ordersList = await database
     .select()
@@ -146,8 +183,8 @@ export async function getRevenueTrends(
       and(
         eq(orders.merchantId, merchantId),
         gte(orders.createdAt, formatDateForDB(dateRange.startDate)),
-        lte(orders.createdAt, formatDateForDB(dateRange.endDate)),
-        eq(orders.status, 'paid' as any)
+        lt(orders.createdAt, formatDateForDB(dateRange.endDate)),
+        eq(orders.status, "paid" as any)
       )
     );
 
@@ -155,17 +192,17 @@ export async function getRevenueTrends(
   const grouped = new Map<string, { revenue: number; orders: number }>();
 
   ordersList.forEach(order => {
-    const date = new Date(order.createdAt);
+    const date = orderDate(order.createdAt);
     let key: string;
 
-    if (groupBy === 'day') {
-      key = date.toISOString().split('T')[0];
-    } else if (groupBy === 'week') {
+    if (groupBy === "day") {
+      key = date.toISOString().split("T")[0];
+    } else if (groupBy === "week") {
       const weekStart = new Date(date);
-      weekStart.setDate(date.getDate() - date.getDay());
-      key = weekStart.toISOString().split('T')[0];
+      weekStart.setUTCDate(date.getUTCDate() - date.getUTCDay());
+      key = weekStart.toISOString().split("T")[0];
     } else {
-      key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      key = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
     }
 
     if (!grouped.has(key)) {
@@ -192,7 +229,7 @@ export interface ProductAnalytics {
   totalSales: number;
   totalRevenue: number;
   averagePrice: number;
-  stockLevel: number;
+  stockLevel: number | null;
 }
 
 export async function getTopProducts(
@@ -200,8 +237,10 @@ export async function getTopProducts(
   dateRange: DateRange,
   limit: number = 10
 ): Promise<ProductAnalytics[]> {
-  const database = await getDb();
-  if (!database) return [];
+  if (!Number.isInteger(limit) || limit < 1 || limit > 100)
+    throw Error("Invalid analytics limit");
+  dateRange = analyticsWindow(merchantId, dateRange);
+  const database = await analyticsDatabase();
 
   const ordersList = await database
     .select()
@@ -210,26 +249,30 @@ export async function getTopProducts(
       and(
         eq(orders.merchantId, merchantId),
         gte(orders.createdAt, formatDateForDB(dateRange.startDate)),
-        lte(orders.createdAt, formatDateForDB(dateRange.endDate)),
-        eq(orders.status, 'paid' as any)
+        lt(orders.createdAt, formatDateForDB(dateRange.endDate)),
+        eq(orders.status, "paid" as any)
       )
     );
 
   // Parse order items and aggregate
-  const productStats = new Map<number, { name: string; sales: number; revenue: number }>();
+  const productStats = new Map<
+    number,
+    { name: string; sales: number; revenue: number }
+  >();
 
   for (const order of ordersList) {
     try {
-      const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
-      
+      const items =
+        typeof order.items === "string" ? JSON.parse(order.items) : order.items;
+
       if (Array.isArray(items)) {
         items.forEach((item: any) => {
-          const productId = item.productId || item.id;
-          if (!productId) return;
+          const productId = item.productId ?? item.id;
+          if (!Number.isSafeInteger(productId) || productId < 1) return;
 
           if (!productStats.has(productId)) {
             productStats.set(productId, {
-              name: item.name || item.productName || 'Unknown',
+              name: item.name || item.productName || "Unknown",
               sales: 0,
               revenue: 0,
             });
@@ -241,7 +284,7 @@ export async function getTopProducts(
         });
       }
     } catch (error) {
-      console.error('Error parsing order items:', error);
+      console.error("Error parsing order items:", error);
     }
   }
 
@@ -249,15 +292,21 @@ export async function getTopProducts(
   const productAnalytics: ProductAnalytics[] = [];
 
   for (const [productId, stats] of Array.from(productStats.entries())) {
-    const product = await getProductById(productId);
-    
+    const [product] = await database
+      .select()
+      .from(products)
+      .where(
+        and(eq(products.id, productId), eq(products.merchantId, merchantId))
+      )
+      .limit(1);
+
     productAnalytics.push({
       productId,
       productName: product?.name || stats.name,
       totalSales: stats.sales,
       totalRevenue: stats.revenue,
       averagePrice: stats.sales > 0 ? stats.revenue / stats.sales : 0,
-      stockLevel: product?.stock || 0,
+      stockLevel: product?.stock ?? null,
     });
   }
 
@@ -273,76 +322,46 @@ export async function getTopProducts(
 export interface CampaignAnalytics {
   campaignId: number;
   campaignName: string;
-  sentCount: number;
-  openRate: number;
-  clickRate: number;
-  conversionRate: number;
-  revenue: number;
-  roi: number;
+  sentCount: number | null;
+  openRate: null;
+  clickRate: null;
+  conversionRate: null;
+  revenue: null;
+  roi: null;
 }
 
 export async function getCampaignAnalytics(
   merchantId: number,
   dateRange: DateRange
 ): Promise<CampaignAnalytics[]> {
-  const database = await getDb();
-  if (!database) return [];
-
-  const campaignsList = await database
+  dateRange = analyticsWindow(merchantId, dateRange);
+  const database = await analyticsDatabase();
+  const rows = await database
     .select()
     .from(campaigns)
     .where(
       and(
         eq(campaigns.merchantId, merchantId),
         gte(campaigns.createdAt, formatDateForDB(dateRange.startDate)),
-        lte(campaigns.createdAt, formatDateForDB(dateRange.endDate))
+        lt(campaigns.createdAt, formatDateForDB(dateRange.endDate))
       )
     );
-
-  const analytics: CampaignAnalytics[] = [];
-
-  for (const campaign of campaignsList) {
-    // For now, we'll use basic metrics
-    // In a real system, you'd track opens, clicks, and conversions
-    const sentCount = (campaign as any).recipientCount || 0;
-    
-    // Estimate metrics (in production, track these properly)
-    const openRate = sentCount > 0 ? 65 : 0; // Estimated 65% open rate
-    const clickRate = sentCount > 0 ? 25 : 0; // Estimated 25% click rate
-    
-    // Calculate conversions from orders with campaign reference
-    const campaignOrders = await database
-      .select()
-      .from(orders)
-      .where(
-        and(
-          eq(orders.merchantId, merchantId),
-          gte(orders.createdAt, formatDateForDB(new Date(campaign.createdAt))),
-          eq(orders.status, 'paid' as any)
-        )
-      );
-
-    const revenue = campaignOrders.reduce((sum, order) => sum + order.totalAmount, 0);
-    const conversions = campaignOrders.length;
-    const conversionRate = sentCount > 0 ? (conversions / sentCount) * 100 : 0;
-    
-    // ROI calculation (assuming campaign cost is minimal for WhatsApp)
-    const campaignCost = 0; // WhatsApp campaigns are essentially free
-    const roi = campaignCost > 0 ? ((revenue - campaignCost) / campaignCost) * 100 : revenue > 0 ? 999 : 0;
-
-    analytics.push({
+  // Lifetime recorded send count for campaigns created in the window. No event-level attribution exists here.
+  return rows
+    .map(campaign => ({
       campaignId: campaign.id,
       campaignName: campaign.name,
-      sentCount,
-      openRate,
-      clickRate,
-      conversionRate,
-      revenue,
-      roi,
-    });
-  }
-
-  return analytics.sort((a, b) => b.revenue - a.revenue);
+      sentCount:
+        Number.isSafeInteger(campaign.sentCount) && campaign.sentCount >= 0
+          ? campaign.sentCount
+          : null,
+      openRate: null,
+      clickRate: null,
+      conversionRate: null,
+      revenue: null,
+      roi: null,
+    }))
+    .sort((a, b) => b.campaignId - a.campaignId);
 }
 
 // ============================================
@@ -350,7 +369,7 @@ export async function getCampaignAnalytics(
 // ============================================
 
 export interface CustomerSegment {
-  segment: 'new' | 'returning' | 'vip';
+  segment: "new" | "returning" | "vip";
   count: number;
   revenue: number;
   averageOrderValue: number;
@@ -360,8 +379,8 @@ export async function getCustomerSegments(
   merchantId: number,
   dateRange: DateRange
 ): Promise<CustomerSegment[]> {
-  const database = await getDb();
-  if (!database) return [];
+  dateRange = analyticsWindow(merchantId, dateRange);
+  const database = await analyticsDatabase();
 
   const ordersList = await database
     .select()
@@ -370,8 +389,8 @@ export async function getCustomerSegments(
       and(
         eq(orders.merchantId, merchantId),
         gte(orders.createdAt, formatDateForDB(dateRange.startDate)),
-        lte(orders.createdAt, formatDateForDB(dateRange.endDate)),
-        eq(orders.status, 'paid' as any)
+        lt(orders.createdAt, formatDateForDB(dateRange.endDate)),
+        eq(orders.status, "paid" as any)
       )
     );
 
@@ -382,7 +401,8 @@ export async function getCustomerSegments(
     .where(
       and(
         eq(orders.merchantId, merchantId),
-        eq(orders.status, 'paid' as any)
+        lt(orders.createdAt, formatDateForDB(dateRange.endDate)),
+        eq(orders.status, "paid" as any)
       )
     );
 
@@ -425,22 +445,27 @@ export async function getCustomerSegments(
 
   return [
     {
-      segment: 'new',
+      segment: "new",
       count: segments.new.count,
       revenue: segments.new.revenue,
-      averageOrderValue: segments.new.count > 0 ? segments.new.revenue / segments.new.count : 0,
+      averageOrderValue:
+        segments.new.count > 0 ? segments.new.revenue / segments.new.count : 0,
     },
     {
-      segment: 'returning',
+      segment: "returning",
       count: segments.returning.count,
       revenue: segments.returning.revenue,
-      averageOrderValue: segments.returning.count > 0 ? segments.returning.revenue / segments.returning.count : 0,
+      averageOrderValue:
+        segments.returning.count > 0
+          ? segments.returning.revenue / segments.returning.count
+          : 0,
     },
     {
-      segment: 'vip',
+      segment: "vip",
       count: segments.vip.count,
       revenue: segments.vip.revenue,
-      averageOrderValue: segments.vip.count > 0 ? segments.vip.revenue / segments.vip.count : 0,
+      averageOrderValue:
+        segments.vip.count > 0 ? segments.vip.revenue / segments.vip.count : 0,
     },
   ];
 }
@@ -459,8 +484,8 @@ export async function getHourlyAnalytics(
   merchantId: number,
   dateRange: DateRange
 ): Promise<HourlyAnalytics[]> {
-  const database = await getDb();
-  if (!database) return [];
+  dateRange = analyticsWindow(merchantId, dateRange);
+  const database = await analyticsDatabase();
 
   const ordersList = await database
     .select()
@@ -469,8 +494,8 @@ export async function getHourlyAnalytics(
       and(
         eq(orders.merchantId, merchantId),
         gte(orders.createdAt, formatDateForDB(dateRange.startDate)),
-        lte(orders.createdAt, formatDateForDB(dateRange.endDate)),
-        eq(orders.status, 'paid' as any)
+        lt(orders.createdAt, formatDateForDB(dateRange.endDate)),
+        eq(orders.status, "paid" as any)
       )
     );
 
@@ -482,7 +507,7 @@ export async function getHourlyAnalytics(
   }
 
   ordersList.forEach(order => {
-    const hour = new Date(order.createdAt).getHours();
+    const hour = orderDate(order.createdAt).getUTCHours();
     const data = hourlyData.get(hour)!;
     data.orders++;
     data.revenue += order.totalAmount;
@@ -504,8 +529,8 @@ export async function getWeekdayAnalytics(
   merchantId: number,
   dateRange: DateRange
 ): Promise<WeekdayAnalytics[]> {
-  const database = await getDb();
-  if (!database) return [];
+  dateRange = analyticsWindow(merchantId, dateRange);
+  const database = await analyticsDatabase();
 
   const ordersList = await database
     .select()
@@ -514,12 +539,20 @@ export async function getWeekdayAnalytics(
       and(
         eq(orders.merchantId, merchantId),
         gte(orders.createdAt, formatDateForDB(dateRange.startDate)),
-        lte(orders.createdAt, formatDateForDB(dateRange.endDate)),
-        eq(orders.status, 'paid' as any)
+        lt(orders.createdAt, formatDateForDB(dateRange.endDate)),
+        eq(orders.status, "paid" as any)
       )
     );
 
-  const dayNames = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+  const dayNames = [
+    "الأحد",
+    "الاثنين",
+    "الثلاثاء",
+    "الأربعاء",
+    "الخميس",
+    "الجمعة",
+    "السبت",
+  ];
   const weekdayData = new Map<number, { orders: number; revenue: number }>();
 
   // Initialize all days
@@ -528,7 +561,7 @@ export async function getWeekdayAnalytics(
   }
 
   ordersList.forEach(order => {
-    const dayNumber = new Date(order.createdAt).getDay();
+    const dayNumber = orderDate(order.createdAt).getUTCDay();
     const data = weekdayData.get(dayNumber)!;
     data.orders++;
     data.revenue += order.totalAmount;
@@ -560,8 +593,8 @@ export async function getDiscountCodeAnalytics(
   merchantId: number,
   dateRange: DateRange
 ): Promise<DiscountAnalytics[]> {
-  const database = await getDb();
-  if (!database) return [];
+  dateRange = analyticsWindow(merchantId, dateRange);
+  const database = await analyticsDatabase();
 
   const codes = await getDiscountCodesByMerchantId(merchantId);
   const analytics: DiscountAnalytics[] = [];
@@ -576,12 +609,15 @@ export async function getDiscountCodeAnalytics(
           eq(orders.merchantId, merchantId),
           eq(orders.discountCode, code.code),
           gte(orders.createdAt, formatDateForDB(dateRange.startDate)),
-          lte(orders.createdAt, formatDateForDB(dateRange.endDate)),
-          eq(orders.status, 'paid' as any)
+          lt(orders.createdAt, formatDateForDB(dateRange.endDate)),
+          eq(orders.status, "paid" as any)
         )
       );
 
-    const revenue = codeOrders.reduce((sum, order) => sum + order.totalAmount, 0);
+    const revenue = codeOrders.reduce(
+      (sum, order) => sum + order.totalAmount,
+      0
+    );
     const usageCount = codeOrders.length;
 
     analytics.push({
