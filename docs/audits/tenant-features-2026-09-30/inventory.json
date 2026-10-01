@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-01T06:22:13.779Z",
+  "generatedAt": "2026-10-01T06:55:44.496Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -986,11 +986,11 @@
     },
     {
       "file": "client/src/pages/merchant/Dashboard.tsx",
-      "hash": "956ef34e2d17",
+      "hash": "18742003f694",
       "queries": [
         "merchants.getCurrent",
         "merchants.getOnboardingStatus",
-        "dashboard.getSummary",
+        "dashboard.workspace",
         "conversations.listRecent",
         "conversations.count",
         "campaigns.getStats",
@@ -1004,67 +1004,57 @@
       "sections": [
         {
           "label": "مرحبًا،",
-          "line": 123,
+          "line": 83,
           "tag": "h1"
         },
         {
           "label": "أكمل إعداد نشاطك قبل الإطلاق",
-          "line": 153,
+          "line": 115,
           "tag": "h2"
         },
         {
           "label": "خطوتك التالية",
-          "line": 168,
-          "tag": "h2"
-        },
-        {
-          "label": "orders طلباتك خلال الفترة قيمة الطلبات المسلّمة",
-          "line": 239,
+          "line": 130,
           "tag": "h2"
         },
         {
           "label": "ساري، إلى جانبك",
-          "line": 348,
+          "line": 168,
           "tag": "h2"
         },
         {
           "label": "آخر المحادثات",
-          "line": 382,
+          "line": 199,
           "tag": "h2"
         },
         {
           "label": "نبض العلاقة",
-          "line": 431,
-          "tag": "h2"
-        },
-        {
-          "label": "الأكثر مبيعًا خلال الفترة",
-          "line": 475,
+          "line": 248,
           "tag": "h2"
         },
         {
           "label": "المعرفة والمزامنة واقتراحات ساري",
-          "line": 512,
+          "line": 290,
           "tag": "summary"
         },
         {
           "label": "حالة المزامنة",
-          "line": 533,
+          "line": 311,
           "tag": "h2"
         },
         {
           "label": "ساري يقترح",
-          "line": 571,
+          "line": 349,
           "tag": "h2"
         },
         {
           "label": "",
-          "line": 580,
+          "line": 358,
           "tag": "h3"
         },
         {
           "label": "ماذا تريد أن تنجز؟",
-          "line": 604,
+          "line": 382,
           "tag": "DialogTitle"
         }
       ],
@@ -1074,7 +1064,7 @@
         {
           "query": "merchants.getCurrent",
           "binding": "merchantQuery",
-          "line": 51,
+          "line": 34,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
@@ -1082,23 +1072,23 @@
         {
           "query": "merchants.getOnboardingStatus",
           "binding": "onboarding",
-          "line": 52,
+          "line": 35,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
         },
         {
-          "query": "dashboard.getSummary",
+          "query": "dashboard.workspace",
           "binding": "summary",
-          "line": 53,
+          "line": 36,
           "errorSignal": true,
-          "loadingSignal": true,
+          "loadingSignal": false,
           "enabled": null
         },
         {
           "query": "conversations.listRecent",
           "binding": "recent",
-          "line": 57,
+          "line": 37,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
@@ -1106,7 +1096,7 @@
         {
           "query": "conversations.count",
           "binding": "count",
-          "line": 58,
+          "line": 38,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
@@ -1114,7 +1104,7 @@
         {
           "query": "campaigns.getStats",
           "binding": "campaigns",
-          "line": 59,
+          "line": 39,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
@@ -1122,7 +1112,7 @@
         {
           "query": "reviews.getStats",
           "binding": "reviews",
-          "line": 60,
+          "line": 40,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": "!!merchantQuery.data?.id "
@@ -1130,7 +1120,7 @@
         {
           "query": "dashboard.getAiInsights",
           "binding": "insights",
-          "line": 64,
+          "line": 44,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
@@ -1138,7 +1128,7 @@
         {
           "query": "sariBrain.getIntegrationSyncStatus",
           "binding": "sync",
-          "line": 68,
+          "line": 48,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
@@ -1146,11 +1136,63 @@
       ],
       "conditions": [],
       "imports": [
+        "client/src/components/merchant/DashboardAnalytics.tsx",
         "client/src/components/DashboardSkeleton.tsx",
         "client/src/components/TrialBanner.tsx",
         "client/src/components/LearningEvidenceCard.tsx"
       ],
-      "controlCount": 26
+      "controlCount": 21
+    },
+    {
+      "file": "client/src/components/merchant/DashboardAnalytics.tsx",
+      "hash": "21c1dc63079f",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [
+        {
+          "label": "title",
+          "line": 47,
+          "tag": "h2"
+        },
+        {
+          "label": "title",
+          "line": 120,
+          "tag": "h2"
+        },
+        {
+          "label": "window",
+          "line": 129,
+          "tag": "summary"
+        },
+        {
+          "label": "trend",
+          "line": 205,
+          "tag": "h2"
+        },
+        {
+          "label": "table",
+          "line": 254,
+          "tag": "summary"
+        },
+        {
+          "label": "products",
+          "line": 302,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 336,
+          "tag": "h3"
+        }
+      ],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 9
     },
     {
       "file": "client/src/components/DashboardSkeleton.tsx",
@@ -17899,6 +17941,7 @@
       ],
       "files": [
         "client/src/pages/merchant/Dashboard.tsx",
+        "client/src/components/merchant/DashboardAnalytics.tsx",
         "client/src/components/DashboardSkeleton.tsx",
         "client/src/components/TrialBanner.tsx",
         "client/src/components/LearningEvidenceCard.tsx",
@@ -17922,32 +17965,36 @@
         "client/src/components/SalesExperimentReview.tsx"
       ],
       "controls": [
-        "44c2392ef011",
-        "0d026b198b60",
-        "b2923c110bf7",
-        "53a9d401641f",
-        "98c125ba8b92",
-        "f163dd81dcc3",
-        "2a7395690553",
-        "47d5e6fd0d4a",
-        "5342edcc9985",
-        "a84f8bd0cbc1",
-        "c11f05368c47",
-        "aeb74f20f7e7",
-        "996465ac7f08",
-        "95892366a68d",
-        "4b6a7300b4c6",
-        "6903290d232e",
-        "57b7b0c69f3c",
-        "8a8c4b2dd38e",
-        "bb97ced4bb3f",
-        "c5e166eb51c7",
-        "42e57a1e6470",
-        "7e78562502a8",
-        "3b34f75d9790",
-        "2b6f016cc62f",
-        "0fc86e734473",
-        "4f558cb1bda4",
+        "7024c8f28e89",
+        "264db4d4c117",
+        "c9b79d4a2e1d",
+        "91febadb9723",
+        "1f5e82394195",
+        "0f0f6d044e0a",
+        "d1976ccbdfbc",
+        "5f71dda48c4c",
+        "f2eeea096487",
+        "304b3bc76266",
+        "9f838d2f7b26",
+        "d0c3fec09e6d",
+        "3aba2c7b44c5",
+        "ad14f01e75fa",
+        "b392f40d17e6",
+        "ca48d27fb2fb",
+        "06e5cf268ec1",
+        "ec019e8f9d4d",
+        "1df3261b344a",
+        "305c08d1e772",
+        "ad98a9caeff4",
+        "dad91762be70",
+        "6a4fcb6764e8",
+        "97b2d54bee9c",
+        "87df141ce45d",
+        "1cdb5d11f1b9",
+        "05418313fa13",
+        "dfe983757e67",
+        "31cb2bc1f61b",
+        "cfe9b3d6df9e",
         "e14982278fed",
         "d3b0e0c3aadc",
         "3e535348de20",
@@ -18100,7 +18147,7 @@
       "queries": [
         "merchants.getCurrent",
         "merchants.getOnboardingStatus",
-        "dashboard.getSummary",
+        "dashboard.workspace",
         "conversations.listRecent",
         "conversations.count",
         "campaigns.getStats",
@@ -26741,9 +26788,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "44c2392ef011",
+      "id": "7024c8f28e89",
       "file": "client/src/pages/merchant/Dashboard.tsx",
-      "line": 40,
+      "line": 23,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -26762,9 +26809,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "0d026b198b60",
+      "id": "264db4d4c117",
       "file": "client/src/pages/merchant/Dashboard.tsx",
-      "line": 130,
+      "line": 90,
       "tag": "select",
       "role": "",
       "kind": "field",
@@ -26796,9 +26843,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "b2923c110bf7",
+      "id": "c9b79d4a2e1d",
       "file": "client/src/pages/merchant/Dashboard.tsx",
-      "line": 139,
+      "line": 101,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -26817,9 +26864,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "53a9d401641f",
+      "id": "91febadb9723",
       "file": "client/src/pages/merchant/Dashboard.tsx",
-      "line": 159,
+      "line": 121,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -26841,9 +26888,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "98c125ba8b92",
+      "id": "1f5e82394195",
       "file": "client/src/pages/merchant/Dashboard.tsx",
-      "line": 172,
+      "line": 134,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -26862,9 +26909,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "f163dd81dcc3",
+      "id": "0f0f6d044e0a",
       "file": "client/src/pages/merchant/Dashboard.tsx",
-      "line": 176,
+      "line": 138,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -26883,9 +26930,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "2a7395690553",
+      "id": "d1976ccbdfbc",
       "file": "client/src/pages/merchant/Dashboard.tsx",
-      "line": 180,
+      "line": 142,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -26904,105 +26951,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "47d5e6fd0d4a",
+      "id": "5f71dda48c4c",
       "file": "client/src/pages/merchant/Dashboard.tsx",
-      "line": 225,
-      "tag": "Link",
-      "role": "",
-      "kind": "action",
-      "label": "",
-      "section": "خطوتك التالية",
-      "binding": "metric.path",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [
-        "summary.error || !stats",
-        "summary.isLoading"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "5342edcc9985",
-      "file": "client/src/pages/merchant/Dashboard.tsx",
-      "line": 252,
-      "tag": "button",
-      "role": "",
-      "kind": "action",
-      "label": "الطلبات",
-      "section": "orders طلباتك خلال الفترة قيمة الطلبات المسلّمة",
-      "binding": "() => setChartType('orders')",
-      "type": "button",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [
-        "summary.error || !stats",
-        "summary.isLoading"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "a84f8bd0cbc1",
-      "file": "client/src/pages/merchant/Dashboard.tsx",
-      "line": 259,
-      "tag": "button",
-      "role": "",
-      "kind": "action",
-      "label": "القيمة",
-      "section": "orders طلباتك خلال الفترة قيمة الطلبات المسلّمة",
-      "binding": "() => setChartType('revenue')",
-      "type": "button",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [
-        "summary.error || !stats",
-        "summary.isLoading"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "c11f05368c47",
-      "file": "client/src/pages/merchant/Dashboard.tsx",
-      "line": 331,
-      "tag": "Link",
-      "role": "",
-      "kind": "action",
-      "label": "استكشف التحليلات",
-      "section": "orders طلباتك خلال الفترة قيمة الطلبات المسلّمة",
-      "binding": "/merchant/analytics-hub",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [
-        "summary.error || !stats",
-        "summary.isLoading"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "aeb74f20f7e7",
-      "file": "client/src/pages/merchant/Dashboard.tsx",
-      "line": 363,
+      "line": 183,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -27017,17 +26968,15 @@
       "required": false,
       "conditional": false,
       "conditions": [
-        "channelReady",
-        "summary.error || !stats",
-        "summary.isLoading"
+        "channelReady"
       ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "996465ac7f08",
+      "id": "f2eeea096487",
       "file": "client/src/pages/merchant/Dashboard.tsx",
-      "line": 368,
+      "line": 188,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -27041,17 +26990,14 @@
       "maxLength": "",
       "required": false,
       "conditional": true,
-      "conditions": [
-        "summary.error || !stats",
-        "summary.isLoading"
-      ],
+      "conditions": [],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "95892366a68d",
+      "id": "304b3bc76266",
       "file": "client/src/pages/merchant/Dashboard.tsx",
-      "line": 369,
+      "line": 189,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -27065,17 +27011,14 @@
       "maxLength": "",
       "required": false,
       "conditional": false,
-      "conditions": [
-        "summary.error || !stats",
-        "summary.isLoading"
-      ],
+      "conditions": [],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "4b6a7300b4c6",
+      "id": "9f838d2f7b26",
       "file": "client/src/pages/merchant/Dashboard.tsx",
-      "line": 385,
+      "line": 202,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -27094,9 +27037,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "6903290d232e",
+      "id": "d0c3fec09e6d",
       "file": "client/src/pages/merchant/Dashboard.tsx",
-      "line": 397,
+      "line": 214,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -27119,9 +27062,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "57b7b0c69f3c",
+      "id": "3aba2c7b44c5",
       "file": "client/src/pages/merchant/Dashboard.tsx",
-      "line": 422,
+      "line": 239,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -27144,9 +27087,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "8a8c4b2dd38e",
+      "id": "ad14f01e75fa",
       "file": "client/src/pages/merchant/Dashboard.tsx",
-      "line": 437,
+      "line": 254,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -27165,9 +27108,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "bb97ced4bb3f",
+      "id": "b392f40d17e6",
       "file": "client/src/pages/merchant/Dashboard.tsx",
-      "line": 450,
+      "line": 267,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -27186,30 +27129,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "c5e166eb51c7",
+      "id": "ca48d27fb2fb",
       "file": "client/src/pages/merchant/Dashboard.tsx",
-      "line": 478,
-      "tag": "Link",
-      "role": "",
-      "kind": "action",
-      "label": "الكتالوج",
-      "section": "الأكثر مبيعًا خلال الفترة",
-      "binding": "/merchant/products",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "42e57a1e6470",
-      "file": "client/src/pages/merchant/Dashboard.tsx",
-      "line": 512,
+      "line": 290,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -27228,9 +27150,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "7e78562502a8",
+      "id": "06e5cf268ec1",
       "file": "client/src/pages/merchant/Dashboard.tsx",
-      "line": 563,
+      "line": 341,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -27252,9 +27174,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "3b34f75d9790",
+      "id": "ec019e8f9d4d",
       "file": "client/src/pages/merchant/Dashboard.tsx",
-      "line": 585,
+      "line": 363,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -27269,15 +27191,15 @@
       "required": false,
       "conditional": false,
       "conditions": [
-        "insight.action?.href?.startsWith('/merchant/')"
+        "insight.action?.href?.startsWith(\"/merchant/\")"
       ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "2b6f016cc62f",
+      "id": "1df3261b344a",
       "file": "client/src/pages/merchant/Dashboard.tsx",
-      "line": 602,
+      "line": 380,
       "tag": "DialogContent",
       "role": "",
       "kind": "dialog",
@@ -27296,9 +27218,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "0fc86e734473",
+      "id": "305c08d1e772",
       "file": "client/src/pages/merchant/Dashboard.tsx",
-      "line": 617,
+      "line": 395,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -27317,15 +27239,206 @@
       "review": "source-inventoried"
     },
     {
-      "id": "4f558cb1bda4",
+      "id": "ad98a9caeff4",
       "file": "client/src/pages/merchant/Dashboard.tsx",
-      "line": 618,
+      "line": 396,
       "tag": "Link",
       "role": "",
       "kind": "action",
       "label": "",
       "section": "ماذا تريد أن تنجز؟",
       "binding": "path",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "dad91762be70",
+      "file": "client/src/components/merchant/DashboardAnalytics.tsx",
+      "line": 49,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "retry",
+      "section": "title",
+      "binding": "onRetry",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "6a4fcb6764e8",
+      "file": "client/src/components/merchant/DashboardAnalytics.tsx",
+      "line": 121,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "refresh",
+      "section": "title",
+      "binding": "onRetry",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "97b2d54bee9c",
+      "file": "client/src/components/merchant/DashboardAnalytics.tsx",
+      "line": 129,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "window",
+      "section": "window",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "87df141ce45d",
+      "file": "client/src/components/merchant/DashboardAnalytics.tsx",
+      "line": 194,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "window",
+      "binding": "metric.path",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "1cdb5d11f1b9",
+      "file": "client/src/components/merchant/DashboardAnalytics.tsx",
+      "line": 213,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "orders",
+      "section": "trend",
+      "binding": "() => setMeasure(\"orders\")",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "05418313fa13",
+      "file": "client/src/components/merchant/DashboardAnalytics.tsx",
+      "line": 220,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "deliveredValue",
+      "section": "trend",
+      "binding": "() => setMeasure(\"value\")",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "dfe983757e67",
+      "file": "client/src/components/merchant/DashboardAnalytics.tsx",
+      "line": 254,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "table",
+      "section": "table",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!current.totalOrders"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "31cb2bc1f61b",
+      "file": "client/src/components/merchant/DashboardAnalytics.tsx",
+      "line": 295,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "analytics",
+      "section": "table",
+      "binding": "/merchant/analytics-hub",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "cfe9b3d6df9e",
+      "file": "client/src/components/merchant/DashboardAnalytics.tsx",
+      "line": 305,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "catalog",
+      "section": "products",
+      "binding": "/merchant/products",
       "type": "text",
       "options": [],
       "min": "",

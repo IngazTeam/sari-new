@@ -958,6 +958,33 @@
           "contains": "triggerKeywords: JSON.stringify(d.triggerKeywords)"
         }
       ]
+    },
+    {
+      "routes": [
+        "/merchant/dashboard"
+      ],
+      "removed": [
+        "dashboard.getSummary"
+      ],
+      "required": [
+        "dashboard.workspace"
+      ],
+      "note": "The home analytics now consumes a tenant-scoped consistent snapshot with explicit missing-value and bounded-product-sample evidence. Metrics, chart, daily table and product catalog links remain available; the old summary API is retained for compatibility.",
+      "evidence": [
+        "docs/audits/tenant-dashboard-snapshot-2026-10-01/REPORT.md",
+        "client/src/components/merchant/DashboardAnalytics.tsx",
+        "server/dashboard-analytics-view.test.ts"
+      ],
+      "checks": [
+        {
+          "file": "client/src/pages/merchant/Dashboard.tsx",
+          "contains": "<DashboardAnalytics"
+        },
+        {
+          "file": "client/src/components/merchant/DashboardAnalytics.tsx",
+          "contains": "dashboardWorkspaceSchema.safeParse(data)"
+        }
+      ]
     }
   ]
 }

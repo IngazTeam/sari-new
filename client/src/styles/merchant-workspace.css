@@ -1468,3 +1468,15 @@ html:has(.merchant-workspace) {
   .sary-report-print tr, .sary-report-print dl > * { break-inside: avoid; }
   .sary-report-print .overflow-x-auto { overflow: visible; }
 }
+.mw-home-analytics { min-width: 0; }
+.mw-home-analytics .mw-metric { overflow-wrap: anywhere; }
+.mw-home-analytics .mw-daily-chart { display: flex; align-items: stretch; gap: clamp(1px, .35vw, 7px); height: 190px; direction: ltr; margin-block: 24px 8px; border-block-end: 1px solid var(--border); }
+.mw-home-analytics .mw-daily-column { display: flex; flex: 1; min-width: 0; align-items: end; }
+.mw-home-analytics .mw-daily-column > span { width: 100%; background: var(--primary); border-radius: 4px 4px 0 0; }
+.mw-home-analytics .mw-daily-table { overflow: auto; max-height: 360px; border: 1px solid var(--border); border-radius: 10px; }
+.mw-home-analytics table { width: 100%; border-collapse: collapse; text-align: start; font-size: 13px; }
+.mw-home-analytics th, .mw-home-analytics td { padding: 12px; text-align: start; border-block-end: 1px solid var(--border); }
+.mw-home-analytics th { font-weight: 600; }
+.mw-home-analytics .mw-product-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding-block: 16px; border-block-end: 1px solid var(--border); }
+.mw-home-analytics .mw-product-row > strong { max-width: 100%; overflow-wrap: anywhere; }
+.mw-home-analytics summary:focus-visible, .mw-home-analytics [tabindex]:focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; }
