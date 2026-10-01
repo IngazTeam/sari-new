@@ -1,4 +1,5 @@
 import type { Pool, PoolConnection } from 'mysql2/promise';
+import { campaignDeliveryEvidence } from '../../campaign-delivery-evidence';
 import { validCampaignTransportInput, canRetryCampaignTransport, withCampaignTransportAuthority } from '../../campaign-transport';
 import { getPool, getPrimaryWhatsAppInstance, getWhatsAppInstanceById } from '../../db';
 import { assertRuntimeSchema } from '../../db/schema-readiness';
@@ -151,6 +152,7 @@ async function dispatchMerchantWhatsApp(input: SendMerchantWhatsAppInput): Promi
         && !input.idempotencyKey.startsWith('staff_compat_text:') && !input.staffCompatibilityGuard && !priorRequest?.staffCompatibilityGuard
         && !input.idempotencyKey.startsWith('staff_compat_voice:') && !input.staffCompatibilityVoiceGuard && !priorRequest?.staffCompatibilityVoiceGuard
         && (campaignTransport ? canRetryCampaignTransport(input,priorRequest) : !priorRequest?.campaignGuard)
+        && (!campaignTransport || campaignDeliveryEvidence(existing)==='rejected')
         && existing.error_code !== 'provider_unreachable'
         && !/^http_(?:[235]\d\d|408)$/.test(existing.error_code || '')) {
       const [retry] = await pool.execute(

@@ -25,4 +25,9 @@ describe('campaign integration with the actual transport service',()=>{
     mocks.authority.mockImplementation(async(_i,_c,_id,send)=>{await send({execute:mocks.execute});throw Error('Commit response lost');});
     await expect(sendMerchantWhatsApp(input)).rejects.toMatchObject({code:'delivery_outcome_unknown'});expect(mocks.send).toHaveBeenCalledOnce();
   });
+  it('does not reset a legacy failed row whose rejection cannot be established',async()=>{
+    mocks.execute.mockRejectedValueOnce({code:'ER_DUP_ENTRY'}).mockResolvedValueOnce([[{status:'failed',error_code:'unrecognized',request_json:input}]]);
+    expect(await sendMerchantWhatsApp({...input,retryFailed:true})).toMatchObject({accepted:false,duplicate:true});
+    expect(mocks.authority).not.toHaveBeenCalled();expect(mocks.send).not.toHaveBeenCalled();
+  });
 });

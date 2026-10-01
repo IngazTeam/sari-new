@@ -1,3 +1,4 @@
+import { campaignDeliveryEvidence } from '../campaign-delivery-evidence';
 import crypto from 'node:crypto';
 import type { PoolConnection, RowDataPacket } from 'mysql2/promise';
 import { campaignRecipientLimit } from '../../shared/campaign-audience';
@@ -53,6 +54,7 @@ type CampaignState = RowDataPacket & {
 };
 
 type DeliveryLedgerRow = RowDataPacket & {
+  provider_message_id: string | null;
   status: string;
   error_code: string | null;
 };
@@ -242,7 +244,7 @@ async function readDeliveryLedger(row: CampaignDeliveryRow): Promise<DeliveryLed
   const pool = await getPool();
   if (!pool) throw new RetriableCampaignDeliveryError('database_unavailable');
   const [rows] = await pool.execute<DeliveryLedgerRow[]>(
-    `SELECT status, error_code FROM whatsapp_message_deliveries
+    `SELECT status, error_code, provider_message_id FROM whatsapp_message_deliveries
       WHERE merchant_id = ? AND idempotency_key = ? LIMIT 1`,
     [row.merchant_id, deliveryIdempotencyKey(row)],
   );
@@ -333,11 +335,11 @@ async function writeTerminalState(
     // The update above waits for that lease lock; reread its committed receipt now.
     if (status === 'manual_review') {
       const [receipts] = await connection.execute<DeliveryLedgerRow[]>(
-        `SELECT status, error_code FROM whatsapp_message_deliveries
+        `SELECT status, error_code, provider_message_id FROM whatsapp_message_deliveries
           WHERE merchant_id = ? AND idempotency_key = ? FOR SHARE`,
         [row.merchant_id, deliveryIdempotencyKey(row)],
       );
-      if (receipts[0] && ['sent', 'delivered', 'read'].includes(receipts[0].status)) {
+      if (campaignDeliveryEvidence(receipts[0]) === 'accepted') {
         status = 'sent'; reason = null;
         await connection.execute(`UPDATE campaign_delivery_outbox SET status='sent',sent_at=NOW(3),last_error=NULL
           WHERE id=? AND merchant_id=?`, [row.id, row.merchant_id]);
@@ -406,11 +408,11 @@ async function recoverStaleLeases(): Promise<void> {
   );
   for (const row of rows) {
     const ledger = await readDeliveryLedger(row);
-    if (ledger && ['sent', 'delivered', 'read'].includes(String(ledger.status))) {
+    if (campaignDeliveryEvidence(ledger) === 'accepted') {
       await writeTerminalState(row, 'sent', null);
       continue;
     }
-    if (ledger?.status === 'queued' || ledger?.error_code === 'provider_unreachable') {
+    if (campaignDeliveryEvidence(ledger) === 'unknown') {
       await writeTerminalState(row, 'manual_review', 'ambiguous_provider_outcome');
       continue;
     }
@@ -489,6 +491,17 @@ async function loadCampaignContext(row: CampaignDeliveryRow): Promise<CampaignCo
 async function dispatchDelivery(row: CampaignDeliveryRow): Promise<void> {
   const context = await loadCampaignContext(row);
   if (!context) throw new RetriableCampaignDeliveryError('campaign_context_unavailable');
+  const existing = await readDeliveryLedger(row);
+  if (campaignDeliveryEvidence(existing) === 'accepted') {
+    await writeTerminalState(row, 'sent', null);
+    return;
+  }
+  if (campaignDeliveryEvidence(existing) === 'unknown') {
+    await writeTerminalState(row, 'manual_review', 'ambiguous_provider_outcome');
+    return;
+  }
+
+
   if (context.campaignStatus !== 'sending' || context.merchantStatus !== 'active') {
     await writeTerminalState(row, 'suppressed', 'campaign_or_merchant_inactive');
     return;
@@ -499,16 +512,6 @@ async function dispatchDelivery(row: CampaignDeliveryRow): Promise<void> {
   }
   if (isQuietHours(22, 8, context.timezone || 'Asia/Riyadh')) {
     await deferWithoutAttempt(row, 'quiet_hours', 15 * 60);
-    return;
-  }
-
-  const existing = await readDeliveryLedger(row);
-  if (existing && ['sent', 'delivered', 'read'].includes(existing.status)) {
-    await writeTerminalState(row, 'sent', null);
-    return;
-  }
-  if (existing?.status === 'queued' || existing?.error_code === 'provider_unreachable') {
-    await writeTerminalState(row, 'manual_review', 'ambiguous_provider_outcome');
     return;
   }
 
@@ -549,17 +552,22 @@ async function dispatchDelivery(row: CampaignDeliveryRow): Promise<void> {
   }
 
   try {
-    if (result.accepted) {
+    const evidence = campaignDeliveryEvidence({status:result.status,provider_message_id:result.providerMessageId,error_code:result.errorCode});
+    if (evidence === 'accepted') {
       await writeTerminalState(row, 'sent', null);
       return;
     }
-    if (result.errorCode === 'provider_unreachable' || result.errorCode === 'delivery_in_progress') {
+    if (evidence !== 'rejected') {
       await writeTerminalState(row, 'manual_review', 'ambiguous_provider_outcome');
       return;
     }
     await releaseQuotaReservation(row);
     if (result.errorCode === 'campaign_authority_suppressed') {
       await writeTerminalState(row, 'suppressed', 'campaign_authority_suppressed');
+      return;
+    }
+    if (result.duplicate) {
+      await writeTerminalState(row, 'manual_review', 'campaign_retry_authority_unavailable');
       return;
     }
     await scheduleRetry(row, result.errorCode || 'provider_rejected');

@@ -101,4 +101,41 @@ describe.skipIf(!process.env.DATABASE_URL)('campaign transport fencing with real
     expect((await q('SELECT status,errorMessage FROM campaignLogs WHERE campaign_outbox_id=?',[lease.id]))[0]).toMatchObject({status:'success',errorMessage:null});
     expect(mocks.send).toHaveBeenCalledOnce();
   });
+  it.each([
+    {status:'queued',code:null,id:null,expected:'manual_review'},
+    {status:'failed',code:'http_200',id:null,expected:'manual_review'},
+    {status:'failed',code:'http_408',id:null,expected:'manual_review'},
+    {status:'failed',code:'http_500',id:null,expected:'manual_review'},
+    {status:'failed',code:'unrecognized',id:null,expected:'manual_review'},
+    {status:'failed',code:null,id:null,expected:'manual_review'},
+    {status:'sent',code:null,id:null,expected:'manual_review'},
+    {status:'failed',code:'delivery_failed',id:'fixture-receipt',expected:'sent'},
+    {status:'sent',code:null,id:'fixture-receipt',expected:'sent'},
+    {status:'failed',code:'http_400',id:null,expected:'failed'},
+  ])('recovers legacy evidence %j without another provider call',async test=>{
+    await q(`INSERT INTO whatsapp_message_deliveries (merchant_id,instance_id,provider,idempotency_key,direction,status,error_code,provider_message_id,request_json)
+      VALUES (?,?,'mock',?,'outgoing',?,?,?,NULL)`,[owner.merchantId,input.instanceRecordId,input.idempotencyKey,test.status,test.code,test.id]);
+    await q('UPDATE campaign_delivery_outbox SET claimed_at=DATE_SUB(UTC_TIMESTAMP(),INTERVAL 6 MINUTE) WHERE id=?',[lease.id]);
+    await runCampaignDeliveryBatch(1);
+    const saved=(await q('SELECT status,quota_reserved FROM campaign_delivery_outbox WHERE id=?',[lease.id]))[0];
+    expect(saved).toMatchObject({status:test.expected,quota_reserved:test.expected==='failed'?0:1});
+    expect(mocks.send).not.toHaveBeenCalled();
+  });
+  it('sends legacy rejection without a guard to review once, returning only the new unused reservation',async()=>{
+    await releaseCampaignQuota(lease);
+    await q("UPDATE campaign_delivery_outbox SET status='pending',processing_token=NULL,claimed_at=NULL,available_at=UTC_TIMESTAMP(3) WHERE id=?",[lease.id]);
+    await q(`INSERT INTO whatsapp_message_deliveries (merchant_id,instance_id,provider,idempotency_key,direction,status,error_code,request_json)
+      VALUES (?,?,'mock',?,'outgoing','failed','http_400',?)`,[owner.merchantId,input.instanceRecordId,input.idempotencyKey,JSON.stringify({to:input.to,kind:input.kind,text:input.text})]);
+    await runCampaignDeliveryBatch(1);
+    expect((await q('SELECT status,quota_reserved,last_error FROM campaign_delivery_outbox WHERE id=?',[lease.id]))[0]).toMatchObject({status:'manual_review',quota_reserved:0,last_error:'campaign_retry_authority_unavailable'});
+    expect((await q('SELECT messages_used FROM merchant_subscriptions WHERE id=?',[sub]))[0].messages_used).toBe(0);
+    expect(mocks.send).not.toHaveBeenCalled();
+  });
+  it('retains acceptance evidence even if consent was withdrawn before worker reconciliation',async()=>{
+    await sendMerchantWhatsApp(input);
+    await q("UPDATE campaign_consent_state SET status='withdrawn' WHERE merchant_id=?",[owner.merchantId]);
+    await q("UPDATE campaign_delivery_outbox SET status='pending',processing_token=NULL,claimed_at=NULL,available_at=UTC_TIMESTAMP(3) WHERE id=?",[lease.id]);
+    await runCampaignDeliveryBatch(1);
+    expect((await q('SELECT status,quota_reserved FROM campaign_delivery_outbox WHERE id=?',[lease.id]))[0]).toMatchObject({status:'sent',quota_reserved:1});expect(mocks.send).toHaveBeenCalledOnce();
+  });
 });
