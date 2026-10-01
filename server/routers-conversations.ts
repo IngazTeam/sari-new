@@ -11,6 +11,7 @@ import { z } from "zod";
 import { staffDashboardReplyInput } from '../shared/staff-dashboard-reply';
 import { routeDashboardStaffReply } from './staff-dashboard-reply-route';
 import { conversationHandoffProcedures } from './routers-conversation-handoff';
+import { escalationReconciliationProcedures } from './routers-escalation-reconciliation';
 import { staffAttemptReviewProcedures } from './routers-staff-attempt-review';
 import { TRPCError } from "@trpc/server";
 import { permissionProcedure, router } from "./_core/trpc";
@@ -29,6 +30,7 @@ import {
 export const conversationsRouter = router({
     ...staffAttemptReviewProcedures,
     ...conversationHandoffProcedures,
+    ...escalationReconciliationProcedures,
     list: conversationInboxProcedure,
 
     // Lightweight: get only recent conversations (for Dashboard)

@@ -9,6 +9,7 @@ import { createSourcedEscalation, sendSourcedEscalationAlert, relayEscalationRep
 import { listEscalationRelays, reviewEscalationRelay, reconcileEscalationRelay, runEscalationReconciliationBatch } from './escalation-reconciliation';
 import { expireStaleEscalations } from '../db/learning';
 import { readStaffAcceptance } from './sales-staff-acceptance-contract';
+import {escalationReviewPage} from '../../shared/escalation-review';
 
 describe.skipIf(!process.env.DATABASE_URL)('durable escalation reconciliation and review', () => {
   let fixture: Awaited<ReturnType<typeof createDisposableMerchant>>, conversationId: number, escalationId: number, relayId: number, instanceId: number, deliveryId: number;
@@ -49,6 +50,27 @@ describe.skipIf(!process.env.DATABASE_URL)('durable escalation reconciliation an
     mock.send.mockClear();
   });
   afterEach(async () => { vi.restoreAllMocks(); await cleanupDisposableMerchants([fixture.userId]); }); afterAll(closeDb);
+
+  it('does not mix a previous relay revision with a concurrently saved review',async()=>{
+    await unknown();
+    const pool=(await getPool())!,connection=await pool.getConnection(),original=connection.execute.bind(connection);
+    vi.spyOn(pool,'getConnection').mockResolvedValueOnce(connection);let changed=false;
+    vi.spyOn(connection,'execute').mockImplementation((async(sql:string,args:any[])=>{
+      const result=await original(sql,args);
+      if(sql.includes('ORDER BY r.id DESC LIMIT 11')&&!changed){changed=true;
+        await query("INSERT INTO sales_escalation_reviews (merchant_id,relay_id,actor_user_id,revision,evidence_hash,outcome,note) VALUES (?,?,?,1,?,'unresolved','concurrent fixture review')",[fixture.merchantId,relayId,fixture.userId,'a'.repeat(64)]);
+        await query('UPDATE sales_escalation_relays SET review_revision=1 WHERE id=?',[relayId]);
+      }return result;
+    }) as any);
+    expect(escalationReviewPage.parse(await list()).items[0]).toMatchObject({revision:0,lastReview:null});vi.restoreAllMocks();
+    expect(escalationReviewPage.parse(await list()).items[0]).toMatchObject({revision:1,lastReview:{actorUserId:fixture.userId,note:'concurrent fixture review'}});
+  });
+  it('releases a failed snapshot and permits a later recovery read',async()=>{
+    const pool=(await getPool())!,connection=await pool.getConnection(),original=connection.execute.bind(connection);
+    const rollback=vi.spyOn(connection,'rollback'),release=vi.spyOn(connection,'release');vi.spyOn(pool,'getConnection').mockResolvedValueOnce(connection);
+    vi.spyOn(connection,'execute').mockImplementation(((sql:string,args:any[])=>sql.includes('ORDER BY revision DESC LIMIT 1')?Promise.reject(Error('fixture review read failed')):original(sql,args)) as any);
+    await expect(list()).rejects.toThrow('fixture review read failed');expect(rollback).toHaveBeenCalledOnce();expect(release).toHaveBeenCalledOnce();vi.restoreAllMocks();expect(escalationReviewPage.parse(await list()).items[0].id).toBe(relayId);
+  });
 
   it('repairs an accepted receipt after reconnection, learns only a pending proposal and preserves newer conversation activity',async () => {
     await query("UPDATE conversations SET lastMessageAt='2028-01-01 00:00:00' WHERE id=?",[conversationId]); await closeDb();

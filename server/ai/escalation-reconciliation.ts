@@ -6,6 +6,7 @@ import { checkoutTransaction } from './checkout-agreements';
 import { normalizeCampaignPhone } from '../automation/campaign-guard';
 import { assertSalesStaffAcceptanceSchema,recordStaffRelayAcceptance } from './sales-staff-acceptance';
 import { readStaffRelayBasis } from './sales-staff-acceptance-contract';
+import {databaseTimeEpoch} from '../db/time';
 
 const id = z.number().int().positive().safe();
 export const relayReviewSchema = z.object({ conversationId: id, relayId: id, expectedRevision: z.number().int().nonnegative(),
@@ -108,6 +109,16 @@ export async function reviewEscalationRelay(input: Review) {
 export async function listEscalationRelays(merchantId: number, conversationId: number, beforeId?: number) {
   id.parse(merchantId); id.parse(conversationId); if (beforeId !== undefined) id.parse(beforeId);
   const pool = await getPool(); if (!pool) throw new Error('Storage unavailable');
+  const connection=await pool.getConnection();
+  try {
+    await connection.query('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
+    await connection.query('START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY');
+    const result=await readEscalationRelays(connection,merchantId,conversationId,beforeId);
+    await connection.commit();return result;
+  } catch(error){await connection.rollback();throw error;}
+  finally{connection.release();}
+}
+async function readEscalationRelays(pool:PoolConnection,merchantId:number,conversationId:number,beforeId?:number){
   const [conversations] = await pool.execute<any[]>('SELECT id FROM conversations WHERE id=? AND merchantId=?', [conversationId,merchantId]);
   if (!conversations.length) throw new Error('Conversation unavailable');
   const [rows] = await pool.execute<any[]>(`${relaySql} WHERE r.merchant_id=? AND e.conversation_id=? AND r.id<? ORDER BY r.id DESC LIMIT 11`,
@@ -119,9 +130,9 @@ export async function listEscalationRelays(merchantId: number, conversationId: n
     const proof = inspect(r,deliveries[0]);
     items.push({ id: r.id as number, revision: r.review_revision as number, evidence: proof.evidence, state: proof.state, outcome: proof.outcome,
       projected: r.status === 'accepted', sourceMessageId: r.source_message_id as number, question: r.question as string, reply: r.reply_text as string,
-      authorPhone: r.author_phone as string, createdAt: new Date(r.created_at).toISOString(),
+      authorPhone: r.author_phone as string, createdAt: new Date(databaseTimeEpoch(r.created_at)).toISOString(),
       receipt: proof.receipt, lastReview: reviews[0] ? { actorUserId: reviews[0].actor_user_id as number, note: reviews[0].note as string,
-        outcome: reviews[0].outcome as Outcome, at: new Date(reviews[0].created_at).toISOString() } : null });
+        outcome: reviews[0].outcome as Outcome, at: new Date(databaseTimeEpoch(reviews[0].created_at)).toISOString() } : null });
   }
   return { items, nextCursor: rows.length > 10 ? rows[9].id as number : null };
 }
