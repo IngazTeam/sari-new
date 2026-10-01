@@ -8,7 +8,6 @@
 
 import {
   getActiveSubscriptionByMerchantId,
-  getConversationsByMerchantId,
   getDb,
   getPrimaryWhatsAppInstance,
 } from '../db.js';
@@ -17,13 +16,14 @@ import {
   CampaignTargetingError,
   completeCampaignWithoutRecipients,
   enqueueCampaignDeliveries,
-  filterCampaignAudience,
 } from '../automation/campaign-delivery-outbox';
 import {
   CampaignSuppressionUnavailableError,
   filterCampaignRecipients,
   normalizeCampaignPhone,
 } from '../automation/campaign-guard';
+
+import { readCampaignAudience, requireCompleteCampaignAudience } from '../campaign-audience';
 
 export async function checkScheduledCampaigns(): Promise<{
   checked: number;
@@ -32,7 +32,7 @@ export async function checkScheduledCampaigns(): Promise<{
   failed: number;
 }> {
   const db = await getDb();
-  if (!db) return { checked: 0, queued: 0, deferred: 0, failed: 0 };
+  if (!db) throw new Error('Database not available');
   const { campaigns } = await import('../../drizzle/schema.js');
   const { and, asc, eq, lte } = await import('drizzle-orm');
   const due = await db
@@ -48,10 +48,9 @@ export async function checkScheduledCampaigns(): Promise<{
 
   for (const campaign of due) {
     try {
-      const [subscription, instance, conversations] = await Promise.all([
+      const [subscription, instance] = await Promise.all([
         getActiveSubscriptionByMerchantId(campaign.merchantId),
         getPrimaryWhatsAppInstance(campaign.merchantId),
-        getConversationsByMerchantId(campaign.merchantId),
       ]);
       if (!subscription || !instance || instance.status !== 'active') {
         deferred++;
@@ -60,7 +59,7 @@ export async function checkScheduledCampaigns(): Promise<{
 
       let targeted;
       try {
-        targeted = filterCampaignAudience(conversations, campaign.targetAudience);
+        targeted = requireCompleteCampaignAudience(await readCampaignAudience(campaign.merchantId, campaign.targetAudience));
       } catch (error) {
         if (error instanceof CampaignTargetingError) {
           failed++;

@@ -429,7 +429,7 @@ export async function filterCampaignRecipients(
   if (!options?.skipQuietHours && isQuietHours(22, 8, merchantTz)) {
     return {
       allowed: [],
-      blocked: phones.map(p => ({ phone: p, reason: 'quiet_hours' })),
+      blocked: [...blocked, ...phones.map(p => ({ phone: p, reason: 'quiet_hours' }))],
       warnings: ['الإرسال محجوب خلال ساعات الهدوء (10 مساءً - 8 صباحاً)'],
     };
   }
@@ -441,7 +441,7 @@ export async function filterCampaignRecipients(
     if (maxToSend === 0) {
       return {
         allowed: [],
-        blocked: phones.map(p => ({ phone: p, reason: 'rate_limit' })),
+        blocked: [...blocked, ...phones.map(p => ({ phone: p, reason: 'rate_limit' }))],
         warnings: [`تم تجاوز الحد اليومي (${rateCheck.limit} رسالة/يوم)`],
       };
     }

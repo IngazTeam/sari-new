@@ -26,7 +26,6 @@ import {
   getCampaignById,
   getCampaignLogsWithStats,
   getCampaignsByMerchantId,
-  getConversationsByMerchantId,
   getMerchantById,
   getPrimaryWhatsAppInstance,
   updateEditableCampaign,
@@ -41,12 +40,14 @@ import {
   CampaignDispatchConflictError,
   CampaignTargetingError,
   enqueueCampaignDeliveries,
-  filterCampaignAudience,
   getCampaignAcceptanceTimeline,
   getCampaignDeliveryProgress,
   getCampaignManualReviewSummary,
   isValidCampaignTargetAudience,
 } from './automation/campaign-delivery-outbox';
+
+import { campaignAudienceSchema, parseCampaignAudience } from '../shared/campaign-audience';
+import { CampaignAudienceLimitError, readCampaignAudience, requireCompleteCampaignAudience } from './campaign-audience';
 
 const campaignImageUrlSchema = z.string().url().max(500).refine(value => {
     try {
@@ -231,25 +232,18 @@ export const campaignsRouter = router({
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'An active subscription is required' });
             }
 
-            const conversations = await getConversationsByMerchantId(merchant.id);
-            let targeted: typeof conversations;
+            let uniqueRecipients;
             try {
-                targeted = filterCampaignAudience(conversations, campaign.targetAudience);
+                parseCampaignAudience(campaign.targetAudience);
+                uniqueRecipients = requireCompleteCampaignAudience(await readCampaignAudience(merchant.id, campaign.targetAudience));
             } catch (error) {
                 if (error instanceof CampaignTargetingError) {
                     throw new TRPCError({ code: 'BAD_REQUEST', message: 'Campaign targeting must be reviewed before sending' });
                 }
-                throw error;
-            }
-
-            const phoneSet = new Set<string>();
-            const uniqueRecipients: typeof targeted = [];
-            for (const conv of targeted) {
-                const phone = normalizeCampaignPhone(conv.customerPhone);
-                if (phone && !phoneSet.has(phone)) {
-                    phoneSet.add(phone);
-                    uniqueRecipients.push(conv);
+                if (error instanceof CampaignAudienceLimitError) {
+                    throw new TRPCError({ code: 'PRECONDITION_FAILED', message: error.message });
                 }
+                throw error;
             }
 
             if (uniqueRecipients.length === 0) {
@@ -435,39 +429,14 @@ export const campaignsRouter = router({
 
     // Filter customers for targeting (migrated from legacy router)
     filterCustomers: permissionProcedure('campaigns.manage')
-        .input(z.object({
-            lastActivityDays: z.number().optional(),
-            purchaseCountMin: z.number().optional(),
-            purchaseCountMax: z.number().optional(),
-        }))
+        .input(campaignAudienceSchema)
         .query(async ({ input, ctx }) => {
             const merchant = await getMerchantById(ctx.merchantId);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
 
-            const conversations = await getConversationsByMerchantId(merchant.id);
-            let filtered = conversations;
-
-            if (input.lastActivityDays) {
-                const cutoffDate = new Date();
-                cutoffDate.setDate(cutoffDate.getDate() - input.lastActivityDays);
-                filtered = filtered.filter(c =>
-                    c.lastActivityAt && new Date(c.lastActivityAt) >= cutoffDate
-                );
-            }
-
-            if (input.purchaseCountMin !== undefined) {
-                filtered = filtered.filter(c => c.purchaseCount >= input.purchaseCountMin!);
-            }
-            if (input.purchaseCountMax !== undefined) {
-                filtered = filtered.filter(c => c.purchaseCount <= input.purchaseCountMax!);
-            }
-
-            return {
-                customers: filtered,
-                count: filtered.length,
-            };
+            return readCampaignAudience(merchant.id, JSON.stringify(input));
         }),
 
     // Main dashboard stats

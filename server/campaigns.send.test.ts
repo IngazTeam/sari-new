@@ -1,11 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks=vi.hoisted(()=>({merchant:vi.fn(),campaign:vi.fn(),instance:vi.fn(),subscription:vi.fn(),customers:vi.fn(),enqueue:vi.fn()}));
 vi.mock('./accounts/merchant-access',()=>({resolveMerchantAccess:vi.fn().mockResolvedValue({merchantId:73,role:'owner',memberId:1})}));
-vi.mock('./db',async original=>({...await original<typeof import('./db')>(),getMerchantById:mocks.merchant,getCampaignById:mocks.campaign,getPrimaryWhatsAppInstance:mocks.instance,getActiveSubscriptionByMerchantId:mocks.subscription,getConversationsByMerchantId:mocks.customers}));
+vi.mock('./db',async original=>({...await original<typeof import('./db')>(),getMerchantById:mocks.merchant,getCampaignById:mocks.campaign,getPrimaryWhatsAppInstance:mocks.instance,getActiveSubscriptionByMerchantId:mocks.subscription,}));
 vi.mock('./automation/campaign-delivery-outbox',async original=>({...await original<typeof import('./automation/campaign-delivery-outbox')>(),enqueueCampaignDeliveries:mocks.enqueue}));
+vi.mock('./campaign-audience',async original=>({...await original<typeof import('./campaign-audience')>(),readCampaignAudience:mocks.customers}));
 import {campaignsRouter} from './routers-campaigns';
 const caller=()=>campaignsRouter.createCaller({user:{id:21,role:'user'}} as any);
-beforeEach(()=>{for(const mock of Object.values(mocks))mock.mockReset();mocks.merchant.mockResolvedValue({id:73,status:'active'});mocks.campaign.mockResolvedValue({id:7,merchantId:73,status:'draft',message:'Fixture',targetAudience:'{}'});mocks.instance.mockResolvedValue({id:5,status:'active'});mocks.subscription.mockResolvedValue({id:6});mocks.customers.mockResolvedValue([]);});
+beforeEach(()=>{for(const mock of Object.values(mocks))mock.mockReset();mocks.merchant.mockResolvedValue({id:73,status:'active'});mocks.campaign.mockResolvedValue({id:7,merchantId:73,status:'draft',message:'Fixture',targetAudience:'{}'});mocks.instance.mockResolvedValue({id:5,status:'active'});mocks.subscription.mockResolvedValue({id:6});mocks.customers.mockResolvedValue({customers:[],recipientCount:0});});
 describe('campaign send boundaries without database or provider side effects',()=>{
   it('returns the requested campaign of the verified tenant',async()=>{expect(await caller().getById({id:7})).toMatchObject({id:7,merchantId:73});expect(mocks.campaign).toHaveBeenCalledWith(7);});
   it('rejects a completed campaign before reading recipients or dispatching',async()=>{mocks.campaign.mockResolvedValue({id:7,merchantId:73,status:'completed'});await expect(caller().send({id:7})).rejects.toMatchObject({code:'BAD_REQUEST',message:'Campaign already sent or in progress'});expect(mocks.customers).not.toHaveBeenCalled();expect(mocks.enqueue).not.toHaveBeenCalled();});

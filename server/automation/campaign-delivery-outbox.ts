@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import type { PoolConnection, RowDataPacket } from 'mysql2/promise';
-import { z } from 'zod';
+import { campaignRecipientLimit } from '../../shared/campaign-audience';
+export { CampaignTargetingError, filterCampaignAudience, isValidCampaignTargetAudience } from '../../shared/campaign-audience';
 import { getPool } from '../db';
 import { assertRuntimeSchema } from '../db/schema-readiness';
 import {
@@ -18,28 +19,10 @@ const MAX_ATTEMPTS = 8;
 const STALE_LEASE_MINUTES = 5;
 const PROVIDER_WINDOW_LIMIT = 10;
 const PROVIDER_WINDOW_MICROSECONDS = 1_000_000;
-const MAX_RECIPIENTS = 2_000;
+const MAX_RECIPIENTS = campaignRecipientLimit;
 
 let workerTimer: NodeJS.Timeout | null = null;
 let workerRunning = false;
-
-const campaignAudienceSchema = z.object({
-  lastActivityDays: z.number().int().min(1).max(3650).optional(),
-  purchaseCountMin: z.number().int().min(0).max(1_000_000).optional(),
-  purchaseCountMax: z.number().int().min(0).max(1_000_000).optional(),
-}).strict().refine(
-  value => value.purchaseCountMin === undefined
-    || value.purchaseCountMax === undefined
-    || value.purchaseCountMin <= value.purchaseCountMax,
-  { message: 'Invalid purchase count range' },
-);
-
-type AudienceCustomer = {
-  id?: number | null;
-  customerPhone: string;
-  lastActivityAt?: string | Date | null;
-  purchaseCount: number;
-};
 
 type CampaignDeliveryRow = RowDataPacket & {
   id: number;
@@ -92,13 +75,6 @@ export class CampaignDispatchConflictError extends Error {
   }
 }
 
-export class CampaignTargetingError extends Error {
-  constructor() {
-    super('Campaign targeting definition is invalid');
-    this.name = 'CampaignTargetingError';
-  }
-}
-
 class RetriableCampaignDeliveryError extends Error {
   constructor(readonly code: string) {
     super(code);
@@ -129,44 +105,6 @@ async function ensureCampaignOutboxSchema(): Promise<void> {
     { table: 'whatsapp_message_deliveries', columns: ['idempotency_key', 'provider_message_id', 'status'] },
     { table: 'occasion_campaigns', columns: ['campaign_id', 'merchantId', 'status', 'recipientCount', 'sentAt'] },
   ]);
-}
-
-function parseCampaignAudience(value: string | null | undefined): z.infer<typeof campaignAudienceSchema> {
-  if (!value) return {};
-  if (value.length > 1_000) throw new CampaignTargetingError();
-  try {
-    return campaignAudienceSchema.parse(JSON.parse(value));
-  } catch {
-    throw new CampaignTargetingError();
-  }
-}
-
-export function isValidCampaignTargetAudience(value: string): boolean {
-  try {
-    parseCampaignAudience(value);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-export function filterCampaignAudience<T extends AudienceCustomer>(
-  customers: T[],
-  targetAudience: string | null | undefined,
-): T[] {
-  const filters = parseCampaignAudience(targetAudience);
-  const cutoff = filters.lastActivityDays === undefined
-    ? null
-    : Date.now() - (filters.lastActivityDays * 24 * 60 * 60 * 1_000);
-  return customers.filter(customer => {
-    if (cutoff !== null) {
-      const activity = customer.lastActivityAt ? new Date(customer.lastActivityAt).getTime() : Number.NaN;
-      if (!Number.isFinite(activity) || activity < cutoff) return false;
-    }
-    if (filters.purchaseCountMin !== undefined && customer.purchaseCount < filters.purchaseCountMin) return false;
-    if (filters.purchaseCountMax !== undefined && customer.purchaseCount > filters.purchaseCountMax) return false;
-    return true;
-  });
 }
 
 function normalizeRecipients(recipients: Array<{ customerId?: number | null; phone: string }>) {
