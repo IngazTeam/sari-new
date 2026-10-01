@@ -13,6 +13,18 @@ beforeEach(()=>{
 });
 afterEach(()=>dom.window.close());
 const send=(data:any,origin='http://127.0.0.1:4329',source=frame.contentWindow)=>w.dispatchEvent(new w.MessageEvent('message',{origin,source,data}));
+it('syncs campaign pages and filters only from the owned frame without replacing its local model',()=>{
+  frame.setAttribute('src','./campaign-workspace.html?embed=brain');w.history.replaceState(null,'','#/page/merchant/campaigns');
+  const message={type:'sary-brain-preview',action:'campaignState',search:'path=%2Fmerchant%2Fcampaigns%2F3%2Freport&view=results&page=2&tenant=259&lang=en'};
+  for(const search of ['path=https://example.com','path=/merchant/settings','tenant=999','token=secret','page=1000001','q=a&q=b','view=bad','q='+ 'x'.repeat(201)])send({...message,search});
+  send(message,'https://example.com');send(message,undefined,w);expect(w.location.hash).toBe('#/page/merchant/campaigns');send(message);expect(w.location.hash).toBe('#/page/merchant/campaigns/3/report?view=results&page=2&tenant=259&lang=en');expect(frame.isConnected).toBe(true);
+  frame.setAttribute('src','./dashboard.html?embed=brain');send({...message,search:'path=/merchant/campaigns/new'});expect(w.location.hash).toContain('/3/report');
+  const policy=previewPolicy('/campaign-workspace.html',new URLSearchParams('embed=brain'));expect(policy).toContain("frame-ancestors 'self'");expect(policy).toContain("connect-src 'none'");expect(previewPolicy('/campaign-workspace.html',new URLSearchParams())).toContain("frame-ancestors 'none'");
+});
+it('allows campaign recovery tools only from the owned frame and fixed destinations',()=>{
+  frame.setAttribute('src','./campaign-workspace.html?embed=brain');const message={type:'sary-brain-preview',action:'campaignTool',route:'/merchant/tools'};
+  send(message,'https://example.com');send(message,undefined,w);send({...message,route:'/merchant/settings'});expect(w.location.hash).toBe('');send(message);expect(w.location.hash).toBe('#/page/merchant/tools');
+});
 it('allows the actual inbox frame and local audio previews while continuing to block connections and foreign frames',()=>{
   const policy=previewPolicy('/inbox.html',new URLSearchParams('embed=brain'));
   expect(policy).toContain("frame-ancestors 'self'");expect(policy).toContain("media-src 'self' blob:");expect(policy).toContain("connect-src 'none'");

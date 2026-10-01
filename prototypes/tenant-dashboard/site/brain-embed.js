@@ -1,10 +1,22 @@
 // Same-origin, allowlisted communication between the central mockup and its actual-component previews.
 (() => {
-  const pages = new Set(['knowledge-groups.html','sales-knowledge.html','brain-preview.html','reply-quality.html','knowledge-activity.html','personas.html','assistant-options.html','assistant-settings.html','dashboard.html','sales-analytics.html','messages-analytics.html','inbox.html']);
+  const pages = new Set(['knowledge-groups.html','sales-knowledge.html','brain-preview.html','reply-quality.html','knowledge-activity.html','personas.html','assistant-options.html','assistant-settings.html','dashboard.html','sales-analytics.html','messages-analytics.html','inbox.html','campaign-workspace.html']);
   const dashboardDestinations=new Set(["/merchant/conversations","/merchant/conversations?needs_human=1","/merchant/conversations?phone=ux-customer-051","/merchant/conversations?phone=ux-customer-052","/merchant/products","/merchant/campaigns","/merchant/campaigns/new","/merchant/reviews","/merchant/reports","/merchant/analytics","/merchant/analytics-hub","/merchant/orders","/merchant/services/new","/merchant/sales-hub","/merchant/setup-wizard","/merchant/bot-settings","/merchant/whatsapp","/merchant/whatsapp-instances","/merchant/test-sari","/merchant/my-subscription","/merchant/subscription/plans","/merchant/subscription/compare","/merchant/platform-integrations","/merchant/sari-brain","/merchant/sari-brain?view=overview","/merchant/sari-brain?view=sources","/merchant/sari-brain?view=knowledge&pane=conflicts","/merchant/sari-brain?view=knowledge&pane=pages","/merchant/sari-brain?view=knowledge&pane=faq","/merchant/sari-brain?view=knowledge&pane=sections","/merchant/sari-brain?view=sales"]);
   const messagesDestinations=new Set(['/merchant/tools','/merchant/dashboard']);
   const inboxDestinations=new Set(['/merchant/tools','/merchant/dashboard','/merchant/whatsapp-instances']);
   const isInbox=url=>url.pathname==='/inbox.html' && new URLSearchParams(url.search).get('embed')==='brain';
+  const isCampaign=url=>url.pathname==='/campaign-workspace.html' && new URLSearchParams(url.search).get('embed')==='brain';
+  const campaignState=search=>{
+    if(typeof search!=='string'||search.length>1400)return null;
+    const input=new URLSearchParams(search),output=new URLSearchParams(),seen=new Set();let path='/merchant/campaigns';
+    for(const [key,value] of input){
+      if(key==='embed'&&value==='brain')continue;
+      if(seen.has(key))return null;seen.add(key);
+      const valid=key==='path'?/^\/merchant\/campaigns(?:\/new|\/[1-9]\d{0,15}(?:\/edit|\/report)?)?$/.test(value):key==='lang'?['ar','en'].includes(value):key==='tenant'?['258','259'].includes(value):key==='scenario'?/^[a-z-]{1,24}$/.test(value):key==='q'?value.length<=200&&!/[\u0000-\u001f]/.test(value):key==='page'?/^[1-9]\d{0,6}$/.test(value)&&Number(value)<=1000000:key==='status'?['all','draft','scheduled','sending','completed','failed','pending','processing','sent','suppressed','manual_review','success'].includes(value):key==='review'?['1','send'].includes(value):key==='tab'?['list','performance'].includes(value):key==='days'?['7','30','90'].includes(value):key==='view'?['recipients','results'].includes(value):false;
+      if(!valid)return null;if(key==='path')path=value;else output.set(key,value);
+    }
+    return path+(output.size?'?'+output.toString():'');
+  };
   const inboxState=search=>{
     if(typeof search!=='string'||search.length>2800)return null;
     const input=new URLSearchParams(search),output=new URLSearchParams(),seen=new Set();
@@ -25,6 +37,10 @@
   const embedded = parent !== window && new URLSearchParams(location.search).get('embed') === 'brain' && pages.has(location.pathname.split('/').pop());
   if (embedded) {
     document.documentElement.dataset.brainEmbedded = 'true';
+    if(isCampaign(location)){
+      const sync=()=>{const route=campaignState(location.search);if(route!==null)parent.postMessage({type:'sary-brain-preview',action:'campaignState',search:location.search},location.origin);};
+      addEventListener('popstate',sync);sync();
+    }
     if(isInbox(location)){
       const sync=()=>{const search=inboxState(location.search);if(search!==null)parent.postMessage({type:'sary-brain-preview',action:'inboxState',search},location.origin);};
       addEventListener('popstate',sync);sync();
@@ -34,6 +50,7 @@
       if(!anchor || event.defaultPrevented || event.button!==0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey)return;
       const url=new URL(anchor.getAttribute('href'),location.href);
       const tool = url.hash.startsWith('#/page') ? url.hash.slice(6) : '';
+      if(isCampaign(location) && url.origin===location.origin && url.pathname==='/' && !url.search && messagesDestinations.has(tool)){event.preventDefault();parent.postMessage({type:'sary-brain-preview',action:'campaignTool',route:tool},location.origin);return;}
       if(isInbox(location) && url.origin===location.origin && url.pathname==='/' && !url.search && inboxDestinations.has(tool)){event.preventDefault();parent.postMessage({type:'sary-brain-preview',action:'inboxTool',route:tool},location.origin);return;}
       if(isMessages(location) && url.origin===location.origin && url.pathname==='/' && !url.search && messagesDestinations.has(tool)){event.preventDefault();parent.postMessage({type:'sary-brain-preview',action:'messagesTool',route:tool},location.origin);return;}
       if(isSales(location) && url.origin===location.origin && url.pathname==='/' && !url.search && salesDestinations.has(tool)){event.preventDefault();parent.postMessage({type:'sary-brain-preview',action:'salesTool',route:tool},location.origin);return;}
@@ -109,6 +126,10 @@
     const message=event.data;
     if (!message || typeof message !== 'object' || message.type!=='sary-brain-preview') return;
     if(message.action==='inboxTool' && isInbox(url) && inboxDestinations.has(message.route))location.hash='#/page'+message.route;
+    if(message.action==='campaignTool' && isCampaign(url) && messagesDestinations.has(message.route))location.hash='#/page'+message.route;
+    if(message.action==='campaignState' && isCampaign(url) && /^#\/page\/merchant\/campaigns(?:\/|\?|$)/.test(location.hash)){
+      const route=campaignState(message.search);if(route!==null)history.replaceState(null,'','#/page'+route);
+    }
     if(message.action==='inboxState' && isInbox(url) && location.hash.split('?')[0]==='#/page/merchant/conversations'){
       const search=inboxState(message.search);
       if(search!==null)history.replaceState(null,'','#/page/merchant/conversations'+(search?'?'+search:''));

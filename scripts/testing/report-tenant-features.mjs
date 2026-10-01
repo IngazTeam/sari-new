@@ -11,6 +11,11 @@ const sourceDate = new Date(inventory.generatedAt).toLocaleDateString("ar-SA", {
   day: "numeric",
 });
 const specifics = {
+  ...Object.fromEntries(['/merchant/campaigns','/merchant/campaigns/new','/merchant/campaigns/:id','/merchant/campaigns/:id/edit','/merchant/campaigns/:id/report'].map(route=>[route,{
+    level:'تفصيلي',implemented:true,
+    sections:['مكونات التطبيق الفعلية للقائمة والأداء والتفاصيل والتقرير والمحرر، مع البحث والحالات والصفحات والتصدير الكامل','حقول الرسالة والصورة والجمهور المخصص والجدولة بتوقيت المتجر، والتحقق بجانب الحقول ومراجعة مستقلة للحفظ والإرسال','موك أب بتيننتين ولغتين و20 حالة، وحفظ وتنقل ومراجعات محلية؛ تقاعد نموذج الحملات اليدوي القديم'],
+    gaps:['راجع tenant-campaign-prototype-2026-10-01 وتقارير مصادر وواجهات الحملات237–257. فُحصت عروض480/390/320 بإطارات محلية؛ Safari/iPhone الفعلي ومزود واتساب غير مختبرين.','بيانات الموك أب وإيصالاته مؤقتة في الذاكرة. قبول المزود لا يثبت التسليم أو القراءة أو المبيعات؛ لا توجد نسبة احتراف مبيعات مستنتجة من الحملات.']
+  }])),
   "/merchant/conversations": {
     level: "تفصيلي", implemented: true,
     sections: [
@@ -415,14 +420,6 @@ Object.assign(specifics, {
     sections: [],
     gaps: [
       "اكتمل التطبيق والموك أب للتبويبات الثلاثة والفترة والترقيم والعينات والتحديث وحالات الفشل وCSV للصفحة الحالية. راجع tenant-insights-workspace-2026-09-29 وtenant-insights-prototype-2026-09-29. يبقى تنزيل CSV الحي وSafari/iPhone وواجهات الكلمات والتوليد القديمة ودليل القياس الفعلي مفتوحة.",
-    ],
-  },
-  "/merchant/campaigns": {
-    level: "تفصيلي جزئي",
-    implemented: true,
-    sections: [],
-    gaps: [
-      "نُقل تقرير الأداء القديم إلى تبويب داخل التطبيق والموك أب، مع القبول المؤكد والعينة والفترات 7/30/90 والجدول والخطأ والفراغ؛ راجع tenant-campaign-performance-2026-09-28. فُحص Chrome عند 320 و390 بكسل. تبقى مطابقة الجمهور والموافقة والقالب والجدولة والمسودة والمراجعة والإرسال والتعديل والحذف والتصدير وتقرير الحملة الفردي، وSafari/iPhone الحقيقي.",
     ],
   },
   "/merchant/ab-tests": {
