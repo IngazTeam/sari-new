@@ -128,7 +128,7 @@ export class AssistantSettingsPreviewModel {
   private checkedAt = new Date().toISOString();
   constructor(
     readonly merchantId: number,
-    private storage: Pick<Storage, "getItem" | "setItem">
+    private storage: Pick<Storage, "getItem" | "setItem">,
   ) {
     if (![181, 182].includes(merchantId)) throw Error("Invalid sample tenant");
     this.state = initial(merchantId);
@@ -233,7 +233,7 @@ export class AssistantSettingsPreviewModel {
       const now = new Date(
           new Date(this.checkedAt).toLocaleString("en-US", {
             timeZone: "Asia/Riyadh",
-          })
+          }),
         ),
         day = now.getDay(),
         time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
@@ -332,6 +332,7 @@ export class AssistantSettingsPreviewModel {
     this.readable();
     if (this.mode === "policy-load-error") throw failure();
     return {
+      merchantId: this.merchantId,
       policy: structuredClone(this.state[kind]),
       revision: this.state[`${kind}Version`],
       evidence: this.proof(kind),
@@ -381,7 +382,13 @@ export class AssistantSettingsPreviewModel {
     }
     this.commit(next);
     this.after(kind);
-    return this.policy(kind);
+    return {
+      ...this.policy(kind),
+      merchantId:
+        this.mode === "foreign-result"
+          ? this.merchantId + 100
+          : this.merchantId,
+    };
   }
   async preview(raw: unknown) {
     this.writable();

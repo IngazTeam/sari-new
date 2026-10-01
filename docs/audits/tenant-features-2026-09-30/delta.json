@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-01T04:49:37.639Z",
+  "generatedAt": "2026-10-01T05:15:20.952Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 333,
-      "controls": 2188
+      "files": 335,
+      "controls": 2186
     }
   },
   "addedFiles": [
@@ -21,6 +21,7 @@
     "client/src/lib/setup-field-validation.ts",
     "client/src/pages/setup-wizard/WorkingHoursFields.tsx",
     "client/src/lib/knowledge-workspace-cache.ts",
+    "client/src/lib/sales-policy-draft.ts",
     "client/src/lib/setup-website-draft.ts",
     "client/src/lib/setup-website-product.ts",
     "client/src/lib/test-sari-session.ts",
@@ -89,6 +90,7 @@
     "client/src/components/merchant/AssistantPersonalityFields.tsx",
     "client/src/components/merchant/AssistantReplyPreview.tsx",
     "client/src/components/merchant/AssistantScheduleStatus.tsx",
+    "client/src/components/merchant/ReviewedSalesPolicy.tsx",
     "client/src/constants/botTemplates.ts",
     "client/src/components/merchant/AssistantOptionReview.tsx",
     "client/src/components/merchant/AssistantOptionRecovery.tsx",
@@ -198,6 +200,8 @@
     "client/src/pages/merchant/TestSari.tsx",
     "client/src/pages/merchant/MetricsDashboard.tsx",
     "client/src/pages/merchant/BotSettings.tsx",
+    "client/src/components/CheckoutMarginPolicySettings.tsx",
+    "client/src/components/DiscountPolicySettings.tsx",
     "client/src/pages/merchant/HumanTakeoverSettings.tsx",
     "client/src/pages/merchant/VirtualTeamPage.tsx",
     "client/src/components/AgentAvatars.tsx",
@@ -822,7 +826,7 @@
     {
       "route": "/merchant/bot-settings",
       "controlsBefore": 37,
-      "controlsNow": 58,
+      "controlsNow": 56,
       "removedQueries": [],
       "addedQueries": [
         "auth.me",
@@ -879,7 +883,7 @@
     {
       "route": "/merchant/sari-brain",
       "controlsBefore": 275,
-      "controlsNow": 415,
+      "controlsNow": 413,
       "removedQueries": [
         "sariBrain.getFaqs",
         "sariBrain.getKnowledgeSections",

@@ -31,19 +31,19 @@ export const botSettingsRouter = router({
         catch { throw new TRPCError({ code:'INTERNAL_SERVER_ERROR',message:'Takeover conversations unavailable' }); }
     }),
     getMarginPolicy: merchantProcedure.query(async ({ctx}) => {
-        try { return { ...await getMarginPolicy(ctx.merchantId), canManage: hasPermission(ctx.merchantRole,'bot_settings.manage') }; }
+        try { return { ...await getMarginPolicy(ctx.merchantId), merchantId: ctx.merchantId, canManage: hasPermission(ctx.merchantRole,'bot_settings.manage') }; }
         catch { throw new TRPCError({code:'CONFLICT',message:'Margin policy unavailable'}); }
     }),
     updateMarginPolicy: permissionProcedure('bot_settings.manage').input(marginPolicyUpdateSchema).mutation(async ({ctx,input}) => {
-        try { return await updateMarginPolicy({...input,merchantId:ctx.merchantId,actorUserId:ctx.user.id}); }
+        try { return { ...await updateMarginPolicy({...input,merchantId:ctx.merchantId,actorUserId:ctx.user.id}), merchantId: ctx.merchantId }; }
         catch { throw new TRPCError({code:'CONFLICT',message:'Margin policy changed or unavailable; refresh and review again'}); }
     }),
     getDiscountPolicy: merchantProcedure.query(async ({ ctx }) => {
-        try { return { ...await getDiscountPolicy(ctx.merchantId), canManage: hasPermission(ctx.merchantRole, 'bot_settings.manage') }; }
+        try { return { ...await getDiscountPolicy(ctx.merchantId), merchantId: ctx.merchantId, canManage: hasPermission(ctx.merchantRole, 'bot_settings.manage') }; }
         catch { throw new TRPCError({ code: 'CONFLICT', message: 'Discount settings unavailable' }); }
     }),
     updateDiscountPolicy: permissionProcedure('bot_settings.manage').input(discountPolicyUpdateSchema).mutation(async ({ ctx, input }) => {
-        try { return await updateDiscountPolicy({ ...input, merchantId: ctx.merchantId, actorUserId: ctx.user.id }); }
+        try { return { ...await updateDiscountPolicy({ ...input, merchantId: ctx.merchantId, actorUserId: ctx.user.id }), merchantId: ctx.merchantId }; }
         catch { throw new TRPCError({ code: 'CONFLICT', message: 'Discount settings changed or unavailable; refresh and review again' }); }
     }),
     // Get bot settings for current merchant

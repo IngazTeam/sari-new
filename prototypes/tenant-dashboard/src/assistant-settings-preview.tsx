@@ -105,8 +105,8 @@ function Preview() {
                   ? "شاشة التطبيق الفعلية. روابط الأقسام تفتح بيانات محاكاة محلية؛ لا اتصال بمتجر أو خدمات خارجية."
                   : "Actual application screen. Section links open local sample data; no store or external service connection."
                 : ar
-                  ? "شاشة التطبيق الفعلية ببيانات محاكاة معزولة. لا اتصال بمتجر أو ذكاء اصطناعي أو واتساب؛ الردود أمثلة ثابتة لا تقيس جودة المعرفة أو المبيعات. تبقى بيانات التجربة ومسودة السلوك في هذا التبويب. تغيير الحالة يعيد بيانات التجربة ويحافظ على مسودة السلوك؛ مسودات سياسات البيع مؤقتة داخل الصفحة."
-                  : "Actual application screen with isolated sample data. No store, AI, or WhatsApp connection; replies are fixed layout samples and do not measure knowledge or sales quality. Sample data and behaviour drafts stay in this tab. Changing scenarios resets sample data and retains the behaviour draft; sales policy drafts are temporary within the page."}
+                  ? "شاشة التطبيق الفعلية ببيانات محاكاة معزولة. لا اتصال بمتجر أو ذكاء اصطناعي أو واتساب؛ الردود أمثلة ثابتة لا تقيس جودة المعرفة أو المبيعات. تبقى بيانات التجربة ومسودة السلوك في هذا التبويب. تغيير الحالة يعيد بيانات التجربة ويحافظ على مسودة السلوك؛ تُحفظ مسودات سياسات البيع بصورة مستقلة لمدة 24 ساعة في التبويب، وتُراجع قبل إعادة الحفظ."
+                  : "Actual application screen with isolated sample data. No store, AI, or WhatsApp connection; replies are fixed layout samples and do not measure knowledge or sales quality. Sample data and behaviour drafts stay in this tab. Changing scenarios resets sample data and retains the behaviour draft; sales policy drafts are saved separately in this tab for 24 hours and reviewed before another save."}
             </p>
             <div className="flex flex-wrap gap-3">
               {!hub && (

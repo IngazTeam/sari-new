@@ -12069,4 +12069,26 @@
   "analytics": "Sari analytics",
   "analyticsDescription": "Review recorded metrics and sample size; numbers alone do not prove knowledge quality or sales proficiency."
 }
+,
+  "salesPolicyDraftUx": {
+  "privacy": "This policy draft stays in this tab for 24 hours after the last edit, scoped to this account and store, and is cleared on sign-out. It is not sent until you review and save it.",
+  "pendingFound": "A saved draft has an unconfirmed save request. Restore it and review the latest policy before another attempt. Removing the local draft does not cancel the request.",
+  "found": "A draft is saved in this tab. Restore it and review the latest policy, or remove the local draft.",
+  "unreadable": "The draft could not be restored or has expired. Local data was not replaced. You can remove it and read the saved policy.",
+  "restore": "Restore draft",
+  "discard": "Remove local draft",
+  "storageFailed": "The draft could not be saved in tab storage. A new save request will not start until storage succeeds. Keep this page open.",
+  "uncertain": "The save result is unconfirmed. Removing the draft does not cancel the request. Review the latest policy before trying again.",
+  "reviewRequired": "Review the latest policy before saving this draft.",
+  "readFailed": "The save could not be confirmed or the latest policy could not be read. Your draft is unchanged.",
+  "reviewLatest": "Read latest policy for review",
+  "reviewTitle": "Compare policy and draft",
+  "latest": "Saved now:",
+  "draft": "Your draft:",
+  "reviewHelp": "Choose which version to use. This does not save anything on the server; review the authority and save separately if needed. Matching values do not prove that your earlier request saved them.",
+  "useLatest": "Use saved policy and remove my edits",
+  "keepDraft": "Keep my draft for review",
+  "historyScope": "The latest 10 recorded changes to this policy in the current store.",
+  "working": "Checking…"
+}
 }

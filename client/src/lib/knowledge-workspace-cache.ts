@@ -1,3 +1,4 @@
+import { clearSalesPolicyDrafts } from './sales-policy-draft';
 export type KnowledgeDraft = {
   name: string;
   content: string;
@@ -87,6 +88,7 @@ export function forgetKnowledgeAttempt(key: string, requestId: string | null) {
 }
 export function clearKnowledgeWorkspace() {
   epoch++;
+  clearSalesPolicyDrafts();
   drafts.clear();
   window.removeEventListener('beforeunload', warn);
   try {
