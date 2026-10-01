@@ -6,6 +6,7 @@ vi.mock('./campaign-audience', async original => ({ ...await original<typeof imp
 vi.mock('./automation/campaign-guard', async original => ({ ...await original<typeof import('./automation/campaign-guard')>(), filterCampaignRecipients: mocks.guard }));
 vi.mock('./automation/campaign-delivery-outbox', async original => ({ ...await original<typeof import('./automation/campaign-delivery-outbox')>(), enqueueCampaignDeliveries: mocks.enqueue }));
 import { campaignsRouter } from './routers-campaigns';
+import { CampaignCapacityUnavailableError } from './campaign-capacity';
 const caller = () => campaignsRouter.createCaller({ user: { id: 21, role: 'user' } } as any);
 beforeEach(() => {
   for (const mock of Object.values(mocks)) mock.mockReset();
@@ -32,6 +33,9 @@ describe('manual campaigns and preview use the verified audience', () => {
   it('does not turn failed audience storage into an empty preview or a send', async () => {
     mocks.audience.mockRejectedValue(Error('Unavailable audience storage')); await expect(caller().filterCustomers({})).rejects.toThrow('Unavailable audience storage');
     await expect(caller().send({ id: 7 })).rejects.toThrow('Unavailable audience storage'); expect(mocks.enqueue).not.toHaveBeenCalled();
+  });
+  it('reports capacity evidence failure as service unavailable before dispatch', async () => {
+    mocks.guard.mockRejectedValue(new CampaignCapacityUnavailableError());await expect(caller().send({id:7})).rejects.toMatchObject({code:'SERVICE_UNAVAILABLE',message:'تعذر التحقق من حصة رسائل الاشتراك. لم يبدأ إرسال الحملة.'});expect(mocks.enqueue).not.toHaveBeenCalled();
   });
   it.each(['quiet_hours','rate_limit'])('does not send the allowed portion when another portion is temporarily blocked by %s', async reason => {
     mocks.guard.mockResolvedValue({ allowed: ['966500000002'], blocked: [{ phone: '966500000001', reason }], warnings: [] });

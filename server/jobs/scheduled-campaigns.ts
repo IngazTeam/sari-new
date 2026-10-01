@@ -25,6 +25,7 @@ import {
 
 import { readCampaignAudience, requireCompleteCampaignAudience } from '../campaign-audience';
 import { campaignDefinitionKey } from '../campaign-definition';
+import { CampaignCapacityUnavailableError } from '../campaign-capacity';
 
 export async function checkScheduledCampaigns(): Promise<{
   checked: number;
@@ -101,7 +102,7 @@ export async function checkScheduledCampaigns(): Promise<{
       queued++;
     } catch (error) {
       if (error instanceof CampaignDispatchConflictError) continue;
-      if (error instanceof CampaignSuppressionUnavailableError) {
+      if (error instanceof CampaignSuppressionUnavailableError || error instanceof CampaignCapacityUnavailableError) {
         deferred++;
         continue;
       }

@@ -3,12 +3,12 @@
  * 
  * Protects campaigns from:
  * 1. Sending to opted-out customers
- * 2. Exceeding daily/monthly message limits per merchant
+ * 2. Exceeding the selected subscription's available message quota
  * 3. Sending during quiet hours (22:00-08:00 local time)
  * 
  * Design:
  * - Opt-out stored in DB (campaign_optouts table)
- * - Rate limits tracked in-memory per merchant (reset daily)
+ * - Admission capacity comes from persisted consumption and outstanding reply holds
  * - Quiet hours configurable per merchant (default: 22:00-08:00 KSA)
  * - Suppression is fail-closed: an unavailable list blocks marketing sends
  */
@@ -20,6 +20,7 @@
 import { assertRuntimeSchema } from '../db/schema-readiness';
 import { privacyHashExact } from '../accounts/privacy-hash';
 import { createHash } from 'node:crypto';
+import { readCampaignCapacity } from '../campaign-capacity';
 
 const CAMPAIGN_SUPPRESSION_QUERY_BATCH = 100;
 export const CAMPAIGN_CONSENT_VERSION = 'campaign-marketing-v1';
@@ -335,7 +336,7 @@ function today(): string {
 }
 
 /**
- * Check and increment rate limit for a merchant.
+ * Legacy estimator retained for compatibility; runtime admission uses persisted subscription capacity.
  * Returns remaining capacity (0 = blocked).
  */
 export function checkCampaignRate(merchantId: number, recipientCount: number, planSlug?: string): {
@@ -359,7 +360,7 @@ export function checkCampaignRate(merchantId: number, recipientCount: number, pl
 }
 
 /**
- * Track messages sent (call AFTER successful send).
+ * Legacy estimator retained for compatibility; runtime usage is persisted by the outbox worker.
  */
 export function trackCampaignSend(merchantId: number, count: number): void {
   const todayStr = today();
@@ -403,6 +404,7 @@ export async function filterCampaignRecipients(
   merchantId: number,
   phones: string[],
   options?: {
+    /** @deprecated Kept for callers of the legacy estimator; does not select runtime entitlements. */
     planSlug?: string;
     skipQuietHours?: boolean;
   }
@@ -434,24 +436,15 @@ export async function filterCampaignRecipients(
     };
   }
 
-  // 2. Rate limit check
-  const rateCheck = checkCampaignRate(merchantId, phones.length, options?.planSlug);
-  if (!rateCheck.allowed) {
-    const maxToSend = rateCheck.remaining;
-    if (maxToSend === 0) {
-      return {
-        allowed: [],
-        blocked: [...blocked, ...phones.map(p => ({ phone: p, reason: 'rate_limit' }))],
-        warnings: [`تم تجاوز الحد اليومي (${rateCheck.limit} رسالة/يوم)`],
-      };
-    }
-    // Partial send: only send up to remaining capacity
-    const excess = phones.slice(maxToSend);
-    phones = phones.slice(0, maxToSend);
-    for (const p of excess) {
-      blocked.push({ phone: p, reason: 'rate_limit' });
-    }
-    warnings.push(`سيتم إرسال ${maxToSend} فقط من أصل ${phones.length + excess.length} (الحد اليومي: ${rateCheck.limit})`);
+  // 2. The selected subscription and pending reply holds define actual capacity.
+  // Do not drop recipients based on an untracked process-local daily estimate.
+  if (phones.length) {
+    const capacity = await readCampaignCapacity(merchantId);
+    if (capacity.remaining < phones.length) return {
+      allowed: [],
+      blocked: [...blocked, ...phones.map(phone => ({ phone, reason: 'rate_limit' }))],
+      warnings: [`حصة الرسائل المتبقية (${capacity.remaining}) لا تكفي للجمهور المؤهل (${phones.length}). لم يُرسل أي جزء من الحملة.`],
+    };
   }
 
   return { allowed: phones, blocked, warnings };

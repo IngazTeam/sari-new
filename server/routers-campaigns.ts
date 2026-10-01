@@ -49,6 +49,7 @@ import {
 import { campaignAudienceSchema, parseCampaignAudience } from '../shared/campaign-audience';
 import { CampaignAudienceLimitError, readCampaignAudience, requireCompleteCampaignAudience } from './campaign-audience';
 import { campaignDefinitionKey } from './campaign-definition';
+import { CampaignCapacityUnavailableError } from './campaign-capacity';
 
 const campaignImageUrlSchema = z.string().url().max(500).refine(value => {
     try {
@@ -272,6 +273,9 @@ export const campaignsRouter = router({
                 blockedRecipients = guard.blocked.length;
                 guardWarnings = guard.warnings;
             } catch (error) {
+                if (error instanceof CampaignCapacityUnavailableError) {
+                    throw new TRPCError({ code: 'SERVICE_UNAVAILABLE', message: 'تعذر التحقق من حصة رسائل الاشتراك. لم يبدأ إرسال الحملة.' });
+                }
                 if (error instanceof CampaignSuppressionUnavailableError) {
                     throw new TRPCError({
                         code: 'SERVICE_UNAVAILABLE',

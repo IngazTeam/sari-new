@@ -5,6 +5,7 @@ vi.mock('./campaign-audience', async original => ({ ...await original<typeof imp
 vi.mock('./automation/campaign-guard', async original => ({ ...await original<typeof import('./automation/campaign-guard')>(), filterCampaignRecipients: mocks.guard }));
 vi.mock('./automation/campaign-delivery-outbox', async original => ({ ...await original<typeof import('./automation/campaign-delivery-outbox')>(), enqueueCampaignDeliveries: mocks.enqueue, completeCampaignWithoutRecipients: mocks.complete }));
 import { checkScheduledCampaigns } from './jobs/scheduled-campaigns';
+import { CampaignCapacityUnavailableError } from './campaign-capacity';
 beforeEach(() => {
   for (const mock of Object.values(mocks)) mock.mockReset();
   const chain = { select: () => chain, from: () => chain, where: () => chain, orderBy: () => chain, limit: mocks.due };
@@ -25,6 +26,7 @@ describe('scheduled audience boundaries', () => {
     mocks.audience.mockRejectedValue(Error('Unavailable')); expect(await checkScheduledCampaigns()).toMatchObject({ queued: 0, failed: 1 }); expect(mocks.enqueue).not.toHaveBeenCalled(); expect(mocks.complete).not.toHaveBeenCalled();
   });
   it('surfaces a database outage rather than reporting a successful empty batch', async () => { mocks.db.mockResolvedValue(null); await expect(checkScheduledCampaigns()).rejects.toThrow('Database not available'); });
+  it('keeps the campaign scheduled when capacity evidence is unavailable',async()=>{mocks.guard.mockRejectedValue(new CampaignCapacityUnavailableError());expect(await checkScheduledCampaigns()).toEqual({checked:1,queued:0,deferred:1,failed:0});expect(mocks.enqueue).not.toHaveBeenCalled();expect(mocks.complete).not.toHaveBeenCalled();});
   it.each(['quiet_hours','rate_limit'])('defers the entire campaign on %s without completing or truncating it', async reason => {
     mocks.guard.mockResolvedValue({ allowed: ['966500000001'], blocked: [{ phone: '966500000002', reason }], warnings: [] });
     expect(await checkScheduledCampaigns()).toEqual({ checked: 1, queued: 0, deferred: 1, failed: 0 });
