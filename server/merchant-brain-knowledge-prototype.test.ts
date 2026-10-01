@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { runInContext } from "node:vm";
+import { MessageChannel } from 'node:worker_threads';
 import { JSDOM, VirtualConsole } from "jsdom";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { learningStates } from "../prototypes/tenant-dashboard/src/brain-knowledge";
@@ -20,6 +21,8 @@ function boot(saved: Record<string, string> = {}) {
   });
   w = dom.window;
   w.structuredClone = structuredClone;
+  w.TextEncoder = TextEncoder; w.TextDecoder = TextDecoder;
+  w.MessageChannel = class extends MessageChannel { constructor() { super(); this.port1.unref(); this.port2.unref(); } };
   w.scrollTo = () => {};
   w.fetch = vi.fn(() => {
     throw Error("No provider requests in mockup");
@@ -53,8 +56,11 @@ const click = (a: string, extra = "") =>
   node(`[data-bk-action="${a}"]${extra}`).click();
 const bw = (a: string, extra = "") =>
   node(`[data-bw-action="${a}"]${extra}`).click();
-const nav = (s: string) =>
+const nav = (s: string) => {
+  if (s === 'results') s = 'overview';
+  if (s === 'learning' || s === 'operations') node('[data-brain-action="navigate"][data-id="sales"]').click();
   node(`[data-brain-action="navigate"][data-id="${s}"]`).click();
+};
 it('explores the independent file library, text pages, literal search, and failed reads without external calls', () => {
   sources();
   const action = (name: string) => node(`[data-kl-action="${name}"]`).click();
@@ -151,17 +157,14 @@ const snapshot = () =>
     Object.keys(w.localStorage).map(k => [k, w.localStorage.getItem(k)])
   ) as Record<string, string>;
 function openIntake() {
-  nav("knowledge");
-  bw("knowledge-tab", '[data-value="intake"]');
+  nav("sources");
   click("intake");
 }
 function sources() {
-  nav("knowledge");
-  bw("knowledge-tab", '[data-value="sources"]');
+  nav("sources");
 }
 function status() {
-  nav("knowledge");
-  bw("knowledge-tab", '[data-value="status"]');
+  nav("overview");
 }
 function web() {
   nav("knowledge");
@@ -225,6 +228,7 @@ it("validates fields inline, stores raw text safely, requires renewed consent an
   });
   expect(node('[data-bk-action="ingest"]').disabled).toBe(true);
   click("close");
+  nav("knowledge");
   bw("knowledge-tab", '[data-value="sections"]');
   expect(w.document.querySelector("img[src=x]")).toBeNull();
   expect(node("#main").textContent).toContain("<img src=x onerror=alert(1)>");
@@ -355,7 +359,7 @@ it("keeps the intake draft on failure, refreshes its own stale editor and reconc
   click("intake");
   expect(node('[data-bk-action="ingest"]').disabled).toBe(true);
 });
-it("explains that product deletion deletes the catalogue and invalidates sourced answers without crashing", () => {
+it("explains product deletion and removes the local source without generating a fabricated answer", () => {
   sources();
   click("remove", '[data-kind="products"]');
   expect(body()).toContain("جميع سجلات منتجات التاجر");
@@ -367,13 +371,11 @@ it("explains that product deletion deletes the catalogue and invalidates sourced
   click("confirm-remove");
   expect(w.SaryBrainPreview.sourceCounts().products).toBe(0);
   click("close");
-  nav("results");
-  node('[data-brain-action="test"]').click();
-  set("#brain-question", "كم سعر كولومبيا؟");
-  node('[data-brain-form="test"]').dispatchEvent(
-    new w.Event("submit", { bubbles: true, cancelable: true })
-  );
-  expect(body()).toContain("نحتاج معلومة مؤكدة");
+  sources();
+  expect(w.document.querySelector('[data-bk-action="remove"][data-kind="products"]')).toBeNull();
+  nav('testing');
+  expect(w.document.querySelector('[data-brain-form="test"]')).toBeNull();
+  expect(node('a[href="./brain-preview.html"]')).toBeTruthy();
 });
 it("resets only knowledge examples, retains experiment history and settings, and requires a new candidate", () => {
   openIntake();
@@ -421,8 +423,8 @@ it("resets only knowledge examples, retains experiment history and settings, and
     draft: { content: "" },
   });
   click("close");
-  nav("results");
-  expect(node("#main").textContent).toContain("لا توجد معلومات مفعّلة");
+  sources();
+  expect(w.document.querySelector('[data-bk-action="remove"]')).toBeNull();
 });
 it("blocks destructive actions on unread sources and for read-only users", () => {
   sources();
@@ -433,7 +435,7 @@ it("blocks destructive actions on unread sources and for read-only users", () =>
   set('[data-bw-lab="role"]', "viewer", "change");
   expect(node('[data-bk-action="reset"]').disabled).toBe(true);
   expect(node('[data-bk-action="remove"]').disabled).toBe(true);
-  bw("knowledge-tab", '[data-value="intake"]');
+  nav("sources");
   expect(node('[data-bk-action="intake"]').disabled).toBe(true);
 });
 it("keeps website progress on close, disallows parallel start and distinguishes read failure from job failure", () => {

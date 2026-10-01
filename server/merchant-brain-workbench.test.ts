@@ -1,6 +1,7 @@
 import { evaluationDriver } from "../scripts/testing/fixtures/brain-evaluation-driver";
 import { readFileSync } from "node:fs";
 import { runInContext } from "node:vm";
+import { MessageChannel } from 'node:worker_threads';
 import { JSDOM, VirtualConsole } from "jsdom";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
@@ -20,6 +21,8 @@ function boot(stored?: string, sectionDraft?: string) {
   w = dom.window;
   w.structuredClone = structuredClone;
   w.TextEncoder = TextEncoder;
+  w.TextDecoder = TextDecoder;
+  w.MessageChannel = class extends MessageChannel { constructor() { super(); this.port1.unref(); this.port2.unref(); } };
   w.scrollTo = () => {};
   w.fetch = vi.fn(() => {
     throw Error("No provider calls in design preview");
@@ -50,8 +53,10 @@ const node = (s: string): any => {
   expect(el, s).toBeTruthy();
   return el;
 };
-const nav = (v: string) =>
+const nav = (v: string) => {
+  if (v === 'learning' || v === 'operations') node('[data-brain-action="navigate"][data-id="sales"]').click();
   node(`[data-brain-action="navigate"][data-id="${v}"]`).click();
+};
 const click = (a: string, extra = "") =>
   node(`[data-bw-action="${a}"]${extra}`).click();
 const tab = (group: string, v: string) =>
@@ -258,8 +263,8 @@ it("validates manual sections, escapes markup and prevents bypassing pending rev
  expect(node('[data-sw-field="content"]').maxLength).toBe(50000);
  swInput('title','<img src=x onerror=alert(1)>');swInput('content',reason);swCheck();swInput('type','policies');expect(node('[data-sw-ack]').checked).toBe(false);swCheck();sw('save');
  expect(data().sections.at(-1)).toMatchObject({approved:true,useInBot:false});expect(node('#main').querySelector('img[src=x]')).toBeNull();
- tab('knowledge','intake');click('intake');input('title','سياسة جديدة');input('content',reason);check('attest');submit();const id=data().sections[0].id;expect(data().sections[0].approved).toBe(false);
- tab('knowledge','sections');sw('open',id);expect(main()).toContain('احسم الاقتراح');expect(node('[data-sw-action="save"]').disabled).toBe(true);
+ nav('sources');click('intake');input('title','سياسة جديدة');input('content',reason);check('attest');submit();const id=data().sections[0].id;expect(data().sections[0].approved).toBe(false);
+ nav('knowledge');tab('knowledge','sections');sw('open',id);expect(main()).toContain('احسم الاقتراح');expect(node('[data-sw-action="save"]').disabled).toBe(true);
 });
 
 const pi=(a:string)=>node('[data-pi-action="'+a+'"]').click();

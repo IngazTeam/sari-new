@@ -1,4 +1,9 @@
 .brain-workspace { display:grid; gap:24px; --brain-line:#e2e7de; }
+.brain-current-section { display:grid; gap:20px; min-width:0; }
+.brain-current-card { display:grid; gap:12px; justify-items:start; }
+.brain-current-links { display:flex; flex-wrap:wrap; gap:10px; margin-block:14px; }
+.brain-current-score { font-size:16px; color:var(--muted); }
+.brain-current-score strong { font-size:32px; color:var(--ink); margin-inline-end:12px; }
 .brain-workspace h2 { font-size:21px; letter-spacing:-.5px; line-height:1.6; }
 .brain-workspace h3,.brain-dialog h3 { font-size:15px; line-height:1.7; }
 .brain-workspace p,.brain-dialog p { line-height:1.9; }

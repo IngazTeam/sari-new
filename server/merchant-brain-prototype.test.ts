@@ -27,122 +27,64 @@ const dialog = () => w.document.querySelector('#dialog').textContent;
 const saved = () => JSON.parse(w.localStorage.getItem('sary-brain-preview-v1'));
 function submit(type: string) { node(`[data-brain-form="${type}"]`).dispatchEvent(new w.Event('submit', { bubbles: true, cancelable: true })); }
 function set(selector: string, value: string, event = 'input') { const el = node(selector); el.value = value; el.dispatchEvent(new w.Event(event, { bubbles: true })); }
-function draftReturn(answer = 'يمكن استرجاع المنتج غير المفتوح خلال 7 أيام من الاستلام.') {
-  click('navigate', 'gaps'); click('gap', 'returns');
-  set('#brain-answer', answer); set('#brain-source', 'policy', 'change'); submit('gap-draft');
-}
 
-it('separates saved source counts from extraction and reply settings in an independent example', () => {
+it('matches the six application views without the retired sales score or fabricated gap controls',()=>{
+  expect([...w.document.querySelectorAll('.brain-nav button')].map(b=>b.dataset.id)).toEqual(['overview','sources','knowledge','sales','testing','history']);
+  expect(w.document.querySelectorAll('#main h1')).toHaveLength(1);
   expect(w.document.querySelectorAll('[data-source-inventory]')).toHaveLength(4);
-  expect(text()).toContain('اكتمل السجل بلا نص قابل للقراءة');
-  expect(text()).toContain('مثال مستقل لشرح العدادات');
+  for(const view of ['overview','sources','knowledge','sales','testing','history']){
+    click('navigate',view);expect(w.document.querySelector('meter,[data-brain-score],[data-brain-file],[data-gap-state]')).toBeNull();
+    expect(text()).not.toContain('74%');
+  }
 });
-it.each(['loading','error'])('hides source inventory values during %s without inventing zeros', state => {
+it.each(['loading','error'])('keeps source failures distinct from empty data: %s',state=>{
   set('[data-si-state]',state,'change');expect(w.document.querySelectorAll('[data-source-inventory]')).toHaveLength(0);
   node('[data-si-action="retry"]').click();expect(w.document.querySelectorAll('[data-source-inventory]')).toHaveLength(4);
 });
-it('shows genuine empty-state examples and navigates to FAQ review', () => {
-  set('[data-si-state]','empty','change');
-  expect([...w.document.querySelectorAll('[data-source-inventory] strong')].map((e:any)=>e.textContent)).toEqual(['0','0','0','0']);
-  node('[data-si-action="faqs"]').click();expect(text()).toContain('هل يتوفر طحن للتقطير؟');expect(w.document.querySelector('[data-bw-action="new-faq"]')).toBeTruthy();
+it('navigates each overview source to the correct editor workspace',()=>{
+  node('[data-si-action="faqs"]').click();expect(text()).toContain('هل يتوفر طحن للتقطير؟');expect(w.location.hash).toContain('pane=faq');
+  click('navigate','overview');node('[data-si-action="pages"]').click();expect(w.location.hash).toContain('pane=pages');
+  click('navigate','overview');node('[data-si-action="documents"]').click();expect(node('[data-kl-library]')).toBeTruthy();expect(w.location.hash).toContain('view=sources');
 });
-
-it('separates results, source files, actionable gaps and a sourced sales rubric', () => {
-  expect(w.document.querySelectorAll('#main h1')).toHaveLength(1);
-  expect(w.document.querySelectorAll('.brain-nav button')).toHaveLength(8);
-  expect(text()).toContain('نتائج مرتبطة بمصادرها');
-  click('file', 'catalog'); expect(dialog()).toContain('ورقة المنتجات · صف 2');
-  click('navigate', 'sales'); expect(node('[data-brain-score]').textContent).toBe('74%');
-  const meters = [...w.document.querySelectorAll('meter')].map((m: any) => Number(m.value));
-  expect(meters).toEqual([80, 85, 65, 70, 75, 60]);
-  expect(text()).toContain('لا تمثل نسبة العملاء الذين اشتروا');
-  click('evidence', 'objection'); expect(dialog()).toContain('26 ÷ 40');
-});
-
-it('hides the assessment when the selected sample is insufficient', () => {
-  click('navigate', 'sales'); set('#brain-period', '7', 'change');
-  expect(node('[data-brain-score]').textContent).toBe('—');
-  expect(w.document.querySelectorAll('meter')).toHaveLength(0);
-  expect(text()).toContain('12 محادثة');
-  set('#brain-period', '30', 'change'); expect(node('[data-brain-score]').textContent).toBe('74%');
-});
-
-it('filters files and distinguishes extraction failure from pending review and activation', () => {
-  click('navigate', 'files'); expect(w.document.querySelectorAll('[data-brain-file]')).toHaveLength(5);
-  set('#brain-search', 'المصوّر'); expect(w.document.querySelectorAll('[data-brain-file]')).toHaveLength(1);
-  click('file', 'scan'); expect(dialog()).toContain('لم نتمكن من قراءة');
-  expect(w.document.querySelector('[data-brain-form="approve-file"]')).toBeNull();
-  set('#brain-search', ''); set('#brain-file-filter', 'review', 'change');
-  expect(w.document.querySelectorAll('[data-brain-file]')).toHaveLength(1);
-  click('file', 'guide'); submit('approve-file');
-  expect(saved()).toBeNull();
-  node('[data-brain-form="approve-file"] input').checked = true; submit('approve-file');
-  expect(saved().files.find((f: any) => f.id === 'guide')).toMatchObject({ status: 'ready', active: true });
-  click('navigate', 'sales'); expect(node('[data-brain-score]').textContent).toBe('74%');
-});
-
-it('requires a reviewed source, approval, test and confirmation to close a gap', () => {
-  click('navigate', 'gaps'); click('gap', 'returns'); submit('gap-draft');
-  expect(saved()).toBeNull();
-  set('#brain-answer', 'يمكن استرجاع المنتج غير المفتوح خلال 7 أيام من الاستلام.'); set('#brain-source', 'policy', 'change'); submit('gap-draft');
-  expect(saved().gaps[0].state).toBe('draft'); expect(saved().files[0].active).toBe(false);
-  submit('approve-gap'); expect(saved().gaps[0].state).toBe('draft');
-  node('[data-brain-form="approve-gap"] input').checked = true; submit('approve-gap');
-  expect(saved().gaps[0].state).toBe('retest');
-  expect(saved().files.find((f: any) => f.id === 'legacy').active).toBe(false);
-  expect(w.document.querySelector('[data-brain-form="resolve-gap"]')).toBeNull();
-  click('run-gap', 'returns'); submit('resolve-gap'); expect(saved().gaps[0].state).toBe('retest');
-  node('[data-brain-form="resolve-gap"] input').checked = true; submit('resolve-gap');
-  expect(saved().gaps[0].state).toBe('resolved');
-  click('navigate', 'sales'); expect(node('[data-brain-score]').textContent).toBe('74%');
-  click('navigate', 'gaps'); click('filter-gaps', 'resolved'); expect(w.document.querySelectorAll('.brain-gap')).toHaveLength(1);
-});
-
-it('renders edits as text and preserves the draft across navigation', () => {
-  const answer = '<img src=x onerror=alert(1)> إجابة للمراجعة من المصدر.';
-  draftReturn(answer);
-  expect(dialog()).toContain(answer); expect(w.document.querySelector('#dialog img')).toBeNull();
-  w.document.querySelector('#dialog').close();
-  w.history.replaceState(null, '', '#/page/merchant/products'); w.dispatchEvent(new w.HashChangeEvent('hashchange'));
-  w.history.replaceState(null, '', '#/page/merchant/sari-brain'); w.dispatchEvent(new w.HashChangeEvent('hashchange'));
-  click('navigate', 'gaps'); click('gap', 'returns'); expect(dialog()).toContain(answer);
-});
-
-it('stops source-backed answers after a source is disabled and requests help for unknown questions', () => {
-  click('test'); set('#brain-question', 'كم سعر بن كولومبيا؟'); submit('test'); expect(dialog()).toContain('64 ريالًا');
-  click('file', 'catalog'); click('toggle-file', 'catalog'); click('confirm-toggle', 'catalog');
-  click('test'); set('#brain-question', 'كم سعر بن كولومبيا؟'); submit('test');
-  expect(dialog()).toContain('نحتاج معلومة مؤكدة'); expect(dialog()).not.toContain('64 ريالًا');
-  set('#brain-question', 'سؤال ليس في مصادر المعرفة'); submit('test'); expect(dialog()).toContain('مساعدة الفريق');
-});
-
-it('adds only local file metadata and never fabricates extraction or sales progress', () => {
+it('moves upload and content review into sources while retaining the library and extraction states',()=>{
   node('[data-page-action="primary"]').click();
-  const input = node('#brain-upload');
-  Object.defineProperty(input, 'files', { configurable: true, value: [new w.File(['sample text'], 'new-policy.txt', { type: 'text/plain' })] });
-  node('[data-brain-form="upload"]').reportValidity = () => true; submit('upload');
-  const added = saved().files[0]; expect(added).toMatchObject({ name: 'new-policy.txt', status: 'queued', active: false, facts: [] });
-  expect(JSON.stringify(added)).not.toContain('sample text');
-  click('file', added.id); expect(dialog()).toContain('لم تُقرأ محتوياته');
-  click('navigate', 'sales'); expect(node('[data-brain-score]').textContent).toBe('74%');
+  expect(w.location.hash).toContain('view=sources');expect(node('[data-kl-library]')).toBeTruthy();expect(node('[data-kd-document]')).toBeTruthy();expect(node('[data-bk-action="intake"]')).toBeTruthy();
+  expect(w.document.querySelector('#brain-upload,[data-brain-form="approve-file"]')).toBeNull();
 });
-
-it.each([{ name: 'payload.html', size: 20 }, { name: 'large.pdf', size: 6 * 1024 * 1024 }, { name: 'empty.txt', size: 0 }])('rejects an unsupported, oversized or empty attachment: $name', ({ name, size }) => {
-  node('[data-page-action="primary"]').click();
-  Object.defineProperty(node('#brain-upload'), 'files', { value: [{ name, size }] });
-  node('[data-brain-form="upload"]').reportValidity = () => true; submit('upload');
-  expect(saved()).toBeNull(); expect(node('#brain-upload-error').textContent).toContain('لا يتجاوز 5 ميغابايت');
+it('preserves the four actual knowledge panes and their deep links',()=>{
+  click('navigate','knowledge');
+  expect([...w.document.querySelectorAll('[data-bw-action="knowledge-tab"]')].map(b=>b.dataset.value)).toEqual(['sections','faq','conflicts','website']);
+  node('[data-bw-action="knowledge-tab"][data-value="website"]').click();expect(w.location.hash).toContain('pane=pages');
+  click('navigate','sales');click('navigate','knowledge');expect(node('[data-bw-action="knowledge-tab"][data-value="website"]').getAttribute('aria-pressed')).toBe('true');
+  w.history.replaceState(null,'','#/page/merchant/sari-brain?view=knowledge&pane=faq');w.dispatchEvent(new w.HashChangeEvent('hashchange'));
+  expect(node('[data-bw-action="knowledge-tab"][data-value="faq"]').getAttribute('aria-pressed')).toBe('true');
 });
-
-
-it('reviews eight learning cases without activating a policy or inflating sales proficiency',()=>{
-  click('navigate','learning');click('review-open');submit('review');expect(node('#brain-review-error').textContent).toContain('الثماني');
+it('validates deep-link destinations and escapes untrusted query values',()=>{
+  w.history.replaceState(null,'','#/page/merchant/sari-brain?view=%3Cimg%20src=x%3E&pane=unknown');w.dispatchEvent(new w.HashChangeEvent('hashchange'));
+  expect(node('#brain-nav-overview').getAttribute('aria-pressed')).toBe('true');expect(w.document.querySelector('#main img[src=x]')).toBeNull();
+});
+it('does not add duplicate history entries when the same view is selected',()=>{
+  click('navigate','sources');const length=w.history.length;click('navigate','sources');expect(w.history.length).toBe(length);
+});
+it.each([
+ ['overview',['website-analysis.html']],
+ ['sources',['knowledge-groups.html','knowledge-removal.html']],
+ ['sales',['sales-knowledge.html']],
+ ['testing',['brain-preview.html','reply-quality.html']],
+ ['history',['knowledge-activity.html']],
+])('keeps actual-component previews reachable from %s', (view, paths)=>{
+  click('navigate',view);for(const path of paths)expect(node('a[href="./'+path+'"]').textContent).toBe('فتح الشاشة التفاعلية');
+});
+it('keeps sales policies, experiments, reply reviews and evaluations reachable without a score',()=>{
+  click('navigate','sales');for(const value of ['sector','followup','experiments','replies','evaluation'])expect(node('[data-bw-action="ops-tab"][data-value="'+value+'"]')).toBeTruthy();
+  expect(text()).toContain('غير متاح حاليًا');expect(w.document.querySelector('[data-brain-score]')).toBeNull();
+});
+it('retains the eight-case learning review and prevents it from inflating proficiency',()=>{
+  click('navigate','sales');click('navigate','learning');click('review-open');
   for(let i=0;i<8;i++){
-    set('#brain-review-baseline','الرد الحالي '+i);set('#brain-review-candidate','الرد المقترح '+i);set('#brain-review-reason','راجعت الإجابة والمصدر وتأكدت من دقة رد الحالة '+i);
-    set('#brain-review-baselineVerdict','pass','change');set('#brain-review-candidateVerdict',i===7?'fail':'pass','change');
-    if(i<7)click('review-next');
+    set('#brain-review-baseline','Current '+i);set('#brain-review-candidate','Candidate '+i);set('#brain-review-reason','راجعت الإجابة والمصدر وتأكدت من دقة رد الحالة '+i);
+    set('#brain-review-baselineVerdict','pass','change');set('#brain-review-candidateVerdict',i===7?'fail':'pass','change');if(i<7)click('review-next');
   }
-  node('#brain-review-attest').checked=true;set('#brain-review-reason','تعديل يستوجب مراجعة جديدة');expect(node('#brain-review-attest').checked).toBe(false);
   node('#brain-review-attest').checked=true;submit('review');expect(saved().review.cases).toHaveLength(8);expect(saved().review.outcome).toContain('لم يجتز');
-  click('navigate','sales');expect(node('[data-brain-score]').textContent).toBe('74%');
+  expect(text()).not.toContain('74%');expect(w.document.querySelector('meter')).toBeNull();
 });

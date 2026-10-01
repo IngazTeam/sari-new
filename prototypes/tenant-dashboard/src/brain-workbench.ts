@@ -306,9 +306,6 @@ window.SaryBrainWorkbench = (() => {
           ["faq", "الأسئلة الشائعة"],
           ["conflicts", "مراجعة التعارضات"],
           ["website", "صفحات الموقع"],
-          ["intake", "فحص المحتوى"],
-          ["status", "حالة التحليل"],
-          ["sources", "إدارة المصادر"],
         ],
         knowledgeTab,
         "knowledge-tab"
@@ -434,9 +431,10 @@ window.SaryBrainWorkbench = (() => {
         ""
       )}</select></label>${slice.map(r => `<article class="bw-card"><h3>${esc(r.label)}</h3><time dir="ltr">${esc(r.at)}</time>${badge("سجل الموك أب")}</article>`).join("") || '<p class="bw-empty">لا يوجد نشاط في هذه الفئة.</p>'}<div class="bw-actions">${btn("الأحدث", "history-prev", historyPage === 0 ? "disabled" : "")}<span>صفحة ${historyPage + 1}</span>${btn("الأقدم", "history-next", (historyPage + 1) * 10 >= rows.length ? "disabled" : "")}</div></section>`;
   }
-  function render(section) {
+  function render(section, pane) {
+    if (section === 'knowledge' && pane) knowledgeTab = pane === 'pages' ? 'website' : pane;
     active = section;
-    return `<div class="bw-workbench">${lab()}${alert()}${{ knowledge, operations, history }[section]()}${note}</div>`;
+    return `<div class="bw-workbench">${lab()}${alert()}${{ knowledge, operations, history, sources: () => knowledgeWorkbench.sources()+knowledgeWorkbench.intakeSummary() }[section]()}${note}</div>`;
   }
   const nextId = rows => Math.max(0, ...rows.map(r => r.id)) + 1;
   const protocolLabels = {
@@ -987,7 +985,7 @@ window.SaryBrainWorkbench = (() => {
     const { bwAction: a, id, value, kind } = el.dataset;
     if (a === "close") return close();
     if (a === "knowledge-tab" || a === "ops-tab") {
-      if (a === "knowledge-tab") { conflictWorkspace.leave(); sectionWorkspace.leave(); knowledgeTab = value; }
+      if (a === "knowledge-tab") { conflictWorkspace.leave(); sectionWorkspace.leave(); knowledgeTab = value; return window.SaryBrainPreview.navigate('knowledge',value === 'website' ? 'pages' : value); }
       else opsTab = value;
       if (!pending) error = "";
       return refresh();
@@ -1321,8 +1319,8 @@ window.SaryBrainWorkbench = (() => {
   });
   const sourceInventory = createSourceInventory({esc,refresh,open(kind) {
     if (kind === 'products') { window.location.hash = '#/page/merchant/products'; return; }
-    knowledgeTab = kind === 'faqs' ? 'faq' : kind === 'pages' ? 'website' : 'sources';
-    document.querySelector<HTMLButtonElement>('[data-brain-action="navigate"][data-id="knowledge"]')?.click();
+    if (kind === 'documents') window.SaryBrainPreview.navigate('sources');
+    else window.SaryBrainPreview.navigate('knowledge',kind === 'faqs' ? 'faq' : 'pages');
   }});
   return {
     renderSourceInventory: () => sourceInventory.render(),

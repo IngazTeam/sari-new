@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { runInContext } from "node:vm";
+import { MessageChannel } from 'node:worker_threads';
 import { JSDOM, VirtualConsole } from "jsdom";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { evaluationDriver } from "../scripts/testing/fixtures/brain-evaluation-driver";
@@ -24,6 +25,8 @@ function boot(saved?: Record<string, string>) {
   });
   w = dom.window;
   w.structuredClone = structuredClone;
+  w.TextEncoder = TextEncoder; w.TextDecoder = TextDecoder;
+  w.MessageChannel = class extends MessageChannel { constructor() { super(); this.port1.unref(); this.port2.unref(); } };
   w.scrollTo = () => {};
   w.fetch = vi.fn(() => {
     throw Error("A design preview must not call a provider");
@@ -54,8 +57,10 @@ const snapshot = () =>
   Object.fromEntries(
     Object.keys(w.localStorage).map(k => [k, w.localStorage.getItem(k)])
   ) as Record<string, string>;
-const nav = (s: string) =>
+const nav = (s: string) => {
+  if (s === 'learning' || s === 'operations') d.node('[data-brain-action="navigate"][data-id="sales"]').click();
   d.node(`[data-brain-action="navigate"][data-id="${s}"]`).click();
+};
 const bw = (a: string, extra = "") =>
   d.node(`[data-bw-action="${a}"]${extra}`).click();
 const body = () => d.node("#dialog").textContent;
