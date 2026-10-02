@@ -6,6 +6,8 @@ import type {Permission} from './_core/permissions';
 import {withWooDashboardAuthority,assertWooDashboardAuthority} from './integrations/woocommerce-dashboard-authority';
 import {readWooWorkspace,readWooLogsWorkspace} from './integrations/woocommerce-workspace';
 import {wooLogsInput} from '../shared/woocommerce-workspace';
+import {readWooProductsWorkspace,readWooOrdersWorkspace,readWooOrderDetailsWorkspace} from './integrations/woocommerce-data-workspace';
+import {wooProductsInput,wooOrdersInput,wooOrderDetailsInput} from '../shared/woocommerce-data-workspace';
 import {
   createWooCommerceSyncLog,
   getDb,
@@ -340,6 +342,9 @@ async function runFullWooCommerceReconciliation(ctx: WooCommerceRequestAbortCont
 }
 
 export const woocommerceRouter = router({
+  getProductsWorkspace: wooAccessProcedure().input(wooProductsInput).query(({ctx,input})=>readWooProductsWorkspace(ctx.user.id,tenantId(ctx),input)),
+  getOrdersWorkspace: wooAccessProcedure().input(wooOrdersInput).query(({ctx,input})=>readWooOrdersWorkspace(ctx.user.id,tenantId(ctx),input)),
+  getOrderDetailsWorkspace: wooAccessProcedure().input(wooOrderDetailsInput).query(({ctx,input})=>readWooOrderDetailsWorkspace(ctx.user.id,tenantId(ctx),input)),
   getWorkspace: wooAccessProcedure('integrations.manage').input(noInput).query(({ctx})=>readWooWorkspace(ctx.user.id,tenantId(ctx))),
   getLogsWorkspace: wooAccessProcedure('integrations.manage').input(wooLogsInput).query(({ctx,input})=>readWooLogsWorkspace(ctx.user.id,tenantId(ctx),input)),
   getSettings: wooAccessProcedure('integrations.manage').input(noInput).query(async ({ ctx }) => {
