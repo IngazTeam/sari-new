@@ -1,0 +1,17 @@
+import {beforeEach,it,expect,vi} from 'vitest';
+const m=vi.hoisted(()=>({source:vi.fn(),integration:vi.fn(),list:vi.fn()}));
+vi.mock('./integrations/calendly-workspace',()=>({readCalendlyWorkspace:m.source}));
+vi.mock('./db',()=>({getIntegrationByType:m.integration}));
+vi.mock('./integrations/calendly-api',()=>({listCalendlyCollection:m.list}));
+import {readCalendlyBookingLinks} from './integrations/calendly-booking-links';
+import {assertCalendlyProviderCheckpoint} from './integrations/calendly-provider-checkpoint';
+const revision='a'.repeat(64),userUri='https://api.calendly.com/users/LOCAL_123456';
+beforeEach(()=>{vi.resetAllMocks();m.source.mockResolvedValue({actorId:7,merchantId:20,revision,state:'configured',identityValid:true,credentialsStored:true,userUri});m.integration.mockResolvedValue({accessToken:'PRIVATE',storeUrl:userUri});m.list.mockResolvedValue([{name:'Local',duration:30,scheduling_url:'https://calendly.com/local/book'}]);});
+it('returns only safe scoped booking link metadata',async()=>{const data=await readCalendlyBookingLinks(7,20);expect(data).toMatchObject({actorId:7,merchantId:20,revision,rows:[{name:'Local',duration:30,schedulingUrl:'https://calendly.com/local/book'}]});expect(JSON.stringify(data)).not.toContain('PRIVATE');expect(m.source.mock.calls.every(v=>v[0]===7&&v[1]===20)).toBe(true);expect(m.list).toHaveBeenCalledWith('PRIVATE',`/event_types?user=${encodeURIComponent(userUri)}&active=true&count=100`,100);});
+it.each(['unlinked','disabled','unknown'])('does not fetch links for %s',async state=>{m.source.mockResolvedValue({state});await expect(readCalendlyBookingLinks(7,20)).rejects.toMatchObject({reason:'changed'});expect(m.integration).not.toHaveBeenCalled();expect(m.list).not.toHaveBeenCalled();});
+it('rejects links after the reviewed account changes',async()=>{m.source.mockResolvedValueOnce({actorId:7,merchantId:20,revision,state:'configured',identityValid:true,credentialsStored:true,userUri}).mockResolvedValue({revision:'b'.repeat(64)});await expect(readCalendlyBookingLinks(7,20)).rejects.toMatchObject({reason:'changed'});});
+it('checks the source during provider work',async()=>{m.list.mockImplementation(async()=>{m.source.mockRejectedValue(Error('revoked'));await assertCalendlyProviderCheckpoint();return [];});await expect(readCalendlyBookingLinks(7,20)).rejects.toThrow('checkpoint');});
+it('does not send credentials retrieved for a different account',async()=>{m.integration.mockResolvedValue({accessToken:'PRIVATE',storeUrl:'https://api.calendly.com/users/OTHER_123456'});await expect(readCalendlyBookingLinks(7,20)).rejects.toMatchObject({reason:'changed'});expect(m.list).not.toHaveBeenCalled();});
+it('preserves missing/unsafe metadata as unavailable rather than invented values',async()=>{m.list.mockResolvedValue([{duration:'30',scheduling_url:'javascript:alert(1)'},{name:'Missing',duration:-1},{name:'Large',duration:99999}]);const result=await readCalendlyBookingLinks(7,20);expect(result.rows.every(v=>v.duration===null&&v.schedulingUrl===null)).toBe(true);expect(result.rows[0].name).toBeNull();});
+it('propagates provider errors rather than returning an empty list',async()=>{m.list.mockRejectedValue(Error('unavailable'));await expect(readCalendlyBookingLinks(7,20)).rejects.toThrow();});
+it('does not accept a truncated over-limit result',async()=>{m.list.mockResolvedValue(Array.from({length:101},()=>({name:'Local'})));await expect(readCalendlyBookingLinks(7,20)).rejects.toThrow();});
