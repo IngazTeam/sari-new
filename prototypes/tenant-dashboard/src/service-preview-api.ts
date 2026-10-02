@@ -12,6 +12,6 @@ function useMutation(name:string){
   useEffect(()=>{live.current=true;return()=>{live.current=false;};},[]);
   return {isPending,mutateAsync:async(input:any)=>{setPending(true);try{return await model.mutate(name,input);}finally{if(live.current)setPending(false);}}};
 }
-export const trpc:any={useUtils:()=>{const model=useModel();return {services:new Proxy({}, {get:()=>({invalidate:model.invalidate})})};}};
+export const trpc:any={useUtils:()=>{const model=useModel();return {services:new Proxy({}, {get:()=>({invalidate:model.invalidate})}),bookings:new Proxy({}, {get:()=>({invalidate:model.invalidate})})};}};
 for(const name of serviceQueries){const [namespace,method]=name.split('.');trpc[namespace]??={};trpc[namespace][method]={useQuery:(input:any,options:any)=>useRead(name,input,options)};}
 for(const name of serviceMutations){const [namespace,method]=name.split('.');trpc[namespace]??={};trpc[namespace][method]={useMutation:()=>useMutation(name)};}

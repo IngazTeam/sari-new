@@ -1,3 +1,4 @@
+import {BookingPreviewStore,bookingPreviewQueries,bookingPreviewMutations} from './booking-preview-model';
 import {catalogListInput,catalogRecordInput,catalogEditorInput,catalogChoicesInput,catalogWorkspaceSchema,catalogEditorSchema,catalogEditorContextSchema,catalogChoicesSchema,type CatalogRecord} from '../../../shared/service-catalog-workspace';
 import {normalizeCatalogService,normalizeCatalogCategory,normalizeCatalogPackage} from '../../../shared/service-catalog-write';
 import {serviceDetailsInput,serviceDetailsSchema} from '../../../shared/service-details-workspace';
@@ -6,8 +7,8 @@ import {staffWorkspaceSnapshot} from '../../../shared/staff-workspace';
 import {z} from 'zod';
 export const serviceModes=['normal','empty','loading','failure','forbidden','session','foreign','stale-error','readonly','legacy','unavailable-reference','choices-error','action-failure','save-conflict','pending-save','uncertain-save'] as const;
 export type ServiceMode=typeof serviceModes[number];
-export const serviceQueries=['auth.me','merchants.getCurrent','services.catalogWorkspace','services.catalogEditor','services.catalogChoices','services.detailsWorkspace','staff.list'] as const;
-export const serviceMutations=['services.create','services.update','services.delete','serviceCategories.create','serviceCategories.update','serviceCategories.delete','servicePackages.create','servicePackages.update','servicePackages.delete','staff.create','staff.update','staff.delete'] as const;
+export const serviceQueries=['auth.me','merchants.getCurrent','services.catalogWorkspace','services.catalogEditor','services.catalogChoices','services.detailsWorkspace','staff.list',...bookingPreviewQueries] as const;
+export const serviceMutations=['services.create','services.update','services.delete','serviceCategories.create','serviceCategories.update','serviceCategories.delete','servicePackages.create','servicePackages.update','servicePackages.delete','staff.create','staff.update','staff.delete',...bookingPreviewMutations] as const;
 type Entity=CatalogRecord['entity'];type Row={id:number;entity:Entity;fields:any;version:number};
 const fault=(code='INTERNAL_SERVER_ERROR')=>({message:'Local service simulation',data:{code}});
 const normalize={service:normalizeCatalogService,category:normalizeCatalogCategory,package:normalizeCatalogPackage};
@@ -15,6 +16,7 @@ const normalize={service:normalizeCatalogService,category:normalizeCatalogCatego
 export class ServicePreviewModel{
  readonly actorId:number;operations=0;retries=0;pending=0;private revision=0;private recovered=false;private disposed=false;private nextId=32;
  private listeners=new Set<()=>void>();private cache=new Map<string,any>();private rows=new Map<string,Row>();private waiting:Array<{resolve:()=>void;reject:(e:any)=>void}>=[];
+ private bookings:BookingPreviewStore;
  private staffRows=new Map<number,{fields:any;version:number}>();private nextStaffId=32;
  constructor(readonly merchantId:number,readonly mode:ServiceMode='normal',readonly now=new Date().toISOString()){
   if(![269,270].includes(merchantId))throw Error('Unknown simulated tenant');this.actorId=merchantId+1000;
@@ -24,6 +26,7 @@ export class ServicePreviewModel{
    this.rows.set(entity+':'+id,{id,entity,fields,version:0});
   }
   if(mode!=='empty')for(let id=1;id<=31;id++)this.staffRows.set(id,{version:0,fields:{id,merchantId,name:`${merchantId===269?'نواة · Nawa':'مدار · Madar'} · مقدم خدمة ${id}`,phone:null,email:`provider${id}@example.test`,role:'استشارات · Consultant',workingHours:JSON.stringify({sunday:{start:'09:00',end:'17:00'}}),googleCalendarId:null,isActive:id%5===0?0:1,specialization:null,bio:null,avatar:null,serviceIds:null}});
+  this.bookings=new BookingPreviewStore({actorId:this.actorId,merchantId,now,mode:()=>this.activeMode,reference:(kind,id)=>{const fields=kind==='staff'?this.staffRows.get(id)?.fields:this.rows.get('service:'+id)?.fields;return fields?{name:fields.name,isActive:kind==='staff'?fields.isActive===1:fields.isActive===true}:null;}});
  }
  subscribe=(listener:()=>void)=>{this.listeners.add(listener);return()=>this.listeners.delete(listener);};snapshot=()=>this.revision;
  private emit(){this.cache.clear();this.revision++;for(const listener of Array.from(this.listeners))listener();}
@@ -54,13 +57,14 @@ export class ServicePreviewModel{
   return {id:row.id,entity:row.entity,definition:this.definition(row),fields,issues,unavailableReferences,references,categoryName:references.find(r=>r.kind==='category')?.name??null} as CatalogRecord;
  }
  private details(input:any){
-  const selection=serviceDetailsInput.parse(input),row=this.owned('service',selection.serviceId),legacy=this.activeMode==='legacy',hasBookings=row.id<=31;
-  const recent=hasBookings?Array.from({length:10},(_,i)=>({id:13-i,customerName:'عميل مثال · Sample '+(13-i),customerPhone:null,date:legacy?null:'2026-10-02',startTime:'09:00',endTime:'09:45',durationMinutes:45,status:i<3?'confirmed':'completed',paymentStatus:legacy?'unknown':'paid',finalPrice:legacy?null:10000})):[];
-  return serviceDetailsSchema.parse({...this.scope(),selection,service:this.record(row),bookings:{total:hasBookings?13:0,counts:{pending:0,confirmed:hasBookings?3:0,in_progress:0,completed:hasBookings?10:0,cancelled:0,no_show:0,unknown:0},paidValue:{minor:hasBookings?(legacy?null:100000):0,eligible:hasBookings?10:0,invalid:hasBookings&&legacy?1:0}},recent,ratings:{total:hasBookings?2:0,excluded:legacy?1:0,distribution:{one:0,two:0,three:hasBookings?1:0,four:0,five:hasBookings?1:0}}});
+  const selection=serviceDetailsInput.parse(input),row=this.owned('service',selection.serviceId),legacy=this.activeMode==='legacy',source=this.bookings.read('bookings.workspace',{serviceId:row.id}) as any,hasBookings=source.summary.total>0;
+  const recent=source.rows.slice(0,10).map((b:any)=>({id:b.id,customerName:b.customerName,customerPhone:b.customerPhone,date:b.date,startTime:b.startTime,endTime:b.endTime,durationMinutes:b.durationMinutes,status:b.status,paymentStatus:b.paymentStatus,finalPrice:b.finalPrice}));
+  return serviceDetailsSchema.parse({...this.scope(),selection,service:this.record(row),bookings:{total:source.summary.total,counts:source.summary.counts,paidValue:source.summary.paidValue},recent,ratings:{total:hasBookings?2:0,excluded:legacy?1:0,distribution:{one:0,two:0,three:hasBookings?1:0,four:0,five:hasBookings?1:0}}});
  }
  private fixture(name:string,input:any={}):any{
   if(name==='auth.me')return this.activeMode==='session'?null:{id:this.actorId,name:'Local account'};
   if(name==='merchants.getCurrent')return {id:this.merchantId};
+  if(name.startsWith('bookings.'))return this.bookings.read(name,input);
   if(name==='staff.list'){const selection=z.object({activeOnly:z.boolean().optional()}).strict().parse(input);const data=this.staffSnapshot();return {...data,staff:selection.activeOnly?data.staff.filter(row=>row.isActive===1):data.staff};}
   if(name==='services.detailsWorkspace')return this.details(input);
   if(name==='services.catalogEditor'||name==='services.catalogRecord'){
@@ -80,7 +84,7 @@ export class ServicePreviewModel{
  }
  read(name:string,input?:any){
   if(!serviceQueries.includes(name as any)&&name!=='services.catalogRecord')throw Error('Unmapped read');const key=JSON.stringify([name,input]);if(this.cache.has(key))return this.cache.get(key);
-  const mode=this.activeMode,workspace=name.startsWith('services.')||name==='staff.list',loading=workspace&&mode==='loading';let data:any,error:any=mode==='forbidden'&&name==='merchants.getCurrent'?fault('FORBIDDEN'):workspace&&(['failure','stale-error'].includes(mode)||mode==='choices-error'&&name==='services.catalogChoices')?fault():null;
+  const mode=this.activeMode,workspace=name.startsWith('services.')||name.startsWith('bookings.')||name==='staff.list',loading=workspace&&mode==='loading';let data:any,error:any=mode==='forbidden'&&name==='merchants.getCurrent'?fault('FORBIDDEN'):workspace&&(['failure','stale-error'].includes(mode)||mode==='choices-error'&&name==='services.catalogChoices')?fault():null;
   try{data=this.fixture(name,input);}catch(e){error=e;}if(mode==='foreign'&&workspace&&data)data={...data,merchantId:999};
   const result={data:loading||error&&mode!=='stale-error'?undefined:data,error,isLoading:loading,isFetching:loading,isError:!!error,isFetchedAfterMount:!loading,dataUpdatedAt:loading?0:Date.parse(this.now)};this.cache.set(key,result);return result;
  }
@@ -88,6 +92,7 @@ export class ServicePreviewModel{
   if(!serviceMutations.includes(name as any))throw Error('Unmapped mutation');if(this.disposed||['readonly','forbidden','session','foreign','failure','stale-error'].includes(this.activeMode))throw fault('FORBIDDEN');
   if(this.activeMode==='action-failure')throw fault();if(this.activeMode==='save-conflict'){this.complete();throw fault('CONFLICT');}
   if(this.activeMode==='pending-save'){this.pending++;this.emit();try{await new Promise<void>((resolve,reject)=>this.waiting.push({resolve,reject}));}finally{this.pending--;this.emit();}}if(this.disposed)throw fault('CONFLICT');
+  if(name.startsWith('bookings.')){const before=this.bookings.writes,result=this.bookings.mutate(name,input);this.operations+=this.bookings.writes-before;this.emit();if(this.activeMode==='uncertain-save')throw fault();return result;}
   if(name.startsWith('staff.'))return this.saveStaff(name,input);
   const [namespace,action]=name.split('.'),entity:Entity=namespace==='services'?'service':namespace==='serviceCategories'?'category':'package',idKey=entity+'Id';
   const {expectedDefinition,...body}=input,id=body[idKey];delete body[idKey];const current=action==='create'?null:this.owned(entity,id);
