@@ -1,6 +1,12 @@
 .tp-preview {
   min-width: 0;
 }
+.tp-preview summary { min-height: 44px; padding-block: 10px; }
+.tp-preview button, .tp-editor button { min-height: 44px; }
+.tp-check { min-height: 44px; padding-block: 10px; cursor: pointer; }
+.tp-draft-hint { color: var(--muted); font-size: 13px; line-height: 1.8; }
+body:has(.tp-preview) .prototype-toggle { min-width: 44px; min-height: 44px; }
+body:has(.tp-preview) .search-button { min-width: 44px; min-height: 44px; }
 .tp-toolbar {
   display: flex;
   flex-wrap: wrap;

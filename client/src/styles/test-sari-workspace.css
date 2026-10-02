@@ -1,0 +1,23 @@
+.ts-workspace :is(button, input, [data-slot="select-trigger"]),
+.ts-dialog :is(button, input) {
+  min-height: 44px;
+  min-width: 44px;
+}
+.ts-workspace summary {
+  min-height: 44px;
+  padding-block: 10px;
+}
+.ts-dialog {
+  width: calc(100% - 2rem);
+  max-width: 32rem;
+  max-height: calc(100vh - 2rem);
+  max-height: calc(100svh - 2rem);
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+}
+.ts-dialog [data-slot="dialog-header"] { padding-inline-end: 28px; }
+@media (max-width: 620px) {
+  .ts-dialog input { font-size: 16px; }
+}

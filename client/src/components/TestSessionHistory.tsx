@@ -85,7 +85,7 @@ export function TestSessionHistory({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="max-h-[calc(100dvh-2rem)] overflow-y-auto"
+        className="ts-dialog"
         closeLabel={t("testSariPage.closeDialog")}
       >
         <DialogHeader>

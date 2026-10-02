@@ -105,6 +105,39 @@ const reload = () => {
 };
 
 describe("assistant testing workspace prototype", () => {
+  it("keeps an unsent draft across internal navigation without storing its text", () => {
+    route();
+    input("question", "private draft <script>text</script>");
+    expect(session().draft).toBe("");
+    expect(w.localStorage.getItem(key)).not.toContain("private draft");
+    route("tools");
+    const event = new w.Event("beforeunload", { cancelable: true });
+    w.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(true);
+    route();
+    expect(node("#tp-question").value).toBe("private draft <script>text</script>");
+    expect(session().messages).toHaveLength(0);
+    expect(session().pending).toBeNull();
+    reload();
+    expect(node("#tp-question").value).toBe("");
+  });
+  it("keeps a deal draft in memory while navigating, but clears it on reload", () => {
+    route(); example(); click("deal"); input("value", "387.25"); click("close");
+    route("tools"); route(); click("deal");
+    expect(node("#tp-value").value).toBe("387.25");
+    expect(session().dealDraft).toBe("");
+    expect(w.localStorage.getItem(key)).not.toContain("387.25");
+    click("close"); reload(); click("deal");
+    expect(node("#tp-value").value).toBe("");
+  });
+  it("removes the unload warning after clearing the example and never restores the draft", () => {
+    route(); input("question", "temporary draft");
+    w.TestingPreview.reset(); route();
+    const event = new w.Event("beforeunload", { cancelable: true });
+    w.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(false);
+    expect(node("#tp-question").value).toBe("");
+  });
   it("waits for feedback acknowledgement and retries the identical receipt without optimistic success", () => {
     route();
     example();
@@ -190,7 +223,8 @@ describe("assistant testing workspace prototype", () => {
       "لم نستبدل المحادثة أو المسودة"
     );
     expect(session().id).toBe(1);
-    expect(session().draft).toBe("draft");
+    expect(node("#tp-question").value).toBe("draft");
+    expect(session().draft).toBe("");
     click("close");
     option("history", "forbidden");
     click("history");

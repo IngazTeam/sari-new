@@ -305,7 +305,7 @@ export default function MerchantShell({ children }: { children: ReactNode }) {
                   <span>{user?.name?.charAt(0) || "س"}</span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-64">
+              <DropdownMenuContent align="end" collisionPadding={8} className="mw-account-menu w-64">
                 <div className="px-3 py-2">
                   <strong className="block text-sm">{user?.name}</strong>
                   <span className="text-xs text-muted-foreground break-all">

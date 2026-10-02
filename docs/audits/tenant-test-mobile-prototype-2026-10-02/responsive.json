@@ -1,0 +1,502 @@
+{
+  "measurements": [
+    {
+      "label": "actual-ar-320",
+      "client": 290,
+      "rawKeys": [],
+      "scroll": 290,
+      "small": [
+        {
+          "h": 36,
+          "label": "فتح قائمة التاجر",
+          "w": 44
+        },
+        {
+          "h": 36,
+          "label": "الإشعارات",
+          "w": 36
+        },
+        {
+          "h": 44,
+          "label": "الحساب والتفضيلات",
+          "w": 36
+        },
+        {
+          "h": 42,
+          "label": "اكتب رسالتك هنا...",
+          "w": 152
+        },
+        {
+          "h": 36,
+          "label": "تسجيل صفقة تجريبية",
+          "w": 186
+        },
+        {
+          "h": 20,
+          "label": "جرّب أمثلة جاهزة",
+          "w": 204
+        },
+        {
+          "h": 42,
+          "label": "سيناريو الاختبار",
+          "w": 170
+        },
+        {
+          "h": 20,
+          "label": "عن التجربة وحدودها",
+          "w": 204
+        }
+      ],
+      "width": 320
+    },
+    {
+      "label": "actual-ar-320-after-touch-fix",
+      "client": 290,
+      "rawKeys": [],
+      "scroll": 290,
+      "small": [],
+      "width": 320
+    },
+    {
+      "label": "actual-ar-320-reset-dialog",
+      "client": 290,
+      "rawKeys": [],
+      "scroll": 290,
+      "small": [],
+      "width": 320
+    },
+    {
+      "label": "actual-ar-320x550-history",
+      "client": 290,
+      "rawKeys": [],
+      "scroll": 290,
+      "small": [],
+      "width": 320
+    },
+    {
+      "label": "history-dialog",
+      "bottom": 361,
+      "h": 172,
+      "top": 189,
+      "viewport": 550,
+      "w": 258
+    },
+    {
+      "label": "actual-ar-390",
+      "client": 360,
+      "rawKeys": [],
+      "scroll": 360,
+      "small": [],
+      "width": 390
+    },
+    {
+      "label": "actual-ar-768",
+      "client": 738,
+      "rawKeys": [],
+      "scroll": 738,
+      "small": [],
+      "width": 768
+    },
+    {
+      "label": "actual-ar-1440",
+      "client": 1410,
+      "rawKeys": [],
+      "scroll": 1410,
+      "small": [
+        {
+          "h": 40,
+          "label": "اختر متجرًا للمتابعةمتجر الفحص المحلي — WooCommerce",
+          "w": 179
+        }
+      ],
+      "width": 1440
+    },
+    {
+      "label": "prototype-ar-320",
+      "client": 290,
+      "rawKeys": [],
+      "scroll": 290,
+      "small": [
+        {
+          "h": 21,
+          "label": "جرّب أمثلة جاهزة",
+          "w": 222
+        },
+        {
+          "h": 25,
+          "label": "عن التجربة وحدودها",
+          "w": 222
+        },
+        {
+          "h": 20,
+          "label": "تغييرات تقييمك في هذه الزيارة",
+          "w": 222
+        },
+        {
+          "h": 20,
+          "label": "حالات تجربة التصميم",
+          "w": 228
+        },
+        {
+          "h": 37,
+          "label": "خيارات تجربة الموك أب",
+          "w": 37
+        }
+      ],
+      "width": 320
+    },
+    {
+      "label": "prototype-ar-320-after-touch-fix",
+      "client": 290,
+      "rawKeys": [],
+      "scroll": 290,
+      "small": [],
+      "width": 320
+    },
+    {
+      "label": "prototype-ar-320x550-reset-dialog",
+      "client": 290,
+      "rawKeys": [],
+      "scroll": 290,
+      "small": [
+        {
+          "h": 20,
+          "label": "",
+          "w": 20
+        }
+      ],
+      "width": 320
+    },
+    {
+      "label": "prototype-final-ar-320",
+      "client": 290,
+      "rawKeys": [],
+      "scroll": 290,
+      "small": [],
+      "width": 320
+    },
+    {
+      "label": "prototype-final-ar-390",
+      "client": 360,
+      "rawKeys": [],
+      "scroll": 360,
+      "small": [],
+      "width": 390
+    },
+    {
+      "label": "prototype-final-ar-768",
+      "client": 738,
+      "rawKeys": [],
+      "scroll": 738,
+      "small": [
+        {
+          "h": 42,
+          "label": "البحث في جميع الأدوات",
+          "w": 44
+        }
+      ],
+      "width": 768
+    },
+    {
+      "label": "prototype-final-ar-1440",
+      "client": 1410,
+      "rawKeys": [],
+      "scroll": 1410,
+      "small": [
+        {
+          "h": 40,
+          "label": "البحث في جميع الأدوات",
+          "w": 245
+        },
+        {
+          "h": 43,
+          "label": "الجلسات المحفوظة",
+          "w": 132
+        },
+        {
+          "h": 43,
+          "label": "جلسة جديدة",
+          "w": 98
+        },
+        {
+          "h": 43,
+          "label": "جرّب الرد محليًا",
+          "w": 105
+        },
+        {
+          "h": 43,
+          "label": "تسجيل صفقة تجريبية",
+          "w": 952
+        }
+      ],
+      "width": 1440
+    },
+    {
+      "label": "prototype-final-ar-320x550-dialog",
+      "client": 290,
+      "rawKeys": [],
+      "scroll": 290,
+      "small": [],
+      "width": 320
+    },
+    {
+      "label": "prototype-verified-ar-320",
+      "client": 290,
+      "rawKeys": [],
+      "scroll": 290,
+      "small": [],
+      "width": 320
+    },
+    {
+      "label": "prototype-verified-ar-390",
+      "client": 360,
+      "rawKeys": [],
+      "scroll": 360,
+      "small": [],
+      "width": 390
+    },
+    {
+      "label": "prototype-verified-ar-768",
+      "client": 738,
+      "rawKeys": [],
+      "scroll": 738,
+      "small": [],
+      "width": 768
+    },
+    {
+      "label": "prototype-verified-ar-1440",
+      "client": 1410,
+      "rawKeys": [],
+      "scroll": 1410,
+      "small": [],
+      "width": 1440
+    },
+    {
+      "label": "actual-verified-ar-320",
+      "client": 290,
+      "rawKeys": [],
+      "scroll": 290,
+      "small": [],
+      "width": 320
+    },
+    {
+      "label": "actual-verified-ar-320",
+      "client": 290,
+      "rawKeys": [],
+      "scroll": 290,
+      "small": [
+        {
+          "h": 35,
+          "label": "تبديل الوضع",
+          "w": 35
+        },
+        {
+          "h": 43,
+          "label": "سلسلة تنبيهات ساري",
+          "w": 43
+        }
+      ],
+      "width": 320
+    },
+    {
+      "label": "actual-verified-ar-390",
+      "client": 360,
+      "rawKeys": [],
+      "scroll": 360,
+      "small": [
+        {
+          "h": 34,
+          "label": "تبديل الوضع",
+          "w": 34
+        },
+        {
+          "h": 42,
+          "label": "سلسلة تنبيهات ساري",
+          "w": 42
+        }
+      ],
+      "width": 390
+    },
+    {
+      "label": "actual-verified-ar-768",
+      "client": 738,
+      "rawKeys": [],
+      "scroll": 738,
+      "small": [],
+      "width": 768
+    },
+    {
+      "label": "actual-verified-ar-1440",
+      "client": 1410,
+      "rawKeys": [],
+      "scroll": 1410,
+      "small": [],
+      "width": 1440
+    },
+    {
+      "label": "actual-final-clean-ar-320",
+      "client": 290,
+      "rawKeys": [],
+      "scroll": 290,
+      "small": [],
+      "width": 320
+    },
+    {
+      "label": "actual-final-clean-ar-320-account-menu",
+      "client": 290,
+      "rawKeys": [],
+      "scroll": 290,
+      "small": [],
+      "width": 320
+    },
+    {
+      "label": "account-final-boundary-320",
+      "client": 290,
+      "left": 62,
+      "right": 318
+    },
+    {
+      "label": "actual-final-account-320",
+      "client": 290,
+      "rawKeys": [],
+      "scroll": 290,
+      "small": [],
+      "width": 320
+    },
+    {
+      "label": "actual-account-final-320",
+      "client": 290,
+      "rawKeys": [],
+      "scroll": 290,
+      "small": [],
+      "width": 320
+    },
+    {
+      "label": "actual-final-pass-ar-320",
+      "client": 290,
+      "rawKeys": [],
+      "scroll": 290,
+      "small": [],
+      "width": 320
+    },
+    {
+      "label": "actual-final-pass-ar-390",
+      "client": 360,
+      "rawKeys": [],
+      "scroll": 360,
+      "small": [],
+      "width": 390
+    },
+    {
+      "label": "actual-final-pass-ar-768",
+      "client": 738,
+      "rawKeys": [],
+      "scroll": 738,
+      "small": [],
+      "width": 768
+    },
+    {
+      "label": "actual-final-pass-ar-1440",
+      "client": 1410,
+      "rawKeys": [],
+      "scroll": 1410,
+      "small": [],
+      "width": 1440
+    }
+  ],
+  "accepted": [
+    {
+      "label": "actual-ar-320x550-history",
+      "client": 290,
+      "rawKeys": [],
+      "scroll": 290,
+      "small": [],
+      "width": 320
+    },
+    {
+      "label": "prototype-final-ar-320x550-dialog",
+      "client": 290,
+      "rawKeys": [],
+      "scroll": 290,
+      "small": [],
+      "width": 320
+    },
+    {
+      "label": "prototype-verified-ar-320",
+      "client": 290,
+      "rawKeys": [],
+      "scroll": 290,
+      "small": [],
+      "width": 320
+    },
+    {
+      "label": "prototype-verified-ar-390",
+      "client": 360,
+      "rawKeys": [],
+      "scroll": 360,
+      "small": [],
+      "width": 390
+    },
+    {
+      "label": "prototype-verified-ar-768",
+      "client": 738,
+      "rawKeys": [],
+      "scroll": 738,
+      "small": [],
+      "width": 768
+    },
+    {
+      "label": "prototype-verified-ar-1440",
+      "client": 1410,
+      "rawKeys": [],
+      "scroll": 1410,
+      "small": [],
+      "width": 1440
+    },
+    {
+      "label": "actual-account-final-320",
+      "client": 290,
+      "rawKeys": [],
+      "scroll": 290,
+      "small": [],
+      "width": 320
+    },
+    {
+      "label": "actual-final-pass-ar-320",
+      "client": 290,
+      "rawKeys": [],
+      "scroll": 290,
+      "small": [],
+      "width": 320
+    },
+    {
+      "label": "actual-final-pass-ar-390",
+      "client": 360,
+      "rawKeys": [],
+      "scroll": 360,
+      "small": [],
+      "width": 390
+    },
+    {
+      "label": "actual-final-pass-ar-768",
+      "client": 738,
+      "rawKeys": [],
+      "scroll": 738,
+      "small": [],
+      "width": 768
+    },
+    {
+      "label": "actual-final-pass-ar-1440",
+      "client": 1410,
+      "rawKeys": [],
+      "scroll": 1410,
+      "small": [],
+      "width": 1440
+    }
+  ],
+  "notes": [
+    "The fixed iframe widths include a 30px browser scrollbar in this Windows/zoom setup.",
+    "Earlier measurements include issues that were corrected, and transient menu exit transforms.",
+    "Arabic UI; not Safari or physical iPhone evidence."
+  ]
+}

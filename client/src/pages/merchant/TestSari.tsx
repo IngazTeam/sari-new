@@ -1,4 +1,5 @@
 import { TestSessionHistory } from "@/components/TestSessionHistory";
+import "@/styles/test-sari-workspace.css";
 import { knowledgeCacheEpoch } from "@/lib/knowledge-workspace-cache";
 import {
   readTestSessionReference,
@@ -307,7 +308,7 @@ function TestSariWorkspace({ scopeKey }: { scopeKey: string }) {
   }, [messages, isTyping]);
 
   return (
-    <div className="mx-auto w-full min-w-0 max-w-5xl space-y-4 p-3 sm:p-6">
+    <div className="ts-workspace mx-auto w-full min-w-0 max-w-5xl space-y-4 p-3 sm:p-6">
       <div>
         <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
           <div>
@@ -663,7 +664,7 @@ function TestSariWorkspace({ scopeKey }: { scopeKey: string }) {
           <DialogContent
             closeLabel={t("testSariPage.closeDialog")}
             showCloseButton={!busy}
-            className="max-h-[calc(100dvh-2rem)] overflow-y-auto"
+            className="ts-dialog"
           >
             <DialogHeader>
               <DialogTitle>{t("testSariPage.dealDialogTitle")}</DialogTitle>
@@ -902,6 +903,7 @@ function TestSariWorkspace({ scopeKey }: { scopeKey: string }) {
         <DialogContent
           closeLabel={t("testSariPage.closeDialog")}
           showCloseButton={!busy}
+          className="ts-dialog"
         >
           <DialogHeader>
             <DialogTitle>{t("testSariPage.openSessionTitle")}</DialogTitle>
@@ -943,7 +945,7 @@ function TestSariWorkspace({ scopeKey }: { scopeKey: string }) {
         >
           <DialogContent
             closeLabel={t("testSariPage.closeDialog")}
-            className="max-h-[calc(100dvh-2rem)] overflow-y-auto"
+            className="ts-dialog"
           >
             <DialogHeader>
               <DialogTitle>{t("testSariPage.replaceTitle")}</DialogTitle>

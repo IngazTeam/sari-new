@@ -5106,7 +5106,7 @@ html:has(.merchant-workspace) {
 }
 .mw-sidebar-footer select {
   font-size: 12px;
-  min-height: 40px;
+  min-height: 44px;
 }
 .mw-subscription {
   padding: 12px;
@@ -5154,6 +5154,11 @@ html:has(.merchant-workspace) {
   gap: 12px;
   min-width: 0;
 }
+.mw-topbar button { min-width: 44px; min-height: 44px; }
+.mw-account-menu :is(button, [role="menuitem"]) { min-height: 44px; min-width: 44px; }
+.mw-account-menu { max-width: calc(100vw - 4rem); }
+.mw-header-actions { flex-shrink: 0; }
+.mw-store > span:last-child { min-width: 0; }
 .mw-store {
   display: flex;
   align-items: center;
