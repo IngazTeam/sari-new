@@ -1,0 +1,377 @@
+[
+  {
+    "label": "ar-320-overview",
+    "dialog": null,
+    "overflow": false,
+    "rawKeys": false,
+    "scrollWidth": 290,
+    "small": [],
+    "width": 290
+  },
+  {
+    "label": "ar-320-الربط والإعدادات",
+    "dialog": null,
+    "overflow": false,
+    "rawKeys": false,
+    "scrollWidth": 290,
+    "small": [],
+    "width": 290
+  },
+  {
+    "label": "ar-320-المواعيد",
+    "dialog": null,
+    "overflow": false,
+    "rawKeys": false,
+    "scrollWidth": 290,
+    "small": [],
+    "width": 290
+  },
+  {
+    "label": "ar-320-سجل التحديثات · 12",
+    "dialog": null,
+    "overflow": false,
+    "rawKeys": false,
+    "scrollWidth": 290,
+    "small": [],
+    "width": 290
+  },
+  {
+    "label": "ar-320-روابط الحجز",
+    "dialog": null,
+    "overflow": false,
+    "rawKeys": false,
+    "scrollWidth": 290,
+    "small": [],
+    "width": 290
+  },
+  {
+    "label": "ar-390-الربط والإعدادات",
+    "dialog": null,
+    "overflow": false,
+    "rawKeys": false,
+    "scrollWidth": 360,
+    "small": [],
+    "width": 360
+  },
+  {
+    "label": "ar-390-المواعيد",
+    "dialog": null,
+    "overflow": false,
+    "rawKeys": false,
+    "scrollWidth": 360,
+    "small": [],
+    "width": 360
+  },
+  {
+    "label": "ar-390-سجل التحديثات · 12",
+    "dialog": null,
+    "overflow": false,
+    "rawKeys": false,
+    "scrollWidth": 360,
+    "small": [],
+    "width": 360
+  },
+  {
+    "label": "ar-390-روابط الحجز",
+    "dialog": null,
+    "overflow": false,
+    "rawKeys": false,
+    "scrollWidth": 360,
+    "small": [],
+    "width": 360
+  },
+  {
+    "label": "ar-768-الربط والإعدادات",
+    "dialog": null,
+    "overflow": false,
+    "rawKeys": false,
+    "scrollWidth": 738,
+    "small": [],
+    "width": 738
+  },
+  {
+    "label": "ar-768-المواعيد",
+    "dialog": null,
+    "overflow": false,
+    "rawKeys": false,
+    "scrollWidth": 738,
+    "small": [],
+    "width": 738
+  },
+  {
+    "label": "ar-768-سجل التحديثات · 12",
+    "dialog": null,
+    "overflow": false,
+    "rawKeys": false,
+    "scrollWidth": 738,
+    "small": [],
+    "width": 738
+  },
+  {
+    "label": "ar-768-روابط الحجز",
+    "dialog": null,
+    "overflow": false,
+    "rawKeys": false,
+    "scrollWidth": 738,
+    "small": [],
+    "width": 768
+  },
+  {
+    "label": "ar-1440-الربط والإعدادات",
+    "dialog": null,
+    "overflow": false,
+    "rawKeys": false,
+    "scrollWidth": 1410,
+    "small": [],
+    "width": 1410
+  },
+  {
+    "label": "ar-1440-المواعيد",
+    "dialog": null,
+    "overflow": false,
+    "rawKeys": false,
+    "scrollWidth": 1410,
+    "small": [],
+    "width": 1410
+  },
+  {
+    "label": "ar-1440-سجل التحديثات · 12",
+    "dialog": null,
+    "overflow": false,
+    "rawKeys": false,
+    "scrollWidth": 1410,
+    "small": [],
+    "width": 1410
+  },
+  {
+    "label": "ar-1440-روابط الحجز",
+    "dialog": null,
+    "overflow": false,
+    "rawKeys": false,
+    "scrollWidth": 1410,
+    "small": [],
+    "width": 1440
+  },
+  {
+    "label": "en-320-Connection & settings",
+    "dialog": null,
+    "overflow": false,
+    "rawKeys": false,
+    "scrollWidth": 290,
+    "small": [],
+    "width": 290
+  },
+  {
+    "label": "en-320-Appointments",
+    "dialog": null,
+    "overflow": false,
+    "rawKeys": false,
+    "scrollWidth": 290,
+    "small": [],
+    "width": 290
+  },
+  {
+    "label": "en-320-Update history · 12",
+    "dialog": null,
+    "overflow": false,
+    "rawKeys": false,
+    "scrollWidth": 290,
+    "small": [],
+    "width": 290
+  },
+  {
+    "label": "en-320-Booking links",
+    "dialog": null,
+    "overflow": false,
+    "rawKeys": false,
+    "scrollWidth": 290,
+    "small": [],
+    "width": 290
+  },
+  {
+    "label": "en-390-Connection & settings",
+    "dialog": null,
+    "overflow": false,
+    "rawKeys": false,
+    "scrollWidth": 360,
+    "small": [],
+    "width": 360
+  },
+  {
+    "label": "en-390-Appointments",
+    "dialog": null,
+    "overflow": false,
+    "rawKeys": false,
+    "scrollWidth": 360,
+    "small": [],
+    "width": 360
+  },
+  {
+    "label": "en-390-Update history · 12",
+    "dialog": null,
+    "overflow": false,
+    "rawKeys": false,
+    "scrollWidth": 360,
+    "small": [],
+    "width": 360
+  },
+  {
+    "label": "en-390-Booking links",
+    "dialog": null,
+    "overflow": false,
+    "rawKeys": false,
+    "scrollWidth": 360,
+    "small": [],
+    "width": 360
+  },
+  {
+    "label": "en-768-Connection & settings",
+    "dialog": null,
+    "overflow": false,
+    "rawKeys": false,
+    "scrollWidth": 738,
+    "small": [],
+    "width": 738
+  },
+  {
+    "label": "en-768-Appointments",
+    "dialog": null,
+    "overflow": false,
+    "rawKeys": false,
+    "scrollWidth": 738,
+    "small": [],
+    "width": 738
+  },
+  {
+    "label": "en-768-Update history · 12",
+    "dialog": null,
+    "overflow": false,
+    "rawKeys": false,
+    "scrollWidth": 738,
+    "small": [],
+    "width": 738
+  },
+  {
+    "label": "en-768-Booking links",
+    "dialog": null,
+    "overflow": false,
+    "rawKeys": false,
+    "scrollWidth": 738,
+    "small": [],
+    "width": 768
+  },
+  {
+    "label": "en-1440-Connection & settings",
+    "dialog": null,
+    "overflow": false,
+    "rawKeys": false,
+    "scrollWidth": 1410,
+    "small": [],
+    "width": 1410
+  },
+  {
+    "label": "en-1440-Appointments",
+    "dialog": null,
+    "overflow": false,
+    "rawKeys": false,
+    "scrollWidth": 1410,
+    "small": [],
+    "width": 1410
+  },
+  {
+    "label": "en-1440-Update history · 12",
+    "dialog": null,
+    "overflow": false,
+    "rawKeys": false,
+    "scrollWidth": 1410,
+    "small": [],
+    "width": 1410
+  },
+  {
+    "label": "en-1440-Booking links",
+    "dialog": null,
+    "overflow": false,
+    "rawKeys": false,
+    "scrollWidth": 1410,
+    "small": [],
+    "width": 1440
+  },
+  {
+    "label": "en-390-verify-dialog",
+    "dialog": {
+      "height": 244.375,
+      "viewportHeight": 1100,
+      "width": 328
+    },
+    "overflow": false,
+    "rawKeys": false,
+    "scrollWidth": 360,
+    "small": [],
+    "width": 360
+  },
+  {
+    "label": "en-390-disconnect-dialog",
+    "dialog": {
+      "height": 439.15625,
+      "viewportHeight": 1100,
+      "width": 328
+    },
+    "overflow": false,
+    "rawKeys": false,
+    "scrollWidth": 360,
+    "small": [],
+    "width": 360
+  },
+  {
+    "label": "en-390-sync-dialog",
+    "dialog": {
+      "height": 339.5625,
+      "viewportHeight": 1100,
+      "width": 328
+    },
+    "overflow": false,
+    "rawKeys": false,
+    "scrollWidth": 360,
+    "small": [],
+    "width": 360
+  },
+  {
+    "label": "ar-390x550-replacement-dialog",
+    "dialog": {
+      "height": 518,
+      "viewportHeight": 550,
+      "width": 328
+    },
+    "overflow": false,
+    "rawKeys": false,
+    "scrollWidth": 360,
+    "small": [],
+    "width": 360
+  },
+  {
+    "label": "ar-390x550-settings-dialog",
+    "dialog": {
+      "height": 289.96875,
+      "viewportHeight": 550,
+      "width": 328
+    },
+    "overflow": false,
+    "rawKeys": false,
+    "scrollWidth": 360,
+    "small": [],
+    "width": 360
+  },
+  {
+    "label": "ar-390x550-unknown-review",
+    "dialog": {
+      "height": 394.75,
+      "viewportHeight": 550,
+      "width": 328
+    },
+    "overflow": false,
+    "rawKeys": false,
+    "scrollWidth": 360,
+    "small": [],
+    "width": 360
+  }
+]

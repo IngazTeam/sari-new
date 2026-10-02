@@ -13,6 +13,12 @@ beforeEach(()=>{
 });
 afterEach(()=>dom.window.close());
 const send=(data:any,origin='http://127.0.0.1:4329',source=frame.contentWindow)=>w.dispatchEvent(new w.MessageEvent('message',{origin,source,data}));
+it('preserves Calendly context from its owned frame without copying token parameters',()=>{
+ frame.setAttribute('src','./service-workspace.html?embed=brain');w.history.replaceState(null,'','#/page/merchant/integrations/calendly');w.syncServicePreviewContext=vi.fn();
+ const message={type:'sary-brain-preview',action:'serviceState',search:'path=/merchant/integrations/calendly&tenant=270&lang=en&scenario=destination-missing'};
+ send({...message,search:message.search+'&apiKey=secret'});send(message,'https://evil.test');send(message,undefined,w);expect(w.location.hash).toBe('#/page/merchant/integrations/calendly');send(message);expect(w.location.hash).toBe('#/page/merchant/integrations/calendly?tenant=270&lang=en&scenario=destination-missing');
+ for(const route of ['/merchant/whatsapp','/merchant/integrations/calendly']){const before=w.location.hash;send({type:'sary-brain-preview',action:'serviceTool',route},'https://evil.test');expect(w.location.hash).toBe(before);send({type:'sary-brain-preview',action:'serviceTool',route});expect(w.location.hash).toBe('#/page'+route);}
+});
 it.each(['/merchant/integrations/zid','/merchant/zid/settings','/merchant/zid/products','/merchant/zid/sync-logs','/merchant/zid/callback'])('preserves the owned Zid route %s without copying authorization parameters',route=>{
  frame.setAttribute('src','./service-workspace.html?embed=brain');w.history.replaceState(null,'','#/page/merchant/zid/settings');w.syncServicePreviewContext=vi.fn();
  const message={type:'sary-brain-preview',action:'serviceState',search:`path=${route}&connection=zid-events-pending&tenant=270&lang=en`};

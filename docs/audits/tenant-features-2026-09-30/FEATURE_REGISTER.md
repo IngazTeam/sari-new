@@ -2,7 +2,7 @@
 
 هذا حصر مصدر قابل لإعادة التوليد، وليس ادعاءً بأن كل مسار عمل اختُبر أو أُعيد تصميمه. يشمل المكونات الفرعية المحلية، الحقول، الأزرار، النوافذ، التبويبات، واجهات القراءة والتعديل. العناصر الديناميكية تحتاج مراجعة إضافية.
 
-- 126 مسارًا مسجلًا، 421 ملف واجهة متصلًا، 2473 عنصر تحكم في المصدر.
+- 126 مسارًا مسجلًا، 427 ملف واجهة متصلًا، 2497 عنصر تحكم في المصدر.
 - 0 رابطًا حرفيًا غير مطابق، و0 ملف صفحة غير متصل بالمسارات المحصورة.
 
 | الصفحة | الملفات | عناصر التحكم | القراءة / التعديل | موك أب للصفحة |
@@ -34,7 +34,7 @@
 | /merchant/woocommerce/products — منتجات WooCommerce | 13 | 78 | 13 / 6 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/woocommerce/orders — طلبات WooCommerce | 13 | 78 | 13 / 6 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/woocommerce/analytics — تحليلات WooCommerce | 13 | 78 | 13 / 6 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/integrations/calendly — ربط Calendly | 6 | 23 | 6 / 4 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/integrations/calendly — ربط Calendly | 7 | 46 | 8 / 5 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/chat-orders — مدخل لوحة التاجر | 0 | 0 | 0 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/discounts — كوبونات الخصم | 1 | 16 | 2 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/referrals — إحالات التجار | 2 | 2 | 4 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -1475,32 +1475,71 @@
 | 36 | Button | تسمية ديناميكية / تحتاج مراجعة | WooOrderDialog |
 | 36 | Button | تسمية ديناميكية / تحتاج مراجعة | WooOrderDialog |
 
-## client/src/pages/merchant/CalendlyIntegration.tsx
+## client/src/components/merchant/CalendlyOperationPanel.tsx
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 159 | Button | تسمية ديناميكية / تحتاج مراجعة | CalendlyIntegration |
-| 186 | Calendar | تسمية ديناميكية / تحتاج مراجعة | تكامل Calendly |
-| 209 | Calendar | تسمية ديناميكية / تحتاج مراجعة | حالة الاتصال |
-| 239 | TabsTrigger | المواعيد | المواعيد |
-| 240 | Calendar | تسمية ديناميكية / تحتاج مراجعة | المواعيد |
-| 243 | TabsTrigger | الإعدادات | الإعدادات |
-| 247 | TabsTrigger | Webhooks | Webhooks |
-| 251 | TabsTrigger | روابط الحجز | روابط الحجز |
-| 273 | Calendar | تسمية ديناميكية / تحتاج مراجعة | المواعيد القادمة |
-| 291 | Calendar | تسمية ديناميكية / تحتاج مراجعة | المواعيد القادمة |
-| 318 | Switch | تسمية ديناميكية / تحتاج مراجعة | إعدادات التكامل |
-| 322 | Button | حفظ الإعدادات | إعدادات التكامل |
-| 326 | Button | مزامنة الآن | إعدادات التكامل |
-| 334 | Button | فصل الحساب | إعدادات التكامل |
-| 399 | Button | دليل إعداد Webhooks في Calendly | إعدادات Webhooks |
-| 400 | a | دليل إعداد Webhooks في Calendly | إعدادات Webhooks |
-| 432 | Button | فتح الرابط | روابط الحجز |
-| 433 | a | فتح الرابط | روابط الحجز |
-| 469 | Input | Personal Access Token | ربط حساب Calendly |
-| 481 | Button | ربط الحساب | ربط حساب Calendly |
-| 485 | Button | فتح إعدادات Calendly | ربط حساب Calendly |
-| 486 | a | فتح إعدادات Calendly | ربط حساب Calendly |
+| 72 | Button | تسمية ديناميكية / تحتاج مراجعة | CalendlyOperationPanel |
+| 75 | Button | تسمية ديناميكية / تحتاج مراجعة | CalendlyOperationPanel |
+| 76 | summary | تسمية ديناميكية / تحتاج مراجعة | CalendlyOperationPanel |
+| 76 | Button | تسمية ديناميكية / تحتاج مراجعة | CalendlyOperationPanel |
+| 77 | DialogContent | تسمية ديناميكية / تحتاج مراجعة | CalendlyOperationPanel |
+| 77 | Button | تسمية ديناميكية / تحتاج مراجعة | CalendlyOperationPanel |
+| 77 | Button | تسمية ديناميكية / تحتاج مراجعة | CalendlyOperationPanel |
+
+## client/src/components/merchant/CalendlyWorkspaceShell.tsx
+
+| السطر | النوع | التسمية | القسم |
+|---:|---|---|---|
+| 10 | Button | تسمية ديناميكية / تحتاج مراجعة | CalendlyWorkspaceShell |
+| 10 | Link | تسمية ديناميكية / تحتاج مراجعة | CalendlyWorkspaceShell |
+
+## client/src/components/merchant/CalendlyWorkspace.tsx
+
+| السطر | النوع | التسمية | القسم |
+|---:|---|---|---|
+| 49 | button | receipts | CalendlyWorkspace |
+| 52 | Button | تسمية ديناميكية / تحتاج مراجعة | CalendlyWorkspace |
+| 52 | Button | تسمية ديناميكية / تحتاج مراجعة | CalendlyWorkspace |
+| 53 | summary | تسمية ديناميكية / تحتاج مراجعة | CalendlyWorkspace |
+| 53 | input | تسمية ديناميكية / تحتاج مراجعة | CalendlyWorkspace |
+| 53 | Button | تسمية ديناميكية / تحتاج مراجعة | CalendlyWorkspace |
+| 54 | input | startDate | CalendlyWorkspace |
+| 54 | Button | تسمية ديناميكية / تحتاج مراجعة | CalendlyWorkspace |
+| 55 | Button | تسمية ديناميكية / تحتاج مراجعة | CalendlyWorkspace |
+| 56 | input | تسمية ديناميكية / تحتاج مراجعة | CalendlyWorkspace |
+| 56 | Button | تسمية ديناميكية / تحتاج مراجعة | CalendlyWorkspace |
+| 56 | Button | تسمية ديناميكية / تحتاج مراجعة | CalendlyWorkspace |
+| 56 | Link | تسمية ديناميكية / تحتاج مراجعة | CalendlyWorkspace |
+| 59 | DialogContent | connect disconnect verify settings : · disconnect : · : — · UTC settings : disconnect | CalendlyWorkspace |
+| 63 | input | تسمية ديناميكية / تحتاج مراجعة | CalendlyWorkspace |
+| 64 | Button | تسمية ديناميكية / تحتاج مراجعة | CalendlyWorkspace |
+| 64 | Button | تسمية ديناميكية / تحتاج مراجعة | CalendlyWorkspace |
+
+## client/src/components/merchant/CalendlyLists.tsx
+
+| السطر | النوع | التسمية | القسم |
+|---:|---|---|---|
+| 11 | Button | تسمية ديناميكية / تحتاج مراجعة | CalendlyLists |
+| 11 | Button | تسمية ديناميكية / تحتاج مراجعة | CalendlyLists |
+| 19 | input | c.searchAppointments | CalendlyLists |
+| 19 | select | all | CalendlyLists |
+| 19 | select | all upcoming past | CalendlyLists |
+| 19 | input | startDate | CalendlyLists |
+| 19 | Button | تسمية ديناميكية / تحتاج مراجعة | CalendlyLists |
+| 19 | Button | تسمية ديناميكية / تحتاج مراجعة | CalendlyLists |
+| 19 | Button | تسمية ديناميكية / تحتاج مراجعة | CalendlyLists |
+| 24 | summary | تسمية ديناميكية / تحتاج مراجعة | CalendlyLists |
+| 29 | input | c.searchReceipts | CalendlyLists |
+| 29 | select | all | CalendlyLists |
+| 29 | select | all created cancelled unknown | CalendlyLists |
+| 29 | Button | تسمية ديناميكية / تحتاج مراجعة | CalendlyLists |
+| 29 | Button | تسمية ديناميكية / تحتاج مراجعة | CalendlyLists |
+| 29 | Button | تسمية ديناميكية / تحتاج مراجعة | CalendlyLists |
+| 33 | summary | تسمية ديناميكية / تحتاج مراجعة | CalendlyLists |
+| 36 | Button | · | CalendlyLists |
+| 36 | a | · | CalendlyLists |
+| 36 | Button | تسمية ديناميكية / تحتاج مراجعة | CalendlyLists |
 
 ## client/src/pages/DiscountCodes.tsx
 

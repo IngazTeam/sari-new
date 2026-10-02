@@ -18,7 +18,7 @@ import {CalendlyAppointmentsList,CalendlyReceiptsList,CalendlyBookingLinks} from
 type Review={action:CalendlyOperationKind;revision:string;preview?:z.infer<typeof calendlyConnectionPreviewSchema>;token?:string;period?:z.infer<typeof calendlySyncPeriod>;syncToWhatsApp?:boolean};
 export function CalendlyWorkspace({actorId,merchantId}:{actorId:number;merchantId:number}){
  const {t,i18n}=useTranslation(),c=calendlyWorkspaceLabels(t),locale=i18n.language.startsWith('ar')?'ar':'en';
- const query=trpc.calendly.getWorkspace.useQuery(undefined,calendlyFresh),data=query.error?null:scopedCalendlyWorkspace(query.data,actorId,merchantId);
+ const utils=trpc.useUtils(),query=trpc.calendly.getWorkspace.useQuery(undefined,calendlyFresh),data=query.error?null:scopedCalendlyWorkspace(query.data,actorId,merchantId);
  const preview=trpc.calendly.previewConnection.useMutation({retry:false}),connection=trpc.calendly.requestConnection.useMutation({retry:false}),sync=trpc.calendly.requestSync.useMutation({retry:false}),settings=trpc.calendly.saveWorkspaceSettings.useMutation({retry:false}),o=useCalendlyOperation(actorId,merchantId,true);
  const [tab,setTab]=useState<'overview'|'appointments'|'receipts'|'links'>('overview'),[token,setToken]=useState(''),[previewBusy,setPreviewBusy]=useState(false),[tokenError,setTokenError]=useState<'invalidKey'|'previewFailed'|null>(null);
  const [period,setPeriod]=useState(calendlyDefaultPeriod),[dateError,setDateError]=useState(false),[sendConfirmations,setSendConfirmations]=useState(false),[settingsRevision,setSettingsRevision]=useState('');
@@ -43,7 +43,7 @@ export function CalendlyWorkspace({actorId,merchantId}:{actorId:number;merchantI
   if(alive.current){setReview(null);setToken('');}
  }
  const listProps={actorId,merchantId,copy:c,locale} as const;
- return <CalendlyWorkspaceShell copy={c} locale={locale} heading={heading} busy={busy} refresh={()=>{void query.refetch();void o.recover();}}>
+ return <CalendlyWorkspaceShell copy={c} locale={locale} heading={heading} busy={busy} refresh={()=>{void utils.calendly.invalidate();void o.recover();}}>
  {query.isLoading?<WorkspaceState inline kind="loading"/>:!data?<WorkspaceState inline kind={workspaceFailureKind(query.error)} onRetry={()=>void query.refetch()}/>:<>
   <CalendlyOperationPanel operation={o} copy={c} locale={locale}/>
   <nav className="cl-tabs" aria-label={c.title}>{(['overview','appointments','receipts','links'] as const).map(value=><button key={value} type="button" aria-pressed={tab===value} disabled={o.busy||previewBusy} onClick={()=>setTab(value)}>{c[value]}{value==='receipts'&&data.webhooks.needsReview>0?` · ${data.webhooks.needsReview.toLocaleString(locale)}`:''}</button>)}</nav>

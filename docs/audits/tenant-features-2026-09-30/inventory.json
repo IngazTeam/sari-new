@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-02T18:34:22.706Z",
+  "generatedAt": "2026-10-02T19:49:32.708Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -6719,149 +6719,333 @@
     },
     {
       "file": "client/src/pages/merchant/CalendlyIntegration.tsx",
-      "hash": "2ee9fd0cb265",
+      "hash": "6fdeda5dde53",
       "queries": [
-        "calendly.getConnection",
-        "calendly.getUpcomingEvents",
-        "calendly.getEventTypes",
-        "calendly.getStats"
+        "auth.me",
+        "merchants.getCurrent"
       ],
-      "mutations": [
-        "calendly.connect",
-        "calendly.disconnect",
-        "calendly.syncNow",
-        "calendly.updateSettings"
-      ],
+      "mutations": [],
       "imperativeReads": [],
       "browserRequests": [],
-      "sections": [
-        {
-          "label": "تكامل Calendly",
-          "line": 172,
-          "tag": "h1"
-        },
-        {
-          "label": "حالة الاتصال",
-          "line": 189,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "المواعيد",
-          "line": 239,
-          "tag": "TabsTrigger"
-        },
-        {
-          "label": "الإعدادات",
-          "line": 243,
-          "tag": "TabsTrigger"
-        },
-        {
-          "label": "Webhooks",
-          "line": 247,
-          "tag": "TabsTrigger"
-        },
-        {
-          "label": "روابط الحجز",
-          "line": 251,
-          "tag": "TabsTrigger"
-        },
-        {
-          "label": "المواعيد القادمة",
-          "line": 261,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "إعدادات التكامل",
-          "line": 303,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "إعدادات Webhooks",
-          "line": 346,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "روابط الحجز",
-          "line": 413,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "ربط حساب Calendly",
-          "line": 455,
-          "tag": "CardTitle"
-        }
-      ],
+      "sections": [],
       "choices": [],
-      "handlers": [
-        {
-          "name": "handleConnect",
-          "line": 122,
-          "calls": [
-            "connectMutation"
-          ]
-        },
-        {
-          "name": "handleDisconnect",
-          "line": 136,
-          "calls": [
-            "disconnectMutation"
-          ]
-        },
-        {
-          "name": "handleSync",
-          "line": 142,
-          "calls": [
-            "syncMutation"
-          ]
-        },
-        {
-          "name": "handleSaveSettings",
-          "line": 146,
-          "calls": [
-            "updateSettingsMutation"
-          ]
-        }
-      ],
+      "handlers": [],
       "queryStates": [
         {
-          "query": "calendly.getConnection",
-          "binding": "{ data: connection, error: connectionError, isLoading, refetch }",
-          "line": 42,
+          "query": "auth.me",
+          "binding": "user",
+          "line": 6,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
         },
         {
-          "query": "calendly.getUpcomingEvents",
-          "binding": "{ data: upcomingEvents, error: eventsError, isLoading: eventsLoading, refetch: refreshEvents }",
-          "line": 47,
+          "query": "merchants.getCurrent",
+          "binding": "merchant",
+          "line": 6,
           "errorSignal": true,
           "loadingSignal": true,
-          "enabled": "!connectionError && connection?.connected "
-        },
-        {
-          "query": "calendly.getEventTypes",
-          "binding": "{ data: eventTypes, error: typesError, isLoading: typesLoading, refetch: refreshTypes }",
-          "line": 53,
-          "errorSignal": true,
-          "loadingSignal": true,
-          "enabled": "!connectionError && connection?.connected "
-        },
-        {
-          "query": "calendly.getStats",
-          "binding": "{ data: stats, error: statsError, isLoading: statsLoading, refetch: refreshStats }",
-          "line": 59,
-          "errorSignal": true,
-          "loadingSignal": true,
-          "enabled": "!connectionError && connection?.connected "
+          "enabled": "!!user.data?.id&&!user.error&&!user.isFetching"
         }
       ],
       "conditions": [],
       "imports": [
-        "client/src/lib/i18n.ts",
-        "client/src/components/KnowledgeWorkspaceScope.tsx"
+        "client/src/components/merchant/CalendlyOperationPanel.tsx",
+        "client/src/components/merchant/CalendlyWorkspace.tsx"
       ],
-      "controlCount": 22
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/components/merchant/CalendlyOperationPanel.tsx",
+      "hash": "c5eb9bd5491b",
+      "queries": [
+        "calendly.getBlockingOperation",
+        "calendly.getOperation"
+      ],
+      "mutations": [
+        "calendly.acknowledgeOperation"
+      ],
+      "imperativeReads": [
+        {
+          "procedure": "calendly.getOperation",
+          "method": "fetch",
+          "expression": "utils.calendly.getOperation.fetch",
+          "line": 28,
+          "provenance": "trpc-utility-static"
+        }
+      ],
+      "browserRequests": [],
+      "sections": [
+        {
+          "label": "",
+          "line": 66,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 67,
+          "tag": "h3"
+        },
+        {
+          "label": "",
+          "line": 76,
+          "tag": "summary"
+        },
+        {
+          "label": "",
+          "line": 77,
+          "tag": "DialogTitle"
+        }
+      ],
+      "choices": [
+        {
+          "name": "shown",
+          "line": 61,
+          "values": [
+            "...(o.receipt?[o.receipt]:[])",
+            "...(o.blocker&&o.blocker.requestId!==o.receipt?.requestId?[o.blocker]:[])"
+          ]
+        }
+      ],
+      "handlers": [],
+      "queryStates": [
+        {
+          "query": "calendly.getBlockingOperation",
+          "binding": "blockerQuery",
+          "line": 13,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        }
+      ],
+      "conditions": [],
+      "imports": [
+        "client/src/components/merchant/CalendlyWorkspaceShell.tsx",
+        "client/src/lib/calendly-workspace.ts"
+      ],
+      "controlCount": 7
+    },
+    {
+      "file": "client/src/components/merchant/CalendlyWorkspaceShell.tsx",
+      "hash": "f2a5b8f2af16",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [
+        {
+          "label": "",
+          "line": 10,
+          "tag": "h1"
+        }
+      ],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 2
+    },
+    {
+      "file": "client/src/lib/calendly-workspace.ts",
+      "hash": "382ad32faf07",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/components/merchant/CalendlyWorkspace.tsx",
+      "hash": "078a482ddf34",
+      "queries": [
+        "calendly.getWorkspace"
+      ],
+      "mutations": [
+        "calendly.previewConnection",
+        "calendly.requestConnection",
+        "calendly.requestSync",
+        "calendly.saveWorkspaceSettings"
+      ],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [
+        {
+          "label": "",
+          "line": 52,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 53,
+          "tag": "summary"
+        },
+        {
+          "label": "",
+          "line": 54,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 55,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 56,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 59,
+          "tag": "DialogTitle"
+        }
+      ],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [
+        {
+          "query": "calendly.getWorkspace",
+          "binding": "query",
+          "line": 21,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        }
+      ],
+      "conditions": [],
+      "imports": [
+        "client/src/lib/calendly-workspace.ts",
+        "client/src/lib/calendly-workspace-labels.ts",
+        "client/src/components/merchant/CalendlyWorkspaceShell.tsx",
+        "client/src/components/merchant/CalendlyOperationPanel.tsx",
+        "client/src/components/merchant/CalendlyLists.tsx"
+      ],
+      "controlCount": 17
+    },
+    {
+      "file": "client/src/lib/calendly-workspace-labels.ts",
+      "hash": "24a7b628d8b6",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/components/merchant/CalendlyLists.tsx",
+      "hash": "bb57e327f5a1",
+      "queries": [
+        "calendly.getAppointmentsWorkspace",
+        "calendly.getReceiptsWorkspace",
+        "calendly.getBookingLinksWorkspace"
+      ],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [
+        {
+          "label": "",
+          "line": 19,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 20,
+          "tag": "h3"
+        },
+        {
+          "label": "",
+          "line": 24,
+          "tag": "h3"
+        },
+        {
+          "label": "",
+          "line": 24,
+          "tag": "summary"
+        },
+        {
+          "label": "",
+          "line": 29,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 30,
+          "tag": "h3"
+        },
+        {
+          "label": "·",
+          "line": 33,
+          "tag": "h3"
+        },
+        {
+          "label": "",
+          "line": 33,
+          "tag": "summary"
+        },
+        {
+          "label": "",
+          "line": 36,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 36,
+          "tag": "h3"
+        },
+        {
+          "label": "",
+          "line": 36,
+          "tag": "h3"
+        }
+      ],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [
+        {
+          "query": "calendly.getAppointmentsWorkspace",
+          "binding": "query",
+          "line": 15,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        },
+        {
+          "query": "calendly.getReceiptsWorkspace",
+          "binding": "query",
+          "line": 28,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        },
+        {
+          "query": "calendly.getBookingLinksWorkspace",
+          "binding": "query",
+          "line": 35,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": "ready"
+        }
+      ],
+      "conditions": [],
+      "imports": [
+        "client/src/components/merchant/CalendlyOperationPanel.tsx",
+        "client/src/lib/calendly-workspace.ts"
+      ],
+      "controlCount": 20
     },
     {
       "file": "client/src/pages/DiscountCodes.tsx",
@@ -22122,52 +22306,88 @@
       ],
       "files": [
         "client/src/pages/merchant/CalendlyIntegration.tsx",
-        "client/src/lib/i18n.ts",
-        "client/src/components/KnowledgeWorkspaceScope.tsx",
-        "client/src/lib/knowledge-workspace-cache.ts",
-        "client/src/lib/sales-policy-draft.ts",
-        "client/src/lib/conversation-draft.ts"
+        "client/src/components/merchant/CalendlyOperationPanel.tsx",
+        "client/src/components/merchant/CalendlyWorkspaceShell.tsx",
+        "client/src/lib/calendly-workspace.ts",
+        "client/src/components/merchant/CalendlyWorkspace.tsx",
+        "client/src/lib/calendly-workspace-labels.ts",
+        "client/src/components/merchant/CalendlyLists.tsx"
       ],
       "controls": [
-        "e3bafa8eaef5",
-        "8bb931cbf3be",
-        "409620139872",
-        "9a9fef2709fa",
-        "a5612604d2de",
-        "5357ccc46409",
-        "8c5104ff776e",
-        "12d5b6239b67",
-        "57602408b6bd",
-        "83df442ddeae",
-        "4fc6263ff760",
-        "90167535f9a8",
-        "515f84885a0e",
-        "5dd436c44558",
-        "e4770b08f135",
-        "cd930b6e8f89",
-        "cf1a8ea18eed",
-        "bc5bea4a47a0",
-        "d80a69ca00ee",
-        "e13739d83be8",
-        "3600cc1913a2",
-        "5eb09e888d0a",
-        "77ce5300e6f7"
+        "8796af8cdea4",
+        "5cf280583aa8",
+        "2b9459ef6dcf",
+        "90c24766a6a9",
+        "a125e00e63d4",
+        "6e751d8de273",
+        "93f6c371ad97",
+        "21592f26a185",
+        "95156da8aa27",
+        "6ff9528d3a0d",
+        "6f025bf1cee1",
+        "e10e51eeb422",
+        "ee2c98359c30",
+        "b89d77c08147",
+        "8acb95ccda8e",
+        "abeff563b07a",
+        "83dab92445f7",
+        "deb4cc50b7aa",
+        "7a0e5dbb4526",
+        "e9e9b94986f3",
+        "30da40fb9f6b",
+        "16b2ed621c2b",
+        "576be40c381a",
+        "4483328875b7",
+        "d4ee88af2741",
+        "283380d60fad",
+        "b6c38a371b13",
+        "63bda9981312",
+        "78ea35f73e95",
+        "324b83f817e2",
+        "a8ecb6395cc6",
+        "ad3ceabd238a",
+        "bc54b9c4367e",
+        "8484c4bf0a01",
+        "813785414726",
+        "7202d29ef933",
+        "42131a4dfbb9",
+        "1b1e74175373",
+        "1136686c5aed",
+        "bd8127be7cc8",
+        "53548e36fdb1",
+        "d18e75647eef",
+        "3a12f365a1b7",
+        "59f0e2bed49f",
+        "e1f58688fe0a",
+        "f55999b6239d"
       ],
       "queries": [
-        "calendly.getConnection",
-        "calendly.getUpcomingEvents",
-        "calendly.getEventTypes",
-        "calendly.getStats",
         "auth.me",
-        "merchants.getCurrent"
+        "merchants.getCurrent",
+        "calendly.getBlockingOperation",
+        "calendly.getOperation",
+        "calendly.getWorkspace",
+        "calendly.getAppointmentsWorkspace",
+        "calendly.getReceiptsWorkspace",
+        "calendly.getBookingLinksWorkspace"
       ],
       "mutations": [
-        "calendly.connect",
-        "calendly.disconnect",
-        "calendly.syncNow",
-        "calendly.updateSettings"
+        "calendly.acknowledgeOperation",
+        "calendly.previewConnection",
+        "calendly.requestConnection",
+        "calendly.requestSync",
+        "calendly.saveWorkspaceSettings"
       ],
-      "imperativeReads": [],
+      "imperativeReads": [
+        {
+          "file": "client/src/components/merchant/CalendlyOperationPanel.tsx",
+          "procedure": "calendly.getOperation",
+          "method": "fetch",
+          "expression": "utils.calendly.getOperation.fetch",
+          "line": 28,
+          "provenance": "trpc-utility-static"
+        }
+      ],
       "browserRequests": []
     },
     {
@@ -48488,15 +48708,38 @@
       "review": "source-inventoried"
     },
     {
-      "id": "e3bafa8eaef5",
-      "file": "client/src/pages/merchant/CalendlyIntegration.tsx",
-      "line": 159,
+      "id": "8796af8cdea4",
+      "file": "client/src/components/merchant/CalendlyOperationPanel.tsx",
+      "line": 72,
       "tag": "Button",
       "role": "",
       "kind": "action",
       "label": "",
-      "section": "CalendlyIntegration",
-      "binding": "()=>void retry()",
+      "section": "CalendlyOperationPanel",
+      "binding": "event=>{opener.current=event.currentTarget;setReview(value);}",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "value.reviewRequired"
+      ],
+      "disabled": "o.busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "5cf280583aa8",
+      "file": "client/src/components/merchant/CalendlyOperationPanel.tsx",
+      "line": 75,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "CalendlyOperationPanel",
+      "binding": "()=>void o.recover()",
       "type": "text",
       "options": [],
       "min": "",
@@ -48505,18 +48748,18 @@
       "required": false,
       "conditional": false,
       "conditions": [],
-      "disabled": "",
+      "disabled": "o.busy",
       "review": "source-inventoried"
     },
     {
-      "id": "8bb931cbf3be",
-      "file": "client/src/pages/merchant/CalendlyIntegration.tsx",
-      "line": 186,
-      "tag": "Calendar",
+      "id": "2b9459ef6dcf",
+      "file": "client/src/components/merchant/CalendlyOperationPanel.tsx",
+      "line": 76,
+      "tag": "summary",
       "role": "",
-      "kind": "field",
+      "kind": "action",
       "label": "",
-      "section": "تكامل Calendly",
+      "section": "CalendlyOperationPanel",
       "binding": "",
       "type": "text",
       "options": [],
@@ -48525,19 +48768,225 @@
       "maxLength": "",
       "required": false,
       "conditional": false,
+      "conditions": [
+        "o.tracked&&o.receipt?.outcome!=='pending'&&o.blocker?.outcome!=='pending'"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "90c24766a6a9",
+      "file": "client/src/components/merchant/CalendlyOperationPanel.tsx",
+      "line": 76,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "CalendlyOperationPanel",
+      "binding": "()=>{forgetting.current=true;o.forget();}",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "o.tracked&&o.receipt?.outcome!=='pending'&&o.blocker?.outcome!=='pending'"
+      ],
+      "disabled": "o.busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "a125e00e63d4",
+      "file": "client/src/components/merchant/CalendlyOperationPanel.tsx",
+      "line": 77,
+      "tag": "DialogContent",
+      "role": "",
+      "kind": "dialog",
+      "label": "",
+      "section": "CalendlyOperationPanel",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
       "conditions": [],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "409620139872",
-      "file": "client/src/pages/merchant/CalendlyIntegration.tsx",
-      "line": 209,
-      "tag": "Calendar",
+      "id": "6e751d8de273",
+      "file": "client/src/components/merchant/CalendlyOperationPanel.tsx",
+      "line": 77,
+      "tag": "Button",
       "role": "",
-      "kind": "field",
+      "kind": "action",
       "label": "",
-      "section": "حالة الاتصال",
+      "section": "CalendlyOperationPanel",
+      "binding": "()=>setReview(null)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "o.busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "93f6c371ad97",
+      "file": "client/src/components/merchant/CalendlyOperationPanel.tsx",
+      "line": 77,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "CalendlyOperationPanel",
+      "binding": "async()=>{if(review)await o.reviewUnknown(review);setReview(null);}",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "o.busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "21592f26a185",
+      "file": "client/src/components/merchant/CalendlyWorkspaceShell.tsx",
+      "line": 10,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "CalendlyWorkspaceShell",
+      "binding": "refresh",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "95156da8aa27",
+      "file": "client/src/components/merchant/CalendlyWorkspaceShell.tsx",
+      "line": 10,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "CalendlyWorkspaceShell",
+      "binding": "/merchant/platform-integrations",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "6ff9528d3a0d",
+      "file": "client/src/components/merchant/CalendlyWorkspace.tsx",
+      "line": 49,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "receipts",
+      "section": "CalendlyWorkspace",
+      "binding": "()=>setTab(value)",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!data",
+        "query.isLoading"
+      ],
+      "disabled": "o.busy||previewBusy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "6f025bf1cee1",
+      "file": "client/src/components/merchant/CalendlyWorkspace.tsx",
+      "line": 52,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "CalendlyWorkspace",
+      "binding": "e=>open('verify',e.currentTarget)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "tab==='links'",
+        "tab==='receipts'",
+        "tab==='appointments'",
+        "!data"
+      ],
+      "disabled": "!ready||!o.canStart||busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "e10e51eeb422",
+      "file": "client/src/components/merchant/CalendlyWorkspace.tsx",
+      "line": 52,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "CalendlyWorkspace",
+      "binding": "e=>open('disconnect',e.currentTarget)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "data.present",
+        "tab==='links'",
+        "tab==='receipts'",
+        "tab==='appointments'"
+      ],
+      "disabled": "!o.canStart||busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "ee2c98359c30",
+      "file": "client/src/components/merchant/CalendlyWorkspace.tsx",
+      "line": 53,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "CalendlyWorkspace",
       "binding": "",
       "type": "text",
       "options": [],
@@ -48547,21 +48996,172 @@
       "required": false,
       "conditional": true,
       "conditions": [
-        "connection?.connected"
+        "tab==='links'",
+        "tab==='receipts'",
+        "tab==='appointments'",
+        "!data"
       ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "9a9fef2709fa",
-      "file": "client/src/pages/merchant/CalendlyIntegration.tsx",
-      "line": 239,
-      "tag": "TabsTrigger",
+      "id": "b89d77c08147",
+      "file": "client/src/components/merchant/CalendlyWorkspace.tsx",
+      "line": 53,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "CalendlyWorkspace",
+      "binding": "apiKey",
+      "type": "password",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "4096",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "tab==='links'",
+        "tab==='receipts'",
+        "tab==='appointments'"
+      ],
+      "disabled": "o.busy||previewBusy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "8acb95ccda8e",
+      "file": "client/src/components/merchant/CalendlyWorkspace.tsx",
+      "line": 53,
+      "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "المواعيد",
-      "section": "المواعيد",
-      "binding": "events",
+      "label": "",
+      "section": "CalendlyWorkspace",
+      "binding": "e=>{opener.current=e.currentTarget;}",
+      "type": "submit",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "tab==='links'",
+        "tab==='receipts'",
+        "tab==='appointments'"
+      ],
+      "disabled": "!o.canStart||busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "abeff563b07a",
+      "file": "client/src/components/merchant/CalendlyWorkspace.tsx",
+      "line": 54,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "startDate",
+      "section": "CalendlyWorkspace",
+      "binding": "period[field]",
+      "type": "date",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "!ready||o.busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "83dab92445f7",
+      "file": "client/src/components/merchant/CalendlyWorkspace.tsx",
+      "line": 54,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "CalendlyWorkspace",
+      "binding": "",
+      "type": "submit",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "tab==='links'",
+        "tab==='receipts'",
+        "tab==='appointments'"
+      ],
+      "disabled": "!ready||!o.canStart||busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "deb4cc50b7aa",
+      "file": "client/src/components/merchant/CalendlyWorkspace.tsx",
+      "line": 55,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "CalendlyWorkspace",
+      "binding": "()=>setTab('receipts')",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "tab==='links'",
+        "tab==='receipts'",
+        "tab==='appointments'",
+        "!data"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "7a0e5dbb4526",
+      "file": "client/src/components/merchant/CalendlyWorkspace.tsx",
+      "line": 56,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "CalendlyWorkspace",
+      "binding": "sendConfirmations",
+      "type": "checkbox",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!data.settingsValid",
+        "tab==='links'",
+        "tab==='receipts'",
+        "tab==='appointments'"
+      ],
+      "disabled": "!data.present||o.busy||!ready&&!sendConfirmations||!data.webhooks.registered&&!sendConfirmations",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "e9e9b94986f3",
+      "file": "client/src/components/merchant/CalendlyWorkspace.tsx",
+      "line": 56,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "CalendlyWorkspace",
+      "binding": "e=>open('settings',e.currentTarget)",
       "type": "text",
       "options": [],
       "min": "",
@@ -48570,20 +49170,23 @@
       "required": false,
       "conditional": false,
       "conditions": [
-        "connection?.connected"
+        "!data.settingsValid",
+        "tab==='links'",
+        "tab==='receipts'",
+        "tab==='appointments'"
       ],
-      "disabled": "",
+      "disabled": "!data.present||!o.canStart||busy||settingsRevision!==data.revision||sendConfirmations===data.settings.syncToWhatsApp",
       "review": "source-inventoried"
     },
     {
-      "id": "a5612604d2de",
-      "file": "client/src/pages/merchant/CalendlyIntegration.tsx",
-      "line": 240,
-      "tag": "Calendar",
+      "id": "30da40fb9f6b",
+      "file": "client/src/components/merchant/CalendlyWorkspace.tsx",
+      "line": 56,
+      "tag": "Button",
       "role": "",
-      "kind": "field",
+      "kind": "action",
       "label": "",
-      "section": "المواعيد",
+      "section": "CalendlyWorkspace",
       "binding": "",
       "type": "text",
       "options": [],
@@ -48593,89 +49196,49 @@
       "required": false,
       "conditional": false,
       "conditions": [
-        "connection?.connected"
+        "!data.settingsValid",
+        "tab==='links'",
+        "tab==='receipts'",
+        "tab==='appointments'"
       ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "5357ccc46409",
-      "file": "client/src/pages/merchant/CalendlyIntegration.tsx",
-      "line": 243,
-      "tag": "TabsTrigger",
+      "id": "16b2ed621c2b",
+      "file": "client/src/components/merchant/CalendlyWorkspace.tsx",
+      "line": 56,
+      "tag": "Link",
       "role": "",
       "kind": "action",
-      "label": "الإعدادات",
-      "section": "الإعدادات",
-      "binding": "settings",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [
-        "connection?.connected"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "8c5104ff776e",
-      "file": "client/src/pages/merchant/CalendlyIntegration.tsx",
-      "line": 247,
-      "tag": "TabsTrigger",
-      "role": "",
-      "kind": "action",
-      "label": "Webhooks",
-      "section": "Webhooks",
-      "binding": "webhooks",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [
-        "connection?.connected"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "12d5b6239b67",
-      "file": "client/src/pages/merchant/CalendlyIntegration.tsx",
-      "line": 251,
-      "tag": "TabsTrigger",
-      "role": "",
-      "kind": "action",
-      "label": "روابط الحجز",
-      "section": "روابط الحجز",
-      "binding": "links",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [
-        "connection?.connected"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "57602408b6bd",
-      "file": "client/src/pages/merchant/CalendlyIntegration.tsx",
-      "line": 273,
-      "tag": "Calendar",
-      "role": "",
-      "kind": "field",
       "label": "",
-      "section": "المواعيد القادمة",
+      "section": "CalendlyWorkspace",
+      "binding": "/merchant/whatsapp",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "!data.settingsValid",
+        "tab==='links'",
+        "tab==='receipts'",
+        "tab==='appointments'"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "576be40c381a",
+      "file": "client/src/components/merchant/CalendlyWorkspace.tsx",
+      "line": 59,
+      "tag": "DialogContent",
+      "role": "",
+      "kind": "dialog",
+      "label": "connect disconnect verify settings : · disconnect : · : — · UTC settings : disconnect",
+      "section": "CalendlyWorkspace",
       "binding": "",
       "type": "text",
       "options": [],
@@ -48683,48 +49246,21 @@
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": false,
-      "conditions": [
-        "upcomingEvents && upcomingEvents.length > 0"
-      ],
+      "conditional": true,
+      "conditions": [],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "83df442ddeae",
-      "file": "client/src/pages/merchant/CalendlyIntegration.tsx",
-      "line": 291,
-      "tag": "Calendar",
+      "id": "4483328875b7",
+      "file": "client/src/components/merchant/CalendlyWorkspace.tsx",
+      "line": 63,
+      "tag": "input",
       "role": "",
       "kind": "field",
       "label": "",
-      "section": "المواعيد القادمة",
-      "binding": "",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [
-        "upcomingEvents && upcomingEvents.length > 0",
-        "eventsLoading",
-        "eventsError"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "4fc6263ff760",
-      "file": "client/src/pages/merchant/CalendlyIntegration.tsx",
-      "line": 318,
-      "tag": "Switch",
-      "role": "",
-      "kind": "field",
-      "label": "",
-      "section": "إعدادات التكامل",
-      "binding": "syncToWhatsApp",
+      "section": "CalendlyWorkspace",
+      "binding": "consent",
       "type": "checkbox",
       "options": [],
       "min": "",
@@ -48733,21 +49269,21 @@
       "required": false,
       "conditional": false,
       "conditions": [
-        "connection?.connected"
+        "(review?.action==='disconnect'||review?.preview?.replacing)"
       ],
-      "disabled": "",
+      "disabled": "o.busy",
       "review": "source-inventoried"
     },
     {
-      "id": "90167535f9a8",
-      "file": "client/src/pages/merchant/CalendlyIntegration.tsx",
-      "line": 322,
+      "id": "d4ee88af2741",
+      "file": "client/src/components/merchant/CalendlyWorkspace.tsx",
+      "line": 64,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "حفظ الإعدادات",
-      "section": "إعدادات التكامل",
-      "binding": "handleSaveSettings",
+      "label": "",
+      "section": "CalendlyWorkspace",
+      "binding": "closeReview",
       "type": "text",
       "options": [],
       "min": "",
@@ -48755,22 +49291,20 @@
       "maxLength": "",
       "required": false,
       "conditional": true,
-      "conditions": [
-        "connection?.connected"
-      ],
-      "disabled": "updateSettingsMutation.isPending",
+      "conditions": [],
+      "disabled": "o.busy",
       "review": "source-inventoried"
     },
     {
-      "id": "515f84885a0e",
-      "file": "client/src/pages/merchant/CalendlyIntegration.tsx",
-      "line": 326,
+      "id": "283380d60fad",
+      "file": "client/src/components/merchant/CalendlyWorkspace.tsx",
+      "line": 64,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "مزامنة الآن",
-      "section": "إعدادات التكامل",
-      "binding": "handleSync",
+      "label": "",
+      "section": "CalendlyWorkspace",
+      "binding": "()=>void execute()",
       "type": "text",
       "options": [],
       "min": "",
@@ -48778,68 +49312,20 @@
       "maxLength": "",
       "required": false,
       "conditional": true,
-      "conditions": [
-        "connection?.connected"
-      ],
-      "disabled": "syncMutation.isPending",
+      "conditions": [],
+      "disabled": "!o.canStart||busy||review?.revision!==data?.revision||((review?.action==='disconnect'||!!review?.preview?.replacing)&&!consent)",
       "review": "source-inventoried"
     },
     {
-      "id": "5dd436c44558",
-      "file": "client/src/pages/merchant/CalendlyIntegration.tsx",
-      "line": 334,
+      "id": "b6c38a371b13",
+      "file": "client/src/components/merchant/CalendlyLists.tsx",
+      "line": 11,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "فصل الحساب",
-      "section": "إعدادات التكامل",
-      "binding": "handleDisconnect",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [
-        "connection?.connected"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "e4770b08f135",
-      "file": "client/src/pages/merchant/CalendlyIntegration.tsx",
-      "line": 399,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "دليل إعداد Webhooks في Calendly",
-      "section": "إعدادات Webhooks",
-      "binding": "",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [
-        "connection?.connected"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "cd930b6e8f89",
-      "file": "client/src/pages/merchant/CalendlyIntegration.tsx",
-      "line": 400,
-      "tag": "a",
-      "role": "",
-      "kind": "action",
-      "label": "دليل إعداد Webhooks في Calendly",
-      "section": "إعدادات Webhooks",
-      "binding": "https://developer.calendly.com/receive-data-from-scheduled-events-in-real-time-with-webhook-subscriptions",
+      "label": "",
+      "section": "CalendlyLists",
+      "binding": "()=>change(value.page-1)",
       "type": "text",
       "options": [],
       "min": "",
@@ -48847,46 +49333,20 @@
       "maxLength": "",
       "required": false,
       "conditional": false,
-      "conditions": [
-        "connection?.connected"
-      ],
-      "disabled": "",
+      "conditions": [],
+      "disabled": "busy||value.page<=1",
       "review": "source-inventoried"
     },
     {
-      "id": "cf1a8ea18eed",
-      "file": "client/src/pages/merchant/CalendlyIntegration.tsx",
-      "line": 432,
+      "id": "63bda9981312",
+      "file": "client/src/components/merchant/CalendlyLists.tsx",
+      "line": 11,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "فتح الرابط",
-      "section": "روابط الحجز",
-      "binding": "",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [
-        "calendlyBookingUrl(eventType.schedulingUrl)",
-        "eventTypes && eventTypes.length > 0"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "bc5bea4a47a0",
-      "file": "client/src/pages/merchant/CalendlyIntegration.tsx",
-      "line": 433,
-      "tag": "a",
-      "role": "",
-      "kind": "action",
-      "label": "فتح الرابط",
-      "section": "روابط الحجز",
-      "binding": "calendlyBookingUrl(eventType.schedulingUrl)!",
+      "label": "",
+      "section": "CalendlyLists",
+      "binding": "()=>change(value.page+1)",
       "type": "text",
       "options": [],
       "min": "",
@@ -48894,45 +49354,177 @@
       "maxLength": "",
       "required": false,
       "conditional": false,
-      "conditions": [
-        "calendlyBookingUrl(eventType.schedulingUrl)"
-      ],
-      "disabled": "",
+      "conditions": [],
+      "disabled": "busy||value.page>=value.pages",
       "review": "source-inventoried"
     },
     {
-      "id": "d80a69ca00ee",
-      "file": "client/src/pages/merchant/CalendlyIntegration.tsx",
-      "line": 469,
-      "tag": "Input",
+      "id": "78ea35f73e95",
+      "file": "client/src/components/merchant/CalendlyLists.tsx",
+      "line": 19,
+      "tag": "input",
       "role": "",
       "kind": "field",
-      "label": "Personal Access Token",
-      "section": "ربط حساب Calendly",
-      "binding": "apiKey",
-      "type": "password",
+      "label": "c.searchAppointments",
+      "section": "CalendlyLists",
+      "binding": "search",
+      "type": "search",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "100",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "324b83f817e2",
+      "file": "client/src/components/merchant/CalendlyLists.tsx",
+      "line": 19,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "all",
+      "section": "CalendlyLists",
+      "binding": "draft.state",
+      "type": "text",
+      "options": [
+        {
+          "value": "v",
+          "label": ""
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "a8ecb6395cc6",
+      "file": "client/src/components/merchant/CalendlyLists.tsx",
+      "line": 19,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "all upcoming past",
+      "section": "CalendlyLists",
+      "binding": "draft.period",
+      "type": "text",
+      "options": [
+        {
+          "value": "v",
+          "label": ""
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "ad3ceabd238a",
+      "file": "client/src/components/merchant/CalendlyLists.tsx",
+      "line": 19,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "startDate",
+      "section": "CalendlyLists",
+      "binding": "field",
+      "type": "date",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": false,
-      "conditions": [
-        "connection?.connected"
-      ],
+      "conditional": true,
+      "conditions": [],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "e13739d83be8",
-      "file": "client/src/pages/merchant/CalendlyIntegration.tsx",
-      "line": 481,
+      "id": "bc54b9c4367e",
+      "file": "client/src/components/merchant/CalendlyLists.tsx",
+      "line": 19,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "ربط الحساب",
-      "section": "ربط حساب Calendly",
-      "binding": "handleConnect",
+      "label": "",
+      "section": "CalendlyLists",
+      "binding": "",
+      "type": "submit",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "query.isFetching",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "8484c4bf0a01",
+      "file": "client/src/components/merchant/CalendlyLists.tsx",
+      "line": 19,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "CalendlyLists",
+      "binding": "()=>{setDraft({search:'',state:'all',period:'all',startDate:'',endDate:''});setInput(calendlyAppointmentsInput.parse({}));setError(null);heading.current?.focus();}",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "query.isFetching",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "813785414726",
+      "file": "client/src/components/merchant/CalendlyLists.tsx",
+      "line": 19,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "CalendlyLists",
+      "binding": "()=>void query.refetch()",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "query.isFetching",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "7202d29ef933",
+      "file": "client/src/components/merchant/CalendlyLists.tsx",
+      "line": 24,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "CalendlyLists",
+      "binding": "",
       "type": "text",
       "options": [],
       "min": "",
@@ -48940,21 +49532,176 @@
       "maxLength": "",
       "required": false,
       "conditional": true,
-      "conditions": [
-        "connection?.connected"
-      ],
-      "disabled": "isConnecting",
+      "conditions": [],
+      "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "3600cc1913a2",
-      "file": "client/src/pages/merchant/CalendlyIntegration.tsx",
-      "line": 485,
+      "id": "42131a4dfbb9",
+      "file": "client/src/components/merchant/CalendlyLists.tsx",
+      "line": 29,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "c.searchReceipts",
+      "section": "CalendlyLists",
+      "binding": "draft.search",
+      "type": "search",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "100",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "1b1e74175373",
+      "file": "client/src/components/merchant/CalendlyLists.tsx",
+      "line": 29,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "all",
+      "section": "CalendlyLists",
+      "binding": "draft.state",
+      "type": "text",
+      "options": [
+        {
+          "value": "v",
+          "label": ""
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "1136686c5aed",
+      "file": "client/src/components/merchant/CalendlyLists.tsx",
+      "line": 29,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "all created cancelled unknown",
+      "section": "CalendlyLists",
+      "binding": "draft.event",
+      "type": "text",
+      "options": [
+        {
+          "value": "v",
+          "label": ""
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "bd8127be7cc8",
+      "file": "client/src/components/merchant/CalendlyLists.tsx",
+      "line": 29,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "فتح إعدادات Calendly",
-      "section": "ربط حساب Calendly",
+      "label": "",
+      "section": "CalendlyLists",
+      "binding": "",
+      "type": "submit",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "query.isFetching",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "53548e36fdb1",
+      "file": "client/src/components/merchant/CalendlyLists.tsx",
+      "line": 29,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "CalendlyLists",
+      "binding": "()=>{setDraft({search:'',state:'all',event:'all'});setInput(calendlyReceiptsInput.parse({}));setError(false);heading.current?.focus();}",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "query.isFetching",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "d18e75647eef",
+      "file": "client/src/components/merchant/CalendlyLists.tsx",
+      "line": 29,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "CalendlyLists",
+      "binding": "()=>void query.refetch()",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "query.isFetching",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "3a12f365a1b7",
+      "file": "client/src/components/merchant/CalendlyLists.tsx",
+      "line": 33,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "CalendlyLists",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "59f0e2bed49f",
+      "file": "client/src/components/merchant/CalendlyLists.tsx",
+      "line": 36,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "·",
+      "section": "CalendlyLists",
       "binding": "",
       "type": "text",
       "options": [],
@@ -48964,32 +49711,59 @@
       "required": false,
       "conditional": true,
       "conditions": [
-        "connection?.connected"
+        "r.schedulingUrl",
+        "!data.rows.length"
       ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "5eb09e888d0a",
-      "file": "client/src/pages/merchant/CalendlyIntegration.tsx",
-      "line": 486,
+      "id": "e1f58688fe0a",
+      "file": "client/src/components/merchant/CalendlyLists.tsx",
+      "line": 36,
       "tag": "a",
       "role": "",
       "kind": "action",
-      "label": "فتح إعدادات Calendly",
-      "section": "ربط حساب Calendly",
-      "binding": "https://developer.calendly.com/how-to-authenticate-with-personal-access-tokens",
+      "label": "·",
+      "section": "CalendlyLists",
+      "binding": "r.schedulingUrl",
       "type": "text",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": false,
+      "conditional": true,
       "conditions": [
-        "connection?.connected"
+        "r.schedulingUrl",
+        "!data.rows.length"
       ],
       "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "f55999b6239d",
+      "file": "client/src/components/merchant/CalendlyLists.tsx",
+      "line": 36,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "CalendlyLists",
+      "binding": "()=>void query.refetch()",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!data",
+        "query.isLoading",
+        "!ready"
+      ],
+      "disabled": "query.isFetching",
       "review": "source-inventoried"
     },
     {
