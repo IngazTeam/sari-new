@@ -7,13 +7,15 @@
  * - FAQs management
  * - Site content viewer
  * 
- * All endpoints require Byaan integration to be active.
+ * Status is available to members; operational data requires an active verified Byaan integration and feature permission.
  */
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { permissionProcedure, protectedProcedure, router } from "./_core/trpc";
-import { getMerchantByUserId, getPool } from './db';
+import { merchantProcedure, permissionProcedure, router } from "./_core/trpc";
+import { getPool } from './db';
+import { readByaanConnectionWorkspace } from './integrations/byaan-connection-workspace';
+import { ByaanDashboardFault, requireActiveByaanMerchant, toggleByaanDashboardFaq } from './integrations/byaan-dashboard-access';
 import { byaanSalesReviewInput } from '../shared/byaan-sales-review';
 import { byaanEnrollmentRecoveryInput } from '../shared/byaan-enrollment-recovery';
 import { byaanSalesReviewAuthority, listByaanSalesOperations } from './integrations/byaan-sales-review';
@@ -22,24 +24,21 @@ import { byaanSalesReviewAuthority, listByaanSalesOperations } from './integrati
 // Helpers
 // ═══════════════════════════════════════════════════════════════
 
-async function requireByaanMerchant(userId: number) {
-  const merchant = await getMerchantByUserId(userId);
-  if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'التاجر غير موجود' });
-  return merchant;
-}
-
-async function requireActiveByaanMerchant(userId: number) {
-  const merchant = await requireByaanMerchant(userId);
-  const { getByaanConnection } = await import('./integrations/byaan');
-  const connection = await getByaanConnection(merchant.id);
-  const source = merchant.integrationSource || 'none';
-  if (source !== 'byaan' || !connection?.is_active || !connection?.verified_at) {
-    throw new TRPCError({
-      code: 'PRECONDITION_FAILED',
-      message: 'يلزم ربط بيان وتوثيق ملكية النطاق للوصول إلى هذه البيانات',
-    });
+async function dashboardGuard<T>(operation: () => Promise<T>): Promise<T> {
+  try { return await operation(); }
+  catch (error) {
+    const reason = error instanceof ByaanDashboardFault ? error.reason : 'unavailable';
+    const faults = {
+      unavailable: ['INTERNAL_SERVER_ERROR', 'Byaan dashboard data unavailable'],
+      inactive: ['PRECONDITION_FAILED', 'يلزم ربط بيان وتوثيق ملكية النطاق للوصول إلى هذه البيانات'],
+      forbidden: ['FORBIDDEN', 'ليست لديك صلاحية إدارة معرفة بيان'],
+      missing: ['NOT_FOUND', 'السؤال غير موجود'],
+      rate_limited: ['TOO_MANY_REQUESTS', 'انتظر قليلاً قبل إعادة المزامنة (الحد: 3 كل 5 دقائق)'],
+      provider: ['BAD_GATEWAY', 'تعذر طلب المزامنة من بيان'],
+    } as const;
+    const [code, message] = faults[reason];
+    throw new TRPCError({ code, message });
   }
-  return { merchant, connection };
 }
 
 function sanitizeForTRPC(data: any): any {
@@ -131,51 +130,32 @@ export const byaanRouter = router({
   }),
 
   // ── Get connection status + sync stats ──
-  getStatus: protectedProcedure.query(async ({ ctx }) => {
-    const merchant = await requireByaanMerchant(ctx.user.id);
-
-    const { getByaanConnection, getByaanSyncStats } = await import('./integrations/byaan');
-    const connection = await getByaanConnection(merchant.id);
-
-    if (!connection) {
-      return sanitizeForTRPC({
-        connected: false,
-        integrationSource: (merchant as any).integration_source || (merchant as any).integrationSource || 'none',
-        stats: { trainees: 0, faqs: 0, courses: 0, sitePages: 0 },
-      });
-    }
-
-    const integrationSource = merchant.integrationSource || 'none';
-    const connected = Boolean(
-      integrationSource === 'byaan' && connection.is_active && connection.verified_at,
-    );
-    const stats = connected
-      ? await getByaanSyncStats(merchant.id)
-      : { trainees: 0, faqs: 0, courses: 0, sitePages: 0 };
-    return sanitizeForTRPC({
-      connected,
-      verificationPending: !connected,
-      integrationSource,
-      connection: {
-        tenantDomain: connection.tenant_domain,
-        syncStatus: connection.sync_status,
-        lastSyncAt: connection.last_sync_at,
-        hasSyncErrors: Boolean(connection.sync_errors),
-        isActive: connection.is_active,
-      },
-      stats,
-    });
-  }),
+  getStatus: merchantProcedure.query(async ({ ctx }) => dashboardGuard(async () => {
+    const workspace = await readByaanConnectionWorkspace(ctx.user.id, ctx.merchantId);
+    const connected = workspace.managedContent && !!workspace.verifiedAt && ['configured', 'syncing', 'paused', 'error'].includes(workspace.state);
+    return {
+      actorId: ctx.user.id, merchantId: ctx.merchantId,
+      connected, verificationPending: workspace.state === 'pending_verification',
+      integrationSource: workspace.source,
+      connection: workspace.present ? {
+        tenantDomain: workspace.tenantDomain,
+        syncStatus: workspace.state === 'configured' ? 'active' : workspace.state,
+        lastSyncAt: workspace.lastSyncAt, hasSyncErrors: workspace.hasSyncErrors,
+        isActive: connected,
+      } : undefined,
+      stats: { trainees: workspace.counts.activeTrainees, faqs: workspace.counts.activeFaqs, courses: workspace.counts.catalog, sitePages: workspace.counts.sitePages },
+    };
+  })),
 
   // ── Get trainees list ──
-  getTrainees: protectedProcedure
+  getTrainees: permissionProcedure('customers.manage')
     .input(z.object({
       search: z.string().max(100).optional(),
       limit: z.number().int().min(1).max(200).default(50),
-      cursor: z.number().int().positive().optional(),
-    }).optional())
-    .query(async ({ ctx, input }) => {
-      const { merchant } = await requireActiveByaanMerchant(ctx.user.id);
+      cursor: z.number().int().positive().max(2147483647).optional(),
+    }).strict().optional())
+    .query(async ({ ctx, input }) => dashboardGuard(async () => {
+      const { merchant } = await requireActiveByaanMerchant(ctx.merchantId);
 
       const { getByaanTraineePage } = await import('./integrations/byaan');
       const page = await getByaanTraineePage(merchant.id, {
@@ -199,16 +179,16 @@ export const byaanRouter = router({
         })),
         nextCursor: page.nextCursor,
       });
-    }),
+    })),
 
   // ── Get FAQs ──
-  getFaqs: protectedProcedure
+  getFaqs: permissionProcedure('bot_settings.manage')
     .input(z.object({
       limit: z.number().int().min(1).max(200).default(50),
-      cursor: z.number().int().positive().optional(),
-    }).optional())
-    .query(async ({ ctx, input }) => {
-      const { merchant } = await requireActiveByaanMerchant(ctx.user.id);
+      cursor: z.number().int().positive().max(2147483647).optional(),
+    }).strict().optional())
+    .query(async ({ ctx, input }) => dashboardGuard(async () => {
+      const { merchant } = await requireActiveByaanMerchant(ctx.merchantId);
 
       const { getByaanFaqPage } = await import('./integrations/byaan');
       const page = await getByaanFaqPage(merchant.id, {
@@ -228,52 +208,23 @@ export const byaanRouter = router({
         })),
         nextCursor: page.nextCursor,
       });
-    }),
+    })),
 
   // ── Toggle FAQ active/useInBot ──
-  toggleFaq: protectedProcedure
+  toggleFaq: permissionProcedure('bot_settings.manage')
     .input(z.object({
-      faqId: z.number(),
+      faqId: z.number().int().positive().max(2147483647),
       field: z.enum(['is_active', 'use_in_bot']),
       value: z.boolean(),
-    }))
-    .mutation(async ({ ctx, input }) => {
-      const { merchant } = await requireActiveByaanMerchant(ctx.user.id);
-
-      const pool = await getPool();
-      if (!pool) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database error' });
-
-      // Verify FAQ belongs to this merchant
-      const [rows] = await pool.execute(
-        `SELECT id FROM byaan_faqs WHERE id = ? AND merchant_id = ?`,
-        [input.faqId, merchant.id]
-      );
-      if (!(rows as any[])?.length) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'السؤال غير موجود' });
-      }
-
-      // PEN-BYAAN-04: Explicit field mapping — never interpolate user input into SQL
-      const fieldMap: Record<string, string> = {
-        'is_active': 'is_active',
-        'use_in_bot': 'use_in_bot',
-      };
-      const safeField = fieldMap[input.field];
-      if (!safeField) throw new TRPCError({ code: 'BAD_REQUEST', message: 'حقل غير صالح' });
-
-      await pool.execute(
-        `UPDATE byaan_faqs SET ${safeField} = ? WHERE id = ? AND merchant_id = ?`,
-        [input.value ? 1 : 0, input.faqId, merchant.id]
-      );
-
-      return { success: true };
-    }),
+    }).strict())
+    .mutation(async ({ ctx, input }) => dashboardGuard(() => toggleByaanDashboardFaq(ctx.user.id, ctx.merchantId, input))),
 
   // ── Get site content ──
-  getSiteContent: protectedProcedure.query(async ({ ctx }) => {
-    const { merchant } = await requireActiveByaanMerchant(ctx.user.id);
+  getSiteContent: permissionProcedure('bot_settings.manage').query(async ({ ctx }) => dashboardGuard(async () => {
+    const { merchant } = await requireActiveByaanMerchant(ctx.merchantId);
 
     const pool = await getPool();
-    if (!pool) return [];
+    if (!pool) throw new ByaanDashboardFault('unavailable');
 
     const [rows] = await pool.execute(
       `SELECT id, page_type, title, content, synced_at
@@ -281,15 +232,15 @@ export const byaanRouter = router({
       [merchant.id],
     );
     return sanitizeForTRPC(rows);
-  }),
+  })),
 
   // ── Trigger resync from Sari side ──
-  triggerResync: protectedProcedure.mutation(async ({ ctx }) => {
-    const { merchant } = await requireActiveByaanMerchant(ctx.user.id);
+  triggerResync: permissionProcedure('integrations.manage').mutation(async ({ ctx }) => dashboardGuard(async () => {
+    const { merchant } = await requireActiveByaanMerchant(ctx.merchantId);
 
     // PEN-BYAAN-06: Rate limit resync (3 per 5 min)
     if (!checkResyncLimit(merchant.id)) {
-      throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'انتظر قليلاً قبل إعادة المزامنة (الحد: 3 كل 5 دقائق)' });
+      throw new ByaanDashboardFault('rate_limited');
     }
     const { requestByaanResync, updateByaanSyncStatus } = await import('./integrations/byaan');
 
@@ -297,8 +248,8 @@ export const byaanRouter = router({
     const result = await requestByaanResync(merchant.id);
     if (!result.success) {
       await updateByaanSyncStatus(merchant.id, 'error', result.error);
-      throw new TRPCError({ code: 'BAD_GATEWAY', message: 'تعذر طلب المزامنة من بيان' });
+      throw new ByaanDashboardFault('provider');
     }
     return { success: true, message: 'تم طلب إعادة المزامنة من بيان عبر طلب موقع' };
-  }),
+  })),
 });
