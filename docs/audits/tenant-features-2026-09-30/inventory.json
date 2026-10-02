@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-02T00:15:54.651Z",
+  "generatedAt": "2026-10-02T00:24:09.417Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -14125,7 +14125,7 @@
     },
     {
       "file": "client/src/lib/service-collection-labels.ts",
-      "hash": "2d2e3ce08592",
+      "hash": "43a4487ade81",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
@@ -14229,7 +14229,7 @@
     },
     {
       "file": "client/src/components/merchant/ServiceEditorWorkspace.tsx",
-      "hash": "6a250c126db9",
+      "hash": "307be0b26822",
       "queries": [
         "services.catalogEditor"
       ],
@@ -14242,39 +14242,39 @@
       "sections": [
         {
           "label": "",
-          "line": 50,
+          "line": 51,
           "tag": "h3"
         },
         {
           "label": "editTitle title",
-          "line": 66,
+          "line": 67,
           "tag": "h1"
         },
         {
           "label": "basics",
-          "line": 68,
+          "line": 69,
           "tag": "h2"
         },
         {
           "label": "advanced advancedHint",
-          "line": 69,
+          "line": 70,
           "tag": "summary"
         },
         {
           "label": "preview",
-          "line": 70,
+          "line": 71,
           "tag": "h2"
         },
         {
           "label": "reload reloadTitle reviewTitle",
-          "line": 71,
+          "line": 72,
           "tag": "DialogTitle"
         }
       ],
       "choices": [
         {
           "name": "order",
-          "line": 52,
+          "line": 53,
           "values": [
             "name",
             "description",
@@ -14298,12 +14298,12 @@
       "handlers": [
         {
           "name": "open",
-          "line": 51,
+          "line": 52,
           "calls": []
         },
         {
           "name": "save",
-          "line": 53,
+          "line": 54,
           "calls": [
             "update",
             "create"
@@ -14330,7 +14330,7 @@
     },
     {
       "file": "client/src/lib/service-editor-labels.ts",
-      "hash": "93239b456f64",
+      "hash": "b5845ce186fe",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
@@ -15002,7 +15002,7 @@
     },
     {
       "file": "client/src/components/merchant/ServiceCollectionEditor.tsx",
-      "hash": "7eac063f9d35",
+      "hash": "442bef5cf22b",
       "queries": [
         "services.catalogEditor"
       ],
@@ -15017,32 +15017,32 @@
       "sections": [
         {
           "label": "category categoryEdit categoryCreate packageEdit packageCreate",
-          "line": 66,
+          "line": 67,
           "tag": "h1"
         },
         {
           "label": "basics",
-          "line": 68,
+          "line": 69,
           "tag": "h2"
         },
         {
           "label": "serviceIds",
-          "line": 68,
+          "line": 69,
           "tag": "h3"
         },
         {
           "label": "advanced advancedHint",
-          "line": 69,
+          "line": 70,
           "tag": "summary"
         },
         {
           "label": "preview",
-          "line": 70,
+          "line": 71,
           "tag": "h2"
         },
         {
           "label": "reload reloadTitle reviewTitle",
-          "line": 71,
+          "line": 72,
           "tag": "DialogTitle"
         }
       ],
@@ -15050,12 +15050,12 @@
       "handlers": [
         {
           "name": "open",
-          "line": 48,
+          "line": 49,
           "calls": []
         },
         {
           "name": "save",
-          "line": 50,
+          "line": 51,
           "calls": [
             "updateCategory",
             "createCategory",
@@ -23319,20 +23319,20 @@
         "client/src/components/merchant/CatalogChoicePicker.tsx"
       ],
       "controls": [
-        "c8397b99cc88",
-        "2037243b2379",
-        "e06bc273fe78",
-        "25ce8d895c5e",
-        "d5697b6ec406",
-        "83157f050913",
-        "d560f748c482",
+        "764d34d975bf",
+        "cc425288ecac",
+        "ae6e177f5eae",
         "7c09c8d48865",
-        "cefc1fe53842",
-        "1e1030aa02ff",
-        "f07d17153975",
-        "47af680da4fa",
-        "c4ccb2e9350c",
-        "810aef647586",
+        "c6eda86257f8",
+        "5371e71f8931",
+        "3666abe7b3df",
+        "1ff560be95ac",
+        "ee04c03c2622",
+        "62e45f37b7e0",
+        "818944e8ccbc",
+        "12c58f153d53",
+        "b419423c44de",
+        "4933f1cafa35",
         "0fcb146316bb",
         "f6e8afbe8570",
         "7dde5fe152d4",
@@ -23370,20 +23370,20 @@
         "client/src/components/merchant/CatalogChoicePicker.tsx"
       ],
       "controls": [
-        "c8397b99cc88",
-        "2037243b2379",
-        "e06bc273fe78",
-        "25ce8d895c5e",
-        "d5697b6ec406",
-        "83157f050913",
-        "d560f748c482",
+        "764d34d975bf",
+        "cc425288ecac",
+        "ae6e177f5eae",
         "7c09c8d48865",
-        "cefc1fe53842",
-        "1e1030aa02ff",
-        "f07d17153975",
-        "47af680da4fa",
-        "c4ccb2e9350c",
-        "810aef647586",
+        "c6eda86257f8",
+        "5371e71f8931",
+        "3666abe7b3df",
+        "1ff560be95ac",
+        "ee04c03c2622",
+        "62e45f37b7e0",
+        "818944e8ccbc",
+        "12c58f153d53",
+        "b419423c44de",
+        "4933f1cafa35",
         "0fcb146316bb",
         "f6e8afbe8570",
         "7dde5fe152d4",
@@ -23618,19 +23618,19 @@
         "78c24da10a4a",
         "0387e8050f71",
         "d5d31cab43e2",
-        "44859ef4b959",
-        "81f0b68b4a1a",
-        "10751a6af1dc",
-        "3fd7ba9c5007",
-        "54d75ca0dd9f",
-        "b07a5aeafe89",
-        "13d964abcb54",
+        "872f0df11ccb",
+        "423c7cb7c525",
+        "fe564bb67d1b",
         "a0082a7418e7",
-        "510db2693962",
-        "dbbb8a4a3d2b",
-        "3fa894834f98",
-        "ae11aa82e53d",
-        "8451dcab7e38",
+        "6e0a7d9f5781",
+        "d6a94657175d",
+        "c38159fb0ae2",
+        "cff5dcef071e",
+        "48eb650a9036",
+        "e9626dc8ff65",
+        "fdae0d87962c",
+        "14adbd15d174",
+        "6a7a0b0cfb11",
         "0fcb146316bb",
         "f6e8afbe8570",
         "7dde5fe152d4",
@@ -23707,19 +23707,19 @@
         "78c24da10a4a",
         "0387e8050f71",
         "d5d31cab43e2",
-        "44859ef4b959",
-        "81f0b68b4a1a",
-        "10751a6af1dc",
-        "3fd7ba9c5007",
-        "54d75ca0dd9f",
-        "b07a5aeafe89",
-        "13d964abcb54",
+        "872f0df11ccb",
+        "423c7cb7c525",
+        "fe564bb67d1b",
         "a0082a7418e7",
-        "510db2693962",
-        "dbbb8a4a3d2b",
-        "3fa894834f98",
-        "ae11aa82e53d",
-        "8451dcab7e38",
+        "6e0a7d9f5781",
+        "d6a94657175d",
+        "c38159fb0ae2",
+        "cff5dcef071e",
+        "48eb650a9036",
+        "e9626dc8ff65",
+        "fdae0d87962c",
+        "14adbd15d174",
+        "6a7a0b0cfb11",
         "0fcb146316bb",
         "f6e8afbe8570",
         "7dde5fe152d4",
@@ -66607,9 +66607,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "c8397b99cc88",
+      "id": "764d34d975bf",
       "file": "client/src/components/merchant/ServiceEditorWorkspace.tsx",
-      "line": 47,
+      "line": 48,
       "tag": "textarea",
       "role": "",
       "kind": "field",
@@ -66630,9 +66630,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "2037243b2379",
+      "id": "cc425288ecac",
       "file": "client/src/components/merchant/ServiceEditorWorkspace.tsx",
-      "line": 47,
+      "line": 48,
       "tag": "input",
       "role": "",
       "kind": "field",
@@ -66653,9 +66653,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "e06bc273fe78",
+      "id": "ae6e177f5eae",
       "file": "client/src/components/merchant/ServiceEditorWorkspace.tsx",
-      "line": 49,
+      "line": 50,
       "tag": "select",
       "role": "",
       "kind": "field",
@@ -66687,9 +66687,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "25ce8d895c5e",
+      "id": "7c09c8d48865",
       "file": "client/src/components/merchant/ServiceEditorWorkspace.tsx",
-      "line": 66,
+      "line": 67,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -66708,9 +66708,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "d5697b6ec406",
+      "id": "c6eda86257f8",
       "file": "client/src/components/merchant/ServiceEditorWorkspace.tsx",
-      "line": 66,
+      "line": 67,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -66729,9 +66729,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "83157f050913",
+      "id": "5371e71f8931",
       "file": "client/src/components/merchant/ServiceEditorWorkspace.tsx",
-      "line": 67,
+      "line": 68,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -66752,9 +66752,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "d560f748c482",
+      "id": "3666abe7b3df",
       "file": "client/src/components/merchant/ServiceEditorWorkspace.tsx",
-      "line": 67,
+      "line": 68,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -66775,9 +66775,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "7c09c8d48865",
+      "id": "1ff560be95ac",
       "file": "client/src/components/merchant/ServiceEditorWorkspace.tsx",
-      "line": 67,
+      "line": 68,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -66798,9 +66798,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "cefc1fe53842",
+      "id": "ee04c03c2622",
       "file": "client/src/components/merchant/ServiceEditorWorkspace.tsx",
-      "line": 68,
+      "line": 69,
       "tag": "select",
       "role": "",
       "kind": "field",
@@ -66828,9 +66828,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "1e1030aa02ff",
+      "id": "62e45f37b7e0",
       "file": "client/src/components/merchant/ServiceEditorWorkspace.tsx",
-      "line": 69,
+      "line": 70,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -66849,9 +66849,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "f07d17153975",
+      "id": "818944e8ccbc",
       "file": "client/src/components/merchant/ServiceEditorWorkspace.tsx",
-      "line": 70,
+      "line": 71,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -66864,15 +66864,15 @@
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": false,
+      "conditional": true,
       "conditions": [],
       "disabled": "busy||!canManage||refreshing||!current||stale||uncertain",
       "review": "source-inventoried"
     },
     {
-      "id": "47af680da4fa",
+      "id": "12c58f153d53",
       "file": "client/src/components/merchant/ServiceEditorWorkspace.tsx",
-      "line": 71,
+      "line": 72,
       "tag": "DialogContent",
       "role": "",
       "kind": "dialog",
@@ -66891,9 +66891,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "c4ccb2e9350c",
+      "id": "b419423c44de",
       "file": "client/src/components/merchant/ServiceEditorWorkspace.tsx",
-      "line": 71,
+      "line": 72,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -66912,9 +66912,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "810aef647586",
+      "id": "4933f1cafa35",
       "file": "client/src/components/merchant/ServiceEditorWorkspace.tsx",
-      "line": 71,
+      "line": 72,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -68827,9 +68827,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "44859ef4b959",
+      "id": "872f0df11ccb",
       "file": "client/src/components/merchant/ServiceCollectionEditor.tsx",
-      "line": 45,
+      "line": 46,
       "tag": "textarea",
       "role": "",
       "kind": "field",
@@ -68850,9 +68850,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "81f0b68b4a1a",
+      "id": "423c7cb7c525",
       "file": "client/src/components/merchant/ServiceCollectionEditor.tsx",
-      "line": 45,
+      "line": 46,
       "tag": "input",
       "role": "",
       "kind": "field",
@@ -68873,9 +68873,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "10751a6af1dc",
+      "id": "fe564bb67d1b",
       "file": "client/src/components/merchant/ServiceCollectionEditor.tsx",
-      "line": 47,
+      "line": 48,
       "tag": "select",
       "role": "",
       "kind": "field",
@@ -68907,9 +68907,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "3fd7ba9c5007",
+      "id": "a0082a7418e7",
       "file": "client/src/components/merchant/ServiceCollectionEditor.tsx",
-      "line": 66,
+      "line": 67,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -68928,9 +68928,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "54d75ca0dd9f",
+      "id": "6e0a7d9f5781",
       "file": "client/src/components/merchant/ServiceCollectionEditor.tsx",
-      "line": 66,
+      "line": 67,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -68949,9 +68949,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "b07a5aeafe89",
+      "id": "d6a94657175d",
       "file": "client/src/components/merchant/ServiceCollectionEditor.tsx",
-      "line": 67,
+      "line": 68,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -68972,9 +68972,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "13d964abcb54",
+      "id": "c38159fb0ae2",
       "file": "client/src/components/merchant/ServiceCollectionEditor.tsx",
-      "line": 67,
+      "line": 68,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -68995,9 +68995,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "a0082a7418e7",
+      "id": "cff5dcef071e",
       "file": "client/src/components/merchant/ServiceCollectionEditor.tsx",
-      "line": 67,
+      "line": 68,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -69018,9 +69018,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "510db2693962",
+      "id": "48eb650a9036",
       "file": "client/src/components/merchant/ServiceCollectionEditor.tsx",
-      "line": 69,
+      "line": 70,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -69041,9 +69041,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "dbbb8a4a3d2b",
+      "id": "e9626dc8ff65",
       "file": "client/src/components/merchant/ServiceCollectionEditor.tsx",
-      "line": 70,
+      "line": 71,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -69056,15 +69056,15 @@
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": false,
+      "conditional": true,
       "conditions": [],
       "disabled": "busy||!canManage||refreshing||!current||stale||uncertain",
       "review": "source-inventoried"
     },
     {
-      "id": "3fa894834f98",
+      "id": "fdae0d87962c",
       "file": "client/src/components/merchant/ServiceCollectionEditor.tsx",
-      "line": 71,
+      "line": 72,
       "tag": "DialogContent",
       "role": "",
       "kind": "dialog",
@@ -69083,9 +69083,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ae11aa82e53d",
+      "id": "14adbd15d174",
       "file": "client/src/components/merchant/ServiceCollectionEditor.tsx",
-      "line": 71,
+      "line": 72,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -69104,9 +69104,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "8451dcab7e38",
+      "id": "6a7a0b0cfb11",
       "file": "client/src/components/merchant/ServiceCollectionEditor.tsx",
-      "line": 71,
+      "line": 72,
       "tag": "Button",
       "role": "",
       "kind": "action",

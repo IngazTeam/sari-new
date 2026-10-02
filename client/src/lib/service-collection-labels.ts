@@ -77,6 +77,8 @@ export function serviceCollectionLabels(t:Translate){return lookup({
  rejected:()=>t('merchantUx.serviceCollection.rejected'),
  forbidden:()=>t('merchantUx.serviceCollection.forbidden'),
  viewList:()=>t('merchantUx.serviceCollection.viewList'),
+ unchanged:()=>t('merchantUx.serviceCollection.unchanged'),
+ viewOnly:()=>t('merchantUx.serviceCollection.viewOnly'),
  unsaved:()=>t('merchantUx.serviceCollection.unsaved'),
  minutes:({value}:{value:string|number})=>t('merchantUx.serviceCollection.minutes',{value}),
  noName:()=>t('merchantUx.serviceCollection.noName'),
