@@ -1,3 +1,8 @@
+import {parseCalendlyCanonicalPair} from './calendly-canonical';
+import {calendlyStamp} from './calendly-workspace';
+import {assertCalendlyWorkerConnection,assertCalendlyReceiptLease,CalendlyWorkerAuthorityError} from './calendly-worker-authority';
+import {calendlyOperationTransaction} from './calendly-operation';
+import {withCalendlyProviderCheckpoint} from './calendly-provider-checkpoint';
 import {assertCalendlyDashboardAuthority,assertCalendlyDashboardWrite,calendlyMysqlExecutor} from './calendly-dashboard-authority';
 import crypto from 'node:crypto';
 import type { RowDataPacket } from 'mysql2/promise';
@@ -150,37 +155,44 @@ async function fetchCanonicalResources(row: ReceiptRow, accessToken: string): Pr
   return { event, invitee };
 }
 
-async function applyCanonicalAppointment(
+export async function applyCanonicalAppointment(
   row: ReceiptRow,
   integration: PlatformIntegration,
   event: CalendlyScheduledEvent,
   invitee: CalendlyInvitee,
 ): Promise<void> {
+  if(row.merchant_id!==integration.merchantId||row.integration_id!==integration.id)throw new CalendlyReceiptError('connection_inactive',true);
   const pool = await getPool();
   if (!pool) throw new CalendlyReceiptError('database_unavailable');
+  try{parseCalendlyCanonicalPair(event,invitee,integration.storeUrl??'');assertCanonicalResources(row,event,invitee);}catch{throw new CalendlyReceiptError('invalid_canonical_appointment',true);}
   const startAt = mysqlTimestamp(event.start_time, 'invalid_event_start');
   const endAt = mysqlTimestamp(event.end_time, 'invalid_event_end');
   if (new Date(endAt).getTime() <= new Date(startAt).getTime()) {
     throw new CalendlyReceiptError('invalid_event_range', true);
   }
   const providerUpdatedAt = mysqlTimestamp(
-    invitee.updated_at || event.updated_at || row.signature_timestamp * 1000,
+    Math.max(Date.parse(invitee.updated_at!),Date.parse(event.updated_at!)),
     'invalid_provider_timestamp',
   );
-  const status = invitee.status === 'canceled' || row.event_type === 'invitee.canceled'
+  const status = invitee.status === 'canceled' || event.status === 'canceled'
     ? 'cancelled'
     : 'active';
   const phone = normalizePhone(invitee.text_reminder_number);
-  const notify = row.event_type === 'invitee.created'
+  let notify = row.event_type === 'invitee.created'
     && status === 'active'
     && parseSettings(integration.settings).syncToWhatsApp
     && Boolean(phone);
   const connection = await pool.getConnection();
   let inTransaction = false;
+  let committing = false;
   let reusable = true;
   try {
     await connection.beginTransaction();
     inTransaction = true;
+    const current=await assertCalendlyWorkerConnection(connection,integration);await assertCalendlyReceiptLease(connection,row);
+    const [previous]=await connection.execute<RowDataPacket[]>('SELECT provider_updated_at FROM calendly_appointments WHERE merchant_id=? AND invitee_uri=? FOR UPDATE',[row.merchant_id,row.invitee_uri]);
+    const previousTime=previous[0]?.provider_updated_at;
+    notify=notify&&current.syncToWhatsApp&&(!previousTime||Date.parse(calendlyStamp(previousTime)??'')<=Date.parse(calendlyStamp(providerUpdatedAt)??''));
     await connection.execute(
       `INSERT INTO calendly_appointments
          (merchant_id, integration_id, event_uri, invitee_uri, event_name,
@@ -214,11 +226,8 @@ async function applyCanonicalAppointment(
         status,
         locationText(event),
         providerUpdatedAt,
-        status === 'cancelled'
-          ? invitee.cancellation?.canceled_at
-            ? mysqlTimestamp(invitee.cancellation.canceled_at, 'invalid_cancellation_time')
-            : providerUpdatedAt
-          : null,
+        status === 'cancelled' && ((invitee.cancellation as any)?.created_at||invitee.cancellation?.canceled_at)
+          ? mysqlTimestamp((invitee.cancellation as any)?.created_at||invitee.cancellation!.canceled_at!, 'invalid_cancellation_time') : null,
       ],
     );
     const [receiptUpdate] = await connection.execute(
@@ -228,11 +237,13 @@ async function applyCanonicalAppointment(
       [notify ? 1 : 0, row.id, row.processing_token],
     );
     if (Number((receiptUpdate as any).affectedRows || 0) !== 1) throw new CalendlyReceiptError('lease_lost');
+    committing = true;
     await connection.commit();
     inTransaction = false;
     row.effect_applied = 1;
     row.notification_required = notify ? 1 : 0;
   } catch (error) {
+    if(committing)reusable=false;
     if (inTransaction && reusable) {
       try {
         await connection.rollback();
@@ -307,6 +318,8 @@ async function deliverNotification(row: ReceiptRow): Promise<void> {
 export async function enqueueCalendlyWebhookReceipt(input: {
   merchantId: number;
   integrationId: number;
+  expectedEndpointId:string;
+  expectedSigningSecret:string;
   signatureTimestamp: number;
   payload: ParsedCalendlyWebhook;
 }): Promise<{ accepted: true; duplicate: boolean }> {
@@ -314,12 +327,15 @@ export async function enqueueCalendlyWebhookReceipt(input: {
   const pool = await getPool();
   if (!pool) throw new CalendlyReceiptError('database_unavailable');
   const eventKey = calendlyEventKey(input.payload);
-  const [result] = await pool.execute(
+  return calendlyOperationTransaction(async tx=>{
+  await assertCalendlyWorkerConnection(tx,{id:input.integrationId,merchantId:input.merchantId,webhookEndpointId:input.expectedEndpointId,webhookSigningSecret:input.expectedSigningSecret});
+  const [existing]=await tx.execute<RowDataPacket[]>('SELECT id FROM calendly_webhook_receipts WHERE merchant_id=? AND event_key=? FOR UPDATE',[input.merchantId,eventKey]);
+  if(existing.length)return {accepted:true as const,duplicate:true};
+  const [result] = await tx.execute(
     `INSERT INTO calendly_webhook_receipts
        (merchant_id, integration_id, event_key, event_type, event_uri, invitee_uri,
         signature_timestamp, status, attempt_count, available_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', 0, NOW(3))
-     ON DUPLICATE KEY UPDATE event_key = VALUES(event_key)`,
+     VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', 0, NOW(3))`,
     [
       input.merchantId,
       input.integrationId,
@@ -330,7 +346,9 @@ export async function enqueueCalendlyWebhookReceipt(input: {
       input.signatureTimestamp,
     ],
   );
-  return { accepted: true, duplicate: Number((result as any).affectedRows || 0) === 0 };
+  if(Number((result as any).affectedRows)!==1)throw new CalendlyReceiptError('receipt_save_unavailable');
+  return { accepted: true as const, duplicate:false };
+  });
 }
 
 async function recoverStaleLeases(): Promise<void> {
@@ -401,16 +419,22 @@ async function claimReceipts(limit: number): Promise<ReceiptRow[]> {
   return rows;
 }
 
-async function processReceipt(row: ReceiptRow): Promise<void> {
+export async function processCalendlyReceipt(row: ReceiptRow): Promise<void> {
   const integration = await getIntegrationByType(Number(row.merchant_id), 'calendly');
   if (!integration || integration.id !== Number(row.integration_id) || !integration.isActive || !integration.accessToken) {
     throw new CalendlyReceiptError('connection_inactive', true);
   }
-  if (!row.effect_applied) {
-    const canonical = await fetchCanonicalResources(row, integration.accessToken);
-    await applyCanonicalAppointment(row, integration, canonical.event, canonical.invitee);
-  }
-  await deliverNotification(row);
+  const check=()=>calendlyOperationTransaction(async tx=>{await assertCalendlyWorkerConnection(tx,integration);await assertCalendlyReceiptLease(tx,row);});
+  await withCalendlyProviderCheckpoint(check,async()=>{
+    await check();
+    if (!row.effect_applied) {
+      const canonical = await fetchCanonicalResources(row, integration.accessToken!);
+      const memberships=(canonical.event as any).event_memberships;
+      if(!Array.isArray(memberships)||!memberships.some(member=>member?.user===integration.storeUrl)||(canonical.invitee as any).event!==canonical.event.uri)throw new CalendlyReceiptError('provider_account_mismatch',true);
+      await applyCanonicalAppointment(row, integration, canonical.event, canonical.invitee);
+    }
+    await check();await deliverNotification(row);
+  });
 }
 
 async function completeReceipt(row: ReceiptRow): Promise<void> {
@@ -429,7 +453,7 @@ async function scheduleFailure(row: ReceiptRow, error: unknown): Promise<void> {
   const pool = await getPool();
   if (!pool) return;
   const apiError = error instanceof CalendlyApiError ? error : null;
-  const known = error instanceof CalendlyReceiptError ? error : null;
+  const known = error instanceof CalendlyReceiptError ? error : error instanceof CalendlyWorkerAuthorityError ? new CalendlyReceiptError('connection_changed',true) : null;
   const exhausted = Number(row.attempt_count) >= MAX_ATTEMPTS;
   const permanentProviderError = apiError && [400, 401, 403, 404].includes(apiError.status);
   const manualReview = Boolean(known?.manualReview || permanentProviderError || exhausted);
@@ -453,7 +477,7 @@ export async function runCalendlyWebhookReceiptBatch(limit = 20): Promise<number
     const rows = await claimReceipts(limit);
     for (const row of rows) {
       try {
-        await processReceipt(row);
+        await processCalendlyReceipt(row);
         await completeReceipt(row);
       } catch (error) {
         await scheduleFailure(row, error);

@@ -1,3 +1,4 @@
+import {eventSchema,inviteeSchema} from './calendly-canonical';
 import {z} from 'zod';
 import type {PoolConnection} from 'mysql2/promise';
 import {calendlySyncCommand,type calendlySyncPeriod} from '../../shared/calendly-sync';
@@ -10,9 +11,6 @@ import {withCalendlyDashboardAuthority} from './calendly-dashboard-authority';
 import {withCalendlyProviderCheckpoint} from './calendly-provider-checkpoint';
 import {withCalendlyConnectionLock} from './calendly-lock';
 import {listCalendlyCollection,CalendlyApiError} from './calendly-api';
-const name=z.string().trim().min(1).max(255),stamp=z.string().datetime({offset:true}).refine(v=>Date.parse(v)>=Date.UTC(2000,0,1)&&Date.parse(v)<Date.UTC(2038,0,1));
-const eventSchema=z.object({uri:z.string().refine(v=>!!calendlyResourceUri(v,'event')),name,status:z.enum(['active','canceled']),start_time:stamp,end_time:stamp,updated_at:stamp,location:z.object({location:z.string().max(500).optional().nullable()}).optional().nullable(),event_memberships:z.array(z.object({user:z.string()})).min(1)}).refine(v=>Date.parse(v.end_time)>Date.parse(v.start_time));
-const inviteeSchema=z.object({uri:z.string().refine(v=>!!calendlyResourceUri(v,'invitee')),event:z.string(),name,status:z.enum(['active','canceled']),updated_at:stamp,email:z.string().max(320).optional().nullable(),text_reminder_number:z.string().max(100).optional().nullable(),cancellation:z.object({created_at:stamp.optional(),canceled_at:stamp.optional()}).optional().nullable()});
 const sqlDate=(value:string)=>new Date(value).toISOString().slice(0,19).replace('T',' ');
 const phone=(value:string|null|undefined)=>{if(!value)return null;const compact=value.trim().replace(/[\s().-]/g,''),normalized=compact.startsWith('+')?compact:'+'+compact;return /^\+[1-9]\d{7,14}$/.test(normalized)?normalized:null;};
 type Appointment={eventUri:string;inviteeUri:string;eventName:string;customerName:string;email:string|null;phone:string|null;startAt:string;endAt:string;state:'active'|'cancelled';location:string|null;updatedAt:string;cancelledAt:string|null};

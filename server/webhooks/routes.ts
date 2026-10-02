@@ -280,6 +280,8 @@ router.post('/calendly/:endpointId', async (req: Request & { rawBody?: Buffer },
     const result = await enqueueCalendlyWebhookReceipt({
       merchantId: integration.merchantId,
       integrationId: integration.id,
+      expectedEndpointId:endpointId,
+      expectedSigningSecret:integration.webhookSigningSecret,
       signatureTimestamp: signature.timestamp,
       payload,
     });
