@@ -1338,6 +1338,13 @@
       "when": 1795392000052,
       "tag": "0190_zid_sync_requests",
       "breakpoints": true
+    },
+    {
+      "idx": 191,
+      "version": "5",
+      "when": 1795392000053,
+      "tag": "0191_woocommerce_operations",
+      "breakpoints": true
     }
   ]
 }
