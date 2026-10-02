@@ -16,13 +16,16 @@ describe('10/10 remediation regression guards', () => {
     const discountClient = read('./client/src/pages/DiscountCodes.tsx');
     const notificationClient = read('./client/src/pages/NotificationSettings.tsx');
     const routers = read('./server/routers.ts');
-    const discounts = section(routers, 'discounts: router({', '// Referrals & Rewards Management');
+    const discounts = read('./server/routers-discounts.ts');
+    expect(routers).toContain('discounts: discountsRouter');
     const preferences = section(routers, 'notificationPreferences: router({', '// Email Templates APIs');
 
     expect(discountClient).not.toMatch(/merchantId\s*=\s*1/);
     expect(discountClient).not.toMatch(/merchantId\s*:/);
     expect(notificationClient).not.toContain('merchants.list');
-    expect(discounts).toContain('getMerchantByUserId(ctx.user.id)');
+    expect(discounts).toContain('merchantProcedure.input');
+    expect(discounts).toContain('ctx.user.id, ctx.merchantId');
+    expect(discounts).not.toContain('getMerchantByUserId');
     expect(preferences).toContain('getMerchantByUserId(ctx.user.id)');
   });
 
@@ -48,8 +51,8 @@ describe('10/10 remediation regression guards', () => {
 
   it('delegates voice reply effects to the durable service and validates standalone uploads', () => {
     const routers = read('./server/routers.ts');
-    const voiceSend = section(routers, "sendVoiceReply: permissionProcedure('conversations.reply')", '// ── Sync conversations');
-    const voiceUpload = section(routers, 'voice: router({', 'messageAnalytics: router({');
+    const voiceSend = section(routers, "sendVoiceReply: permissionProcedure('conversations.reply')", '...conversationImportProcedures');
+    const voiceUpload = section(routers, 'voice: router({', 'messageAnalytics:');
     const client = read('./client/src/pages/merchant/Conversations.tsx');
 
     expect(voiceSend).toContain('.input(staffVoiceInput)');
@@ -75,8 +78,9 @@ describe('10/10 remediation regression guards', () => {
     const customers = read('./server/routers-customers.ts');
     const csv = read('./server/utils/csv.ts');
 
-    expect(customers).toContain("exportCsv: permissionProcedure('customers.manage').query(async ({ ctx })");
-    expect(customers).toContain('getMerchantById(ctx.merchantId)');
+    expect(customers).toContain('export: permissionProcedure("customers.manage")');
+    expect(customers).toContain('exportCustomerWorkspace(ctx.merchantId, input)');
+    expect(read('./server/customer-workspace.ts')).toContain('buildCsv');
     expect(csv).toMatch(/FORMULA_PREFIX/);
     expect(csv).toContain("text = `'${text}`;");
   });
