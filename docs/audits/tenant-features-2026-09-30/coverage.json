@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-02T17:49:33.438Z",
+  "generatedAt": "2026-10-02T18:12:46.951Z",
   "definition": "Every registered route is accounted for; source inventory and design completion are different statuses.",
   "routes": [
     {
@@ -32680,28 +32680,28 @@
         "client/src/lib/conversation-draft.ts"
       ],
       "controls": [
-        "e36734e61e7d",
-        "8aebb1d12eb8",
-        "9a64f78f82c4",
-        "cf4650ca47e7",
-        "a679487e37c7",
-        "5823b49afcb8",
-        "9e5113541148",
-        "46209b1260d2",
-        "b529c5fa6767",
-        "81ed57b96be9",
-        "547f83452fa1",
-        "303f8c9ac332",
-        "ee06b6ea307f",
-        "2a7c46f561ba",
-        "8456b8662745",
-        "ad70ab2df6f5",
-        "43dd7f2e60e9",
-        "9c2843ab53fd",
-        "d3c91ba3dcbc",
-        "79277f185667",
-        "177518ac2f0d",
-        "d9f1f43c8127",
+        "e3bafa8eaef5",
+        "8bb931cbf3be",
+        "409620139872",
+        "9a9fef2709fa",
+        "a5612604d2de",
+        "5357ccc46409",
+        "8c5104ff776e",
+        "12d5b6239b67",
+        "57602408b6bd",
+        "83df442ddeae",
+        "4fc6263ff760",
+        "90167535f9a8",
+        "515f84885a0e",
+        "5dd436c44558",
+        "e4770b08f135",
+        "cd930b6e8f89",
+        "cf1a8ea18eed",
+        "bc5bea4a47a0",
+        "d80a69ca00ee",
+        "e13739d83be8",
+        "3600cc1913a2",
+        "5eb09e888d0a",
         "77ce5300e6f7"
       ],
       "queries": [
@@ -32729,9 +32729,9 @@
       ],
       "controlDetails": [
         {
-          "id": "e36734e61e7d",
+          "id": "e3bafa8eaef5",
           "file": "client/src/pages/merchant/CalendlyIntegration.tsx",
-          "line": 158,
+          "line": 159,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -32750,9 +32750,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "8aebb1d12eb8",
+          "id": "8bb931cbf3be",
           "file": "client/src/pages/merchant/CalendlyIntegration.tsx",
-          "line": 185,
+          "line": 186,
           "tag": "Calendar",
           "role": "",
           "kind": "field",
@@ -32771,9 +32771,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "9a64f78f82c4",
+          "id": "409620139872",
           "file": "client/src/pages/merchant/CalendlyIntegration.tsx",
-          "line": 208,
+          "line": 209,
           "tag": "Calendar",
           "role": "",
           "kind": "field",
@@ -32794,9 +32794,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "cf4650ca47e7",
+          "id": "9a9fef2709fa",
           "file": "client/src/pages/merchant/CalendlyIntegration.tsx",
-          "line": 238,
+          "line": 239,
           "tag": "TabsTrigger",
           "role": "",
           "kind": "action",
@@ -32817,9 +32817,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "a679487e37c7",
+          "id": "a5612604d2de",
           "file": "client/src/pages/merchant/CalendlyIntegration.tsx",
-          "line": 239,
+          "line": 240,
           "tag": "Calendar",
           "role": "",
           "kind": "field",
@@ -32840,9 +32840,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "5823b49afcb8",
+          "id": "5357ccc46409",
           "file": "client/src/pages/merchant/CalendlyIntegration.tsx",
-          "line": 242,
+          "line": 243,
           "tag": "TabsTrigger",
           "role": "",
           "kind": "action",
@@ -32863,9 +32863,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "9e5113541148",
+          "id": "8c5104ff776e",
           "file": "client/src/pages/merchant/CalendlyIntegration.tsx",
-          "line": 246,
+          "line": 247,
           "tag": "TabsTrigger",
           "role": "",
           "kind": "action",
@@ -32886,9 +32886,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "46209b1260d2",
+          "id": "12d5b6239b67",
           "file": "client/src/pages/merchant/CalendlyIntegration.tsx",
-          "line": 250,
+          "line": 251,
           "tag": "TabsTrigger",
           "role": "",
           "kind": "action",
@@ -32909,9 +32909,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "b529c5fa6767",
+          "id": "57602408b6bd",
           "file": "client/src/pages/merchant/CalendlyIntegration.tsx",
-          "line": 272,
+          "line": 273,
           "tag": "Calendar",
           "role": "",
           "kind": "field",
@@ -32932,9 +32932,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "81ed57b96be9",
+          "id": "83df442ddeae",
           "file": "client/src/pages/merchant/CalendlyIntegration.tsx",
-          "line": 290,
+          "line": 291,
           "tag": "Calendar",
           "role": "",
           "kind": "field",
@@ -32957,9 +32957,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "547f83452fa1",
+          "id": "4fc6263ff760",
           "file": "client/src/pages/merchant/CalendlyIntegration.tsx",
-          "line": 317,
+          "line": 318,
           "tag": "Switch",
           "role": "",
           "kind": "field",
@@ -32980,9 +32980,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "303f8c9ac332",
+          "id": "90167535f9a8",
           "file": "client/src/pages/merchant/CalendlyIntegration.tsx",
-          "line": 321,
+          "line": 322,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -33003,9 +33003,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "ee06b6ea307f",
+          "id": "515f84885a0e",
           "file": "client/src/pages/merchant/CalendlyIntegration.tsx",
-          "line": 325,
+          "line": 326,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -33026,9 +33026,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "2a7c46f561ba",
+          "id": "5dd436c44558",
           "file": "client/src/pages/merchant/CalendlyIntegration.tsx",
-          "line": 333,
+          "line": 334,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -33049,9 +33049,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "8456b8662745",
+          "id": "e4770b08f135",
           "file": "client/src/pages/merchant/CalendlyIntegration.tsx",
-          "line": 398,
+          "line": 399,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -33072,9 +33072,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "ad70ab2df6f5",
+          "id": "cd930b6e8f89",
           "file": "client/src/pages/merchant/CalendlyIntegration.tsx",
-          "line": 399,
+          "line": 400,
           "tag": "a",
           "role": "",
           "kind": "action",
@@ -33095,9 +33095,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "43dd7f2e60e9",
+          "id": "cf1a8ea18eed",
           "file": "client/src/pages/merchant/CalendlyIntegration.tsx",
-          "line": 431,
+          "line": 432,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -33110,25 +33110,24 @@
           "max": "",
           "maxLength": "",
           "required": false,
-          "conditional": false,
+          "conditional": true,
           "conditions": [
-            "eventTypes && eventTypes.length > 0",
-            "typesLoading",
-            "typesError"
+            "calendlyBookingUrl(eventType.schedulingUrl)",
+            "eventTypes && eventTypes.length > 0"
           ],
           "disabled": "",
           "review": "source-inventoried"
         },
         {
-          "id": "9c2843ab53fd",
+          "id": "bc5bea4a47a0",
           "file": "client/src/pages/merchant/CalendlyIntegration.tsx",
-          "line": 432,
+          "line": 433,
           "tag": "a",
           "role": "",
           "kind": "action",
           "label": "فتح الرابط",
           "section": "روابط الحجز",
-          "binding": "eventType.schedulingUrl",
+          "binding": "calendlyBookingUrl(eventType.schedulingUrl)!",
           "type": "text",
           "options": [],
           "min": "",
@@ -33137,16 +33136,15 @@
           "required": false,
           "conditional": false,
           "conditions": [
-            "eventTypes && eventTypes.length > 0",
-            "typesLoading"
+            "calendlyBookingUrl(eventType.schedulingUrl)"
           ],
           "disabled": "",
           "review": "source-inventoried"
         },
         {
-          "id": "d3c91ba3dcbc",
+          "id": "d80a69ca00ee",
           "file": "client/src/pages/merchant/CalendlyIntegration.tsx",
-          "line": 468,
+          "line": 469,
           "tag": "Input",
           "role": "",
           "kind": "field",
@@ -33167,9 +33165,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "79277f185667",
+          "id": "e13739d83be8",
           "file": "client/src/pages/merchant/CalendlyIntegration.tsx",
-          "line": 480,
+          "line": 481,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -33190,9 +33188,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "177518ac2f0d",
+          "id": "3600cc1913a2",
           "file": "client/src/pages/merchant/CalendlyIntegration.tsx",
-          "line": 484,
+          "line": 485,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -33213,9 +33211,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "d9f1f43c8127",
+          "id": "5eb09e888d0a",
           "file": "client/src/pages/merchant/CalendlyIntegration.tsx",
-          "line": 485,
+          "line": 486,
           "tag": "a",
           "role": "",
           "kind": "action",

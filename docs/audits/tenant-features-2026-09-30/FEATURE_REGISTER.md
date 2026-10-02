@@ -1479,28 +1479,28 @@
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 158 | Button | تسمية ديناميكية / تحتاج مراجعة | CalendlyIntegration |
-| 185 | Calendar | تسمية ديناميكية / تحتاج مراجعة | تكامل Calendly |
-| 208 | Calendar | تسمية ديناميكية / تحتاج مراجعة | حالة الاتصال |
-| 238 | TabsTrigger | المواعيد | المواعيد |
-| 239 | Calendar | تسمية ديناميكية / تحتاج مراجعة | المواعيد |
-| 242 | TabsTrigger | الإعدادات | الإعدادات |
-| 246 | TabsTrigger | Webhooks | Webhooks |
-| 250 | TabsTrigger | روابط الحجز | روابط الحجز |
-| 272 | Calendar | تسمية ديناميكية / تحتاج مراجعة | المواعيد القادمة |
-| 290 | Calendar | تسمية ديناميكية / تحتاج مراجعة | المواعيد القادمة |
-| 317 | Switch | تسمية ديناميكية / تحتاج مراجعة | إعدادات التكامل |
-| 321 | Button | حفظ الإعدادات | إعدادات التكامل |
-| 325 | Button | مزامنة الآن | إعدادات التكامل |
-| 333 | Button | فصل الحساب | إعدادات التكامل |
-| 398 | Button | دليل إعداد Webhooks في Calendly | إعدادات Webhooks |
-| 399 | a | دليل إعداد Webhooks في Calendly | إعدادات Webhooks |
-| 431 | Button | فتح الرابط | روابط الحجز |
-| 432 | a | فتح الرابط | روابط الحجز |
-| 468 | Input | Personal Access Token | ربط حساب Calendly |
-| 480 | Button | ربط الحساب | ربط حساب Calendly |
-| 484 | Button | فتح إعدادات Calendly | ربط حساب Calendly |
-| 485 | a | فتح إعدادات Calendly | ربط حساب Calendly |
+| 159 | Button | تسمية ديناميكية / تحتاج مراجعة | CalendlyIntegration |
+| 186 | Calendar | تسمية ديناميكية / تحتاج مراجعة | تكامل Calendly |
+| 209 | Calendar | تسمية ديناميكية / تحتاج مراجعة | حالة الاتصال |
+| 239 | TabsTrigger | المواعيد | المواعيد |
+| 240 | Calendar | تسمية ديناميكية / تحتاج مراجعة | المواعيد |
+| 243 | TabsTrigger | الإعدادات | الإعدادات |
+| 247 | TabsTrigger | Webhooks | Webhooks |
+| 251 | TabsTrigger | روابط الحجز | روابط الحجز |
+| 273 | Calendar | تسمية ديناميكية / تحتاج مراجعة | المواعيد القادمة |
+| 291 | Calendar | تسمية ديناميكية / تحتاج مراجعة | المواعيد القادمة |
+| 318 | Switch | تسمية ديناميكية / تحتاج مراجعة | إعدادات التكامل |
+| 322 | Button | حفظ الإعدادات | إعدادات التكامل |
+| 326 | Button | مزامنة الآن | إعدادات التكامل |
+| 334 | Button | فصل الحساب | إعدادات التكامل |
+| 399 | Button | دليل إعداد Webhooks في Calendly | إعدادات Webhooks |
+| 400 | a | دليل إعداد Webhooks في Calendly | إعدادات Webhooks |
+| 432 | Button | فتح الرابط | روابط الحجز |
+| 433 | a | فتح الرابط | روابط الحجز |
+| 469 | Input | Personal Access Token | ربط حساب Calendly |
+| 481 | Button | ربط الحساب | ربط حساب Calendly |
+| 485 | Button | فتح إعدادات Calendly | ربط حساب Calendly |
+| 486 | a | فتح إعدادات Calendly | ربط حساب Calendly |
 
 ## client/src/pages/DiscountCodes.tsx
 

@@ -56,7 +56,7 @@ import { subscriptionWorkspaceEn } from './subscription-workspace';
 import { whatsappWorkspaceEn } from './whatsapp-workspace';
 
 const merchantUxEn: MerchantUxCopy = {
-  calendlyAccess: {"unavailable":"Unable to confirm Calendly data. Refresh before making changes.","retry":"Refresh status","loading":"Loading…","actionFailed":"The result could not be confirmed. Refresh the status before trying again.","forbidden":"You need permission to manage integrations for this store."},
+  calendlyAccess: {"linkUnavailable":"Booking link is unavailable or invalid.","unavailable":"Unable to confirm Calendly data. Refresh before making changes.","retry":"Refresh status","loading":"Loading…","actionFailed":"The result could not be confirmed. Refresh the status before trying again.","forbidden":"You need permission to manage integrations for this store."},
   wooWorkspace:wooWorkspaceEn,
   zidWorkspace:zidWorkspaceEn,
   sallaWorkspace:sallaWorkspaceEn,

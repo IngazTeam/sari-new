@@ -71,7 +71,7 @@ import type { SalesExperimentProtocolCopy } from './sales-experiment-protocol';
 import type { SalesExperimentReviewCopy } from './sales-experiment-review';
 import type { SalesExperimentLaunchCopy } from './sales-experiment-launch';
 export type MerchantUxCopy = {
-  calendlyAccess: Record<'unavailable'|'retry'|'loading'|'actionFailed'|'forbidden',string>;
+  calendlyAccess: Record<'linkUnavailable'|'unavailable'|'retry'|'loading'|'actionFailed'|'forbidden',string>;
   wooWorkspace: typeof import('./woocommerce-workspace').wooWorkspaceEn;
   zidWorkspace: typeof import('./zid-workspace').zidWorkspaceEn;
   sallaWorkspace: typeof import('./salla-workspace').sallaWorkspaceEn;

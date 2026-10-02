@@ -1,3 +1,4 @@
+import {calendlyResourceUri} from '../../shared/calendly-provider';
 import {assertCalendlyDashboardAuthority,CalendlyAuthorityError} from './calendly-dashboard-authority';
 const CALENDLY_API_ORIGIN = 'https://api.calendly.com';
 const CALENDLY_TIMEOUT_MS = 12_000;
@@ -54,15 +55,17 @@ export async function calendlyApiRequest<T>(
       redirect: 'error',
     });
     await assertCalendlyDashboardAuthority();
-    if (response.status === 204) return undefined as T;
+    if (response.status === 204 && options.method==='DELETE') return undefined as T;
     const contentLength = Number(response.headers.get('content-length') || 0);
     if (Number.isFinite(contentLength) && contentLength > CALENDLY_MAX_RESPONSE_BYTES) {
+      await response.body?.cancel().catch(()=>undefined);
       throw new CalendlyApiError(502, 'provider_response_too_large');
     }
-    const text = await response.text();
-    if (Buffer.byteLength(text, 'utf8') > CALENDLY_MAX_RESPONSE_BYTES) {
-      throw new CalendlyApiError(502, 'provider_response_too_large');
-    }
+    const reader=response.body?.getReader();if(!reader)throw new CalendlyApiError(502,'invalid_provider_response');
+    const chunks:Uint8Array[]=[];let bytes=0;
+    try{for(;;){const part=await reader.read();if(part.done)break;bytes+=part.value.byteLength;if(bytes>CALENDLY_MAX_RESPONSE_BYTES){await reader.cancel().catch(()=>undefined);throw new CalendlyApiError(502,'provider_response_too_large');}chunks.push(part.value);}}
+    finally{reader.releaseLock();}
+    const text=Buffer.concat(chunks,bytes).toString('utf8');
     if (!response.ok) throw new CalendlyApiError(response.status, `provider_http_${response.status}`);
     try {
       const value=JSON.parse(text) as T;
@@ -111,7 +114,7 @@ export type CalendlyInvitee = {
 export async function getCalendlyCurrentUser(accessToken: string): Promise<CalendlyUser> {
   const result = await calendlyApiRequest<{ resource?: CalendlyUser }>('/users/me', accessToken);
   const user = result?.resource;
-  if (!user || typeof user.uri !== 'string' || typeof user.current_organization !== 'string') {
+  if (!user || !calendlyResourceUri(user.uri,'user') || !calendlyResourceUri(user.current_organization,'organization')) {
     throw new CalendlyApiError(502, 'invalid_current_user');
   }
   return user;
@@ -124,6 +127,7 @@ export async function createCalendlyWebhookSubscription(input: {
   organizationUri: string;
   userUri: string;
 }): Promise<string> {
+  if(!calendlyResourceUri(input.organizationUri,'organization')||!calendlyResourceUri(input.userUri,'user'))throw new CalendlyApiError(502,'invalid_current_user');
   const result = await calendlyApiRequest<{ resource?: { uri?: string } }>('/webhook_subscriptions', input.accessToken, {
     method: 'POST',
     body: {
@@ -136,25 +140,28 @@ export async function createCalendlyWebhookSubscription(input: {
     },
   });
   const uri = result?.resource?.uri;
-  if (typeof uri !== 'string' || !uri.startsWith(`${CALENDLY_API_ORIGIN}/webhook_subscriptions/`)) {
+  if (!calendlyResourceUri(uri,'subscription')) {
     throw new CalendlyApiError(502, 'invalid_webhook_subscription');
   }
-  return uri;
+  return uri!;
 }
 
 export async function deleteCalendlyWebhookSubscription(accessToken: string, subscriptionUri: string): Promise<void> {
+  if(!calendlyResourceUri(subscriptionUri,'subscription'))throw new CalendlyApiError(0,'invalid_webhook_subscription');
   await calendlyApiRequest<void>(subscriptionUri, accessToken, { method: 'DELETE' });
 }
 
 export async function getCalendlyScheduledEvent(accessToken: string, eventUri: string): Promise<CalendlyScheduledEvent> {
+  if(!calendlyResourceUri(eventUri,'event'))throw new CalendlyApiError(0,'invalid_event_uri');
   const result = await calendlyApiRequest<{ resource?: CalendlyScheduledEvent }>(eventUri, accessToken);
-  if (!result?.resource?.uri) throw new CalendlyApiError(502, 'invalid_scheduled_event');
+  if (result?.resource?.uri!==eventUri) throw new CalendlyApiError(502, 'invalid_scheduled_event');
   return result.resource;
 }
 
 export async function getCalendlyInvitee(accessToken: string, inviteeUri: string): Promise<CalendlyInvitee> {
+  if(!calendlyResourceUri(inviteeUri,'invitee'))throw new CalendlyApiError(0,'invalid_invitee_uri');
   const result = await calendlyApiRequest<{ resource?: CalendlyInvitee }>(inviteeUri, accessToken);
-  if (!result?.resource?.uri) throw new CalendlyApiError(502, 'invalid_invitee');
+  if (result?.resource?.uri!==inviteeUri) throw new CalendlyApiError(502, 'invalid_invitee');
   return result.resource;
 }
 
@@ -163,17 +170,25 @@ export async function listCalendlyCollection<T>(
   initialPath: string,
   maxItems = 1_000,
 ): Promise<T[]> {
+  if(!Number.isSafeInteger(maxItems)||maxItems<1||maxItems>2000)throw new CalendlyApiError(0,'invalid_collection_limit');
+  const origin=normalizeCalendlyApiUrl(initialPath);
   const items: T[] = [];
   let next: string | null = initialPath;
   const seen = new Set<string>();
-  while (next && items.length < maxItems) {
-    const normalized = normalizeCalendlyApiUrl(next).toString();
+  while (next) {
+    const url=normalizeCalendlyApiUrl(next);
+    if(url.pathname!==origin.pathname||Array.from(origin.searchParams.keys()).some(key=>key!=='page_token'&&JSON.stringify(origin.searchParams.getAll(key))!==JSON.stringify(url.searchParams.getAll(key))))throw new CalendlyApiError(502,'invalid_pagination_scope');
+    const normalized=url.toString();
     if (seen.has(normalized) || seen.size >= 20) throw new CalendlyApiError(502, 'invalid_pagination');
     seen.add(normalized);
     const page: { collection?: T[]; pagination?: { next_page?: string | null } } = await calendlyApiRequest(normalized, accessToken);
-    if (!Array.isArray(page.collection)) throw new CalendlyApiError(502, 'invalid_collection');
-    items.push(...page.collection.slice(0, Math.max(0, maxItems - items.length)));
-    next = typeof page.pagination?.next_page === 'string' ? page.pagination.next_page : null;
+    if (!Array.isArray(page?.collection)) throw new CalendlyApiError(502, 'invalid_collection');
+    if(page.pagination!=null&&(typeof page.pagination!=='object'||Array.isArray(page.pagination)))throw new CalendlyApiError(502,'invalid_pagination');
+    const cursor=page.pagination?.next_page;
+    if(cursor!==undefined&&cursor!==null&&(typeof cursor!=='string'||!cursor))throw new CalendlyApiError(502,'invalid_pagination');
+    if(page.collection.length>maxItems-items.length||cursor&&page.collection.length+items.length>=maxItems)throw new CalendlyApiError(502,'collection_limit_exceeded');
+    items.push(...page.collection);
+    next=cursor??null;
   }
   return items;
 }

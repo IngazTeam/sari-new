@@ -587,6 +587,7 @@ export async function syncCalendlyAppointments(integration: PlatformIntegration)
   );
   let synced = 0;
   for (const event of events) {
+    if(synced>=1_000)throw new CalendlyApiError(502,'collection_limit_exceeded');
     const invitees = await listCalendlyCollection<CalendlyInvitee>(
       integration.accessToken,
       `${event.uri}/invitees?status=active&count=100`,
@@ -595,7 +596,6 @@ export async function syncCalendlyAppointments(integration: PlatformIntegration)
     for (const invitee of invitees) {
       await persistSyncAppointment(integration, event, invitee);
       synced += 1;
-      if (synced >= 1_000) return synced;
     }
   }
   return synced;

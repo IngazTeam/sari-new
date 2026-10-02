@@ -19,7 +19,7 @@ it('rechecks authority after the provider responds, before reading its body',asy
  await expect(withCalendlyDashboardAuthority(scope,()=>calendlyApiRequest('/users/me',token))).rejects.toMatchObject({code:'FORBIDDEN'});expect(fetcher).toHaveBeenCalledOnce();expect(body).not.toHaveBeenCalled();
 });
 it('does not expose a provider body after access is revoked during the read',async()=>{
- const fetcher=vi.fn(async()=>({status:200,ok:true,headers:new Headers(),text:async()=>{m.access.mockResolvedValue(null);return '{"resource":{"name":"PRIVATE"}}';}}));vi.stubGlobal('fetch',fetcher);
+ const fetcher=vi.fn(async()=>new Response(new ReadableStream({start(controller){controller.enqueue(new TextEncoder().encode('{"resource":{"name":"PRIVATE"}}'));},pull(controller){m.access.mockResolvedValue(null);controller.close();}}),{status:200}));vi.stubGlobal('fetch',fetcher);
  await expect(withCalendlyDashboardAuthority(scope,()=>calendlyApiRequest('/users/me',token))).rejects.toMatchObject({code:'FORBIDDEN',message:'calendly_dashboard:forbidden'});
 });
 it('allows an authorized bounded request with pinned origin and no redirect',async()=>{
@@ -27,3 +27,4 @@ it('allows an authorized bounded request with pinned origin and no redirect',asy
  expect(await withCalendlyDashboardAuthority(scope,()=>calendlyApiRequest('/users/me',token))).toEqual({resource:{name:'Local'}});expect(fetcher).toHaveBeenCalledWith(new URL('https://api.calendly.com/users/me'),expect.objectContaining({redirect:'error',method:'GET'}));expect(m.access).toHaveBeenCalledTimes(3);
 });
 it('rejects a mismatched merchant before resolving membership',async()=>{await expect(withCalendlyDashboardAuthority(scope,()=>assertCalendlyDashboardAuthority(21))).rejects.toMatchObject({code:'FORBIDDEN'});expect(m.access).not.toHaveBeenCalled();});
+

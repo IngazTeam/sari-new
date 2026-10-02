@@ -1,3 +1,4 @@
+import {calendlyResourceUri,calendlyBookingUrl} from '../../shared/calendly-provider';
 import {withCalendlyDashboardAuthority,assertCalendlyDashboardAuthority,CalendlyAuthorityError} from './calendly-dashboard-authority';
 import crypto from 'node:crypto';
 import { z } from 'zod';
@@ -230,6 +231,7 @@ export const calendlyRouter = router({
       const merchantId = ctx.merchantId;
       const integration = await getIntegrationByType(merchantId, 'calendly');
       if (!integration?.isActive || !integration.accessToken || !integration.storeUrl) return [];
+      if(!calendlyResourceUri(integration.storeUrl,'user'))throw unavailable();
       try {
         const now = new Date().toISOString();
         const response = await calendlyApiRequest<{ collection?: any[] }>(
@@ -254,6 +256,7 @@ export const calendlyRouter = router({
     const merchantId = ctx.merchantId;
     const integration = await getIntegrationByType(merchantId, 'calendly');
     if (!integration?.isActive || !integration.accessToken || !integration.storeUrl) return [];
+    if(!calendlyResourceUri(integration.storeUrl,'user'))throw unavailable();
     try {
       const eventTypes = await listCalendlyCollection<any>(
         integration.accessToken,
@@ -264,7 +267,7 @@ export const calendlyRouter = router({
         uri: typeof eventType.uri === 'string' ? eventType.uri : '',
         name: typeof eventType.name === 'string' ? eventType.name.slice(0, 255) : 'Calendly',
         duration: Number.isFinite(Number(eventType.duration)) ? Number(eventType.duration) : 0,
-        schedulingUrl: typeof eventType.scheduling_url === 'string' ? eventType.scheduling_url : '',
+        schedulingUrl: calendlyBookingUrl(eventType.scheduling_url),
         active: eventType.active === true,
       }));
     } catch {

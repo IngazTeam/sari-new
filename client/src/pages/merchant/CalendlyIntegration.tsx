@@ -1,3 +1,4 @@
+import {calendlyBookingUrl} from '@shared/calendly-provider';
 import { useState, useEffect } from 'react';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
@@ -428,12 +429,12 @@ export function CalendlyScreen() {
                             <p className="text-sm text-muted-foreground">{eventType.duration} دقيقة</p>
                           </div>
                         </div>
-                        <Button variant="outline" size="sm" asChild>
-                          <a href={eventType.schedulingUrl} target="_blank" rel="noopener noreferrer">
+                        {calendlyBookingUrl(eventType.schedulingUrl)?<Button variant="outline" size="sm" asChild>
+                          <a href={calendlyBookingUrl(eventType.schedulingUrl)!} target="_blank" rel="noopener noreferrer">
                             <ExternalLink className="h-4 w-4 ml-2" />
                             {t('calendlyIntegrationPage.text37')}
                           </a>
-                        </Button>
+                        </Button>:<span>{t('merchantUx.calendlyAccess.linkUnavailable')}</span>}
                       </div>
                     ))}
                   </div>
