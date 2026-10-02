@@ -285,7 +285,7 @@ export class SallaIntegration {
       const storeInfo = normalizeSallaStoreIdentity(response.data.data);
       return storeInfo ? { success: true, storeInfo } : { success: false };
     } catch (error: any) {
-      console.error('[Salla] Connection test failed:', error.response?.data || error.message);
+      console.error('[Salla] Connection test could not be confirmed');
       return { success: false };
     }
   }

@@ -94,7 +94,7 @@ export default function SallaIntegration() {
   });
 
   const handleConnect = () => {
-    if (!storeUrl || !accessToken) {
+    if (!storeUrl || !accessToken || !connection?.revision) {
       toast.error(t('toast.common.msg16'), {
         description: 'يرجى إدخال رابط المتجر والـ Token',
       });
@@ -105,12 +105,13 @@ export default function SallaIntegration() {
     connectMutation.mutate({
       storeUrl,
       accessToken,
+      revision: connection.revision,
     });
   };
 
   const handleDisconnect = () => {
-    if (confirm('هل أنت متأكد من فصل المتجر؟')) {
-      disconnectMutation.mutate();
+    if (connection?.revision && confirm('هل أنت متأكد من فصل المتجر؟')) {
+      disconnectMutation.mutate({ revision: connection.revision });
     }
   };
 

@@ -7,7 +7,7 @@ import { sallaWorkspaceSchema,sallaLogsInput,sallaLogsWorkspaceSchema,sallaLogSt
 import { catalogVisibleSql } from './catalog-scope';
 type Executor = Pick<PoolConnection,'execute'>;
 export class SallaWorkspaceFault extends Error { constructor() { super('Salla workspace unavailable'); } }
-async function rows(tx:Executor,sql:string,args:unknown[]=[]):Promise<any[]> { const [result]=await tx.execute(sql,args);if(!Array.isArray(result))throw new SallaWorkspaceFault();return result; }
+async function rows(tx:Executor,sql:string,args:Array<string|number|null>=[]):Promise<any[]> { const [result]=await tx.execute(sql,args);if(!Array.isArray(result))throw new SallaWorkspaceFault();return result; }
 function count(value:unknown) { const n=typeof value==='number'||typeof value==='string'&&/^\d+$/.test(value)?Number(value):NaN;if(!Number.isSafeInteger(n)||n<0)throw new SallaWorkspaceFault();return n; }
 function stamp(value:unknown) { if(value==null)return null;const date=value instanceof Date?value:typeof value==='string'?new Date(value.includes('T')?value:value.replace(' ','T')+'Z'):null;return date&&Number.isFinite(date.getTime())?date.toISOString():null; }
 /** Stable identity for a later reviewed mutation. Sync counters and progress do not change this version. */
@@ -47,7 +47,7 @@ export async function readSallaLogsWorkspace(actorId:number,merchantId:number,in
   const selection=sallaLogsInput.parse(input);return snapshot(actorId,merchantId,async tx=>{
     const merchant=await rows(tx,'SELECT id FROM merchants WHERE id=?',[merchantId]);if(merchant.length!==1)throw new SallaWorkspaceFault();
     const storedRows=await rows(tx,'SELECT COUNT(*) AS count FROM sync_logs WHERE merchantId=?',[merchantId]);if(storedRows.length!==1)throw new SallaWorkspaceFault();
-    const args:unknown[]=[merchantId];let where='merchantId=?';
+    const args:Array<string|number|null>=[merchantId];let where='merchantId=?';
     if(selection.search){where+=" AND CAST(id AS CHAR) LIKE ? ESCAPE '!'";args.push('%'+selection.search.replace(/[!%_]/g,v=>'!'+v)+'%');}
     if(selection.kind!=='all'){where+=` AND (${kindSql})=?`;args.push(selection.kind);}
     const grouped=await rows(tx,`SELECT ${stateSql} AS state,COUNT(*) AS count FROM sync_logs WHERE ${where} GROUP BY state`,args);
