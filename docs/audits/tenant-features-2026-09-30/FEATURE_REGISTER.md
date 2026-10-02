@@ -2,7 +2,7 @@
 
 هذا حصر مصدر قابل لإعادة التوليد، وليس ادعاءً بأن كل مسار عمل اختُبر أو أُعيد تصميمه. يشمل المكونات الفرعية المحلية، الحقول، الأزرار، النوافذ، التبويبات، واجهات القراءة والتعديل. العناصر الديناميكية تحتاج مراجعة إضافية.
 
-- 126 مسارًا مسجلًا، 409 ملف واجهة متصلًا، 2431 عنصر تحكم في المصدر.
+- 126 مسارًا مسجلًا، 421 ملف واجهة متصلًا، 2472 عنصر تحكم في المصدر.
 - 0 رابطًا حرفيًا غير مطابق، و0 ملف صفحة غير متصل بالمسارات المحصورة.
 
 | الصفحة | الملفات | عناصر التحكم | القراءة / التعديل | موك أب للصفحة |
@@ -30,10 +30,10 @@
 | /merchant/zid/callback — نتيجة تفويض زد | 6 | 11 | 3 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/zid/products — منتجات زد | 9 | 40 | 7 / 6 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/zid/sync-logs — سجل مزامنة زد | 9 | 40 | 7 / 6 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/woocommerce/settings — ربط WooCommerce | 1 | 10 | 1 / 6 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/woocommerce/products — منتجات WooCommerce | 2 | 4 | 2 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/woocommerce/orders — طلبات WooCommerce | 2 | 14 | 1 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/woocommerce/analytics — تحليلات WooCommerce | 1 | 9 | 4 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/woocommerce/settings — ربط WooCommerce | 13 | 78 | 13 / 6 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/woocommerce/products — منتجات WooCommerce | 13 | 78 | 13 / 6 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/woocommerce/orders — طلبات WooCommerce | 13 | 78 | 13 / 6 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/woocommerce/analytics — تحليلات WooCommerce | 13 | 78 | 13 / 6 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/integrations/calendly — ربط Calendly | 2 | 21 | 4 / 4 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/chat-orders — مدخل لوحة التاجر | 0 | 0 | 0 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/discounts — كوبونات الخصم | 1 | 16 | 2 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -1352,62 +1352,128 @@
 |---:|---|---|---|
 | 39 | Link | تسمية ديناميكية / تحتاج مراجعة | ZidCallback |
 
-## client/src/pages/merchant/WooCommerceSettings.tsx
+## client/src/components/merchant/WooOperationPanel.tsx
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 169 | Input | رابط المتجر | بيانات الاتصال |
-| 177 | Input | Consumer Key محفوظ saved | بيانات الاتصال |
-| 182 | Input | Consumer Secret محفوظ saved | بيانات الاتصال |
-| 190 | a | مرجع المصادقة الرسمي Official authentication reference | بيانات الاتصال |
-| 197 | Button | تحقق واحفظ Verify and save | بيانات الاتصال |
-| 201 | Button | أعد اختبار الاتصال Retest connection | بيانات الاتصال |
-| 206 | Button | فصل وحذف النسخ المحلية Disconnect and delete local copies | بيانات الاتصال |
-| 229 | Button | مزامنة المنتجات | حالة المزامنة Synchronization status |
-| 233 | Button | مزامنة الطلبات | حالة المزامنة Synchronization status |
-| 238 | Button | مصالحة كاملة وإغلاق المراجعة Full reconciliation and close review | حالة المزامنة Synchronization status |
+| 69 | Button | تسمية ديناميكية / تحتاج مراجعة | WooOperationPanel |
+| 72 | Button | تسمية ديناميكية / تحتاج مراجعة | WooOperationPanel |
+| 73 | summary | تسمية ديناميكية / تحتاج مراجعة | WooOperationPanel |
+| 73 | Button | تسمية ديناميكية / تحتاج مراجعة | WooOperationPanel |
+| 74 | DialogContent | تسمية ديناميكية / تحتاج مراجعة | WooOperationPanel |
+| 74 | Button | تسمية ديناميكية / تحتاج مراجعة | WooOperationPanel |
+| 74 | Button | تسمية ديناميكية / تحتاج مراجعة | WooOperationPanel |
 
-## client/src/pages/WooCommerceProducts.tsx
+## client/src/components/merchant/WooSettingsWorkspace.tsx
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 91 | Button | مزامنة المنتجات | منتجات WooCommerce |
-| 155 | Input | غير متوفر | متوفر |
-| 250 | Button | السابق | متوفر قريباً |
-| 260 | Button | التالي | متوفر قريباً |
+| 31 | button | incidents | WooSettingsWorkspace |
+| 32 | Button | تسمية ديناميكية / تحتاج مراجعة | WooSettingsWorkspace |
+| 32 | Button | تسمية ديناميكية / تحتاج مراجعة | WooSettingsWorkspace |
+| 33 | summary | تسمية ديناميكية / تحتاج مراجعة | WooSettingsWorkspace |
+| 33 | input | تسمية ديناميكية / تحتاج مراجعة | WooSettingsWorkspace |
+| 33 | Button | `${visible[field]?c.hide:c.show} ${c[field]}` | WooSettingsWorkspace |
+| 33 | Button | تسمية ديناميكية / تحتاج مراجعة | WooSettingsWorkspace |
+| 34 | Button | تسمية ديناميكية / تحتاج مراجعة | WooSettingsWorkspace |
+| 34 | Button | تسمية ديناميكية / تحتاج مراجعة | WooSettingsWorkspace |
+| 34 | Button | تسمية ديناميكية / تحتاج مراجعة | WooSettingsWorkspace |
+| 36 | DialogContent | connect disconnect verify connect disconnect | WooSettingsWorkspace |
+| 36 | input | تسمية ديناميكية / تحتاج مراجعة | WooSettingsWorkspace |
+| 36 | Button | تسمية ديناميكية / تحتاج مراجعة | WooSettingsWorkspace |
+| 36 | Button | تسمية ديناميكية / تحتاج مراجعة | WooSettingsWorkspace |
 
-## client/src/pages/WooCommerceOrders.tsx
-
-| السطر | النوع | التسمية | القسم |
-|---:|---|---|---|
-| 210 | Button | مزامنة الطلبات | طلبات WooCommerce |
-| 270 | Input | تم إرسال إشعار واتساب للعميل | تم إرسال الإشعار |
-| 278 | Select | تسمية ديناميكية / تحتاج مراجعة | تم إرسال الإشعار |
-| 365 | Button | التفاصيل | قائمة الطلبات ( ) |
-| 372 | Button | تحديث الحالة | قائمة الطلبات ( ) |
-| 379 | Button | إرسال إشعار | قائمة الطلبات ( ) |
-| 394 | Button | السابق | قائمة الطلبات ( ) |
-| 396 | Button | التالي | قائمة الطلبات ( ) |
-| 403 | DialogContent | تفاصيل الطلب # معلومات كاملة عن الطلب جميع الحالات قيد الانتظار - قيد المعالجة - معلق مكتمل × ar-SA ملغي مسترجع فاشل 0.00 جميع الطلبات المزامنة من WooCommerce جاري التحميل... ar-SA لا توجد طلبات العميل: | قائمة الطلبات ( ) |
-| 485 | DialogContent | الهاتف: تحديث حالة الطلب # الحالة: المنتجات: اسم العميل البريد الإلكتروني رقم الهاتف حالة الطلب المنتجات المجموع الفرعي الشحن إلغاء جاري التحديث... تحديث | تفاصيل الطلب # |
-| 495 | Select | الحالة: | الهاتف: |
-| 512 | Textarea | الشحن | الهاتف: |
-| 521 | Button | إلغاء | الهاتف: |
-| 524 | Button | جاري التحديث... تحديث | الهاتف: |
-
-## client/src/pages/merchant/WooCommerceAnalytics.tsx
+## client/src/components/merchant/WooWorkspaceShell.tsx
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 79 | Button | تحديث | تحليلات WooCommerce |
-| 94 | Select | نوع العرض | الفترة الزمنية |
-| 108 | Input | من تاريخ | الفترة الزمنية |
-| 118 | Input | إلى تاريخ | الفترة الزمنية |
-| 127 | Button | تطبيق | الفترة الزمنية |
-| 205 | TabsTrigger | المبيعات | المبيعات |
-| 206 | TabsTrigger | المنتجات | المنتجات |
-| 207 | TabsTrigger | التحويل | التحويل |
-| 208 | TabsTrigger | العملاء | العملاء |
+| 11 | Button | تسمية ديناميكية / تحتاج مراجعة | WooWorkspaceShell |
+| 11 | Link | تسمية ديناميكية / تحتاج مراجعة | WooWorkspaceShell |
+| 11 | Link | تسمية ديناميكية / تحتاج مراجعة | WooWorkspaceShell |
+
+## client/src/components/merchant/WooHistoryPanels.tsx
+
+| السطر | النوع | التسمية | القسم |
+|---:|---|---|---|
+| 14 | Button | تسمية ديناميكية / تحتاج مراجعة | WooHistoryPanels |
+| 14 | Button | تسمية ديناميكية / تحتاج مراجعة | WooHistoryPanels |
+| 18 | input | تسمية ديناميكية / تحتاج مراجعة | WooHistoryPanels |
+| 18 | select | kind resource all state kind | WooHistoryPanels |
+| 18 | Button | تسمية ديناميكية / تحتاج مراجعة | WooHistoryPanels |
+| 18 | Button | تسمية ديناميكية / تحتاج مراجعة | WooHistoryPanels |
+| 29 | input | تسمية ديناميكية / تحتاج مراجعة | WooHistoryPanels |
+| 29 | select | all | WooHistoryPanels |
+| 29 | select | all product order | WooHistoryPanels |
+| 29 | Button | تسمية ديناميكية / تحتاج مراجعة | WooHistoryPanels |
+| 29 | Button | تسمية ديناميكية / تحتاج مراجعة | WooHistoryPanels |
+| 30 | input | تسمية ديناميكية / تحتاج مراجعة | : |
+| 30 | Button | · | : |
+| 31 | DialogContent | · : | : |
+| 31 | Button | تسمية ديناميكية / تحتاج مراجعة | WooHistoryPanels |
+| 31 | Button | تسمية ديناميكية / تحتاج مراجعة | WooHistoryPanels |
+
+## client/src/components/merchant/WooProductsWorkspace.tsx
+
+| السطر | النوع | التسمية | القسم |
+|---:|---|---|---|
+| 21 | input | تسمية ديناميكية / تحتاج مراجعة | WooProductsWorkspace |
+| 21 | select | all | WooProductsWorkspace |
+| 21 | Button | تسمية ديناميكية / تحتاج مراجعة | WooProductsWorkspace |
+| 21 | Button | تسمية ديناميكية / تحتاج مراجعة | WooProductsWorkspace |
+| 22 | summary | تسمية ديناميكية / تحتاج مراجعة | WooProductsWorkspace |
+
+## client/src/components/merchant/WooQuickSync.tsx
+
+| السطر | النوع | التسمية | القسم |
+|---:|---|---|---|
+| 12 | Button | تسمية ديناميكية / تحتاج مراجعة | WooQuickSync |
+| 13 | DialogContent | تسمية ديناميكية / تحتاج مراجعة | WooQuickSync |
+| 13 | Button | تسمية ديناميكية / تحتاج مراجعة | WooQuickSync |
+| 13 | Button | تسمية ديناميكية / تحتاج مراجعة | WooQuickSync |
+
+## client/src/components/merchant/WooAnalyticsWorkspace.tsx
+
+| السطر | النوع | التسمية | القسم |
+|---:|---|---|---|
+| 13 | summary | تسمية ديناميكية / تحتاج مراجعة | WooAnalyticsWorkspace |
+| 14 | summary | تسمية ديناميكية / تحتاج مراجعة | WooAnalyticsWorkspace |
+| 21 | input | تسمية ديناميكية / تحتاج مراجعة | WooAnalyticsWorkspace |
+| 21 | input | تسمية ديناميكية / تحتاج مراجعة | WooAnalyticsWorkspace |
+| 21 | select | daily weekly monthly | WooAnalyticsWorkspace |
+| 21 | Button | تسمية ديناميكية / تحتاج مراجعة | WooAnalyticsWorkspace |
+| 21 | Button | تسمية ديناميكية / تحتاج مراجعة | WooAnalyticsWorkspace |
+
+## client/src/components/merchant/WooOrdersWorkspace.tsx
+
+| السطر | النوع | التسمية | القسم |
+|---:|---|---|---|
+| 20 | input | تسمية ديناميكية / تحتاج مراجعة | WooOrdersWorkspace |
+| 20 | select | all | WooOrdersWorkspace |
+| 20 | input | تسمية ديناميكية / تحتاج مراجعة | WooOrdersWorkspace |
+| 20 | input | تسمية ديناميكية / تحتاج مراجعة | WooOrdersWorkspace |
+| 20 | Button | تسمية ديناميكية / تحتاج مراجعة | WooOrdersWorkspace |
+| 20 | Button | تسمية ديناميكية / تحتاج مراجعة | WooOrdersWorkspace |
+| 21 | Button | تسمية ديناميكية / تحتاج مراجعة | · |
+| 21 | Button | تسمية ديناميكية / تحتاج مراجعة | · |
+| 21 | Button | تسمية ديناميكية / تحتاج مراجعة | · |
+
+## client/src/components/merchant/WooOrderDialog.tsx
+
+| السطر | النوع | التسمية | القسم |
+|---:|---|---|---|
+| 32 | DialogContent | notify status details status notify details status details subtotal shippingTotal totalTax discountTotal total · : order_status note order_notify status unknown details | WooOrderDialog |
+| 33 | button | details status | WooOrderDialog |
+| 34 | summary | تسمية ديناميكية / تحتاج مراجعة | WooOrderDialog |
+| 34 | Button | تسمية ديناميكية / تحتاج مراجعة | WooOrderDialog |
+| 34 | select | unknown | WooOrderDialog |
+| 34 | input | تسمية ديناميكية / تحتاج مراجعة | WooOrderDialog |
+| 34 | textarea | c.note | WooOrderDialog |
+| 34 | input | c.none | WooOrderDialog |
+| 34 | textarea | c.message | WooOrderDialog |
+| 36 | Button | تسمية ديناميكية / تحتاج مراجعة | WooOrderDialog |
+| 36 | Button | تسمية ديناميكية / تحتاج مراجعة | WooOrderDialog |
+| 36 | Button | تسمية ديناميكية / تحتاج مراجعة | WooOrderDialog |
+| 36 | Button | تسمية ديناميكية / تحتاج مراجعة | WooOrderDialog |
 
 ## client/src/pages/merchant/CalendlyIntegration.tsx
 

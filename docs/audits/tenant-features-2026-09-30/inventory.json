@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-02T12:11:35.547Z",
+  "generatedAt": "2026-10-02T17:17:07.113Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -5801,7 +5801,7 @@
     },
     {
       "file": "client/src/components/merchant/ZidSyncPanel.tsx",
-      "hash": "4bde249a8f4f",
+      "hash": "1811bd7b430c",
       "queries": [
         "zid.latestSyncRequest",
         "zid.syncRequest"
@@ -5913,7 +5913,7 @@
     },
     {
       "file": "client/src/components/merchant/ZidNotificationReview.tsx",
-      "hash": "6b3687a27e4f",
+      "hash": "91a25fc3ffe8",
       "queries": [
         "zid.notificationReview"
       ],
@@ -6061,461 +6061,660 @@
     },
     {
       "file": "client/src/pages/merchant/WooCommerceSettings.tsx",
-      "hash": "cbd11cdaabcc",
-      "queries": [
-        "woocommerce.getSettings"
-      ],
-      "mutations": [
-        "woocommerce.saveSettings",
-        "woocommerce.testConnection",
-        "woocommerce.syncProducts",
-        "woocommerce.syncOrders",
-        "woocommerce.reconcileWebhookIncidents",
-        "woocommerce.disconnect"
-      ],
-      "imperativeReads": [],
-      "browserRequests": [],
-      "sections": [
-        {
-          "label": "إعدادات WooCommerce",
-          "line": 131,
-          "tag": "h1"
-        },
-        {
-          "label": "بيانات الاتصال",
-          "line": 159,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "حالة المزامنة Synchronization status",
-          "line": 217,
-          "tag": "CardTitle"
-        }
-      ],
-      "choices": [],
-      "handlers": [
-        {
-          "name": "handleSave",
-          "line": 92,
-          "calls": [
-            "saveSettings"
-          ]
-        },
-        {
-          "name": "handleDisconnect",
-          "line": 107,
-          "calls": [
-            "disconnect"
-          ]
-        },
-        {
-          "name": "handleWebhookReconciliation",
-          "line": 114,
-          "calls": [
-            "reconcileWebhookIncidents"
-          ]
-        }
-      ],
-      "queryStates": [
-        {
-          "query": "woocommerce.getSettings",
-          "binding": "settingsQuery",
-          "line": 20,
-          "errorSignal": false,
-          "loadingSignal": true,
-          "enabled": null
-        }
-      ],
-      "conditions": [],
-      "imports": [],
-      "controlCount": 10
-    },
-    {
-      "file": "client/src/pages/WooCommerceProducts.tsx",
-      "hash": "7429ef130558",
-      "queries": [
-        "woocommerce.getProducts",
-        "woocommerce.searchProducts"
-      ],
-      "mutations": [
-        "woocommerce.syncProducts"
-      ],
-      "imperativeReads": [],
-      "browserRequests": [],
-      "sections": [
-        {
-          "label": "منتجات WooCommerce",
-          "line": 88,
-          "tag": "h1"
-        },
-        {
-          "label": "غير متوفر",
-          "line": 106,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "متوفر قريباً",
-          "line": 116,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "منتجات WooCommerce",
-          "line": 126,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "إجمالي المنتجات",
-          "line": 136,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "متوفر",
-          "line": 149,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "متوفر قريباً",
-          "line": 168,
-          "tag": "CardTitle"
-        }
-      ],
-      "choices": [],
-      "handlers": [
-        {
-          "name": "handleSync",
-          "line": 54,
-          "calls": [
-            "syncProducts"
-          ]
-        }
-      ],
-      "queryStates": [
-        {
-          "query": "woocommerce.getProducts",
-          "binding": "{ data: productsData, isLoading, refetch }",
-          "line": 26,
-          "errorSignal": false,
-          "loadingSignal": true,
-          "enabled": null
-        },
-        {
-          "query": "woocommerce.searchProducts",
-          "binding": "{ data: searchResults, isLoading: isSearching }",
-          "line": 31,
-          "errorSignal": false,
-          "loadingSignal": true,
-          "enabled": "searchTerm.length > 2 "
-        }
-      ],
-      "conditions": [],
-      "imports": [
-        "client/src/hooks/use-toast.ts"
-      ],
-      "controlCount": 4
-    },
-    {
-      "file": "client/src/hooks/use-toast.ts",
-      "hash": "f9bb878946fd",
+      "hash": "378033f98042",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
       "browserRequests": [],
       "sections": [],
       "choices": [],
-      "handlers": [
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [
+        "client/src/components/merchant/WooWorkspacePage.tsx"
+      ],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/components/merchant/WooWorkspacePage.tsx",
+      "hash": "19604815fb02",
+      "queries": [
+        "auth.me",
+        "merchants.getCurrent",
+        "woocommerce.getAccess"
+      ],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [
         {
-          "name": "addToRemoveQueue",
-          "line": 56,
-          "calls": []
+          "query": "auth.me",
+          "binding": "user",
+          "line": 10,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
         },
         {
-          "name": "update",
-          "line": 141,
-          "calls": []
+          "query": "merchants.getCurrent",
+          "binding": "merchant",
+          "line": 10,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": "!!user.data?.id&&!user.error&&!user.isFetching"
+        },
+        {
+          "query": "woocommerce.getAccess",
+          "binding": "accessQuery",
+          "line": 11,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": "!!user.data?.id&&!!merchant.data?.id&&!user.error&&!merchant.error"
         }
       ],
+      "conditions": [],
+      "imports": [
+        "client/src/lib/woocommerce-workspace.ts",
+        "client/src/components/merchant/WooOperationPanel.tsx",
+        "client/src/components/merchant/WooSettingsWorkspace.tsx",
+        "client/src/components/merchant/WooProductsWorkspace.tsx",
+        "client/src/components/merchant/WooAnalyticsWorkspace.tsx",
+        "client/src/components/merchant/WooOrdersWorkspace.tsx"
+      ],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/lib/woocommerce-workspace.ts",
+      "hash": "a2b35b961fe1",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
       "queryStates": [],
       "conditions": [],
       "imports": [],
       "controlCount": 0
     },
     {
-      "file": "client/src/pages/WooCommerceOrders.tsx",
-      "hash": "395b785b5a27",
+      "file": "client/src/components/merchant/WooOperationPanel.tsx",
+      "hash": "222b46d5f68a",
       "queries": [
-        "woocommerce.getOrders"
+        "woocommerce.getBlockingOperation",
+        "woocommerce.getOperation"
       ],
       "mutations": [
-        "woocommerce.syncOrders",
-        "woocommerce.updateOrderStatus",
-        "woocommerce.sendOrderNotification"
+        "woocommerce.acknowledgeOperation"
       ],
-      "imperativeReads": [],
+      "imperativeReads": [
+        {
+          "procedure": "woocommerce.getOperation",
+          "method": "fetch",
+          "expression": "utils.woocommerce.getOperation.fetch",
+          "line": 27,
+          "provenance": "trpc-utility-static"
+        }
+      ],
       "browserRequests": [],
       "sections": [
         {
-          "label": "طلبات WooCommerce",
-          "line": 207,
-          "tag": "h1"
+          "label": "",
+          "line": 63,
+          "tag": "h2"
         },
         {
-          "label": "فشلت المزامنة",
-          "line": 221,
-          "tag": "CardTitle"
+          "label": "",
+          "line": 64,
+          "tag": "h3"
         },
         {
-          "label": "تم تحديث الحالة",
-          "line": 231,
-          "tag": "CardTitle"
+          "label": "",
+          "line": 73,
+          "tag": "summary"
         },
         {
-          "label": "تم تحديث حالة الطلب بنجاح",
-          "line": 241,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "فشل التحديث",
-          "line": 251,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "تم إرسال الإشعار",
-          "line": 263,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "قائمة الطلبات ( )",
-          "line": 301,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "تفاصيل الطلب #",
-          "line": 405,
-          "tag": "DialogTitle"
-        },
-        {
-          "label": "الهاتف:",
-          "line": 487,
+          "label": "",
+          "line": 74,
           "tag": "DialogTitle"
         }
       ],
-      "choices": [],
-      "handlers": [
+      "choices": [
         {
-          "name": "handleViewDetails",
-          "line": 147,
-          "calls": []
-        },
-        {
-          "name": "handleUpdateStatus",
-          "line": 152,
-          "calls": []
-        },
-        {
-          "name": "handleSendNotification",
-          "line": 158,
-          "calls": [
-            "sendNotificationMutation"
-          ]
-        },
-        {
-          "name": "handleConfirmUpdateStatus",
-          "line": 163,
-          "calls": [
-            "updateStatusMutation"
+          "name": "shown",
+          "line": 60,
+          "values": [
+            "...(o.receipt?[o.receipt]:[])",
+            "...(o.blocker&&o.blocker.requestId!==o.receipt?.requestId?[o.blocker]:[])"
           ]
         }
       ],
+      "handlers": [],
       "queryStates": [
         {
-          "query": "woocommerce.getOrders",
-          "binding": "{ data: ordersData, isLoading, refetch }",
-          "line": 56,
-          "errorSignal": false,
+          "query": "woocommerce.getBlockingOperation",
+          "binding": "blockerQuery",
+          "line": 12,
+          "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
         }
       ],
       "conditions": [],
       "imports": [
-        "client/src/hooks/use-toast.ts"
+        "client/src/lib/woocommerce-workspace.ts"
+      ],
+      "controlCount": 7
+    },
+    {
+      "file": "client/src/components/merchant/WooSettingsWorkspace.tsx",
+      "hash": "5b2728eba0d7",
+      "queries": [
+        "woocommerce.getWorkspace"
+      ],
+      "mutations": [
+        "woocommerce.requestReviewedConnection",
+        "woocommerce.requestReviewedSync"
+      ],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [
+        {
+          "label": "",
+          "line": 32,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 33,
+          "tag": "summary"
+        },
+        {
+          "label": "",
+          "line": 34,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 34,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 36,
+          "tag": "DialogTitle"
+        }
+      ],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [
+        {
+          "query": "woocommerce.getWorkspace",
+          "binding": "query",
+          "line": 17,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        }
+      ],
+      "conditions": [],
+      "imports": [
+        "client/src/lib/woocommerce-workspace.ts",
+        "client/src/lib/woocommerce-workspace-labels.ts",
+        "client/src/components/merchant/WooWorkspaceShell.tsx",
+        "client/src/components/merchant/WooOperationPanel.tsx",
+        "client/src/components/merchant/WooHistoryPanels.tsx"
       ],
       "controlCount": 14
     },
     {
-      "file": "client/src/pages/merchant/WooCommerceAnalytics.tsx",
-      "hash": "bfe381156741",
+      "file": "client/src/lib/woocommerce-workspace-labels.ts",
+      "hash": "12020eb3b25e",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/components/merchant/WooWorkspaceShell.tsx",
+      "hash": "3b31e95f4fe9",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [
+        {
+          "label": "",
+          "line": 11,
+          "tag": "h1"
+        }
+      ],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 3
+    },
+    {
+      "file": "client/src/components/merchant/WooHistoryPanels.tsx",
+      "hash": "1f0a0a549087",
       "queries": [
-        "woocommerce.getSalesStats",
-        "woocommerce.getTopProducts",
-        "woocommerce.getConversionRate",
-        "woocommerce.getCustomerStats"
+        "woocommerce.getLogsWorkspace",
+        "woocommerce.getIncidentsWorkspace"
+      ],
+      "mutations": [
+        "woocommerce.requestReviewedReconciliation"
+      ],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [
+        {
+          "label": "",
+          "line": 18,
+          "tag": "h2"
+        },
+        {
+          "label": "·",
+          "line": 19,
+          "tag": "h3"
+        },
+        {
+          "label": "",
+          "line": 29,
+          "tag": "h2"
+        },
+        {
+          "label": ":",
+          "line": 30,
+          "tag": "h3"
+        },
+        {
+          "label": "",
+          "line": 31,
+          "tag": "DialogTitle"
+        }
+      ],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [
+        {
+          "query": "woocommerce.getLogsWorkspace",
+          "binding": "query",
+          "line": 17,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        },
+        {
+          "query": "woocommerce.getIncidentsWorkspace",
+          "binding": "query",
+          "line": 24,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        }
+      ],
+      "conditions": [],
+      "imports": [
+        "client/src/lib/woocommerce-workspace.ts",
+        "client/src/components/merchant/WooOperationPanel.tsx"
+      ],
+      "controlCount": 16
+    },
+    {
+      "file": "client/src/components/merchant/WooProductsWorkspace.tsx",
+      "hash": "0d0a212eaeed",
+      "queries": [
+        "woocommerce.getProductsWorkspace"
       ],
       "mutations": [],
       "imperativeReads": [],
       "browserRequests": [],
       "sections": [
         {
-          "label": "تحليلات WooCommerce",
-          "line": 74,
-          "tag": "h1"
+          "label": "",
+          "line": 21,
+          "tag": "h2"
         },
         {
-          "label": "الفترة الزمنية",
-          "line": 88,
-          "tag": "CardTitle"
+          "label": "",
+          "line": 22,
+          "tag": "h3"
         },
         {
-          "label": "إجمالي الإيرادات",
-          "line": 139,
-          "tag": "CardTitle"
+          "label": "",
+          "line": 22,
+          "tag": "h3"
         },
         {
-          "label": "متوسط قيمة الطلب",
-          "line": 156,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "معدل التحويل",
-          "line": 171,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "إجمالي العملاء",
-          "line": 186,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "المبيعات",
-          "line": 205,
-          "tag": "TabsTrigger"
-        },
-        {
-          "label": "المنتجات",
-          "line": 206,
-          "tag": "TabsTrigger"
-        },
-        {
-          "label": "التحويل",
-          "line": 207,
-          "tag": "TabsTrigger"
-        },
-        {
-          "label": "العملاء",
-          "line": 208,
-          "tag": "TabsTrigger"
-        },
-        {
-          "label": "رسم بياني للإيرادات",
-          "line": 215,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "الطلبات المكتملة",
-          "line": 253,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "الطلبات قيد المعالجة",
-          "line": 264,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "الطلبات الملغاة",
-          "line": 275,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "أكثر المنتجات مبيعاً",
-          "line": 290,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "تفاصيل المنتجات",
-          "line": 311,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "معدل التحويل من واتساب",
-          "line": 344,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "معدل إتمام الطلبات",
-          "line": 372,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "أعداد مستقلة في الفترة Independent totals in range",
-          "line": 397,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "إجمالي العملاء",
-          "line": 429,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "عملاء بطلب واحد في الفترة Customers with one order in range",
-          "line": 440,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "عملاء متكررون في الفترة Repeat customers in range",
-          "line": 451,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "معدل العملاء المتكررين",
-          "line": 463,
-          "tag": "CardTitle"
+          "label": "",
+          "line": 22,
+          "tag": "summary"
         }
       ],
       "choices": [],
-      "handlers": [
-        {
-          "name": "handleRefresh",
-          "line": 53,
-          "calls": []
-        }
-      ],
+      "handlers": [],
       "queryStates": [
         {
-          "query": "woocommerce.getSalesStats",
-          "binding": "{ data: salesStats, isLoading: isLoadingSales, refetch: refetchSales }",
-          "line": 31,
-          "errorSignal": false,
-          "loadingSignal": true,
-          "enabled": null
-        },
-        {
-          "query": "woocommerce.getTopProducts",
-          "binding": "{ data: topProducts, isLoading: isLoadingProducts, refetch: refetchProducts }",
-          "line": 37,
-          "errorSignal": false,
-          "loadingSignal": true,
-          "enabled": null
-        },
-        {
-          "query": "woocommerce.getConversionRate",
-          "binding": "{ data: conversionRate, isLoading: isLoadingConversion, refetch: refetchConversion }",
-          "line": 43,
-          "errorSignal": false,
-          "loadingSignal": true,
-          "enabled": null
-        },
-        {
-          "query": "woocommerce.getCustomerStats",
-          "binding": "{ data: customerStats, isLoading: isLoadingCustomers, refetch: refetchCustomers }",
-          "line": 48,
-          "errorSignal": false,
+          "query": "woocommerce.getProductsWorkspace",
+          "binding": "query",
+          "line": 18,
+          "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
         }
       ],
       "conditions": [],
-      "imports": [],
+      "imports": [
+        "client/src/lib/woocommerce-workspace.ts",
+        "client/src/lib/woocommerce-workspace-labels.ts",
+        "client/src/components/merchant/WooWorkspaceShell.tsx",
+        "client/src/components/merchant/WooOperationPanel.tsx",
+        "client/src/components/merchant/WooHistoryPanels.tsx",
+        "client/src/components/merchant/WooQuickSync.tsx"
+      ],
+      "controlCount": 5
+    },
+    {
+      "file": "client/src/components/merchant/WooQuickSync.tsx",
+      "hash": "03fa9bb5849b",
+      "queries": [
+        "woocommerce.getWorkspace"
+      ],
+      "mutations": [
+        "woocommerce.requestReviewedSync"
+      ],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [
+        {
+          "label": "",
+          "line": 12,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 13,
+          "tag": "DialogTitle"
+        }
+      ],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [
+        {
+          "query": "woocommerce.getWorkspace",
+          "binding": "query",
+          "line": 10,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        }
+      ],
+      "conditions": [],
+      "imports": [
+        "client/src/lib/woocommerce-workspace.ts",
+        "client/src/components/merchant/WooOperationPanel.tsx"
+      ],
+      "controlCount": 4
+    },
+    {
+      "file": "client/src/components/merchant/WooAnalyticsWorkspace.tsx",
+      "hash": "6a7533292917",
+      "queries": [
+        "woocommerce.getAnalyticsWorkspace"
+      ],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [
+        {
+          "label": "·",
+          "line": 13,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 13,
+          "tag": "h3"
+        },
+        {
+          "label": "",
+          "line": 13,
+          "tag": "summary"
+        },
+        {
+          "label": "",
+          "line": 14,
+          "tag": "h3"
+        },
+        {
+          "label": "",
+          "line": 14,
+          "tag": "summary"
+        },
+        {
+          "label": "",
+          "line": 21,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 22,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 22,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 22,
+          "tag": "h2"
+        }
+      ],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [
+        {
+          "query": "woocommerce.getAnalyticsWorkspace",
+          "binding": "query",
+          "line": 20,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        }
+      ],
+      "conditions": [],
+      "imports": [
+        "client/src/lib/woocommerce-workspace.ts",
+        "client/src/lib/woocommerce-workspace-labels.ts",
+        "client/src/components/merchant/WooWorkspaceShell.tsx",
+        "client/src/components/merchant/WooOperationPanel.tsx"
+      ],
+      "controlCount": 7
+    },
+    {
+      "file": "client/src/components/merchant/WooOrdersWorkspace.tsx",
+      "hash": "2a176e6f9abc",
+      "queries": [
+        "woocommerce.getOrdersWorkspace"
+      ],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [
+        {
+          "label": "",
+          "line": 20,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 21,
+          "tag": "h3"
+        },
+        {
+          "label": "·",
+          "line": 21,
+          "tag": "h3"
+        }
+      ],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [
+        {
+          "query": "woocommerce.getOrdersWorkspace",
+          "binding": "query",
+          "line": 17,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        }
+      ],
+      "conditions": [],
+      "imports": [
+        "client/src/lib/woocommerce-workspace.ts",
+        "client/src/lib/woocommerce-workspace-labels.ts",
+        "client/src/components/merchant/WooWorkspaceShell.tsx",
+        "client/src/components/merchant/WooOperationPanel.tsx",
+        "client/src/components/merchant/WooHistoryPanels.tsx",
+        "client/src/components/merchant/WooQuickSync.tsx",
+        "client/src/components/merchant/WooOrderDialog.tsx"
+      ],
       "controlCount": 9
+    },
+    {
+      "file": "client/src/components/merchant/WooOrderDialog.tsx",
+      "hash": "cf7640197692",
+      "queries": [
+        "woocommerce.getOrderDetailsWorkspace",
+        "woocommerce.getOrderActionWorkspace"
+      ],
+      "mutations": [
+        "woocommerce.requestReviewedOrderStatus",
+        "woocommerce.requestReviewedNotification"
+      ],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [
+        {
+          "label": "",
+          "line": 32,
+          "tag": "DialogTitle"
+        },
+        {
+          "label": "",
+          "line": 34,
+          "tag": "h3"
+        },
+        {
+          "label": "·",
+          "line": 34,
+          "tag": "h3"
+        },
+        {
+          "label": "",
+          "line": 34,
+          "tag": "summary"
+        },
+        {
+          "label": "",
+          "line": 34,
+          "tag": "h3"
+        }
+      ],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [
+        {
+          "query": "woocommerce.getOrderDetailsWorkspace",
+          "binding": "details",
+          "line": 17,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        },
+        {
+          "query": "woocommerce.getOrderActionWorkspace",
+          "binding": "action",
+          "line": 17,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": "ordersManage"
+        }
+      ],
+      "conditions": [],
+      "imports": [
+        "client/src/lib/woocommerce-workspace.ts",
+        "client/src/components/merchant/WooHistoryPanels.tsx",
+        "client/src/components/merchant/WooOperationPanel.tsx"
+      ],
+      "controlCount": 13
+    },
+    {
+      "file": "client/src/pages/WooCommerceProducts.tsx",
+      "hash": "e2a590183f98",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [
+        "client/src/components/merchant/WooWorkspacePage.tsx"
+      ],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/pages/WooCommerceOrders.tsx",
+      "hash": "89b8550b5b2b",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [
+        "client/src/components/merchant/WooWorkspacePage.tsx"
+      ],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/pages/merchant/WooCommerceAnalytics.tsx",
+      "hash": "30b096b262c1",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [
+        "client/src/components/merchant/WooWorkspacePage.tsx"
+      ],
+      "controlCount": 0
     },
     {
       "file": "client/src/pages/merchant/CalendlyIntegration.tsx",
@@ -13540,6 +13739,32 @@
         "client/src/lib/i18n.ts"
       ],
       "controlCount": 9
+    },
+    {
+      "file": "client/src/hooks/use-toast.ts",
+      "hash": "f9bb878946fd",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [
+        {
+          "name": "addToRemoveQueue",
+          "line": 56,
+          "calls": []
+        },
+        {
+          "name": "update",
+          "line": 141,
+          "calls": []
+        }
+      ],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 0
     },
     {
       "file": "client/src/pages/merchant/OrderNotificationsSettings.tsx",
@@ -21346,32 +21571,133 @@
         "WooCommerceSettings"
       ],
       "files": [
-        "client/src/pages/merchant/WooCommerceSettings.tsx"
+        "client/src/pages/merchant/WooCommerceSettings.tsx",
+        "client/src/components/merchant/WooWorkspacePage.tsx",
+        "client/src/lib/woocommerce-workspace.ts",
+        "client/src/components/merchant/WooOperationPanel.tsx",
+        "client/src/components/merchant/WooSettingsWorkspace.tsx",
+        "client/src/lib/woocommerce-workspace-labels.ts",
+        "client/src/components/merchant/WooWorkspaceShell.tsx",
+        "client/src/components/merchant/WooHistoryPanels.tsx",
+        "client/src/components/merchant/WooProductsWorkspace.tsx",
+        "client/src/components/merchant/WooQuickSync.tsx",
+        "client/src/components/merchant/WooAnalyticsWorkspace.tsx",
+        "client/src/components/merchant/WooOrdersWorkspace.tsx",
+        "client/src/components/merchant/WooOrderDialog.tsx"
       ],
       "controls": [
-        "bcde5deed6bb",
-        "e2196e12bfab",
-        "3869c97d56a1",
-        "19c9e04c2143",
-        "5c3f734a728a",
-        "acbf3fade7fc",
-        "02a108a05de7",
-        "1881bb502fd3",
-        "7814b38063bf",
-        "f03e11d0a608"
+        "4403d8261a7a",
+        "b45e365f37bf",
+        "b9c64d497356",
+        "508344ce1b99",
+        "c477b8e66780",
+        "7fbfd5a51f5f",
+        "b681da43d033",
+        "409a8894480c",
+        "24c90343bc2d",
+        "75fdd774d93b",
+        "0fc6152eb51a",
+        "ca1a69bd0b11",
+        "5a366412dd56",
+        "3b7638d9de40",
+        "291232f6072e",
+        "503d231c5a68",
+        "cc037293f919",
+        "8b36128e8d21",
+        "f43f62b0a883",
+        "9563f5463871",
+        "8ffc52fd5c1a",
+        "23c7a25c6ad4",
+        "93bcb7f71cd2",
+        "8c8fb9e602ce",
+        "5ac34f9f14da",
+        "2393a11da562",
+        "49ed7c9c7870",
+        "2a155af661d5",
+        "d57aea46345d",
+        "f64cf8263f12",
+        "bc326bf15cba",
+        "072be04d0c34",
+        "1dd87fbb6899",
+        "d605af6cae83",
+        "a80bef3c8d04",
+        "0e25a497e0c6",
+        "5254f48755af",
+        "e4d3adf9101e",
+        "779a28439277",
+        "0f2869559fd8",
+        "1500728562ab",
+        "d67088779742",
+        "797c980b9fd2",
+        "dd6d74f147b7",
+        "96b8f1b9b317",
+        "8e3f77f00a61",
+        "c536aa3fe1b0",
+        "ea1806b4214d",
+        "c2d2beacd233",
+        "6886f18829b2",
+        "e8e524dd4c85",
+        "972f5c0aa882",
+        "952551d019d6",
+        "70a4f5af7d73",
+        "8c6d44632db5",
+        "398e16b43881",
+        "1b62a71f8c9d",
+        "6e50ef9eee8f",
+        "89589969d9ad",
+        "7afa3a65f4e4",
+        "5e048232c1ac",
+        "f28efba834a0",
+        "6523ed5e61e9",
+        "4988b89fd316",
+        "87143042116b",
+        "b8378330d60b",
+        "33dba42487c1",
+        "19fb12b0b56d",
+        "912402d83526",
+        "1bacfadc7d8a",
+        "55d6aa1476f8",
+        "7df267d6a3a4",
+        "c191c0bc13b7",
+        "fe289fdc7cb7",
+        "dbcbae0b3fc0",
+        "67bfb6a78b28",
+        "1f92489e7abe",
+        "46a579d40223"
       ],
       "queries": [
-        "woocommerce.getSettings"
+        "auth.me",
+        "merchants.getCurrent",
+        "woocommerce.getAccess",
+        "woocommerce.getBlockingOperation",
+        "woocommerce.getOperation",
+        "woocommerce.getWorkspace",
+        "woocommerce.getLogsWorkspace",
+        "woocommerce.getIncidentsWorkspace",
+        "woocommerce.getProductsWorkspace",
+        "woocommerce.getAnalyticsWorkspace",
+        "woocommerce.getOrdersWorkspace",
+        "woocommerce.getOrderDetailsWorkspace",
+        "woocommerce.getOrderActionWorkspace"
       ],
       "mutations": [
-        "woocommerce.saveSettings",
-        "woocommerce.testConnection",
-        "woocommerce.syncProducts",
-        "woocommerce.syncOrders",
-        "woocommerce.reconcileWebhookIncidents",
-        "woocommerce.disconnect"
+        "woocommerce.acknowledgeOperation",
+        "woocommerce.requestReviewedConnection",
+        "woocommerce.requestReviewedSync",
+        "woocommerce.requestReviewedReconciliation",
+        "woocommerce.requestReviewedOrderStatus",
+        "woocommerce.requestReviewedNotification"
       ],
-      "imperativeReads": [],
+      "imperativeReads": [
+        {
+          "file": "client/src/components/merchant/WooOperationPanel.tsx",
+          "procedure": "woocommerce.getOperation",
+          "method": "fetch",
+          "expression": "utils.woocommerce.getOperation.fetch",
+          "line": 27,
+          "provenance": "trpc-utility-static"
+        }
+      ],
       "browserRequests": []
     },
     {
@@ -21383,22 +21709,132 @@
       ],
       "files": [
         "client/src/pages/WooCommerceProducts.tsx",
-        "client/src/hooks/use-toast.ts"
+        "client/src/components/merchant/WooWorkspacePage.tsx",
+        "client/src/lib/woocommerce-workspace.ts",
+        "client/src/components/merchant/WooOperationPanel.tsx",
+        "client/src/components/merchant/WooSettingsWorkspace.tsx",
+        "client/src/lib/woocommerce-workspace-labels.ts",
+        "client/src/components/merchant/WooWorkspaceShell.tsx",
+        "client/src/components/merchant/WooHistoryPanels.tsx",
+        "client/src/components/merchant/WooProductsWorkspace.tsx",
+        "client/src/components/merchant/WooQuickSync.tsx",
+        "client/src/components/merchant/WooAnalyticsWorkspace.tsx",
+        "client/src/components/merchant/WooOrdersWorkspace.tsx",
+        "client/src/components/merchant/WooOrderDialog.tsx"
       ],
       "controls": [
-        "30a78a801007",
-        "4cc0f47e3fb1",
-        "b809810357f4",
-        "ad02f609c9c2"
+        "4403d8261a7a",
+        "b45e365f37bf",
+        "b9c64d497356",
+        "508344ce1b99",
+        "c477b8e66780",
+        "7fbfd5a51f5f",
+        "b681da43d033",
+        "409a8894480c",
+        "24c90343bc2d",
+        "75fdd774d93b",
+        "0fc6152eb51a",
+        "ca1a69bd0b11",
+        "5a366412dd56",
+        "3b7638d9de40",
+        "291232f6072e",
+        "503d231c5a68",
+        "cc037293f919",
+        "8b36128e8d21",
+        "f43f62b0a883",
+        "9563f5463871",
+        "8ffc52fd5c1a",
+        "23c7a25c6ad4",
+        "93bcb7f71cd2",
+        "8c8fb9e602ce",
+        "5ac34f9f14da",
+        "2393a11da562",
+        "49ed7c9c7870",
+        "2a155af661d5",
+        "d57aea46345d",
+        "f64cf8263f12",
+        "bc326bf15cba",
+        "072be04d0c34",
+        "1dd87fbb6899",
+        "d605af6cae83",
+        "a80bef3c8d04",
+        "0e25a497e0c6",
+        "5254f48755af",
+        "e4d3adf9101e",
+        "779a28439277",
+        "0f2869559fd8",
+        "1500728562ab",
+        "d67088779742",
+        "797c980b9fd2",
+        "dd6d74f147b7",
+        "96b8f1b9b317",
+        "8e3f77f00a61",
+        "c536aa3fe1b0",
+        "ea1806b4214d",
+        "c2d2beacd233",
+        "6886f18829b2",
+        "e8e524dd4c85",
+        "972f5c0aa882",
+        "952551d019d6",
+        "70a4f5af7d73",
+        "8c6d44632db5",
+        "398e16b43881",
+        "1b62a71f8c9d",
+        "6e50ef9eee8f",
+        "89589969d9ad",
+        "7afa3a65f4e4",
+        "5e048232c1ac",
+        "f28efba834a0",
+        "6523ed5e61e9",
+        "4988b89fd316",
+        "87143042116b",
+        "b8378330d60b",
+        "33dba42487c1",
+        "19fb12b0b56d",
+        "912402d83526",
+        "1bacfadc7d8a",
+        "55d6aa1476f8",
+        "7df267d6a3a4",
+        "c191c0bc13b7",
+        "fe289fdc7cb7",
+        "dbcbae0b3fc0",
+        "67bfb6a78b28",
+        "1f92489e7abe",
+        "46a579d40223"
       ],
       "queries": [
-        "woocommerce.getProducts",
-        "woocommerce.searchProducts"
+        "auth.me",
+        "merchants.getCurrent",
+        "woocommerce.getAccess",
+        "woocommerce.getBlockingOperation",
+        "woocommerce.getOperation",
+        "woocommerce.getWorkspace",
+        "woocommerce.getLogsWorkspace",
+        "woocommerce.getIncidentsWorkspace",
+        "woocommerce.getProductsWorkspace",
+        "woocommerce.getAnalyticsWorkspace",
+        "woocommerce.getOrdersWorkspace",
+        "woocommerce.getOrderDetailsWorkspace",
+        "woocommerce.getOrderActionWorkspace"
       ],
       "mutations": [
-        "woocommerce.syncProducts"
+        "woocommerce.acknowledgeOperation",
+        "woocommerce.requestReviewedConnection",
+        "woocommerce.requestReviewedSync",
+        "woocommerce.requestReviewedReconciliation",
+        "woocommerce.requestReviewedOrderStatus",
+        "woocommerce.requestReviewedNotification"
       ],
-      "imperativeReads": [],
+      "imperativeReads": [
+        {
+          "file": "client/src/components/merchant/WooOperationPanel.tsx",
+          "procedure": "woocommerce.getOperation",
+          "method": "fetch",
+          "expression": "utils.woocommerce.getOperation.fetch",
+          "line": 27,
+          "provenance": "trpc-utility-static"
+        }
+      ],
       "browserRequests": []
     },
     {
@@ -21410,33 +21846,132 @@
       ],
       "files": [
         "client/src/pages/WooCommerceOrders.tsx",
-        "client/src/hooks/use-toast.ts"
+        "client/src/components/merchant/WooWorkspacePage.tsx",
+        "client/src/lib/woocommerce-workspace.ts",
+        "client/src/components/merchant/WooOperationPanel.tsx",
+        "client/src/components/merchant/WooSettingsWorkspace.tsx",
+        "client/src/lib/woocommerce-workspace-labels.ts",
+        "client/src/components/merchant/WooWorkspaceShell.tsx",
+        "client/src/components/merchant/WooHistoryPanels.tsx",
+        "client/src/components/merchant/WooProductsWorkspace.tsx",
+        "client/src/components/merchant/WooQuickSync.tsx",
+        "client/src/components/merchant/WooAnalyticsWorkspace.tsx",
+        "client/src/components/merchant/WooOrdersWorkspace.tsx",
+        "client/src/components/merchant/WooOrderDialog.tsx"
       ],
       "controls": [
-        "4c0b283ac9ad",
-        "907b0be6c72e",
-        "c306a85c5f8f",
-        "294f158fda1a",
-        "43644c072efd",
-        "df184efb7725",
-        "37e5178d49f6",
-        "2402dd75c47b",
-        "c201fa4ec469",
-        "8a3ea7236949",
-        "76e1a7238115",
-        "56c2063ad17f",
-        "17cf52802cab",
-        "56ffd6e82257"
+        "4403d8261a7a",
+        "b45e365f37bf",
+        "b9c64d497356",
+        "508344ce1b99",
+        "c477b8e66780",
+        "7fbfd5a51f5f",
+        "b681da43d033",
+        "409a8894480c",
+        "24c90343bc2d",
+        "75fdd774d93b",
+        "0fc6152eb51a",
+        "ca1a69bd0b11",
+        "5a366412dd56",
+        "3b7638d9de40",
+        "291232f6072e",
+        "503d231c5a68",
+        "cc037293f919",
+        "8b36128e8d21",
+        "f43f62b0a883",
+        "9563f5463871",
+        "8ffc52fd5c1a",
+        "23c7a25c6ad4",
+        "93bcb7f71cd2",
+        "8c8fb9e602ce",
+        "5ac34f9f14da",
+        "2393a11da562",
+        "49ed7c9c7870",
+        "2a155af661d5",
+        "d57aea46345d",
+        "f64cf8263f12",
+        "bc326bf15cba",
+        "072be04d0c34",
+        "1dd87fbb6899",
+        "d605af6cae83",
+        "a80bef3c8d04",
+        "0e25a497e0c6",
+        "5254f48755af",
+        "e4d3adf9101e",
+        "779a28439277",
+        "0f2869559fd8",
+        "1500728562ab",
+        "d67088779742",
+        "797c980b9fd2",
+        "dd6d74f147b7",
+        "96b8f1b9b317",
+        "8e3f77f00a61",
+        "c536aa3fe1b0",
+        "ea1806b4214d",
+        "c2d2beacd233",
+        "6886f18829b2",
+        "e8e524dd4c85",
+        "972f5c0aa882",
+        "952551d019d6",
+        "70a4f5af7d73",
+        "8c6d44632db5",
+        "398e16b43881",
+        "1b62a71f8c9d",
+        "6e50ef9eee8f",
+        "89589969d9ad",
+        "7afa3a65f4e4",
+        "5e048232c1ac",
+        "f28efba834a0",
+        "6523ed5e61e9",
+        "4988b89fd316",
+        "87143042116b",
+        "b8378330d60b",
+        "33dba42487c1",
+        "19fb12b0b56d",
+        "912402d83526",
+        "1bacfadc7d8a",
+        "55d6aa1476f8",
+        "7df267d6a3a4",
+        "c191c0bc13b7",
+        "fe289fdc7cb7",
+        "dbcbae0b3fc0",
+        "67bfb6a78b28",
+        "1f92489e7abe",
+        "46a579d40223"
       ],
       "queries": [
-        "woocommerce.getOrders"
+        "auth.me",
+        "merchants.getCurrent",
+        "woocommerce.getAccess",
+        "woocommerce.getBlockingOperation",
+        "woocommerce.getOperation",
+        "woocommerce.getWorkspace",
+        "woocommerce.getLogsWorkspace",
+        "woocommerce.getIncidentsWorkspace",
+        "woocommerce.getProductsWorkspace",
+        "woocommerce.getAnalyticsWorkspace",
+        "woocommerce.getOrdersWorkspace",
+        "woocommerce.getOrderDetailsWorkspace",
+        "woocommerce.getOrderActionWorkspace"
       ],
       "mutations": [
-        "woocommerce.syncOrders",
-        "woocommerce.updateOrderStatus",
-        "woocommerce.sendOrderNotification"
+        "woocommerce.acknowledgeOperation",
+        "woocommerce.requestReviewedConnection",
+        "woocommerce.requestReviewedSync",
+        "woocommerce.requestReviewedReconciliation",
+        "woocommerce.requestReviewedOrderStatus",
+        "woocommerce.requestReviewedNotification"
       ],
-      "imperativeReads": [],
+      "imperativeReads": [
+        {
+          "file": "client/src/components/merchant/WooOperationPanel.tsx",
+          "procedure": "woocommerce.getOperation",
+          "method": "fetch",
+          "expression": "utils.woocommerce.getOperation.fetch",
+          "line": 27,
+          "provenance": "trpc-utility-static"
+        }
+      ],
       "browserRequests": []
     },
     {
@@ -21447,27 +21982,133 @@
         "WooCommerceAnalytics"
       ],
       "files": [
-        "client/src/pages/merchant/WooCommerceAnalytics.tsx"
+        "client/src/pages/merchant/WooCommerceAnalytics.tsx",
+        "client/src/components/merchant/WooWorkspacePage.tsx",
+        "client/src/lib/woocommerce-workspace.ts",
+        "client/src/components/merchant/WooOperationPanel.tsx",
+        "client/src/components/merchant/WooSettingsWorkspace.tsx",
+        "client/src/lib/woocommerce-workspace-labels.ts",
+        "client/src/components/merchant/WooWorkspaceShell.tsx",
+        "client/src/components/merchant/WooHistoryPanels.tsx",
+        "client/src/components/merchant/WooProductsWorkspace.tsx",
+        "client/src/components/merchant/WooQuickSync.tsx",
+        "client/src/components/merchant/WooAnalyticsWorkspace.tsx",
+        "client/src/components/merchant/WooOrdersWorkspace.tsx",
+        "client/src/components/merchant/WooOrderDialog.tsx"
       ],
       "controls": [
-        "a9832e6bc999",
-        "86656913d841",
-        "b3c6050a6a07",
-        "da19e9bad668",
-        "1c64657286be",
-        "2919b567bfb8",
-        "4f77f7f5cbdd",
-        "d23fd1e2eefd",
-        "d0efe0a7e1a2"
+        "4403d8261a7a",
+        "b45e365f37bf",
+        "b9c64d497356",
+        "508344ce1b99",
+        "c477b8e66780",
+        "7fbfd5a51f5f",
+        "b681da43d033",
+        "409a8894480c",
+        "24c90343bc2d",
+        "75fdd774d93b",
+        "0fc6152eb51a",
+        "ca1a69bd0b11",
+        "5a366412dd56",
+        "3b7638d9de40",
+        "291232f6072e",
+        "503d231c5a68",
+        "cc037293f919",
+        "8b36128e8d21",
+        "f43f62b0a883",
+        "9563f5463871",
+        "8ffc52fd5c1a",
+        "23c7a25c6ad4",
+        "93bcb7f71cd2",
+        "8c8fb9e602ce",
+        "5ac34f9f14da",
+        "2393a11da562",
+        "49ed7c9c7870",
+        "2a155af661d5",
+        "d57aea46345d",
+        "f64cf8263f12",
+        "bc326bf15cba",
+        "072be04d0c34",
+        "1dd87fbb6899",
+        "d605af6cae83",
+        "a80bef3c8d04",
+        "0e25a497e0c6",
+        "5254f48755af",
+        "e4d3adf9101e",
+        "779a28439277",
+        "0f2869559fd8",
+        "1500728562ab",
+        "d67088779742",
+        "797c980b9fd2",
+        "dd6d74f147b7",
+        "96b8f1b9b317",
+        "8e3f77f00a61",
+        "c536aa3fe1b0",
+        "ea1806b4214d",
+        "c2d2beacd233",
+        "6886f18829b2",
+        "e8e524dd4c85",
+        "972f5c0aa882",
+        "952551d019d6",
+        "70a4f5af7d73",
+        "8c6d44632db5",
+        "398e16b43881",
+        "1b62a71f8c9d",
+        "6e50ef9eee8f",
+        "89589969d9ad",
+        "7afa3a65f4e4",
+        "5e048232c1ac",
+        "f28efba834a0",
+        "6523ed5e61e9",
+        "4988b89fd316",
+        "87143042116b",
+        "b8378330d60b",
+        "33dba42487c1",
+        "19fb12b0b56d",
+        "912402d83526",
+        "1bacfadc7d8a",
+        "55d6aa1476f8",
+        "7df267d6a3a4",
+        "c191c0bc13b7",
+        "fe289fdc7cb7",
+        "dbcbae0b3fc0",
+        "67bfb6a78b28",
+        "1f92489e7abe",
+        "46a579d40223"
       ],
       "queries": [
-        "woocommerce.getSalesStats",
-        "woocommerce.getTopProducts",
-        "woocommerce.getConversionRate",
-        "woocommerce.getCustomerStats"
+        "auth.me",
+        "merchants.getCurrent",
+        "woocommerce.getAccess",
+        "woocommerce.getBlockingOperation",
+        "woocommerce.getOperation",
+        "woocommerce.getWorkspace",
+        "woocommerce.getLogsWorkspace",
+        "woocommerce.getIncidentsWorkspace",
+        "woocommerce.getProductsWorkspace",
+        "woocommerce.getAnalyticsWorkspace",
+        "woocommerce.getOrdersWorkspace",
+        "woocommerce.getOrderDetailsWorkspace",
+        "woocommerce.getOrderActionWorkspace"
       ],
-      "mutations": [],
-      "imperativeReads": [],
+      "mutations": [
+        "woocommerce.acknowledgeOperation",
+        "woocommerce.requestReviewedConnection",
+        "woocommerce.requestReviewedSync",
+        "woocommerce.requestReviewedReconciliation",
+        "woocommerce.requestReviewedOrderStatus",
+        "woocommerce.requestReviewedNotification"
+      ],
+      "imperativeReads": [
+        {
+          "file": "client/src/components/merchant/WooOperationPanel.tsx",
+          "procedure": "woocommerce.getOperation",
+          "method": "fetch",
+          "expression": "utils.woocommerce.getOperation.fetch",
+          "line": 27,
+          "provenance": "trpc-utility-static"
+        }
+      ],
       "browserRequests": []
     },
     {
@@ -46032,271 +46673,15 @@
       "review": "source-inventoried"
     },
     {
-      "id": "bcde5deed6bb",
-      "file": "client/src/pages/merchant/WooCommerceSettings.tsx",
-      "line": 169,
-      "tag": "Input",
-      "role": "",
-      "kind": "field",
-      "label": "رابط المتجر",
-      "section": "بيانات الاتصال",
-      "binding": "storeUrl",
-      "type": "url",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "e2196e12bfab",
-      "file": "client/src/pages/merchant/WooCommerceSettings.tsx",
-      "line": 177,
-      "tag": "Input",
-      "role": "",
-      "kind": "field",
-      "label": "Consumer Key محفوظ saved",
-      "section": "بيانات الاتصال",
-      "binding": "consumerKey",
-      "type": "password",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "3869c97d56a1",
-      "file": "client/src/pages/merchant/WooCommerceSettings.tsx",
-      "line": 182,
-      "tag": "Input",
-      "role": "",
-      "kind": "field",
-      "label": "Consumer Secret محفوظ saved",
-      "section": "بيانات الاتصال",
-      "binding": "consumerSecret",
-      "type": "password",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "19c9e04c2143",
-      "file": "client/src/pages/merchant/WooCommerceSettings.tsx",
-      "line": 190,
-      "tag": "a",
-      "role": "",
-      "kind": "action",
-      "label": "مرجع المصادقة الرسمي Official authentication reference",
-      "section": "بيانات الاتصال",
-      "binding": "https://developer.woocommerce.com/docs/apis/rest-api/authentication",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "5c3f734a728a",
-      "file": "client/src/pages/merchant/WooCommerceSettings.tsx",
-      "line": 197,
+      "id": "4403d8261a7a",
+      "file": "client/src/components/merchant/WooOperationPanel.tsx",
+      "line": 69,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "تحقق واحفظ Verify and save",
-      "section": "بيانات الاتصال",
-      "binding": "handleSave",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "saveSettings.isPending",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "acbf3fade7fc",
-      "file": "client/src/pages/merchant/WooCommerceSettings.tsx",
-      "line": 201,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "أعد اختبار الاتصال Retest connection",
-      "section": "بيانات الاتصال",
-      "binding": "() => testConnection.mutate()",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "!credentialsStored || testConnection.isPending",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "02a108a05de7",
-      "file": "client/src/pages/merchant/WooCommerceSettings.tsx",
-      "line": 206,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "فصل وحذف النسخ المحلية Disconnect and delete local copies",
-      "section": "بيانات الاتصال",
-      "binding": "handleDisconnect",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [
-        "settings"
-      ],
-      "disabled": "disconnect.isPending",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "1881bb502fd3",
-      "file": "client/src/pages/merchant/WooCommerceSettings.tsx",
-      "line": 229,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "مزامنة المنتجات",
-      "section": "حالة المزامنة Synchronization status",
-      "binding": "() => syncProducts.mutate()",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "!connected || syncProducts.isPending",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "7814b38063bf",
-      "file": "client/src/pages/merchant/WooCommerceSettings.tsx",
-      "line": 233,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "مزامنة الطلبات",
-      "section": "حالة المزامنة Synchronization status",
-      "binding": "() => syncOrders.mutate()",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "!connected || syncOrders.isPending",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "f03e11d0a608",
-      "file": "client/src/pages/merchant/WooCommerceSettings.tsx",
-      "line": 238,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "مصالحة كاملة وإغلاق المراجعة Full reconciliation and close review",
-      "section": "حالة المزامنة Synchronization status",
-      "binding": "handleWebhookReconciliation",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [
-        "(settings?.webhook.health?.manualReview ?? 0) > 0"
-      ],
-      "disabled": "!connected || reconcileWebhookIncidents.isPending",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "30a78a801007",
-      "file": "client/src/pages/WooCommerceProducts.tsx",
-      "line": 91,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "مزامنة المنتجات",
-      "section": "منتجات WooCommerce",
-      "binding": "handleSync",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "syncProducts.isPending",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "4cc0f47e3fb1",
-      "file": "client/src/pages/WooCommerceProducts.tsx",
-      "line": 155,
-      "tag": "Input",
-      "role": "",
-      "kind": "field",
-      "label": "غير متوفر",
-      "section": "متوفر",
-      "binding": "searchTerm",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "b809810357f4",
-      "file": "client/src/pages/WooCommerceProducts.tsx",
-      "line": 250,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "السابق",
-      "section": "متوفر قريباً",
-      "binding": "() => setPage(page - 1)",
+      "label": "",
+      "section": "WooOperationPanel",
+      "binding": "event=>{opener.current=event.currentTarget;setReview(value);}",
       "type": "text",
       "options": [],
       "min": "",
@@ -46305,21 +46690,42 @@
       "required": false,
       "conditional": false,
       "conditions": [
-        "productsData && productsData.pagination.total > productsData.pagination.limit"
+        "value.reviewRequired"
       ],
-      "disabled": "page === 1",
+      "disabled": "o.busy",
       "review": "source-inventoried"
     },
     {
-      "id": "ad02f609c9c2",
-      "file": "client/src/pages/WooCommerceProducts.tsx",
-      "line": 260,
+      "id": "b45e365f37bf",
+      "file": "client/src/components/merchant/WooOperationPanel.tsx",
+      "line": 72,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "التالي",
-      "section": "متوفر قريباً",
-      "binding": "() => setPage(page + 1)",
+      "label": "",
+      "section": "WooOperationPanel",
+      "binding": "()=>void o.recover()",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "o.busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "b9c64d497356",
+      "file": "client/src/components/merchant/WooOperationPanel.tsx",
+      "line": 73,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "WooOperationPanel",
+      "binding": "",
       "type": "text",
       "options": [],
       "min": "",
@@ -46328,21 +46734,44 @@
       "required": false,
       "conditional": false,
       "conditions": [
-        "productsData && productsData.pagination.total > productsData.pagination.limit"
+        "o.tracked&&o.receipt?.outcome!=='pending'&&o.blocker?.outcome!=='pending'"
       ],
-      "disabled": "page >= Math.ceil(productsData.pagination.total / productsData.pagination.limit)",
+      "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "4c0b283ac9ad",
-      "file": "client/src/pages/WooCommerceOrders.tsx",
-      "line": 210,
+      "id": "508344ce1b99",
+      "file": "client/src/components/merchant/WooOperationPanel.tsx",
+      "line": 73,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "مزامنة الطلبات",
-      "section": "طلبات WooCommerce",
-      "binding": "() => syncOrdersMutation.mutate()",
+      "label": "",
+      "section": "WooOperationPanel",
+      "binding": "o.forget",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "o.tracked&&o.receipt?.outcome!=='pending'&&o.blocker?.outcome!=='pending'"
+      ],
+      "disabled": "o.busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "c477b8e66780",
+      "file": "client/src/components/merchant/WooOperationPanel.tsx",
+      "line": 74,
+      "tag": "DialogContent",
+      "role": "",
+      "kind": "dialog",
+      "label": "",
+      "section": "WooOperationPanel",
+      "binding": "",
       "type": "text",
       "options": [],
       "min": "",
@@ -46351,94 +46780,231 @@
       "required": false,
       "conditional": true,
       "conditions": [],
-      "disabled": "syncOrdersMutation.isPending",
+      "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "907b0be6c72e",
-      "file": "client/src/pages/WooCommerceOrders.tsx",
-      "line": 270,
-      "tag": "Input",
+      "id": "7fbfd5a51f5f",
+      "file": "client/src/components/merchant/WooOperationPanel.tsx",
+      "line": 74,
+      "tag": "Button",
       "role": "",
-      "kind": "field",
-      "label": "تم إرسال إشعار واتساب للعميل",
-      "section": "تم إرسال الإشعار",
-      "binding": "searchTerm",
+      "kind": "action",
+      "label": "",
+      "section": "WooOperationPanel",
+      "binding": "()=>setReview(null)",
       "type": "text",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": false,
+      "conditional": true,
       "conditions": [],
+      "disabled": "o.busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "b681da43d033",
+      "file": "client/src/components/merchant/WooOperationPanel.tsx",
+      "line": 74,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "WooOperationPanel",
+      "binding": "async()=>{if(review)await o.reviewUnknown(review);setReview(null);}",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "o.busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "409a8894480c",
+      "file": "client/src/components/merchant/WooSettingsWorkspace.tsx",
+      "line": 31,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "incidents",
+      "section": "WooSettingsWorkspace",
+      "binding": "()=>setTab(value)",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!data",
+        "query.isLoading"
+      ],
+      "disabled": "o.busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "24c90343bc2d",
+      "file": "client/src/components/merchant/WooSettingsWorkspace.tsx",
+      "line": 32,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "WooSettingsWorkspace",
+      "binding": "event=>open('verify',event.currentTarget)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "tab==='incidents'",
+        "tab==='history'",
+        "!data",
+        "query.isLoading"
+      ],
+      "disabled": "!data.present||!data.hasConsumerKey||!data.hasConsumerSecret||!o.canStart||busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "75fdd774d93b",
+      "file": "client/src/components/merchant/WooSettingsWorkspace.tsx",
+      "line": 32,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "WooSettingsWorkspace",
+      "binding": "event=>open('disconnect',event.currentTarget)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "data.present",
+        "tab==='incidents'",
+        "tab==='history'"
+      ],
+      "disabled": "!o.canStart||busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "0fc6152eb51a",
+      "file": "client/src/components/merchant/WooSettingsWorkspace.tsx",
+      "line": 33,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "WooSettingsWorkspace",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "tab==='incidents'",
+        "tab==='history'",
+        "!data",
+        "query.isLoading"
+      ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "c306a85c5f8f",
-      "file": "client/src/pages/WooCommerceOrders.tsx",
-      "line": 278,
-      "tag": "Select",
+      "id": "ca1a69bd0b11",
+      "file": "client/src/components/merchant/WooSettingsWorkspace.tsx",
+      "line": 33,
+      "tag": "input",
       "role": "",
       "kind": "field",
       "label": "",
-      "section": "تم إرسال الإشعار",
-      "binding": "statusFilter",
-      "type": "select",
-      "options": [
-        {
-          "value": "all",
-          "label": "قيد الانتظار"
-        },
-        {
-          "value": "pending",
-          "label": "قيد المعالجة"
-        },
-        {
-          "value": "processing",
-          "label": "معلق"
-        },
-        {
-          "value": "on-hold",
-          "label": "مكتمل"
-        },
-        {
-          "value": "completed",
-          "label": "ملغي"
-        },
-        {
-          "value": "cancelled",
-          "label": "مسترجع"
-        },
-        {
-          "value": "refunded",
-          "label": "فاشل"
-        },
-        {
-          "value": "failed",
-          "label": "طلبات WooCommerce"
-        }
+      "section": "WooSettingsWorkspace",
+      "binding": "field",
+      "type": "field==='storeUrl'?'url':visible[field]?'text':'password'",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "field==='storeUrl'?500:160",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "o.busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "5a366412dd56",
+      "file": "client/src/components/merchant/WooSettingsWorkspace.tsx",
+      "line": 33,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "`${visible[field]?c.hide:c.show} ${c[field]}`",
+      "section": "WooSettingsWorkspace",
+      "binding": "()=>setVisible({...visible,[field]:!visible[field]})",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "field!=='storeUrl'"
       ],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "294f158fda1a",
-      "file": "client/src/pages/WooCommerceOrders.tsx",
-      "line": 365,
+      "id": "3b7638d9de40",
+      "file": "client/src/components/merchant/WooSettingsWorkspace.tsx",
+      "line": 33,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "التفاصيل",
-      "section": "قائمة الطلبات ( )",
-      "binding": "() => handleViewDetails(order)",
+      "label": "",
+      "section": "WooSettingsWorkspace",
+      "binding": "event=>{opener.current=event.currentTarget;}",
+      "type": "submit",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "tab==='incidents'",
+        "tab==='history'",
+        "!data"
+      ],
+      "disabled": "!o.canStart||busy||draftRevision!==data.revision",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "291232f6072e",
+      "file": "client/src/components/merchant/WooSettingsWorkspace.tsx",
+      "line": 34,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "WooSettingsWorkspace",
+      "binding": "event=>open('sync_products',event.currentTarget)",
       "type": "text",
       "options": [],
       "min": "",
@@ -46446,103 +47012,74 @@
       "maxLength": "",
       "required": false,
       "conditional": false,
-      "conditions": [],
+      "conditions": [
+        "tab==='incidents'",
+        "tab==='history'",
+        "!data"
+      ],
+      "disabled": "!ready||!o.canStart||busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "503d231c5a68",
+      "file": "client/src/components/merchant/WooSettingsWorkspace.tsx",
+      "line": 34,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "WooSettingsWorkspace",
+      "binding": "event=>open('sync_orders',event.currentTarget)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "tab==='incidents'",
+        "tab==='history'",
+        "!data"
+      ],
+      "disabled": "!ready||!o.canStart||busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "cc037293f919",
+      "file": "client/src/components/merchant/WooSettingsWorkspace.tsx",
+      "line": 34,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "WooSettingsWorkspace",
+      "binding": "()=>setTab('incidents')",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "tab==='incidents'",
+        "tab==='history'",
+        "!data",
+        "query.isLoading"
+      ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "43644c072efd",
-      "file": "client/src/pages/WooCommerceOrders.tsx",
-      "line": 372,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "تحديث الحالة",
-      "section": "قائمة الطلبات ( )",
-      "binding": "() => handleUpdateStatus(order)",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "df184efb7725",
-      "file": "client/src/pages/WooCommerceOrders.tsx",
-      "line": 379,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "إرسال إشعار",
-      "section": "قائمة الطلبات ( )",
-      "binding": "() => handleSendNotification(order)",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "isSendingNotification || !order.customerPhone",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "37e5178d49f6",
-      "file": "client/src/pages/WooCommerceOrders.tsx",
-      "line": 394,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "السابق",
-      "section": "قائمة الطلبات ( )",
-      "binding": "() => setPage(current => Math.max(1, current - 1))",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "page <= 1 || isLoading",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "2402dd75c47b",
-      "file": "client/src/pages/WooCommerceOrders.tsx",
-      "line": 396,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "التالي",
-      "section": "قائمة الطلبات ( )",
-      "binding": "() => setPage(current => Math.min(totalPages, current + 1))",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "page >= totalPages || isLoading",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "c201fa4ec469",
-      "file": "client/src/pages/WooCommerceOrders.tsx",
-      "line": 403,
+      "id": "8b36128e8d21",
+      "file": "client/src/components/merchant/WooSettingsWorkspace.tsx",
+      "line": 36,
       "tag": "DialogContent",
       "role": "",
       "kind": "dialog",
-      "label": "تفاصيل الطلب # معلومات كاملة عن الطلب جميع الحالات قيد الانتظار - قيد المعالجة - معلق مكتمل × ar-SA ملغي مسترجع فاشل 0.00 جميع الطلبات المزامنة من WooCommerce جاري التحميل... ar-SA لا توجد طلبات العميل:",
-      "section": "قائمة الطلبات ( )",
+      "label": "connect disconnect verify connect disconnect",
+      "section": "WooSettingsWorkspace",
       "binding": "",
       "type": "text",
       "options": [],
@@ -46556,44 +47093,1063 @@
       "review": "source-inventoried"
     },
     {
-      "id": "8a3ea7236949",
-      "file": "client/src/pages/WooCommerceOrders.tsx",
-      "line": 485,
+      "id": "f43f62b0a883",
+      "file": "client/src/components/merchant/WooSettingsWorkspace.tsx",
+      "line": 36,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "WooSettingsWorkspace",
+      "binding": "consent",
+      "type": "checkbox",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "(review?.action==='disconnect'||review?.changed)"
+      ],
+      "disabled": "o.busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "9563f5463871",
+      "file": "client/src/components/merchant/WooSettingsWorkspace.tsx",
+      "line": 36,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "WooSettingsWorkspace",
+      "binding": "()=>setReview(null)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "o.busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "8ffc52fd5c1a",
+      "file": "client/src/components/merchant/WooSettingsWorkspace.tsx",
+      "line": 36,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "WooSettingsWorkspace",
+      "binding": "()=>void execute()",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "!o.canStart||busy||review?.revision!==data?.revision||((review?.action==='disconnect'||!!review?.changed)&&!consent)",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "23c7a25c6ad4",
+      "file": "client/src/components/merchant/WooWorkspaceShell.tsx",
+      "line": 11,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "WooWorkspaceShell",
+      "binding": "refresh",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "93bcb7f71cd2",
+      "file": "client/src/components/merchant/WooWorkspaceShell.tsx",
+      "line": 11,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "WooWorkspaceShell",
+      "binding": "/merchant/platform-integrations",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "8c8fb9e602ce",
+      "file": "client/src/components/merchant/WooWorkspaceShell.tsx",
+      "line": 11,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "WooWorkspaceShell",
+      "binding": "destinations[v]",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "5ac34f9f14da",
+      "file": "client/src/components/merchant/WooHistoryPanels.tsx",
+      "line": 14,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "WooHistoryPanels",
+      "binding": "()=>change(page-1)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "disabled||page<=1",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "2393a11da562",
+      "file": "client/src/components/merchant/WooHistoryPanels.tsx",
+      "line": 14,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "WooHistoryPanels",
+      "binding": "()=>change(page+1)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "disabled||page>=pages",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "49ed7c9c7870",
+      "file": "client/src/components/merchant/WooHistoryPanels.tsx",
+      "line": 18,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "WooHistoryPanels",
+      "binding": "search",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "100",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "2a155af661d5",
+      "file": "client/src/components/merchant/WooHistoryPanels.tsx",
+      "line": 18,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "kind resource all state kind",
+      "section": "WooHistoryPanels",
+      "binding": "selection[key]",
+      "type": "text",
+      "options": [
+        {
+          "value": "value",
+          "label": ""
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "d57aea46345d",
+      "file": "client/src/components/merchant/WooHistoryPanels.tsx",
+      "line": 18,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "WooHistoryPanels",
+      "binding": "",
+      "type": "submit",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "query.isFetching",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "f64cf8263f12",
+      "file": "client/src/components/merchant/WooHistoryPanels.tsx",
+      "line": 18,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "WooHistoryPanels",
+      "binding": "()=>{setSearch('');setSelection(wooLogsInput.parse({}));}",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "bc326bf15cba",
+      "file": "client/src/components/merchant/WooHistoryPanels.tsx",
+      "line": 29,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "WooHistoryPanels",
+      "binding": "search",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "100",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "072be04d0c34",
+      "file": "client/src/components/merchant/WooHistoryPanels.tsx",
+      "line": 29,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "all",
+      "section": "WooHistoryPanels",
+      "binding": "selection.state",
+      "type": "text",
+      "options": [
+        {
+          "value": "value",
+          "label": ""
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "1dd87fbb6899",
+      "file": "client/src/components/merchant/WooHistoryPanels.tsx",
+      "line": 29,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "all product order",
+      "section": "WooHistoryPanels",
+      "binding": "selection.resource",
+      "type": "text",
+      "options": [
+        {
+          "value": "value",
+          "label": ""
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "d605af6cae83",
+      "file": "client/src/components/merchant/WooHistoryPanels.tsx",
+      "line": 29,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "WooHistoryPanels",
+      "binding": "",
+      "type": "submit",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "query.isFetching",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "a80bef3c8d04",
+      "file": "client/src/components/merchant/WooHistoryPanels.tsx",
+      "line": 29,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "WooHistoryPanels",
+      "binding": "()=>{setSearch('');change({});}",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "0e25a497e0c6",
+      "file": "client/src/components/merchant/WooHistoryPanels.tsx",
+      "line": 30,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": ":",
+      "binding": "chosen.some(r=>r.id===row.id)",
+      "type": "checkbox",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "row.reviewable",
+        "!data.rows.length"
+      ],
+      "disabled": "!ready||!o.canStart||query.isFetching",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "5254f48755af",
+      "file": "client/src/components/merchant/WooHistoryPanels.tsx",
+      "line": 30,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "·",
+      "section": ":",
+      "binding": "()=>setReview({revision,rows:[...chosen]})",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "!data",
+        "query.isLoading||query.isFetching&&!data"
+      ],
+      "disabled": "!chosen.length||!valid||!ready||!o.canStart||query.isFetching",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "e4d3adf9101e",
+      "file": "client/src/components/merchant/WooHistoryPanels.tsx",
+      "line": 31,
       "tag": "DialogContent",
       "role": "",
       "kind": "dialog",
-      "label": "الهاتف: تحديث حالة الطلب # الحالة: المنتجات: اسم العميل البريد الإلكتروني رقم الهاتف حالة الطلب المنتجات المجموع الفرعي الشحن إلغاء جاري التحديث... تحديث",
-      "section": "تفاصيل الطلب #",
+      "label": "· :",
+      "section": ":",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "779a28439277",
+      "file": "client/src/components/merchant/WooHistoryPanels.tsx",
+      "line": 31,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "WooHistoryPanels",
+      "binding": "()=>setReview(null)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "o.busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "0f2869559fd8",
+      "file": "client/src/components/merchant/WooHistoryPanels.tsx",
+      "line": 31,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "WooHistoryPanels",
+      "binding": "()=>void execute()",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "o.busy||!o.canStart||!valid||review?.revision!==revision||!ready",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "1500728562ab",
+      "file": "client/src/components/merchant/WooProductsWorkspace.tsx",
+      "line": 21,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "WooProductsWorkspace",
+      "binding": "search",
+      "type": "search",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "100",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "d67088779742",
+      "file": "client/src/components/merchant/WooProductsWorkspace.tsx",
+      "line": 21,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "all",
+      "section": "WooProductsWorkspace",
+      "binding": "selection.state",
+      "type": "text",
+      "options": [
+        {
+          "value": "value",
+          "label": ""
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "797c980b9fd2",
+      "file": "client/src/components/merchant/WooProductsWorkspace.tsx",
+      "line": 21,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "WooProductsWorkspace",
+      "binding": "",
+      "type": "submit",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "query.isFetching",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "dd6d74f147b7",
+      "file": "client/src/components/merchant/WooProductsWorkspace.tsx",
+      "line": 21,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "WooProductsWorkspace",
+      "binding": "()=>{setSearch('');setSelection(wooProductsInput.parse({}));}",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "96b8f1b9b317",
+      "file": "client/src/components/merchant/WooProductsWorkspace.tsx",
+      "line": 22,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "WooProductsWorkspace",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "!data.rows.length"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "8e3f77f00a61",
+      "file": "client/src/components/merchant/WooQuickSync.tsx",
+      "line": 12,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "WooQuickSync",
+      "binding": "()=>setRevision(data.revision)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "!data",
+        "query.isLoading"
+      ],
+      "disabled": "!ready||!o.canStart||query.isFetching",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "c536aa3fe1b0",
+      "file": "client/src/components/merchant/WooQuickSync.tsx",
+      "line": 13,
+      "tag": "DialogContent",
+      "role": "",
+      "kind": "dialog",
+      "label": "",
+      "section": "WooQuickSync",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "ea1806b4214d",
+      "file": "client/src/components/merchant/WooQuickSync.tsx",
+      "line": 13,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "WooQuickSync",
+      "binding": "()=>setRevision(null)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "o.busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "c2d2beacd233",
+      "file": "client/src/components/merchant/WooQuickSync.tsx",
+      "line": 13,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "WooQuickSync",
+      "binding": "async()=>{if(!revision||!ready||revision!==data?.revision||query.isFetching)return;await o.execute(resource==='products'?'sync_products':'sync_orders',revision,requestId=>mutation.mutateAsync({requestId,revision,resource}));setRevision(null);}",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "!ready||!o.canStart||query.isFetching||revision!==data?.revision",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "6886f18829b2",
+      "file": "client/src/components/merchant/WooAnalyticsWorkspace.tsx",
+      "line": 13,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "WooAnalyticsWorkspace",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "e8e524dd4c85",
+      "file": "client/src/components/merchant/WooAnalyticsWorkspace.tsx",
+      "line": 14,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "WooAnalyticsWorkspace",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "972f5c0aa882",
+      "file": "client/src/components/merchant/WooAnalyticsWorkspace.tsx",
+      "line": 21,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "WooAnalyticsWorkspace",
+      "binding": "draft.startDate",
+      "type": "date",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "952551d019d6",
+      "file": "client/src/components/merchant/WooAnalyticsWorkspace.tsx",
+      "line": 21,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "WooAnalyticsWorkspace",
+      "binding": "draft.endDate",
+      "type": "date",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "70a4f5af7d73",
+      "file": "client/src/components/merchant/WooAnalyticsWorkspace.tsx",
+      "line": 21,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "daily weekly monthly",
+      "section": "WooAnalyticsWorkspace",
+      "binding": "draft.period",
+      "type": "text",
+      "options": [
+        {
+          "value": "value",
+          "label": ""
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "8c6d44632db5",
+      "file": "client/src/components/merchant/WooAnalyticsWorkspace.tsx",
+      "line": 21,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "WooAnalyticsWorkspace",
+      "binding": "",
+      "type": "submit",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "query.isFetching",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "398e16b43881",
+      "file": "client/src/components/merchant/WooAnalyticsWorkspace.tsx",
+      "line": 21,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "WooAnalyticsWorkspace",
+      "binding": "()=>{const next=wooDefaultPeriod();setDraft(next);setSelection(next);setInvalid(false);}",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "1b62a71f8c9d",
+      "file": "client/src/components/merchant/WooOrdersWorkspace.tsx",
+      "line": 20,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "WooOrdersWorkspace",
+      "binding": "search",
+      "type": "search",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "100",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "6e50ef9eee8f",
+      "file": "client/src/components/merchant/WooOrdersWorkspace.tsx",
+      "line": 20,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "all",
+      "section": "WooOrdersWorkspace",
+      "binding": "selection.state",
+      "type": "text",
+      "options": [
+        {
+          "value": "value",
+          "label": ""
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "89589969d9ad",
+      "file": "client/src/components/merchant/WooOrdersWorkspace.tsx",
+      "line": 20,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "WooOrdersWorkspace",
+      "binding": "dates.startDate",
+      "type": "date",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "7afa3a65f4e4",
+      "file": "client/src/components/merchant/WooOrdersWorkspace.tsx",
+      "line": 20,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "WooOrdersWorkspace",
+      "binding": "dates.endDate",
+      "type": "date",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "5e048232c1ac",
+      "file": "client/src/components/merchant/WooOrdersWorkspace.tsx",
+      "line": 20,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "WooOrdersWorkspace",
+      "binding": "",
+      "type": "submit",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "query.isFetching",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "f28efba834a0",
+      "file": "client/src/components/merchant/WooOrdersWorkspace.tsx",
+      "line": 20,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "WooOrdersWorkspace",
+      "binding": "()=>{setSearch('');setDates({startDate:'',endDate:''});setInvalid(false);setSelection(wooOrdersInput.parse({}));}",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "6523ed5e61e9",
+      "file": "client/src/components/merchant/WooOrdersWorkspace.tsx",
+      "line": 21,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "·",
+      "binding": "event=>open(row.id,'details',event.currentTarget)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!data.rows.length",
+        "!data"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "4988b89fd316",
+      "file": "client/src/components/merchant/WooOrdersWorkspace.tsx",
+      "line": 21,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "·",
+      "binding": "event=>open(row.id,'status',event.currentTarget)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "ordersManage",
+        "!data.rows.length"
+      ],
+      "disabled": "!o.canStart",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "87143042116b",
+      "file": "client/src/components/merchant/WooOrdersWorkspace.tsx",
+      "line": 21,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "·",
+      "binding": "event=>open(row.id,'notify',event.currentTarget)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "ordersManage",
+        "!data.rows.length"
+      ],
+      "disabled": "!o.canStart",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "b8378330d60b",
+      "file": "client/src/components/merchant/WooOrderDialog.tsx",
+      "line": 32,
+      "tag": "DialogContent",
+      "role": "",
+      "kind": "dialog",
+      "label": "notify status details status notify details status details subtotal shippingTotal totalTax discountTotal total · : order_status note order_notify status unknown details",
+      "section": "WooOrderDialog",
       "binding": "",
       "type": "text",
       "options": [
         {
-          "value": "pending",
-          "label": "المنتجات:"
+          "value": "",
+          "label": ""
         },
         {
-          "value": "processing",
-          "label": "اسم العميل"
-        },
-        {
-          "value": "on-hold",
-          "label": "البريد الإلكتروني"
-        },
-        {
-          "value": "completed",
-          "label": "رقم الهاتف"
-        },
-        {
-          "value": "cancelled",
-          "label": "حالة الطلب"
-        },
-        {
-          "value": "refunded",
-          "label": "المنتجات"
-        },
-        {
-          "value": "failed",
-          "label": "المجموع الفرعي"
+          "value": "value",
+          "label": ""
         }
       ],
       "min": "",
@@ -46606,86 +48162,262 @@
       "review": "source-inventoried"
     },
     {
-      "id": "76e1a7238115",
-      "file": "client/src/pages/WooCommerceOrders.tsx",
-      "line": 495,
-      "tag": "Select",
+      "id": "33dba42487c1",
+      "file": "client/src/components/merchant/WooOrderDialog.tsx",
+      "line": 33,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "details status",
+      "section": "WooOrderDialog",
+      "binding": "()=>switchMode(value)",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!review",
+        "!order",
+        "!data",
+        "waiting"
+      ],
+      "disabled": "o.busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "19fb12b0b56d",
+      "file": "client/src/components/merchant/WooOrderDialog.tsx",
+      "line": 34,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "WooOrderDialog",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "mode==='details'",
+        "!order",
+        "!data",
+        "waiting"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "912402d83526",
+      "file": "client/src/components/merchant/WooOrderDialog.tsx",
+      "line": 34,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "WooOrderDialog",
+      "binding": "()=>{void action.refetch();void details.refetch();}",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "!matching",
+        "!authority",
+        "mode==='details'",
+        "!order",
+        "!data",
+        "waiting"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "1bacfadc7d8a",
+      "file": "client/src/components/merchant/WooOrderDialog.tsx",
+      "line": 34,
+      "tag": "select",
       "role": "",
       "kind": "field",
-      "label": "الحالة:",
-      "section": "الهاتف:",
-      "binding": "newStatus",
-      "type": "select",
+      "label": "unknown",
+      "section": "WooOrderDialog",
+      "binding": "status",
+      "type": "text",
       "options": [
         {
-          "value": "pending",
-          "label": "المنتجات:"
+          "value": "",
+          "label": ""
         },
         {
-          "value": "processing",
-          "label": "اسم العميل"
-        },
-        {
-          "value": "on-hold",
-          "label": "البريد الإلكتروني"
-        },
-        {
-          "value": "completed",
-          "label": "رقم الهاتف"
-        },
-        {
-          "value": "cancelled",
-          "label": "حالة الطلب"
-        },
-        {
-          "value": "refunded",
-          "label": "المنتجات"
-        },
-        {
-          "value": "failed",
-          "label": "المجموع الفرعي"
+          "value": "value",
+          "label": ""
         }
       ],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
+      "conditional": true,
+      "conditions": [
+        "mode==='status'",
+        "review",
+        "!matching",
+        "!authority",
+        "mode==='details'"
+      ],
+      "disabled": "o.busy||!canStatus",
       "review": "source-inventoried"
     },
     {
-      "id": "56c2063ad17f",
-      "file": "client/src/pages/WooCommerceOrders.tsx",
-      "line": 512,
-      "tag": "Textarea",
+      "id": "55d6aa1476f8",
+      "file": "client/src/components/merchant/WooOrderDialog.tsx",
+      "line": 34,
+      "tag": "input",
       "role": "",
       "kind": "field",
-      "label": "الشحن",
-      "section": "الهاتف:",
-      "binding": "statusNote",
-      "type": "textarea",
+      "label": "",
+      "section": "WooOrderDialog",
+      "binding": "editNote",
+      "type": "checkbox",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
       "conditional": false,
-      "conditions": [],
+      "conditions": [
+        "mode==='status'",
+        "review",
+        "!matching",
+        "!authority",
+        "mode==='details'"
+      ],
+      "disabled": "o.busy||!canStatus",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "7df267d6a3a4",
+      "file": "client/src/components/merchant/WooOrderDialog.tsx",
+      "line": 34,
+      "tag": "textarea",
+      "role": "",
+      "kind": "field",
+      "label": "c.note",
+      "section": "WooOrderDialog",
+      "binding": "note",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "1000",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "editNote",
+        "mode==='status'",
+        "review",
+        "!matching",
+        "!authority"
+      ],
+      "disabled": "o.busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "c191c0bc13b7",
+      "file": "client/src/components/merchant/WooOrderDialog.tsx",
+      "line": 34,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "c.none",
+      "section": "WooOrderDialog",
+      "binding": "authority.recipient??''",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "mode==='status'",
+        "review",
+        "!matching",
+        "!authority",
+        "mode==='details'"
+      ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "17cf52802cab",
-      "file": "client/src/pages/WooCommerceOrders.tsx",
-      "line": 521,
+      "id": "fe289fdc7cb7",
+      "file": "client/src/components/merchant/WooOrderDialog.tsx",
+      "line": 34,
+      "tag": "textarea",
+      "role": "",
+      "kind": "field",
+      "label": "c.message",
+      "section": "WooOrderDialog",
+      "binding": "message",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "2000",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "mode==='status'",
+        "review",
+        "!matching",
+        "!authority",
+        "mode==='details'"
+      ],
+      "disabled": "o.busy||!canNotify",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "dbcbae0b3fc0",
+      "file": "client/src/components/merchant/WooOrderDialog.tsx",
+      "line": 36,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "إلغاء",
-      "section": "الهاتف:",
-      "binding": "() => setIsUpdateStatusOpen(false)",
+      "label": "",
+      "section": "WooOrderDialog",
+      "binding": "()=>setReview(null)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "review"
+      ],
+      "disabled": "o.busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "67bfb6a78b28",
+      "file": "client/src/components/merchant/WooOrderDialog.tsx",
+      "line": 36,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "WooOrderDialog",
+      "binding": "onClose",
       "type": "text",
       "options": [],
       "min": "",
@@ -46694,19 +48426,19 @@
       "required": false,
       "conditional": true,
       "conditions": [],
-      "disabled": "",
+      "disabled": "o.busy",
       "review": "source-inventoried"
     },
     {
-      "id": "56ffd6e82257",
-      "file": "client/src/pages/WooCommerceOrders.tsx",
-      "line": 524,
+      "id": "1f92489e7abe",
+      "file": "client/src/components/merchant/WooOrderDialog.tsx",
+      "line": 36,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "جاري التحديث... تحديث",
-      "section": "الهاتف:",
-      "binding": "handleConfirmUpdateStatus",
+      "label": "",
+      "section": "WooOrderDialog",
+      "binding": "()=>void execute()",
       "type": "text",
       "options": [],
       "min": "",
@@ -46714,210 +48446,35 @@
       "maxLength": "",
       "required": false,
       "conditional": true,
-      "conditions": [],
-      "disabled": "updateStatusMutation.isPending || !newStatus",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "a9832e6bc999",
-      "file": "client/src/pages/merchant/WooCommerceAnalytics.tsx",
-      "line": 79,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "تحديث",
-      "section": "تحليلات WooCommerce",
-      "binding": "handleRefresh",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "86656913d841",
-      "file": "client/src/pages/merchant/WooCommerceAnalytics.tsx",
-      "line": 94,
-      "tag": "Select",
-      "role": "",
-      "kind": "field",
-      "label": "نوع العرض",
-      "section": "الفترة الزمنية",
-      "binding": "period",
-      "type": "select",
-      "options": [
-        {
-          "value": "daily",
-          "label": "يومي"
-        },
-        {
-          "value": "weekly",
-          "label": "أسبوعي"
-        },
-        {
-          "value": "monthly",
-          "label": "شهري"
-        }
+      "conditions": [
+        "review",
+        "mode!=='details'&&order&&authority&&matching"
       ],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
+      "disabled": "!reviewCurrent||!o.canStart",
       "review": "source-inventoried"
     },
     {
-      "id": "b3c6050a6a07",
-      "file": "client/src/pages/merchant/WooCommerceAnalytics.tsx",
-      "line": 108,
-      "tag": "Input",
-      "role": "",
-      "kind": "field",
-      "label": "من تاريخ",
-      "section": "الفترة الزمنية",
-      "binding": "startDate",
-      "type": "date",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "da19e9bad668",
-      "file": "client/src/pages/merchant/WooCommerceAnalytics.tsx",
-      "line": 118,
-      "tag": "Input",
-      "role": "",
-      "kind": "field",
-      "label": "إلى تاريخ",
-      "section": "الفترة الزمنية",
-      "binding": "endDate",
-      "type": "date",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "1c64657286be",
-      "file": "client/src/pages/merchant/WooCommerceAnalytics.tsx",
-      "line": 127,
+      "id": "46a579d40223",
+      "file": "client/src/components/merchant/WooOrderDialog.tsx",
+      "line": 36,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "تطبيق",
-      "section": "الفترة الزمنية",
-      "binding": "handleRefresh",
-      "type": "text",
+      "label": "",
+      "section": "WooOrderDialog",
+      "binding": "",
+      "type": "submit",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "2919b567bfb8",
-      "file": "client/src/pages/merchant/WooCommerceAnalytics.tsx",
-      "line": 205,
-      "tag": "TabsTrigger",
-      "role": "",
-      "kind": "action",
-      "label": "المبيعات",
-      "section": "المبيعات",
-      "binding": "sales",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "4f77f7f5cbdd",
-      "file": "client/src/pages/merchant/WooCommerceAnalytics.tsx",
-      "line": 206,
-      "tag": "TabsTrigger",
-      "role": "",
-      "kind": "action",
-      "label": "المنتجات",
-      "section": "المنتجات",
-      "binding": "products",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "d23fd1e2eefd",
-      "file": "client/src/pages/merchant/WooCommerceAnalytics.tsx",
-      "line": 207,
-      "tag": "TabsTrigger",
-      "role": "",
-      "kind": "action",
-      "label": "التحويل",
-      "section": "التحويل",
-      "binding": "conversion",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "d0efe0a7e1a2",
-      "file": "client/src/pages/merchant/WooCommerceAnalytics.tsx",
-      "line": 208,
-      "tag": "TabsTrigger",
-      "role": "",
-      "kind": "action",
-      "label": "العملاء",
-      "section": "العملاء",
-      "binding": "customers",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
+      "conditional": true,
+      "conditions": [
+        "review",
+        "mode!=='details'&&order&&authority&&matching"
+      ],
+      "disabled": "!o.canStart||!(mode==='status'?canStatus:canNotify)||mode==='status'&&status===order.state&&(!editNote||note.trim()===(order.customerNote??'').trim())",
       "review": "source-inventoried"
     },
     {
