@@ -1373,6 +1373,565 @@
           "contains": "resolveCampaignSchedule"
         }
       ]
+    },
+    {
+      "routes": [
+        "/merchant/salla"
+      ],
+      "removed": [
+        "salla.getConnection",
+        "salla.getSyncLogs",
+        "salla.connect",
+        "salla.syncNow"
+      ],
+      "required": [
+        "salla.workspace",
+        "salla.logsWorkspace",
+        "salla.registerConnection",
+        "salla.disconnect",
+        "salla.requestSync",
+        "salla.syncRequest"
+      ],
+      "note": "Connection and complete paginated logs use scoped snapshots. Registration checks the saved identity; synchronization uses a durable request and recovery read. Reviewed disconnection and existing order-effect review remain. The old OAuth link had no implemented route and was intentionally removed; webhook guidance remains.",
+      "evidence": [
+        "docs/audits/tenant-salla-workspace-2026-10-02/REPORT.md",
+        "docs/audits/tenant-salla-sync-request-2026-10-02/REPORT.md",
+        "docs/audits/tenant-salla-legacy-retirement-2026-10-02/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "client/src/components/merchant/SallaWorkspace.tsx",
+          "contains": "trpc.salla.registerConnection.useMutation"
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/integrations/byaan"
+      ],
+      "removed": [
+        "integrations.getByaanStatus"
+      ],
+      "required": [
+        "integrations.byaanConnectionWorkspace",
+        "integrations.connectByaan",
+        "integrations.disconnectByaan",
+        "integrations.testByaanConnection"
+      ],
+      "note": "Connection status and complete local counts come from one scoped snapshot. Domain validation, connection check, reviewed disconnection and setup guidance remain. The prior fabricated zero revenue and empty sales log are replaced by navigation to the actual sales-operation workspace.",
+      "evidence": [
+        "docs/audits/tenant-byaan-connection-source-2026-10-02/REPORT.md",
+        "docs/audits/tenant-byaan-connection-workspace-2026-10-02/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "client/src/components/merchant/ByaanConnectionWorkspace.tsx",
+          "contains": "/merchant/byaan-dashboard"
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/byaan-dashboard"
+      ],
+      "removed": [
+        "byaan.getStatus",
+        "byaan.getTrainees",
+        "byaan.getFaqs",
+        "byaan.triggerResync",
+        "byaan.toggleFaq"
+      ],
+      "required": [
+        "byaan.dataWorkspace",
+        "byaan.dashboardOverview",
+        "byaan.requestResync",
+        "byaan.resyncAttempt",
+        "byaan.changeFaq",
+        "byaan.listSalesOperations",
+        "byaan.recoverEnrollmentProjection"
+      ],
+      "note": "Five sections preserve overview, trainees, knowledge questions, academy pages and sales operations. Full paginated sources replace capped reads; FAQ selection checks its digest and synchronization has a saved request receipt. Queue acceptance is not completion, and enrollment evidence review remains available.",
+      "evidence": [
+        "docs/audits/tenant-byaan-data-workspace-2026-10-02/REPORT.md",
+        "docs/audits/tenant-byaan-resync-2026-10-02/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "client/src/components/merchant/ByaanDataWorkspace.tsx",
+          "contains": "trpc.byaan.dataWorkspace.useQuery"
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/integrations/zid",
+        "/merchant/zid/settings",
+        "/merchant/zid/products",
+        "/merchant/zid/sync-logs"
+      ],
+      "removed": [
+        "zid.getConnection",
+        "zid.getSyncLogs",
+        "zid.getSyncStats",
+        "zid.getNotificationHealth",
+        "zid.disconnect",
+        "zid.syncNow",
+        "zid.updateSettings",
+        "zid.acknowledgeNotificationIncidents",
+        "zid.rotateWebhookCredentials"
+      ],
+      "required": [
+        "zid.workspace",
+        "zid.logsWorkspace",
+        "zid.notificationReview",
+        "zid.saveWorkspaceSettings",
+        "zid.disconnectWorkspace",
+        "zid.rotateWorkspaceWebhook",
+        "zid.beginOAuth",
+        "zid.requestSync",
+        "zid.syncRequest",
+        "zid.acknowledgeReviewedNotifications"
+      ],
+      "note": "Existing routes render the shared reviewed workspace: connection/settings, product synchronization and catalog navigation, complete logs and notification review. Five settings and webhook credential rotation remain; settings/disconnection check the connection revision, synchronization has durable recovery, and incident acknowledgement covers only the reviewed identifiers.",
+      "evidence": [
+        "docs/audits/tenant-zid-workspace-2026-10-02/REPORT.md",
+        "docs/audits/tenant-zid-reviewed-writes-2026-10-02/REPORT.md",
+        "docs/audits/tenant-zid-legacy-retirement-2026-10-02/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "client/src/components/merchant/ZidWorkspace.tsx",
+          "contains": "/merchant/products"
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/woocommerce/settings"
+      ],
+      "removed": [
+        "woocommerce.getSettings",
+        "woocommerce.saveSettings",
+        "woocommerce.testConnection",
+        "woocommerce.syncProducts",
+        "woocommerce.syncOrders",
+        "woocommerce.reconcileWebhookIncidents",
+        "woocommerce.disconnect"
+      ],
+      "required": [
+        "woocommerce.getWorkspace",
+        "woocommerce.getLogsWorkspace",
+        "woocommerce.getIncidentsWorkspace",
+        "woocommerce.requestReviewedConnection",
+        "woocommerce.requestReviewedSync",
+        "woocommerce.requestReviewedReconciliation",
+        "woocommerce.getOperation",
+        "woocommerce.acknowledgeOperation"
+      ],
+      "note": "Connection save/check/disconnect and product/order sync use reviewed durable operations. Complete logs and explicit incident-set reconciliation replace unrestricted legacy writes. Browser recovery reads an existing receipt rather than silently replaying a provider action.",
+      "evidence": [
+        "docs/audits/tenant-woocommerce-settings-workspace-2026-10-02/REPORT.md",
+        "docs/audits/tenant-woocommerce-legacy-retirement-2026-10-02/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "client/src/components/merchant/WooSettingsWorkspace.tsx",
+          "contains": "trpc.woocommerce.getWorkspace.useQuery"
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/woocommerce/products"
+      ],
+      "removed": [
+        "woocommerce.getProducts",
+        "woocommerce.searchProducts",
+        "woocommerce.syncProducts"
+      ],
+      "required": [
+        "woocommerce.getProductsWorkspace",
+        "woocommerce.requestReviewedSync"
+      ],
+      "note": "One complete paginated product source implements server-side search and saved filters; reviewed sync replaces immediate sync and preserves operation recovery.",
+      "evidence": [
+        "docs/audits/tenant-woocommerce-catalog-analytics-2026-10-02/REPORT.md",
+        "docs/audits/tenant-woocommerce-reviewed-sync-2026-10-02/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "client/src/components/merchant/WooProductsWorkspace.tsx",
+          "contains": "trpc.woocommerce.getProductsWorkspace.useQuery"
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/woocommerce/orders"
+      ],
+      "removed": [
+        "woocommerce.getOrders",
+        "woocommerce.syncOrders",
+        "woocommerce.updateOrderStatus",
+        "woocommerce.sendOrderNotification"
+      ],
+      "required": [
+        "woocommerce.getOrdersWorkspace",
+        "woocommerce.getOrderDetailsWorkspace",
+        "woocommerce.getOrderActionWorkspace",
+        "woocommerce.requestReviewedSync",
+        "woocommerce.requestReviewedOrderStatus",
+        "woocommerce.requestReviewedNotification"
+      ],
+      "note": "Complete order paging and details preserve items and notes. Synchronization, status changes and customer notifications require scoped review and durable receipts; notifications do not claim delivery from provider acceptance.",
+      "evidence": [
+        "docs/audits/tenant-woocommerce-orders-workspace-2026-10-02/REPORT.md",
+        "docs/audits/tenant-woocommerce-reviewed-orders-2026-10-02/REPORT.md",
+        "docs/audits/tenant-woocommerce-reviewed-notifications-2026-10-02/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "client/src/components/merchant/WooOrdersWorkspace.tsx",
+          "contains": "trpc.woocommerce.getOrdersWorkspace.useQuery"
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/woocommerce/analytics"
+      ],
+      "removed": [
+        "woocommerce.getSalesStats",
+        "woocommerce.getTopProducts",
+        "woocommerce.getConversionRate",
+        "woocommerce.getCustomerStats"
+      ],
+      "required": [
+        "woocommerce.getAnalyticsWorkspace"
+      ],
+      "note": "One complete period snapshot preserves sales, products and customer counts while separating currencies and exposing excluded rows. The old claimed conversation conversion rate has no valid causal denominator; the replacement explicitly distinguishes observed order/customer indicators from unmeasured conversion.",
+      "evidence": [
+        "docs/audits/tenant-woocommerce-analytics-source-2026-10-02/REPORT.md",
+        "docs/audits/tenant-woocommerce-catalog-analytics-2026-10-02/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "client/src/components/merchant/WooAnalyticsWorkspace.tsx",
+          "contains": "trpc.woocommerce.getAnalyticsWorkspace.useQuery"
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/integrations/calendly"
+      ],
+      "removed": [
+        "calendly.getConnection",
+        "calendly.getUpcomingEvents",
+        "calendly.getEventTypes",
+        "calendly.getStats",
+        "calendly.connect",
+        "calendly.disconnect",
+        "calendly.syncNow",
+        "calendly.updateSettings"
+      ],
+      "required": [
+        "calendly.getWorkspace",
+        "calendly.getAppointmentsWorkspace",
+        "calendly.getReceiptsWorkspace",
+        "calendly.getBookingLinksWorkspace",
+        "calendly.previewConnection",
+        "calendly.requestConnection",
+        "calendly.requestSync",
+        "calendly.saveWorkspaceSettings",
+        "calendly.getOperation",
+        "calendly.acknowledgeOperation"
+      ],
+      "note": "Four workspace tabs preserve overview, appointments, webhook receipts and booking links. Connection preview/save/check/disconnect, settings and bounded manual synchronization use reviewed operations and recoverable results. Legacy writes reject before provider or database effects.",
+      "evidence": [
+        "docs/audits/tenant-calendly-interface-2026-10-02/REPORT.md",
+        "docs/audits/tenant-calendly-reviewed-connection-2026-10-02/REPORT.md",
+        "docs/audits/tenant-calendly-legacy-retirement-2026-10-02/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "client/src/components/merchant/CalendlyWorkspace.tsx",
+          "contains": "trpc.calendly.getWorkspace.useQuery"
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/calendar/settings"
+      ],
+      "removed": [
+        "calendar.getStatus"
+      ],
+      "required": [
+        "calendar.settings",
+        "calendar.beginOAuth",
+        "calendar.disconnect"
+      ],
+      "note": "Scoped connection settings distinguish stored linkage from live provider access. The explicit OAuth start and reviewed disconnect remain on this route, including local data retention.",
+      "evidence": [
+        "docs/audits/tenant-calendar-connection-source-2026-10-02/REPORT.md",
+        "docs/audits/tenant-calendar-connection-workspace-2026-10-02/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "client/src/components/merchant/CalendarConnectionWorkspace.tsx",
+          "contains": "trpc.calendar.settings.useQuery"
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/calendar"
+      ],
+      "removed": [
+        "calendar.listAppointments",
+        "calendar.getStatus"
+      ],
+      "required": [
+        "calendar.workspace",
+        "calendar.details",
+        "calendar.getSyncReview",
+        "calendar.getReminderReview",
+        "calendar.cancelAppointment",
+        "calendar.getAvailableSlots",
+        "calendar.bookAppointment"
+      ],
+      "note": "Month/week/day/custom selection, full daily counts, paged appointments and separate details replace the partial grid. Cancellation and sync/reminder review remain; connection status is managed through the linked connection settings page. Appointment creation and availability remain separate from booking creation.",
+      "evidence": [
+        "docs/audits/tenant-calendar-workspace-source-2026-10-02/REPORT.md",
+        "docs/audits/tenant-calendar-workspace-2026-10-02/REPORT.md",
+        "docs/audits/tenant-calendar-prototype-2026-10-02/REPORT.md"
+      ],
+      "checks": [
+        {
+          "route": "/merchant/calendar/settings",
+          "api": "calendar.settings"
+        },
+        {
+          "file": "client/src/components/merchant/CalendarWorkspace.tsx",
+          "contains": "/merchant/calendar/settings"
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/services"
+      ],
+      "removed": [
+        "services.list",
+        "serviceCategories.list"
+      ],
+      "required": [
+        "services.catalogWorkspace",
+        "services.delete"
+      ],
+      "note": "Complete catalog pages include category names and filters in one snapshot. Detail/create/edit navigation and reviewed archive remain; archive preserves referenced history.",
+      "evidence": [
+        "docs/audits/tenant-service-catalog-source-2026-10-02/REPORT.md",
+        "docs/audits/tenant-service-list-workspace-2026-10-02/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "client/src/components/merchant/ServiceCatalogList.tsx",
+          "contains": "/merchant/services/new"
+        },
+        {
+          "file": "client/src/components/merchant/ServiceCatalogList.tsx",
+          "contains": "expectedDefinition:row.definition"
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/services/new",
+        "/merchant/services/:id/edit"
+      ],
+      "removed": [
+        "serviceCategories.list",
+        "services.getById"
+      ],
+      "required": [
+        "services.catalogEditor",
+        "services.catalogChoices",
+        "services.create",
+        "services.update"
+      ],
+      "note": "Scoped editor context and paged category/provider choices preserve service fields with field errors, full review and version checks. Existing create/update actions remain; uncertain saves are not silently repeated.",
+      "evidence": [
+        "docs/audits/tenant-service-editor-workspace-2026-10-02/REPORT.md",
+        "docs/audits/tenant-service-editor-status-2026-10-02/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "client/src/components/merchant/ServiceEditorWorkspace.tsx",
+          "contains": "trpc.services.catalogEditor.useQuery"
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/services/:id"
+      ],
+      "removed": [
+        "services.getById"
+      ],
+      "required": [
+        "services.detailsWorkspace"
+      ],
+      "note": "A consistent scoped detail snapshot preserves definition, prices, configuration, providers, six booking summaries, latest ten bookings and review distribution, with unknown data explicit and links to editing and bookings.",
+      "evidence": [
+        "docs/audits/tenant-service-details-source-2026-10-02/REPORT.md",
+        "docs/audits/tenant-service-details-workspace-2026-10-02/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "client/src/components/merchant/ServiceDetailsWorkspace.tsx",
+          "contains": "trpc.services.detailsWorkspace.useQuery"
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/service-categories"
+      ],
+      "removed": [
+        "serviceCategories.list"
+      ],
+      "required": [
+        "services.catalogWorkspace",
+        "services.catalogEditor",
+        "services.catalogChoices",
+        "serviceCategories.create",
+        "serviceCategories.update",
+        "serviceCategories.delete"
+      ],
+      "note": "Category list and editor share complete scoped catalog sources while preserving create/edit/archive and optional fields; reviewed writes check saved definitions.",
+      "evidence": [
+        "docs/audits/tenant-service-collections-workspace-2026-10-02/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "client/src/components/merchant/ServiceCollectionEditor.tsx",
+          "contains": "trpc.serviceCategories.update.useMutation"
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/service-packages"
+      ],
+      "removed": [
+        "servicePackages.list",
+        "services.list"
+      ],
+      "required": [
+        "services.catalogWorkspace",
+        "services.catalogEditor",
+        "services.catalogChoices",
+        "servicePackages.create",
+        "servicePackages.update",
+        "servicePackages.delete"
+      ],
+      "note": "Package list/editor preserve package fields and multi-service selection using complete paged catalog choices; reviewed create/edit/archive remain.",
+      "evidence": [
+        "docs/audits/tenant-service-collections-workspace-2026-10-02/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "client/src/components/merchant/ServiceCollectionEditor.tsx",
+          "contains": "trpc.servicePackages.update.useMutation"
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/bookings"
+      ],
+      "removed": [
+        "bookings.list",
+        "bookings.getStats",
+        "services.list"
+      ],
+      "required": [
+        "bookings.workspace",
+        "bookings.details",
+        "services.catalogEditor",
+        "services.catalogChoices",
+        "bookings.create",
+        "bookings.update",
+        "bookings.delete",
+        "bookings.getOperationHistory",
+        "bookings.getCheckoutAttempts"
+      ],
+      "note": "Full filtered paging and matching summary replace the capped list. Detailed create/review and independent details retain all fields and the actual calendar, notification, payment-renewal and checkout-review tools. Creation still lacks a durable client idempotency key and is not claimed fully recoverable.",
+      "evidence": [
+        "docs/audits/tenant-booking-workspace-source-2026-10-02/REPORT.md",
+        "docs/audits/tenant-booking-workspace-2026-10-02/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "client/src/components/merchant/BookingWorkspace.tsx",
+          "contains": "BookingOperations"
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/platform-integrations"
+      ],
+      "removed": [
+        "integrations.getByaanStatus",
+        "calendar.getStatus",
+        "integrations.getCurrentPlatform",
+        "salla.getConnection",
+        "zid.getConnection",
+        "woocommerce.getSettings",
+        "salla.disconnect",
+        "zid.disconnect",
+        "woocommerce.disconnect"
+      ],
+      "required": [
+        "integrations.workspace",
+        "calendar.settings",
+        "sheets.getStatus",
+        "integrations.testByaanConnection"
+      ],
+      "note": "A scoped platform snapshot and independent calendar/Sheets cards preserve statuses and navigation. Destructive disconnect buttons intentionally move to each platform workspace where the merchant reviews identity, retained data and consequences; they are not silently removed from the product.",
+      "evidence": [
+        "docs/audits/tenant-platform-source-2026-10-02/REPORT.md",
+        "docs/audits/tenant-platform-workspace-2026-10-02/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "client/src/components/merchant/PlatformIntegrationsWorkspace.tsx",
+          "contains": "salla:'/merchant/salla'"
+        },
+        {
+          "file": "client/src/components/merchant/PlatformIntegrationsWorkspace.tsx",
+          "contains": "zid:'/merchant/integrations/zid'"
+        },
+        {
+          "file": "client/src/components/merchant/PlatformIntegrationsWorkspace.tsx",
+          "contains": "woocommerce:'/merchant/woocommerce/settings'"
+        },
+        {
+          "route": "/merchant/salla",
+          "api": "salla.disconnect"
+        },
+        {
+          "route": "/merchant/integrations/zid",
+          "api": "zid.disconnectWorkspace"
+        },
+        {
+          "route": "/merchant/woocommerce/settings",
+          "api": "woocommerce.requestReviewedConnection"
+        }
+      ]
     }
   ]
 }
