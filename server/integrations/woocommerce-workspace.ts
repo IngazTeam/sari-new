@@ -4,7 +4,7 @@ import {getPool} from '../db/connection';
 import {bookingReadId} from '../../shared/booking-read';
 import {safePlatformUrl} from '../../shared/platform-workspace';
 import {wooWorkspaceSchema,wooLogsInput,wooLogsWorkspaceSchema,wooLogStates} from '../../shared/woocommerce-workspace';
-import {WOOCOMMERCE_WEBHOOK_TOPICS} from '../webhooks/woocommerce-security';
+import {WOOCOMMERCE_WEBHOOK_TOPICS,WOOCOMMERCE_ENDPOINT_PATTERN} from '../webhooks/woocommerce-security';
 type Executor=Pick<PoolConnection,'execute'>;
 export class WooWorkspaceFault extends Error {constructor(){super('WooCommerce workspace unavailable');}}
 export async function wooRows(tx:Executor,sql:string,args:Array<string|number|null>=[]):Promise<any[]>{const [r]=await tx.execute(sql,args);if(!Array.isArray(r))throw new WooWorkspaceFault();return r;}
@@ -39,8 +39,8 @@ export async function readWooWorkspace(actorId:number,merchantId:number){return 
   COALESCE(SUM(status IN ('pending','processing','failed')),0) AS awaiting,COALESCE(SUM(status='manual_review'),0) AS needsReview,COALESCE(SUM(status='suppressed'),0) AS suppressed,COALESCE(SUM(status NOT IN ('pending','processing','failed','manual_review','completed','suppressed')),0) AS unknownCount,
   MIN(CASE WHEN status IN ('pending','processing','failed') THEN created_at END) AS oldestPendingAt FROM woocommerce_webhook_receipts WHERE merchant_id=?`,[merchantId]);
  if(totals.length!==1||hooks.length!==1||grouped.some(g=>!wooLogStates.includes(g.state))||new Set(grouped.map(g=>g.state)).size!==grouped.length)throw new WooWorkspaceFault();
- const identityStored=!!row&&/^[a-f0-9]{48}$/.test(row.endpoint??'')&&Number(row.hasWebhookSecret)===1;
- const registrationsValid=registrations.every(r=>WOOCOMMERCE_WEBHOOK_TOPICS.includes(r.topic)&&/^[1-9][0-9]{0,31}$/.test(r.webhookId))&&new Set(registrations.map(r=>r.topic)).size===registrations.length&&new Set(registrations.map(r=>r.webhookId)).size===registrations.length;
+ const identityStored=!!row&&WOOCOMMERCE_ENDPOINT_PATTERN.test(row.endpoint??'')&&Number(row.hasWebhookSecret)===1;
+ const registrationsValid=registrations.every(r=>WOOCOMMERCE_WEBHOOK_TOPICS.includes(r.topic)&&/^[1-9][0-9]{0,19}$/.test(r.webhookId))&&new Set(registrations.map(r=>r.topic)).size===registrations.length&&new Set(registrations.map(r=>r.webhookId)).size===registrations.length;
  const registeredTopics=new Set(registrations.filter(r=>WOOCOMMERCE_WEBHOOK_TOPICS.includes(r.topic)).map(r=>r.topic)).size;
  const connectionStatus=!row?null:['connected','disconnected','error'].includes(row.connectionStatus)?row.connectionStatus:'unknown';
  const counts=(value:any)=>Object.fromEntries(Object.entries(value).map(([k,v])=>[k,wooCount(v)]));const {oldestPendingAt,unknownCount,storedCount,...health}=hooks[0];health.unknown=unknownCount;health.stored=storedCount;
