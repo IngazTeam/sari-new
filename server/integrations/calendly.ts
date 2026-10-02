@@ -1,11 +1,11 @@
 import crypto from 'node:crypto';
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
-import { protectedProcedure, router } from '../_core/trpc';
+import { permissionProcedure, router } from '../_core/trpc';
 import {
   deleteIntegrationByType,
   getIntegrationByType,
-  getMerchantByUserId,
+  getDb,
   getPool,
   replaceCalendlyIntegration,
   updateIntegrationLastSync,
@@ -75,11 +75,12 @@ function safeCalendlyMessage(error: unknown, fallback: string): string {
   return fallback;
 }
 
-async function requireMerchant(userId: number) {
-  const merchant = await getMerchantByUserId(userId);
-  if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-  return merchant;
-}
+const noInput=z.object({}).strict().optional();
+const unavailable=()=>new TRPCError({code:'INTERNAL_SERVER_ERROR',message:'calendly_dashboard:unavailable'});
+const calendlyDashboardProcedure=permissionProcedure('integrations.manage').use(async({next})=>{
+  try{if(!await getDb())throw unavailable();}catch{throw unavailable();}
+  const result=await next();if(!result.ok&&result.error.code==='INTERNAL_SERVER_ERROR')throw unavailable();return result;
+});
 
 async function withCalendlyConnectionLock<T>(merchantId: number, action: () => Promise<T>): Promise<T> {
   const pool = await getPool();
@@ -99,11 +100,11 @@ async function withCalendlyConnectionLock<T>(merchantId: number, action: () => P
 }
 
 export const calendlyRouter = router({
-  getConnection: protectedProcedure.query(async ({ ctx }) => {
-    const merchant = await requireMerchant(ctx.user.id);
-    const integration = await getIntegrationByType(merchant.id, 'calendly');
+  getConnection: calendlyDashboardProcedure.input(noInput).query(async ({ ctx }) => {
+    const merchantId = ctx.merchantId;
+    const integration = await getIntegrationByType(merchantId, 'calendly');
     if (!integration) return { connected: false as const };
-    const health = await getCalendlyWebhookHealth(merchant.id);
+    const health = await getCalendlyWebhookHealth(merchantId);
     return {
       connected: Boolean(integration.isActive),
       userName: integration.storeName,
@@ -117,12 +118,12 @@ export const calendlyRouter = router({
     };
   }),
 
-  connect: protectedProcedure
+  connect: calendlyDashboardProcedure
     .input(z.object({ apiKey: apiKeySchema }).strict())
     .mutation(async ({ ctx, input }) => {
-      const merchant = await requireMerchant(ctx.user.id);
-      return withCalendlyConnectionLock(merchant.id, async () => {
-        const previous = await getIntegrationByType(merchant.id, 'calendly');
+      const merchantId = ctx.merchantId;
+      return withCalendlyConnectionLock(merchantId, async () => {
+        const previous = await getIntegrationByType(merchantId, 'calendly');
         const endpointId = crypto.randomBytes(32).toString('base64url');
         const signingKey = crypto.randomBytes(48).toString('base64url');
         let subscriptionUri: string | null = null;
@@ -137,7 +138,7 @@ export const calendlyRouter = router({
             userUri: user.uri,
           });
           const integration = await replaceCalendlyIntegration({
-            merchantId: merchant.id,
+            merchantId: merchantId,
             storeName: typeof user.name === 'string' ? user.name.slice(0, 255) : 'Calendly User',
             storeUrl: user.uri,
             accessToken: input.apiKey,
@@ -167,23 +168,23 @@ export const calendlyRouter = router({
       });
     }),
 
-  disconnect: protectedProcedure.mutation(async ({ ctx }) => {
-    const merchant = await requireMerchant(ctx.user.id);
-    return withCalendlyConnectionLock(merchant.id, async () => {
-      const integration = await getIntegrationByType(merchant.id, 'calendly');
+  disconnect: calendlyDashboardProcedure.input(noInput).mutation(async ({ ctx }) => {
+    const merchantId = ctx.merchantId;
+    return withCalendlyConnectionLock(merchantId, async () => {
+      const integration = await getIntegrationByType(merchantId, 'calendly');
       if (integration?.accessToken && integration.webhookSubscriptionUri) {
         await deleteCalendlyWebhookSubscription(integration.accessToken, integration.webhookSubscriptionUri).catch(() => {
           console.warn('[Calendly] remote webhook cleanup failed during disconnect');
         });
       }
-      await deleteIntegrationByType(merchant.id, 'calendly');
+      await deleteIntegrationByType(merchantId, 'calendly');
       return { success: true, message: 'تم فصل حساب Calendly وإبطال نقطة الاستقبال المحلية' };
     });
   }),
 
-  syncNow: protectedProcedure.mutation(async ({ ctx }) => {
-    const merchant = await requireMerchant(ctx.user.id);
-    const integration = await getIntegrationByType(merchant.id, 'calendly');
+  syncNow: calendlyDashboardProcedure.input(noInput).mutation(async ({ ctx }) => {
+    const merchantId = ctx.merchantId;
+    const integration = await getIntegrationByType(merchantId, 'calendly');
     if (!integration?.accessToken || !integration.isActive) {
       throw new TRPCError({ code: 'NOT_FOUND', message: 'لم يتم العثور على تكامل Calendly نشط' });
     }
@@ -199,47 +200,48 @@ export const calendlyRouter = router({
     }
   }),
 
-  updateSettings: protectedProcedure
+  updateSettings: calendlyDashboardProcedure
     .input(z.object({
       syncToWhatsApp: z.boolean(),
     }).strict())
     .mutation(async ({ ctx, input }) => {
-      const merchant = await requireMerchant(ctx.user.id);
-      const integration = await getIntegrationByType(merchant.id, 'calendly');
+      const merchantId = ctx.merchantId;
+      const integration = await getIntegrationByType(merchantId, 'calendly');
       if (!integration) throw new TRPCError({ code: 'NOT_FOUND', message: 'لم يتم العثور على تكامل Calendly' });
       await updateIntegrationSettings(integration.id, input);
       return { success: true };
     }),
 
-  getUpcomingEvents: protectedProcedure
+  getUpcomingEvents: calendlyDashboardProcedure
     .input(z.object({ limit: z.number().int().min(1).max(20).default(5) }).strict())
     .query(async ({ ctx, input }) => {
-      const merchant = await requireMerchant(ctx.user.id);
-      const integration = await getIntegrationByType(merchant.id, 'calendly');
-      if (!integration?.accessToken || !integration.storeUrl) return [];
+      const merchantId = ctx.merchantId;
+      const integration = await getIntegrationByType(merchantId, 'calendly');
+      if (!integration?.isActive || !integration.accessToken || !integration.storeUrl) return [];
       try {
         const now = new Date().toISOString();
         const response = await calendlyApiRequest<{ collection?: any[] }>(
           `/scheduled_events?user=${encodeURIComponent(integration.storeUrl)}&status=active&min_start_time=${encodeURIComponent(now)}&count=${input.limit}`,
           integration.accessToken,
         );
-        return Array.isArray(response.collection) ? response.collection.slice(0, input.limit).map(event => ({
+        if (!Array.isArray(response?.collection)) throw unavailable();
+        return response.collection.slice(0, input.limit).map(event => ({
           uri: typeof event.uri === 'string' ? event.uri : '',
           name: typeof event.name === 'string' ? event.name.slice(0, 255) : 'Calendly',
           startTime: event.start_time,
           endTime: event.end_time,
           status: event.status,
           inviteeName: '-',
-        })) : [];
+        }));
       } catch {
-        return [];
+        throw unavailable();
       }
     }),
 
-  getEventTypes: protectedProcedure.query(async ({ ctx }) => {
-    const merchant = await requireMerchant(ctx.user.id);
-    const integration = await getIntegrationByType(merchant.id, 'calendly');
-    if (!integration?.accessToken || !integration.storeUrl) return [];
+  getEventTypes: calendlyDashboardProcedure.input(noInput).query(async ({ ctx }) => {
+    const merchantId = ctx.merchantId;
+    const integration = await getIntegrationByType(merchantId, 'calendly');
+    if (!integration?.isActive || !integration.accessToken || !integration.storeUrl) return [];
     try {
       const eventTypes = await listCalendlyCollection<any>(
         integration.accessToken,
@@ -254,15 +256,15 @@ export const calendlyRouter = router({
         active: eventType.active === true,
       }));
     } catch {
-      return [];
+      throw unavailable();
     }
   }),
 
-  getStats: protectedProcedure.query(async ({ ctx }) => {
-    const merchant = await requireMerchant(ctx.user.id);
-    const integration = await getIntegrationByType(merchant.id, 'calendly');
+  getStats: calendlyDashboardProcedure.input(noInput).query(async ({ ctx }) => {
+    const merchantId = ctx.merchantId;
+    const integration = await getIntegrationByType(merchantId, 'calendly');
     if (!integration) return null;
-    const stats = await getCalendlyAppointmentStats(merchant.id);
+    const stats = await getCalendlyAppointmentStats(merchantId);
     return {
       totalEvents: stats.total,
       upcomingEvents: stats.upcoming,

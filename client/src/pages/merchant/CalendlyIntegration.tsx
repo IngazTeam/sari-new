@@ -27,34 +27,37 @@ import {
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import i18n from '@/lib/i18n';
+import {KnowledgeWorkspaceScope} from '@/components/KnowledgeWorkspaceScope';
+const fresh={retry:false,staleTime:0,refetchOnMount:'always' as const,refetchOnWindowFocus:false};
 
-export default function CalendlyIntegration() {
+export default function CalendlyIntegration(){return <KnowledgeWorkspaceScope slot="calendly">{key=><CalendlyScreen key={key}/>}</KnowledgeWorkspaceScope>;}
+export function CalendlyScreen() {
   const { t } = useTranslation();
   const [apiKey, setApiKey] = useState('');
   const [isConnecting, setIsConnecting] = useState(false);
   const [syncToWhatsApp, setSyncToWhatsApp] = useState(false);
 
   // Get connection status
-  const { data: connection, isLoading, refetch } = trpc.calendly.getConnection.useQuery(
-    undefined,
+  const { data: connection, error: connectionError, isLoading, refetch } = trpc.calendly.getConnection.useQuery(
+    undefined, fresh,
   );
 
   // Get upcoming events
-  const { data: upcomingEvents } = trpc.calendly.getUpcomingEvents.useQuery(
+  const { data: upcomingEvents, error: eventsError, isLoading: eventsLoading, refetch: refreshEvents } = trpc.calendly.getUpcomingEvents.useQuery(
     { limit: 5 },
-    { enabled: connection?.connected }
+    { ...fresh, enabled: !connectionError && connection?.connected }
   );
 
   // Get event types
-  const { data: eventTypes } = trpc.calendly.getEventTypes.useQuery(
+  const { data: eventTypes, error: typesError, isLoading: typesLoading, refetch: refreshTypes } = trpc.calendly.getEventTypes.useQuery(
     undefined,
-    { enabled: connection?.connected }
+    { ...fresh, enabled: !connectionError && connection?.connected }
   );
 
   // Get stats
-  const { data: stats } = trpc.calendly.getStats.useQuery(
+  const { data: stats, error: statsError, isLoading: statsLoading, refetch: refreshStats } = trpc.calendly.getStats.useQuery(
     undefined,
-    { enabled: connection?.connected }
+    { ...fresh, enabled: !connectionError && connection?.connected }
   );
 
   // Mutations
@@ -68,7 +71,7 @@ export default function CalendlyIntegration() {
     },
     onError: (error: any) => {
       toast.error(t('calendlyIntegrationPage.text41'), {
-        description: error.message,
+        description: t('merchantUx.calendlyAccess.actionFailed'),
       });
     },
     onSettled: () => {
@@ -85,7 +88,7 @@ export default function CalendlyIntegration() {
     },
     onError: (error: any) => {
       toast.error(t('calendlyIntegrationPage.text43'), {
-        description: error.message,
+        description: t('merchantUx.calendlyAccess.actionFailed'),
       });
     },
   });
@@ -99,7 +102,7 @@ export default function CalendlyIntegration() {
     },
     onError: (error: any) => {
       toast.error(t('calendlyIntegrationPage.text45'), {
-        description: error.message,
+        description: t('merchantUx.calendlyAccess.actionFailed'),
       });
     },
   });
@@ -110,7 +113,7 @@ export default function CalendlyIntegration() {
     },
     onError: (error: any) => {
       toast.error(t('calendlyIntegrationPage.text46'), {
-        description: error.message,
+        description: t('merchantUx.calendlyAccess.actionFailed'),
       });
     },
   });
@@ -152,6 +155,8 @@ export default function CalendlyIntegration() {
     }
   }, [connection]);
 
+  const failure=(retry:()=>unknown)=><div role="alert" className="space-y-3 rounded-xl border p-4"><p>{t('merchantUx.calendlyAccess.unavailable')}</p><Button variant="outline" onClick={()=>void retry()}>{t('merchantUx.calendlyAccess.retry')}</Button></div>;
+  if(connectionError||!isLoading&&!connection)return <div dir={i18n.language.startsWith('ar')?'rtl':'ltr'}>{connectionError?.data?.code==='FORBIDDEN'?<p role="alert">{t('merchantUx.calendlyAccess.forbidden')}</p>:failure(refetch)}</div>;
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -161,7 +166,7 @@ export default function CalendlyIntegration() {
   }
 
   return (
-    <div className="container mx-auto py-8 px-4 max-w-5xl" dir="rtl">
+    <div className="container mx-auto py-8 px-4 max-w-5xl" dir={i18n.language.startsWith('ar')?'rtl':'ltr'}>
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">{t('calendlyIntegrationPage.text1')}</h1>
         <p className="text-muted-foreground">
@@ -197,25 +202,26 @@ export default function CalendlyIntegration() {
         </CardHeader>
         {connection?.connected && (
           <CardContent>
+            {statsError&&failure(refreshStats)}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center p-4 bg-muted/50 rounded-lg">
                 <Calendar className="h-5 w-5 mx-auto mb-2 text-blue-500" />
-                <div className="text-2xl font-bold">{stats?.totalEvents || 0}</div>
+                <div className="text-2xl font-bold">{statsError||statsLoading?'—':stats?.totalEvents??'—'}</div>
                 <div className="text-sm text-muted-foreground">{t('calendlyIntegrationPage.text5')}</div>
               </div>
               <div className="text-center p-4 bg-muted/50 rounded-lg">
                 <Clock className="h-5 w-5 mx-auto mb-2 text-green-500" />
-                <div className="text-2xl font-bold">{stats?.upcomingEvents || 0}</div>
+                <div className="text-2xl font-bold">{statsError||statsLoading?'—':stats?.upcomingEvents??'—'}</div>
                 <div className="text-sm text-muted-foreground">{t('calendlyIntegrationPage.text6')}</div>
               </div>
               <div className="text-center p-4 bg-muted/50 rounded-lg">
                 <Users className="h-5 w-5 mx-auto mb-2 text-orange-500" />
-                <div className="text-2xl font-bold">{eventTypes?.length || 0}</div>
+                <div className="text-2xl font-bold">{typesError||typesLoading?'—':eventTypes?.length??'—'}</div>
                 <div className="text-sm text-muted-foreground">{t('calendlyIntegrationPage.text7')}</div>
               </div>
               <div className="text-center p-4 bg-muted/50 rounded-lg">
                 <Bell className="h-5 w-5 mx-auto mb-2 text-purple-500" />
-                <div className="text-2xl font-bold">{stats?.remindersSent || 0}</div>
+                <div className="text-2xl font-bold">{statsError||statsLoading?'—':stats?.remindersSent??'—'}</div>
                 <div className="text-sm text-muted-foreground">
                   {i18n.language.startsWith('ar') ? 'تأكيدات واتساب مرسلة' : 'WhatsApp confirmations sent'}
                 </div>
@@ -257,7 +263,7 @@ export default function CalendlyIntegration() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {upcomingEvents && upcomingEvents.length > 0 ? (
+                {eventsError?failure(refreshEvents):eventsLoading?<p role="status">{t('merchantUx.calendlyAccess.loading')}</p>:upcomingEvents && upcomingEvents.length > 0 ? (
                   <div className="space-y-3">
                     {upcomingEvents.map((event: any, index: number) => (
                       <div key={index} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
@@ -409,7 +415,7 @@ export default function CalendlyIntegration() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {eventTypes && eventTypes.length > 0 ? (
+                {typesError?failure(refreshTypes):typesLoading?<p role="status">{t('merchantUx.calendlyAccess.loading')}</p>:eventTypes && eventTypes.length > 0 ? (
                   <div className="space-y-3">
                     {eventTypes.map((eventType: any, index: number) => (
                       <div key={index} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">

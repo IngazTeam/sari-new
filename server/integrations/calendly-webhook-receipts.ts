@@ -597,7 +597,7 @@ export async function getCalendlyAppointmentStats(merchantId: number): Promise<{
 }> {
   await ensureCalendlySchema();
   const pool = await getPool();
-  if (!pool) return { total: 0, upcoming: 0, remindersSent: 0 };
+  if (!pool) throw new CalendlyReceiptError('database_unavailable');
   const [rows] = await pool.execute<RowDataPacket[]>(
     `SELECT COUNT(*) AS total,
             SUM(status = 'active' AND start_at >= NOW(3)) AS upcoming,
