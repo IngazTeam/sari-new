@@ -5,6 +5,8 @@ import { getDb, getSallaConnectionByMerchantId, createSallaConnection, updateSal
 import { readSallaDashboardStatus, readSallaDashboardLogs } from './integrations/salla-dashboard-read';
 import { checkExistingIntegrations } from './integrations/platform-checker';
 import { safePlatformUrl } from '../shared/platform-workspace';
+import { sallaLogsInput } from '../shared/salla-workspace';
+import { readSallaWorkspace, readSallaLogsWorkspace } from './integrations/salla-workspace';
 
 class DashboardFault extends Error { constructor(readonly code: 'BAD_REQUEST'|'CONFLICT'|'NOT_FOUND', message: string) { super(message); } }
 async function guarded<T>(read: () => Promise<T>): Promise<T> {
@@ -13,6 +15,8 @@ async function guarded<T>(read: () => Promise<T>): Promise<T> {
 }
 const access = permissionProcedure('integrations.manage');
 export const sallaDashboardProcedures = {
+  workspace: access.query(({ ctx }) => guarded(() => readSallaWorkspace(ctx.user.id,ctx.merchantId))),
+  logsWorkspace: access.input(sallaLogsInput).query(({ ctx,input }) => guarded(() => readSallaLogsWorkspace(ctx.user.id,ctx.merchantId,input))),
   getConnection: access.query(({ ctx }) => guarded(() => readSallaDashboardStatus(ctx.merchantId))),
   getSyncLogs: access.query(({ ctx }) => guarded(() => readSallaDashboardLogs(ctx.merchantId))),
   connect: access.input(z.object({ storeUrl: z.string().trim().max(2048).url().refine(value => !!safePlatformUrl(value), 'Invalid store URL'), accessToken: z.string().trim().min(10).max(8192).regex(/^[\x21-\x7e]+$/) }).strict()).mutation(({ ctx,input }) => guarded(async () => {
