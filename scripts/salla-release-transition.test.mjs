@@ -131,6 +131,15 @@ for (const body of ['{', 'null', '[]', '{"version":1}', '{"version":1,"capabilit
 }
 
 for (const entry of Object.keys(sources)) {
+  test(`${entry}: previous WooCommerce writers stop before retiring unreviewed dashboard writes`, t => {
+    const f = fixture(t);
+    const previous = f.release('previous WooCommerce dashboard release', marker(requiredReleaseCapabilities.filter(value => value !== 'woocommerce-dashboard-reviewed-writes-0191')));
+    const before = ['sari', 'sari-inbound'].map(name => application(previous, name));
+    const after = ['sari', 'sari-inbound'].map(name => application(previous, name, 'stopped', 0));
+    const result = shell(f, entry, { before, after });
+    assert.equal(result.status, 0, result.stderr);
+    assert.deepEqual(result.trace.filter(line => !line.startsWith('describe ')), ['jlist ', 'stop sari', 'stop sari-inbound', 'jlist ', 'save ', 'MIGRATE']);
+  });
   test(`${entry}: previous WooCommerce writers stop before reviewed notification transport`, t => {
     const f = fixture(t);
     const previous = f.release('previous WooCommerce notice release', marker(requiredReleaseCapabilities.filter(value => value !== 'woocommerce-reviewed-notices-0191')));

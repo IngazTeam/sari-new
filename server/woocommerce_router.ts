@@ -1,4 +1,3 @@
-import crypto from 'node:crypto';
 import {wooSyncRequest} from '../shared/woocommerce-sync-request';
 import {wooOperationLookup} from '../shared/woocommerce-operation';
 import {requestReviewedWooSync,requestReviewedWooReconciliation} from './integrations/woocommerce-sync-request';
@@ -15,7 +14,7 @@ import { z } from 'zod';
 import { merchantProcedure, permissionProcedure, router } from './_core/trpc';
 import {hasPermission,type Permission} from './_core/permissions';
 import {wooAccessSchema} from '../shared/woocommerce-access';
-import {withWooDashboardAuthority,assertWooDashboardAuthority} from './integrations/woocommerce-dashboard-authority';
+import {withWooDashboardAuthority} from './integrations/woocommerce-dashboard-authority';
 import {readWooWorkspace,readWooLogsWorkspace} from './integrations/woocommerce-workspace';
 import {wooLogsInput} from '../shared/woocommerce-workspace';
 import {readWooProductsWorkspace,readWooOrdersWorkspace,readWooOrderDetailsWorkspace} from './integrations/woocommerce-data-workspace';
@@ -23,9 +22,7 @@ import {wooProductsInput,wooOrdersInput,wooOrderDetailsInput} from '../shared/wo
 import {wooAnalyticsInput} from '../shared/woocommerce-analytics-workspace';
 import {readWooAnalyticsWorkspace} from './integrations/woocommerce-analytics-workspace';
 import {
-  createWooCommerceSyncLog,
   getDb,
-  deleteWooCommerceIntegration,
   getConversationsByMerchant,
   getLatestWooCommerceSyncLog,
   getWooCommerceOrderByIdForMerchant,
@@ -38,41 +35,10 @@ import {
   getWooCommerceSettings,
   getWooCommerceSyncLogs,
   getWooCommerceWebhookRegistrations,
-  reconcileWooCommerceSnapshotAndWebhookIncidents,
-  saveVerifiedWooCommerceSettings,
   searchWooCommerceProducts,
-  updateWooCommerceConnectionStatus,
-  updateWooCommerceSettings,
-  updateWooCommerceSyncLog,
-  upsertWooCommerceOrdersSnapshot,
-  upsertWooCommerceProductsSnapshot,
 } from './db';
-import {
-  canonicalWooStoreUrl,
-  createWooCommerceClient,
-  WooCommerceApiError,
-} from './woocommerce';
-import {
-  fetchWooCommerceOrders,
-  fetchWooCommerceProducts,
-  normalizeWooCommerceOrder,
-  normalizeWooCommerceProduct,
-  wooSyncTimestamp,
-} from './integrations/woocommerce-sync';
-import {
-  deleteWooCommerceWebhookRegistrations,
-  registerWooCommerceWebhooks,
-  verifyWooCommerceWebhookRegistrations,
-} from './integrations/woocommerce-webhook-registration';
+import {WooCommerceApiError} from './woocommerce';
 import { getWooCommerceWebhookHealth } from './integrations/woocommerce-webhook-receipts';
-import { withWooCommerceMerchantLock, WooCommerceMerchantLockError } from './integrations/woocommerce-lock';
-import {
-  withWooCommerceRequestAbortSignal,
-  type WooCommerceRequestAbortContext,
-} from './integrations/woocommerce-request-lifecycle';
-import { validateNewPlatformConnection } from './integrations/platform-checker';
-import { sendMerchantWhatsApp, WhatsAppDeliveryStateError } from './channels/whatsapp/service';
-
 const pageInput = z.object({
   page: z.number().int().min(1).max(10_000).default(1),
   limit: z.number().int().min(1).max(100).default(50),
@@ -125,48 +91,8 @@ async function reviewedWooAction<T>(work:()=>Promise<T>){
   }
 }
 
-async function withWooCommerceLock<T>(merchantId: number, action: () => Promise<T>, signal?: AbortSignal): Promise<T> {
-  try {
-    return await withWooCommerceMerchantLock(merchantId, action, signal);
-  } catch (error) {
-    if (error instanceof WooCommerceMerchantLockError) {
-      if (error.code === 'merchant_lock_timeout') {
-        throw new TRPCError({ code: 'CONFLICT', message: 'توجد عملية WooCommerce أخرى قيد التنفيذ' });
-      }
-      if (error.code === 'operation_capacity') {
-        throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'خدمة WooCommerce مشغولة؛ حاول بعد قليل' });
-      }
-      if (error.code === 'operation_cancelled') {
-        throw new TRPCError({ code: 'CLIENT_CLOSED_REQUEST', message: 'تم إلغاء الطلب' });
-      }
-      throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'قاعدة البيانات غير متاحة' });
-    }
-    throw error;
-  }
-}
-
-async function withWooCommerceRequestLock<T>(
-  ctx: WooCommerceRequestAbortContext,
-  merchantId: number,
-  action: () => Promise<T>,
-): Promise<T> {
-  return withWooCommerceRequestAbortSignal(
-    ctx,
-    signal => withWooCommerceLock(merchantId, async()=>{await assertWooDashboardAuthority(merchantId);return action();}, signal),
-  );
-}
-
-async function cleanupRemoteWebhookRegistrations(
-  settings: Parameters<typeof createWooCommerceClient>[0],
-  registrations: Awaited<ReturnType<typeof getWooCommerceWebhookRegistrations>>,
-): Promise<void> {
-  if (!registrations.length) return;
-  try {
-    await deleteWooCommerceWebhookRegistrations(createWooCommerceClient(settings), registrations);
-  } catch {
-    console.warn('[WooCommerce] unable to initialize remote webhook cleanup');
-  }
-}
+// Old browser tabs must reload; never translate an unreviewed call into a new operation.
+function retiredWooWrite():never {throw new TRPCError({code:'PRECONDITION_FAILED',message:'woo_dashboard:reload'});}
 
 async function settingsDto(settings: NonNullable<Awaited<ReturnType<typeof getWooCommerceSettings>>>) {
   const registrations = await getWooCommerceWebhookRegistrations(settings.merchantId);
@@ -263,109 +189,6 @@ function filterOrdersByDate<T extends { orderDate: string }>(orders: T[], range:
   });
 }
 
-async function runManualSync(ctx: WooCommerceRequestAbortContext, merchantId: number, type: 'products' | 'orders') {
-  return withWooCommerceRequestLock(ctx, merchantId, async () => {
-    const settings = await getWooCommerceSettings(merchantId);
-    if (!settings || settings.isActive !== 1 || settings.connectionStatus !== 'connected') {
-      throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'يجب ربط WooCommerce والتحقق منه أولًا' });
-    }
-    const started = Date.now();
-    const startedAt = wooSyncTimestamp(new Date(started));
-    const logId = await createWooCommerceSyncLog({
-      merchantId,
-      syncType: type,
-      direction: 'import',
-      status: 'running',
-      startedAt,
-    });
-    try {
-      const client = createWooCommerceClient(settings);
-      if (type === 'products') {
-        const remote = await fetchWooCommerceProducts(client);
-        const normalized = remote.map(product => normalizeWooCommerceProduct(merchantId, product, startedAt));
-        await upsertWooCommerceProductsSnapshot(merchantId, normalized, true);
-      } else {
-        const remote = await fetchWooCommerceOrders(client);
-        const normalized = remote.map(order => normalizeWooCommerceOrder(merchantId, order, startedAt));
-        await upsertWooCommerceOrdersSnapshot(merchantId, normalized, true);
-      }
-      const count = type === 'products'
-        ? (await getWooCommerceProductsStats(merchantId)).total
-        : (await getWooCommerceOrdersStats(merchantId)).total;
-      await updateWooCommerceSyncLog(logId, {
-        status: 'success',
-        itemsProcessed: count,
-        itemsSuccess: count,
-        itemsFailed: 0,
-        completedAt: wooSyncTimestamp(),
-        duration: Math.max(0, Math.floor((Date.now() - started) / 1000)),
-        errorMessage: null,
-      });
-      await updateWooCommerceSettings(merchantId, { lastSyncAt: wooSyncTimestamp() });
-      return { success: true, count };
-    } catch (error) {
-      await updateWooCommerceSyncLog(logId, {
-        status: 'failed',
-        completedAt: wooSyncTimestamp(),
-        duration: Math.max(0, Math.floor((Date.now() - started) / 1000)),
-        errorMessage: error instanceof WooCommerceApiError ? error.code : 'sync_failed',
-      }).catch(() => undefined);
-      throw publicWooError(error);
-    }
-  });
-}
-
-async function runFullWooCommerceReconciliation(ctx: WooCommerceRequestAbortContext, merchantId: number) {
-  return withWooCommerceRequestLock(ctx, merchantId, async () => {
-    const settings = await getWooCommerceSettings(merchantId);
-    if (!settings || settings.isActive !== 1 || settings.connectionStatus !== 'connected') {
-      throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'يجب ربط WooCommerce والتحقق منه أولًا' });
-    }
-    const started = Date.now();
-    const startedAt = wooSyncTimestamp(new Date(started));
-    const logId = await createWooCommerceSyncLog({
-      merchantId,
-      syncType: 'manual',
-      direction: 'import',
-      status: 'running',
-      startedAt,
-    });
-    try {
-      const client = createWooCommerceClient(settings);
-      const [remoteProducts, remoteOrders] = await Promise.all([
-        fetchWooCommerceProducts(client),
-        fetchWooCommerceOrders(client),
-      ]);
-      const observedAt = wooSyncTimestamp();
-      const result = await reconcileWooCommerceSnapshotAndWebhookIncidents({
-        merchantId,
-        products: remoteProducts.map(product => normalizeWooCommerceProduct(merchantId, product, observedAt)),
-        orders: remoteOrders.map(order => normalizeWooCommerceOrder(merchantId, order, observedAt)),
-        observedAt,
-      });
-      const total = result.products + result.orders;
-      await updateWooCommerceSyncLog(logId, {
-        status: 'success',
-        itemsProcessed: total,
-        itemsSuccess: total,
-        itemsFailed: 0,
-        completedAt: wooSyncTimestamp(),
-        duration: Math.max(0, Math.floor((Date.now() - started) / 1000)),
-        errorMessage: null,
-      });
-      return { success: true, ...result };
-    } catch (error) {
-      await updateWooCommerceSyncLog(logId, {
-        status: 'failed',
-        completedAt: wooSyncTimestamp(),
-        duration: Math.max(0, Math.floor((Date.now() - started) / 1000)),
-        errorMessage: error instanceof WooCommerceApiError ? error.code : 'reconciliation_failed',
-      }).catch(() => undefined);
-      throw publicWooError(error);
-    }
-  });
-}
-
 export const woocommerceRouter = router({
   getAccess: wooAccessProcedure().input(noInput).query(({ctx})=>wooAccessSchema.parse({actorId:ctx.user.id,merchantId:tenantId(ctx),integrationsManage:hasPermission(ctx.merchantRole,'integrations.manage'),ordersManage:hasPermission(ctx.merchantRole,'orders.manage'),analyticsRead:hasPermission(ctx.merchantRole,'analytics.read')})),
   requestReviewedNotification: wooAccessProcedure('orders.manage').input(wooOrderNotificationRequest).mutation(({ctx,input})=>reviewedWooAction(()=>requestReviewedWooNotification(ctx.user.id,tenantId(ctx),input))),
@@ -395,143 +218,11 @@ export const woocommerceRouter = router({
       consumerKey: z.string().trim().max(160).optional(),
       consumerSecret: z.string().trim().max(160).optional(),
     }).strict())
-    .mutation(async ({ ctx, input }) => {
-      const merchantId = tenantId(ctx);
-      try {
-        return await withWooCommerceRequestLock(ctx, merchantId, async () => {
-          const existing = await getWooCommerceSettings(merchantId);
-          if (!existing) await validateNewPlatformConnection(merchantId, 'WooCommerce');
-          const storeUrl = canonicalWooStoreUrl(input.storeUrl);
-          // Saved credentials are bound to the verified store root, including its path.
-          // A new destination must supply both credentials explicitly before any request.
-          if(existing&&(!input.consumerKey||!input.consumerSecret)&&storeUrl!==canonicalWooStoreUrl(existing.storeUrl)){
-            throw new TRPCError({code:'BAD_REQUEST',message:'أدخل مفتاحًا وسرًا جديدين عند تغيير رابط متجر WooCommerce'});
-          }
-          const consumerKey = input.consumerKey || existing?.consumerKey;
-          const consumerSecret = input.consumerSecret || existing?.consumerSecret;
-          if (!consumerKey || !consumerSecret) {
-            throw new TRPCError({ code: 'BAD_REQUEST', message: 'مفتاح WooCommerce وسرّه مطلوبان للربط الأول' });
-          }
-          const client = createWooCommerceClient({ storeUrl, consumerKey, consumerSecret });
-          const storeInfo = await client.testConnection();
-          const previousRegistrations = existing
-            ? await getWooCommerceWebhookRegistrations(merchantId)
-            : [];
-          const webhookEndpointId = crypto.randomBytes(32).toString('base64url');
-          const webhookSigningSecret = crypto.randomBytes(48).toString('base64url');
-          const registrations = await registerWooCommerceWebhooks({
-            client,
-            endpointId: webhookEndpointId,
-            signingSecret: webhookSigningSecret,
-          });
-          const now = wooSyncTimestamp();
-          try {
-            await saveVerifiedWooCommerceSettings({
-              merchantId,
-              storeUrl,
-              consumerKey,
-              consumerSecret,
-              webhookEndpointId,
-              webhookSigningSecret,
-              isActive: 1,
-              connectionStatus: 'connected',
-              lastTestAt: now,
-              autoSyncProducts: 0,
-              autoSyncOrders: 0,
-              autoSyncCustomers: 0,
-              syncInterval: 60,
-              storeVersion: storeInfo.version || null,
-              storeName: storeInfo.name || null,
-              storeCurrency: storeInfo.currency || null,
-            }, registrations);
-          } catch (error) {
-            await deleteWooCommerceWebhookRegistrations(client, registrations);
-            throw error;
-          }
-          if (existing && previousRegistrations.length) {
-            await cleanupRemoteWebhookRegistrations(existing, previousRegistrations);
-          }
-          return { success: true, connected: true, webhookReady: true };
-        });
-      } catch (error) {
-        throw publicWooError(error);
-      }
-    }),
+    .mutation(retiredWooWrite),
 
-  testConnection: wooAccessProcedure('integrations.manage').input(noInput).mutation(async ({ ctx }) => {
-    const merchantId = tenantId(ctx);
-    try {
-      return await withWooCommerceRequestLock(ctx, merchantId, async () => {
-        const settings = await getWooCommerceSettings(merchantId);
-        if (!settings) throw new TRPCError({ code: 'NOT_FOUND', message: 'لم يتم ربط WooCommerce' });
-        const client = createWooCommerceClient(settings);
-        const info = await client.testConnection();
-        const previousRegistrations = await getWooCommerceWebhookRegistrations(merchantId);
-        const storedWebhookIdentityReady = Boolean(
-          settings.webhookEndpointId
-          && settings.webhookSigningSecret
-          && previousRegistrations.length === 6,
-        );
-        const webhookReady = storedWebhookIdentityReady
-          && await verifyWooCommerceWebhookRegistrations({
-            client,
-            endpointId: settings.webhookEndpointId!,
-            registrations: previousRegistrations,
-          });
-        if (webhookReady) {
-          await updateWooCommerceConnectionStatus(merchantId, 'connected', info);
-          return { success: true, connected: true, webhookReady: true };
-        }
-        const webhookEndpointId = crypto.randomBytes(32).toString('base64url');
-        const webhookSigningSecret = crypto.randomBytes(48).toString('base64url');
-        const registrations = await registerWooCommerceWebhooks({
-          client,
-          endpointId: webhookEndpointId,
-          signingSecret: webhookSigningSecret,
-        });
-        try {
-          await saveVerifiedWooCommerceSettings({
-            merchantId,
-            storeUrl: settings.storeUrl,
-            consumerKey: settings.consumerKey,
-            consumerSecret: settings.consumerSecret,
-            webhookEndpointId,
-            webhookSigningSecret,
-            isActive: 1,
-            connectionStatus: 'connected',
-            lastSyncAt: settings.lastSyncAt,
-            lastTestAt: wooSyncTimestamp(),
-            autoSyncProducts: 0,
-            autoSyncOrders: 0,
-            autoSyncCustomers: 0,
-            syncInterval: settings.syncInterval,
-            storeVersion: info.version || settings.storeVersion,
-            storeName: info.name || settings.storeName,
-            storeCurrency: info.currency || settings.storeCurrency,
-          }, registrations);
-        } catch (error) {
-          await deleteWooCommerceWebhookRegistrations(client, registrations);
-          throw error;
-        }
-        await cleanupRemoteWebhookRegistrations(settings, previousRegistrations);
-        return { success: true, connected: true, webhookReady: true };
-      });
-    } catch (error) {
-      if (!(error instanceof TRPCError)) await updateWooCommerceConnectionStatus(merchantId, 'error').catch(() => undefined);
-      throw publicWooError(error);
-    }
-  }),
+  testConnection: wooAccessProcedure('integrations.manage').input(noInput).mutation(retiredWooWrite),
 
-  disconnect: wooAccessProcedure('integrations.manage').input(noInput).mutation(async ({ ctx }) => {
-    const merchantId = tenantId(ctx);
-    await withWooCommerceRequestLock(ctx, merchantId, async () => {
-      const settings = await getWooCommerceSettings(merchantId);
-      const registrations = await getWooCommerceWebhookRegistrations(merchantId);
-      if (settings) await cleanupRemoteWebhookRegistrations(settings, registrations);
-      await deleteWooCommerceIntegration(merchantId);
-    });
-    return { success: true };
-  }),
+  disconnect: wooAccessProcedure('integrations.manage').input(noInput).mutation(retiredWooWrite),
 
   getProducts: wooAccessProcedure().input(pageInput).query(async ({ ctx, input }) => {
     const merchantId = tenantId(ctx);
@@ -544,10 +235,7 @@ export const woocommerceRouter = router({
     .input(z.object({ search: z.string().trim().min(3).max(120), limit: z.number().int().min(1).max(50).default(20) }).strict())
     .query(async ({ ctx, input }) => (await searchWooCommerceProducts(tenantId(ctx), input.search, input.limit)).map(productDto)),
 
-  syncProducts: wooAccessProcedure('integrations.manage').input(noInput).mutation(async ({ ctx }) => {
-    const result = await runManualSync(ctx, tenantId(ctx), 'products');
-    return { ...result, message: `تمت مزامنة ${result.count} منتج من WooCommerce` };
-  }),
+  syncProducts: wooAccessProcedure('integrations.manage').input(noInput).mutation(retiredWooWrite),
 
   getOrders: wooAccessProcedure()
     .input(pageInput.extend({ status: orderStatus.optional() }))
@@ -568,14 +256,9 @@ export const woocommerceRouter = router({
     return orderDto(order);
   }),
 
-  syncOrders: wooAccessProcedure('integrations.manage').input(noInput).mutation(async ({ ctx }) => {
-    const result = await runManualSync(ctx, tenantId(ctx), 'orders');
-    return { ...result, message: `تمت مزامنة ${result.count} طلب من WooCommerce` };
-  }),
+  syncOrders: wooAccessProcedure('integrations.manage').input(noInput).mutation(retiredWooWrite),
 
-  reconcileWebhookIncidents: wooAccessProcedure('integrations.manage').input(noInput).mutation(async ({ ctx }) => {
-    return runFullWooCommerceReconciliation(ctx, tenantId(ctx));
-  }),
+  reconcileWebhookIncidents: wooAccessProcedure('integrations.manage').input(noInput).mutation(retiredWooWrite),
 
   getSyncLogs: wooAccessProcedure('integrations.manage')
     .input(z.object({ limit: z.number().int().min(1).max(100).default(25) }).strict())
@@ -587,66 +270,11 @@ export const woocommerceRouter = router({
 
   updateOrderStatus: wooAccessProcedure('orders.manage')
     .input(z.object({ orderId: z.number().int().positive(), status: orderStatus, note: z.string().trim().max(1_000).optional() }).strict())
-    .mutation(async ({ ctx, input }) => {
-      const merchantId = tenantId(ctx);
-      try {
-        return await withWooCommerceRequestLock(ctx, merchantId, async () => {
-          const order = await getWooCommerceOrderByIdForMerchant(merchantId, input.orderId);
-          if (!order) throw new TRPCError({ code: 'NOT_FOUND', message: 'الطلب غير موجود' });
-          const settings = await getWooCommerceSettings(merchantId);
-          if (!settings || settings.connectionStatus !== 'connected') {
-            throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'اتصال WooCommerce غير جاهز' });
-          }
-          const canonical = await createWooCommerceClient(settings).updateOrder(order.wooOrderId, {
-            status: input.status,
-            ...(input.note ? { customer_note: input.note } : {}),
-          });
-          const normalized = normalizeWooCommerceOrder(merchantId, canonical, wooSyncTimestamp());
-          await upsertWooCommerceOrdersSnapshot(merchantId, [normalized], false);
-          const updated = await getWooCommerceOrderByIdForMerchant(merchantId, input.orderId);
-          if (!updated) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'تعذر قراءة الطلب بعد التحديث' });
-          return { success: true, order: orderDto(updated) };
-        });
-      } catch (error) {
-        throw publicWooError(error);
-      }
-    }),
+    .mutation(retiredWooWrite),
 
   sendOrderNotification: wooAccessProcedure('orders.manage')
     .input(z.object({ orderId: z.number().int().positive(), message: z.string().trim().min(1).max(2_000).optional() }).strict())
-    .mutation(async ({ ctx, input }) => {
-      const merchantId = tenantId(ctx);
-      const order = await getWooCommerceOrderByIdForMerchant(merchantId, input.orderId);
-      if (!order) throw new TRPCError({ code: 'NOT_FOUND', message: 'الطلب غير موجود' });
-      if (!order.customerPhone) throw new TRPCError({ code: 'BAD_REQUEST', message: 'لا يوجد رقم هاتف صالح لهذا الطلب' });
-      const defaultMessage = `مرحبًا ${order.customerName || ''}\n\nتم تحديث طلبك #${order.orderNumber}.\nالحالة: ${order.status}\nالإجمالي: ${order.total} ${order.currency}`;
-      const message = input.message || defaultMessage;
-      const messageDigest = crypto.createHash('sha256').update(message, 'utf8').digest('hex').slice(0, 24);
-      try {
-        await assertWooDashboardAuthority(merchantId);
-        const sent = await sendMerchantWhatsApp({
-          merchantId,
-          idempotencyKey: `woo-order:${merchantId}:${order.wooOrderId}:${order.status}:${messageDigest}`,
-          to: order.customerPhone,
-          kind: 'text',
-          text: message,
-          retryFailed: true,
-        });
-        if (sent.accepted && sent.providerMessageId) {
-          return { success: true, messageId: sent.providerMessageId, duplicate: sent.duplicate };
-        }
-        if (sent.errorCode === 'delivery_in_progress') {
-          throw new TRPCError({ code: 'CONFLICT', message: 'حالة تسليم الرسالة غير محسومة؛ لن نعيد إرسالها تلقائيًا' });
-        }
-        throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'تعذر إرسال الرسالة عبر قناة WhatsApp النشطة' });
-      } catch (error) {
-        if (error instanceof TRPCError) throw error;
-        if (error instanceof WhatsAppDeliveryStateError) {
-          throw new TRPCError({ code: 'CONFLICT', message: 'حالة تسليم الرسالة غير محسومة؛ راجع سجل التسليم قبل المحاولة' });
-        }
-        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'تعذر الوصول إلى خدمة إرسال WhatsApp' });
-      }
-    }),
+    .mutation(retiredWooWrite),
 
   getSalesStats: wooAccessProcedure('analytics.read')
     .input(dateRangeInput.extend({ period: z.enum(['daily', 'weekly', 'monthly']).default('daily') }))

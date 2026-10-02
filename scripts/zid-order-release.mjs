@@ -21,6 +21,7 @@ export const requiredReleaseCapabilities = Object.freeze([
   'woocommerce-atomic-admission-v1',
   'woocommerce-reviewed-sync-0191',
   'woocommerce-reviewed-notices-0191',
+  'woocommerce-dashboard-reviewed-writes-0191',
 ]);
 
 export function assertZidOrderReleaseCompatible(directory) {
