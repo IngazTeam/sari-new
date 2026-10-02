@@ -1882,7 +1882,7 @@ sariPlatformRouter.post('/request-resync', async (req: PlatformRequest, res: Res
   if (!merchant) return merchantNotFound(res);
 
   try {
-    const { getByaanConnection, requestByaanResync, updateByaanSyncStatus } = await import('../integrations/byaan');
+    const { getByaanConnection, requestByaanResync } = await import('../integrations/byaan');
     const connection = await getByaanConnection(merchant.id);
 
     if (!connection || !connection.api_base_url) {
@@ -1892,23 +1892,22 @@ sariPlatformRouter.post('/request-resync', async (req: PlatformRequest, res: Res
       });
     }
 
-    // Mark sync status as 'syncing'
-    await updateByaanSyncStatus(merchant.id, 'syncing');
 
     const result = await requestByaanResync(merchant.id);
     if (!result.success) {
-      await updateByaanSyncStatus(merchant.id, 'error', result.error || 'Connection failed');
       return res.status(502).json({
         success: false,
-        message: 'Failed to reach the verified Byaan API',
-        messageAr: 'فشل الاتصال الآمن بـ API بيان الموثق',
+        outcome: result.receipt.outcome, requestId: result.receipt.requestId, retryable: false,
+        message: 'Byaan did not acknowledge the request; do not automatically repeat it',
+        messageAr: 'لم نتأكد من قبول بيان للطلب؛ لا تُعد إرساله تلقائيًا',
       });
     }
     const { logBrainActivity } = await import('../routers-sari-brain');
-    await logBrainActivity(merchant.id, 'settings_changed', 'طلب إعادة مزامنة موقع من بيان — تم بنجاح', { source: 'platform' });
+    await logBrainActivity(merchant.id, 'settings_changed', 'قبل بيان طلب إعادة المزامنة — الاكتمال غير مؤكد', { source: 'platform' }).catch(() => {});
     return res.status(202).json({
       success: true,
       accepted: true,
+      requestId: result.receipt.requestId,
       status: 'queued',
       message: 'Signed resync request sent to Byaan successfully',
       messageAr: 'تم إرسال طلب إعادة المزامنة الموقع لبيان بنجاح',

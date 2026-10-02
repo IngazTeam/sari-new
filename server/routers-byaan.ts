@@ -14,6 +14,8 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { merchantProcedure, permissionProcedure, router } from "./_core/trpc";
 import { getPool } from './db';
+import { byaanResyncRequest, byaanResyncLookup } from '../shared/byaan-resync';
+import { requestReviewedByaanResync, readByaanResyncAttempt } from './integrations/byaan-resync';
 import { hasPermission } from './_core/permissions';
 import { byaanDataInput, byaanFaqChangeInput } from '../shared/byaan-data-workspace';
 import { readByaanDataWorkspace } from './integrations/byaan-data-workspace';
@@ -83,39 +85,16 @@ function parseEnrolledCourseNames(value: unknown): string[] {
   }
 }
 
-// PEN-BYAAN-06: Rate limiter for resync mutation (3 per 5 min per merchant)
-const resyncLimits = new Map<number, number[]>();
-function checkResyncLimit(merchantId: number): boolean {
-  const now = Date.now();
-  const window = 5 * 60_000; // 5 minutes
-  const maxCalls = 3;
-  let calls = resyncLimits.get(merchantId) || [];
-  calls = calls.filter(t => now - t < window);
-  if (calls.length >= maxCalls) return false;
-  calls.push(now);
-  resyncLimits.set(merchantId, calls);
-  return true;
-}
-
-// NQ-2: Register memory cleanup
-import('./cron/memory-cleanup').then(({ registerMemoryCleanup }) => {
-  registerMemoryCleanup('byaan-resync', () => {
-    const now = Date.now();
-    let evicted = 0;
-    for (const [key, calls] of Array.from(resyncLimits.entries())) {
-      const fresh = calls.filter((t: number) => now - t < 600_000);
-      if (fresh.length === 0) { resyncLimits.delete(key); evicted++; }
-      else resyncLimits.set(key, fresh);
-    }
-    return evicted;
-  });
-}).catch(() => {});
-
 // ═══════════════════════════════════════════════════════════════
 // Router
 // ═══════════════════════════════════════════════════════════════
 
 export const byaanRouter = router({
+  requestResync: permissionProcedure('integrations.manage').input(byaanResyncRequest).mutation(async ({ ctx, input }) =>
+    dashboardGuard(() => requestReviewedByaanResync(ctx.user.id, ctx.merchantId, input))),
+  resyncAttempt: permissionProcedure('integrations.manage').input(byaanResyncLookup).query(async ({ ctx, input }) =>
+    dashboardGuard(() => readByaanResyncAttempt(ctx.user.id, ctx.merchantId, input))),
+
   dataWorkspace: merchantProcedure.input(byaanDataInput).query(async ({ ctx, input }) => dashboardGuard(async () => {
     const permission = input.kind === 'trainees' ? 'customers.manage' : 'bot_settings.manage';
     if (!hasPermission(ctx.merchantRole, permission)) throw new ByaanDashboardFault('forbidden');
@@ -250,18 +229,10 @@ export const byaanRouter = router({
   triggerResync: permissionProcedure('integrations.manage').mutation(async ({ ctx }) => dashboardGuard(async () => {
     const { merchant } = await requireActiveByaanMerchant(ctx.merchantId);
 
-    // PEN-BYAAN-06: Rate limit resync (3 per 5 min)
-    if (!checkResyncLimit(merchant.id)) {
-      throw new ByaanDashboardFault('rate_limited');
-    }
-    const { requestByaanResync, updateByaanSyncStatus } = await import('./integrations/byaan');
+    const { requestByaanResync } = await import('./integrations/byaan');
+    const result = await requestByaanResync(merchant.id, ctx.user.id);
+    if (!result.success) throw new ByaanDashboardFault('provider');
+    return { success: true, message: 'قبل بيان طلب المزامنة؛ لم نتأكد من اكتمالها بعد', receipt: result.receipt };
 
-    await updateByaanSyncStatus(merchant.id, 'syncing');
-    const result = await requestByaanResync(merchant.id);
-    if (!result.success) {
-      await updateByaanSyncStatus(merchant.id, 'error', result.error);
-      throw new ByaanDashboardFault('provider');
-    }
-    return { success: true, message: 'تم طلب إعادة المزامنة من بيان عبر طلب موقع' };
   })),
 });

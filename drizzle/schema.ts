@@ -4061,6 +4061,17 @@ export const byaanSalesOperations = mysqlTable("byaan_sales_operations", {
   updatedAt: datetime("updated_at", { mode: 'string', fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
 }, table => [uniqueIndex("byaan_sales_request").on(table.merchantId, table.requestId)]);
 
+export const byaanResyncRequests = mysqlTable("byaan_resync_requests", {
+  id: int().autoincrement().primaryKey(),
+  merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+  actorId: int("actor_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  requestId: varchar("request_id", { length: 36 }).notNull(),
+  connectionRevision: varchar("connection_revision", { length: 64 }).notNull(),
+  state: varchar({ length: 16 }).notNull(),
+  createdAt: datetime("created_at", { mode: 'string', fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+  updatedAt: datetime("updated_at", { mode: 'string', fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+}, table => [uniqueIndex("uq_byaan_resync_request").on(table.merchantId, table.requestId), index("idx_byaan_resync_rate").on(table.merchantId, table.createdAt)]);
+
 export const byaanWebhookReceipts = mysqlTable("byaan_webhook_receipts", {
 	id: int().autoincrement().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),

@@ -27,7 +27,7 @@ for (const mounted of [false, true]) {
     expect(m.access).toHaveBeenCalledWith(7, selected); expect(m.read).toHaveBeenCalledWith(7, selected);
     expect(m.active).toHaveBeenCalledWith(selected); expect(m.toggle).toHaveBeenCalledWith(7, selected, { faqId: 3, field: 'use_in_bot', value: false });
     expect(m.trainees).toHaveBeenCalledWith(selected, { limit: 50 }); expect(m.faqs).toHaveBeenCalledWith(selected, { limit: 50 });
-    expect(m.sql.mock.calls[0][1]).toEqual([selected]); expect(m.resync).toHaveBeenCalledWith(selected);
+    expect(m.sql.mock.calls[0][1]).toEqual([selected]); expect(m.resync).toHaveBeenCalledWith(selected, 7);
   });
   it.each(names)(`rejects anonymous and revoked users before %s (${mounted})`, async name => {
     await expect(call(name, api(null))).rejects.toMatchObject({ code: 'UNAUTHORIZED' });

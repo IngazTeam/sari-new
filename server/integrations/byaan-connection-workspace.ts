@@ -25,7 +25,7 @@ function stamp(value:unknown) {
   const date=value instanceof Date?value:new Date(String(value).replace(' ','T')+(String(value).includes('T')?'':'Z'));
   if(!Number.isFinite(date.getTime()))throw new ByaanConnectionFault('unavailable');return date.toISOString();
 }
-async function definition(tx:Executor,merchantId:number,lock=false) {
+export async function definition(tx:Executor,merchantId:number,lock=false) {
   const merchants=await rows(tx,'SELECT id,integration_source AS source FROM merchants WHERE id=?'+(lock?' FOR UPDATE':''),[merchantId]);
   if(merchants.length!==1)throw new ByaanConnectionFault('unavailable');
   const connections=await rows(tx,`SELECT id,tenant_domain AS domain,api_base_url AS baseUrl,is_active AS active,sync_status AS status,
@@ -57,7 +57,7 @@ function state(row:any):ByaanConnectionWorkspace['state'] {
   if(!row.active)return 'disabled';
   return row.status==='active'?'configured':['syncing','paused','error'].includes(row.status)?row.status:'unknown';
 }
-async function writeAuthority(tx:Executor,merchantId:number,actorId?:number) {
+export async function writeAuthority(tx:Executor,merchantId:number,actorId?:number) {
   if(actorId===undefined)return; // Trusted REST lifecycle calls authenticate their platform key separately.
   bookingReadId.parse(actorId);
   const merchant=(await rows(tx,'SELECT userId,status FROM merchants WHERE id=?',[merchantId]))[0];

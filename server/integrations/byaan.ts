@@ -1117,11 +1117,25 @@ export async function createPaymentLink(
   });
 }
 
-export async function requestByaanResync(merchantId: number): Promise<{ success: boolean; error?: string }> {
-  const result = await callByaanApi(merchantId, 'POST', '/request-resync', {
-    merchant_id: String(merchantId),
-  });
-  return { success: result.success && result.data?.accepted === true && result.data?.status === 'queued', error: result.error };
+/** Dispatch only after the durable dashboard request has rechecked authority. */
+export async function dispatchByaanResync(merchantId: number, requestId: string, beforeDispatch: (connection: unknown) => Promise<void>): Promise<{ outcome: 'queued' | 'not_sent' | 'unknown' }> {
+  const { byaanResyncLookup } = await import('../../shared/byaan-resync');
+  byaanResyncLookup.parse({ requestId });
+  if (typeof beforeDispatch !== 'function') throw Error('Durable resync request required');
+  const result = await callByaanApi(merchantId, 'POST', '/request-resync', { merchant_id: String(merchantId) }, beforeDispatch, requestId);
+  return { outcome: result.success && result.data?.accepted === true && result.data?.status === 'queued' ? 'queued' : result.dispatched ? 'unknown' : 'not_sent' };
+}
+/** Compatibility entry for authenticated platform/legacy callers; every request is durable. */
+export async function requestByaanResync(merchantId: number, actorId?: number, requestId: string = crypto.randomUUID()) {
+  const { readByaanConnectionWorkspace } = await import('./byaan-connection-workspace');
+  const { requestReviewedByaanResync } = await import('./byaan-resync');
+  const pool = await getPool(); if (!pool) throw Error('Byaan data unavailable');
+  const [merchants] = await pool.execute<any[]>('SELECT userId FROM merchants WHERE id=?', [merchantId]);
+  if (merchants.length !== 1) throw Error('Byaan merchant unavailable');
+  const actor = actorId ?? merchants[0].userId;
+  const current = await readByaanConnectionWorkspace(actor, merchantId);
+  const receipt = await requestReviewedByaanResync(actor, merchantId, { requestId, revision: current.revision });
+  return { success: receipt.outcome === 'queued', receipt };
 }
 
 /**
