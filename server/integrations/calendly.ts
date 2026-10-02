@@ -1,3 +1,7 @@
+import {calendlyConnectionCommand,calendlyConnectionPreviewInput} from '../../shared/calendly-connection';
+import {previewCalendlyConnection,requestReviewedCalendlyConnection} from './calendly-connection';
+import {calendlyWebhookOrigin} from './calendly-origin';
+import {withCalendlyConnectionLock} from './calendly-lock';
 import {calendlySettingsCommand} from '../../shared/calendly-settings';
 import {calendlyOperationLookup} from '../../shared/calendly-operation';
 import {saveReviewedCalendlySettings} from './calendly-settings';
@@ -52,26 +56,6 @@ function integrationSettings(value: string | null): {
   }
 }
 
-function calendlyWebhookOrigin(): string {
-  const configured = process.env.CALENDLY_WEBHOOK_BASE_URL
-    || process.env.FRONTEND_URL
-    || process.env.VITE_APP_URL
-    || (process.env.NODE_ENV === 'production' ? 'https://sary.live' : '');
-  if (!configured) throw new Error('CALENDLY_WEBHOOK_BASE_URL_REQUIRED');
-  let url: URL;
-  try {
-    url = new URL(configured);
-  } catch {
-    throw new Error('CALENDLY_WEBHOOK_BASE_URL_INVALID');
-  }
-  const localDevelopment = process.env.NODE_ENV !== 'production'
-    && (url.hostname === 'localhost' || url.hostname === '127.0.0.1');
-  if ((!localDevelopment && url.protocol !== 'https:') || url.username || url.password || url.hash) {
-    throw new Error('CALENDLY_WEBHOOK_BASE_URL_INVALID');
-  }
-  return url.origin;
-}
-
 function safeCalendlyMessage(error: unknown, fallback: string): string {
   if (error instanceof CalendlyApiError && error.status === 403) {
     return 'يتطلب Calendly خطة تدعم Webhooks وصلاحيات webhooks:write وscheduled_events:read وinvitees:read';
@@ -90,27 +74,11 @@ const calendlyDashboardProcedure=permissionProcedure('integrations.manage').use(
   const result=await withCalendlyDashboardAuthority({actorId:ctx.user.id,merchantId:ctx.merchantId},next);if(!result.ok&&result.error.code==='INTERNAL_SERVER_ERROR')throw unavailable();return result;
 });
 
-async function withCalendlyConnectionLock<T>(merchantId: number, action: () => Promise<T>): Promise<T> {
-  const pool = await getPool();
-  if (!pool) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'قاعدة البيانات غير متاحة' });
-  const connection = await pool.getConnection();
-  const lockName = `sari:calendly:connection:${merchantId}`;
-  let acquired = false;
-  try {
-    const [rows] = await connection.query<any[]>('SELECT GET_LOCK(?, 20) AS acquired', [lockName]);
-    acquired = Number(rows[0]?.acquired) === 1;
-    if (!acquired) throw new TRPCError({ code: 'CONFLICT', message: 'عملية ربط Calendly أخرى قيد التنفيذ' });
-    await assertCalendlyDashboardAuthority(merchantId);
-    return await action();
-  } finally {
-    if (acquired) await connection.query('SELECT RELEASE_LOCK(?)', [lockName]).catch(() => undefined);
-    connection.release();
-  }
-}
-
 async function reviewedOperation<T>(work:()=>Promise<T>){try{return await work();}catch(error){if(error instanceof CalendlyOperationFault)throw new TRPCError({code:error.reason==='forbidden'?'FORBIDDEN':error.reason==='missing'?'NOT_FOUND':error.reason==='rate_limited'?'TOO_MANY_REQUESTS':error.reason==='unavailable'?'INTERNAL_SERVER_ERROR':'CONFLICT',message:'calendly_operation:'+error.reason});throw unavailable();}}
 
 export const calendlyRouter = router({
+  previewConnection:calendlyDashboardProcedure.input(calendlyConnectionPreviewInput).mutation(({ctx,input})=>reviewedOperation(()=>previewCalendlyConnection(ctx.user.id,ctx.merchantId,input))),
+  requestConnection:calendlyDashboardProcedure.input(calendlyConnectionCommand).mutation(({ctx,input})=>reviewedOperation(()=>requestReviewedCalendlyConnection(ctx.user.id,ctx.merchantId,input))),
   saveWorkspaceSettings:calendlyDashboardProcedure.input(calendlySettingsCommand).mutation(({ctx,input})=>reviewedOperation(()=>saveReviewedCalendlySettings(ctx.user.id,ctx.merchantId,input))),
   getOperation:calendlyDashboardProcedure.input(calendlyOperationLookup).query(({ctx,input})=>reviewedOperation(()=>readCalendlyOperation(ctx.user.id,ctx.merchantId,input))),
   getBlockingOperation:calendlyDashboardProcedure.input(noInput).query(({ctx})=>reviewedOperation(()=>readBlockingCalendlyOperation(ctx.user.id,ctx.merchantId))),

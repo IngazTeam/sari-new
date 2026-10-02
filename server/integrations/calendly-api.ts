@@ -1,3 +1,4 @@
+import {assertCalendlyProviderCheckpoint,CalendlyProviderCheckpointError} from './calendly-provider-checkpoint';
 import {calendlyResourceUri} from '../../shared/calendly-provider';
 import {assertCalendlyDashboardAuthority,CalendlyAuthorityError} from './calendly-dashboard-authority';
 const CALENDLY_API_ORIGIN = 'https://api.calendly.com';
@@ -40,6 +41,7 @@ export async function calendlyApiRequest<T>(
   }
   const url = normalizeCalendlyApiUrl(endpointOrUri);
   await assertCalendlyDashboardAuthority();
+  await assertCalendlyProviderCheckpoint();
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), CALENDLY_TIMEOUT_MS);
   try {
@@ -54,7 +56,7 @@ export async function calendlyApiRequest<T>(
       signal: controller.signal,
       redirect: 'error',
     });
-    await assertCalendlyDashboardAuthority();
+    try{await assertCalendlyDashboardAuthority();await assertCalendlyProviderCheckpoint();}catch(error){await response.body?.cancel().catch(()=>undefined);throw error;}
     if (response.status === 204 && options.method==='DELETE') return undefined as T;
     const contentLength = Number(response.headers.get('content-length') || 0);
     if (Number.isFinite(contentLength) && contentLength > CALENDLY_MAX_RESPONSE_BYTES) {
@@ -70,13 +72,14 @@ export async function calendlyApiRequest<T>(
     try {
       const value=JSON.parse(text) as T;
       await assertCalendlyDashboardAuthority();
+  await assertCalendlyProviderCheckpoint();
       return value;
     } catch (error) {
-      if(error instanceof CalendlyAuthorityError)throw error;
+      if(error instanceof CalendlyAuthorityError||error instanceof CalendlyProviderCheckpointError)throw error;
       throw new CalendlyApiError(502, 'invalid_provider_response');
     }
   } catch (error) {
-    if (error instanceof CalendlyAuthorityError) throw error;
+    if (error instanceof CalendlyAuthorityError||error instanceof CalendlyProviderCheckpointError) throw error;
     if (error instanceof CalendlyApiError) throw error;
     if ((error as Error)?.name === 'AbortError') throw new CalendlyApiError(504, 'provider_timeout');
     throw new CalendlyApiError(502, 'provider_unavailable');
