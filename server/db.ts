@@ -6021,24 +6021,6 @@ export async function getServicesByCategory(categoryId: number, merchantId?: num
 // Enhanced Staff Functions
 // ============================================
 
-export async function updateStaffMember(id: number, data: {
-  name?: string;
-  phone?: string;
-  email?: string;
-  role?: string;
-  specialization?: string;
-  workingHours?: string;
-  serviceIds?: string;
-  avatar?: string;
-  bio?: string;
-  isActive?: number;
-  googleCalendarId?: string;
-}) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  await db.update(staffMembers).set(data).where(eq(staffMembers.id, id));
-}
-
 export async function assignServicesToStaff(staffId: number, serviceIds: number[]) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -11028,89 +11010,18 @@ export async function updateUserPassword(userId: number, hashedPassword: string)
  * Get staff members by merchant
  * Used by: routers.ts, routers-staff.ts
  */
-export async function getStaffMembersByMerchant(merchantId: number): Promise<any[]> {
-  const database = await getDb();
-  if (!database) return [];
-
-  try {
-    return await database
-      .select()
-      .from(staffMembers)
-      .where(eq(staffMembers.merchantId, merchantId))
-      .orderBy(staffMembers.name);
-  } catch (error) {
-    console.error('[DB] Error getting staff members:', error);
-    return [];
-  }
+export async function getStaffMembersByMerchant(merchantId: number) {
+  const database=await getDb();if(!database)throw new Error('Database not available');
+  return database.select().from(staffMembers).where(eq(staffMembers.merchantId,merchantId)).orderBy(staffMembers.name,staffMembers.id);
 }
-
-/**
- * Get active staff by merchant
- */
-export async function getActiveStaffByMerchant(merchantId: number): Promise<any[]> {
-  const database = await getDb();
-  if (!database) return [];
-
-  try {
-    return await database
-      .select()
-      .from(staffMembers)
-      .where(and(eq(staffMembers.merchantId, merchantId), eq(staffMembers.isActive, 1)))
-      .orderBy(staffMembers.name);
-  } catch (error) {
-    console.error('[DB] Error getting active staff:', error);
-    return [];
-  }
+export async function getActiveStaffByMerchant(merchantId: number) {
+  const database=await getDb();if(!database)throw new Error('Database not available');
+  return database.select().from(staffMembers).where(and(eq(staffMembers.merchantId,merchantId),eq(staffMembers.isActive,1))).orderBy(staffMembers.name,staffMembers.id);
 }
-
-/**
- * Get staff member by ID
- */
-export async function getStaffMemberById(id: number): Promise<any | undefined> {
-  const database = await getDb();
-  if (!database) return undefined;
-
-  try {
-    const [member] = await database
-      .select()
-      .from(staffMembers)
-      .where(eq(staffMembers.id, id));
-    return member;
-  } catch (error) {
-    console.error('[DB] Error getting staff member by id:', error);
-    return undefined;
-  }
-}
-
-/**
- * Create staff member
- */
-export async function createStaffMember(data: any): Promise<number> {
-  const database = await getDb();
-  if (!database) return 0;
-
-  try {
-    const [result] = await database.insert(staffMembers).values(data);
-    return (result as any).insertId;
-  } catch (error) {
-    console.error('[DB] Error creating staff member:', error);
-    throw error;
-  }
-}
-
-/**
- * Delete staff member
- */
-export async function deleteStaffMember(id: number): Promise<void> {
-  const database = await getDb();
-  if (!database) return;
-
-  try {
-    await database.delete(staffMembers).where(eq(staffMembers.id, id));
-  } catch (error) {
-    console.error('[DB] Error deleting staff member:', error);
-    throw error;
-  }
+export async function getStaffMemberById(id: number,merchantId?:number) {
+  const database=await getDb();if(!database)throw new Error('Database not available');
+  const [member]=await database.select().from(staffMembers).where(and(eq(staffMembers.id,id),merchantId===undefined?undefined:eq(staffMembers.merchantId,merchantId)));
+  return member;
 }
 
 /**

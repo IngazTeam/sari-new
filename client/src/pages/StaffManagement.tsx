@@ -67,7 +67,7 @@ export default function StaffManagement() {
 
   const deleteMutation = trpc.staff.delete.useMutation({
     onSuccess: () => {
-      toast.success("تم الحذف بنجاح");
+      toast.success("تم تعطيل مقدم الخدمة مع حفظ سجل حجوزاته");
       utils.staff.list.invalidate();
     },
     onError: (error) => {
@@ -122,7 +122,7 @@ export default function StaffManagement() {
   };
 
   const handleDelete = (staffId: number, staffName: string) => {
-    if (confirm(`هل أنت متأكد من حذف "${staffName}"؟ سيتم إلغاء ربطه بجميع الخدمات.`)) {
+    if (confirm(`تعطيل "${staffName}" للحجوزات الجديدة؟ ستبقى بياناته وروابط حجوزاته محفوظة.`)) {
       deleteMutation.mutate({ staffId });
     }
   };
@@ -365,8 +365,8 @@ export default function StaffManagement() {
                           variant="ghost"
                           size="sm"
                           onClick={() => handleDelete(staff.id, staff.name)}
-                          disabled={deleteMutation.isPending}
-                          aria-label={t('merchantUx.actions.deleteNamed', { name: staff.name })}
+                          disabled={deleteMutation.isPending || staff.isActive !== 1}
+                          aria-label={`تعطيل ${staff.name}`}
                         >
                           <Trash2 className="h-4 w-4 text-red-500" />
                         </Button>

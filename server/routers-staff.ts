@@ -1,140 +1,29 @@
-/**
- * Staff Router Module
- * Handles staff member management
- * 
- * This is a standalone module following the "Parallel Coexistence" pattern.
- */
-
-import { z } from "zod";
-import { TRPCError } from "@trpc/server";
-import { protectedProcedure, router } from "./_core/trpc";
-import {
-  createStaffMember,
-  deleteStaffMember,
-  getActiveStaffByMerchant,
-  getMerchantByUserId,
-  getStaffMemberById,
-  getStaffMembersByMerchant,
-  updateStaffMember,
-} from './db';
-
+import { z } from 'zod';
+import { TRPCError } from '@trpc/server';
+import { merchantProcedure, permissionProcedure, router } from './_core/trpc';
+import { hasPermission } from './_core/permissions';
+import { staffCatalogFields, staffCatalogUpdate, staffCatalogArchive, staffCatalogIdentity } from '../shared/staff-catalog';
+import { getStaffMemberById, getStaffMembersByMerchant, getActiveStaffByMerchant } from './db';
+import { staffDefinitionKey, writeStaffCatalog } from './staff-catalog-write';
+async function read<T>(run:()=>Promise<T>):Promise<T> {
+  try{return await run();}catch(error){if(error instanceof TRPCError)throw error;throw new TRPCError({code:'INTERNAL_SERVER_ERROR',message:'Staff data unavailable'});}
+}
 export const staffRouter = router({
-    // Create staff member
-    create: protectedProcedure
-        .input(z.object({
-            name: z.string(),
-            phone: z.string().optional(),
-            email: z.string().email().optional(),
-            role: z.string().optional(),
-            workingHours: z.record(z.string(), z.object({
-                start: z.string(),
-                end: z.string(),
-            })).optional(),
-            googleCalendarId: z.string().optional(),
-        }))
-        .mutation(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
-            if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-
-            const staffId = await createStaffMember({
-                merchantId: merchant.id,
-                name: input.name,
-                phone: input.phone,
-                email: input.email,
-                role: input.role,
-                workingHours: input.workingHours ? JSON.stringify(input.workingHours) : undefined,
-                googleCalendarId: input.googleCalendarId,
-                isActive: 1,
-            });
-
-            return { success: true, staffId };
-        }),
-
-    // List staff members
-    list: protectedProcedure
-        .input(z.object({
-            activeOnly: z.boolean().optional(),
-        }).optional())
-        .query(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
-            if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-
-            const staff = input?.activeOnly
-                ? await getActiveStaffByMerchant(merchant.id)
-                : await getStaffMembersByMerchant(merchant.id);
-
-            return { staff };
-        }),
-
-    // Get staff member by ID
-    getById: protectedProcedure
-        .input(z.object({ staffId: z.number() }))
-        .query(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
-            if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-
-            const staff = await getStaffMemberById(input.staffId);
-            if (!staff || staff.merchantId !== merchant.id) {
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'Staff member not found' });
-            }
-
-            return { staff };
-        }),
-
-    // Update staff member
-    update: protectedProcedure
-        .input(z.object({
-            staffId: z.number(),
-            name: z.string().optional(),
-            phone: z.string().optional(),
-            email: z.string().email().optional(),
-            role: z.string().optional(),
-            workingHours: z.record(z.string(), z.object({
-                start: z.string(),
-                end: z.string(),
-            })).optional(),
-            googleCalendarId: z.string().optional(),
-            isActive: z.boolean().optional(),
-        }))
-        .mutation(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
-            if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-
-            const staff = await getStaffMemberById(input.staffId);
-            if (!staff || staff.merchantId !== merchant.id) {
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'Staff member not found' });
-            }
-
-            const updateData: any = {};
-            if (input.name !== undefined) updateData.name = input.name;
-            if (input.phone !== undefined) updateData.phone = input.phone;
-            if (input.email !== undefined) updateData.email = input.email;
-            if (input.role !== undefined) updateData.role = input.role;
-            if (input.workingHours !== undefined) updateData.workingHours = JSON.stringify(input.workingHours);
-            if (input.googleCalendarId !== undefined) updateData.googleCalendarId = input.googleCalendarId;
-            if (input.isActive !== undefined) updateData.isActive = input.isActive ? 1 : 0;
-
-            await updateStaffMember(input.staffId, updateData);
-
-            return { success: true };
-        }),
-
-    // Delete staff member
-    delete: protectedProcedure
-        .input(z.object({ staffId: z.number() }))
-        .mutation(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
-            if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-
-            const staff = await getStaffMemberById(input.staffId);
-            if (!staff || staff.merchantId !== merchant.id) {
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'Staff member not found' });
-            }
-
-            await deleteStaffMember(input.staffId);
-
-            return { success: true };
-        }),
+  list: merchantProcedure.input(z.object({activeOnly:z.boolean().optional()}).strict().optional()).query(({ctx,input})=>read(async()=>({
+    actorUserId:ctx.user.id, merchantId:ctx.merchantId, canManage:hasPermission(ctx.merchantRole,'products.manage'),
+    staff:(await (input?.activeOnly?getActiveStaffByMerchant(ctx.merchantId):getStaffMembersByMerchant(ctx.merchantId))).filter(row=>row.merchantId===ctx.merchantId).map(row=>({...row,definition:staffDefinitionKey(ctx.merchantId,row.id,row)})),
+  }))),
+  getById: merchantProcedure.input(staffCatalogIdentity).query(({ctx,input})=>read(async()=>{
+    const staff=await getStaffMemberById(input.staffId,ctx.merchantId);
+    if(!staff||staff.merchantId!==ctx.merchantId)throw new TRPCError({code:'NOT_FOUND',message:'Staff member not found'});
+    return {actorUserId:ctx.user.id,merchantId:ctx.merchantId,canManage:hasPermission(ctx.merchantRole,'products.manage'),staff:{...staff,definition:staffDefinitionKey(ctx.merchantId,staff.id,staff)}};
+  })),
+  create: permissionProcedure('products.manage').input(staffCatalogFields).mutation(async({ctx,input})=>({success:true,staffId:await writeStaffCatalog(ctx.merchantId,input)})),
+  update: permissionProcedure('products.manage').input(staffCatalogUpdate).mutation(async({ctx,input})=>{
+    const {staffId,expectedDefinition,...patch}=input;await writeStaffCatalog(ctx.merchantId,patch,staffId,expectedDefinition);return {success:true};
+  }),
+  delete: permissionProcedure('products.manage').input(staffCatalogArchive).mutation(async({ctx,input})=>{
+    await writeStaffCatalog(ctx.merchantId,{isActive:false},input.staffId,input.expectedDefinition);return {success:true};
+  }),
 });
-
 export type StaffRouter = typeof staffRouter;
