@@ -1,9 +1,10 @@
+import { referralProgramProfile } from '../shared/referral-program';
 import { createHash } from 'node:crypto';
 import { referralWorkspaceInput, referralWorkspaceSchema, type ReferralSelection, type ReferralWorkspaceRow } from '../shared/referral-workspace';
-type Source = { codes: any[]; referrals: any[]; rewards: any[] };
+type Source = { codes: any[]; referrals: any[]; rewards: any[]; program?: unknown };
 export function projectReferralWorkspace(actorId: number, merchantId: number, canManage: boolean, input: ReferralSelection, source: Source, now = new Date()) {
   const selection = referralWorkspaceInput.parse(input);
-  if (Object.values(source).some(rows => rows.some(row => row.merchantId !== merchantId))) throw Error('Invalid referral source scope');
+  if ([source.codes, source.referrals, source.rewards].some(rows => rows.some(row => row.merchantId !== merchantId))) throw Error('Invalid referral source scope');
   const encode = (raw: any, kind: 'code' | 'referral' | 'reward'): ReferralWorkspaceRow => {
     const issues: string[] = [];
     const text = (v: any, field: string, max: number, nullable = false) => { if (nullable && v == null) return ''; if (typeof v !== 'string' || v.length > max || /[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(v)) { issues.push(field); return ''; } return v; };
@@ -33,10 +34,12 @@ export function projectReferralWorkspace(actorId: number, merchantId: number, ca
     if (!referralAvailable) issues.push('referral'); if (storedState === 'claimed' && !claimedAt || storedState !== 'claimed' && claimedAt) issues.push('claim_state');
     return { ...common, kind, referralId: raw.referralId, type, storedState, description, expiresAt, claimedAt, referralAvailable, state: issues.length ? 'invalid' : storedState === 'pending' && expiresAt! <= now.toISOString() ? 'expired' : storedState };
   };
+  let invitation: {state:'not_created'|'ready'|'inactive'|'invalid';codeId:number|null;code:string|null;applied:boolean} = {state:'not_created',codeId:null,code:null,applied:false};
+  try { const profile=referralProgramProfile(source.program);invitation.applied=!!profile.applied;if(profile.codeId){const raw=source.codes.find(row=>row.id===profile.codeId),record=raw?encode(raw,'code'):null;invitation=record?.kind==='code'&&record.state!=='invalid'?{state:record.isActive?'ready':'inactive',codeId:record.id,code:record.code,applied:!!profile.applied}:{state:'invalid',codeId:profile.codeId,code:null,applied:!!profile.applied};}}catch{invitation.state='invalid';}
   const all = (selection.tab === 'codes' ? source.codes.map(row => encode(row, 'code')) : selection.tab === 'referrals' ? source.referrals.map(row => encode(row, 'referral')) : source.rewards.map(row => encode(row, 'reward')));
   const counts = { active: 0, inactive: 0, pending: 0, completed: 0, claimed: 0, expired: 0, invalid: 0 };
   for (const row of all) counts[row.state]++;
   const query = selection.query.toLocaleLowerCase('en');
   const matches = all.filter(row => (selection.state === 'all' || row.state === selection.state) && (!query || String(row.id) === query || (row.kind === 'code' ? [row.code, row.referrerName, row.referrerPhone] : row.kind === 'referral' ? [row.code, row.referredName, row.referredPhone] : [row.description, String(row.referralId)]).some(value => value.toLocaleLowerCase('en').includes(query))));
-  return referralWorkspaceSchema.parse({ actorId, merchantId, checkedAt: now.toISOString(), canManage, selection, totals: { codes: source.codes.length, referrals: source.referrals.length, rewards: source.rewards.length }, counts, rewardFulfillment: 'not_verified', pageSize: 25, matched: matches.length, pages: Math.ceil(matches.length / 25), rows: matches.slice((selection.page - 1) * 25, selection.page * 25) });
+  return referralWorkspaceSchema.parse({ actorId, merchantId, checkedAt: now.toISOString(), canManage, selection, totals: { codes: source.codes.length, referrals: source.referrals.length, rewards: source.rewards.length }, counts, invitation, rewardFulfillment: 'not_verified', pageSize: 25, matched: matches.length, pages: Math.ceil(matches.length / 25), rows: matches.slice((selection.page - 1) * 25, selection.page * 25) });
 }

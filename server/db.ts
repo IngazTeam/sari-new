@@ -2401,7 +2401,8 @@ export async function getReferralCodeByPhone(merchantId: number, phone: string):
   const result = await db.select().from(referralCodes).where(
     and(
       eq(referralCodes.merchantId, merchantId),
-      eq(referralCodes.referrerPhone, phone)
+      eq(referralCodes.referrerPhone, phone),
+      sql`${referralCodes.code} NOT LIKE 'SARY-%'`
     )
   ).limit(1);
 

@@ -1,3 +1,4 @@
+import {invitationCode,invitationReviewHref} from '@/lib/referral-invitation-handoff';
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useMerchantViewport } from "@/lib/merchant-viewport";
 import { useLocation } from "wouter";
@@ -255,7 +256,7 @@ export default function SetupWizard() {
         setRemoteDraft(progress);
         setDraftRecovery(true);
       } else if (progress.isCompleted && !unreadableLocal) {
-        setLocation("/merchant/dashboard");
+        setLocation(invitationReviewHref(window.location.search));
         return;
       } else if (local) {
         try {
@@ -703,10 +704,10 @@ export default function SetupWizard() {
               } catch {
                 /* The confirmed receipt remains recoverable. */
               }
-              setLocation("/merchant/dashboard");
+              setLocation(invitationReviewHref(window.location.search));
             }}
           >
-            {t("setupApprovalUx.openDashboard")}
+            {invitationCode(window.location.search) ? t('merchantUx.referralWorkspace.review') : t("setupApprovalUx.openDashboard")}
           </Button>
         </div>
       );

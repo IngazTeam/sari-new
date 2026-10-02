@@ -18,7 +18,7 @@ describe.skipIf(!process.env.DATABASE_URL)('complete referral workspace MySQL sn
   for (let i = 1; i <= 31; i++) await referral(i % 2 ? a : b, 'Friend ' + i, i % 2);
   await q('UPDATE referral_codes SET referralCount=900 WHERE merchantId=?', [other.merchantId]);
   const first = await caller().workspace({}), second = await caller().workspace({ page: 2 }), found = await caller().workspace({ query: 'Friend 1', state: 'completed' });
-  expect(first).toMatchObject({ merchantId: other.merchantId, actorId: owner.userId, canManage: true, totals: { codes: 2, referrals: 31, rewards: 0 }, counts: { completed: 16, pending: 15 }, matched: 31, pages: 2 }); expect(first.rows).toHaveLength(25); expect(second.rows).toHaveLength(6); expect(found.rows.every(row => row.state === 'completed')).toBe(true); expect(JSON.stringify(first)).not.toContain('SECRET');
+  expect(first).toMatchObject({ merchantId: other.merchantId, actorId: owner.userId, canManage: false, totals: { codes: 2, referrals: 31, rewards: 0 }, counts: { completed: 16, pending: 15 }, matched: 31, pages: 2 }); expect(first.rows).toHaveLength(25); expect(second.rows).toHaveLength(6); expect(found.rows.every(row => row.state === 'completed')).toBe(true); expect(JSON.stringify(first)).not.toContain('SECRET');
  });
  it('separates expired, claimed and foreign-link reward evidence', async () => {
   const ownReferral = await referral(await code(other.merchantId, 'A'), 'Own'), foreignReferral = await referral(await code(owner.merchantId, 'FOREIGN'), 'SECRET');

@@ -856,6 +856,12 @@ export const rewards = mysqlTable("rewards", {
 	updatedAt: timestamp({ mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 });
 
+export const merchantReferralPrograms = mysqlTable('merchant_referral_programs', {
+ merchantId: int('merchant_id').primaryKey().references(() => merchants.id, { onDelete: 'cascade' }),
+ codeId: int('code_id'), appliedCodeId: int('applied_code_id'), appliedReferralId: int('applied_referral_id'), appliedRewardId: int('applied_reward_id'),
+ createdAt: timestamp('created_at', { mode: 'string' }).defaultNow().notNull(), updatedAt: timestamp('updated_at', { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+}, table => [uniqueIndex('uq_merchant_referral_code').on(table.codeId), uniqueIndex('uq_merchant_referral_application').on(table.appliedReferralId), uniqueIndex('uq_merchant_referral_reward').on(table.appliedRewardId), check('chk_merchant_referral_application', sql`(${table.appliedCodeId} IS NULL AND ${table.appliedReferralId} IS NULL AND ${table.appliedRewardId} IS NULL) OR (${table.appliedCodeId} IS NOT NULL AND ${table.appliedReferralId} IS NOT NULL AND ${table.appliedRewardId} IS NOT NULL)`)]);
+
 export const sallaConnections = mysqlTable("salla_connections", {
 	id: int().autoincrement().primaryKey(),
 	merchantId: int().notNull().references(() => merchants.id, { onDelete: "cascade" }),

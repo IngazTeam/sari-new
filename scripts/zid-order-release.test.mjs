@@ -7,6 +7,13 @@ import { spawnSync } from 'node:child_process';
 import { assertZidOrderReleaseCompatible, assertManagedWritersStopped, assertManagedWriterCompatibility } from './zid-order-release.mjs';
 import { managedRelease } from './sary-update-ops.mjs';
 
+test('refuses releases without the merchant referral program migration contract',()=>{
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'sari-referral-release-test-'));fs.mkdirSync(path.join(root,'scripts'));
+  const file=path.join(root,'scripts/zid-order-store-capability.json');
+  try {const marker=JSON.parse(fs.readFileSync('scripts/zid-order-store-capability.json','utf8'));marker.capabilities=marker.capabilities.filter(c=>c!=='merchant-referral-program-0193');fs.writeFileSync(file,JSON.stringify(marker));assert.throws(()=>assertZidOrderReleaseCompatible(root));}
+  finally{fs.unlinkSync(file);fs.rmdirSync(path.dirname(file));fs.rmdirSync(root);}
+});
+
 test('accepts this built source capability and refuses older or relative targets',()=>{
   assert.doesNotThrow(()=>assertZidOrderReleaseCompatible(path.resolve('.')));
   assert.throws(()=>assertZidOrderReleaseCompatible('.'));

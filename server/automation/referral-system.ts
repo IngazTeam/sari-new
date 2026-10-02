@@ -41,7 +41,7 @@ export async function createReferralCodeForCustomer(
   try {
     // التحقق من عدم وجود كود إحالة مسبقاً
     const existing = await getReferralCodeByPhone(merchantId, customerPhone);
-    if (existing) {
+    if (existing && !existing.code.startsWith('SARY-')) {
       return { success: true, code: existing.code };
     }
 
@@ -101,7 +101,7 @@ export async function trackReferral(
       return { success: false, error: 'كود الإحالة غير صحيح' };
     }
 
-    if (code.merchantId !== merchantId) {
+    if (code.merchantId !== merchantId || code.code.startsWith('SARY-')) {
       return { success: false, error: 'كود الإحالة غير صحيح' };
     }
 
@@ -149,7 +149,7 @@ export async function completeReferral(
 
       // الحصول على كود الإحالة
       const code = await getReferralCodeById(referral.referralCodeId);
-      if (!code || code.merchantId !== merchantId) continue;
+      if (!code || code.merchantId !== merchantId || code.code.startsWith('SARY-')) continue;
 
       // تحديث الإحالة
       await updateReferralStatus(referral.id, true);
@@ -192,6 +192,8 @@ export async function rewardReferrer(
   referralCodeId: number
 ): Promise<{ success: boolean; discountCode?: string; error?: string }> {
   try {
+    const source = await getReferralCodeById(referralCodeId);
+    if (!source || source.merchantId !== merchantId || source.referrerPhone !== referrerPhone || source.code.startsWith('SARY-')) return {success:false,error:'كود الإحالة غير صحيح'};
     // إنشاء كود خصم 15%
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 60); // صالح لمدة 60 يوم

@@ -1352,6 +1352,13 @@
       "when": 1795392000054,
       "tag": "0192_calendly_operations",
       "breakpoints": true
+    },
+    {
+      "idx": 193,
+      "version": "5",
+      "when": 1795392000055,
+      "tag": "0193_merchant_referral_programs",
+      "breakpoints": true
     }
   ]
 }

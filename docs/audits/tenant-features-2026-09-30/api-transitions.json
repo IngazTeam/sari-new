@@ -1961,6 +1961,38 @@
           "contains": "discountDeleteInput"
         }
       ]
+    },
+    {
+      "routes": [
+        "/merchant/referrals"
+      ],
+      "removed": [
+        "referrals.getMyCode",
+        "referrals.getMyReferrals",
+        "referrals.getMyRewards",
+        "referrals.getStats"
+      ],
+      "required": [
+        "referrals.workspace",
+        "referrals.createInvitation",
+        "referrals.reviewInvitation",
+        "referrals.applyReferralCode",
+        "referrals.claimReward"
+      ],
+      "note": "Full selected-tenant workspace replaces first-code reads. Explicit owner-only canonical merchant invitation, reviewed atomic application, record-only claim. Legacy reads remain read-only compatibility endpoints. Signup carries a validated code through setup to explicit review, never auto-applies.",
+      "evidence": [
+        "docs/audits/tenant-referral-program-2026-10-03/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "client/src/pages/merchant/Referrals.tsx",
+          "contains": "<ReferralWorkspace"
+        },
+        {
+          "file": "server/referral-program-store.ts",
+          "contains": "withReferralAuthority"
+        }
+      ]
     }
   ]
 }

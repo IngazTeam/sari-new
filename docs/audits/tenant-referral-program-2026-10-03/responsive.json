@@ -1,0 +1,113 @@
+{
+  "environment": "Chromium; same-origin authored iframe, declared CSS widths 320/390/768/1440; root reserves 30px scrollbar gutter. Not native Safari/iPhone.",
+  "measurements": [
+    {
+      "label": "empty-ar-320",
+      "dialog": null,
+      "raw": false,
+      "scroll": 290,
+      "small": [],
+      "width": 290
+    },
+    {
+      "label": "create-review-ar-320",
+      "dialog": {
+        "height": 233.59375,
+        "scroll": 232,
+        "width": 258,
+        "x": 46
+      },
+      "raw": false,
+      "scroll": 290,
+      "small": [],
+      "width": 290
+    },
+    {
+      "label": "referrals-ar-320",
+      "dialog": null,
+      "raw": false,
+      "scroll": 290,
+      "small": [],
+      "width": 290
+    },
+    {
+      "label": "referrals-ar-390",
+      "dialog": null,
+      "raw": false,
+      "scroll": 360,
+      "small": [],
+      "width": 360
+    },
+    {
+      "label": "second-page-ar-390",
+      "dialog": null,
+      "raw": false,
+      "scroll": 360,
+      "small": [],
+      "width": 360
+    },
+    {
+      "label": "claim-ar-390",
+      "dialog": {
+        "height": 807.9954833984375,
+        "scroll": 1052,
+        "width": 326.3824462890625,
+        "x": 46.80878829956055
+      },
+      "raw": false,
+      "scroll": 360,
+      "small": [],
+      "width": 360
+    },
+    {
+      "label": "claim-ar-320-height550",
+      "dialog": {
+        "height": 518,
+        "scroll": 1191,
+        "width": 258,
+        "x": 46
+      },
+      "raw": false,
+      "scroll": 290,
+      "small": [],
+      "width": 290
+    },
+    {
+      "label": "claimed-ar-320",
+      "dialog": null,
+      "raw": false,
+      "scroll": 290,
+      "small": [],
+      "width": 290
+    },
+    {
+      "label": "rewards-ar-768",
+      "dialog": null,
+      "raw": false,
+      "scroll": 738,
+      "small": [],
+      "width": 738
+    },
+    {
+      "label": "rewards-ar-1440",
+      "dialog": null,
+      "raw": false,
+      "scroll": 1410,
+      "small": [],
+      "width": 1410
+    },
+    {
+      "label": "reward-details-ar-1440",
+      "dialog": {
+        "height": 627.359375,
+        "scroll": 629,
+        "width": 572.364990234375,
+        "x": 448.8175354003906
+      },
+      "raw": false,
+      "scroll": 1410,
+      "small": [],
+      "width": 1410
+    }
+  ]
+}

@@ -15,6 +15,7 @@ export const referralWorkspaceSchema = z.object({
   actorId: id, merchantId: id, checkedAt: z.string().datetime(), canManage: z.boolean(), selection: referralWorkspaceInput,
   totals: z.object({ codes: count, referrals: count, rewards: count }).strict(),
   counts: z.object({ active: count, inactive: count, pending: count, completed: count, claimed: count, expired: count, invalid: count }).strict(),
+  invitation: z.object({ state: z.enum(['not_created', 'ready', 'inactive', 'invalid']), codeId: id.nullable(), code: z.string().max(50).nullable(), applied: z.boolean() }).strict(),
   rewardFulfillment: z.literal('not_verified'), pageSize: z.literal(25), matched: count, pages: count, rows: z.array(referralWorkspaceRow).max(25),
 }).strict();
 export type ReferralWorkspace = z.infer<typeof referralWorkspaceSchema>;

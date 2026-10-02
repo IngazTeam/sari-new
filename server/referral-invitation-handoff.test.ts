@@ -1,0 +1,5 @@
+import {expect,it} from 'vitest';
+import {invitationCode,invitationSetupHref,invitationReviewHref} from '../client/src/lib/referral-invitation-handoff';
+import {readFileSync} from 'node:fs';
+it('carries only validated invite codes through setup and explicit review',()=>{expect(invitationSetupHref('?ref=sary-20-abcd&redirect=https://bad.test')).toBe('/merchant/setup-wizard?ref=SARY-20-ABCD');expect(invitationReviewHref('?ref=SARY-20-ABCD')).toBe('/merchant/referrals?ref=SARY-20-ABCD');for(const s of ['','?ref=<script>','?ref='+ 'A'.repeat(51),'?ref=abc%0a<script>']){expect(invitationCode(s)).toBeNull();expect(invitationReviewHref(s)).toBe('/merchant/dashboard');}});
+it('keeps signup field validation and wizard completion before invitation review',()=>{const signup=readFileSync('client/src/pages/SignUp.tsx','utf8'),wizard=readFileSync('client/src/pages/SetupWizard.tsx','utf8');expect(signup).toContain('invitationSetupHref(window.location.search)');expect(signup).toContain('readSignupFieldErrors');expect(wizard.match(/invitationReviewHref\(window.location.search\)/g)).toHaveLength(2);expect(signup+wizard).not.toContain('applyReferralCode');});

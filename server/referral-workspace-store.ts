@@ -19,7 +19,8 @@ export async function readReferralWorkspace(actorId: number, merchantId: number,
     const codes = await rows(tx, 'SELECT id,merchantId,code,referralCount,isActive,createdAt,updatedAt,referrerPhone,referrerName,rewardGiven FROM referral_codes WHERE merchantId=? ORDER BY createdAt DESC,id DESC', [merchantId]);
     const referrals = await rows(tx, 'SELECT r.id,c.merchantId,r.referralCodeId,c.code,r.referredPhone,r.referredName,r.orderCompleted,r.createdAt,r.updatedAt FROM referrals r JOIN referral_codes c ON c.id=r.referralCodeId WHERE c.merchantId=? ORDER BY r.createdAt DESC,r.id DESC', [merchantId]);
     const rewards = await rows(tx, 'SELECT w.id,w.merchantId,w.referralId,w.rewardType,w.status,w.claimedAt,w.expiresAt,w.description,w.createdAt,w.updatedAt,CASE WHEN c.merchantId=? THEN r.id ELSE NULL END AS scopedReferralId FROM rewards w LEFT JOIN referrals r ON r.id=w.referralId LEFT JOIN referral_codes c ON c.id=r.referralCodeId WHERE w.merchantId=? ORDER BY w.createdAt DESC,w.id DESC', [merchantId, merchantId]);
-    const result = projectReferralWorkspace(actorId, merchantId, hasPermission(role as MerchantRole, 'campaigns.manage'), selection, { codes, referrals, rewards });
+    const profiles = await rows(tx, 'SELECT code_id,applied_code_id,applied_referral_id,applied_reward_id FROM merchant_referral_programs WHERE merchant_id=?',[merchantId]);
+    const result = projectReferralWorkspace(actorId, merchantId, hasPermission(role as MerchantRole, 'subscription.manage'), selection, { codes, referrals, rewards, program: profiles[0]??null });
     committing = true; await tx.commit(); return result;
   } catch (error) {
     if (committing) reusable = false; else if (tx) try { await tx.rollback(); } catch { reusable = false; }

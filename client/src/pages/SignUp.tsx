@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { useLocation } from 'wouter';
+import {invitationSetupHref} from '@/lib/referral-invitation-handoff';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -84,7 +85,7 @@ export default function SignUp() {
         setLocation('/admin/dashboard');
       } else {
         // Redirect new merchants to Setup Wizard
-        setLocation('/merchant/setup-wizard');
+        setLocation(invitationSetupHref(window.location.search));
       }
     },
     onError: (mutationError: any) => {
