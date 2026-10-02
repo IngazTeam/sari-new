@@ -2,7 +2,7 @@ import { sallaShippingSchema, type SallaShipping } from '../../shared/salla-orde
 import { sallaExternalId } from '../../shared/salla-sales-observations';
 import axios from 'axios';
 import { createSyncLog, updateSyncLog } from '../db';
-import { sallaCatalogAuthority, assertCatalogReadAuthority, persistSallaCatalogRead, listSallaCatalogPage, finishSallaCatalogSync, type SallaCatalogReceipt } from './salla-catalog';
+import { sallaCatalogAuthority, assertCatalogReadAuthority, persistSallaCatalogRead, listSallaCatalogPage, finishSallaCatalogSync, type SallaCatalogReceipt,type SallaCatalogGuard } from './salla-catalog';
 import { readSallaProductPage, readSallaProductResponse } from './salla-product-normalization';
 import type { SallaOrderAuthority } from './salla-order-projection';
 import { readSallaCreationAcknowledgement, readSallaCreatedOrder, sallaOrderPhone } from './salla-order-result';
@@ -59,19 +59,21 @@ export class SallaIntegration {
   private accessToken: string;
   private merchantId: number;
 
-  constructor(merchantId: number, accessToken: string) {
+  constructor(merchantId: number, accessToken: string,private readonly catalogGuard?:SallaCatalogGuard) {
     this.merchantId = merchantId;
     this.accessToken = accessToken;
   }
 
   /** Only authenticated reads of the current store may project catalog data. */
   async fullSync(): Promise<{ success: boolean; synced: number }> {
+    await this.catalogGuard?.();
     const authority = await sallaCatalogAuthority(this.merchantId, this.accessToken);
     const revision = await createSyncLog(this.merchantId, 'full_sync', 'in_progress');
     let synced = 0;
     try {
       const seen = new Set<string>();
       for (let page = 1; page <= 200; page++) {
+        await this.catalogGuard?.();
         await assertCatalogReadAuthority(authority);
         const response = await sallaHttp.get(SALLA_API_BASE + '/products', {
           headers: this.catalogHeaders(), params: { page, per_page: 50 },
@@ -80,13 +82,13 @@ export class SallaIntegration {
         if (result.items.some(p => seen.has(p.externalId))) throw Error('Duplicate catalog page');
         for (const product of result.items) {
           seen.add(product.externalId);
-          const saved = await persistSallaCatalogRead(authority, revision, product.externalId, product);
+          const saved = await persistSallaCatalogRead(authority, revision, product.externalId, product,undefined,this.catalogGuard);
           if (saved.applied) synced++;
         }
         if (!result.hasMore) break;
         await this.sleep(1000);
       }
-      await finishSallaCatalogSync(authority);
+      await finishSallaCatalogSync(authority,this.catalogGuard);
       await updateSyncLog(revision, 'success', synced);
       return { success: true, synced };
     } catch {
@@ -96,23 +98,25 @@ export class SallaIntegration {
 
   /** Refresh only verified products from this store, never another integration's IDs. */
   async syncStock(): Promise<{ success: boolean; updated: number }> {
+    await this.catalogGuard?.();
     const authority = await sallaCatalogAuthority(this.merchantId, this.accessToken);
     const revision = await createSyncLog(this.merchantId, 'stock_sync', 'in_progress');
     let updated = 0, cursor = 0, read = 0;
     try {
       while (true) {
+        await this.catalogGuard?.();
         const products = await listSallaCatalogPage(authority, cursor);
         if (!products.length) break;
         for (const p of products) {
           if (++read > 10000) throw Error('Catalog refresh limit exceeded');
           const product = await this.readCatalogProduct(authority, p.external_product_id);
-          const saved = await persistSallaCatalogRead(authority, revision, p.external_product_id, product);
+          const saved = await persistSallaCatalogRead(authority, revision, p.external_product_id, product,undefined,this.catalogGuard);
           if (saved.applied) updated++;
           cursor = p.id;
           await this.sleep(1000);
         }
       }
-      await finishSallaCatalogSync(authority);
+      await finishSallaCatalogSync(authority,this.catalogGuard);
       await updateSyncLog(revision, 'success', updated);
       return { success: true, updated };
     } catch {
@@ -126,6 +130,7 @@ export class SallaIntegration {
 
   private async readCatalogProduct(authority: SallaOrderAuthority, id: string) {
     sallaExternalId.parse(id);
+    await this.catalogGuard?.();
     await assertCatalogReadAuthority(authority);
     try {
       const response = await sallaHttp.get(SALLA_API_BASE + '/products/' + id, { headers: this.catalogHeaders() });
@@ -220,11 +225,12 @@ export class SallaIntegration {
 
   async syncSingleProduct(id: string, receipt?: SallaCatalogReceipt): Promise<{ success: boolean }> {
     sallaExternalId.parse(id);
+    await this.catalogGuard?.();
     const authority = await sallaCatalogAuthority(this.merchantId, this.accessToken, receipt?.storeId);
     const revision = await createSyncLog(this.merchantId, 'single_product', 'in_progress');
     try {
       const product = await this.readCatalogProduct(authority, id);
-      const saved = await persistSallaCatalogRead(authority, revision, id, product, receipt);
+      const saved = await persistSallaCatalogRead(authority, revision, id, product, receipt,this.catalogGuard);
       await updateSyncLog(revision, 'success', saved.applied ? 1 : 0);
       return { success: true };
     } catch {

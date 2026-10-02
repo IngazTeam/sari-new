@@ -11,6 +11,7 @@ import { sallaOrderSku } from './salla-order-items';
 
 const internal=z.number().int().positive().max(2147483647);
 export type SallaCatalogReceipt={id:number;storeId:string;productId:string;token:string};
+export type SallaCatalogGuard=(tx?:PoolConnection)=>Promise<void>;
 const receiptSchema=z.object({id:internal,storeId:sallaExternalId,productId:sallaExternalId,token:z.string().min(1).max(64)}).strict();
 export async function assertSallaCatalogSchema() {
   await assertRuntimeSchema('Salla product store identity',[{table:'salla_product_projections',
@@ -42,9 +43,10 @@ async function assertReceipt(c:PoolConnection,a:SallaOrderAuthority,id:string,r:
 }
 /** A committed sync log ID fences older concurrent GETs. No backfill of bare IDs.
  * A tombstone without a local product still prevents an older response resurrecting it. */
-export async function persistSallaCatalogRead(a:SallaOrderAuthority,revision:number,id:string,p:NormalizedSallaProduct|null,receipt?:SallaCatalogReceipt) {
+export async function persistSallaCatalogRead(a:SallaOrderAuthority,revision:number,id:string,p:NormalizedSallaProduct|null,receipt?:SallaCatalogReceipt,guard?:SallaCatalogGuard) {
   sallaAuthoritySchema.parse(a);internal.parse(revision);sallaExternalId.parse(id);if(p&&p.externalId!==id)throw Error('Catalog identity mismatch');
   await assertSallaCatalogSchema();return transaction(async c=>{
+    await guard?.(c);
     await assertSallaOrderAuthority(c,a,true);
     const [logs]=await c.execute<any[]>("SELECT id FROM sync_logs WHERE id=? AND merchantId=? AND status='in_progress' FOR SHARE",[revision,a.merchantId]);
     if(logs.length!==1)throw Error('Catalog read revision unavailable');
@@ -81,8 +83,8 @@ export async function listSallaCatalogPage(a:SallaOrderAuthority,cursor:number) 
     ON o.id=p.local_product_id AND o.merchantId=p.merchant_id AND o.sallaProductId=CONCAT('salla:',p.store_id,':',p.external_product_id)
     WHERE p.merchant_id=? AND p.store_id=? AND p.archived=0 AND p.id>? ORDER BY p.id LIMIT 500`,[a.merchantId,a.storeId,cursor]);return rows;
 }
-export async function finishSallaCatalogSync(a:SallaOrderAuthority) {
-  await transaction(async c=>{await assertSallaOrderAuthority(c,a,true);await c.execute('UPDATE salla_connections SET lastSyncAt=UTC_TIMESTAMP(),syncErrors=NULL WHERE id=?',[a.connectionId]);});
+export async function finishSallaCatalogSync(a:SallaOrderAuthority,guard?:SallaCatalogGuard) {
+  await transaction(async c=>{await guard?.(c);await assertSallaOrderAuthority(c,a,true);await c.execute('UPDATE salla_connections SET lastSyncAt=UTC_TIMESTAMP(),syncErrors=NULL WHERE id=?',[a.connectionId]);});
 }
 export const sallaProductSelectionSchema=z.object({productId:internal,externalId:sallaExternalId,revision:internal,quantity:internal,price:z.number().int().nonnegative().max(2147483647),name:z.string().min(1).max(255),sku:sallaOrderSku}).strict();
 const selectionSchema=sallaProductSelectionSchema;

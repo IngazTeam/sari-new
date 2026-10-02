@@ -116,7 +116,7 @@ export default function SallaIntegration() {
   };
 
   const handleSync = (syncType: 'full' | 'stock') => {
-    syncMutation.mutate({ syncType });
+    if(connection?.revision)syncMutation.mutate({ syncType,revision:connection.revision });
   };
 
   if (isLoading) {

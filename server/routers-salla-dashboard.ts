@@ -4,7 +4,8 @@ import { permissionProcedure } from './_core/trpc';
 import { getDb, getSallaConnectionByMerchantId } from './db';
 import { readSallaDashboardLogs } from './integrations/salla-dashboard-read';
 import { registerSallaConnection,disconnectSallaConnection,SallaConnectionFault } from './integrations/salla-connection';
-import { sallaRegisterInput,sallaDisconnectInput } from '../shared/salla-connection';
+import { sallaRegisterInput,sallaDisconnectInput,sallaSyncInput } from '../shared/salla-connection';
+import { sallaSyncReview } from './integrations/salla-sync-review';
 import { safePlatformUrl } from '../shared/platform-workspace';
 import { sallaLogsInput } from '../shared/salla-workspace';
 import { readSallaWorkspace, readSallaLogsWorkspace } from './integrations/salla-workspace';
@@ -22,15 +23,15 @@ export const sallaDashboardProcedures = {
   getSyncLogs: access.query(({ ctx }) => guarded(() => readSallaDashboardLogs(ctx.merchantId))),
   registerConnection: access.input(sallaRegisterInput).mutation(({ctx,input})=>guarded(()=>registerSallaConnection(ctx.user.id,ctx.merchantId,input))),
   connect: access.input(sallaRegisterInput.extend({storeUrl:z.string().trim().max(2048).url().refine(value=>!!safePlatformUrl(value),'Invalid store URL')}).strict()).mutation(({ctx,input})=>guarded(async()=>{
-    await registerSallaConnection(ctx.user.id,ctx.merchantId,{revision:input.revision,accessToken:input.accessToken});
+    const receipt=await registerSallaConnection(ctx.user.id,ctx.merchantId,{revision:input.revision,accessToken:input.accessToken});
     const { SallaIntegration }=await import('./integrations/salla');
-    void new SallaIntegration(ctx.merchantId,input.accessToken).fullSync().catch(()=>console.error('[Salla] Initial catalog sync could not be confirmed'));
+    void new SallaIntegration(ctx.merchantId,input.accessToken,sallaSyncReview(ctx.user.id,ctx.merchantId,receipt.revision)).fullSync().catch(()=>console.error('[Salla] Initial catalog sync could not be confirmed'));
     return {success:true,message:'حُفظ الربط وبدأ طلب المزامنة. راجع السجل لمعرفة نتيجته.'};
   })),
   disconnect: access.input(sallaDisconnectInput).mutation(({ctx,input})=>guarded(async()=>({...await disconnectSallaConnection(ctx.user.id,ctx.merchantId,input),success:true,message:'تم فصل المتجر بنجاح'}))),
-  syncNow: access.input(z.object({ syncType: z.enum(['full','stock']).default('stock') }).strict()).mutation(({ ctx,input }) => guarded(async () => {
+  syncNow: access.input(sallaSyncInput).mutation(({ ctx,input }) => guarded(async () => {
     const connection = await getSallaConnectionByMerchantId(ctx.merchantId); if (!connection) throw new DashboardFault('NOT_FOUND','المتجر غير مربوط');
-    const { SallaIntegration } = await import('./integrations/salla'), salla = new SallaIntegration(ctx.merchantId,connection.accessToken);
+    const { SallaIntegration } = await import('./integrations/salla'), salla = new SallaIntegration(ctx.merchantId,connection.accessToken,sallaSyncReview(ctx.user.id,ctx.merchantId,input.revision));
     if (input.syncType === 'full') { const result = await salla.fullSync(); if (!result.success) throw Error('Sync not confirmed'); return { success: true, message: `تمت مزامنة ${result.synced} منتج بنجاح` }; }
     const result = await salla.syncStock(); if (!result.success) throw Error('Sync not confirmed'); return { success: true, message: `تم تحديث ${result.updated} منتج بنجاح` };
   })),
