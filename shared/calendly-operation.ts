@@ -1,3 +1,4 @@
+import {calendlySyncPeriod} from './calendly-sync';
 import {z} from 'zod';
 import {bookingReadId} from './booking-read';
 export const calendlyOperationKinds=['connect','verify','disconnect','sync','settings'] as const;
@@ -7,7 +8,7 @@ export const calendlyOperationIntent=z.object({requestId:z.string().uuid().toLow
 export const calendlyOperationLookup=z.object({requestId:z.string().uuid().toLowerCase()}).strict();
 export const calendlyOperationResult=z.discriminatedUnion('type',[
  z.object({type:z.literal('connection'),revision:digest,configured:z.boolean(),remoteCleanup:z.enum(['not_needed','confirmed','unconfirmed']),verification:z.enum(['not_checked','api','api_and_webhooks']),localCopies:z.enum(['retained','cleared'])}).strict(),
- z.object({type:z.literal('sync'),appointments:count,active:count,cancelled:count}).strict(),
+ z.object({type:z.literal('sync'),period:calendlySyncPeriod,appointments:count,active:count,cancelled:count}).strict(),
  z.object({type:z.literal('settings'),revision:digest,syncToWhatsApp:z.boolean()}).strict(),
 ]);
 export const calendlyOperationReceipt=z.object({actorId:bookingReadId,merchantId:bookingReadId,requestId:z.string().uuid(),kind:z.enum(calendlyOperationKinds),revision:digest,outcome:z.enum(['pending','success','rejected','unknown']),started:z.boolean(),reviewRequired:z.boolean(),result:calendlyOperationResult.nullable(),createdAt:z.string().datetime(),checkedAt:z.string().datetime(),replayed:z.boolean()}).strict().superRefine((v,ctx)=>{

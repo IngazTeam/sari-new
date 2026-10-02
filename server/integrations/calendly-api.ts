@@ -184,10 +184,16 @@ export async function listCalendlyCollection<T>(
     const normalized=url.toString();
     if (seen.has(normalized) || seen.size >= 20) throw new CalendlyApiError(502, 'invalid_pagination');
     seen.add(normalized);
-    const page: { collection?: T[]; pagination?: { next_page?: string | null } } = await calendlyApiRequest(normalized, accessToken);
+    const page: { collection?: T[]; pagination?: { next_page?: string | null; next_page_token?:string|null } } = await calendlyApiRequest(normalized, accessToken);
     if (!Array.isArray(page?.collection)) throw new CalendlyApiError(502, 'invalid_collection');
     if(page.pagination!=null&&(typeof page.pagination!=='object'||Array.isArray(page.pagination)))throw new CalendlyApiError(502,'invalid_pagination');
-    const cursor=page.pagination?.next_page;
+    let cursor=page.pagination?.next_page;
+    const token=page.pagination?.next_page_token;
+    if(token!==undefined&&token!==null){
+      if(typeof token!=='string'||!token||token.length>2048||/[\u0000-\u001f\u007f]/.test(token))throw new CalendlyApiError(502,'invalid_pagination');
+      // Rebuild from our reviewed query; the provider's next_page may omit its filters.
+      const scoped=new URL(origin);scoped.searchParams.set('page_token',token);cursor=scoped.toString();
+    }
     if(cursor!==undefined&&cursor!==null&&(typeof cursor!=='string'||!cursor))throw new CalendlyApiError(502,'invalid_pagination');
     if(page.collection.length>maxItems-items.length||cursor&&page.collection.length+items.length>=maxItems)throw new CalendlyApiError(502,'collection_limit_exceeded');
     items.push(...page.collection);

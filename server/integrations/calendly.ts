@@ -1,3 +1,5 @@
+import {calendlySyncCommand} from '../../shared/calendly-sync';
+import {requestReviewedCalendlySync} from './calendly-sync';
 import {calendlyConnectionCommand,calendlyConnectionPreviewInput} from '../../shared/calendly-connection';
 import {previewCalendlyConnection,requestReviewedCalendlyConnection} from './calendly-connection';
 import {calendlyWebhookOrigin} from './calendly-origin';
@@ -77,6 +79,7 @@ const calendlyDashboardProcedure=permissionProcedure('integrations.manage').use(
 async function reviewedOperation<T>(work:()=>Promise<T>){try{return await work();}catch(error){if(error instanceof CalendlyOperationFault)throw new TRPCError({code:error.reason==='forbidden'?'FORBIDDEN':error.reason==='missing'?'NOT_FOUND':error.reason==='rate_limited'?'TOO_MANY_REQUESTS':error.reason==='unavailable'?'INTERNAL_SERVER_ERROR':'CONFLICT',message:'calendly_operation:'+error.reason});throw unavailable();}}
 
 export const calendlyRouter = router({
+  requestSync:calendlyDashboardProcedure.input(calendlySyncCommand).mutation(({ctx,input})=>reviewedOperation(()=>requestReviewedCalendlySync(ctx.user.id,ctx.merchantId,input))),
   previewConnection:calendlyDashboardProcedure.input(calendlyConnectionPreviewInput).mutation(({ctx,input})=>reviewedOperation(()=>previewCalendlyConnection(ctx.user.id,ctx.merchantId,input))),
   requestConnection:calendlyDashboardProcedure.input(calendlyConnectionCommand).mutation(({ctx,input})=>reviewedOperation(()=>requestReviewedCalendlyConnection(ctx.user.id,ctx.merchantId,input))),
   saveWorkspaceSettings:calendlyDashboardProcedure.input(calendlySettingsCommand).mutation(({ctx,input})=>reviewedOperation(()=>saveReviewedCalendlySettings(ctx.user.id,ctx.merchantId,input))),
