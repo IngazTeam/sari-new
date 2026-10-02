@@ -4,6 +4,8 @@ import { z } from 'zod';
 import { merchantProcedure, permissionProcedure, router } from './_core/trpc';
 import type {Permission} from './_core/permissions';
 import {withWooDashboardAuthority,assertWooDashboardAuthority} from './integrations/woocommerce-dashboard-authority';
+import {readWooWorkspace,readWooLogsWorkspace} from './integrations/woocommerce-workspace';
+import {wooLogsInput} from '../shared/woocommerce-workspace';
 import {
   createWooCommerceSyncLog,
   getDb,
@@ -338,6 +340,8 @@ async function runFullWooCommerceReconciliation(ctx: WooCommerceRequestAbortCont
 }
 
 export const woocommerceRouter = router({
+  getWorkspace: wooAccessProcedure('integrations.manage').input(noInput).query(({ctx})=>readWooWorkspace(ctx.user.id,tenantId(ctx))),
+  getLogsWorkspace: wooAccessProcedure('integrations.manage').input(wooLogsInput).query(({ctx,input})=>readWooLogsWorkspace(ctx.user.id,tenantId(ctx),input)),
   getSettings: wooAccessProcedure('integrations.manage').input(noInput).query(async ({ ctx }) => {
     const settings = await getWooCommerceSettings(tenantId(ctx));
     return settings ? await settingsDto(settings) : null;
