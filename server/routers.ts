@@ -1,3 +1,4 @@
+import { sallaDashboardProcedures } from './routers-salla-dashboard';
 import { calendarConnectionProcedures } from './routers-calendar-connection';
 import { staffRouter } from './routers-staff';
 import { conversationImportProcedures } from './routers-conversation-import';
@@ -139,7 +140,6 @@ import {
   createProduct,
   createReferral,
   createReward,
-  createSallaConnection,
   createScheduledMessage,
   createService,
   createServiceCategory,
@@ -153,7 +153,6 @@ import {
   deleteBooking,
   deleteDiscountCode,
   deleteGoogleIntegration,
-  deleteSallaConnection,
   deleteScheduledMessage,
   deleteService,
   deleteServiceCategory,
@@ -219,7 +218,6 @@ import {
   getReviewsByService,
   getRewardById,
   getRewardsByMerchantId,
-  getSallaConnectionByMerchantId,
   getScheduledMessages,
   getServiceById,
   getServiceCategoriesByMerchant,
@@ -232,7 +230,6 @@ import {
   getStaffMemberById,
   getStaffMembersByMerchant,
   getSubscriptionPlanById,
-  getSyncLogsByMerchantId,
   getTemplateTranslation,
   getTemplateTranslationsByTemplateId,
   getTrySariAnalyticsBySessionId,
@@ -268,7 +265,6 @@ import {
   updateGoogleIntegration,
   updateMerchant,
   updatePlan,
-  updateSallaConnection,
   updateScheduledMessage,
   updateService,
   updateServiceCategory,
@@ -1531,173 +1527,8 @@ export const appRouter = router({
       }),
   }),
 
-  // Salla Integration Router
-  salla: router({
-    ...sallaEffectReviewProcedures,
-    // Get connection status
-    getConnection: protectedProcedure
-      .query(async ({ ctx }) => {
-        // SECURITY: derive merchantId from session
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) {
-          return { connected: false };
-        }
-
-        const connection = await getSallaConnectionByMerchantId(merchant.id);
-        if (!connection) {
-          return { connected: false };
-        }
-
-        const { getSallaWebhookReceiptHealth } = await import('./integrations/salla-webhook-receipts');
-        const webhookHealth = await getSallaWebhookReceiptHealth(merchant.id);
-
-        return {
-          connected: true,
-          storeUrl: connection.storeUrl,
-          syncStatus: connection.syncStatus,
-          lastSyncAt: connection.lastSyncAt,
-          webhookHealth,
-        };
-      }),
-
-    // Connect to Salla store
-    connect: protectedProcedure
-      .input(z.object({
-        storeUrl: z.string().url(),
-        accessToken: z.string().min(10),
-      }))
-      .mutation(async ({ input, ctx }) => {
-        // SECURITY: derive merchantId from session
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'التاجر غير موجود' });
-
-        // Check for existing platform connections
-        const { validateNewPlatformConnection } = await import('./integrations/platform-checker');
-        try {
-          await validateNewPlatformConnection(merchant.id, 'سلة');
-        } catch (error: any) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: error.message
-          });
-        }
-
-        // Test connection first
-        const { SallaIntegration } = await import('./integrations/salla');
-        const salla = new SallaIntegration(merchant.id, input.accessToken);
-        const testResult = await salla.testConnection();
-
-        if (!testResult.success || !testResult.storeInfo) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'فشل الاتصال بـ Salla. تأكد من صحة الرابط والـ Token'
-          });
-        }
-
-        // Check if connection already exists
-        const existing = await getSallaConnectionByMerchantId(merchant.id);
-
-        try {
-          if (existing) {
-            // The token-authorized Salla response is the identity authority.
-            await updateSallaConnection(merchant.id, {
-              sallaStoreId: testResult.storeInfo.id,
-              storeUrl: testResult.storeInfo.domain,
-              accessToken: input.accessToken,
-              syncStatus: 'active',
-            });
-          } else {
-            await createSallaConnection({
-              merchantId: merchant.id,
-              sallaStoreId: testResult.storeInfo.id,
-              storeUrl: testResult.storeInfo.domain,
-              accessToken: input.accessToken,
-              syncStatus: 'active',
-            });
-          }
-        } catch (error: any) {
-          if (error?.code === 'ER_DUP_ENTRY') {
-            throw new TRPCError({
-              code: 'CONFLICT',
-              message: 'متجر سلة هذا مرتبط بحساب تاجر آخر',
-            });
-          }
-          throw error;
-        }
-
-        // Start initial sync in background
-        salla.fullSync().catch(err => {
-          console.error('[Salla] Initial sync failed:', err);
-        });
-
-        return {
-          success: true,
-          message: 'تم ربط المتجر بنجاح! جاري مزامنة المنتجات...'
-        };
-      }),
-
-    // Disconnect from Salla
-    disconnect: protectedProcedure
-      .mutation(async ({ ctx }) => {
-        // SECURITY: derive merchantId from session
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'التاجر غير موجود' });
-
-        await deleteSallaConnection(merchant.id);
-        return { success: true, message: 'تم فصل المتجر بنجاح' };
-      }),
-
-    // Manual sync
-    syncNow: protectedProcedure
-      .input(z.object({
-        syncType: z.enum(['full', 'stock']).default('stock'),
-      }))
-      .mutation(async ({ input, ctx }) => {
-        // SECURITY: derive merchantId from session
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'التاجر غير موجود' });
-
-        const connection = await getSallaConnectionByMerchantId(merchant.id);
-        if (!connection) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'المتجر غير مربوط' });
-        }
-
-        const { SallaIntegration } = await import('./integrations/salla');
-        const salla = new SallaIntegration(merchant.id, connection.accessToken);
-
-        try {
-          let result;
-          if (input.syncType === 'full') {
-            result = await salla.fullSync();
-            return {
-              success: true,
-              message: `تمت مزامنة ${result.synced} منتج بنجاح`
-            };
-          } else {
-            result = await salla.syncStock();
-            return {
-              success: true,
-              message: `تم تحديث ${result.updated} منتج بنجاح`
-            };
-          }
-        } catch (error: any) {
-          throw new TRPCError({
-            code: 'INTERNAL_SERVER_ERROR',
-            message: error.message || 'فشلت المزامنة'
-          });
-        }
-      }),
-
-    // Get sync logs
-    getSyncLogs: protectedProcedure
-      .query(async ({ ctx }) => {
-        // SECURITY: derive merchantId from session
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) return [];
-
-        return await getSyncLogsByMerchantId(merchant.id, 20);
-      }),
-  }),
+  // Salla dashboard and recorded-effect review share the selected tenant permission boundary.
+  salla: router({ ...sallaDashboardProcedures, ...sallaEffectReviewProcedures }),
 
   // Orders from WhatsApp Chat
   orders: router({
