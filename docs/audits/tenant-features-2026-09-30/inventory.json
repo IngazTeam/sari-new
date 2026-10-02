@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-02T17:17:07.113Z",
+  "generatedAt": "2026-10-02T17:36:19.418Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -6144,7 +6144,7 @@
     },
     {
       "file": "client/src/components/merchant/WooOperationPanel.tsx",
-      "hash": "222b46d5f68a",
+      "hash": "c9e26f3f332f",
       "queries": [
         "woocommerce.getBlockingOperation",
         "woocommerce.getOperation"
@@ -6157,7 +6157,7 @@
           "procedure": "woocommerce.getOperation",
           "method": "fetch",
           "expression": "utils.woocommerce.getOperation.fetch",
-          "line": 27,
+          "line": 28,
           "provenance": "trpc-utility-static"
         }
       ],
@@ -6165,29 +6165,29 @@
       "sections": [
         {
           "label": "",
-          "line": 63,
+          "line": 66,
           "tag": "h2"
         },
         {
           "label": "",
-          "line": 64,
+          "line": 67,
           "tag": "h3"
         },
         {
           "label": "",
-          "line": 73,
+          "line": 76,
           "tag": "summary"
         },
         {
           "label": "",
-          "line": 74,
+          "line": 77,
           "tag": "DialogTitle"
         }
       ],
       "choices": [
         {
           "name": "shown",
-          "line": 60,
+          "line": 61,
           "values": [
             "...(o.receipt?[o.receipt]:[])",
             "...(o.blocker&&o.blocker.requestId!==o.receipt?.requestId?[o.blocker]:[])"
@@ -6199,7 +6199,7 @@
         {
           "query": "woocommerce.getBlockingOperation",
           "binding": "blockerQuery",
-          "line": 12,
+          "line": 13,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
@@ -6207,9 +6207,31 @@
       ],
       "conditions": [],
       "imports": [
+        "client/src/components/merchant/WooWorkspaceShell.tsx",
         "client/src/lib/woocommerce-workspace.ts"
       ],
       "controlCount": 7
+    },
+    {
+      "file": "client/src/components/merchant/WooWorkspaceShell.tsx",
+      "hash": "08845ac49e31",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [
+        {
+          "label": "",
+          "line": 13,
+          "tag": "h1"
+        }
+      ],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 3
     },
     {
       "file": "client/src/components/merchant/WooSettingsWorkspace.tsx",
@@ -6286,27 +6308,6 @@
       "conditions": [],
       "imports": [],
       "controlCount": 0
-    },
-    {
-      "file": "client/src/components/merchant/WooWorkspaceShell.tsx",
-      "hash": "3b31e95f4fe9",
-      "queries": [],
-      "mutations": [],
-      "imperativeReads": [],
-      "browserRequests": [],
-      "sections": [
-        {
-          "label": "",
-          "line": 11,
-          "tag": "h1"
-        }
-      ],
-      "choices": [],
-      "handlers": [],
-      "queryStates": [],
-      "conditions": [],
-      "imports": [],
-      "controlCount": 3
     },
     {
       "file": "client/src/components/merchant/WooHistoryPanels.tsx",
@@ -21575,9 +21576,9 @@
         "client/src/components/merchant/WooWorkspacePage.tsx",
         "client/src/lib/woocommerce-workspace.ts",
         "client/src/components/merchant/WooOperationPanel.tsx",
+        "client/src/components/merchant/WooWorkspaceShell.tsx",
         "client/src/components/merchant/WooSettingsWorkspace.tsx",
         "client/src/lib/woocommerce-workspace-labels.ts",
-        "client/src/components/merchant/WooWorkspaceShell.tsx",
         "client/src/components/merchant/WooHistoryPanels.tsx",
         "client/src/components/merchant/WooProductsWorkspace.tsx",
         "client/src/components/merchant/WooQuickSync.tsx",
@@ -21586,13 +21587,16 @@
         "client/src/components/merchant/WooOrderDialog.tsx"
       ],
       "controls": [
-        "4403d8261a7a",
-        "b45e365f37bf",
-        "b9c64d497356",
-        "508344ce1b99",
-        "c477b8e66780",
-        "7fbfd5a51f5f",
-        "b681da43d033",
+        "8f1e95a32d4c",
+        "7d60e89072f9",
+        "32a0824444f4",
+        "453818e2aa3b",
+        "a67a790ba37f",
+        "35fdf3531a7d",
+        "e06ff91353fa",
+        "ad879b23a2cb",
+        "d7eb281869fb",
+        "61adc8748b86",
         "409a8894480c",
         "24c90343bc2d",
         "75fdd774d93b",
@@ -21607,9 +21611,6 @@
         "f43f62b0a883",
         "9563f5463871",
         "8ffc52fd5c1a",
-        "23c7a25c6ad4",
-        "93bcb7f71cd2",
-        "8c8fb9e602ce",
         "5ac34f9f14da",
         "2393a11da562",
         "49ed7c9c7870",
@@ -21694,7 +21695,7 @@
           "procedure": "woocommerce.getOperation",
           "method": "fetch",
           "expression": "utils.woocommerce.getOperation.fetch",
-          "line": 27,
+          "line": 28,
           "provenance": "trpc-utility-static"
         }
       ],
@@ -21712,9 +21713,9 @@
         "client/src/components/merchant/WooWorkspacePage.tsx",
         "client/src/lib/woocommerce-workspace.ts",
         "client/src/components/merchant/WooOperationPanel.tsx",
+        "client/src/components/merchant/WooWorkspaceShell.tsx",
         "client/src/components/merchant/WooSettingsWorkspace.tsx",
         "client/src/lib/woocommerce-workspace-labels.ts",
-        "client/src/components/merchant/WooWorkspaceShell.tsx",
         "client/src/components/merchant/WooHistoryPanels.tsx",
         "client/src/components/merchant/WooProductsWorkspace.tsx",
         "client/src/components/merchant/WooQuickSync.tsx",
@@ -21723,13 +21724,16 @@
         "client/src/components/merchant/WooOrderDialog.tsx"
       ],
       "controls": [
-        "4403d8261a7a",
-        "b45e365f37bf",
-        "b9c64d497356",
-        "508344ce1b99",
-        "c477b8e66780",
-        "7fbfd5a51f5f",
-        "b681da43d033",
+        "8f1e95a32d4c",
+        "7d60e89072f9",
+        "32a0824444f4",
+        "453818e2aa3b",
+        "a67a790ba37f",
+        "35fdf3531a7d",
+        "e06ff91353fa",
+        "ad879b23a2cb",
+        "d7eb281869fb",
+        "61adc8748b86",
         "409a8894480c",
         "24c90343bc2d",
         "75fdd774d93b",
@@ -21744,9 +21748,6 @@
         "f43f62b0a883",
         "9563f5463871",
         "8ffc52fd5c1a",
-        "23c7a25c6ad4",
-        "93bcb7f71cd2",
-        "8c8fb9e602ce",
         "5ac34f9f14da",
         "2393a11da562",
         "49ed7c9c7870",
@@ -21831,7 +21832,7 @@
           "procedure": "woocommerce.getOperation",
           "method": "fetch",
           "expression": "utils.woocommerce.getOperation.fetch",
-          "line": 27,
+          "line": 28,
           "provenance": "trpc-utility-static"
         }
       ],
@@ -21849,9 +21850,9 @@
         "client/src/components/merchant/WooWorkspacePage.tsx",
         "client/src/lib/woocommerce-workspace.ts",
         "client/src/components/merchant/WooOperationPanel.tsx",
+        "client/src/components/merchant/WooWorkspaceShell.tsx",
         "client/src/components/merchant/WooSettingsWorkspace.tsx",
         "client/src/lib/woocommerce-workspace-labels.ts",
-        "client/src/components/merchant/WooWorkspaceShell.tsx",
         "client/src/components/merchant/WooHistoryPanels.tsx",
         "client/src/components/merchant/WooProductsWorkspace.tsx",
         "client/src/components/merchant/WooQuickSync.tsx",
@@ -21860,13 +21861,16 @@
         "client/src/components/merchant/WooOrderDialog.tsx"
       ],
       "controls": [
-        "4403d8261a7a",
-        "b45e365f37bf",
-        "b9c64d497356",
-        "508344ce1b99",
-        "c477b8e66780",
-        "7fbfd5a51f5f",
-        "b681da43d033",
+        "8f1e95a32d4c",
+        "7d60e89072f9",
+        "32a0824444f4",
+        "453818e2aa3b",
+        "a67a790ba37f",
+        "35fdf3531a7d",
+        "e06ff91353fa",
+        "ad879b23a2cb",
+        "d7eb281869fb",
+        "61adc8748b86",
         "409a8894480c",
         "24c90343bc2d",
         "75fdd774d93b",
@@ -21881,9 +21885,6 @@
         "f43f62b0a883",
         "9563f5463871",
         "8ffc52fd5c1a",
-        "23c7a25c6ad4",
-        "93bcb7f71cd2",
-        "8c8fb9e602ce",
         "5ac34f9f14da",
         "2393a11da562",
         "49ed7c9c7870",
@@ -21968,7 +21969,7 @@
           "procedure": "woocommerce.getOperation",
           "method": "fetch",
           "expression": "utils.woocommerce.getOperation.fetch",
-          "line": 27,
+          "line": 28,
           "provenance": "trpc-utility-static"
         }
       ],
@@ -21986,9 +21987,9 @@
         "client/src/components/merchant/WooWorkspacePage.tsx",
         "client/src/lib/woocommerce-workspace.ts",
         "client/src/components/merchant/WooOperationPanel.tsx",
+        "client/src/components/merchant/WooWorkspaceShell.tsx",
         "client/src/components/merchant/WooSettingsWorkspace.tsx",
         "client/src/lib/woocommerce-workspace-labels.ts",
-        "client/src/components/merchant/WooWorkspaceShell.tsx",
         "client/src/components/merchant/WooHistoryPanels.tsx",
         "client/src/components/merchant/WooProductsWorkspace.tsx",
         "client/src/components/merchant/WooQuickSync.tsx",
@@ -21997,13 +21998,16 @@
         "client/src/components/merchant/WooOrderDialog.tsx"
       ],
       "controls": [
-        "4403d8261a7a",
-        "b45e365f37bf",
-        "b9c64d497356",
-        "508344ce1b99",
-        "c477b8e66780",
-        "7fbfd5a51f5f",
-        "b681da43d033",
+        "8f1e95a32d4c",
+        "7d60e89072f9",
+        "32a0824444f4",
+        "453818e2aa3b",
+        "a67a790ba37f",
+        "35fdf3531a7d",
+        "e06ff91353fa",
+        "ad879b23a2cb",
+        "d7eb281869fb",
+        "61adc8748b86",
         "409a8894480c",
         "24c90343bc2d",
         "75fdd774d93b",
@@ -22018,9 +22022,6 @@
         "f43f62b0a883",
         "9563f5463871",
         "8ffc52fd5c1a",
-        "23c7a25c6ad4",
-        "93bcb7f71cd2",
-        "8c8fb9e602ce",
         "5ac34f9f14da",
         "2393a11da562",
         "49ed7c9c7870",
@@ -22105,7 +22106,7 @@
           "procedure": "woocommerce.getOperation",
           "method": "fetch",
           "expression": "utils.woocommerce.getOperation.fetch",
-          "line": 27,
+          "line": 28,
           "provenance": "trpc-utility-static"
         }
       ],
@@ -46673,9 +46674,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "4403d8261a7a",
+      "id": "8f1e95a32d4c",
       "file": "client/src/components/merchant/WooOperationPanel.tsx",
-      "line": 69,
+      "line": 72,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -46696,9 +46697,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "b45e365f37bf",
+      "id": "7d60e89072f9",
       "file": "client/src/components/merchant/WooOperationPanel.tsx",
-      "line": 72,
+      "line": 75,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -46717,9 +46718,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "b9c64d497356",
+      "id": "32a0824444f4",
       "file": "client/src/components/merchant/WooOperationPanel.tsx",
-      "line": 73,
+      "line": 76,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -46740,15 +46741,15 @@
       "review": "source-inventoried"
     },
     {
-      "id": "508344ce1b99",
+      "id": "453818e2aa3b",
       "file": "client/src/components/merchant/WooOperationPanel.tsx",
-      "line": 73,
+      "line": 76,
       "tag": "Button",
       "role": "",
       "kind": "action",
       "label": "",
       "section": "WooOperationPanel",
-      "binding": "o.forget",
+      "binding": "()=>{forgetting.current=true;o.forget();}",
       "type": "text",
       "options": [],
       "min": "",
@@ -46763,9 +46764,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "c477b8e66780",
+      "id": "a67a790ba37f",
       "file": "client/src/components/merchant/WooOperationPanel.tsx",
-      "line": 74,
+      "line": 77,
       "tag": "DialogContent",
       "role": "",
       "kind": "dialog",
@@ -46784,9 +46785,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "7fbfd5a51f5f",
+      "id": "35fdf3531a7d",
       "file": "client/src/components/merchant/WooOperationPanel.tsx",
-      "line": 74,
+      "line": 77,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -46805,9 +46806,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "b681da43d033",
+      "id": "e06ff91353fa",
       "file": "client/src/components/merchant/WooOperationPanel.tsx",
-      "line": 74,
+      "line": 77,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -46823,6 +46824,69 @@
       "conditional": true,
       "conditions": [],
       "disabled": "o.busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "ad879b23a2cb",
+      "file": "client/src/components/merchant/WooWorkspaceShell.tsx",
+      "line": 13,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "WooWorkspaceShell",
+      "binding": "refresh",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "d7eb281869fb",
+      "file": "client/src/components/merchant/WooWorkspaceShell.tsx",
+      "line": 13,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "WooWorkspaceShell",
+      "binding": "/merchant/platform-integrations",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "61adc8748b86",
+      "file": "client/src/components/merchant/WooWorkspaceShell.tsx",
+      "line": 13,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "WooWorkspaceShell",
+      "binding": "destinations[v]",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
       "review": "source-inventoried"
     },
     {
@@ -47155,69 +47219,6 @@
       "conditional": true,
       "conditions": [],
       "disabled": "!o.canStart||busy||review?.revision!==data?.revision||((review?.action==='disconnect'||!!review?.changed)&&!consent)",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "23c7a25c6ad4",
-      "file": "client/src/components/merchant/WooWorkspaceShell.tsx",
-      "line": 11,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "",
-      "section": "WooWorkspaceShell",
-      "binding": "refresh",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "busy",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "93bcb7f71cd2",
-      "file": "client/src/components/merchant/WooWorkspaceShell.tsx",
-      "line": 11,
-      "tag": "Link",
-      "role": "",
-      "kind": "action",
-      "label": "",
-      "section": "WooWorkspaceShell",
-      "binding": "/merchant/platform-integrations",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "8c8fb9e602ce",
-      "file": "client/src/components/merchant/WooWorkspaceShell.tsx",
-      "line": 11,
-      "tag": "Link",
-      "role": "",
-      "kind": "action",
-      "label": "",
-      "section": "WooWorkspaceShell",
-      "binding": "destinations[v]",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "",
       "review": "source-inventoried"
     },
     {

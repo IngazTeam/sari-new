@@ -89,3 +89,21 @@ it('hides a foreign order detail and never offers a mutation for it',async()=>{m
 it('ignores an old notification receipt after switching tenant',async()=>{m.view='orders';let finish!:(value:any)=>void;m.notify.mockImplementation(()=>new Promise(resolve=>finish=resolve));await render();await click(c.notify);await inDialog(c.review);await inDialog(c.confirm);const input=m.notify.mock.calls[0][0];m.merchant=21;m.access.data={...m.access.data,merchantId:21};m.orders.data={...ordersSample(),merchantId:21};await render();await act(async()=>finish({...receipt(input,'order_notify'),outcome:'success',result:{type:'notification',orderId:4,accepted:true,duplicate:false}}));expect(container.textContent).not.toContain(c.accepted);expect(readWooTracking(sessionStorage,7,21)).toBeNull();expect(m.invalidate).not.toHaveBeenCalled();});
 
 it('rejects a saved receipt for a different order on recovery',()=>{const intent={requestId,revision,kind:'order_notify' as const,targetOrderId:4};const result={...receipt(intent,'order_notify'),outcome:'success',result:{type:'notification',orderId:5,accepted:true,duplicate:false}};expect(scopedWooOperation(result,7,20,intent)).toBeNull();expect(scopedWooOperation({...result,result:{...result.result,orderId:4}},7,20,intent)).not.toBeNull();});
+
+it('returns keyboard focus to the page after clearing the last recovered receipt',async()=>{
+ saveWooTracking(sessionStorage,7,20,{requestId,revision,kind:'sync_products'});m.lookup.mockResolvedValue(receipt({requestId,revision},'sync_products','success'));
+ await render();const forget=buttons(c.forget)[0];forget.closest('details')!.open=true;forget.focus();await click(c.forget);
+ expect(container.querySelector('.wc-operation')).toBeNull();expect(document.activeElement).toBe(container.querySelector('h1'));expect(readWooTracking(sessionStorage,7,20)).toBeNull();expect(m.sync).not.toHaveBeenCalled();
+});
+it('keeps focus and the receipt when clearing recovery storage fails',async()=>{
+ saveWooTracking(sessionStorage,7,20,{requestId,revision,kind:'sync_products'});m.lookup.mockResolvedValue(receipt({requestId,revision},'sync_products','success'));await render();
+ vi.spyOn(Storage.prototype,'removeItem').mockImplementation(()=>{throw Error('blocked');});const forget=buttons(c.forget)[0];forget.closest('details')!.open=true;forget.focus();await click(c.forget);
+ expect(container.querySelector('.wc-operation')).not.toBeNull();expect(container.textContent).toContain(c.storage);expect(document.activeElement).toBe(forget);expect(m.sync).not.toHaveBeenCalled();
+});
+it('returns focus to the page when acknowledging the last other-member operation removes the panel',async()=>{
+ m.blocker.data.operation={...receipt({requestId,revision},'sync_products','unknown'),actorId:8};await render();buttons(c.acknowledge)[0].focus();await click(c.acknowledge);
+ m.ack.mockResolvedValue({actorId:7,merchantId:20,operation:{...m.blocker.data.operation,reviewRequired:false}});
+ m.blockerRefresh.mockImplementation(async()=>{m.blocker.data.operation=null;return {data:m.blocker.data};});
+ await act(async()=>buttons(c.acknowledge).at(-1)!.click());await act(async()=>{await new Promise(resolve=>setTimeout(resolve,5));});
+ expect(container.querySelector('.wc-operation')).toBeNull();expect(document.querySelector('[role=dialog]')).toBeNull();expect(document.activeElement).toBe(container.querySelector('h1'));expect(m.ack).toHaveBeenCalledWith({requestId});expect(m.sync).not.toHaveBeenCalled();
+});

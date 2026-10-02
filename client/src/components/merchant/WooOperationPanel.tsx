@@ -1,4 +1,5 @@
-import {useEffect,useRef,useState} from 'react';
+import {useContext,useEffect,useLayoutEffect,useRef,useState} from 'react';
+import {WooPageHeading} from './WooWorkspaceShell';
 import {trpc} from '@/lib/trpc';
 import {Button} from '@/components/ui/button';
 import {Dialog,DialogContent,DialogHeader,DialogTitle,DialogDescription,DialogFooter} from '@/components/ui/dialog';
@@ -58,7 +59,9 @@ export type WooOperationController=ReturnType<typeof useWooOperation>;
 export function WooOperationPanel({operation:o,copy:c,locale}:{operation:WooOperationController;copy:WooCopy;locale:'ar'|'en'}){
  const [review,setReview]=useState<WooOperationReceipt|null>(null),opener=useRef<HTMLButtonElement|null>(null),heading=useRef<HTMLHeadingElement>(null);
  const shown=[...(o.receipt?[o.receipt]:[]),...(o.blocker&&o.blocker.requestId!==o.receipt?.requestId?[o.blocker]:[])];
- if(!shown.length&&!o.notice&&!o.tracked)return null;
+ const pageHeading=useContext(WooPageHeading),forgetting=useRef(false),hidden=!shown.length&&!o.notice&&!o.tracked;
+ useLayoutEffect(()=>{if(forgetting.current){forgetting.current=false;if(hidden)pageHeading?.current?.focus();}});
+ if(hidden)return null;
  const title=(kind:WooOperationKind)=>c[kind],outcome=(value:WooOperationReceipt)=>c[value.outcome==='pending'?'opPending':value.outcome==='success'?'opSuccess':value.outcome==='rejected'?'opRejected':'opUnknown'];
  return <section className="wc-panel wc-operation" aria-labelledby="wc-operation"><h2 id="wc-operation" ref={heading} tabIndex={-1}>{c.operation}</h2>
   {shown.map(value=><div className="wc-notice" key={value.requestId} role="status" data-woo-outcome={value.outcome}><h3>{title(value.kind)}</h3><strong>{outcome(value)}</strong>{value.actorId!==o.actorId&&<p>{c.otherActor}</p>}{value.outcome==='unknown'&&<p>{c.unknownHelp}</p>}
@@ -70,7 +73,7 @@ export function WooOperationPanel({operation:o,copy:c,locale}:{operation:WooOper
   </div>)}
   {o.notice&&<p role="alert" className="wc-notice">{c[o.notice]}</p>}{o.tracked&&!o.receipt&&<p>{c.requestId}: <bdi dir="ltr">{o.tracked.requestId}</bdi></p>}
   <div className="sc-actions"><Button variant="outline" disabled={o.busy} onClick={()=>void o.recover()}>{c.recover}</Button></div>
-  {o.tracked&&o.receipt?.outcome!=='pending'&&o.blocker?.outcome!=='pending'&&<details className="wc-help"><summary>{c.forget}</summary><p>{c.forgetHint}</p><Button variant="outline" disabled={o.busy} onClick={o.forget}>{c.forget}</Button></details>}
-  <Dialog open={!!review} onOpenChange={open=>{if(!open&&!o.busy)setReview(null);}}><DialogContent className="sc-dialog wc-dialog" closeLabel={c.close} showCloseButton={!o.busy} dir={locale==='ar'?'rtl':'ltr'} onCloseAutoFocus={event=>{event.preventDefault();(opener.current?.isConnected&&!opener.current.disabled?opener.current:heading.current)?.focus();}} onEscapeKeyDown={event=>{if(o.busy)event.preventDefault();}} onInteractOutside={event=>{if(o.busy)event.preventDefault();}}><DialogHeader><DialogTitle>{c.acknowledge}</DialogTitle><DialogDescription>{c.acknowledgeHint}</DialogDescription></DialogHeader><p><bdi dir="ltr">{review?.requestId}</bdi></p><p>{c.unknownHelp}</p><DialogFooter><Button variant="outline" disabled={o.busy} onClick={()=>setReview(null)}>{c.cancel}</Button><Button disabled={o.busy} onClick={async()=>{if(review)await o.reviewUnknown(review);setReview(null);}}>{o.busy?c.working:c.acknowledge}</Button></DialogFooter></DialogContent></Dialog>
+  {o.tracked&&o.receipt?.outcome!=='pending'&&o.blocker?.outcome!=='pending'&&<details className="wc-help"><summary>{c.forget}</summary><p>{c.forgetHint}</p><Button variant="outline" disabled={o.busy} onClick={()=>{forgetting.current=true;o.forget();}}>{c.forget}</Button></details>}
+  <Dialog open={!!review} onOpenChange={open=>{if(!open&&!o.busy)setReview(null);}}><DialogContent className="sc-dialog wc-dialog" closeLabel={c.close} showCloseButton={!o.busy} dir={locale==='ar'?'rtl':'ltr'} onCloseAutoFocus={event=>{event.preventDefault();(opener.current?.isConnected&&!opener.current.disabled?opener.current:heading.current?.isConnected?heading.current:pageHeading?.current)?.focus();}} onEscapeKeyDown={event=>{if(o.busy)event.preventDefault();}} onInteractOutside={event=>{if(o.busy)event.preventDefault();}}><DialogHeader><DialogTitle>{c.acknowledge}</DialogTitle><DialogDescription>{c.acknowledgeHint}</DialogDescription></DialogHeader><p><bdi dir="ltr">{review?.requestId}</bdi></p><p>{c.unknownHelp}</p><DialogFooter><Button variant="outline" disabled={o.busy} onClick={()=>setReview(null)}>{c.cancel}</Button><Button disabled={o.busy} onClick={async()=>{if(review)await o.reviewUnknown(review);setReview(null);}}>{o.busy?c.working:c.acknowledge}</Button></DialogFooter></DialogContent></Dialog>
  </section>;
 }

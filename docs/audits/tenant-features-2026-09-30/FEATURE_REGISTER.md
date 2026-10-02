@@ -1356,13 +1356,21 @@
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 69 | Button | تسمية ديناميكية / تحتاج مراجعة | WooOperationPanel |
 | 72 | Button | تسمية ديناميكية / تحتاج مراجعة | WooOperationPanel |
-| 73 | summary | تسمية ديناميكية / تحتاج مراجعة | WooOperationPanel |
-| 73 | Button | تسمية ديناميكية / تحتاج مراجعة | WooOperationPanel |
-| 74 | DialogContent | تسمية ديناميكية / تحتاج مراجعة | WooOperationPanel |
-| 74 | Button | تسمية ديناميكية / تحتاج مراجعة | WooOperationPanel |
-| 74 | Button | تسمية ديناميكية / تحتاج مراجعة | WooOperationPanel |
+| 75 | Button | تسمية ديناميكية / تحتاج مراجعة | WooOperationPanel |
+| 76 | summary | تسمية ديناميكية / تحتاج مراجعة | WooOperationPanel |
+| 76 | Button | تسمية ديناميكية / تحتاج مراجعة | WooOperationPanel |
+| 77 | DialogContent | تسمية ديناميكية / تحتاج مراجعة | WooOperationPanel |
+| 77 | Button | تسمية ديناميكية / تحتاج مراجعة | WooOperationPanel |
+| 77 | Button | تسمية ديناميكية / تحتاج مراجعة | WooOperationPanel |
+
+## client/src/components/merchant/WooWorkspaceShell.tsx
+
+| السطر | النوع | التسمية | القسم |
+|---:|---|---|---|
+| 13 | Button | تسمية ديناميكية / تحتاج مراجعة | WooWorkspaceShell |
+| 13 | Link | تسمية ديناميكية / تحتاج مراجعة | WooWorkspaceShell |
+| 13 | Link | تسمية ديناميكية / تحتاج مراجعة | WooWorkspaceShell |
 
 ## client/src/components/merchant/WooSettingsWorkspace.tsx
 
@@ -1382,14 +1390,6 @@
 | 36 | input | تسمية ديناميكية / تحتاج مراجعة | WooSettingsWorkspace |
 | 36 | Button | تسمية ديناميكية / تحتاج مراجعة | WooSettingsWorkspace |
 | 36 | Button | تسمية ديناميكية / تحتاج مراجعة | WooSettingsWorkspace |
-
-## client/src/components/merchant/WooWorkspaceShell.tsx
-
-| السطر | النوع | التسمية | القسم |
-|---:|---|---|---|
-| 11 | Button | تسمية ديناميكية / تحتاج مراجعة | WooWorkspaceShell |
-| 11 | Link | تسمية ديناميكية / تحتاج مراجعة | WooWorkspaceShell |
-| 11 | Link | تسمية ديناميكية / تحتاج مراجعة | WooWorkspaceShell |
 
 ## client/src/components/merchant/WooHistoryPanels.tsx
 

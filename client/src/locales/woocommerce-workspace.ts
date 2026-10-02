@@ -209,7 +209,7 @@ export const wooWorkspaceEn={
   "opPending": "Request saved; running or waiting to start",
   "opSuccess": "Confirmed and saved result",
   "opRejected": "Execution did not start",
-  "opUnknown": "Outcome needs review",
+  "opUnknown": "Outcome unconfirmed",
   "unknownHelp": "The request may already have had an effect. Review the current state and delivery history before a new action; recovery never repeats execution.",
   "recover": "Recover result",
   "requestId": "Operation ID",
