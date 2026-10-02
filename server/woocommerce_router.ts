@@ -13,7 +13,8 @@ import {WooOperationFault,readWooOperation,readBlockingWooOperation,acknowledgeW
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { merchantProcedure, permissionProcedure, router } from './_core/trpc';
-import type {Permission} from './_core/permissions';
+import {hasPermission,type Permission} from './_core/permissions';
+import {wooAccessSchema} from '../shared/woocommerce-access';
 import {withWooDashboardAuthority,assertWooDashboardAuthority} from './integrations/woocommerce-dashboard-authority';
 import {readWooWorkspace,readWooLogsWorkspace} from './integrations/woocommerce-workspace';
 import {wooLogsInput} from '../shared/woocommerce-workspace';
@@ -366,6 +367,7 @@ async function runFullWooCommerceReconciliation(ctx: WooCommerceRequestAbortCont
 }
 
 export const woocommerceRouter = router({
+  getAccess: wooAccessProcedure().input(noInput).query(({ctx})=>wooAccessSchema.parse({actorId:ctx.user.id,merchantId:tenantId(ctx),integrationsManage:hasPermission(ctx.merchantRole,'integrations.manage'),ordersManage:hasPermission(ctx.merchantRole,'orders.manage'),analyticsRead:hasPermission(ctx.merchantRole,'analytics.read')})),
   requestReviewedNotification: wooAccessProcedure('orders.manage').input(wooOrderNotificationRequest).mutation(({ctx,input})=>reviewedWooAction(()=>requestReviewedWooNotification(ctx.user.id,tenantId(ctx),input))),
   getOrderActionWorkspace: wooAccessProcedure('orders.manage').input(wooOrderActionLookup).query(({ctx,input})=>readWooOrderActionWorkspace(ctx.user.id,tenantId(ctx),input)),
   requestReviewedOrderStatus: wooAccessProcedure('orders.manage').input(wooOrderStatusRequest).mutation(({ctx,input})=>reviewedWooAction(()=>requestReviewedWooOrderStatus(ctx.user.id,tenantId(ctx),input))),
