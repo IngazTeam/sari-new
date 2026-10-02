@@ -8,6 +8,8 @@ import {readWooWorkspace,readWooLogsWorkspace} from './integrations/woocommerce-
 import {wooLogsInput} from '../shared/woocommerce-workspace';
 import {readWooProductsWorkspace,readWooOrdersWorkspace,readWooOrderDetailsWorkspace} from './integrations/woocommerce-data-workspace';
 import {wooProductsInput,wooOrdersInput,wooOrderDetailsInput} from '../shared/woocommerce-data-workspace';
+import {wooAnalyticsInput} from '../shared/woocommerce-analytics-workspace';
+import {readWooAnalyticsWorkspace} from './integrations/woocommerce-analytics-workspace';
 import {
   createWooCommerceSyncLog,
   getDb,
@@ -342,6 +344,7 @@ async function runFullWooCommerceReconciliation(ctx: WooCommerceRequestAbortCont
 }
 
 export const woocommerceRouter = router({
+  getAnalyticsWorkspace: wooAccessProcedure('analytics.read').input(wooAnalyticsInput).query(({ctx,input})=>readWooAnalyticsWorkspace(ctx.user.id,tenantId(ctx),input)),
   getProductsWorkspace: wooAccessProcedure().input(wooProductsInput).query(({ctx,input})=>readWooProductsWorkspace(ctx.user.id,tenantId(ctx),input)),
   getOrdersWorkspace: wooAccessProcedure().input(wooOrdersInput).query(({ctx,input})=>readWooOrdersWorkspace(ctx.user.id,tenantId(ctx),input)),
   getOrderDetailsWorkspace: wooAccessProcedure().input(wooOrderDetailsInput).query(({ctx,input})=>readWooOrderDetailsWorkspace(ctx.user.id,tenantId(ctx),input)),
