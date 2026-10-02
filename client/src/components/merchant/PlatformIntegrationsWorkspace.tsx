@@ -17,7 +17,7 @@ const settings = {salla:'/merchant/salla',zid:'/merchant/integrations/zid',wooco
 const fresh={retry:false,staleTime:0,refetchOnMount:'always' as const,refetchOnWindowFocus:false};
 const needsReview=(row:PlatformSummary)=>['error','pending_verification','unknown'].includes(row.state)||row.hasSyncErrors;
 export function PlatformIntegrationsWorkspace({actorId,merchantId}:{actorId:number;merchantId:number}) {
-  const {t,i18n}=useTranslation(),copy=platformWorkspaceLabels(t),[health,setHealth]=useState(''),[busy,setBusy]=useState(false);
+  const {t,i18n}=useTranslation(),copy=platformWorkspaceLabels(t),[health,setHealth]=useState<''|'healthChanged'|'healthOk'|'healthPending'|'healthNone'|'healthFailed'>(''),[busy,setBusy]=useState(false);
   const live=useRef(true),lock=useRef(false),scope=useRef('');scope.current=actorId+':'+merchantId;
   const query=trpc.integrations.workspace.useQuery(undefined,fresh),test=trpc.integrations.testByaanConnection.useMutation();
   const parsed=platformWorkspaceSchema.safeParse(query.data);
@@ -32,9 +32,9 @@ export function PlatformIntegrationsWorkspace({actorId,merchantId}:{actorId:numb
     try {
       const result=await test.mutateAsync();
       if(!live.current||identity!==scope.current)return;
-      if(evidence!==currentDefinition.current){setHealth(copy.healthChanged);return;}
-      setHealth(result.status==='active'&&result.success===true?copy.healthOk:result.status==='pending_verification'?copy.healthPending:result.status==='not_connected'?copy.healthNone:copy.healthFailed);
-    }catch{if(live.current&&identity===scope.current)setHealth(copy.healthFailed);}
+      if(evidence!==currentDefinition.current){setHealth('healthChanged');return;}
+      setHealth(result.status==='active'&&result.success===true?'healthOk':result.status==='pending_verification'?'healthPending':result.status==='not_connected'?'healthNone':'healthFailed');
+    }catch{if(live.current&&identity===scope.current)setHealth('healthFailed');}
     finally{lock.current=false;if(live.current&&identity===scope.current)setBusy(false);}
   };
   if(query.error)return <WorkspaceState kind={workspaceFailureKind(query.error)} onRetry={refresh}/>;
@@ -56,7 +56,7 @@ export function PlatformIntegrationsWorkspace({actorId,merchantId}:{actorId:numb
           <div className="pi-card-actions">{path&&!blocked?<Button asChild variant={row.present?'outline':'default'}><Link href={path}>{row.present?copy.manage:copy.connect}</Link></Button>:<p className="sc-muted">{path?copy.blocked:copy.unsupported}</p>}
             {row.platform==='shopify'&&row.present&&<Link href="/support">{copy.support}</Link>}
             {row.platform==='byaan'&&row.occupiesSlot&&data.source==='byaan'&&<Button variant="outline" disabled={busy||query.isFetching} onClick={()=>{void check();}}><RefreshCw aria-hidden="true"/>{busy?copy.testing:copy.test}</Button>}
-          </div>{row.platform==='byaan'&&health&&<p className="pi-health" role="status">{health}</p>}
+          </div>{row.platform==='byaan'&&health&&<p className="pi-health" role="status">{copy[health]}</p>}
         </li>;
       })}</ul>
     </section>

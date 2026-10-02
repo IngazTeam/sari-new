@@ -1,0 +1,16 @@
+import {it,expect} from 'vitest';
+import {ServicePreviewModel,serviceModes} from '../prototypes/tenant-dashboard/src/service-preview-model';
+import {platformSamples} from '../prototypes/tenant-dashboard/src/platform-preview-model';
+import {platformWorkspaceSchema} from '../shared/platform-workspace';
+import {sheetsSettingsView} from '../shared/sheets-settings';
+import {servicePreviewHref,previewNavigation} from '../prototypes/tenant-dashboard/src/service-preview-router';
+it.each(platformSamples)('represents all saved sources for %s in separate tenants',sample=>{
+ for(const merchant of [269,270]){const model=new ServicePreviewModel(merchant,'normal',undefined,sample);const data=platformWorkspaceSchema.parse(model.read('integrations.workspace').data);expect(data).toMatchObject({actorId:merchant+1000,merchantId:merchant,conflict:sample==='conflict',occupied:sample==='unlinked'?0:sample==='conflict'?3:1});expect(data.platforms).toHaveLength(5);expect(data.stats.products).toBe(sample==='unlinked'?0:merchant===269?601:712);if(sample==='pending')expect(data.platforms[4].state).toBe('pending_verification');expect(sheetsSettingsView.safeParse(model.read('sheets.getStatus').data).success).toBe(true);}
+});
+it.each(serviceModes)('provides scoped %s platform and Google states',mode=>{
+ const model=new ServicePreviewModel(269,mode);for(const name of ['integrations.workspace','sheets.getStatus']){const result=model.read(name);if(mode==='loading')expect(result.isLoading).toBe(true);else if(['failure','stale-error','readonly'].includes(mode))expect(result.error).toBeTruthy();else if(mode==='foreign')expect(result.data.merchantId).toBe(999);else expect(result.error).toBeNull();}
+});
+it('performs a local health check without changing the stored sync timestamp',async()=>{const model=new ServicePreviewModel(269),before=model.read('integrations.workspace').data;expect(await model.mutate('integrations.testByaanConnection',undefined)).toMatchObject({status:'active',success:true});expect(model.operations).toBe(1);expect(model.read('integrations.workspace').data).toEqual(before);});
+it('reports pending ownership without claiming a successful health check',async()=>{const model=new ServicePreviewModel(269,'normal',undefined,'pending');expect(await model.mutate('integrations.testByaanConnection',undefined)).toMatchObject({success:false,status:'pending_verification'});});
+it('rejects delayed work after its tenant model is disposed',async()=>{const model=new ServicePreviewModel(269,'pending-save'),pending=model.mutate('integrations.testByaanConnection',undefined),result=expect(pending).rejects.toBeTruthy();model.dispose();await result;expect(model.operations).toBe(0);});
+it('retains the connection example when moving to calendar settings and back',()=>{const target=servicePreviewHref('/merchant/calendar/settings','?path=/merchant/platform-integrations&lang=en&tenant=270&connection=conflict&embed=brain')!;expect(previewNavigation(target).params.get('connection')).toBe('conflict');expect(previewNavigation(target).search).toBe('');expect(previewNavigation(servicePreviewHref('/merchant/platform-integrations',target)!).path).toBe('/merchant/platform-integrations');});

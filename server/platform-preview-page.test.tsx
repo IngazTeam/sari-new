@@ -1,0 +1,19 @@
+// @vitest-environment jsdom
+import React,{act} from 'react';import {createRoot,type Root} from 'react-dom/client';import {beforeEach,afterEach,it,expect,vi} from 'vitest';
+import en from '../client/src/locales/merchant-ux.en';import ar from '../client/src/locales/merchant-ux.ar';
+const m=vi.hoisted(()=>({language:'en'}));
+vi.mock('@/lib/trpc',()=>import('../prototypes/tenant-dashboard/src/service-preview-api'));
+vi.mock('wouter',()=>import('../prototypes/tenant-dashboard/src/service-preview-router'));
+vi.mock('react-i18next',()=>({useTranslation:()=>({i18n:{language:m.language},t:(key:string)=>{let value:any=m.language==='ar'?ar:en;for(const k of key.split('.').slice(1))value=value?.[k];return typeof value==='string'?value:key;}})}));
+import PlatformIntegrations from '../client/src/pages/PlatformIntegrations';
+import {ServicePreviewContext} from '../prototypes/tenant-dashboard/src/service-preview-api';import {ServicePreviewModel} from '../prototypes/tenant-dashboard/src/service-preview-model';
+let root:Root,container:HTMLDivElement,model:ServicePreviewModel;
+beforeEach(()=>{Object.assign(globalThis,{React,IS_REACT_ACT_ENVIRONMENT:true});m.language='en';container=document.createElement('div');document.body.append(container);root=createRoot(container);model=new ServicePreviewModel(269);history.replaceState(null,'','/?path=/merchant/platform-integrations&tenant=269');});
+afterEach(async()=>{await act(async()=>root.unmount());model.dispose();container.remove();});
+const render=()=>act(async()=>root.render(<ServicePreviewContext.Provider value={model}><PlatformIntegrations/></ServicePreviewContext.Provider>));
+const click=async(text:string)=>act(async()=>{const b=Array.from(container.querySelectorAll('button')).find(b=>b.textContent===text)!;expect(b).toBeTruthy();b.click();});
+it.each(['ar','en'])('renders the actual integration page and its Byaan check in %s',async language=>{m.language=language;await render();const copy=(language==='ar'?ar:en).platformWorkspace;expect(container.querySelectorAll('[data-platform]')).toHaveLength(5);expect(container.textContent).not.toContain('merchantUx.');await click(copy.test);expect(container.textContent).toContain(copy.healthOk);expect(model.operations).toBe(1);});
+it('preserves all configured links and pending verification examples',async()=>{model=new ServicePreviewModel(269,'normal',undefined,'conflict');await render();expect(container.textContent).toContain(en.platformWorkspace.conflict);expect(container.querySelectorAll('.pi-card-actions a[href*="settings"],.pi-card-actions a[href*="salla"],.pi-card-actions a[href*="byaan"],.pi-card-actions a[href*="zid"]')).toHaveLength(3);});
+it('does not claim that pending Byaan ownership is a successful connection check',async()=>{model=new ServicePreviewModel(269,'normal',undefined,'pending');await render();await click(en.platformWorkspace.test);expect(container.textContent).toContain(en.platformWorkspace.healthPending);expect(container.textContent).not.toContain(en.platformWorkspace.healthOk);});
+it.each(['foreign','readonly','stale-error'])('rejects %s data instead of showing another or stale connection',async mode=>{model=new ServicePreviewModel(269,mode as any);await render();expect(container.querySelectorAll('[data-platform]')).toHaveLength(0);expect(container.querySelector('[data-state]')).not.toBeNull();});
+it('keeps a delayed check disabled until explicit local completion',async()=>{model=new ServicePreviewModel(269,'pending-save');await render();await click(en.platformWorkspace.test);expect(Array.from(container.querySelectorAll('button')).find(b=>b.textContent===en.platformWorkspace.testing)?.disabled).toBe(true);expect(model.pending).toBe(1);await act(async()=>model.finishPending());expect(container.textContent).toContain(en.platformWorkspace.healthOk);expect(model.operations).toBe(1);});
