@@ -2,8 +2,10 @@ import crypto from 'node:crypto';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { merchantProcedure, permissionProcedure, router } from './_core/trpc';
+import type {Permission} from './_core/permissions';
 import {
   createWooCommerceSyncLog,
+  getDb,
   deleteWooCommerceIntegration,
   getConversationsByMerchant,
   getLatestWooCommerceSyncLog,
@@ -55,12 +57,23 @@ import { sendMerchantWhatsApp, WhatsAppDeliveryStateError } from './channels/wha
 const pageInput = z.object({
   page: z.number().int().min(1).max(10_000).default(1),
   limit: z.number().int().min(1).max(100).default(50),
-});
+}).strict();
 const orderStatus = z.enum(['pending', 'processing', 'on-hold', 'completed', 'cancelled', 'refunded', 'failed']);
+const noInput=z.object({}).strict().optional();
 const dateRangeInput = z.object({
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-}).refine(value => Boolean(value.startDate) === Boolean(value.endDate), 'date_range_incomplete');
+}).strict().refine(value => Boolean(value.startDate) === Boolean(value.endDate), 'date_range_incomplete');
+
+// Preserve member read access to catalog/orders; integration metadata needs its own permission.
+function wooAccessProcedure(permission?:Permission){
+  const procedure=permission?permissionProcedure(permission):merchantProcedure;
+  return procedure.use(async({next})=>{
+    const unavailable=()=>new TRPCError({code:'INTERNAL_SERVER_ERROR',message:'تعذر تأكيد بيانات WooCommerce. حدّث الصفحة وحاول مجددًا.'});
+    try{if(!await getDb())throw unavailable();}catch{throw unavailable();}
+    const result=await next();if(!result.ok&&result.error.code==='INTERNAL_SERVER_ERROR')throw unavailable();return result;
+  });
+}
 
 function tenantId(ctx: { merchantId?: number }): number {
   if (!ctx.merchantId) throw new TRPCError({ code: 'FORBIDDEN', message: 'لا يوجد متجر مرتبط بهذه الجلسة' });
@@ -324,12 +337,12 @@ async function runFullWooCommerceReconciliation(ctx: WooCommerceRequestAbortCont
 }
 
 export const woocommerceRouter = router({
-  getSettings: merchantProcedure.query(async ({ ctx }) => {
+  getSettings: wooAccessProcedure('integrations.manage').input(noInput).query(async ({ ctx }) => {
     const settings = await getWooCommerceSettings(tenantId(ctx));
     return settings ? await settingsDto(settings) : null;
   }),
 
-  saveSettings: permissionProcedure('integrations.manage')
+  saveSettings: wooAccessProcedure('integrations.manage')
     .input(z.object({
       storeUrl: z.string().trim().min(8).max(500),
       consumerKey: z.string().trim().max(160).optional(),
@@ -342,6 +355,11 @@ export const woocommerceRouter = router({
           const existing = await getWooCommerceSettings(merchantId);
           if (!existing) await validateNewPlatformConnection(merchantId, 'WooCommerce');
           const storeUrl = canonicalWooStoreUrl(input.storeUrl);
+          // Saved credentials are bound to the verified store root, including its path.
+          // A new destination must supply both credentials explicitly before any request.
+          if(existing&&(!input.consumerKey||!input.consumerSecret)&&storeUrl!==canonicalWooStoreUrl(existing.storeUrl)){
+            throw new TRPCError({code:'BAD_REQUEST',message:'أدخل مفتاحًا وسرًا جديدين عند تغيير رابط متجر WooCommerce'});
+          }
           const consumerKey = input.consumerKey || existing?.consumerKey;
           const consumerSecret = input.consumerSecret || existing?.consumerSecret;
           if (!consumerKey || !consumerSecret) {
@@ -393,7 +411,7 @@ export const woocommerceRouter = router({
       }
     }),
 
-  testConnection: permissionProcedure('integrations.manage').mutation(async ({ ctx }) => {
+  testConnection: wooAccessProcedure('integrations.manage').input(noInput).mutation(async ({ ctx }) => {
     const merchantId = tenantId(ctx);
     try {
       return await withWooCommerceRequestLock(ctx, merchantId, async () => {
@@ -457,7 +475,7 @@ export const woocommerceRouter = router({
     }
   }),
 
-  disconnect: permissionProcedure('integrations.manage').mutation(async ({ ctx }) => {
+  disconnect: wooAccessProcedure('integrations.manage').input(noInput).mutation(async ({ ctx }) => {
     const merchantId = tenantId(ctx);
     await withWooCommerceRequestLock(ctx, merchantId, async () => {
       const settings = await getWooCommerceSettings(merchantId);
@@ -468,23 +486,23 @@ export const woocommerceRouter = router({
     return { success: true };
   }),
 
-  getProducts: merchantProcedure.input(pageInput).query(async ({ ctx, input }) => {
+  getProducts: wooAccessProcedure().input(pageInput).query(async ({ ctx, input }) => {
     const merchantId = tenantId(ctx);
     const products = await getWooCommerceProducts(merchantId, input.limit, (input.page - 1) * input.limit);
     const stats = await getWooCommerceProductsStats(merchantId);
     return { products: products.map(productDto), stats, pagination: { ...input, total: stats.total } };
   }),
 
-  searchProducts: merchantProcedure
+  searchProducts: wooAccessProcedure()
     .input(z.object({ search: z.string().trim().min(3).max(120), limit: z.number().int().min(1).max(50).default(20) }).strict())
     .query(async ({ ctx, input }) => (await searchWooCommerceProducts(tenantId(ctx), input.search, input.limit)).map(productDto)),
 
-  syncProducts: permissionProcedure('integrations.manage').mutation(async ({ ctx }) => {
+  syncProducts: wooAccessProcedure('integrations.manage').input(noInput).mutation(async ({ ctx }) => {
     const result = await runManualSync(ctx, tenantId(ctx), 'products');
     return { ...result, message: `تمت مزامنة ${result.count} منتج من WooCommerce` };
   }),
 
-  getOrders: merchantProcedure
+  getOrders: wooAccessProcedure()
     .input(pageInput.extend({ status: orderStatus.optional() }))
     .query(async ({ ctx, input }) => {
       const merchantId = tenantId(ctx);
@@ -497,30 +515,30 @@ export const woocommerceRouter = router({
       return { orders: rows.map(orderDto), stats, pagination: { page: input.page, limit: input.limit, total } };
     }),
 
-  getOrder: merchantProcedure.input(z.object({ id: z.number().int().positive() }).strict()).query(async ({ ctx, input }) => {
+  getOrder: wooAccessProcedure().input(z.object({ id: z.number().int().positive() }).strict()).query(async ({ ctx, input }) => {
     const order = await getWooCommerceOrderByIdForMerchant(tenantId(ctx), input.id);
     if (!order) throw new TRPCError({ code: 'NOT_FOUND', message: 'الطلب غير موجود' });
     return orderDto(order);
   }),
 
-  syncOrders: permissionProcedure('integrations.manage').mutation(async ({ ctx }) => {
+  syncOrders: wooAccessProcedure('integrations.manage').input(noInput).mutation(async ({ ctx }) => {
     const result = await runManualSync(ctx, tenantId(ctx), 'orders');
     return { ...result, message: `تمت مزامنة ${result.count} طلب من WooCommerce` };
   }),
 
-  reconcileWebhookIncidents: permissionProcedure('integrations.manage').mutation(async ({ ctx }) => {
+  reconcileWebhookIncidents: wooAccessProcedure('integrations.manage').input(noInput).mutation(async ({ ctx }) => {
     return runFullWooCommerceReconciliation(ctx, tenantId(ctx));
   }),
 
-  getSyncLogs: merchantProcedure
+  getSyncLogs: wooAccessProcedure('integrations.manage')
     .input(z.object({ limit: z.number().int().min(1).max(100).default(25) }).strict())
     .query(({ ctx, input }) => getWooCommerceSyncLogs(tenantId(ctx), input.limit)),
 
-  getLatestSync: merchantProcedure
+  getLatestSync: wooAccessProcedure('integrations.manage')
     .input(z.object({ syncType: z.enum(['products', 'orders', 'customers', 'manual']) }).strict())
     .query(({ ctx, input }) => getLatestWooCommerceSyncLog(tenantId(ctx), input.syncType)),
 
-  updateOrderStatus: permissionProcedure('orders.manage')
+  updateOrderStatus: wooAccessProcedure('orders.manage')
     .input(z.object({ orderId: z.number().int().positive(), status: orderStatus, note: z.string().trim().max(1_000).optional() }).strict())
     .mutation(async ({ ctx, input }) => {
       const merchantId = tenantId(ctx);
@@ -547,7 +565,7 @@ export const woocommerceRouter = router({
       }
     }),
 
-  sendOrderNotification: permissionProcedure('orders.manage')
+  sendOrderNotification: wooAccessProcedure('orders.manage')
     .input(z.object({ orderId: z.number().int().positive(), message: z.string().trim().min(1).max(2_000).optional() }).strict())
     .mutation(async ({ ctx, input }) => {
       const merchantId = tenantId(ctx);
@@ -582,7 +600,7 @@ export const woocommerceRouter = router({
       }
     }),
 
-  getSalesStats: permissionProcedure('analytics.read')
+  getSalesStats: wooAccessProcedure('analytics.read')
     .input(dateRangeInput.extend({ period: z.enum(['daily', 'weekly', 'monthly']).default('daily') }))
     .query(async ({ ctx, input }) => {
       const rows = filterOrdersByDate(await getWooCommerceOrdersByMerchant(tenantId(ctx)), dateBounds(input));
@@ -614,7 +632,7 @@ export const woocommerceRouter = router({
       };
     }),
 
-  getTopProducts: permissionProcedure('analytics.read')
+  getTopProducts: wooAccessProcedure('analytics.read')
     .input(dateRangeInput.extend({ limit: z.number().int().min(1).max(50).default(10) }))
     .query(async ({ ctx, input }) => {
       const rows = filterOrdersByDate(await getWooCommerceOrdersByMerchant(tenantId(ctx)), dateBounds(input))
@@ -638,7 +656,7 @@ export const woocommerceRouter = router({
       return Array.from(products.values()).sort((a, b) => b.quantity - a.quantity).slice(0, input.limit);
     }),
 
-  getConversionRate: permissionProcedure('analytics.read').input(dateRangeInput).query(async ({ ctx, input }) => {
+  getConversionRate: wooAccessProcedure('analytics.read').input(dateRangeInput).query(async ({ ctx, input }) => {
     const merchantId = tenantId(ctx);
     const orders = filterOrdersByDate(await getWooCommerceOrdersByMerchant(merchantId), dateBounds(input));
     const conversations = await getConversationsByMerchant(merchantId);
@@ -655,7 +673,7 @@ export const woocommerceRouter = router({
     };
   }),
 
-  getCustomerStats: permissionProcedure('analytics.read').input(dateRangeInput).query(async ({ ctx, input }) => {
+  getCustomerStats: wooAccessProcedure('analytics.read').input(dateRangeInput).query(async ({ ctx, input }) => {
     const orders = filterOrdersByDate(await getWooCommerceOrdersByMerchant(tenantId(ctx)), dateBounds(input));
     const counts = new Map<string, number>();
     for (const order of orders) {
