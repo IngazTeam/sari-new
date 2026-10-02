@@ -1568,16 +1568,16 @@
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 28 | input | تسمية ديناميكية / تحتاج مراجعة | DiscountEditor |
-| 29 | Button | تسمية ديناميكية / تحتاج مراجعة | DiscountEditor |
-| 29 | Button | تسمية ديناميكية / تحتاج مراجعة | DiscountEditor |
+| 29 | input | تسمية ديناميكية / تحتاج مراجعة | DiscountEditor |
 | 30 | Button | تسمية ديناميكية / تحتاج مراجعة | DiscountEditor |
 | 30 | Button | تسمية ديناميكية / تحتاج مراجعة | DiscountEditor |
-| 32 | select | template10 template25 template50 templateWelcome templateSeasonal templateFlash | DiscountEditor |
-| 32 | select | تسمية ديناميكية / تحتاج مراجعة | DiscountEditor |
-| 33 | summary | تسمية ديناميكية / تحتاج مراجعة | DiscountEditor |
-| 34 | Button | تسمية ديناميكية / تحتاج مراجعة | DiscountEditor |
-| 34 | Button | تسمية ديناميكية / تحتاج مراجعة | DiscountEditor |
+| 31 | Button | تسمية ديناميكية / تحتاج مراجعة | DiscountEditor |
+| 31 | Button | تسمية ديناميكية / تحتاج مراجعة | DiscountEditor |
+| 33 | select | template10 template25 template50 templateWelcome templateSeasonal templateFlash | DiscountEditor |
+| 33 | select | تسمية ديناميكية / تحتاج مراجعة | DiscountEditor |
+| 34 | summary | تسمية ديناميكية / تحتاج مراجعة | DiscountEditor |
+| 35 | Button | تسمية ديناميكية / تحتاج مراجعة | DiscountEditor |
+| 35 | Button | تسمية ديناميكية / تحتاج مراجعة | DiscountEditor |
 
 ## client/src/pages/merchant/Referrals.tsx
 

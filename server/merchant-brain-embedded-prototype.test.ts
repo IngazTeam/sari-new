@@ -239,3 +239,10 @@ it('preserves the Byaan data frame and rejects foreign or unlisted destinations'
  for(const route of ['/merchant/sari-brain','/merchant/products']){send({type:'sary-brain-preview',action:'serviceTool',route});expect(w.location.hash).toBe('#/page'+route);}
  send({type:'sary-brain-preview',action:'serviceTool',route:'/merchant/products?token=private'});expect(w.location.hash).toBe('#/page/merchant/products');
 });
+
+it('syncs discount search, status and origin from its owned frame and rejects invalid scope or filters',()=>{
+ frame.setAttribute('src','./service-workspace.html?embed=brain');w.history.replaceState(null,'','#/page/merchant/discounts');w.syncServicePreviewContext=vi.fn();
+ const message={type:'sary-brain-preview',action:'serviceState',search:'path=/merchant/discounts&q=DEMO&status=expired&origin=automatic&page=2&tenant=270&lang=en'};
+ for(const search of ['path=/merchant/discounts&origin=secret','path=/merchant/discounts&status=paid','path=/merchant/discounts&tenant=999','path=/merchant/discounts&origin=manual&origin=automatic','path=/merchant/discounts&merchantId=999','path=/merchant/discounts/secret'])send({...message,search});
+ send(message,'https://evil.test');send(message,undefined,w);expect(w.location.hash).toBe('#/page/merchant/discounts');send(message);expect(w.location.hash).toBe('#/page/merchant/discounts?q=DEMO&status=expired&origin=automatic&page=2&tenant=270&lang=en');expect(frame.isConnected).toBe(true);expect(w.syncServicePreviewContext).toHaveBeenCalledOnce();
+});

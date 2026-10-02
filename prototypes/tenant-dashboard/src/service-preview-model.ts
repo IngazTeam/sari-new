@@ -1,3 +1,4 @@
+import {DiscountPreviewStore,discountPreviewQueries,discountPreviewMutations} from './discount-preview-model';
 import {CalendlyPreviewStore,calendlyPreviewQueries,calendlyPreviewMutations} from './calendly-preview-model';
 import {WooPreviewStore,wooPreviewQueries,wooPreviewMutations} from './woo-preview-model';
 import {ZidPreviewStore,zidPreviewQueries,zidPreviewMutations} from './zid-preview-model';
@@ -15,8 +16,8 @@ import {staffWorkspaceSnapshot} from '../../../shared/staff-workspace';
 import {z} from 'zod';
 export const serviceModes=['normal','empty','loading','failure','forbidden','session','foreign','stale-error','readonly','legacy','unavailable-reference','choices-error','action-failure','save-conflict','pending-save','uncertain-save','unlinked','oauth-disabled','destination-missing','credentials-invalid'] as const;
 export type ServiceMode=typeof serviceModes[number];
-export const serviceQueries=['auth.me','merchants.getCurrent','services.catalogWorkspace','services.catalogEditor','services.catalogChoices','services.detailsWorkspace','staff.list',...bookingPreviewQueries,...calendarPreviewQueries,...platformPreviewQueries,...byaanConnectionQueries,...byaanDataQueries,...sallaPreviewQueries,...zidPreviewQueries,...wooPreviewQueries,...calendlyPreviewQueries] as const;
-export const serviceMutations=['services.create','services.update','services.delete','serviceCategories.create','serviceCategories.update','serviceCategories.delete','servicePackages.create','servicePackages.update','servicePackages.delete','staff.create','staff.update','staff.delete',...bookingPreviewMutations,...calendarPreviewMutations,...platformPreviewMutations,...byaanConnectionMutations,...byaanDataMutations,...sallaPreviewMutations,...zidPreviewMutations,...wooPreviewMutations,...calendlyPreviewMutations] as const;
+export const serviceQueries=['auth.me','merchants.getCurrent','services.catalogWorkspace','services.catalogEditor','services.catalogChoices','services.detailsWorkspace','staff.list',...bookingPreviewQueries,...calendarPreviewQueries,...platformPreviewQueries,...byaanConnectionQueries,...byaanDataQueries,...sallaPreviewQueries,...zidPreviewQueries,...wooPreviewQueries,...calendlyPreviewQueries,...discountPreviewQueries] as const;
+export const serviceMutations=['services.create','services.update','services.delete','serviceCategories.create','serviceCategories.update','serviceCategories.delete','servicePackages.create','servicePackages.update','servicePackages.delete','staff.create','staff.update','staff.delete',...bookingPreviewMutations,...calendarPreviewMutations,...platformPreviewMutations,...byaanConnectionMutations,...byaanDataMutations,...sallaPreviewMutations,...zidPreviewMutations,...wooPreviewMutations,...calendlyPreviewMutations,...discountPreviewMutations] as const;
 type Entity=CatalogRecord['entity'];type Row={id:number;entity:Entity;fields:any;version:number};
 const fault=(code='INTERNAL_SERVER_ERROR')=>({message:'Local service simulation',data:{code}});
 const normalize={service:normalizeCatalogService,category:normalizeCatalogCategory,package:normalizeCatalogPackage};
@@ -24,7 +25,7 @@ const normalize={service:normalizeCatalogService,category:normalizeCatalogCatego
 export class ServicePreviewModel{
  readonly actorId:number;operations=0;retries=0;pending=0;private revision=0;private recovered=false;private disposed=false;private nextId=32;
  private listeners=new Set<()=>void>();private cache=new Map<string,any>();private rows=new Map<string,Row>();private waiting:Array<{resolve:()=>void;reject:(e:any)=>void}>=[];
- private calendly:CalendlyPreviewStore;private woo:WooPreviewStore;private zid:ZidPreviewStore;private salla:SallaPreviewStore;private byaanData:ByaanDataPreviewStore;private byaan:ByaanConnectionPreviewStore;private bookings:BookingPreviewStore;private calendar:CalendarPreviewStore;
+ private discounts:DiscountPreviewStore;private calendly:CalendlyPreviewStore;private woo:WooPreviewStore;private zid:ZidPreviewStore;private salla:SallaPreviewStore;private byaanData:ByaanDataPreviewStore;private byaan:ByaanConnectionPreviewStore;private bookings:BookingPreviewStore;private calendar:CalendarPreviewStore;
  private staffRows=new Map<number,{fields:any;version:number}>();private nextStaffId=32;
  constructor(readonly merchantId:number,readonly mode:ServiceMode='normal',readonly now=new Date().toISOString(),readonly platformSample:PlatformSample='byaan'){
   this.now=now=new Date(now).toISOString();
@@ -36,6 +37,7 @@ export class ServicePreviewModel{
   }
   if(mode!=='empty')for(let id=1;id<=31;id++)this.staffRows.set(id,{version:0,fields:{id,merchantId,name:`${merchantId===269?'نواة · Nawa':'مدار · Madar'} · مقدم خدمة ${id}`,phone:null,email:`provider${id}@example.test`,role:'استشارات · Consultant',workingHours:JSON.stringify({sunday:{start:'09:00',end:'17:00'}}),googleCalendarId:null,isActive:id%5===0?0:1,specialization:null,bio:null,avatar:null,serviceIds:null}});
   this.byaan=new ByaanConnectionPreviewStore(this.actorId,merchantId,now,mode,platformSample);
+  this.discounts=new DiscountPreviewStore(this.actorId,merchantId,now,()=>this.activeMode);
   this.calendly=new CalendlyPreviewStore(this.actorId,merchantId,now,()=>this.activeMode);
   this.woo=new WooPreviewStore(this.actorId,merchantId,now,()=>this.activeMode,this.byaan);
   this.zid=new ZidPreviewStore(this.actorId,merchantId,now,()=>this.activeMode,this.byaan,platformSample);
@@ -85,6 +87,7 @@ export class ServicePreviewModel{
   if(name==='auth.me')return this.activeMode==='session'?null:{id:this.actorId,name:'Local account'};
   if(name==='merchants.getCurrent')return {id:this.merchantId};
   if(name.startsWith('integrations.'))return this.byaan.read(name);
+  if(name.startsWith('discounts.'))return this.discounts.read(name,input);
   if(name.startsWith('calendly.'))return this.calendly.read(name,input);
   if(name.startsWith('woocommerce.'))return this.woo.read(name,input);
   if(name.startsWith('zid.'))return this.zid.read(name,input);
@@ -112,7 +115,7 @@ export class ServicePreviewModel{
  }
  read(name:string,input?:any){
   if(!serviceQueries.includes(name as any)&&name!=='services.catalogRecord')throw Error('Unmapped read');const key=JSON.stringify([name,input]);if(this.cache.has(key))return this.cache.get(key);
-  const mode=this.activeMode,workspace=name.startsWith('calendly.')||name.startsWith('woocommerce.')||name.startsWith('zid.')||name.startsWith('salla.')||name.startsWith('byaan.')||name.startsWith('integrations.')||name.startsWith('sheets.')||name.startsWith('calendar.')||name.startsWith('services.')||name.startsWith('bookings.')||name==='staff.list',loading=workspace&&mode==='loading';let data:any,error:any=mode==='forbidden'&&name==='merchants.getCurrent'?fault('FORBIDDEN'):workspace&&(['failure','stale-error'].includes(mode)||mode==='choices-error'&&['services.catalogChoices','woocommerce.getOrderActionWorkspace','calendly.getBookingLinksWorkspace'].includes(name))?fault():null;
+  const mode=this.activeMode,workspace=name.startsWith('discounts.')||name.startsWith('calendly.')||name.startsWith('woocommerce.')||name.startsWith('zid.')||name.startsWith('salla.')||name.startsWith('byaan.')||name.startsWith('integrations.')||name.startsWith('sheets.')||name.startsWith('calendar.')||name.startsWith('services.')||name.startsWith('bookings.')||name==='staff.list',loading=workspace&&mode==='loading';let data:any,error:any=mode==='forbidden'&&name==='merchants.getCurrent'?fault('FORBIDDEN'):workspace&&(['failure','stale-error'].includes(mode)||mode==='choices-error'&&['services.catalogChoices','woocommerce.getOrderActionWorkspace','calendly.getBookingLinksWorkspace'].includes(name))?fault():null;
   if(mode==='readonly'&&(name.startsWith('zid.')||name.startsWith('salla.')||name.startsWith('integrations.')||name.startsWith('sheets.'))||mode==='foreign'&&name.startsWith('salla.')&&['effectReviewAccess','listEffects','listEffectReviews'].includes(name.split('.')[1]))error=fault('FORBIDDEN');
   try{data=this.fixture(name,input);}catch(e){error=e;}if(mode==='foreign'&&workspace&&data)data=name==='byaan.dashboardOverview'?{...data,connection:{...data.connection,merchantId:999}}:{...data,merchantId:999};
   const result={data:loading||error&&mode!=='stale-error'?undefined:data,error,isLoading:loading,isFetching:loading,isError:!!error,isFetchedAfterMount:!loading,dataUpdatedAt:loading?0:Date.parse(this.now)+this.revision};this.cache.set(key,result);return result;
@@ -121,6 +124,7 @@ export class ServicePreviewModel{
   if(!serviceMutations.includes(name as any))throw Error('Unmapped mutation');if(this.disposed||['readonly','forbidden','session','foreign','failure','stale-error'].includes(this.activeMode))throw fault('FORBIDDEN');
   if(this.activeMode==='action-failure')throw fault();if(this.activeMode==='save-conflict'){this.complete();throw fault('CONFLICT');}
   if(this.activeMode==='pending-save'){this.pending++;this.emit();try{await new Promise<void>((resolve,reject)=>this.waiting.push({resolve,reject}));}finally{this.pending--;this.emit();}}if(this.disposed)throw fault('CONFLICT');
+  if(name.startsWith('discounts.')){const before=this.discounts.writes,result=this.discounts.mutate(name,input);this.operations+=this.discounts.writes-before;this.emit();if(this.activeMode==='uncertain-save')throw fault();return result;}
   if(name.startsWith('calendly.')){const before=this.calendly.writes,result=this.calendly.mutate(name,input);this.operations+=this.calendly.writes-before;this.emit();if(this.activeMode==='uncertain-save')throw fault();return result;}
   if(name.startsWith('woocommerce.')){const before=this.woo.writes,result=this.woo.mutate(name,input);this.operations+=this.woo.writes-before;this.emit();if(this.activeMode==='uncertain-save')throw fault();return result;}
   if(name.startsWith('zid.')){const before=this.zid.writes,result=this.zid.mutate(name,input);this.operations+=this.zid.writes-before;this.emit();if(this.activeMode==='uncertain-save')throw fault();return result;}

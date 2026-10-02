@@ -13,18 +13,19 @@ export function DiscountEditor({ row, busy, blocked, save, cancel }: {
   const { t } = useTranslation(), c = discountWorkspaceLabels(t);
   const initial = (): DiscountDraft => row ? { code: row.code, type: row.type ?? 'percentage', value: String(row.value ?? ''), minOrderAmount: String(row.minOrderAmount ?? ''), maxUses: String(row.maxUses ?? ''), expiresAt: row.expiresAt?.slice(0, 10) ?? '' } : blankDiscount();
   const [draft, setDraft] = useState(initial), [errors, setErrors] = useState<Record<string, string>>({}), [review, setReview] = useState<any>(null), [discard, setDiscard] = useState(false);
-  const form = useRef<HTMLFormElement>(null), heading = useRef<HTMLHeadingElement>(null), live = useRef(true), submitted = useRef(false);
+  const form = useRef<HTMLFormElement>(null), heading = useRef<HTMLHeadingElement>(null), live = useRef(true), submitted = useRef(false), invalidFocus = useRef<string | null>(null);
   const dirty = JSON.stringify(draft) !== JSON.stringify(initial());
   useEffect(() => { live.current = true; return () => { live.current = false; }; }, []);
   useEffect(() => { if (!dirty) return; const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; }; window.addEventListener('beforeunload', warn); return () => window.removeEventListener('beforeunload', warn); }, [dirty]);
   useEffect(() => { if (review) heading.current?.focus(); }, [review]);
+  useEffect(() => { if (!review && invalidFocus.current) { form.current?.querySelector<HTMLElement>(`[name="${invalidFocus.current}"]`)?.focus(); invalidFocus.current = null; } }, [errors, review]);
   const change = (name: keyof DiscountDraft, value: string) => { setDraft(prev => ({ ...prev, [name]: value })); setErrors(prev => ({ ...prev, [name]: '' })); };
   const validate = () => {
     const result = parseDiscountDraft(draft, row && { id: row.id, revision: row.revision }); setErrors(result.errors);
-    if (!result.parsed.success) { const first = Object.keys(result.errors)[0]; queueMicrotask(() => form.current?.querySelector<HTMLElement>(`[name="${first}"]`)?.focus()); return; }
+    if (!result.parsed.success) { invalidFocus.current = Object.keys(result.errors)[0]; return; }
     setReview(result.parsed.data);
   };
-  async function commit() { if (busy || blocked || submitted.current || !review) return; submitted.current = true; try { const result = await save(review); if (result === 'duplicate' && live.current) { setErrors({ code: 'duplicate' }); setReview(null); queueMicrotask(() => form.current?.querySelector<HTMLElement>('[name="code"]')?.focus()); } } finally { submitted.current = false; } }
+  async function commit() { if (busy || blocked || submitted.current || !review) return; submitted.current = true; try { const result = await save(review); if (result === 'duplicate' && live.current) { invalidFocus.current = 'code'; setErrors({ code: 'duplicate' }); setReview(null); } } finally { submitted.current = false; } }
   const field = (name: keyof DiscountDraft, label: string, type = 'text', hint?: string) => <div className="dc-field"><label htmlFor={`dc-field-${name}`}>{label}</label><input id={`dc-field-${name}`} name={name} value={draft[name]} type={type} inputMode={['value', 'minOrderAmount', 'maxUses'].includes(name) ? 'numeric' : undefined} maxLength={name === 'code' ? 50 : 20} aria-invalid={!!errors[name]} aria-describedby={[errors[name] && `dc-${name}-error`, hint && `dc-${name}-hint`].filter(Boolean).join(' ') || undefined} onChange={event => change(name, event.target.value)} onInput={event => { if (type === 'date') change(name, event.currentTarget.value); }}/>{hint && <small id={`dc-${name}-hint`}>{hint}</small>}{errors[name] && <small id={`dc-${name}-error`} role="alert" className="dc-error">{c[errors[name] as keyof typeof c]}</small>}</div>;
   if (discard) return <div><p>{c.cancelDraft}</p><div className="sc-actions"><Button variant="outline" onClick={() => setDiscard(false)}>{c.keepEditing}</Button><Button variant="destructive" onClick={cancel}>{c.discard}</Button></div></div>;
   if (review) return <div className="dc-editor"><h3 ref={heading} tabIndex={-1}>{c.review}</h3><DiscountSummary draft={draft}/><div className="sc-actions"><Button variant="outline" disabled={busy} onClick={() => setReview(null)}>{c.back}</Button><Button disabled={busy || blocked} onClick={() => void commit()}>{busy ? c.saving : row ? c.confirm : c.confirmCreate}</Button></div></div>;

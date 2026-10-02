@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-02T21:54:28.919Z",
+  "generatedAt": "2026-10-02T22:11:05.654Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -7222,7 +7222,7 @@
     },
     {
       "file": "client/src/components/merchant/DiscountEditor.tsx",
-      "hash": "2754fc05aad5",
+      "hash": "abdbf565072a",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
@@ -7230,12 +7230,12 @@
       "sections": [
         {
           "label": "",
-          "line": 30,
+          "line": 31,
           "tag": "h3"
         },
         {
           "label": "",
-          "line": 33,
+          "line": 34,
           "tag": "summary"
         }
       ],
@@ -22436,16 +22436,16 @@
         "beb21b0d1220",
         "3d62abfece82",
         "7c21f942e9f9",
-        "36a53fcf707e",
-        "c36c100a4f4a",
-        "6fb543fd9d89",
-        "352d658c4a35",
-        "56d31d47017c",
-        "c7cd8f89c028",
-        "32d10abfd072",
-        "3123394cb799",
-        "84f5834e5edd",
-        "dbd691c0cece"
+        "18dd54dd70dd",
+        "dda0eabaf570",
+        "91930208f930",
+        "90c1723f8356",
+        "5ed86a142bc0",
+        "e4f72d2be0e2",
+        "21bf85dfbff6",
+        "39bf351863f7",
+        "d3d75542704d",
+        "079ca520b197"
       ],
       "queries": [
         "auth.me",
@@ -50242,9 +50242,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "36a53fcf707e",
+      "id": "18dd54dd70dd",
       "file": "client/src/components/merchant/DiscountEditor.tsx",
-      "line": 28,
+      "line": 29,
       "tag": "input",
       "role": "",
       "kind": "field",
@@ -50263,9 +50263,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "c36c100a4f4a",
+      "id": "dda0eabaf570",
       "file": "client/src/components/merchant/DiscountEditor.tsx",
-      "line": 29,
+      "line": 30,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -50284,9 +50284,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "6fb543fd9d89",
+      "id": "91930208f930",
       "file": "client/src/components/merchant/DiscountEditor.tsx",
-      "line": 29,
+      "line": 30,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -50305,9 +50305,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "352d658c4a35",
+      "id": "90c1723f8356",
       "file": "client/src/components/merchant/DiscountEditor.tsx",
-      "line": 30,
+      "line": 31,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -50326,9 +50326,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "56d31d47017c",
+      "id": "5ed86a142bc0",
       "file": "client/src/components/merchant/DiscountEditor.tsx",
-      "line": 30,
+      "line": 31,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -50347,9 +50347,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "c7cd8f89c028",
+      "id": "e4f72d2be0e2",
       "file": "client/src/components/merchant/DiscountEditor.tsx",
-      "line": 32,
+      "line": 33,
       "tag": "select",
       "role": "",
       "kind": "field",
@@ -50379,9 +50379,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "32d10abfd072",
+      "id": "21bf85dfbff6",
       "file": "client/src/components/merchant/DiscountEditor.tsx",
-      "line": 32,
+      "line": 33,
       "tag": "select",
       "role": "",
       "kind": "field",
@@ -50411,9 +50411,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "3123394cb799",
+      "id": "39bf351863f7",
       "file": "client/src/components/merchant/DiscountEditor.tsx",
-      "line": 33,
+      "line": 34,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -50434,9 +50434,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "84f5834e5edd",
+      "id": "d3d75542704d",
       "file": "client/src/components/merchant/DiscountEditor.tsx",
-      "line": 34,
+      "line": 35,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -50455,9 +50455,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "dbd691c0cece",
+      "id": "079ca520b197",
       "file": "client/src/components/merchant/DiscountEditor.tsx",
-      "line": 34,
+      "line": 35,
       "tag": "Button",
       "role": "",
       "kind": "action",
