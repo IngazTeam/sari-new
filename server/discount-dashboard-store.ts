@@ -3,6 +3,8 @@ import type { DiscountCode } from '../drizzle/schema';
 import { discountCreateInput, discountUpdateInput, discountRecordId, type DiscountCreateInput, type DiscountUpdateInput } from '../shared/discount-dashboard';
 import { ALL_ROLES, hasPermission, type MerchantRole } from './_core/permissions';
 import { getPool } from './db/connection';
+import { projectDiscountWorkspace } from './discount-workspace-source';
+import type { DiscountSelection } from '../shared/discount-workspace';
 
 export class DiscountDashboardError extends Error {
   constructor(readonly reason: 'unavailable' | 'forbidden' | 'missing' | 'duplicate') { super(`discounts:${reason}`); }
@@ -20,15 +22,16 @@ async function authority(tx: PoolConnection, actorId: number, merchantId: number
     : members.length === 0 && merchants[0]?.userId === actorId ? 'owner' : null;
   if (users.length !== 1 || users[0].account_status !== 'active' || merchants.length !== 1 || merchants[0].status === 'suspended'
     || !ALL_ROLES.includes(role) || write && !hasPermission(role as MerchantRole, 'campaigns.manage')) throw new DiscountDashboardError('forbidden');
+  return hasPermission(role as MerchantRole, 'campaigns.manage');
 }
-async function transaction<T>(actorId: number, merchantId: number, write: boolean, operation: (tx: PoolConnection) => Promise<T>): Promise<T> {
+async function transaction<T>(actorId: number, merchantId: number, write: boolean, operation: (tx: PoolConnection, canManage: boolean) => Promise<T>): Promise<T> {
   discountRecordId.parse(actorId); discountRecordId.parse(merchantId);
   let tx: PoolConnection | undefined, committing = false, reusable = true;
   try {
     const pool = await getPool(); if (!pool) throw new DiscountDashboardError('unavailable');
     tx = await pool.getConnection(); await tx.query('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ'); await tx.beginTransaction();
-    await authority(tx, actorId, merchantId, write);
-    const result = await operation(tx); committing = true; await tx.commit(); return result;
+    const canManage = await authority(tx, actorId, merchantId, write);
+    const result = await operation(tx, canManage); committing = true; await tx.commit(); return result;
   } catch (error) {
     if (committing) reusable = false;
     else if (tx) try { await tx.rollback(); } catch { reusable = false; }
@@ -49,6 +52,12 @@ async function target(tx: PoolConnection, merchantId: number, id: number, lock =
 }
 export function listDashboardDiscounts(actorId: number, merchantId: number) {
   return transaction(actorId, merchantId, false, async tx => (await rows(tx, `SELECT ${projection} FROM discount_codes WHERE merchantId=? ORDER BY createdAt DESC,id DESC`, [merchantId])).map(record));
+}
+export function readDiscountWorkspace(actorId: number, merchantId: number, input: DiscountSelection) {
+  return transaction(actorId, merchantId, false, async (tx, canManage) => {
+    const source = (await rows(tx, `SELECT ${projection} FROM discount_codes WHERE merchantId=? ORDER BY createdAt DESC,id DESC`, [merchantId])).map(record);
+    return projectDiscountWorkspace(actorId, merchantId, canManage, input, source);
+  });
 }
 export function getDashboardDiscount(actorId: number, merchantId: number, id: number) {
   discountRecordId.parse(id); return transaction(actorId, merchantId, false, tx => target(tx, merchantId, id));

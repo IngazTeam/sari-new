@@ -2,7 +2,7 @@ import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vites
 import { getPool, closeDb } from './db/connection';
 import { createDisposableMerchant, cleanupDisposableMerchants } from './tests/helpers/disposable-merchant';
 import { discountsRouter } from './routers-discounts';
-import { createDashboardDiscount, listDashboardDiscounts } from './discount-dashboard-store';
+import { createDashboardDiscount, listDashboardDiscounts, readDiscountWorkspace } from './discount-dashboard-store';
 describe.skipIf(!process.env.DATABASE_URL)('discount dashboard selected-tenant storage', () => {
   let owner: Awaited<ReturnType<typeof createDisposableMerchant>>, other: typeof owner;
   const q = async (sql: string, args: any[] = []) => (await (await getPool())!.execute<any>(sql, args))[0];
@@ -66,5 +66,18 @@ describe.skipIf(!process.env.DATABASE_URL)('discount dashboard selected-tenant s
   it('refuses fractional amounts and impossible dates without a row', async () => {
     for (const patch of [{ value: 10.5 }, { expiresAt: '2026-02-30' }]) await expect(caller().create({ ...draft, ...patch })).rejects.toMatchObject({ code: 'BAD_REQUEST' });
     expect(await caller().list()).toEqual([]);
+  });
+  it('reads complete paged workspace counts and legacy faults without disclosing the other merchant', async () => {
+    for (let i = 1; i <= 31; i++) await q("INSERT INTO discount_codes (merchantId,code,type,value,isActive,usedCount) VALUES (?,?,'percentage',10,1,?)", [other.merchantId, 'SEARCH' + String(i).padStart(2, '0'), i]);
+    await q("INSERT INTO discount_codes (merchantId,code,type,value,isActive,usedCount) VALUES (?,'FOREIGN','percentage',10,1,100)", [owner.merchantId]);
+    await q("UPDATE discount_codes SET usedCount=-1 WHERE merchantId=? AND code='SEARCH01'", [other.merchantId]);
+    const first = await caller().workspace({ page: 1 }), last = await caller().workspace({ page: 2 }), found = await caller().workspace({ query: 'search01' });
+    expect(first).toMatchObject({ actorId: owner.userId, merchantId: other.merchantId, canManage: true, total: 31, matched: 31, pages: 2, counts: { available: 30, invalid: 1 }, usage: { recorded: 495, invalidRows: 1 } });
+    expect(first.rows).toHaveLength(25); expect(last.rows).toHaveLength(6); expect(found.rows[0]).toMatchObject({ code: 'SEARCH01', state: 'invalid', usedCount: null });
+    expect([...first.rows, ...last.rows].every(row => row.code !== 'FOREIGN')).toBe(true);
+    await q("UPDATE merchant_members SET role='viewer' WHERE merchant_id=? AND user_id=?", [other.merchantId, owner.userId]);
+    expect((await caller().workspace({})).canManage).toBe(false);
+    await q('UPDATE merchant_members SET is_active=0 WHERE merchant_id=? AND user_id=?', [other.merchantId, owner.userId]);
+    await expect(readDiscountWorkspace(owner.userId, other.merchantId, { page: 1, query: '', status: 'all', origin: 'all' })).rejects.toMatchObject({ reason: 'forbidden' });
   });
 });
