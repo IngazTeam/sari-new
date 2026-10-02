@@ -8882,9 +8882,12 @@ export type WooCommerceWebhookRegistrationInput = {
   webhookId: string;
 };
 
-export async function saveVerifiedWooCommerceSettings(
+/** Caller owns the transaction; shared verification and platform admission remain enforced. */
+export async function writeVerifiedWooCommerceSettings(
+  tx:Pick<import('./db/connection').SariDb,'select'|'insert'|'update'|'delete'|'execute'>,
   data: NewWooCommerceSettings,
   registrations: readonly WooCommerceWebhookRegistrationInput[] = [],
+  options?:{replaceLocalCopies:boolean},
 ): Promise<void> {
   const uniqueTopics = new Set(registrations.map(item => item.topic));
   const uniqueWebhookIds = new Set(registrations.map(item => item.webhookId));
@@ -8904,7 +8907,6 @@ export async function saveVerifiedWooCommerceSettings(
     || data.webhookSigningSecret.length < 32
     || data.webhookSigningSecret.length > 512
   ) throw new Error('WOOCOMMERCE_WEBHOOK_REGISTRATION_INVALID');
-  await requireDb().transaction(async tx => {
     await assertWooDashboardWrite(tx, data.merchantId);
     await assertWooPlatformAdmission(tx, data.merchantId);
     const current = await tx.select({ id: woocommerceSettings.id, storeUrl: woocommerceSettings.storeUrl })
@@ -8914,7 +8916,7 @@ export async function saveVerifiedWooCommerceSettings(
       .for('update');
     await tx.delete(woocommerceWebhookReceipts).where(eq(woocommerceWebhookReceipts.merchantId, data.merchantId));
     await tx.delete(woocommerceWebhookRegistrations).where(eq(woocommerceWebhookRegistrations.merchantId, data.merchantId));
-    if (current[0] && current[0].storeUrl !== data.storeUrl) {
+    if (current[0] && (options?.replaceLocalCopies ?? current[0].storeUrl !== data.storeUrl)) {
       await tx.delete(woocommerceWebhooks).where(eq(woocommerceWebhooks.merchantId, data.merchantId));
       await tx.delete(woocommerceSyncLogs).where(eq(woocommerceSyncLogs.merchantId, data.merchantId));
       await tx.delete(woocommerceProducts).where(eq(woocommerceProducts.merchantId, data.merchantId));
@@ -8938,7 +8940,10 @@ export async function saveVerifiedWooCommerceSettings(
       webhookId: registration.webhookId,
     })));
     await tx.execute(sql`UPDATE merchants SET integration_source='woocommerce' WHERE id=${data.merchantId}`);
-  });
+}
+
+export async function saveVerifiedWooCommerceSettings(data:NewWooCommerceSettings,registrations:readonly WooCommerceWebhookRegistrationInput[]=[]):Promise<void>{
+  await requireDb().transaction(tx=>writeVerifiedWooCommerceSettings(tx,data,registrations));
 }
 
 export async function getWooCommerceWebhookRegistrations(merchantId: number): Promise<WooCommerceWebhookRegistrationInput[]> {
@@ -8978,8 +8983,7 @@ export async function deleteWooCommerceSettings(merchantId: number) {
   await requireDb().delete(woocommerceSettings).where(eq(woocommerceSettings.merchantId, merchantId));
 }
 
-export async function deleteWooCommerceIntegration(merchantId: number): Promise<void> {
-  await requireDb().transaction(async tx => {
+export async function clearWooCommerceIntegration(tx:Pick<import('./db/connection').SariDb,'delete'|'execute'>,merchantId: number): Promise<void> {
     await assertWooDashboardWrite(tx, merchantId);
     await lockWooPlatformMerchant(tx, merchantId);
     await tx.delete(woocommerceWebhookReceipts).where(eq(woocommerceWebhookReceipts.merchantId, merchantId));
@@ -8990,7 +8994,10 @@ export async function deleteWooCommerceIntegration(merchantId: number): Promise<
     await tx.delete(woocommerceOrders).where(eq(woocommerceOrders.merchantId, merchantId));
     await tx.delete(woocommerceSettings).where(eq(woocommerceSettings.merchantId, merchantId));
     await tx.execute(sql`UPDATE merchants SET integration_source='none' WHERE id=${merchantId} AND integration_source='woocommerce'`);
-  });
+}
+
+export async function deleteWooCommerceIntegration(merchantId:number):Promise<void>{
+  await requireDb().transaction(tx=>clearWooCommerceIntegration(tx,merchantId));
 }
 
 export async function updateWooCommerceConnectionStatus(merchantId: number, status: 'connected' | 'disconnected' | 'error', storeInfo?: { version?: string; name?: string; currency?: string }) {

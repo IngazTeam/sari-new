@@ -6,7 +6,7 @@ const digest=z.string().regex(/^[a-f0-9]{64}$/),count=z.number().int().nonnegati
 export const wooOperationIntent=z.object({requestId:z.string().uuid().toLowerCase(),kind:z.enum(wooOperationKinds),revision:digest,payloadDigest:digest}).strict();
 export const wooOperationLookup=z.object({requestId:z.string().uuid().toLowerCase()}).strict();
 export const wooOperationResult=z.discriminatedUnion('type',[
- z.object({type:z.literal('connection'),revision:digest,configured:z.boolean(),remoteCleanup:z.enum(['not_needed','confirmed','unconfirmed'])}).strict(),
+ z.object({type:z.literal('connection'),revision:digest,configured:z.boolean(),remoteCleanup:z.enum(['not_needed','confirmed','unconfirmed']),verification:z.enum(['not_checked','api','api_and_webhooks']).default('not_checked'),localCopies:z.enum(['unknown','retained','cleared']).default('unknown')}).strict(),
  z.object({type:z.literal('sync'),products:count.nullable(),orders:count.nullable(),reconciled:count}).strict(),
  z.object({type:z.literal('order'),orderId:bookingReadId,status:z.string().min(1).max(50)}).strict(),
  z.object({type:z.literal('notification'),orderId:bookingReadId,accepted:z.literal(true),duplicate:z.boolean()}).strict(),

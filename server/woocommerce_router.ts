@@ -4,6 +4,8 @@ import {wooOperationLookup} from '../shared/woocommerce-operation';
 import {requestReviewedWooSync,requestReviewedWooReconciliation} from './integrations/woocommerce-sync-request';
 import {wooIncidentsInput,wooReconciliationRequest} from '../shared/woocommerce-incidents';
 import {readWooIncidentsWorkspace} from './integrations/woocommerce-incidents';
+import {wooConnectionCommand} from '../shared/woocommerce-connection';
+import {requestReviewedWooConnection} from './integrations/woocommerce-connection';
 import {WooOperationFault,readWooOperation,readBlockingWooOperation,acknowledgeWooOperation} from './integrations/woocommerce-operation';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
@@ -110,6 +112,7 @@ function publicWooError(error: unknown): TRPCError {
 
 async function reviewedWooAction<T>(work:()=>Promise<T>){
   try{return await work();}catch(error){
+    if(error instanceof WooCommerceApiError)throw publicWooError(error);
     if(error instanceof WooOperationFault){
       const code=({forbidden:'FORBIDDEN',missing:'NOT_FOUND',changed:'PRECONDITION_FAILED',busy:'CONFLICT',review_required:'PRECONDITION_FAILED',rate_limited:'TOO_MANY_REQUESTS',unavailable:'INTERNAL_SERVER_ERROR'} as const)[error.reason];
       throw new TRPCError({code,message:'woo_operation:'+error.reason});
@@ -360,6 +363,7 @@ async function runFullWooCommerceReconciliation(ctx: WooCommerceRequestAbortCont
 }
 
 export const woocommerceRouter = router({
+  requestReviewedConnection: wooAccessProcedure('integrations.manage').input(wooConnectionCommand).mutation(({ctx,input})=>reviewedWooAction(()=>requestReviewedWooConnection(ctx.user.id,tenantId(ctx),input))),
   getIncidentsWorkspace: wooAccessProcedure('integrations.manage').input(wooIncidentsInput).query(({ctx,input})=>readWooIncidentsWorkspace(ctx.user.id,tenantId(ctx),input)),
   requestReviewedReconciliation: wooAccessProcedure('integrations.manage').input(wooReconciliationRequest).mutation(({ctx,input})=>reviewedWooAction(()=>requestReviewedWooReconciliation(ctx.user.id,tenantId(ctx),input))),
   requestReviewedSync: wooAccessProcedure('integrations.manage').input(wooSyncRequest).mutation(({ctx,input})=>reviewedWooAction(()=>requestReviewedWooSync(ctx.user.id,tenantId(ctx),input))),
