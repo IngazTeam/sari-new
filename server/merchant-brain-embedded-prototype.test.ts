@@ -216,3 +216,11 @@ it('keeps simulated customer filters in the parent route and rejects arbitrary d
 it.each(['/index.html','/','/elsewhere/knowledge-groups.html','/knowledge-removal.html'])('does not enable embedding or external connections for %s',path=>{
   const policy=previewPolicy(path,new URLSearchParams('embed=brain'));expect(policy).toContain("frame-ancestors 'none'");expect(policy).toContain("connect-src 'none'");expect(policy).toContain("object-src 'none'");
 });
+
+it('preserves the Byaan data frame and rejects foreign or unlisted destinations',()=>{
+ frame.setAttribute('src','./service-workspace.html?embed=brain');w.location.hash='#/page/merchant/byaan-dashboard';
+ const message={type:'sary-brain-preview',action:'serviceState',search:'path=/merchant/byaan-dashboard&connection=byaan-error&tenant=270&lang=en'};
+ send(message,'https://evil.test');send(message,undefined,w);expect(w.location.hash).toBe('#/page/merchant/byaan-dashboard');send(message);expect(w.location.hash).toBe('#/page/merchant/byaan-dashboard?connection=byaan-error&tenant=270&lang=en');expect(frame.isConnected).toBe(true);
+ for(const route of ['/merchant/sari-brain','/merchant/products']){send({type:'sary-brain-preview',action:'serviceTool',route});expect(w.location.hash).toBe('#/page'+route);}
+ send({type:'sary-brain-preview',action:'serviceTool',route:'/merchant/products?token=private'});expect(w.location.hash).toBe('#/page/merchant/products');
+});

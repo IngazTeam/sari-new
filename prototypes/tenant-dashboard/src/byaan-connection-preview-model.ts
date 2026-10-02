@@ -12,6 +12,7 @@ export class ByaanConnectionPreviewStore {
     this.platform=platformWorkspaceSchema.parse(platformPreviewRead('integrations.workspace',actorId,merchantId,now,mode,sample));
     this.counts={catalog:this.platform.stats.products,activeTrainees:this.platform.source==='byaan'?this.platform.stats.customers:0,activeFaqs:this.platform.source==='byaan'?35:0,sitePages:this.platform.source==='byaan'?5:0};
   }
+  updateDataCounts(value:Partial<typeof this.counts>){Object.assign(this.counts,value);}
   private revision(){return [this.merchantId,19,this.version,0,0,0,0,0].map(n=>n.toString(16).padStart(8,'0')).join('');}
   read(name:string) {
     if(name==='integrations.workspace')return platformWorkspaceSchema.parse(this.platform);
