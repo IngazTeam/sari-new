@@ -37,6 +37,12 @@ export async function readByaanResyncAttempt(actorId: number, merchantId: number
   const [rows] = await pool.execute<any[]>('SELECT actor_id,merchant_id,request_id,connection_revision,state,created_at FROM byaan_resync_requests WHERE merchant_id=? AND actor_id=? AND request_id=?', [merchantId, actorId, requestId]);
   if (rows.length !== 1) throw new ByaanDashboardFault('missing'); return receipt(rows[0], true);
 }
+export async function readLatestByaanResync(actorId: number, merchantId: number) {
+  bookingReadId.parse(actorId); bookingReadId.parse(merchantId);
+  const pool = await getPool(); if (!pool) throw new ByaanDashboardFault('unavailable');
+  const [rows] = await pool.execute<any[]>('SELECT actor_id,merchant_id,request_id,connection_revision,state,created_at FROM byaan_resync_requests WHERE merchant_id=? AND actor_id=? ORDER BY id DESC LIMIT 1', [merchantId, actorId]);
+  return rows.length ? receipt(rows[0], true) : null;
+}
 /** A request ID is reserved once. Replays only read the receipt; an uncertain POST is never dispatched again. */
 export async function requestReviewedByaanResync(actorId: number, merchantId: number, input: unknown) {
   bookingReadId.parse(actorId); bookingReadId.parse(merchantId); const intent = byaanResyncRequest.parse(input);

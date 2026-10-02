@@ -2,7 +2,7 @@
 
 هذا حصر مصدر قابل لإعادة التوليد، وليس ادعاءً بأن كل مسار عمل اختُبر أو أُعيد تصميمه. يشمل المكونات الفرعية المحلية، الحقول، الأزرار، النوافذ، التبويبات، واجهات القراءة والتعديل. العناصر الديناميكية تحتاج مراجعة إضافية.
 
-- 126 مسارًا مسجلًا، 393 ملف واجهة متصلًا، 2383 عنصر تحكم في المصدر.
+- 126 مسارًا مسجلًا، 396 ملف واجهة متصلًا، 2398 عنصر تحكم في المصدر.
 - 0 رابطًا حرفيًا غير مطابق، و0 ملف صفحة غير متصل بالمسارات المحصورة.
 
 | الصفحة | الملفات | عناصر التحكم | القراءة / التعديل | موك أب للصفحة |
@@ -24,7 +24,7 @@
 | /merchant/whatsapp — أرقام واتساب | 2 | 23 | 8 / 6 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/salla — ربط سلة | 2 | 22 | 5 / 4 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/integrations/byaan — ربط بيان | 4 | 18 | 3 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/byaan-dashboard — بيان: الدورات والمتدربون | 3 | 18 | 5 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/byaan-dashboard — بيان: الدورات والمتدربون | 7 | 33 | 7 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/integrations/zid — ربط زد | 1 | 25 | 4 / 6 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/zid/settings — ربط زد | 1 | 25 | 4 / 6 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/zid/callback — نتيجة تفويض زد | 3 | 11 | 0 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -1198,23 +1198,38 @@
 | 122 | Button | تسمية ديناميكية / تحتاج مراجعة | ByaanConnectionWorkspace |
 | 122 | Button | remove | ByaanConnectionWorkspace |
 
-## client/src/pages/ByaanDashboard.tsx
+## client/src/components/merchant/ByaanDataWorkspace.tsx
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 154 | Button | اذهب للربط | لم يتم ربط بيان |
-| 189 | Button | إعادة مزامنة | لوحة بيان |
-| 205 | TabsTrigger | لوحة التحكم | لوحة التحكم |
-| 209 | TabsTrigger | المتدربين ( ) | المتدربين ( ) |
-| 213 | TabsTrigger | الأسئلة الشائعة ( ) | الأسئلة الشائعة ( ) |
-| 319 | Input | البحث في متدربي بيان | قائمة المتدربين |
-| 416 | Button | الصفحة السابقة | قائمة المتدربين |
-| 428 | Button | الصفحة التالية | قائمة المتدربين |
-| 472 | Button | العودة إلى الصفحة السابقة | الأسئلة الشائعة |
-| 505 | Switch | `تضمين سؤال ${faq.question} في مزامنة معرفة ساري` | الأسئلة الشائعة |
-| 516 | Switch | `تغيير حالة سؤال ${faq.question}` | الأسئلة الشائعة |
-| 531 | Button | الصفحة السابقة | الأسئلة الشائعة |
-| 543 | Button | الصفحة التالية | الأسئلة الشائعة |
+| 73 | Button | تسمية ديناميكية / تحتاج مراجعة | ByaanDataWorkspace |
+| 73 | Button | تسمية ديناميكية / تحتاج مراجعة | ByaanDataWorkspace |
+| 74 | Button | تسمية ديناميكية / تحتاج مراجعة | ByaanDataWorkspace |
+| 75 | DialogContent | : | ByaanDataWorkspace |
+| 77 | Button | تسمية ديناميكية / تحتاج مراجعة | ByaanDataWorkspace |
+| 77 | Button | تسمية ديناميكية / تحتاج مراجعة | ByaanDataWorkspace |
+| 117 | input | تسمية ديناميكية / تحتاج مراجعة | ByaanDataWorkspace |
+| 117 | select | تسمية ديناميكية / تحتاج مراجعة | ByaanDataWorkspace |
+| 117 | Button | تسمية ديناميكية / تحتاج مراجعة | ByaanDataWorkspace |
+| 122 | Button | تسمية ديناميكية / تحتاج مراجعة | ByaanDataWorkspace |
+| 126 | Button | تسمية ديناميكية / تحتاج مراجعة | ByaanDataWorkspace |
+| 126 | Button | تسمية ديناميكية / تحتاج مراجعة | ByaanDataWorkspace |
+| 126 | Button | تسمية ديناميكية / تحتاج مراجعة | ByaanDataWorkspace |
+| 128 | Button | تسمية ديناميكية / تحتاج مراجعة | ByaanDataWorkspace |
+| 128 | Button | تسمية ديناميكية / تحتاج مراجعة | ByaanDataWorkspace |
+| 130 | DialogContent | faqs site trainees faqs | ByaanDataWorkspace |
+| 132 | Button | تسمية ديناميكية / تحتاج مراجعة | ByaanDataWorkspace |
+| 132 | Button | تسمية ديناميكية / تحتاج مراجعة | ByaanDataWorkspace |
+| 132 | Button | تسمية ديناميكية / تحتاج مراجعة | ByaanDataWorkspace |
+| 148 | Button | تسمية ديناميكية / تحتاج مراجعة | ByaanDataWorkspace |
+| 148 | Link | تسمية ديناميكية / تحتاج مراجعة | ByaanDataWorkspace |
+| 148 | Button | تسمية ديناميكية / تحتاج مراجعة | ByaanDataWorkspace |
+| 149 | button | تسمية ديناميكية / تحتاج مراجعة | ByaanDataWorkspace |
+| 152 | Link | تسمية ديناميكية / تحتاج مراجعة | ByaanDataWorkspace |
+| 152 | Link | تسمية ديناميكية / تحتاج مراجعة | ByaanDataWorkspace |
+| 152 | Link | تسمية ديناميكية / تحتاج مراجعة | ByaanDataWorkspace |
+| 154 | Button | تسمية ديناميكية / تحتاج مراجعة | ByaanDataWorkspace |
+| 154 | Link | تسمية ديناميكية / تحتاج مراجعة | ByaanDataWorkspace |
 
 ## client/src/components/ByaanSalesReview.tsx
 

@@ -65,6 +65,14 @@ describe.skipIf(!process.env.DATABASE_URL)('Byaan complete data workspace MySQL'
     await q('UPDATE byaan_connections SET is_active=0 WHERE merchant_id=?', [own.merchantId]);
     for (const kind of ['trainees','faqs','site'] as const) await expect(read(kind)).rejects.toMatchObject({ reason: 'inactive' });
   });
+  it('scopes overview capabilities and latest request to the selected member account', async () => {
+    await q("INSERT INTO byaan_resync_requests(merchant_id,actor_id,request_id,connection_revision,state) VALUES (?,?,'3bc2a3e4-8589-4d5f-a0f7-68be3fe727ea',?,'queued')", [own.merchantId, own.userId, 'a'.repeat(64)]);
+    const owner = await caller().dashboardOverview(); expect(owner.connection).toMatchObject({ actorId: own.userId, merchantId: own.merchantId }); expect(owner.lastRequest).toMatchObject({ actorId: own.userId, outcome: 'queued' });
+    await q("INSERT INTO merchant_members(merchant_id,user_id,role,is_active) VALUES (?,?,'sales_supervisor',1)", [own.merchantId, other.userId]);
+    expect(await caller(other.userId).dashboardOverview()).toMatchObject({ access: { trainees: true, faqs: false, site: false, sales: true, integrations: false }, lastRequest: null });
+    await q("UPDATE merchant_members SET role='manager' WHERE merchant_id=? AND user_id=?", [own.merchantId, other.userId]);
+    expect(await caller(other.userId).dashboardOverview()).toMatchObject({ access: { integrations: true }, lastRequest: null });
+  });
   it('holds counts and rows on one snapshot during a committed concurrent insert', async () => {
     await faq('Initial'); const pool = (await getPool())!, getConnection = pool.getConnection.bind(pool); let injected = false;
     vi.spyOn(pool, 'getConnection').mockImplementation(async () => {

@@ -15,7 +15,8 @@ import { TRPCError } from "@trpc/server";
 import { merchantProcedure, permissionProcedure, router } from "./_core/trpc";
 import { getPool } from './db';
 import { byaanResyncRequest, byaanResyncLookup } from '../shared/byaan-resync';
-import { requestReviewedByaanResync, readByaanResyncAttempt } from './integrations/byaan-resync';
+import { requestReviewedByaanResync, readByaanResyncAttempt, readLatestByaanResync } from './integrations/byaan-resync';
+import { byaanDashboardOverviewSchema } from '../shared/byaan-dashboard-overview';
 import { hasPermission } from './_core/permissions';
 import { byaanDataInput, byaanFaqChangeInput } from '../shared/byaan-data-workspace';
 import { readByaanDataWorkspace } from './integrations/byaan-data-workspace';
@@ -90,6 +91,12 @@ function parseEnrolledCourseNames(value: unknown): string[] {
 // ═══════════════════════════════════════════════════════════════
 
 export const byaanRouter = router({
+  dashboardOverview: merchantProcedure.query(async ({ ctx }) => dashboardGuard(async () => {
+    const access = { trainees: hasPermission(ctx.merchantRole, 'customers.manage'), faqs: hasPermission(ctx.merchantRole, 'bot_settings.manage'), site: hasPermission(ctx.merchantRole, 'bot_settings.manage'), sales: hasPermission(ctx.merchantRole, 'orders.manage'), integrations: hasPermission(ctx.merchantRole, 'integrations.manage') };
+    const connection = await readByaanConnectionWorkspace(ctx.user.id, ctx.merchantId);
+    const lastRequest = access.integrations ? await readLatestByaanResync(ctx.user.id, ctx.merchantId) : null;
+    return byaanDashboardOverviewSchema.parse({ connection, access, lastRequest });
+  })),
   requestResync: permissionProcedure('integrations.manage').input(byaanResyncRequest).mutation(async ({ ctx, input }) =>
     dashboardGuard(() => requestReviewedByaanResync(ctx.user.id, ctx.merchantId, input))),
   resyncAttempt: permissionProcedure('integrations.manage').input(byaanResyncLookup).query(async ({ ctx, input }) =>
