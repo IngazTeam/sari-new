@@ -9032,37 +9032,35 @@ export async function createWooCommerceProduct(data: NewWooCommerceProduct) {
   return (result as any).insertId;
 }
 
-export async function upsertWooCommerceProductsSnapshot(
-  merchantId: number,
-  rows: NewWooCommerceProduct[],
-  reconcileMissing = true,
-): Promise<void> {
-  await requireDb().transaction(async tx => {
-    await assertWooDashboardWrite(tx, merchantId);
-    for (const row of rows) {
-      if (row.merchantId !== merchantId || !row.providerUpdatedAt) throw new Error('WOOCOMMERCE_TENANT_MISMATCH');
-      await tx.insert(woocommerceProducts).values(row).onDuplicateKeyUpdate({
-        set: { wooProductId: sql`${woocommerceProducts.wooProductId}` },
-      });
-      await tx.update(woocommerceProducts).set(row).where(and(
-        eq(woocommerceProducts.merchantId, merchantId),
-        eq(woocommerceProducts.wooProductId, row.wooProductId),
-        or(
-          isNull(woocommerceProducts.providerUpdatedAt),
-          lte(woocommerceProducts.providerUpdatedAt, row.providerUpdatedAt),
-        ),
-      ));
-    }
-    if (reconcileMissing) {
-      const filter = rows.length > 0
-        ? and(
-            eq(woocommerceProducts.merchantId, merchantId),
-            notInArray(woocommerceProducts.wooProductId, rows.map(row => row.wooProductId)),
-          )
-        : eq(woocommerceProducts.merchantId, merchantId);
-      await tx.delete(woocommerceProducts).where(filter);
-    }
-  });
+/** Caller owns the transaction and must guard authority before invoking this writer. */
+export async function writeWooCommerceProductsSnapshot(tx:Pick<import('./db/connection').SariDb,'insert'|'update'|'delete'>,merchantId:number,rows:NewWooCommerceProduct[],reconcileMissing=true):Promise<void>{
+  for (const row of rows) {
+    if (row.merchantId !== merchantId || !row.providerUpdatedAt) throw new Error('WOOCOMMERCE_TENANT_MISMATCH');
+    await tx.insert(woocommerceProducts).values(row).onDuplicateKeyUpdate({
+      set: { wooProductId: sql`${woocommerceProducts.wooProductId}` },
+    });
+    await tx.update(woocommerceProducts).set(row).where(and(
+      eq(woocommerceProducts.merchantId, merchantId),
+      eq(woocommerceProducts.wooProductId, row.wooProductId),
+      or(
+        isNull(woocommerceProducts.providerUpdatedAt),
+        lte(woocommerceProducts.providerUpdatedAt, row.providerUpdatedAt),
+      ),
+    ));
+  }
+  if (reconcileMissing) {
+    const filter = rows.length > 0
+      ? and(
+          eq(woocommerceProducts.merchantId, merchantId),
+          notInArray(woocommerceProducts.wooProductId, rows.map(row => row.wooProductId)),
+        )
+      : eq(woocommerceProducts.merchantId, merchantId);
+    await tx.delete(woocommerceProducts).where(filter);
+  }
+}
+
+export async function upsertWooCommerceProductsSnapshot(merchantId:number,rows:NewWooCommerceProduct[],reconcileMissing=true):Promise<void>{
+  await requireDb().transaction(async tx=>{await assertWooDashboardWrite(tx,merchantId);await writeWooCommerceProductsSnapshot(tx,merchantId,rows,reconcileMissing);});
 }
 
 export async function updateWooCommerceProduct(id: number, data: Partial<NewWooCommerceProduct>) {
@@ -9138,37 +9136,35 @@ export async function createWooCommerceOrder(data: NewWooCommerceOrder) {
   return (result as any).insertId;
 }
 
-export async function upsertWooCommerceOrdersSnapshot(
-  merchantId: number,
-  rows: NewWooCommerceOrder[],
-  reconcileMissing = true,
-): Promise<void> {
-  await requireDb().transaction(async tx => {
-    await assertWooDashboardWrite(tx, merchantId);
-    for (const row of rows) {
-      if (row.merchantId !== merchantId || !row.providerUpdatedAt) throw new Error('WOOCOMMERCE_TENANT_MISMATCH');
-      await tx.insert(woocommerceOrders).values(row).onDuplicateKeyUpdate({
-        set: { wooOrderId: sql`${woocommerceOrders.wooOrderId}` },
-      });
-      await tx.update(woocommerceOrders).set(row).where(and(
-        eq(woocommerceOrders.merchantId, merchantId),
-        eq(woocommerceOrders.wooOrderId, row.wooOrderId),
-        or(
-          isNull(woocommerceOrders.providerUpdatedAt),
-          lte(woocommerceOrders.providerUpdatedAt, row.providerUpdatedAt),
-        ),
-      ));
-    }
-    if (reconcileMissing) {
-      const filter = rows.length > 0
-        ? and(
-            eq(woocommerceOrders.merchantId, merchantId),
-            notInArray(woocommerceOrders.wooOrderId, rows.map(row => row.wooOrderId)),
-          )
-        : eq(woocommerceOrders.merchantId, merchantId);
-      await tx.delete(woocommerceOrders).where(filter);
-    }
-  });
+/** Caller owns the transaction and must guard authority before invoking this writer. */
+export async function writeWooCommerceOrdersSnapshot(tx:Pick<import('./db/connection').SariDb,'insert'|'update'|'delete'>,merchantId:number,rows:NewWooCommerceOrder[],reconcileMissing=true):Promise<void>{
+  for (const row of rows) {
+    if (row.merchantId !== merchantId || !row.providerUpdatedAt) throw new Error('WOOCOMMERCE_TENANT_MISMATCH');
+    await tx.insert(woocommerceOrders).values(row).onDuplicateKeyUpdate({
+      set: { wooOrderId: sql`${woocommerceOrders.wooOrderId}` },
+    });
+    await tx.update(woocommerceOrders).set(row).where(and(
+      eq(woocommerceOrders.merchantId, merchantId),
+      eq(woocommerceOrders.wooOrderId, row.wooOrderId),
+      or(
+        isNull(woocommerceOrders.providerUpdatedAt),
+        lte(woocommerceOrders.providerUpdatedAt, row.providerUpdatedAt),
+      ),
+    ));
+  }
+  if (reconcileMissing) {
+    const filter = rows.length > 0
+      ? and(
+          eq(woocommerceOrders.merchantId, merchantId),
+          notInArray(woocommerceOrders.wooOrderId, rows.map(row => row.wooOrderId)),
+        )
+      : eq(woocommerceOrders.merchantId, merchantId);
+    await tx.delete(woocommerceOrders).where(filter);
+  }
+}
+
+export async function upsertWooCommerceOrdersSnapshot(merchantId:number,rows:NewWooCommerceOrder[],reconcileMissing=true):Promise<void>{
+  await requireDb().transaction(async tx=>{await assertWooDashboardWrite(tx,merchantId);await writeWooCommerceOrdersSnapshot(tx,merchantId,rows,reconcileMissing);});
 }
 
 export async function reconcileWooCommerceSnapshotAndWebhookIncidents(input: {

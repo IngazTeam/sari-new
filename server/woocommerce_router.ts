@@ -1,4 +1,8 @@
 import crypto from 'node:crypto';
+import {wooSyncRequest} from '../shared/woocommerce-sync-request';
+import {wooOperationLookup} from '../shared/woocommerce-operation';
+import {requestReviewedWooSync} from './integrations/woocommerce-sync-request';
+import {WooOperationFault,readWooOperation,readBlockingWooOperation,acknowledgeWooOperation} from './integrations/woocommerce-operation';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { merchantProcedure, permissionProcedure, router } from './_core/trpc';
@@ -100,6 +104,16 @@ function publicWooError(error: unknown): TRPCError {
     return new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'تعذر الوصول إلى WooCommerce بأمان؛ حاول لاحقًا' });
   }
   return new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'تعذر إكمال عملية WooCommerce' });
+}
+
+async function reviewedWooAction<T>(work:()=>Promise<T>){
+  try{return await work();}catch(error){
+    if(error instanceof WooOperationFault){
+      const code=({forbidden:'FORBIDDEN',missing:'NOT_FOUND',changed:'PRECONDITION_FAILED',busy:'CONFLICT',review_required:'PRECONDITION_FAILED',rate_limited:'TOO_MANY_REQUESTS',unavailable:'INTERNAL_SERVER_ERROR'} as const)[error.reason];
+      throw new TRPCError({code,message:'woo_operation:'+error.reason});
+    }
+    throw new TRPCError({code:'INTERNAL_SERVER_ERROR',message:'woo_operation:unavailable'});
+  }
 }
 
 async function withWooCommerceLock<T>(merchantId: number, action: () => Promise<T>, signal?: AbortSignal): Promise<T> {
@@ -344,6 +358,10 @@ async function runFullWooCommerceReconciliation(ctx: WooCommerceRequestAbortCont
 }
 
 export const woocommerceRouter = router({
+  requestReviewedSync: wooAccessProcedure('integrations.manage').input(wooSyncRequest).mutation(({ctx,input})=>reviewedWooAction(()=>requestReviewedWooSync(ctx.user.id,tenantId(ctx),input))),
+  getOperation: wooAccessProcedure().input(wooOperationLookup).query(({ctx,input})=>reviewedWooAction(()=>readWooOperation(ctx.user.id,tenantId(ctx),input))),
+  getBlockingOperation: wooAccessProcedure().input(noInput).query(({ctx})=>reviewedWooAction(()=>readBlockingWooOperation(ctx.user.id,tenantId(ctx)))),
+  acknowledgeOperation: wooAccessProcedure().input(wooOperationLookup).mutation(({ctx,input})=>reviewedWooAction(()=>acknowledgeWooOperation(ctx.user.id,tenantId(ctx),input))),
   getAnalyticsWorkspace: wooAccessProcedure('analytics.read').input(wooAnalyticsInput).query(({ctx,input})=>readWooAnalyticsWorkspace(ctx.user.id,tenantId(ctx),input)),
   getProductsWorkspace: wooAccessProcedure().input(wooProductsInput).query(({ctx,input})=>readWooProductsWorkspace(ctx.user.id,tenantId(ctx),input)),
   getOrdersWorkspace: wooAccessProcedure().input(wooOrdersInput).query(({ctx,input})=>readWooOrdersWorkspace(ctx.user.id,tenantId(ctx),input)),

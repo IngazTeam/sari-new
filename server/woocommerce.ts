@@ -174,7 +174,7 @@ export class WooCommerceClient {
   private readonly consumerKey: string;
   private readonly consumerSecret: string;
 
-  constructor(settings: Pick<WooCommerceSettings, 'storeUrl' | 'consumerKey' | 'consumerSecret'>) {
+  constructor(settings: Pick<WooCommerceSettings, 'storeUrl' | 'consumerKey' | 'consumerSecret'>, private readonly reviewedCheckpoint?:()=>Promise<void>) {
     this.storeUrl = canonicalWooStoreUrl(settings.storeUrl);
     this.consumerKey = normalizedCredential(settings.consumerKey, 'ck_');
     this.consumerSecret = normalizedCredential(settings.consumerSecret, 'cs_');
@@ -200,9 +200,11 @@ export class WooCommerceClient {
   } = {}): Promise<{ body: unknown; headers: Record<string, unknown> }> {
     let response,httpsAgent;
     await assertWooDashboardAuthority();
+    await this.reviewedCheckpoint?.();
     try{httpsAgent=await createPinnedWooHttpsAgent(this.storeUrl);}catch(error){if(error instanceof WooCommerceApiError)throw error;throw new WooCommerceApiError('network');}
     // DNS resolution can wait. Check immediately before sending credentials, then after the response.
     await assertWooDashboardAuthority();
+    await this.reviewedCheckpoint?.();
     try {
       response = await axios.request<ArrayBuffer>({
         url: this.trustedUrl(endpoint),
@@ -224,6 +226,7 @@ export class WooCommerceClient {
       throw new WooCommerceApiError('network');
     }
     await assertWooDashboardAuthority();
+    await this.reviewedCheckpoint?.();
     if (response.status === 404) throw new WooCommerceApiError('not_found', 404);
     if (response.status < 200 || response.status >= 300) throw new WooCommerceApiError('status', response.status);
     return { body: parseBoundedJson(response.data), headers: response.headers as Record<string, unknown> };

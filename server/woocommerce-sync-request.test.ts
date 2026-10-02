@@ -1,0 +1,12 @@
+import {beforeEach,expect,it,vi} from 'vitest';
+import {wooSyncRequest} from '../shared/woocommerce-sync-request';
+const m=vi.hoisted(()=>({dns:vi.fn(),request:vi.fn()}));
+vi.mock('axios',()=>({default:{request:m.request}}));
+vi.mock('node:dns/promises',()=>({default:{lookup:m.dns}}));
+import {WooCommerceClient} from './woocommerce';
+const input={requestId:'43a7a60b-bd47-4e7d-8eb9-6c97988c02f4',revision:'a'.repeat(64),resource:'products'};
+const settings={storeUrl:'https://shop.example.com',consumerKey:'ck_'+'a'.repeat(40),consumerSecret:'cs_'+'b'.repeat(40)};
+beforeEach(()=>{vi.resetAllMocks();m.dns.mockResolvedValue([{address:'8.8.8.8',family:4}]);m.request.mockResolvedValue({status:200,headers:{},data:Buffer.from('{"environment":{"version":"1"}}')});});
+it('accepts only scoped, canonical synchronization intents',()=>{expect(wooSyncRequest.parse(input)).toEqual(input);for(const extra of [{merchantId:1},{actorId:2},{payloadDigest:'b'.repeat(64)},{resource:'all'},{revision:'x'},{requestId:'bad'}])expect(wooSyncRequest.safeParse({...input,...extra}).success).toBe(false);});
+it.each([1,2,3])('fences reviewed work at provider checkpoint %s',async point=>{let n=0;const check=vi.fn(async()=>{if(++n===point)throw Error('changed');});await expect(new WooCommerceClient(settings,check).testConnection()).rejects.toThrow('changed');expect(check).toHaveBeenCalledTimes(point);expect(m.dns).toHaveBeenCalledTimes(point===1?0:1);expect(m.request).toHaveBeenCalledTimes(point===3?1:0);});
+it('checks each successful call without changing trusted worker calls',async()=>{const check=vi.fn(async()=>{});const client=new WooCommerceClient(settings,check);await client.testConnection();await client.testConnection();expect(check).toHaveBeenCalledTimes(6);await new WooCommerceClient(settings).testConnection();expect(check).toHaveBeenCalledTimes(6);});
