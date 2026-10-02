@@ -2,7 +2,7 @@
 
 هذا حصر مصدر قابل لإعادة التوليد، وليس ادعاءً بأن كل مسار عمل اختُبر أو أُعيد تصميمه. يشمل المكونات الفرعية المحلية، الحقول، الأزرار، النوافذ، التبويبات، واجهات القراءة والتعديل. العناصر الديناميكية تحتاج مراجعة إضافية.
 
-- 126 مسارًا مسجلًا، 376 ملف واجهة متصلًا، 2313 عنصر تحكم في المصدر.
+- 126 مسارًا مسجلًا، 380 ملف واجهة متصلًا، 2321 عنصر تحكم في المصدر.
 - 0 رابطًا حرفيًا غير مطابق، و0 ملف صفحة غير متصل بالمسارات المحصورة.
 
 | الصفحة | الملفات | عناصر التحكم | القراءة / التعديل | موك أب للصفحة |
@@ -86,7 +86,7 @@
 | /merchant/services/new — إضافة وتعديل خدمة | 5 | 22 | 4 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/services/:id/edit — إضافة وتعديل خدمة | 5 | 22 | 4 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/services/:id — تفاصيل الخدمة | 5 | 8 | 3 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/bookings — الحجوزات | 11 | 65 | 11 / 9 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/bookings — الحجوزات | 16 | 81 | 13 / 9 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/service-categories — تصنيفات الخدمات | 11 | 48 | 5 / 7 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/service-packages — حزم الخدمات | 11 | 48 | 5 / 7 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/sheets/settings — ربط Google Sheets | 7 | 30 | 4 / 6 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -2866,52 +2866,30 @@
 | 31 | Calendar | تسمية ديناميكية / تحتاج مراجعة | bookings |
 | 34 | summary | settings settingsHint | settings settingsHint |
 
-## client/src/pages/BookingsManagement.tsx
+## client/src/components/merchant/BookingWorkspace.tsx
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 214 | Button | حجز جديد | إدارة الحجوزات |
-| 218 | DialogContent | حجز جديد أدخل بيانات الحجز الجديد الخدمة * اسم العميل رقم الهاتف * البريد الإلكتروني التاريخ * وقت البدء * وقت الانتهاء * المدة (دقيقة) السعر (هللة) المبلغ النهائي مصدر الحجز حضوري هاتف واتساب الموقع ملاحظات إلغاء إنشاء  | إدارة الحجوزات |
-| 228 | Select | الخدمة * | حجز جديد |
-| 249 | Input | اسم العميل | حجز جديد |
-| 257 | Input | رقم الهاتف * | حجز جديد |
-| 269 | Input | البريد الإلكتروني | حجز جديد |
-| 282 | Input | التاريخ * | حجز جديد |
-| 292 | Input | وقت البدء * | حجز جديد |
-| 301 | Input | وقت الانتهاء * | حجز جديد |
-| 314 | Input | المدة (دقيقة) | حجز جديد |
-| 323 | Input | السعر (هللة) | حجز جديد |
-| 335 | Input | المبلغ النهائي | حجز جديد |
-| 347 | Select | مصدر الحجز | حجز جديد |
-| 366 | Textarea | ملاحظات | حجز جديد |
-| 376 | Button | إلغاء | حجز جديد |
-| 379 | Button | إنشاء الحجز | حجز جديد |
-| 446 | Input | البحث بالاسم أو رقم الهاتف... | حجز جديد |
-| 453 | Select | تسمية ديناميكية / تحتاج مراجعة | حجز جديد |
-| 493 | Calendar | تسمية ديناميكية / تحتاج مراجعة | حجز جديد |
-| 508 | Calendar | تسمية ديناميكية / تحتاج مراجعة | حجز جديد |
-| 525 | Button | تسمية ديناميكية / تحتاج مراجعة | حجز جديد |
-| 533 | DialogContent | تفاصيل الحجز معلومات كاملة عن الحجز العميل غير محدد التاريخ dd MMMM yyyy الوقت - المبلغ ملاحظات paid merchantUx.bookingCheckout.paid refunded merchantUx.bookingCheckout.refunded merchantUx.bookingCheckout.unpaid | حجز جديد |
-
-## client/src/components/BookingCheckoutAttempts.tsx
-
-| السطر | النوع | التسمية | القسم |
-|---:|---|---|---|
-| 16 | input | chg_… | BookingCheckoutAttempts |
-| 18 | input | تسمية ديناميكية / تحتاج مراجعة | BookingCheckoutAttempts |
-| 20 | Button | merchantUx.checkoutAttempts.reconciling merchantUx.checkoutAttempts.reconcile | BookingCheckoutAttempts |
-| 36 | Button | تسمية ديناميكية / تحتاج مراجعة | BookingCheckoutAttempts |
-| 52 | Button | تسمية ديناميكية / تحتاج مراجعة | BookingCheckoutAttempts |
-
-## client/src/components/BookingPaymentLinkRenewal.tsx
-
-| السطر | النوع | التسمية | القسم |
-|---:|---|---|---|
-| 19 | textarea | تسمية ديناميكية / تحتاج مراجعة | BookingPaymentLinkRenewal |
-| 23 | input | تسمية ديناميكية / تحتاج مراجعة | BookingPaymentLinkRenewal |
-| 26 | Button | merchantUx.bookingRenewal.saving merchantUx.bookingRenewal.renew | BookingPaymentLinkRenewal |
-| 48 | Button | تسمية ديناميكية / تحتاج مراجعة | BookingPaymentLinkRenewal |
-| 69 | Button | تسمية ديناميكية / تحتاج مراجعة | BookingPaymentLinkRenewal |
+| 34 | Button | refresh | title |
+| 34 | Button | create | title |
+| 35 | Link | services | title |
+| 35 | Link | providers | title |
+| 35 | Link | calendar | title |
+| 39 | input | search | title |
+| 40 | select | status all pending confirmed in_progress completed cancelled no_show unknown | title |
+| 41 | select | payment all unpaid paid refunded unknown | title |
+| 42 | input | تسمية ديناميكية / تحتاج مراجعة | title |
+| 42 | Button | search | title |
+| 42 | Button | search | title |
+| 46 | Button | first | outOfRange empty |
+| 46 | Button | view | none |
+| 47 | Button | previous | none |
+| 47 | Button | next | none |
+| 60 | Button | back | none |
+| 60 | Button | refresh | bookingNumber |
+| 65 | summary | operations | operations |
+| 65 | summary | paymentTools | paymentTools |
+| 66 | summary | advanced | advanced |
 
 ## client/src/components/BookingOperations.tsx
 
@@ -2980,6 +2958,41 @@
 | 234 | Button | تسمية ديناميكية / تحتاج مراجعة | BookingReschedule |
 | 251 | summary | تسمية ديناميكية / تحتاج مراجعة | BookingReschedule |
 | 282 | Button | تسمية ديناميكية / تحتاج مراجعة | BookingReschedule |
+
+## client/src/components/BookingPaymentLinkRenewal.tsx
+
+| السطر | النوع | التسمية | القسم |
+|---:|---|---|---|
+| 19 | textarea | تسمية ديناميكية / تحتاج مراجعة | BookingPaymentLinkRenewal |
+| 23 | input | تسمية ديناميكية / تحتاج مراجعة | BookingPaymentLinkRenewal |
+| 26 | Button | merchantUx.bookingRenewal.saving merchantUx.bookingRenewal.renew | BookingPaymentLinkRenewal |
+| 48 | Button | تسمية ديناميكية / تحتاج مراجعة | BookingPaymentLinkRenewal |
+| 69 | Button | تسمية ديناميكية / تحتاج مراجعة | BookingPaymentLinkRenewal |
+
+## client/src/components/BookingCheckoutAttempts.tsx
+
+| السطر | النوع | التسمية | القسم |
+|---:|---|---|---|
+| 16 | input | chg_… | BookingCheckoutAttempts |
+| 18 | input | تسمية ديناميكية / تحتاج مراجعة | BookingCheckoutAttempts |
+| 20 | Button | merchantUx.checkoutAttempts.reconciling merchantUx.checkoutAttempts.reconcile | BookingCheckoutAttempts |
+| 36 | Button | تسمية ديناميكية / تحتاج مراجعة | BookingCheckoutAttempts |
+| 52 | Button | تسمية ديناميكية / تحتاج مراجعة | BookingCheckoutAttempts |
+
+## client/src/components/merchant/BookingCreateWorkspace.tsx
+
+| السطر | النوع | التسمية | القسم |
+|---:|---|---|---|
+| 30 | textarea | * optional notes | BookingCreateWorkspace |
+| 30 | input | * optional notes | BookingCreateWorkspace |
+| 36 | Button | back | service * optional |
+| 36 | Button | refresh | create |
+| 38 | Button | checkList | create |
+| 39 | select | bookingSource whatsapp website phone walk_in | notes |
+| 39 | Button | review | notes |
+| 40 | DialogContent | review reviewTitle leaveTitle review reviewHint leaveHint review sourceError cancel saving review save leave | notes |
+| 40 | Button | cancel | review reviewTitle leaveTitle |
+| 40 | Button | saving review save leave | review reviewTitle leaveTitle |
 
 ## client/src/components/merchant/ServiceCollectionEditor.tsx
 

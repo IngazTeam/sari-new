@@ -5,12 +5,12 @@ import {trpc} from '@/lib/trpc';
 import {catalogChoicesSchema} from '@shared/service-catalog-workspace';
 import {Button} from '@/components/ui/button';
 import {WorkspaceState,workspaceFailureKind} from './WorkspaceState';
-export function CatalogChoicePicker({actorId,merchantId,kind,selected,names,onChange,onNames,disabled=false}:{actorId:number;merchantId:number;kind:'category'|'staff'|'service';selected:number[]|null;names:Record<number,string>;onChange:(ids:number[])=>void;onNames:(values:{id:number;name:string}[])=>void;disabled?:boolean}){
+export function CatalogChoicePicker({actorId,merchantId,kind,selected,names,onChange,onNames,disabled=false,single=false}:{actorId:number;merchantId:number;kind:'category'|'staff'|'service';selected:number[]|null;names:Record<number,string>;onChange:(ids:number[])=>void;onNames:(values:{id:number;name:string}[])=>void;disabled?:boolean;single?:boolean}){
  const {t}=useTranslation(),label=serviceEditorLabels(t);
  const [open,setOpen]=useState(false),[search,setSearch]=useState(''),[draft,setDraft]=useState(''),[page,setPage]=useState(1);
  const input={kind,search,page},query=trpc.services.catalogChoices.useQuery(input,{enabled:open,retry:false,staleTime:0,refetchOnMount:'always'}),parsed=catalogChoicesSchema.safeParse(query.data);
  const data=!query.error&&parsed.success&&parsed.data.actorId===actorId&&parsed.data.merchantId===merchantId&&parsed.data.selection.kind===kind&&parsed.data.selection.search===search&&parsed.data.selection.page===page?parsed.data:null;
- const choose=(row:{id:number;name:string})=>{if(!data?.canManage||query.isFetching||disabled)return;onNames([row]);onChange(kind==='category'?[row.id]:[...selected??[],row.id]);if(kind==='category')setOpen(false);};
+ const choose=(row:{id:number;name:string})=>{if(!data?.canManage||query.isFetching||disabled)return;onNames([row]);onChange(kind==='category'||single?[row.id]:[...selected??[],row.id]);if(kind==='category'||single)setOpen(false);};
  return <div className="se-choice">
   {selected===null?<div className="sc-feedback"><span>{label('repairSelection')}</span><Button type="button" disabled={disabled} variant="outline" onClick={()=>onChange([])}>{label('resetSelection')}</Button></div>:<><ul className="se-selected">{selected.map(id=><li key={id}><span>{names[id]??label('unavailableSelection',{id})}</span><Button type="button" variant="ghost" disabled={disabled} aria-label={label('removeSelection',{name:names[id]??label('unavailableSelection',{id})})} onClick={()=>onChange(selected.filter(value=>value!==id))}>×</Button></li>)}</ul>{!selected.length&&<p className="sc-muted">{label('noSelection')}</p>}</>}
   <Button type="button" variant="outline" aria-expanded={open} disabled={disabled||selected===null} onClick={()=>setOpen(value=>!value)}>{label(open?'cancel':'choose')}</Button>

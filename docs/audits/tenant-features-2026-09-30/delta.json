@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-02T01:11:59.480Z",
+  "generatedAt": "2026-10-02T01:49:52.326Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 376,
-      "controls": 2313
+      "files": 380,
+      "controls": 2321
     }
   },
   "addedFiles": [
@@ -192,6 +192,10 @@
     "client/src/components/merchant/CatalogChoicePicker.tsx",
     "client/src/components/merchant/ServiceDetailsWorkspace.tsx",
     "client/src/lib/service-details-labels.ts",
+    "client/src/components/merchant/BookingWorkspace.tsx",
+    "client/src/lib/booking-workspace.ts",
+    "client/src/lib/booking-workspace-labels.ts",
+    "client/src/components/merchant/BookingCreateWorkspace.tsx",
     "client/src/components/merchant/ServiceCollectionPage.tsx",
     "client/src/components/merchant/ServiceCollectionEditor.tsx",
     "client/src/lib/service-collection-form.ts",
@@ -281,6 +285,7 @@
     "client/src/pages/merchant/ServicesManagement.tsx",
     "client/src/pages/merchant/ServiceForm.tsx",
     "client/src/pages/ServiceDetails.tsx",
+    "client/src/pages/BookingsManagement.tsx",
     "client/src/pages/merchant/ServiceCategories.tsx",
     "client/src/pages/merchant/ServicePackages.tsx",
     "client/src/pages/SheetsSettings.tsx",
@@ -1525,10 +1530,19 @@
     {
       "route": "/merchant/bookings",
       "controlsBefore": 65,
-      "controlsNow": 65,
-      "removedQueries": [],
+      "controlsNow": 81,
+      "removedQueries": [
+        "bookings.list",
+        "bookings.getStats",
+        "services.list"
+      ],
       "addedQueries": [
-        "bookings.getById"
+        "auth.me",
+        "merchants.getCurrent",
+        "bookings.workspace",
+        "bookings.details",
+        "services.catalogEditor",
+        "services.catalogChoices"
       ],
       "removedMutations": [],
       "addedMutations": []
