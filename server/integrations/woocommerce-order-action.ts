@@ -1,6 +1,6 @@
 import {drizzle} from 'drizzle-orm/mysql2';
 import type {PoolConnection} from 'mysql2/promise';
-import {wooOrderActionLookup,wooOrderActionWorkspace,wooOrderStatusRequest} from '../../shared/woocommerce-order-action';
+import {wooOrderActionLookup,wooOrderActionWorkspace,wooOrderStatusRequest,normalizeWooRecipient} from '../../shared/woocommerce-order-action';
 import {wooSnapshot,wooConnectionDefinition,wooRows,wooStamp} from './woocommerce-workspace';
 import {readWooOrderDefinition} from './woocommerce-data-workspace';
 import {reviewWooSyncConnection} from './woocommerce-sync-request';
@@ -17,7 +17,8 @@ export async function readWooOrderActionWorkspace(actorId:number,merchantId:numb
  return wooSnapshot(actorId,merchantId,async tx=>{
   const current=await wooConnectionDefinition(tx,merchantId),order=await readWooOrderDefinition(tx,merchantId,orderId);
   const configured=!!current.row&&Number(current.row.active)===1&&current.row.connectionStatus==='connected'&&Number(current.row.hasConsumerKey)===1&&Number(current.row.hasConsumerSecret)===1;
-  return wooOrderActionWorkspace.parse({actorId,merchantId,checkedAt:new Date().toISOString(),revision:current.revision,configured,order,canChangeStatus:Boolean(configured&&order?.providerId&&order.providerUpdatedAt&&order.state!=='unknown')});
+  const channels=await wooRows(tx,"SELECT id FROM whatsapp_instances WHERE merchant_id=? AND status='active' AND is_primary=1",[merchantId]),recipient=normalizeWooRecipient(order?.customerPhone),notificationChannelReady=channels.length===1;
+  return wooOrderActionWorkspace.parse({actorId,merchantId,checkedAt:new Date().toISOString(),revision:current.revision,configured,order,canChangeStatus:Boolean(configured&&order?.providerId&&order.providerUpdatedAt&&order.state!=='unknown'),recipient,notificationChannelReady,canNotify:Boolean(configured&&order?.providerId&&recipient&&notificationChannelReady)});
  });
 }
 const defaultLaunch=(run:()=>Promise<void>)=>{void run().catch(()=>console.error('[WooCommerce] reviewed order outcome unavailable'));};

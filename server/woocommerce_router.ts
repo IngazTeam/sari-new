@@ -6,8 +6,9 @@ import {wooIncidentsInput,wooReconciliationRequest} from '../shared/woocommerce-
 import {readWooIncidentsWorkspace} from './integrations/woocommerce-incidents';
 import {wooConnectionCommand} from '../shared/woocommerce-connection';
 import {requestReviewedWooConnection} from './integrations/woocommerce-connection';
-import {wooOrderActionLookup,wooOrderStatusRequest} from '../shared/woocommerce-order-action';
+import {wooOrderActionLookup,wooOrderStatusRequest,wooOrderNotificationRequest} from '../shared/woocommerce-order-action';
 import {readWooOrderActionWorkspace,requestReviewedWooOrderStatus} from './integrations/woocommerce-order-action';
+import {requestReviewedWooNotification} from './integrations/woocommerce-order-notification';
 import {WooOperationFault,readWooOperation,readBlockingWooOperation,acknowledgeWooOperation} from './integrations/woocommerce-operation';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
@@ -365,6 +366,7 @@ async function runFullWooCommerceReconciliation(ctx: WooCommerceRequestAbortCont
 }
 
 export const woocommerceRouter = router({
+  requestReviewedNotification: wooAccessProcedure('orders.manage').input(wooOrderNotificationRequest).mutation(({ctx,input})=>reviewedWooAction(()=>requestReviewedWooNotification(ctx.user.id,tenantId(ctx),input))),
   getOrderActionWorkspace: wooAccessProcedure('orders.manage').input(wooOrderActionLookup).query(({ctx,input})=>readWooOrderActionWorkspace(ctx.user.id,tenantId(ctx),input)),
   requestReviewedOrderStatus: wooAccessProcedure('orders.manage').input(wooOrderStatusRequest).mutation(({ctx,input})=>reviewedWooAction(()=>requestReviewedWooOrderStatus(ctx.user.id,tenantId(ctx),input))),
   requestReviewedConnection: wooAccessProcedure('integrations.manage').input(wooConnectionCommand).mutation(({ctx,input})=>reviewedWooAction(()=>requestReviewedWooConnection(ctx.user.id,tenantId(ctx),input))),
