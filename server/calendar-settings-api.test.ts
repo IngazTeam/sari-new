@@ -45,6 +45,7 @@ for (const surface of ["mounted", "standalone"])
       async role => {
         m.access.mockResolvedValue({ merchantId: 20, role });
         await caller().settings();
+        await caller().getStatus();
         await caller().disconnect(input);
         expect(m.read).toHaveBeenCalledWith({
           merchantId: 20,
@@ -64,6 +65,7 @@ for (const surface of ["mounted", "standalone"])
         await expect(caller().settings()).rejects.toMatchObject({
           code: "FORBIDDEN",
         });
+        await expect(caller().getStatus()).rejects.toMatchObject({code:'FORBIDDEN'});
         await expect(caller().disconnect(input)).rejects.toMatchObject({
           code: "FORBIDDEN",
         });
@@ -72,6 +74,7 @@ for (const surface of ["mounted", "standalone"])
       }
     );
     it("requires active session context", async () => {
+      await expect(caller(null).getStatus()).rejects.toMatchObject({code:'UNAUTHORIZED'});
       await expect(caller(null).settings()).rejects.toMatchObject({
         code: "UNAUTHORIZED",
       });
@@ -94,9 +97,14 @@ for (const surface of ["mounted", "standalone"])
     });
     it("redacts storage failures", async () => {
       m.read.mockRejectedValue(Error("SQL PRIVATE"));
+      await expect(caller().getStatus()).rejects.toMatchObject({message:'calendar_oauth:unavailable'});
       await expect(caller().settings()).rejects.toMatchObject({
         message: "calendar_oauth:unavailable",
       });
+    });
+    it.each(['configured','unlinked','credentials_invalid','oauth_disabled','needs_destination'])('legacy status projects only a configured connection for %s',async state=>{
+      m.read.mockResolvedValue({actorId:7,merchantId:20,state,active:state!=='unlinked'});
+      expect(await caller().getStatus()).toMatchObject({actorId:7,merchantId:20,state,connected:state==='configured'});
     });
     it.each(["getAuthUrl", "handleCallback"])(
       "removes unsafe legacy entry %s on both surfaces",

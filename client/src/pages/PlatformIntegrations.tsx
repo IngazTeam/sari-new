@@ -1,3 +1,4 @@
+import { CalendarConnectionCard } from '@/components/merchant/CalendarConnectionCard';
 /**
  * صفحة إدارة ربط منصات التجارة الإلكترونية
  * تعرض المنصة المربوطة حالياً وتسمح بالفصل أو التبديل
@@ -82,7 +83,7 @@ export default function PlatformIntegrations() {
 
   // استعلام حالة Google Services
   const { data: sheetsStatus, error: sheetsError, isLoading: sheetsLoading } = trpc.sheets.getStatus.useQuery(undefined,{retry:false});
-  const { data: calendarStatus } = trpc.calendar.getStatus.useQuery();
+
 
   // استعلام المنصة المربوطة حالياً
   const { data: currentPlatform, isLoading } = trpc.integrations.getCurrentPlatform.useQuery();
@@ -359,31 +360,7 @@ export default function PlatformIntegrations() {
             </CardContent>
           </Card>
 
-          {/* Google Calendar */}
-          <Card className={calendarStatus?.connected ? 'border-green-500 bg-green-50 dark:bg-green-950' : ''}>
-            <CardHeader>
-              <div className="flex items-center gap-3">
-                <Calendar className="h-8 w-8 text-blue-600" />
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    Google Calendar
-                    {calendarStatus?.connected && (
-                      <Badge variant="default" className="bg-green-600">
-                        <CheckCircle2 className="h-3 w-3 mr-1" />{t('platformIntegrations.auto_8')}</Badge>
-                    )}
-                  </CardTitle>
-                  <CardDescription>{t('platformIntegrations.auto_9')}</CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <Link href="/merchant/calendar/settings">
-                <Button variant={calendarStatus?.connected ? 'outline' : 'default'} className="w-full">
-                  {calendarStatus?.connected ? 'إدارة الإعدادات' : 'ربط Google Calendar'}
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
+          <CalendarConnectionCard />
         </div>
       </div>
 

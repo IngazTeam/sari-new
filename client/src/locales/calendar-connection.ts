@@ -1,4 +1,9 @@
 export const calendarConnectionEn = {
+  manage: "Manage connection",
+  loading: "Loading connection status…",
+  unknown: "Connection status unavailable",
+  permission:
+    "Integration management permission is required to view this connection.",
   eyebrow: "Appointments and integrations",
   title: "Google Calendar",
   description:
@@ -67,6 +72,10 @@ export const calendarConnectionEn = {
     "To revoke Google permissions too, review third-party access in your Google account.",
 };
 export const calendarConnectionAr: typeof calendarConnectionEn = {
+  manage: "إدارة الاتصال",
+  loading: "جارٍ قراءة حالة الاتصال…",
+  unknown: "تعذرت قراءة حالة الاتصال",
+  permission: "تحتاج صلاحية إدارة التكاملات لعرض هذا الاتصال.",
   eyebrow: "المواعيد والتكاملات",
   title: "تقويم Google",
   description:

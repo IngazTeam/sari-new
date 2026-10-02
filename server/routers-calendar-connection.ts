@@ -5,6 +5,21 @@ import { guardCalendarOAuth } from "./calendar-oauth-api";
 import { readCalendarSettings, disconnectCalendar } from "./calendar-settings";
 import { calendarDisconnectInput } from "../shared/calendar-settings";
 export const calendarConnectionProcedures = {
+  getStatus: permissionProcedure("integrations.manage").query(({ ctx }) => {
+    if (!ctx.session?.sessionId)
+      throw new TRPCError({
+        code: "UNAUTHORIZED",
+        message: "calendar_oauth:session",
+      });
+    return guardCalendarOAuth(async () => {
+      const settings = await readCalendarSettings({
+        merchantId: ctx.merchantId,
+        userId: ctx.user.id,
+        sessionId: ctx.session!.sessionId,
+      });
+      return { ...settings, connected: settings.state === "configured" };
+    });
+  }),
   beginOAuth: permissionProcedure("integrations.manage").mutation(({ ctx }) => {
     if (!ctx.session?.sessionId)
       throw new TRPCError({

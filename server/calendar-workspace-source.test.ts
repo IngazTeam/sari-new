@@ -8,6 +8,7 @@ vi.mock("./db/connection", () => ({ getDb: m.db }));
 import {
   readCalendarWorkspace,
   readCalendarDetails,
+  readCalendarStats,
 } from "./calendar-workspace";
 beforeEach(() => {
   vi.resetAllMocks();
@@ -17,6 +18,14 @@ beforeEach(() => {
   );
 });
 describe("calendar workspace source failures", () => {
+  it.each([undefined,{},[{status:'pending',total:-1}],[{status:'pending',total:1},{status:'pending',total:2}],[{status:'invalid',total:1}],[{status:'pending',total:null}]])('rejects malformed stats groups %j',async rows=>{
+    m.execute.mockResolvedValueOnce([[{id:20}]]).mockResolvedValueOnce([rows]);
+    await expect(readCalendarStats(7,20,{})).rejects.toThrow('Calendar data unavailable');
+  });
+  it('sums complete stats groups without selecting appointment contents',async()=>{
+    m.execute.mockResolvedValueOnce([[{id:20}]]).mockResolvedValueOnce([[{status:'pending',total:501},{status:'unknown',total:2},{status:'no_show',total:1}]]);
+    expect(await readCalendarStats(7,20,{})).toMatchObject({actorId:7,merchantId:20,total:504,pending:501,unknown:2,noShow:1,confirmed:0});
+  });
   for (const detail of [false, true]) {
     const read = () =>
       detail

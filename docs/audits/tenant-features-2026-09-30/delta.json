@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-02T03:07:33.021Z",
+  "generatedAt": "2026-10-02T03:15:59.606Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,7 +10,7 @@
     },
     "after": {
       "routes": 126,
-      "files": 385,
+      "files": 386,
       "controls": 2353
     }
   },
@@ -207,6 +207,7 @@
     "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
     "client/src/components/merchant/InventorySheetWorkspace.tsx",
     "client/src/lib/inventory-sheet-workspace.ts",
+    "client/src/components/merchant/CalendarConnectionCard.tsx",
     "client/src/components/merchant/ReportsWorkspace.tsx",
     "client/src/lib/report-export.ts",
     "client/src/lib/merchant-report-document.ts",
@@ -1768,8 +1769,14 @@
       "route": "/merchant/platform-integrations",
       "controlsBefore": 10,
       "controlsNow": 10,
-      "removedQueries": [],
-      "addedQueries": [],
+      "removedQueries": [
+        "calendar.getStatus"
+      ],
+      "addedQueries": [
+        "auth.me",
+        "merchants.getCurrent",
+        "calendar.settings"
+      ],
       "removedMutations": [],
       "addedMutations": []
     },

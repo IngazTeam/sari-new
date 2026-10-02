@@ -44,6 +44,16 @@ export const calendarWorkspaceInput = z
     return span >= 0 && span <= 92 * 86400000;
   }, "Invalid calendar range");
 export const calendarDetailsInput = z.object({ appointmentId: id }).strict();
+export const calendarStatsInput = z
+  .object({
+    startDate: serviceBookingDate.optional(),
+    endDate: serviceBookingDate.optional(),
+  })
+  .strict()
+  .refine(
+    v => !v.startDate || !v.endDate || v.startDate <= v.endDate,
+    "Invalid calendar range"
+  );
 const reference = z
   .object({ id, name: z.string().nullable(), isActive: z.boolean().nullable() })
   .strict();

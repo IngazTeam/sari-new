@@ -3,6 +3,7 @@ const m = vi.hoisted(() => ({
   access: vi.fn(),
   list: vi.fn(),
   details: vi.fn(),
+  stats: vi.fn(),
 }));
 vi.mock("./accounts/merchant-access", () => ({
   resolveMerchantAccess: m.access,
@@ -11,6 +12,7 @@ vi.mock("./calendar-workspace", async original => ({
   ...(await original<typeof import("./calendar-workspace")>()),
   readCalendarWorkspace: m.list,
   readCalendarDetails: m.details,
+  readCalendarStats: m.stats,
 }));
 import { appRouter } from "./routers";
 import { calendarRouter } from "./routers-calendar";
@@ -59,6 +61,7 @@ beforeEach(() => {
   m.access.mockResolvedValue({ merchantId: 20, role: "viewer" });
   m.list.mockResolvedValue(empty);
   m.details.mockResolvedValue({ ...empty, appointment: { id: 31 } });
+  m.stats.mockResolvedValue({actorId:7,merchantId:20,total:501});
 });
 for (const surface of ["mounted", "standalone"])
   describe(`calendar workspace authority ${surface}`, () => {
@@ -97,6 +100,19 @@ for (const surface of ["mounted", "standalone"])
         expect(m.details).toHaveBeenCalledWith(7, 20, { appointmentId: 31 });
       }
     );
+    it.each(['owner','manager','sales_supervisor','viewer'])('scopes legacy stats for %s',async role=>{
+      m.access.mockResolvedValue({merchantId:20,role});
+      expect(await caller().getStats(range)).toMatchObject({actorId:7,merchantId:20,total:501,canManage:role!=='viewer'});
+      expect(m.stats).toHaveBeenCalledWith(7,20,range);
+    });
+    it.each([{startDate:'2026-02-30'},{startDate:'2026-11-01',endDate:'2026-10-31'},{merchantId:999},{endDate:'2026-10-31T12:00:00Z'}])('validates legacy stats filters %j',async input=>{
+      await expect(caller().getStats(input as any)).rejects.toMatchObject({code:'BAD_REQUEST'});expect(m.stats).not.toHaveBeenCalled();
+    });
+    it('denies anonymous or revoked stats and redacts storage errors',async()=>{
+      await expect(caller(null).getStats({})).rejects.toMatchObject({code:'UNAUTHORIZED'});
+      m.access.mockResolvedValue(null);await expect(caller().getStats({})).rejects.toMatchObject({code:'FORBIDDEN'});expect(m.stats).not.toHaveBeenCalled();
+      m.access.mockResolvedValue({merchantId:20,role:'viewer'});m.stats.mockRejectedValue(Error('PRIVATE'));await expect(caller().getStats({})).rejects.toMatchObject({message:'Calendar data unavailable'});
+    });
     it.each(["workspace", "details"] as const)(
       "denies anonymous, forged scope and revoked membership for %s",
       async method => {

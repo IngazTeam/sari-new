@@ -2,7 +2,7 @@
 
 هذا حصر مصدر قابل لإعادة التوليد، وليس ادعاءً بأن كل مسار عمل اختُبر أو أُعيد تصميمه. يشمل المكونات الفرعية المحلية، الحقول، الأزرار، النوافذ، التبويبات، واجهات القراءة والتعديل. العناصر الديناميكية تحتاج مراجعة إضافية.
 
-- 126 مسارًا مسجلًا، 385 ملف واجهة متصلًا، 2353 عنصر تحكم في المصدر.
+- 126 مسارًا مسجلًا، 386 ملف واجهة متصلًا، 2353 عنصر تحكم في المصدر.
 - 0 رابطًا حرفيًا غير مطابق، و0 ملف صفحة غير متصل بالمسارات المحصورة.
 
 | الصفحة | الملفات | عناصر التحكم | القراءة / التعديل | موك أب للصفحة |
@@ -102,7 +102,7 @@
 | /merchant/loyalty/rewards — مكافآت الولاء | 2 | 19 | 1 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/loyalty/customers — عملاء الولاء | 2 | 14 | 2 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/integrations-dashboard — صحة التكاملات | 6 | 8 | 3 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/platform-integrations — التكاملات | 1 | 10 | 7 / 4 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/platform-integrations — التكاملات | 3 | 10 | 9 / 4 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/notification-settings — تفضيلات الإشعارات | 1 | 17 | 1 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/currency-settings — عملة المتجر | 1 | 2 | 1 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/push-notifications — إشعارات المتصفح | 1 | 3 | 3 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -2704,19 +2704,19 @@
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 220 | Button | تسمية ديناميكية / تحتاج مراجعة | CalendarConnectionWorkspace |
-| 221 | Link | تسمية ديناميكية / تحتاج مراجعة | CalendarConnectionWorkspace |
-| 226 | Button | تسمية ديناميكية / تحتاج مراجعة | CalendarConnectionWorkspace |
-| 302 | Button | connect | CalendarConnectionWorkspace |
-| 314 | Button | تسمية ديناميكية / تحتاج مراجعة | CalendarConnectionWorkspace |
-| 335 | Button | تسمية ديناميكية / تحتاج مراجعة | CalendarConnectionWorkspace |
-| 336 | Link | تسمية ديناميكية / تحتاج مراجعة | CalendarConnectionWorkspace |
-| 343 | summary | تسمية ديناميكية / تحتاج مراجعة | CalendarConnectionWorkspace |
-| 347 | a | تسمية ديناميكية / تحتاج مراجعة | CalendarConnectionWorkspace |
-| 365 | DialogContent | disconnect | CalendarConnectionWorkspace |
-| 392 | input | تسمية ديناميكية / تحتاج مراجعة | CalendarConnectionWorkspace |
-| 401 | Button | تسمية ديناميكية / تحتاج مراجعة | CalendarConnectionWorkspace |
-| 411 | Button | disconnect | CalendarConnectionWorkspace |
+| 221 | Button | تسمية ديناميكية / تحتاج مراجعة | CalendarConnectionWorkspace |
+| 222 | Link | تسمية ديناميكية / تحتاج مراجعة | CalendarConnectionWorkspace |
+| 227 | Button | تسمية ديناميكية / تحتاج مراجعة | CalendarConnectionWorkspace |
+| 303 | Button | connect | CalendarConnectionWorkspace |
+| 315 | Button | تسمية ديناميكية / تحتاج مراجعة | CalendarConnectionWorkspace |
+| 336 | Button | تسمية ديناميكية / تحتاج مراجعة | CalendarConnectionWorkspace |
+| 337 | Link | تسمية ديناميكية / تحتاج مراجعة | CalendarConnectionWorkspace |
+| 344 | summary | تسمية ديناميكية / تحتاج مراجعة | CalendarConnectionWorkspace |
+| 348 | a | تسمية ديناميكية / تحتاج مراجعة | CalendarConnectionWorkspace |
+| 366 | DialogContent | disconnect | CalendarConnectionWorkspace |
+| 396 | input | تسمية ديناميكية / تحتاج مراجعة | CalendarConnectionWorkspace |
+| 405 | Button | تسمية ديناميكية / تحتاج مراجعة | CalendarConnectionWorkspace |
+| 415 | Button | disconnect | CalendarConnectionWorkspace |
 
 ## client/src/components/merchant/CalendarWorkspace.tsx
 
@@ -3267,16 +3267,21 @@
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 57 | Button | جاري الفحص... اختبار الاتصال | PlatformIntegrations |
-| 257 | a | تسمية ديناميكية / تحتاج مراجعة | مربوط |
-| 273 | Button | إدارة الإعدادات | مربوط |
-| 279 | Button | جاري الفصل... فصل المنصة | مربوط |
-| 318 | Button | غير متاح حاليًا غير متاح (افصل المنصة الحالية أولاً) ربط الآن | PlatformIntegrations |
-| 354 | Link | تعذر التحقق من اتصال Google Sheets إدارة الإعدادات ربط Google Sheets | Google Sheets مربوط |
-| 355 | Button | تعذر التحقق من اتصال Google Sheets إدارة الإعدادات ربط Google Sheets | Google Sheets مربوط |
-| 366 | Calendar | تسمية ديناميكية / تحتاج مراجعة | Google Sheets مربوط |
-| 380 | Link | إدارة الإعدادات ربط Google Calendar | Google Calendar مربوط |
-| 381 | Button | إدارة الإعدادات ربط Google Calendar | Google Calendar مربوط |
+| 58 | Button | جاري الفحص... اختبار الاتصال | PlatformIntegrations |
+| 258 | a | تسمية ديناميكية / تحتاج مراجعة | مربوط |
+| 274 | Button | إدارة الإعدادات | مربوط |
+| 280 | Button | جاري الفصل... فصل المنصة | مربوط |
+| 319 | Button | غير متاح حاليًا غير متاح (افصل المنصة الحالية أولاً) ربط الآن | PlatformIntegrations |
+| 355 | Link | تعذر التحقق من اتصال Google Sheets إدارة الإعدادات ربط Google Sheets | Google Sheets مربوط |
+| 356 | Button | تعذر التحقق من اتصال Google Sheets إدارة الإعدادات ربط Google Sheets | Google Sheets مربوط |
+
+## client/src/components/merchant/CalendarConnectionCard.tsx
+
+| السطر | النوع | التسمية | القسم |
+|---:|---|---|---|
+| 70 | Button | تسمية ديناميكية / تحتاج مراجعة | CalendarConnectionCard |
+| 71 | Link | تسمية ديناميكية / تحتاج مراجعة | CalendarConnectionCard |
+| 77 | Button | تسمية ديناميكية / تحتاج مراجعة | CalendarConnectionCard |
 
 ## client/src/pages/NotificationSettings.tsx
 

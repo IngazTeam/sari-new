@@ -12,7 +12,6 @@ import {
   reconcileAppointment,
 } from "./appointment-reconciliation";
 import { readCalendarAppointments } from "./calendar-read";
-import { getGoogleIntegration } from "./db";
 const failure = () =>
   new TRPCError({
     code: "CONFLICT",
@@ -31,14 +30,6 @@ export const calendarReconciliationProcedures = {
         "integrations.manage"
       ),
     })),
-  getStatus: merchantProcedure.query(async ({ ctx }) => {
-    const integration = await getGoogleIntegration(ctx.merchantId, "calendar");
-    return {
-      connected: integration?.isActive === 1,
-      calendarId: integration?.calendarId,
-      lastSync: integration?.lastSync,
-    };
-  }),
   getSyncReview: permissionProcedure("orders.manage")
     .input(appointmentIdSchema)
     .query(async ({ ctx, input }) => {

@@ -5854,36 +5854,6 @@ export async function getUpcomingAppointments(merchantId: number, limit: number 
     .limit(limit);
 }
 
-// Get appointment statistics
-export async function getAppointmentStats(merchantId: number, startDate?: string, endDate?: string) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  let conditions = [eq(appointments.merchantId, merchantId)];
-
-  if (startDate) {
-    conditions.push(gte(appointments.appointmentDate, startDate));
-  }
-
-  if (endDate) {
-    conditions.push(lte(appointments.appointmentDate, endDate));
-  }
-
-  const allAppointments = await db.select().from(appointments)
-    .where(and(...conditions));
-
-  const stats = {
-    total: allAppointments.length,
-    confirmed: allAppointments.filter(a => a.status === 'confirmed').length,
-    completed: allAppointments.filter(a => a.status === 'completed').length,
-    cancelled: allAppointments.filter(a => a.status === 'cancelled').length,
-    noShow: allAppointments.filter(a => a.status === 'no_show').length,
-    pending: allAppointments.filter(a => a.status === 'pending').length,
-  };
-
-  return stats;
-}
-
 // Get all merchants with Google Calendar integration
 export async function getAllMerchantsWithCalendar() {
   const db = await getDb();

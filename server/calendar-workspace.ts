@@ -12,6 +12,7 @@ import {
   calendarStatus,
   calendarSyncState,
   calendarPageSize,
+  calendarStatsInput,
 } from "../shared/calendar-workspace";
 export class CalendarWorkspaceUnavailableError extends Error {
   constructor() {
@@ -84,6 +85,45 @@ const joins = sql`LEFT JOIN services s ON s.id=a.service_id AND s.merchant_id=a.
 const columns = sql`a.id,a.merchant_id AS merchantId,a.service_id AS serviceId,s.name AS serviceName,s.is_active AS serviceActive,a.staff_id AS staffId,m.name AS staffName,m.is_active AS staffActive,a.customer_name AS customerName,a.customer_phone AS customerPhone,DATE_FORMAT(a.appointment_date,'%Y-%m-%d') AS date,a.start_time AS startTime,a.end_time AS endTime,a.status,a.calendar_sync_state AS sync`;
 const statusExpression = sql`CASE WHEN a.status IN ('pending','confirmed','cancelled','completed','no_show') THEN a.status ELSE 'unknown' END`;
 const syncExpression = sql`CASE WHEN a.calendar_sync_state IN ('none','creating','create_unknown','synced','cancelling','cancel_unknown','cancelled','legacy') THEN a.calendar_sync_state ELSE 'unknown' END`;
+export async function readCalendarStats(
+  actorId: number,
+  merchantId: number,
+  raw: unknown,
+  now = new Date()
+) {
+  const input = calendarStatsInput.parse(raw);
+  return snapshot(actorId, merchantId, now, async (read, scope) => {
+    const filters = [sql`a.merchant_id=${merchantId}`];
+    if (input.startDate)
+      filters.push(sql`a.appointment_date>=${input.startDate}`);
+    if (input.endDate)
+      filters.push(
+        sql`a.appointment_date<DATE_ADD(${input.endDate},INTERVAL 1 DAY)`
+      );
+    const rows = await read(
+      sql`SELECT ${statusExpression} AS status,COUNT(*) AS total FROM appointments a WHERE ${sql.join(filters, sql` AND `)} GROUP BY ${statusExpression}`
+    );
+    const counts = {
+        pending: 0,
+        confirmed: 0,
+        cancelled: 0,
+        completed: 0,
+        noShow: 0,
+        unknown: 0,
+      },
+      seen = new Set<string>();
+    for (const row of rows) {
+      const status = calendarStatus.parse(row.status);
+      if (seen.has(status)) throw new CalendarWorkspaceUnavailableError();
+      seen.add(status);
+      counts[status === "no_show" ? "noShow" : status] = integer(row.total);
+    }
+    const total = integer(
+      Object.values(counts).reduce((sum, value) => sum + value, 0)
+    );
+    return { ...scope, selection: input, total, ...counts };
+  });
+}
 function normalize(row: Row, detailed = false) {
   const issues: string[] = [];
   const nullable = (field: string, schema: z.ZodType, value: unknown) => {

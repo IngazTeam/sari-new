@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-02T03:07:33.021Z",
+  "generatedAt": "2026-10-02T03:15:59.606Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -13651,7 +13651,7 @@
     },
     {
       "file": "client/src/components/merchant/CalendarConnectionWorkspace.tsx",
-      "hash": "0386093a91dd",
+      "hash": "e8ca552b0d5a",
       "queries": [
         "calendar.settings"
       ],
@@ -13664,27 +13664,27 @@
       "sections": [
         {
           "label": "",
-          "line": 216,
+          "line": 217,
           "tag": "h1"
         },
         {
           "label": "",
-          "line": 255,
+          "line": 256,
           "tag": "h2"
         },
         {
           "label": "",
-          "line": 330,
+          "line": 331,
           "tag": "h2"
         },
         {
           "label": "",
-          "line": 343,
+          "line": 344,
           "tag": "summary"
         },
         {
           "label": "",
-          "line": 376,
+          "line": 380,
           "tag": "DialogTitle"
         }
       ],
@@ -16579,11 +16579,10 @@
     },
     {
       "file": "client/src/pages/PlatformIntegrations.tsx",
-      "hash": "6deb621ce01f",
+      "hash": "1b5c5d5a92a3",
       "queries": [
         "integrations.getByaanStatus",
         "sheets.getStatus",
-        "calendar.getStatus",
         "integrations.getCurrentPlatform",
         "salla.getConnection",
         "zid.getConnection",
@@ -16600,49 +16599,44 @@
       "sections": [
         {
           "label": "ربط منصات التجارة الإلكترونية",
-          "line": 224,
+          "line": 225,
           "tag": "h1"
         },
         {
           "label": "مربوط",
-          "line": 243,
+          "line": 244,
           "tag": "CardTitle"
         },
         {
           "label": "منصات أخرى متاحة اختر منصة للربط",
-          "line": 299,
+          "line": 300,
           "tag": "h2"
         },
         {
           "label": "",
-          "line": 312,
+          "line": 313,
           "tag": "CardTitle"
         },
         {
           "label": "خدمات Google",
-          "line": 334,
+          "line": 335,
           "tag": "h2"
         },
         {
           "label": "Google Sheets مربوط",
-          "line": 342,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "Google Calendar مربوط",
-          "line": 368,
+          "line": 343,
           "tag": "CardTitle"
         },
         {
           "label": "منصة التجارة الإلكترونية السعودية الرائدة",
-          "line": 393,
+          "line": 370,
           "tag": "CardTitle"
         }
       ],
       "choices": [
         {
           "name": "platforms",
-          "line": 171,
+          "line": 172,
           "values": [
             {
               "id": "salla",
@@ -16695,7 +16689,7 @@
       "handlers": [
         {
           "name": "handleDisconnect",
-          "line": 140,
+          "line": 141,
           "calls": [
             "disconnectSalla",
             "disconnectZid",
@@ -16707,7 +16701,7 @@
         {
           "query": "integrations.getByaanStatus",
           "binding": "{ data: status, isLoading }",
-          "line": 22,
+          "line": 23,
           "errorSignal": false,
           "loadingSignal": true,
           "enabled": null
@@ -16715,23 +16709,15 @@
         {
           "query": "sheets.getStatus",
           "binding": "{ data: sheetsStatus, error: sheetsError, isLoading: sheetsLoading }",
-          "line": 84,
+          "line": 85,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
         },
         {
-          "query": "calendar.getStatus",
-          "binding": "{ data: calendarStatus }",
-          "line": 85,
-          "errorSignal": false,
-          "loadingSignal": false,
-          "enabled": null
-        },
-        {
           "query": "integrations.getCurrentPlatform",
           "binding": "{ data: currentPlatform, isLoading }",
-          "line": 88,
+          "line": 89,
           "errorSignal": false,
           "loadingSignal": true,
           "enabled": null
@@ -16739,7 +16725,7 @@
         {
           "query": "salla.getConnection",
           "binding": "{ data: sallaConnection }",
-          "line": 91,
+          "line": 92,
           "errorSignal": false,
           "loadingSignal": false,
           "enabled": "!currentPlatform || currentPlatform.platform === 'salla' "
@@ -16747,7 +16733,7 @@
         {
           "query": "zid.getConnection",
           "binding": "{ data: zidStatus }",
-          "line": 96,
+          "line": 97,
           "errorSignal": false,
           "loadingSignal": false,
           "enabled": "!currentPlatform || currentPlatform.platform === 'zid' "
@@ -16755,15 +16741,69 @@
         {
           "query": "woocommerce.getSettings",
           "binding": "{ data: wooSettings }",
-          "line": 101,
+          "line": 102,
           "errorSignal": false,
           "loadingSignal": false,
           "enabled": "!currentPlatform || currentPlatform.platform === 'woocommerce' "
         }
       ],
       "conditions": [],
-      "imports": [],
-      "controlCount": 10
+      "imports": [
+        "client/src/components/merchant/CalendarConnectionCard.tsx"
+      ],
+      "controlCount": 7
+    },
+    {
+      "file": "client/src/components/merchant/CalendarConnectionCard.tsx",
+      "hash": "bb676cc155e6",
+      "queries": [
+        "auth.me",
+        "merchants.getCurrent",
+        "calendar.settings"
+      ],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [
+        {
+          "label": "",
+          "line": 55,
+          "tag": "h3"
+        }
+      ],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [
+        {
+          "query": "auth.me",
+          "binding": "user",
+          "line": 16,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        },
+        {
+          "query": "merchants.getCurrent",
+          "binding": "merchant",
+          "line": 17,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": "!!user.data?.id && !user.error && !user.isFetching"
+        },
+        {
+          "query": "calendar.settings",
+          "binding": "query",
+          "line": 21,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": "!!user.data?.id &&"
+        }
+      ],
+      "conditions": [],
+      "imports": [
+        "client/src/lib/calendar-connection.ts"
+      ],
+      "controlCount": 3
     },
     {
       "file": "client/src/pages/NotificationSettings.tsx",
@@ -23502,19 +23542,19 @@
         "client/src/lib/calendar-connection.ts"
       ],
       "controls": [
-        "16846bcdab7d",
-        "b5c5344e5f2e",
-        "c8985fc4cc4d",
-        "b8fb86e5e600",
-        "51ec87153f29",
-        "97b9a4ba7b7a",
-        "c827aaa5dc14",
-        "70dea98122cc",
-        "e3b40a091af4",
-        "d1803b9be8e3",
-        "da244a2f5799",
-        "b29532b0d37d",
-        "29fec06f212a"
+        "2b3c37e9b14f",
+        "a7d76e650ca4",
+        "b5e6f9b38a64",
+        "53ba5a552545",
+        "c78fa672bd91",
+        "f4ad558ed21d",
+        "eedaedcdd1b5",
+        "bfab50652f36",
+        "9cf3a6ea24e5",
+        "f7a21c712fb8",
+        "a48bd30abf05",
+        "83d8236c9fe6",
+        "ca410d190bcb"
       ],
       "queries": [
         "auth.me",
@@ -24703,28 +24743,32 @@
         "PlatformIntegrations"
       ],
       "files": [
-        "client/src/pages/PlatformIntegrations.tsx"
+        "client/src/pages/PlatformIntegrations.tsx",
+        "client/src/components/merchant/CalendarConnectionCard.tsx",
+        "client/src/lib/calendar-connection.ts"
       ],
       "controls": [
-        "e07037cf100c",
-        "54674fea2145",
-        "fc4a26baeaf3",
-        "f9d7cc2549bf",
-        "ea505e2c16ab",
-        "bd6d0147c0c9",
-        "1ffd1c38e2f9",
-        "76e724d1b018",
-        "0acbae63844a",
-        "df06dbe2cb07"
+        "49f5fa958015",
+        "0666df803da9",
+        "d50e989356d9",
+        "93813230beae",
+        "462915175a79",
+        "5cc03af2c7be",
+        "48512bf5f086",
+        "cd13479e62ad",
+        "ce9fd2db7255",
+        "7f2f5df92f27"
       ],
       "queries": [
         "integrations.getByaanStatus",
         "sheets.getStatus",
-        "calendar.getStatus",
         "integrations.getCurrentPlatform",
         "salla.getConnection",
         "zid.getConnection",
-        "woocommerce.getSettings"
+        "woocommerce.getSettings",
+        "auth.me",
+        "merchants.getCurrent",
+        "calendar.settings"
       ],
       "mutations": [
         "integrations.testByaanConnection",
@@ -65583,9 +65627,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "16846bcdab7d",
+      "id": "2b3c37e9b14f",
       "file": "client/src/components/merchant/CalendarConnectionWorkspace.tsx",
-      "line": 220,
+      "line": 221,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -65604,9 +65648,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "b5c5344e5f2e",
+      "id": "a7d76e650ca4",
       "file": "client/src/components/merchant/CalendarConnectionWorkspace.tsx",
-      "line": 221,
+      "line": 222,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -65625,9 +65669,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "c8985fc4cc4d",
+      "id": "b5e6f9b38a64",
       "file": "client/src/components/merchant/CalendarConnectionWorkspace.tsx",
-      "line": 226,
+      "line": 227,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -65646,9 +65690,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "b8fb86e5e600",
+      "id": "53ba5a552545",
       "file": "client/src/components/merchant/CalendarConnectionWorkspace.tsx",
-      "line": 302,
+      "line": 303,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -65667,9 +65711,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "51ec87153f29",
+      "id": "c78fa672bd91",
       "file": "client/src/components/merchant/CalendarConnectionWorkspace.tsx",
-      "line": 314,
+      "line": 315,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -65690,9 +65734,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "97b9a4ba7b7a",
+      "id": "f4ad558ed21d",
       "file": "client/src/components/merchant/CalendarConnectionWorkspace.tsx",
-      "line": 335,
+      "line": 336,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -65711,9 +65755,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "c827aaa5dc14",
+      "id": "eedaedcdd1b5",
       "file": "client/src/components/merchant/CalendarConnectionWorkspace.tsx",
-      "line": 336,
+      "line": 337,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -65732,9 +65776,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "70dea98122cc",
+      "id": "bfab50652f36",
       "file": "client/src/components/merchant/CalendarConnectionWorkspace.tsx",
-      "line": 343,
+      "line": 344,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -65753,9 +65797,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "e3b40a091af4",
+      "id": "9cf3a6ea24e5",
       "file": "client/src/components/merchant/CalendarConnectionWorkspace.tsx",
-      "line": 347,
+      "line": 348,
       "tag": "a",
       "role": "",
       "kind": "action",
@@ -65774,9 +65818,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "d1803b9be8e3",
+      "id": "f7a21c712fb8",
       "file": "client/src/components/merchant/CalendarConnectionWorkspace.tsx",
-      "line": 365,
+      "line": 366,
       "tag": "DialogContent",
       "role": "",
       "kind": "dialog",
@@ -65795,9 +65839,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "da244a2f5799",
+      "id": "a48bd30abf05",
       "file": "client/src/components/merchant/CalendarConnectionWorkspace.tsx",
-      "line": 392,
+      "line": 396,
       "tag": "input",
       "role": "",
       "kind": "field",
@@ -65816,9 +65860,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "b29532b0d37d",
+      "id": "83d8236c9fe6",
       "file": "client/src/components/merchant/CalendarConnectionWorkspace.tsx",
-      "line": 401,
+      "line": 405,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -65837,9 +65881,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "29fec06f212a",
+      "id": "ca410d190bcb",
       "file": "client/src/components/merchant/CalendarConnectionWorkspace.tsx",
-      "line": 411,
+      "line": 415,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -74409,9 +74453,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "e07037cf100c",
+      "id": "49f5fa958015",
       "file": "client/src/pages/PlatformIntegrations.tsx",
-      "line": 57,
+      "line": 58,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -74430,9 +74474,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "54674fea2145",
+      "id": "0666df803da9",
       "file": "client/src/pages/PlatformIntegrations.tsx",
-      "line": 257,
+      "line": 258,
       "tag": "a",
       "role": "",
       "kind": "action",
@@ -74454,9 +74498,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "fc4a26baeaf3",
+      "id": "d50e989356d9",
       "file": "client/src/pages/PlatformIntegrations.tsx",
-      "line": 273,
+      "line": 274,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -74477,9 +74521,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "f9d7cc2549bf",
+      "id": "93813230beae",
       "file": "client/src/pages/PlatformIntegrations.tsx",
-      "line": 279,
+      "line": 280,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -74500,9 +74544,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ea505e2c16ab",
+      "id": "462915175a79",
       "file": "client/src/pages/PlatformIntegrations.tsx",
-      "line": 318,
+      "line": 319,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -74521,9 +74565,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "bd6d0147c0c9",
+      "id": "5cc03af2c7be",
       "file": "client/src/pages/PlatformIntegrations.tsx",
-      "line": 354,
+      "line": 355,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -74542,9 +74586,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "1ffd1c38e2f9",
+      "id": "48512bf5f086",
       "file": "client/src/pages/PlatformIntegrations.tsx",
-      "line": 355,
+      "line": 356,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -74563,14 +74607,14 @@
       "review": "source-inventoried"
     },
     {
-      "id": "76e724d1b018",
-      "file": "client/src/pages/PlatformIntegrations.tsx",
-      "line": 366,
-      "tag": "Calendar",
+      "id": "cd13479e62ad",
+      "file": "client/src/components/merchant/CalendarConnectionCard.tsx",
+      "line": 70,
+      "tag": "Button",
       "role": "",
-      "kind": "field",
+      "kind": "action",
       "label": "",
-      "section": "Google Sheets مربوط",
+      "section": "CalendarConnectionCard",
       "binding": "",
       "type": "text",
       "options": [],
@@ -74578,20 +74622,22 @@
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": true,
-      "conditions": [],
+      "conditional": false,
+      "conditions": [
+        "data"
+      ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "0acbae63844a",
-      "file": "client/src/pages/PlatformIntegrations.tsx",
-      "line": 380,
+      "id": "ce9fd2db7255",
+      "file": "client/src/components/merchant/CalendarConnectionCard.tsx",
+      "line": 71,
       "tag": "Link",
       "role": "",
       "kind": "action",
-      "label": "إدارة الإعدادات ربط Google Calendar",
-      "section": "Google Calendar مربوط",
+      "label": "",
+      "section": "CalendarConnectionCard",
       "binding": "/merchant/calendar/settings",
       "type": "text",
       "options": [],
@@ -74599,29 +74645,33 @@
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": true,
-      "conditions": [],
+      "conditional": false,
+      "conditions": [
+        "data"
+      ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "df06dbe2cb07",
-      "file": "client/src/pages/PlatformIntegrations.tsx",
-      "line": 381,
+      "id": "7f2f5df92f27",
+      "file": "client/src/components/merchant/CalendarConnectionCard.tsx",
+      "line": 77,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "إدارة الإعدادات ربط Google Calendar",
-      "section": "Google Calendar مربوط",
-      "binding": "",
+      "label": "",
+      "section": "CalendarConnectionCard",
+      "binding": "() => {\n              void user.refetch();\n              void merchant.refetch();\n              void query.refetch();\n            }",
       "type": "text",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": true,
-      "conditions": [],
+      "conditional": false,
+      "conditions": [
+        "!data && !loading"
+      ],
       "disabled": "",
       "review": "source-inventoried"
     },

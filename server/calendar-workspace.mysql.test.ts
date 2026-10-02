@@ -15,6 +15,7 @@ import {
 import {
   readCalendarWorkspace,
   readCalendarDetails,
+  readCalendarStats,
 } from "./calendar-workspace";
 import { calendarRouter } from "./routers-calendar";
 describe.skipIf(!process.env.DATABASE_URL)(
@@ -107,6 +108,20 @@ describe.skipIf(!process.env.DATABASE_URL)(
       ]);
     });
     afterAll(closeDb);
+    it("counts complete inclusive dates and every status for the selected membership", async () => {
+      for(const status of ['pending','confirmed','cancelled','completed','no_show'])await book({status,date:'2026-10-31 23:59:59'});
+      await book({date:'2026-11-01 00:00:00'});
+      await book({date:'2026-09-30 23:59:59'});
+      await book({merchant:other.merchantId,date:'2026-10-31 23:59:59'});
+      expect(await readCalendarStats(member.userId,owner.merchantId,range)).toMatchObject({actorId:member.userId,merchantId:owner.merchantId,total:5,pending:1,confirmed:1,cancelled:1,completed:1,noShow:1,unknown:0});
+      expect((await readCalendarStats(member.userId,owner.merchantId,{})).total).toBe(7);
+      expect((await readCalendarStats(member.userId,owner.merchantId,{startDate:'2026-10-31'})).total).toBe(6);
+      expect((await readCalendarStats(member.userId,owner.merchantId,{endDate:'2026-10-31'})).total).toBe(6);
+      const caller=calendarRouter.createCaller({user:{id:member.userId,role:'user'},req:{headers:{'x-merchant-id':String(owner.merchantId)}},res:{}} as any);
+      expect(await caller.getStats(range)).toMatchObject({merchantId:owner.merchantId,total:5,canManage:false});
+      await q('UPDATE merchant_members SET is_active=0 WHERE merchant_id=? AND user_id=?',[owner.merchantId,member.userId]);
+      await expect(caller.getStats(range)).rejects.toMatchObject({code:'FORBIDDEN'});
+    });
     it("returns complete empty and out-of-range pages", async () => {
       expect(await list()).toMatchObject({
         actorId: owner.userId,
@@ -134,6 +149,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
       expect(first.rows.map(r => r.id)).toEqual(ids.slice(0, 25));
       expect(last.rows.map(r => r.id)).toEqual(ids.slice(500));
       expect(first.summary.total).toBe(503);
+      expect((await readCalendarStats(owner.userId,owner.merchantId,range)).total).toBe(503);
       expect(first.days).toEqual([{ date: "2026-10-02", total: 503 }]);
       expect(
         (await list({ search: "last NEEDLE" })).rows.map(r => r.id)

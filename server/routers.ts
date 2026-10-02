@@ -175,7 +175,6 @@ import {
   getAllWhatsAppConnectionRequests,
   getAllWhatsAppRequests,
   getAppointmentById,
-  getAppointmentStats,
   getAppointmentsByMerchant,
   getAvailableTimeSlots,
   getBookingById,
@@ -3816,24 +3815,6 @@ export const appRouter = router({
     ...calendarAppointmentProcedures,
 
     ...calendarReconciliationProcedures,
-
-    // Get appointment statistics
-    getStats: protectedProcedure
-      .input(z.object({
-        startDate: z.string().optional(),
-        endDate: z.string().optional(),
-      }))
-      .query(async ({ ctx, input }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-
-        const stats = await getAppointmentStats(merchant.id, input.startDate, input.endDate);
-
-        return stats;
-      }),
-
-
-
 
   }),
 

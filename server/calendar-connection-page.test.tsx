@@ -59,6 +59,7 @@ vi.mock("@/components/merchant/WorkspaceState", () => ({
     error?.data?.code === "FORBIDDEN" ? "forbidden" : "error",
 }));
 import CalendarSettings from "../client/src/pages/CalendarSettings";
+import {CalendarConnectionCard} from '../client/src/components/merchant/CalendarConnectionCard';
 import {
   calendarAuthorizationUrl,
   calendarCallbackResult,
@@ -343,6 +344,17 @@ describe("Calendar connection workspace", () => {
   });
 });
 describe("Calendar connection boundaries", () => {
+  it.each(['configured','unlinked','credentials_invalid','oauth_disabled','needs_destination','foreign','failure','forbidden','loading'])('integration card displays %s without a false connected badge',async state=>{
+    if(state==='foreign')m.query.data.merchantId=21;
+    else if(state==='failure'||state==='forbidden')m.query.error={message:'PRIVATE',data:{code:state==='forbidden'?'FORBIDDEN':'INTERNAL_SERVER_ERROR'}};
+    else if(state==='loading'){m.query.data=null;m.query.isLoading=true;}
+    else Object.assign(m.query.data,{state,active:state!=='unlinked',oauthReady:state!=='oauth_disabled',calendarId:state==='needs_destination'?null:'primary'});
+    await act(async()=>root.render(<Router hook={memory.hook} searchHook={memory.searchHook}><CalendarConnectionCard/></Router>));
+    expect(container.textContent).not.toContain('PRIVATE');
+    const label=state==='foreign'||state==='failure'?en.unknown:state==='forbidden'?en.permission:state==='loading'?en.loading:en[state as keyof typeof en];
+    expect(container.textContent).toContain(label);
+    expect(!!container.querySelector('a[href="/merchant/calendar/settings"]')).toBe(!['foreign','failure','forbidden','loading'].includes(state));
+  });
   it.each([
     "?oauth=bad",
     "?oauth=connected&oauth=connected",
