@@ -324,40 +324,8 @@ export async function createByaanConnection(
 
 export async function deleteByaanConnection(merchantId: number) {
   await ensureByaanTables();
-  const dbConn = await getPool();
-  if (!dbConn) return;
-
-  // Get tenant domain before deleting (for webhook notification)
-  const connection = await getByaanConnection(merchantId);
-  const tenantDomain = connection?.tenant_domain;
-
-  const deleteTx = await (dbConn as any).getConnection();
-  try {
-    await deleteTx.beginTransaction();
-    // Persist deactivation atomically with disconnect. The outbox owns an
-    // encrypted key copy, so deleting the connection cannot lose the event.
-    if (tenantDomain && connection?.is_active && connection?.verified_at) {
-      const secret = String(connection.webhook_secret || '');
-      if (secret.length < 32) throw new Error('Cannot disconnect a verified Byaan tenant without a valid signing secret');
-      await enqueueByaanLifecycleEvent({
-        merchantId,
-        tenantDomain,
-        event: 'subscription.deactivated',
-        signingSecret: secret,
-        executor: deleteTx,
-      });
-    }
-
-    await deleteTx.execute(`DELETE FROM byaan_connections WHERE merchant_id = ?`, [merchantId]);
-    await deleteTx.execute(`UPDATE merchants SET integration_source = 'none' WHERE id = ?`, [merchantId]);
-    await deleteTx.commit();
-  } catch (error) {
-    await deleteTx.rollback();
-    throw error;
-  } finally {
-    deleteTx.release();
-  }
-
+  const { retireByaanConnection } = await import('./byaan-connection-workspace');
+  return retireByaanConnection(merchantId);
 }
 
 export async function updateByaanSyncStatus(merchantId: number, status: string, errors?: string) {

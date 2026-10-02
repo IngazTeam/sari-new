@@ -1,4 +1,5 @@
-import { z } from 'zod';
+import { byaanRegisterInput, byaanDisconnectInput } from '../shared/byaan-connection-workspace';
+import { ByaanConnectionFault, readByaanConnectionWorkspace, registerByaanDomain, retireByaanConnection } from './integrations/byaan-connection-workspace';
 import { permissionProcedure, router } from './_core/trpc';
 import { TRPCError } from '@trpc/server';
 import { readPlatformWorkspace } from './integrations/platform-workspace';
@@ -8,7 +9,15 @@ async function guarded<T>(operation: () => Promise<T>): Promise<T> {
   try { return await operation(); }
   catch { throw new TRPCError({code:'INTERNAL_SERVER_ERROR',message:'Platform connection data unavailable'}); }
 }
+async function byaanGuard<T>(operation:()=>Promise<T>):Promise<T> {
+  try{return await operation();}catch(error){
+    const reason=error instanceof ByaanConnectionFault?error.reason:'unavailable';
+    throw new TRPCError({code:reason==='forbidden'?'FORBIDDEN':reason==='stale'||reason==='conflict'?'CONFLICT':reason==='missing'?'NOT_FOUND':reason==='invalid_domain'?'BAD_REQUEST':'INTERNAL_SERVER_ERROR',message:`byaan_connection:${reason}`});
+  }
+}
 export const integrationsRouter = router({
+  byaanConnectionWorkspace:manage.query(({ctx})=>byaanGuard(()=>readByaanConnectionWorkspace(ctx.user.id,ctx.merchantId))),
+  disconnectByaan:manage.input(byaanDisconnectInput).mutation(({ctx,input})=>byaanGuard(async()=>({actorId:ctx.user.id,merchantId:ctx.merchantId,...await retireByaanConnection(ctx.merchantId,input.revision,ctx.user.id)}))),
   workspace: manage.query(({ctx}) => guarded(() => readPlatformWorkspace(ctx.user.id,ctx.merchantId))),
   getCurrentPlatform: manage.query(({ctx}) => guarded(() => getCurrentPlatform(ctx.merchantId))),
   getAllConnectedPlatforms: manage.query(({ctx}) => guarded(() => getAllConnectedPlatforms(ctx.merchantId))),
@@ -24,15 +33,10 @@ export const integrationsRouter = router({
       stats:{products:snapshot.stats.products,customers:snapshot.stats.customers},
     };
   })),
-  connectByaan: manage.input(z.object({tenantDomain:z.string().trim().min(3).max(255).regex(/^[a-zA-Z0-9][a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,'نطاق غير صالح')}).strict()).mutation(async ({ctx,input}) => {
+  connectByaan: manage.input(byaanRegisterInput).mutation(async ({ctx,input}) => {
     const existing = await guarded(() => getAllConnectedPlatforms(ctx.merchantId));
     if (existing.some(p => p.platform !== 'byaan')) throw new TRPCError({code:'CONFLICT',message:'افصل المنصة الحالية قبل ربط بيان.'});
-    return guarded(async () => {
-      const {createByaanConnection} = await import('./integrations/byaan');
-      const connection = await createByaanConnection(ctx.merchantId,input.tenantDomain);
-      const connected = Boolean(connection?.is_active && connection?.verified_at);
-      return {success:connected,pendingVerification:!connected,tenantDomain:input.tenantDomain};
-    });
+    return byaanGuard(()=>registerByaanDomain(ctx.merchantId,input.tenantDomain,ctx.user.id));
   }),
   testByaanConnection: manage.mutation(({ctx}) => guarded(async () => {
     const snapshot = await readPlatformWorkspace(ctx.user.id,ctx.merchantId);
