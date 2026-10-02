@@ -1,6 +1,9 @@
 import { z } from 'zod';
-import { protectedProcedure, router } from '../_core/trpc';
+import { permissionProcedure, router } from '../_core/trpc';
 import { TRPCError } from '@trpc/server';
+import { safePlatformUrl } from '../../shared/platform-workspace';
+import { resolveMerchantAccess } from '../accounts/merchant-access';
+import { hasPermission } from '../_core/permissions';
 import { encryptSecret } from '../security/secrets';
 import { rotateZidWebhookCredentials } from '../webhooks/zid-security';
 import {
@@ -13,7 +16,7 @@ import {
   createIntegration,
   getCustomerCountByMerchant,
   getIntegrationByType,
-  getMerchantByUserId,
+  getDb,
   getOrderCountByMerchant,
   getProductCountByMerchant,
   updateIntegrationLastSync,
@@ -53,13 +56,14 @@ import {
 } from './zid-order-notification-outbox';
 const sensitiveActionInput = z.object({
   password: z.string().min(8).max(128).optional(),
-}).optional();
+}).strict().optional();
 const zidSyncInput = z.object({
   resource: z.enum(['all', 'products', 'orders', 'customers']).default('all'),
-}).optional();
+}).strict().optional();
 
 async function requireZidReauthentication(input: {
   userId: number;
+  merchantId: number;
   sessionId: string | undefined;
   password?: string;
   ipAddress: string;
@@ -80,6 +84,11 @@ async function requireZidReauthentication(input: {
       throw new TRPCError({ code: 'UNAUTHORIZED', message: 'تعذر تأكيد الهوية' });
     }
     throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'تعذر تأكيد الهوية' });
+  }
+  // Password proof can wait. Recheck the same selected membership afterwards.
+  const access = await resolveMerchantAccess(input.userId,input.merchantId);
+  if (!access || access.merchantId !== input.merchantId || !hasPermission(access.role,'integrations.manage')) {
+    throw new TRPCError({code:'FORBIDDEN',message:'لم تعد لديك صلاحية إدارة تكامل زد لهذا المتجر'});
   }
 }
 
@@ -158,13 +167,20 @@ async function runLoggedZidResource<T>(input: {
   }
 }
 
+// Resolve the selected tenant and integration permission for every dashboard call.
+// Raw storage/provider failures must not become merchant-facing messages.
+const zidDashboardProcedure=permissionProcedure('integrations.manage').use(async({next})=>{
+  const unavailable=()=>new TRPCError({code:'INTERNAL_SERVER_ERROR',message:'تعذر تأكيد بيانات زد. حدّث الصفحة وحاول مجددًا.'});
+  try{if(!await getDb())throw unavailable();}catch{throw unavailable();}
+  const result=await next();if(!result.ok&&result.error.code==='INTERNAL_SERVER_ERROR')throw unavailable();return result;
+});
+
 // Zid Integration Router
 export const zidRouter = router({
   // Get connection status
-  getConnection: protectedProcedure
+  getConnection: zidDashboardProcedure
     .query(async ({ ctx }) => {
-      const merchant = await getMerchantByUserId(ctx.user.id);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      const merchant = {id:ctx.merchantId};
       const integration = await getIntegrationByType(merchant.id, 'zid');
 
       if (!integration) {
@@ -175,7 +191,7 @@ export const zidRouter = router({
       return {
         connected: integration.isActive,
         storeName: integration.storeName,
-        storeUrl: integration.storeUrl,
+        storeUrl: safePlatformUrl(integration.storeUrl),
         lastSync: integration.lastSyncAt,
         webhookEndpointPath: integration.webhookEndpointId
           ? `/api/webhooks/zid/${integration.webhookEndpointId}`
@@ -190,31 +206,29 @@ export const zidRouter = router({
       };
     }),
 
-  getNotificationHealth: protectedProcedure
+  getNotificationHealth: zidDashboardProcedure
     .query(async ({ ctx }) => {
-      const merchant = await getMerchantByUserId(ctx.user.id);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      const merchant = {id:ctx.merchantId};
       return getZidOrderNotificationHealth(merchant.id);
     }),
 
-  acknowledgeNotificationIncidents: protectedProcedure
+  acknowledgeNotificationIncidents: zidDashboardProcedure
     .mutation(async ({ ctx }) => {
-      const merchant = await getMerchantByUserId(ctx.user.id);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      const merchant = {id:ctx.merchantId};
       return acknowledgeZidOrderNotificationIncidents(merchant.id);
     }),
 
-  beginOAuth: protectedProcedure
+  beginOAuth: zidDashboardProcedure
     .input(sensitiveActionInput)
     .mutation(async ({ ctx, input }) => {
       await requireZidReauthentication({
         userId: ctx.user.id,
+        merchantId: ctx.merchantId,
         sessionId: ctx.session?.sessionId,
         password: input?.password,
         ipAddress: requestIp(ctx),
       });
-      const merchant = await getMerchantByUserId(ctx.user.id);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      const merchant = {id:ctx.merchantId};
       if (!ctx.session?.sessionId) throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Session unavailable' });
       try {
         return await beginZidOAuth({
@@ -235,14 +249,13 @@ export const zidRouter = router({
 
   // OAuth callback consumes a session-bound, one-time state before the server
   // exchanges the code with its own confidential-client credentials.
-  handleOAuthCallback: protectedProcedure
+  handleOAuthCallback: zidDashboardProcedure
     .input(z.object({
       code: z.string().min(1).max(4096),
       state: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
-    }))
+    }).strict())
     .mutation(async ({ ctx, input }) => {
-      const merchant = await getMerchantByUserId(ctx.user.id);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      const merchant = {id:ctx.merchantId};
       if (!ctx.session?.sessionId) throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Session unavailable' });
 
       try {
@@ -302,27 +315,26 @@ export const zidRouter = router({
     }),
 
   // Disconnect from Zid store
-  disconnect: protectedProcedure
+  disconnect: zidDashboardProcedure
     .input(sensitiveActionInput)
     .mutation(async ({ ctx, input }) => {
       await requireZidReauthentication({
         userId: ctx.user.id,
+        merchantId: ctx.merchantId,
         sessionId: ctx.session?.sessionId,
         password: input?.password,
         ipAddress: requestIp(ctx),
       });
-      const merchant = await getMerchantByUserId(ctx.user.id);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      const merchant = {id:ctx.merchantId};
       await deleteAllZidConnections(merchant.id);
       return { success: true, message: 'تم فصل متجر زد' };
     }),
 
   // Sync now
-  syncNow: protectedProcedure
+  syncNow: zidDashboardProcedure
     .input(zidSyncInput)
     .mutation(async ({ ctx, input }) => {
-      const merchant = await getMerchantByUserId(ctx.user.id);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      const merchant = {id:ctx.merchantId};
       const integration = await getIntegrationByType(merchant.id, 'zid');
 
       if (!integration || !integration.accessToken || integration.isActive !== 1) {
@@ -429,17 +441,16 @@ export const zidRouter = router({
     }),
 
   // Update settings
-  updateSettings: protectedProcedure
+  updateSettings: zidDashboardProcedure
     .input(z.object({
       autoSync: z.boolean(),
       syncProducts: z.boolean(),
       syncOrders: z.boolean(),
       syncCustomers: z.boolean(),
       notifyMerchantOrders: z.boolean(),
-    }))
+    }).strict())
     .mutation(async ({ ctx, input }) => {
-      const merchant = await getMerchantByUserId(ctx.user.id);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      const merchant = {id:ctx.merchantId};
       const integration = await getIntegrationByType(merchant.id, 'zid');
 
       if (!integration) {
@@ -460,17 +471,17 @@ export const zidRouter = router({
       return { success: true };
     }),
 
-  rotateWebhookCredentials: protectedProcedure
+  rotateWebhookCredentials: zidDashboardProcedure
     .input(sensitiveActionInput)
     .mutation(async ({ ctx, input }) => {
       await requireZidReauthentication({
         userId: ctx.user.id,
+        merchantId: ctx.merchantId,
         sessionId: ctx.session?.sessionId,
         password: input?.password,
         ipAddress: requestIp(ctx),
       });
-      const merchant = await getMerchantByUserId(ctx.user.id);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      const merchant = {id:ctx.merchantId};
       try {
         return await rotateZidWebhookCredentials(merchant.id);
       } catch (error: any) {
@@ -482,13 +493,12 @@ export const zidRouter = router({
     }),
 
   // Get sync logs
-  getSyncLogs: protectedProcedure
+  getSyncLogs: zidDashboardProcedure
     .input(z.object({
       limit: z.number().int().min(1).max(50).optional().default(10),
-    }))
+    }).strict())
     .query(async ({ ctx, input }) => {
-      const merchant = await getMerchantByUserId(ctx.user.id);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      const merchant = {id:ctx.merchantId};
       const logs = await getZidSyncLogs(merchant.id, undefined, input.limit);
       return logs.map(log => ({
         id: log.id,
@@ -509,10 +519,9 @@ export const zidRouter = router({
     }),
 
   // Get sync stats
-  getSyncStats: protectedProcedure
+  getSyncStats: zidDashboardProcedure
     .query(async ({ ctx }) => {
-      const merchant = await getMerchantByUserId(ctx.user.id);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      const merchant = {id:ctx.merchantId};
       const integration = await getIntegrationByType(merchant.id, 'zid');
 
       if (!integration) {
