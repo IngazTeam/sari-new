@@ -1,3 +1,7 @@
+import {calendlySettingsCommand} from '../../shared/calendly-settings';
+import {calendlyOperationLookup} from '../../shared/calendly-operation';
+import {saveReviewedCalendlySettings} from './calendly-settings';
+import {readCalendlyOperation,readBlockingCalendlyOperation,acknowledgeCalendlyOperation,CalendlyOperationFault} from './calendly-operation';
 import {calendlyResourceUri,calendlyBookingUrl} from '../../shared/calendly-provider';
 import {calendlyAppointmentsInput,calendlyReceiptsInput} from '../../shared/calendly-workspace';
 import {readCalendlyWorkspace,readCalendlyAppointments,readCalendlyReceipts} from './calendly-workspace';
@@ -104,7 +108,13 @@ async function withCalendlyConnectionLock<T>(merchantId: number, action: () => P
   }
 }
 
+async function reviewedOperation<T>(work:()=>Promise<T>){try{return await work();}catch(error){if(error instanceof CalendlyOperationFault)throw new TRPCError({code:error.reason==='forbidden'?'FORBIDDEN':error.reason==='missing'?'NOT_FOUND':error.reason==='rate_limited'?'TOO_MANY_REQUESTS':error.reason==='unavailable'?'INTERNAL_SERVER_ERROR':'CONFLICT',message:'calendly_operation:'+error.reason});throw unavailable();}}
+
 export const calendlyRouter = router({
+  saveWorkspaceSettings:calendlyDashboardProcedure.input(calendlySettingsCommand).mutation(({ctx,input})=>reviewedOperation(()=>saveReviewedCalendlySettings(ctx.user.id,ctx.merchantId,input))),
+  getOperation:calendlyDashboardProcedure.input(calendlyOperationLookup).query(({ctx,input})=>reviewedOperation(()=>readCalendlyOperation(ctx.user.id,ctx.merchantId,input))),
+  getBlockingOperation:calendlyDashboardProcedure.input(noInput).query(({ctx})=>reviewedOperation(()=>readBlockingCalendlyOperation(ctx.user.id,ctx.merchantId))),
+  acknowledgeOperation:calendlyDashboardProcedure.input(calendlyOperationLookup).mutation(({ctx,input})=>reviewedOperation(()=>acknowledgeCalendlyOperation(ctx.user.id,ctx.merchantId,input))),
   getWorkspace:calendlyDashboardProcedure.input(noInput).query(({ctx})=>readCalendlyWorkspace(ctx.user.id,ctx.merchantId)),
   getAppointmentsWorkspace:calendlyDashboardProcedure.input(calendlyAppointmentsInput).query(({ctx,input})=>readCalendlyAppointments(ctx.user.id,ctx.merchantId,input)),
   getReceiptsWorkspace:calendlyDashboardProcedure.input(calendlyReceiptsInput).query(({ctx,input})=>readCalendlyReceipts(ctx.user.id,ctx.merchantId,input)),
