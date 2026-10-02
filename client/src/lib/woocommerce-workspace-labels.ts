@@ -1,4 +1,12 @@
 export function wooWorkspaceLabels(t:(key:string)=>string){return {
+ productDetails:t("merchantUx.wooWorkspace.productDetails"),
+ timelineDetails:t("merchantUx.wooWorkspace.timelineDetails"),
+ dataQuality:t("merchantUx.wooWorkspace.dataQuality"),
+ distinctProducts:t("merchantUx.wooWorkspace.distinctProducts"),
+ validLines:t("merchantUx.wooWorkspace.validLines"),
+ reportPeriod:t("merchantUx.wooWorkspace.reportPeriod"),
+ noSales:t("merchantUx.wooWorkspace.noSales"),
+ noSalesHint:t("merchantUx.wooWorkspace.noSalesHint"),
  productCreated:t("merchantUx.wooWorkspace.productCreated"),
  productUpdated:t("merchantUx.wooWorkspace.productUpdated"),
  productDeleted:t("merchantUx.wooWorkspace.productDeleted"),

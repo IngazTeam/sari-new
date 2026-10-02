@@ -36,6 +36,15 @@ export function readWooTracking(storage:Storage,actorId:number,merchantId:number
 export function saveWooTracking(storage:Storage,actorId:number,merchantId:number,value:unknown){const record=wooOperationTracking.parse(value),raw=JSON.stringify(record);storage.setItem(key(actorId,merchantId),raw);if(storage.getItem(key(actorId,merchantId))!==raw)throw Error('Operation storage unavailable');return record;}
 export function clearWooTracking(storage:Storage,actorId:number,merchantId:number,requestId:string){if(readWooTracking(storage,actorId,merchantId)?.requestId===requestId)storage.removeItem(key(actorId,merchantId));}
 export function wooMoneyLabel(value:string|null,currency:string|null,missing:string){return value===null?missing:`${value}${currency?' '+currency:''}`;}
+export function wooDefaultPeriod(now=new Date()){
+ const endDate=now.toISOString().slice(0,10),startDate=new Date(Date.parse(endDate+'T00:00:00Z')-29*86400000).toISOString().slice(0,10);
+ return wooAnalyticsInput.parse({startDate,endDate,period:'daily'});
+}
+/** Relative chart geometry only. Displayed monetary values remain exact strings. */
+export function wooRevenuePoints(values:string[]){
+ const minor=values.map(value=>BigInt(value.replace('.',''))),max=minor.reduce((a,b)=>a>b?a:b,BigInt(0));
+ return minor.map((value,index)=>[minor.length>1?Math.round(index/(minor.length-1)*1000):500,max?170-Number(value*BigInt(160)/max):170]);
+}
 /** A browser-side destination check only; the server still verifies DNS and every request. */
 export function wooStoreDestination(input:string){
  try{if(input.length>500||/[\u0000-\u001f\u007f]/.test(input))return null;const u=new URL(input.trim()),host=u.hostname.toLowerCase().replace(/\.$/,''),path=u.pathname.replace(/\/+$/,'');

@@ -1,4 +1,12 @@
 export const wooWorkspaceEn={
+ productDetails:"Product details",
+ timelineDetails:"View period values",
+ dataQuality:"Data quality",
+ distinctProducts:"Distinct products in the period",
+ validLines:"Included items",
+ reportPeriod:"Report period",
+ noSales:"No eligible completed sales",
+ noSalesHint:"Review the date range and excluded orders. No currency or amount is inferred.",
  productCreated:"Product created",
  productUpdated:"Product updated",
  productDeleted:"Product deleted",
@@ -222,6 +230,14 @@ export const wooWorkspaceEn={
   "order_notify": "Customer notification"
 };
 export const wooWorkspaceAr:Record<keyof typeof wooWorkspaceEn,string>={
+ productDetails:"تفاصيل المنتج",
+ timelineDetails:"عرض قيم الفترة",
+ dataQuality:"جودة البيانات",
+ distinctProducts:"منتجات مختلفة في الفترة",
+ validLines:"بنود محتسبة",
+ reportPeriod:"فترة التقرير",
+ noSales:"لا توجد مبيعات مكتملة قابلة للاحتساب",
+ noSalesHint:"راجع الفترة والطلبات المستبعدة؛ لا نفترض عملة أو مبلغًا غير مسجل.",
  productCreated:"إنشاء منتج",
  productUpdated:"تحديث منتج",
  productDeleted:"حذف منتج",
