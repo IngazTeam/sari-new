@@ -349,7 +349,7 @@ export class WooCommerceClient {
     if (!Number.isInteger(orderId) || orderId < 1) throw new WooCommerceApiError('endpoint');
     const { body } = await this.request(`/orders/${orderId}`, { method: 'PUT', body: update });
     const parsed = orderSchema.safeParse(body);
-    if (!parsed.success) throw new WooCommerceApiError('response');
+    if (!parsed.success || parsed.data.id !== orderId) throw new WooCommerceApiError('response');
     return parsed.data;
   }
 }

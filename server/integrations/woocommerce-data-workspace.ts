@@ -1,7 +1,8 @@
 import crypto from 'node:crypto';
+import type {PoolConnection} from 'mysql2/promise';
 import {bookingReadId} from '../../shared/booking-read';
 import {safePlatformUrl} from '../../shared/platform-workspace';
-import {wooProductsInput,wooOrdersInput,wooOrderDetailsInput,wooProductsWorkspaceSchema,wooOrdersWorkspaceSchema,wooOrderDetailsWorkspaceSchema,wooStockStates,wooOrderStates,wooCurrencySchema,wooMoneySchema} from '../../shared/woocommerce-data-workspace';
+import {wooProductsInput,wooOrdersInput,wooOrderDetailsInput,wooProductsWorkspaceSchema,wooOrdersWorkspaceSchema,wooOrderDetailsWorkspaceSchema,wooOrderDetails,wooStockStates,wooOrderStates,wooCurrencySchema,wooMoneySchema} from '../../shared/woocommerce-data-workspace';
 import {wooSnapshot,wooRows,wooCount,wooStamp,WooWorkspaceFault} from './woocommerce-workspace';
 /** Database decimals remain exact strings. Missing or invalid values never become zero. */
 export function wooMoney(value:unknown):string|null{if(typeof value!=='string'&&typeof value!=='number')return null;const text=String(value),match=/^(0|[1-9][0-9]{0,15})(?:\.([0-9]{1,2}))?$/.exec(text);if(!match)return null;const result=match[1]+'.'+(match[2]??'').padEnd(2,'0');return wooMoneySchema.safeParse(result).success?result:null;}
@@ -38,13 +39,19 @@ function orderItems(value:unknown,page:number){let validArray=true,items:unknown
   return {position:index+1,providerId,productId,variationId,name,sku,quantity,subtotal,total,invalidData:!name?.trim()||quantity===null||subtotal===null||total===null||r.id!=null&&providerId===null||r.product_id!=null&&productId===null||r.variation_id!=null&&variationId===null||r.sku!=null&&sku===null};});
  return {validArray,invalidItems:rows.filter(r=>r.invalidData).length,total:rows.length,page,pageSize:25 as const,pages:Math.ceil(rows.length/25),rows:rows.slice((page-1)*25,page*25)};
 }
-export async function readWooOrderDetailsWorkspace(actorId:number,merchantId:number,input:unknown){const selection=wooOrderDetailsInput.parse(input);return wooSnapshot(actorId,merchantId,async tx=>{
- const merchant=await wooRows(tx,'SELECT id FROM merchants WHERE id=?',[merchantId]);if(merchant.length!==1)throw new WooWorkspaceFault();
- const records=await wooRows(tx,`SELECT ${orderColumns},${orderStateSql} AS state,${syncSql} AS syncState,customer_email AS customerEmail,subtotal,shipping_total AS shippingTotal,total_tax AS totalTax,discount_total AS discountTotal,payment_method AS paymentMethod,payment_method_title AS paymentMethodTitle,customer_note AS customerNote,line_items AS lineItems,paid_date AS paidAt,completed_date AS completedAt,created_at AS createdAt,updated_at AS updatedAt FROM woocommerce_orders WHERE merchant_id=? AND id=?`,[merchantId,selection.id]);
- if(records.length>1)throw new WooWorkspaceFault();const row=records[0],result={actorId,merchantId,checkedAt:new Date().toISOString(),selection};if(!row)return wooOrderDetailsWorkspaceSchema.parse({...result,order:null});
- const base=orderRow(row),items=orderItems(row.lineItems,selection.itemsPage),amounts=Object.fromEntries(['subtotal','shippingTotal','totalTax','discountTotal'].map(key=>[key,wooMoney(row[key])])),dates=Object.fromEntries(['paidAt','completedAt','createdAt','updatedAt'].map(key=>[key,wooStamp(row[key])]));
+/** Shared detail identity for local snapshots and locked action review. */
+export async function readWooOrderDefinition(tx:Pick<PoolConnection,'execute'>,merchantId:number,id:number,itemsPage=1,lock=false){
+ const records=await wooRows(tx,`SELECT ${orderColumns},${orderStateSql} AS state,${syncSql} AS syncState,customer_email AS customerEmail,subtotal,shipping_total AS shippingTotal,total_tax AS totalTax,discount_total AS discountTotal,payment_method AS paymentMethod,payment_method_title AS paymentMethodTitle,customer_note AS customerNote,line_items AS lineItems,paid_date AS paidAt,completed_date AS completedAt,created_at AS createdAt,updated_at AS updatedAt FROM woocommerce_orders WHERE merchant_id=? AND id=?`+(lock?' FOR UPDATE':''),[merchantId,id]);
+ if(records.length>1)throw new WooWorkspaceFault();const row=records[0];if(!row)return null;
+ const base=orderRow(row),items=orderItems(row.lineItems,itemsPage),amounts=Object.fromEntries(['subtotal','shippingTotal','totalTax','discountTotal'].map(key=>[key,wooMoney(row[key])])),dates=Object.fromEntries(['paidAt','completedAt','createdAt','updatedAt'].map(key=>[key,wooStamp(row[key])]));
  const {lastSyncAt:_progress,updatedAt:_updated,...identity}={...row,...dates,orderDate:base.orderDate,lastSyncAt:base.lastSyncAt,providerUpdatedAt:base.providerUpdatedAt};
  const revision=crypto.createHash('sha256').update(JSON.stringify(identity)).digest('hex');
- return wooOrderDetailsWorkspaceSchema.parse({...result,order:{...base,revision,customerEmail:optionalText(row.customerEmail,255),...amounts,...dates,paymentMethod:optionalText(row.paymentMethod,100),paymentMethodTitle:optionalText(row.paymentMethodTitle,255),customerNote:typeof row.customerNote==='string'?row.customerNote:null,items,
-  invalidData:base.invalidData||!items.validArray||items.invalidItems>0||amounts.subtotal===null||Object.entries(amounts).some(([key,value])=>row[key]!=null&&value===null)||Object.entries(dates).some(([key,value])=>row[key]!=null&&value===null)}});
- });}
+ return wooOrderDetails.parse({...base,revision,customerEmail:optionalText(row.customerEmail,255),...amounts,...dates,paymentMethod:optionalText(row.paymentMethod,100),paymentMethodTitle:optionalText(row.paymentMethodTitle,255),customerNote:typeof row.customerNote==='string'?row.customerNote:null,items,
+  invalidData:base.invalidData||!items.validArray||items.invalidItems>0||amounts.subtotal===null||Object.entries(amounts).some(([key,value])=>row[key]!=null&&value===null)||Object.entries(dates).some(([key,value])=>row[key]!=null&&value===null)});
+}
+
+
+export async function readWooOrderDetailsWorkspace(actorId:number,merchantId:number,input:unknown){const selection=wooOrderDetailsInput.parse(input);return wooSnapshot(actorId,merchantId,async tx=>{
+ const merchant=await wooRows(tx,'SELECT id FROM merchants WHERE id=?',[merchantId]);if(merchant.length!==1)throw new WooWorkspaceFault();
+ return wooOrderDetailsWorkspaceSchema.parse({actorId,merchantId,checkedAt:new Date().toISOString(),selection,order:await readWooOrderDefinition(tx,merchantId,selection.id,selection.itemsPage)});
+});}
