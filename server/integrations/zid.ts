@@ -4,20 +4,20 @@ import { TRPCError } from '@trpc/server';
 import { safePlatformUrl } from '../../shared/platform-workspace';
 import { zidLogsInput } from '../../shared/zid-workspace';
 import { readZidWorkspace, readZidLogsWorkspace } from './zid-workspace';
-import { zidSettingsInput, zidReviewedSensitiveInput } from '../../shared/zid-connection';
+import { zidSettingsInput, zidReviewedSensitiveInput, zidOAuthBeginInput } from '../../shared/zid-connection';
 import { saveZidWorkspaceSettings, disconnectReviewedZid, rotateReviewedZidWebhook, ZidConnectionFault } from './zid-connection';
 import { resolveMerchantAccess } from '../accounts/merchant-access';
 import { hasPermission } from '../_core/permissions';
-import { encryptSecret } from '../security/secrets';
 import { rotateZidWebhookCredentials } from '../webhooks/zid-security';
 import {
   beginZidOAuth,
   consumeZidOAuthState,
   exchangeZidAuthorizationCode,
+  assertZidOAuthClaim,
+  registerZidOAuthConnection,
   ZidOAuthError,
 } from './zid-oauth';
 import {
-  createIntegration,
   getCustomerCountByMerchant,
   getIntegrationByType,
   getDb,
@@ -35,7 +35,6 @@ import {
 import {
   createZidSyncLog,
   deleteAllZidConnections,
-  deleteZidSettings as deleteLegacyZidSettings,
   getZidSyncLogs,
   updateZidSyncLog,
 } from '../db_zid';
@@ -179,8 +178,9 @@ const zidDashboardProcedure=permissionProcedure('integrations.manage').use(async
   const result=await next();if(!result.ok&&result.error.code==='INTERNAL_SERVER_ERROR')throw unavailable();return result;
 });
 
+function connectionError(error:ZidConnectionFault){const code=error.reason==='forbidden'?'FORBIDDEN':error.reason==='missing'?'NOT_FOUND':error.reason==='unavailable'?'INTERNAL_SERVER_ERROR':error.reason==='changed'||error.reason==='conflict'?'CONFLICT':'PRECONDITION_FAILED';return new TRPCError({code,message:error.message});}
 async function reviewedWrite<T>(work:()=>Promise<T>){
-  try{return await work();}catch(error){if(error instanceof ZidConnectionFault){const code=error.reason==='forbidden'?'FORBIDDEN':error.reason==='missing'?'NOT_FOUND':error.reason==='unavailable'?'INTERNAL_SERVER_ERROR':error.reason==='changed'||error.reason==='conflict'?'CONFLICT':'PRECONDITION_FAILED';throw new TRPCError({code,message:error.message});}throw error;}
+  try{return await work();}catch(error){if(error instanceof ZidConnectionFault)throw connectionError(error);throw error;}
 }
 
 // Zid Integration Router
@@ -238,7 +238,7 @@ export const zidRouter = router({
     }),
 
   beginOAuth: zidDashboardProcedure
-    .input(sensitiveActionInput)
+    .input(zidOAuthBeginInput)
     .mutation(async ({ ctx, input }) => {
       await requireZidReauthentication({
         userId: ctx.user.id,
@@ -251,11 +251,13 @@ export const zidRouter = router({
       if (!ctx.session?.sessionId) throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Session unavailable' });
       try {
         return await beginZidOAuth({
+          ...(input?.revision?{revision:input.revision}:{}),
           merchantId: merchant.id,
           userId: ctx.user.id,
           sessionId: ctx.session.sessionId,
         });
       } catch (error) {
+        if(error instanceof ZidConnectionFault)throw connectionError(error);
         if (error instanceof ZidOAuthError && error.code === 'configuration') {
           throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'تكامل زد غير مهيأ على الخادم' });
         }
@@ -278,13 +280,14 @@ export const zidRouter = router({
       if (!ctx.session?.sessionId) throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Session unavailable' });
 
       try {
-        await consumeZidOAuthState({
+        const claim=await consumeZidOAuthState({
           merchantId: merchant.id,
           userId: ctx.user.id,
           sessionId: ctx.session.sessionId,
           state: input.state,
         });
         const tokens = await exchangeZidAuthorizationCode(input.code);
+        await assertZidOAuthClaim(ctx.user.id,merchant.id,claim);
 
         // Verify both tokens and resolve the Store-Id required by Zid's current
         // products API from the authoritative store endpoint.
@@ -295,34 +298,11 @@ export const zidRouter = router({
           },
         });
 
-        // Save integration
-        await createIntegration({
-          merchantId: merchant.id,
-          type: 'zid',
-          storeName: store.storeName,
-          storeUrl: store.storeUrl || undefined,
-          accessToken: tokens.authorizationToken,
-          refreshToken: tokens.refreshToken,
-          isActive: true,
-          settings: JSON.stringify({
-            autoSync: true,
-            syncProducts: true,
-            syncOrders: true,
-            syncCustomers: true,
-            notifyMerchantOrders: false,
-            storeId: store.storeId,
-            managerToken: encryptSecret(tokens.managerToken),
-            tokenExpiresAt: tokens.expiresIn
-              ? new Date(Date.now() + tokens.expiresIn * 1000).toISOString()
-              : null,
-          }),
-        });
-        await deleteLegacyZidSettings(merchant.id).catch(() => {
-          console.warn('[Zid] Legacy credential cleanup pending');
-        });
+        const receipt=await registerZidOAuthConnection(ctx.user.id,merchant.id,claim,tokens,store);
 
-        return { success: true, message: 'تم ربط متجر زد بنجاح عبر OAuth' };
+        return { ...receipt, success: true, message: 'تم ربط متجر زد بنجاح عبر OAuth' };
       } catch (error) {
+        if(error instanceof ZidConnectionFault)throw connectionError(error);
         if (error instanceof ZidOAuthError && error.code === 'invalid_state') {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'انتهت أو استُخدمت محاولة الربط؛ ابدأ من جديد' });
         }

@@ -7,6 +7,7 @@ import { beginZidOAuth, consumeZidOAuthState } from './integrations/zid-oauth';
 
 describe.skipIf(!process.env.DATABASE_URL)('Zid OAuth state lifecycle (database integration)', () => {
   const createdUserIds: number[] = [];
+  let phoneSequence=Date.now()%100_000_000;
   const originalEnvironment = {
     ZID_CLIENT_ID: process.env.ZID_CLIENT_ID,
     ZID_CLIENT_SECRET: process.env.ZID_CLIENT_SECRET,
@@ -38,7 +39,7 @@ describe.skipIf(!process.env.DATABASE_URL)('Zid OAuth state lifecycle (database 
       email: `zid-oauth-${nonce}@example.test`,
       passwordHash: '$2b$10$test.only.hash.not.used.for.login',
       businessName: 'Zid OAuth Test Store',
-      phone: '+966500000006',
+      phone: '+9665'+String(phoneSequence++).padStart(8,'0'),
       acceptedTerms: true,
       acceptedPrivacy: true,
       marketingConsent: false,
@@ -85,7 +86,7 @@ describe.skipIf(!process.env.DATABASE_URL)('Zid OAuth state lifecycle (database 
       userId: account.user.id,
       sessionId,
       state,
-    })).resolves.toBeUndefined();
+    })).resolves.toMatchObject({revision:expect.stringMatching(/^[a-f0-9]{64}$/)});
     await expect(consumeZidOAuthState({
       merchantId: account.merchantId,
       userId: account.user.id,

@@ -11,9 +11,9 @@ async function getDb() {
   if (!db) throw new Error('Database not initialized');
   return db;
 }
-import { platformIntegrations, zidSettings, zidSyncLogs } from "../drizzle/schema";
+import { platformIntegrations, zidSettings, zidSyncLogs, zidOauthStates } from "../drizzle/schema";
 import type { ZidSettings, InsertZidSettings, ZidSyncLog, InsertZidSyncLog } from "../drizzle/schema";
-import { eq, and, desc, inArray, lt } from "drizzle-orm";
+import { eq, and, desc, inArray, lt, sql } from "drizzle-orm";
 import { decryptSecret, encryptSecret } from './security/secrets';
 import { getValidZidApiCredentials } from './integrations/zid-token-manager';
 import { databaseTimeEpoch } from './db/time';
@@ -135,11 +135,13 @@ export async function deleteZidSettings(merchantId: number): Promise<void> {
 export async function deleteAllZidConnections(merchantId: number): Promise<void> {
   const db = await getDb();
   await db.transaction(async (tx) => {
+    await tx.execute(sql`SELECT id FROM merchants WHERE id=${merchantId} FOR UPDATE`);
     await tx.delete(platformIntegrations).where(and(
       eq(platformIntegrations.merchantId, merchantId),
       eq(platformIntegrations.platformType, 'zid'),
     ));
     await tx.delete(zidSettings).where(eq(zidSettings.merchantId, merchantId));
+    await tx.delete(zidOauthStates).where(eq(zidOauthStates.merchantId, merchantId));
   });
 }
 

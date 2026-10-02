@@ -2135,6 +2135,7 @@ export const zidOauthStates = mysqlTable("zid_oauth_states", {
 	userId: int("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
 	stateHash: varchar("state_hash", { length: 64 }).notNull(),
 	sessionHash: varchar("session_hash", { length: 64 }).notNull(),
+	connectionRevision: char("connection_revision", { length: 64 }), // Null legacy attempts must restart.
 	expiresAt: timestamp("expires_at", { mode: 'string' }).notNull(),
 	consumedAt: timestamp("consumed_at", { mode: 'string' }),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),

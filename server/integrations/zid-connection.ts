@@ -32,6 +32,18 @@ export async function reviewedZidConnection(tx:PoolConnection,actorId:number,mer
  const current=await zidConnectionDefinition(tx,merchantId,true);await zidConnectionWriter(tx,actorId,merchantId);
  if(current.revision!==revision)throw new ZidConnectionFault('changed');if(!current.row)throw new ZidConnectionFault('missing');return current;
 }
+/** Serializes admission with the other platform writers that take the merchant lock. */
+export async function zidRegistrationAdmission(tx:PoolConnection,actorId:number,merchantId:number,revision?:string){
+ const current=await zidConnectionDefinition(tx,merchantId,true);await zidConnectionWriter(tx,actorId,merchantId);
+ if(revision!==undefined&&current.revision!==revision)throw new ZidConnectionFault('changed');
+ if(current.row)throw new ZidConnectionFault('conflict');
+ const blockers=await rows(tx,`SELECT EXISTS(SELECT 1 FROM salla_connections WHERE merchantId=?) AS salla,
+  EXISTS(SELECT 1 FROM woocommerce_settings WHERE merchant_id=? AND is_active<>0) AS woo,
+  EXISTS(SELECT 1 FROM platform_integrations WHERE merchant_id=? AND platform_type='shopify' AND is_active<>0) AS shopify,
+  EXISTS(SELECT 1 FROM byaan_connections WHERE merchant_id=? AND (is_active<>0 OR verified_at IS NULL)) AS byaan`,Array(4).fill(merchantId));
+ if(blockers.length!==1||Object.values(blockers[0]).some(value=>![0,1,'0','1'].includes(value as any)))throw new ZidConnectionFault('unavailable');
+ if(Object.values(blockers[0]).some(value=>Number(value)!==0))throw new ZidConnectionFault('conflict');return current;
+}
 /** Update only resource switches. Credentials and other provider settings stay in SQL. */
 export async function saveZidWorkspaceSettings(actorId:number,merchantId:number,raw:unknown){
  const input=zidSettingsInput.parse(raw);
