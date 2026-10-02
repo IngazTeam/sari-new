@@ -54,13 +54,13 @@ describe('Zid Integration', () => {
         accessToken: 'token123',
         refreshToken: null,
         isActive: 1,
-        settings: JSON.stringify({ syncOrders: true }),
+        settings: JSON.stringify({ storeId:'11',syncOrders: true }),
         lastSyncAt: null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       });
 
-      const orderPayload = { id: 123, total: 100, customer: { phone: '966500000000' } };
+      const orderPayload = { store_id:'11', id: 123, total: 100, customer: { phone: '966500000000' } };
       await handleZidWebhook(1, 'order.created', orderPayload);
 
       expect(db.upsertOrderFromZid).toHaveBeenCalledWith(1, orderPayload);
@@ -77,13 +77,13 @@ describe('Zid Integration', () => {
         accessToken: 'token123',
         refreshToken: null,
         isActive: 1,
-        settings: JSON.stringify({ syncProducts: true }),
+        settings: JSON.stringify({ storeId:'11',syncProducts: true }),
         lastSyncAt: null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       });
 
-      const productPayload = { id: 456, name: 'Test Product', price: 50 };
+      const productPayload = { store_id:'11', id: 456, name: 'Test Product', price: 50 };
       await handleZidWebhook(1, 'product.created', productPayload);
 
       expect(db.upsertProductFromZid).toHaveBeenCalledWith(1, productPayload);
@@ -100,13 +100,13 @@ describe('Zid Integration', () => {
         accessToken: 'token123',
         refreshToken: null,
         isActive: 1,
-        settings: JSON.stringify({ syncProducts: true }),
+        settings: JSON.stringify({ storeId:'11',syncProducts: true }),
         lastSyncAt: null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       });
 
-      const inventoryPayload = { product_id: 789, quantity: 10 };
+      const inventoryPayload = { store_id:'11', product_id: 789, quantity: 10 };
       await handleZidWebhook(1, 'inventory.updated', inventoryPayload);
 
       expect(db.updateProductInventoryFromZid).toHaveBeenCalledWith(1, inventoryPayload);

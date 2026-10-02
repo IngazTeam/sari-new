@@ -12,15 +12,18 @@ export async function withZidSyncLock<T>(merchantId: number, task: () => Promise
   const connection = await pool.getConnection();
   const lockName = `sari:zid:sync:${merchantId}`;
   let acquired = false;
+  let reusable = true;
+  let acquisitionKnown = false;
   try {
     const [rows] = await connection.execute<LockRow[]>('SELECT GET_LOCK(?, 0) AS acquired', [lockName]);
+    acquisitionKnown = rows.length===1;
     acquired = Number(rows[0]?.acquired) === 1;
     if (!acquired) throw new ZidProductSyncError('busy');
     return await task();
   } finally {
     if (acquired) {
-      await connection.execute('SELECT RELEASE_LOCK(?)', [lockName]).catch(() => undefined);
+      try{const [rows]=await connection.execute<any[]>('SELECT RELEASE_LOCK(?) AS released',[lockName]);if(rows.length!==1||Number(rows[0].released)!==1)reusable=false;}catch{reusable=false;}
     }
-    connection.release();
+    if(reusable&&acquisitionKnown)connection.release();else connection.destroy();
   }
 }

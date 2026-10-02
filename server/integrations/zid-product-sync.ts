@@ -41,9 +41,11 @@ export type ZidStoreIdentity = {
 export async function fetchZidStoreIdentity(input: {
   credentials: ZidApiCredentials;
   fetchImpl?: typeof fetch;
+  beforeRequest?:()=>Promise<void>;
 }): Promise<ZidStoreIdentity> {
   const response = await requestZidApi('/v1/managers/account/store', input.credentials, {
     fetchImpl: input.fetchImpl,
+    beforeRequest: input.beforeRequest,
   });
   const parsed = zidStoreResponseSchema.safeParse(response);
   const storeId = parsed.success ? requireZidProductStore(parsed.data.store.id) : null;
@@ -60,6 +62,7 @@ export async function fetchAllZidProducts(input: {
   storeId: string;
   fetchImpl?: typeof fetch;
   now?: Date;
+  beforeRequest?:()=>Promise<void>;
 }): Promise<NormalizedZidProduct[]> {
   const storeId = requireZidProductStore(input.storeId);
   if (!storeId) throw new ZidProductSyncError('invalid_store');
@@ -71,7 +74,7 @@ export async function fetchAllZidProducts(input: {
     const response = await requestZidApi(
       `/v1/products/?page=${page}&page_size=${PRODUCT_PAGE_SIZE}`,
       input.credentials,
-      { productContext: { storeId }, fetchImpl: input.fetchImpl },
+      { productContext: { storeId }, fetchImpl: input.fetchImpl, beforeRequest: input.beforeRequest },
     );
     const parsed = zidProductPageSchema.safeParse(response);
     if (!parsed.success) throw new ZidProductSyncError('invalid_page');

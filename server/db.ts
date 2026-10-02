@@ -1,4 +1,5 @@
 import {writeServiceCatalog,archiveServiceCatalog} from './service-catalog-write';
+import type {ZidWriteGuard} from './integrations/zid-sync-review';
 import { normalizeProductMoneyWrite } from '../shared/product-money';
 import { deleteTenantCampaign } from './campaign-delete';
 import { editTenantCampaign } from './campaign-edit';
@@ -6885,7 +6886,7 @@ export async function upsertProductFromZid(
 export async function upsertNormalizedProductsFromZid(
   merchantId: number,
   zidProducts: NormalizedZidProduct[],
-  scope: {storeId:string;startedAt:Date},
+  scope: {storeId:string;startedAt:Date;guard?:ZidWriteGuard},
 ): Promise<{ upsertedProducts: number; disabledProducts: number }> {
   return persistNormalizedProductsFromZid(merchantId, zidProducts, scope);
 }
@@ -6897,7 +6898,7 @@ async function assertZidCatalogSchema() {
 async function persistNormalizedProductsFromZid(
   merchantId: number,
   batch: NormalizedZidProduct[],
-  reconcile?: {storeId:string;startedAt:Date},
+  reconcile?: {storeId:string;startedAt:Date;guard?:ZidWriteGuard},
   transaction?: SariTransaction,
 ): Promise<{ upsertedProducts: number; disabledProducts: number }> {
   if(!Number.isSafeInteger(merchantId)||merchantId<=0)throw Error('ZID_CATALOG_IDENTITY');
@@ -6908,6 +6909,7 @@ async function persistNormalizedProductsFromZid(
     if(seen.has(`${p.storeId}:${p.externalId}`)||cutoff&&p.lastSyncedAt!==cutoff)throw Error('ZID_CATALOG_BATCH');seen.add(`${p.storeId}:${p.externalId}`);}
   await assertZidCatalogSchema();const db=await getDb();if(!db)throw Error('Database unavailable');
   const write = async (tx: SariTransaction) => {
+    await reconcile?.guard?.(tx);
     let upsertedProducts=0,disabledProducts=0;
     for(const p of [...batch].sort((a,b)=>a.externalId.localeCompare(b.externalId))){
       const projectionId=zidProductProjectionId(p.storeId,p.externalId);
@@ -7061,13 +7063,15 @@ async function assertZidOrderStoreSchema() {
 export async function upsertNormalizedOrdersFromZid(
   merchantId: number,
   normalizedOrders: NormalizedZidOrder[],
+  guard?:ZidWriteGuard,
 ): Promise<{ sourceOrders: number; projectedOrders: number; acceptedOrders: number }> {
   const db = await getDb();
-  if (!db) return { sourceOrders: 0, projectedOrders: 0, acceptedOrders: 0 };
+  if (!db) throw new Error('Database unavailable');
   await assertZidOrderStoreSchema();
   let projectedOrders = 0;
   let acceptedOrders = 0;
   await db.transaction(async tx => {
+    await guard?.(tx);
     for (const zidOrder of normalizedOrders) {
       const storeId = requireZidOrderStoreId(zidOrder.storeId);
       if (zidOrder.externalId !== normalizeZidOrderExternalId(zidOrder.externalId)) throw new Error('INVALID_ZID_ORDER');
@@ -7225,10 +7229,12 @@ export async function cancelOrderFromZid(
 export async function upsertNormalizedCustomersFromZid(
   merchantId: number,
   normalizedCustomers: NormalizedZidCustomer[],
+  guard?:ZidWriteGuard,
 ): Promise<{ sourceCustomers: number; contactableCustomers: number; deactivatedCustomers: number }> {
   const db = await getDb();
-  if (!db) return { sourceCustomers: 0, contactableCustomers: 0, deactivatedCustomers: 0 };
+  if (!db) throw new Error('Database unavailable');
   const deactivatedCustomers = await db.transaction(async tx => {
+    await guard?.(tx);
     for (const customer of normalizedCustomers) {
       await tx.insert(zidCustomers).values({
         merchantId,

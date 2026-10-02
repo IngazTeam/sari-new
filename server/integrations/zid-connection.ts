@@ -11,9 +11,9 @@ import {createZidBasicAuthorization} from '../webhooks/zid-security';
 export class ZidConnectionFault extends Error {
  constructor(readonly reason:'unavailable'|'forbidden'|'changed'|'missing'|'legacy'|'invalid'|'inactive'|'conflict'){super(`zid_connection:${reason}`);}
 }
-async function rows(tx:PoolConnection,sql:string,args:Array<string|number|null>):Promise<any[]>{const [result]=await tx.execute(sql,args);if(!Array.isArray(result))throw new ZidConnectionFault('unavailable');return result;}
+async function rows(tx:Pick<PoolConnection,'execute'>,sql:string,args:Array<string|number|null>):Promise<any[]>{const [result]=await tx.execute(sql,args);if(!Array.isArray(result))throw new ZidConnectionFault('unavailable');return result;}
 /** Check authority again after obtaining the merchant lock, preserving an explicit owner revocation. */
-export async function zidConnectionWriter(tx:PoolConnection,actorId:number,merchantId:number){
+export async function zidConnectionWriter(tx:Pick<PoolConnection,'execute'>,actorId:number,merchantId:number){
  const merchant=(await rows(tx,'SELECT userId,status FROM merchants WHERE id=?',[merchantId]))[0];
  if(!merchant||merchant.status==='suspended')throw new ZidConnectionFault('forbidden');
  const users=await rows(tx,'SELECT id,account_status FROM users WHERE id IN (?,?) ORDER BY id FOR SHARE',[actorId,merchant.userId]);

@@ -1,4 +1,4 @@
-import type { RowDataPacket } from 'mysql2/promise';
+import type { PoolConnection, RowDataPacket } from 'mysql2/promise';
 import { getPool } from '../db';
 import { decryptSecret, encryptSecret } from '../security/secrets';
 import { refreshZidAuthorization } from './zid-oauth';
@@ -40,12 +40,16 @@ export async function getValidZidApiCredentials(input: {
   merchantId: number;
   fetchImpl?: typeof fetch;
   nowMs?: number;
+  beforeRead?:(connection:PoolConnection)=>Promise<void>;
+  afterRefresh?:(connection:PoolConnection)=>Promise<void>;
 }): Promise<ZidApiCredentials> {
   const pool = await getPool();
   if (!pool) throw new Error('Database not initialized');
   const connection = await pool.getConnection();
+  let committing=false,reusable=true;
   try {
     await connection.beginTransaction();
+    await input.beforeRead?.(connection);
     // The row lock is intentionally held through the bounded refresh request:
     // only one process may rotate a single-use refresh token for this merchant.
     const [rows] = await connection.execute<ZidCredentialRow[]>(
@@ -98,8 +102,10 @@ export async function getValidZidApiCredentials(input: {
           row.id,
         ],
       );
+      await input.afterRefresh?.(connection);
     }
 
+    committing=true;
     await connection.commit();
     return {
       authorizationToken,
@@ -110,9 +116,9 @@ export async function getValidZidApiCredentials(input: {
         : undefined,
     };
   } catch (error) {
-    await connection.rollback().catch(() => undefined);
+    if(committing)reusable=false;else try{await connection.rollback();}catch{reusable=false;}
     throw error;
   } finally {
-    connection.release();
+    if(reusable)connection.release();else connection.destroy();
   }
 }

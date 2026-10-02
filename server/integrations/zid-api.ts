@@ -93,6 +93,7 @@ export async function requestZidApi(
   options: {
     productContext?: ZidProductRequestContext;
     fetchImpl?: typeof fetch;
+    beforeRequest?:()=>Promise<void>;
   } = {},
 ): Promise<unknown> {
   const authorizationToken = normalizedHeaderCredential(credentials.authorizationToken);
@@ -101,6 +102,8 @@ export async function requestZidApi(
     ? normalizeZidStoreId(options.productContext.storeId)
     : null;
   if (options.productContext && !storeId) throw new ZidApiError('credentials');
+
+  await options.beforeRequest?.();
 
   let response: Response;
   try {

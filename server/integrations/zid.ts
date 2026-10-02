@@ -4,7 +4,7 @@ import { TRPCError } from '@trpc/server';
 import { safePlatformUrl } from '../../shared/platform-workspace';
 import { zidLogsInput } from '../../shared/zid-workspace';
 import { readZidWorkspace, readZidLogsWorkspace } from './zid-workspace';
-import { zidSettingsInput, zidReviewedSensitiveInput, zidOAuthBeginInput } from '../../shared/zid-connection';
+import { zidSettingsInput, zidReviewedSensitiveInput, zidOAuthBeginInput, zidConnectionRevision } from '../../shared/zid-connection';
 import { saveZidWorkspaceSettings, disconnectReviewedZid, rotateReviewedZidWebhook, ZidConnectionFault } from './zid-connection';
 import { resolveMerchantAccess } from '../accounts/merchant-access';
 import { hasPermission } from '../_core/permissions';
@@ -23,12 +23,8 @@ import {
   getDb,
   getOrderCountByMerchant,
   getProductCountByMerchant,
-  updateIntegrationLastSync,
   updateIntegrationSettings,
   updateProductInventoryFromZid,
-  upsertNormalizedCustomersFromZid,
-  upsertNormalizedOrdersFromZid,
-  upsertNormalizedProductsFromZid,
   upsertOrderFromZid,
   upsertProductFromZid,
 } from '../db';
@@ -36,20 +32,13 @@ import {
   createZidSyncLog,
   deleteAllZidConnections,
   getZidSyncLogs,
-  updateZidSyncLog,
 } from '../db_zid';
-import { getValidZidApiCredentials } from './zid-token-manager';
+import {runReviewedZidSync} from './zid-reviewed-sync';
 import { assertRecentReauthentication, ReauthenticationError } from '../security/reauthentication';
 import {
-  fetchAllZidProducts,
   fetchZidStoreIdentity,
   ZidProductSyncError,
 } from './zid-product-sync';
-import { withZidSyncLock } from './zid-sync-lock';
-import {
-  fetchAllZidCustomers,
-  fetchAllZidOrders,
-} from './zid-commerce-sync';
 import { parseZidSettings } from './zid-settings';
 import { requireZidOrderStoreId } from './zid-commerce-normalization';
 import { requireZidProductStore } from './zid-product-normalization';
@@ -62,6 +51,7 @@ const sensitiveActionInput = z.object({
 }).strict().optional();
 const zidSyncInput = z.object({
   resource: z.enum(['all', 'products', 'orders', 'customers']).default('all'),
+  revision: zidConnectionRevision.optional(),
 }).strict().optional();
 
 async function requireZidReauthentication(input: {
@@ -122,52 +112,6 @@ async function recordCompletedZidSync(
   }).catch(() => {
     console.warn('[Zid] Unable to persist completed sync log');
   });
-}
-
-async function runLoggedZidResource<T>(input: {
-  merchantId: number;
-  syncType: 'products' | 'orders' | 'customers';
-  task: () => Promise<{ total: number; result: T }>;
-}): Promise<T> {
-  const syncLog = await createZidSyncLog({
-    merchantId: input.merchantId,
-    syncType: input.syncType,
-    status: 'in_progress',
-    totalItems: 0,
-    processedItems: 0,
-    successCount: 0,
-    failedCount: 0,
-    startedAt: mysqlTimestamp(),
-  }).catch(() => null);
-  try {
-    const completed = await input.task();
-    if (syncLog?.id) {
-      await updateZidSyncLog(syncLog.id, {
-        status: 'completed',
-        totalItems: completed.total,
-        processedItems: completed.total,
-        successCount: completed.total,
-        failedCount: 0,
-        completedAt: mysqlTimestamp(),
-      }).catch(() => console.warn('[Zid] Unable to complete sync log'));
-    }
-    return completed.result;
-  } catch (error) {
-    if (syncLog?.id) {
-      const errorFields = input.syncType === 'products'
-        ? { errorMessage: 'ZID_PRODUCT_SYNC_FAILED' }
-        : input.syncType === 'orders'
-          ? { errorMessage: 'ZID_ORDER_SYNC_FAILED' }
-          : { errorMessage: 'ZID_CUSTOMER_SYNC_FAILED' };
-      await updateZidSyncLog(syncLog.id, {
-        status: 'failed',
-        failedCount: 1,
-        ...errorFields,
-        completedAt: mysqlTimestamp(),
-      }).catch(() => console.warn('[Zid] Unable to fail sync log'));
-    }
-    throw error;
-  }
 }
 
 // Resolve the selected tenant and integration permission for every dashboard call.
@@ -329,114 +273,12 @@ export const zidRouter = router({
       return { success: true, message: 'تم فصل متجر زد' };
     }),
 
-  // Sync now
+  // Manual sync retains its legacy response shape while enforcing continued authority.
   syncNow: zidDashboardProcedure
     .input(zidSyncInput)
-    .mutation(async ({ ctx, input }) => {
-      const merchant = {id:ctx.merchantId};
-      const integration = await getIntegrationByType(merchant.id, 'zid');
-
-      if (!integration || !integration.accessToken || integration.isActive !== 1) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'لم يتم العثور على تكامل زد',
-        });
-      }
-
-      const settings = parseZidSettings(integration.settings);
-      const requestedResource = input?.resource || 'all';
-      if (settings.syncProducts === false) {
-        if (
-          (requestedResource === 'products')
-          || (requestedResource === 'all' && settings.syncOrders === false && settings.syncCustomers === false)
-        ) {
-          return { success: true, message: 'جميع أنواع المزامنة معطلة من الإعدادات' };
-        }
-      }
-
-      try {
-        return await withZidSyncLock(merchant.id, async () => {
-          const currentIntegration = await getIntegrationByType(merchant.id, 'zid');
-          if (!currentIntegration || currentIntegration.isActive !== 1) {
-            throw new Error('ZID_NOT_CONNECTED');
-          }
-          const currentSettings = parseZidSettings(currentIntegration.settings);
-          const syncProducts = (requestedResource === 'all' || requestedResource === 'products')
-            && currentSettings.syncProducts !== false;
-          const syncOrders = (requestedResource === 'all' || requestedResource === 'orders')
-            && currentSettings.syncOrders !== false;
-          const syncCustomers = (requestedResource === 'all' || requestedResource === 'customers')
-            && currentSettings.syncCustomers !== false;
-          if (!syncProducts && !syncOrders && !syncCustomers) {
-            return { success: true, message: 'جميع أنواع المزامنة معطلة من الإعدادات' };
-          }
-          const credentials = await getValidZidApiCredentials({ merchantId: merchant.id });
-          const apiCredentials = {
-            authorizationToken: credentials.authorizationToken,
-            managerToken: credentials.managerToken,
-          };
-          const summary: string[] = [];
-
-          if (syncProducts) {
-            const productCount = await runLoggedZidResource({
-              merchantId: merchant.id,
-              syncType: 'products',
-              task: async () => {
-                const {storeId} = await fetchZidStoreIdentity({ credentials: apiCredentials });
-                requireZidProductStore(storeId, requireZidProductStore(currentSettings.storeId));
-                const startedAt=new Date();
-                const products = await fetchAllZidProducts({ credentials: apiCredentials, storeId, now:startedAt });
-                const persisted = await upsertNormalizedProductsFromZid(merchant.id, products, {storeId,startedAt});
-                return { total: products.length, result: persisted };
-              },
-            });
-            summary.push(`${productCount.upsertedProducts} منتج (${productCount.disabledProducts} عُطّل لغيابه)`);
-          }
-
-          if (syncOrders) {
-            const orderCounts = await runLoggedZidResource({
-              merchantId: merchant.id,
-              syncType: 'orders',
-              task: async () => {
-                // Bind this response to the store proven by the same credential pair,
-                // even if a reconnect changes the selected integration meanwhile.
-                const store = await fetchZidStoreIdentity({ credentials: apiCredentials });
-                const sourceOrders = await fetchAllZidOrders({ credentials: apiCredentials, storeId: store.storeId });
-                const persisted = await upsertNormalizedOrdersFromZid(merchant.id, sourceOrders);
-                return { total: sourceOrders.length, result: persisted };
-              },
-            });
-            summary.push(`${orderCounts.sourceOrders} طلب (${orderCounts.projectedOrders} قابل للعرض والتواصل)`);
-          }
-
-          if (syncCustomers) {
-            const customerCounts = await runLoggedZidResource({
-              merchantId: merchant.id,
-              syncType: 'customers',
-              task: async () => {
-                const sourceCustomers = await fetchAllZidCustomers({ credentials: apiCredentials });
-                const persisted = await upsertNormalizedCustomersFromZid(merchant.id, sourceCustomers);
-                return { total: sourceCustomers.length, result: persisted };
-              },
-            });
-            summary.push(`${customerCounts.sourceCustomers} عميل (${customerCounts.contactableCustomers} نشط برقم صالح، ${customerCounts.deactivatedCustomers} عُطّل لغيابه)`);
-          }
-
-          await updateIntegrationLastSync(currentIntegration.id);
-          return {
-            success: true,
-            message: `تمت مزامنة ${summary.join('، ')} بنجاح`,
-          };
-        });
-      } catch (error) {
-        if (error instanceof ZidProductSyncError && error.code === 'busy') {
-          throw new TRPCError({ code: 'CONFLICT', message: 'توجد مزامنة قيد التنفيذ بالفعل' });
-        }
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'فشلت مزامنة متجر زد',
-        });
-      }
+    .mutation(async ({ctx,input})=>{
+      try{return await reviewedWrite(()=>runReviewedZidSync(ctx.user.id,ctx.merchantId,{resource:input?.resource??'all',revision:input?.revision}));}
+      catch(error){if(error instanceof TRPCError)throw error;if(error instanceof ZidProductSyncError&&error.code==='busy')throw new TRPCError({code:'CONFLICT',message:'توجد مزامنة قيد التنفيذ بالفعل'});throw new TRPCError({code:'INTERNAL_SERVER_ERROR',message: 'فشلت مزامنة متجر زد'});}
     }),
 
   // Update settings

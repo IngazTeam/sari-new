@@ -28,7 +28,11 @@ export async function zidConnectionDefinition(tx:Executor,merchantId:number,lock
   (auto_sync_products IN (0,1) AND auto_sync_orders IN (0,1) AND auto_sync_customers IN (0,1)) AS settingsValid,1 AS autoSync,auto_sync_products AS syncProducts,auto_sync_orders AS syncOrders,auto_sync_customers AS syncCustomers,0 AS notifyMerchantOrders,
   SHA2(COALESCE(access_token,''),256) AS tokenVersion,SHA2(CONCAT(COALESCE(manager_token,''),':',COALESCE(refresh_token,'')),256) AS refreshVersion,NULL AS settingsVersion
   FROM zid_settings WHERE merchant_id=?`+suffix,[merchantId]);if(legacy.length>1)throw new ZidWorkspaceFault();row=legacy[0]??null;source=row?'legacy':null;}
- const {lastSyncAt:_progress,...identity}=row??{};const revision=crypto.createHash('sha256').update(JSON.stringify({merchantId,source,row:row?identity:null})).digest('hex');return {row,source,revision};
+ const {lastSyncAt:_progress,...identity}=row??{};
+ // mysql2 and Drizzle may decode timestamps differently. Revision identity must
+ // be stable across both readers and the transaction that checks a write.
+ if(row)identity.createdAt=stamp(row.createdAt);
+ const revision=crypto.createHash('sha256').update(JSON.stringify({merchantId,source,row:row?identity:null})).digest('hex');return {row,source,revision};
 }
 async function snapshot<T>(actorId:number,merchantId:number,work:(tx:PoolConnection)=>Promise<T>){bookingReadId.parse(actorId);bookingReadId.parse(merchantId);let tx:PoolConnection|undefined,committing=false,reusable=true;
  try{const pool=await getPool();if(!pool)throw new ZidWorkspaceFault();tx=await pool.getConnection();await tx.query('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');await tx.query('START TRANSACTION READ ONLY');const value=await work(tx);committing=true;await tx.commit();return value;}

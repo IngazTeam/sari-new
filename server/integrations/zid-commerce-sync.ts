@@ -36,6 +36,7 @@ export async function fetchAllZidOrders(input: {
   storeId: string;
   fetchImpl?: typeof fetch;
   now?: Date;
+  beforeRequest?:()=>Promise<void>;
 }): Promise<NormalizedZidOrder[]> {
   const storeId = requireZidOrderStoreId(input.storeId);
   const records: NormalizedZidOrder[] = [];
@@ -48,7 +49,7 @@ export async function fetchAllZidOrders(input: {
     const response = await requestZidApi(
       `/v1/managers/store/orders?payload_type=simple&page=${page}&per_page=${PAGE_SIZE}`,
       input.credentials,
-      { fetchImpl: input.fetchImpl },
+      { fetchImpl: input.fetchImpl, beforeRequest: input.beforeRequest },
     );
     const parsed = orderPageSchema.safeParse(response);
     if (!parsed.success) throw new ZidCommerceSyncError('invalid_page');
@@ -81,6 +82,7 @@ export async function fetchAllZidCustomers(input: {
   credentials: ZidApiCredentials;
   fetchImpl?: typeof fetch;
   now?: Date;
+  beforeRequest?:()=>Promise<void>;
 }): Promise<NormalizedZidCustomer[]> {
   const records: NormalizedZidCustomer[] = [];
   const seenIds = new Set<string>();
@@ -94,7 +96,7 @@ export async function fetchAllZidCustomers(input: {
     const response = await requestZidApi(
       `/v1/managers/store/customers?after=${after}&per_page=${PAGE_SIZE}`,
       input.credentials,
-      { fetchImpl: input.fetchImpl },
+      { fetchImpl: input.fetchImpl, beforeRequest: input.beforeRequest },
     );
     const parsed = customerPageSchema.safeParse(response);
     if (!parsed.success) throw new ZidCommerceSyncError('invalid_page');
