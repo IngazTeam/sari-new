@@ -1,4 +1,5 @@
 import { TRPCError } from "@trpc/server";
+import { calendarWorkspaceProcedures } from './routers-calendar-workspace';
 import { merchantProcedure, permissionProcedure } from "./_core/trpc";
 import { hasPermission } from "./_core/permissions";
 import {
@@ -19,6 +20,7 @@ const failure = () =>
       "Calendar evidence changed or is unavailable; refresh before reviewing again",
   });
 export const calendarReconciliationProcedures = {
+  ...calendarWorkspaceProcedures,
   listAppointments: merchantProcedure
     .input(calendarListSchema)
     .query(async ({ ctx, input }) => ({
