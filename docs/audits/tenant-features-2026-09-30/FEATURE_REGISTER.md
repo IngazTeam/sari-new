@@ -2,7 +2,7 @@
 
 هذا حصر مصدر قابل لإعادة التوليد، وليس ادعاءً بأن كل مسار عمل اختُبر أو أُعيد تصميمه. يشمل المكونات الفرعية المحلية، الحقول، الأزرار، النوافذ، التبويبات، واجهات القراءة والتعديل. العناصر الديناميكية تحتاج مراجعة إضافية.
 
-- 126 مسارًا مسجلًا، 391 ملف واجهة متصلًا، 2374 عنصر تحكم في المصدر.
+- 126 مسارًا مسجلًا، 393 ملف واجهة متصلًا، 2383 عنصر تحكم في المصدر.
 - 0 رابطًا حرفيًا غير مطابق، و0 ملف صفحة غير متصل بالمسارات المحصورة.
 
 | الصفحة | الملفات | عناصر التحكم | القراءة / التعديل | موك أب للصفحة |
@@ -23,7 +23,7 @@
 | /merchant/conversations — المحادثات | 25 | 109 | 13 / 10 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/whatsapp — أرقام واتساب | 2 | 23 | 8 / 6 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/salla — ربط سلة | 2 | 22 | 5 / 4 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/integrations/byaan — ربط بيان | 1 | 9 | 1 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/integrations/byaan — ربط بيان | 4 | 18 | 3 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/byaan-dashboard — بيان: الدورات والمتدربون | 3 | 18 | 5 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/integrations/zid — ربط زد | 1 | 25 | 4 / 6 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/zid/settings — ربط زد | 1 | 25 | 4 / 6 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -1175,19 +1175,28 @@
 | 99 | Button | تسمية ديناميكية / تحتاج مراجعة | SallaEffectReview |
 | 109 | summary | تسمية ديناميكية / تحتاج مراجعة | SallaEffectReview |
 
-## client/src/pages/merchant/ByaanIntegration.tsx
+## client/src/components/merchant/ByaanConnectionWorkspace.tsx
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 110 | Link | تسمية ديناميكية / تحتاج مراجعة | ByaanIntegration |
-| 111 | Button | تسمية ديناميكية / تحتاج مراجعة | ByaanIntegration |
-| 178 | Button | جاري الفحص... الاتصال نشط ✓ فشل — أعد المحاولة اختبار الاتصال | ✅ تم الربط بنجاح مع بيان — المحتوى يُدار تلقائياً |
-| 199 | Button | فصل الربط | ✅ تم الربط بنجاح مع بيان — المحتوى يُدار تلقائياً |
-| 226 | Input | مثال: academy.byaan.app | ربط حسابك مع بيان |
-| 233 | Button | جاري الربط... ربط الآن | ربط حسابك مع بيان |
-| 286 | TabsTrigger | الإحصائيات | الإحصائيات |
-| 290 | TabsTrigger | سجل | سجل |
-| 294 | TabsTrigger | المسميات | المسميات |
+| 94 | Button | تسمية ديناميكية / تحتاج مراجعة | ByaanConnectionWorkspace |
+| 95 | Link | تسمية ديناميكية / تحتاج مراجعة | ByaanConnectionWorkspace |
+| 95 | Link | تسمية ديناميكية / تحتاج مراجعة | ByaanConnectionWorkspace |
+| 100 | a | تسمية ديناميكية / تحتاج مراجعة | ByaanConnectionWorkspace |
+| 104 | Button | health | ByaanConnectionWorkspace |
+| 104 | Button | تسمية ديناميكية / تحتاج مراجعة | ByaanConnectionWorkspace |
+| 106 | Link | تسمية ديناميكية / تحتاج مراجعة | ByaanConnectionWorkspace |
+| 107 | Input | تسمية ديناميكية / تحتاج مراجعة | ByaanConnectionWorkspace |
+| 108 | Button | register | ByaanConnectionWorkspace |
+| 113 | Button | تسمية ديناميكية / تحتاج مراجعة | ByaanConnectionWorkspace |
+| 113 | Link | تسمية ديناميكية / تحتاج مراجعة | ByaanConnectionWorkspace |
+| 116 | Link | تسمية ديناميكية / تحتاج مراجعة | ByaanConnectionWorkspace |
+| 117 | summary | تسمية ديناميكية / تحتاج مراجعة | ByaanConnectionWorkspace |
+| 117 | summary | تسمية ديناميكية / تحتاج مراجعة | ByaanConnectionWorkspace |
+| 118 | DialogContent | remove | ByaanConnectionWorkspace |
+| 120 | input | تسمية ديناميكية / تحتاج مراجعة | ByaanConnectionWorkspace |
+| 122 | Button | تسمية ديناميكية / تحتاج مراجعة | ByaanConnectionWorkspace |
+| 122 | Button | remove | ByaanConnectionWorkspace |
 
 ## client/src/pages/ByaanDashboard.tsx
 

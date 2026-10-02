@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-02T05:03:49.424Z",
+  "generatedAt": "2026-10-02T05:30:41.016Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -5090,111 +5090,144 @@
     },
     {
       "file": "client/src/pages/merchant/ByaanIntegration.tsx",
-      "hash": "10087ad9ddb2",
+      "hash": "800de92d1fa0",
       "queries": [
-        "integrations.getByaanStatus"
+        "auth.me",
+        "merchants.getCurrent"
+      ],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [
+        {
+          "query": "auth.me",
+          "binding": "user",
+          "line": 8,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        },
+        {
+          "query": "merchants.getCurrent",
+          "binding": "merchant",
+          "line": 14,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": "!!user.data?.id && !user.error && !user.isFetching"
+        }
+      ],
+      "conditions": [],
+      "imports": [
+        "client/src/components/merchant/ByaanConnectionWorkspace.tsx"
+      ],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/components/merchant/ByaanConnectionWorkspace.tsx",
+      "hash": "abb80f8c810a",
+      "queries": [
+        "integrations.byaanConnectionWorkspace"
       ],
       "mutations": [
         "integrations.connectByaan",
+        "integrations.disconnectByaan",
         "integrations.testByaanConnection"
       ],
       "imperativeReads": [],
-      "browserRequests": [
-        {
-          "line": 73,
-          "target": "/api/v1/connect/byaan",
-          "targetExpression": "'/api/v1/connect/byaan'",
-          "method": "DELETE",
-          "provenance": "browser-fetch-static"
-        }
-      ],
+      "browserRequests": [],
       "sections": [
         {
-          "label": "ربط بيان",
-          "line": 121,
+          "label": "",
+          "line": 94,
           "tag": "h1"
         },
         {
-          "label": "✅ تم الربط بنجاح مع بيان — المحتوى يُدار تلقائياً",
-          "line": 148,
-          "tag": "h3"
+          "label": "",
+          "line": 98,
+          "tag": "h2"
         },
         {
-          "label": "ربط حسابك مع بيان",
-          "line": 216,
-          "tag": "CardTitle"
+          "label": "",
+          "line": 112,
+          "tag": "h2"
         },
         {
-          "label": "حالة التحكم اليدوي",
-          "line": 253,
-          "tag": "CardTitle"
+          "label": "",
+          "line": 113,
+          "tag": "h2"
         },
         {
-          "label": "الإحصائيات",
-          "line": 286,
-          "tag": "TabsTrigger"
+          "label": "",
+          "line": 116,
+          "tag": "h2"
         },
         {
-          "label": "سجل",
-          "line": 290,
-          "tag": "TabsTrigger"
+          "label": "",
+          "line": 117,
+          "tag": "summary"
         },
         {
-          "label": "المسميات",
-          "line": 294,
-          "tag": "TabsTrigger"
+          "label": "",
+          "line": 117,
+          "tag": "summary"
         },
         {
-          "label": "سجل عبر ساري",
-          "line": 334,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "المسميات التكيّفية",
-          "line": 387,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "كيف يعمل ربط بيان؟",
-          "line": 415,
-          "tag": "CardTitle"
+          "label": "",
+          "line": 118,
+          "tag": "DialogTitle"
         }
       ],
       "choices": [],
-      "handlers": [
-        {
-          "name": "handleConnect",
-          "line": 56,
-          "calls": [
-            "connectMutation"
-          ]
-        },
-        {
-          "name": "handleTestConnection",
-          "line": 64,
-          "calls": [
-            "testMutation"
-          ]
-        },
-        {
-          "name": "handleDisconnect",
-          "line": 68,
-          "calls": []
-        }
-      ],
+      "handlers": [],
       "queryStates": [
         {
-          "query": "integrations.getByaanStatus",
-          "binding": "{ data, isLoading: loading }",
+          "query": "integrations.byaanConnectionWorkspace",
+          "binding": "query",
           "line": 26,
-          "errorSignal": false,
+          "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
         }
       ],
       "conditions": [],
+      "imports": [
+        "client/src/lib/byaan-connection-labels.ts",
+        "client/src/lib/platform-workspace-labels.ts"
+      ],
+      "controlCount": 18
+    },
+    {
+      "file": "client/src/lib/byaan-connection-labels.ts",
+      "hash": "59012c1aa035",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
       "imports": [],
-      "controlCount": 9
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/lib/platform-workspace-labels.ts",
+      "hash": "0eff9ccf0acb",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 0
     },
     {
       "file": "client/src/pages/ByaanDashboard.tsx",
@@ -16823,21 +16856,6 @@
       "controlCount": 12
     },
     {
-      "file": "client/src/lib/platform-workspace-labels.ts",
-      "hash": "0eff9ccf0acb",
-      "queries": [],
-      "mutations": [],
-      "imperativeReads": [],
-      "browserRequests": [],
-      "sections": [],
-      "choices": [],
-      "handlers": [],
-      "queryStates": [],
-      "conditions": [],
-      "imports": [],
-      "controlCount": 0
-    },
-    {
       "file": "client/src/components/merchant/CalendarConnectionCard.tsx",
       "hash": "bb676cc155e6",
       "queries": [
@@ -20401,37 +20419,43 @@
         "ByaanIntegration"
       ],
       "files": [
-        "client/src/pages/merchant/ByaanIntegration.tsx"
+        "client/src/pages/merchant/ByaanIntegration.tsx",
+        "client/src/components/merchant/ByaanConnectionWorkspace.tsx",
+        "client/src/lib/byaan-connection-labels.ts",
+        "client/src/lib/platform-workspace-labels.ts"
       ],
       "controls": [
-        "57d8e9e0482b",
-        "d0cdb77cf333",
-        "8a9b0b5bd08d",
-        "96ecbd4e102e",
-        "5e7b6a54d522",
-        "98fcb7c15a5e",
-        "d18f35c58658",
-        "0353c36dd4a0",
-        "7068d7a78d7a"
+        "24a92fb2d56f",
+        "7adc740a8ce0",
+        "1b308391b6c3",
+        "d711f8f87ca8",
+        "163bf057064a",
+        "85b931ac8d71",
+        "1dbcd1004535",
+        "37b8be8b1820",
+        "9beb2c0c3e2e",
+        "a7100bed5abf",
+        "c711675aa78e",
+        "c9c46a6ad151",
+        "b0e75d4c2724",
+        "b0e75d4c2724",
+        "146473b0044f",
+        "cd9d00b01aaa",
+        "7cdc8e775677",
+        "59919ccad9b3"
       ],
       "queries": [
-        "integrations.getByaanStatus"
+        "auth.me",
+        "merchants.getCurrent",
+        "integrations.byaanConnectionWorkspace"
       ],
       "mutations": [
         "integrations.connectByaan",
+        "integrations.disconnectByaan",
         "integrations.testByaanConnection"
       ],
       "imperativeReads": [],
-      "browserRequests": [
-        {
-          "file": "client/src/pages/merchant/ByaanIntegration.tsx",
-          "line": 73,
-          "target": "/api/v1/connect/byaan",
-          "targetExpression": "'/api/v1/connect/byaan'",
-          "method": "DELETE",
-          "provenance": "browser-fetch-static"
-        }
-      ]
+      "browserRequests": []
     },
     {
       "route": "/merchant/byaan-dashboard",
@@ -42562,14 +42586,35 @@
       "review": "source-inventoried"
     },
     {
-      "id": "57d8e9e0482b",
-      "file": "client/src/pages/merchant/ByaanIntegration.tsx",
-      "line": 110,
+      "id": "24a92fb2d56f",
+      "file": "client/src/components/merchant/ByaanConnectionWorkspace.tsx",
+      "line": 94,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ByaanConnectionWorkspace",
+      "binding": "()=>void refresh()",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "!!busy||query.isFetching",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "7adc740a8ce0",
+      "file": "client/src/components/merchant/ByaanConnectionWorkspace.tsx",
+      "line": 95,
       "tag": "Link",
       "role": "",
       "kind": "action",
       "label": "",
-      "section": "ByaanIntegration",
+      "section": "ByaanConnectionWorkspace",
       "binding": "/merchant/platform-integrations",
       "type": "text",
       "options": [],
@@ -42583,16 +42628,16 @@
       "review": "source-inventoried"
     },
     {
-      "id": "d0cdb77cf333",
-      "file": "client/src/pages/merchant/ByaanIntegration.tsx",
-      "line": 111,
-      "tag": "Button",
+      "id": "1b308391b6c3",
+      "file": "client/src/components/merchant/ByaanConnectionWorkspace.tsx",
+      "line": 95,
+      "tag": "Link",
       "role": "",
       "kind": "action",
       "label": "",
-      "section": "ByaanIntegration",
-      "binding": "",
-      "type": "button",
+      "section": "ByaanConnectionWorkspace",
+      "binding": "/merchant/byaan-dashboard",
+      "type": "text",
       "options": [],
       "min": "",
       "max": "",
@@ -42604,15 +42649,15 @@
       "review": "source-inventoried"
     },
     {
-      "id": "8a9b0b5bd08d",
-      "file": "client/src/pages/merchant/ByaanIntegration.tsx",
-      "line": 178,
-      "tag": "Button",
+      "id": "d711f8f87ca8",
+      "file": "client/src/components/merchant/ByaanConnectionWorkspace.tsx",
+      "line": 100,
+      "tag": "a",
       "role": "",
       "kind": "action",
-      "label": "جاري الفحص... الاتصال نشط ✓ فشل — أعد المحاولة اختبار الاتصال",
-      "section": "✅ تم الربط بنجاح مع بيان — المحتوى يُدار تلقائياً",
-      "binding": "handleTestConnection",
+      "label": "",
+      "section": "ByaanConnectionWorkspace",
+      "binding": "'https://'+data.tenantDomain+'/'",
       "type": "text",
       "options": [],
       "min": "",
@@ -42621,21 +42666,22 @@
       "required": false,
       "conditional": true,
       "conditions": [
-        "isConnected"
+        "data.tenantDomain",
+        "data.present"
       ],
-      "disabled": "testMutation.isPending",
+      "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "96ecbd4e102e",
-      "file": "client/src/pages/merchant/ByaanIntegration.tsx",
-      "line": 199,
+      "id": "163bf057064a",
+      "file": "client/src/components/merchant/ByaanConnectionWorkspace.tsx",
+      "line": 104,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "فصل الربط",
-      "section": "✅ تم الربط بنجاح مع بيان — المحتوى يُدار تلقائياً",
-      "binding": "handleDisconnect",
+      "label": "health",
+      "section": "ByaanConnectionWorkspace",
+      "binding": "()=>void check()",
       "type": "text",
       "options": [],
       "min": "",
@@ -42644,45 +42690,94 @@
       "required": false,
       "conditional": true,
       "conditions": [
-        "isConnected"
+        "canCheck",
+        "data.present"
       ],
-      "disabled": "disconnecting",
+      "disabled": "disabled",
       "review": "source-inventoried"
     },
     {
-      "id": "5e7b6a54d522",
-      "file": "client/src/pages/merchant/ByaanIntegration.tsx",
-      "line": 226,
+      "id": "85b931ac8d71",
+      "file": "client/src/components/merchant/ByaanConnectionWorkspace.tsx",
+      "line": 104,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ByaanConnectionWorkspace",
+      "binding": "()=>{setReview(data);setAgreed(false);}",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "data.present"
+      ],
+      "disabled": "disabled",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "1dbcd1004535",
+      "file": "client/src/components/merchant/ByaanConnectionWorkspace.tsx",
+      "line": 106,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ByaanConnectionWorkspace",
+      "binding": "/merchant/platform-integrations",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "data.blockingPlatforms.length",
+        "data.present"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "37b8be8b1820",
+      "file": "client/src/components/merchant/ByaanConnectionWorkspace.tsx",
+      "line": 107,
       "tag": "Input",
       "role": "",
       "kind": "field",
-      "label": "مثال: academy.byaan.app",
-      "section": "ربط حسابك مع بيان",
-      "binding": "tenantDomain",
+      "label": "",
+      "section": "ByaanConnectionWorkspace",
+      "binding": "domain",
       "type": "text",
       "options": [],
       "min": "",
       "max": "",
-      "maxLength": "",
+      "maxLength": "255",
       "required": false,
       "conditional": true,
       "conditions": [
-        "isConnected"
+        "data.blockingPlatforms.length",
+        "data.present"
       ],
-      "disabled": "",
+      "disabled": "!!busy",
       "review": "source-inventoried"
     },
     {
-      "id": "98fcb7c15a5e",
-      "file": "client/src/pages/merchant/ByaanIntegration.tsx",
-      "line": 233,
+      "id": "9beb2c0c3e2e",
+      "file": "client/src/components/merchant/ByaanConnectionWorkspace.tsx",
+      "line": 108,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "جاري الربط... ربط الآن",
-      "section": "ربط حسابك مع بيان",
-      "binding": "handleConnect",
-      "type": "text",
+      "label": "register",
+      "section": "ByaanConnectionWorkspace",
+      "binding": "",
+      "type": "submit",
       "options": [],
       "min": "",
       "max": "",
@@ -42690,21 +42785,22 @@
       "required": false,
       "conditional": true,
       "conditions": [
-        "isConnected"
+        "data.blockingPlatforms.length",
+        "data.present"
       ],
-      "disabled": "connectMutation.isPending || !tenantDomain.trim()",
+      "disabled": "disabled",
       "review": "source-inventoried"
     },
     {
-      "id": "d18f35c58658",
-      "file": "client/src/pages/merchant/ByaanIntegration.tsx",
-      "line": 286,
-      "tag": "TabsTrigger",
+      "id": "a7100bed5abf",
+      "file": "client/src/components/merchant/ByaanConnectionWorkspace.tsx",
+      "line": 113,
+      "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "الإحصائيات",
-      "section": "الإحصائيات",
-      "binding": "overview",
+      "label": "",
+      "section": "ByaanConnectionWorkspace",
+      "binding": "",
       "type": "text",
       "options": [],
       "min": "",
@@ -42712,22 +42808,20 @@
       "maxLength": "",
       "required": false,
       "conditional": false,
-      "conditions": [
-        "isConnected"
-      ],
+      "conditions": [],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "0353c36dd4a0",
-      "file": "client/src/pages/merchant/ByaanIntegration.tsx",
-      "line": 290,
-      "tag": "TabsTrigger",
+      "id": "c711675aa78e",
+      "file": "client/src/components/merchant/ByaanConnectionWorkspace.tsx",
+      "line": 113,
+      "tag": "Link",
       "role": "",
       "kind": "action",
-      "label": "سجل",
-      "section": "سجل",
-      "binding": "conversions",
+      "label": "",
+      "section": "ByaanConnectionWorkspace",
+      "binding": "/merchant/byaan-dashboard",
       "type": "text",
       "options": [],
       "min": "",
@@ -42735,22 +42829,20 @@
       "maxLength": "",
       "required": false,
       "conditional": false,
-      "conditions": [
-        "isConnected"
-      ],
+      "conditions": [],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "7068d7a78d7a",
-      "file": "client/src/pages/merchant/ByaanIntegration.tsx",
-      "line": 294,
-      "tag": "TabsTrigger",
+      "id": "c9c46a6ad151",
+      "file": "client/src/components/merchant/ByaanConnectionWorkspace.tsx",
+      "line": 116,
+      "tag": "Link",
       "role": "",
       "kind": "action",
-      "label": "المسميات",
-      "section": "المسميات",
-      "binding": "terminology",
+      "label": "",
+      "section": "ByaanConnectionWorkspace",
+      "binding": "/merchant/test-sari",
       "type": "text",
       "options": [],
       "min": "",
@@ -42758,10 +42850,134 @@
       "maxLength": "",
       "required": false,
       "conditional": false,
-      "conditions": [
-        "isConnected"
-      ],
+      "conditions": [],
       "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "b0e75d4c2724",
+      "file": "client/src/components/merchant/ByaanConnectionWorkspace.tsx",
+      "line": 117,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ByaanConnectionWorkspace",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "b0e75d4c2724",
+      "file": "client/src/components/merchant/ByaanConnectionWorkspace.tsx",
+      "line": 117,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ByaanConnectionWorkspace",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "146473b0044f",
+      "file": "client/src/components/merchant/ByaanConnectionWorkspace.tsx",
+      "line": 118,
+      "tag": "DialogContent",
+      "role": "",
+      "kind": "dialog",
+      "label": "remove",
+      "section": "ByaanConnectionWorkspace",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "cd9d00b01aaa",
+      "file": "client/src/components/merchant/ByaanConnectionWorkspace.tsx",
+      "line": 120,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "ByaanConnectionWorkspace",
+      "binding": "agreed",
+      "type": "checkbox",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "!!busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "7cdc8e775677",
+      "file": "client/src/components/merchant/ByaanConnectionWorkspace.tsx",
+      "line": 122,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ByaanConnectionWorkspace",
+      "binding": "()=>setReview(null)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "!!busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "59919ccad9b3",
+      "file": "client/src/components/merchant/ByaanConnectionWorkspace.tsx",
+      "line": 122,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "remove",
+      "section": "ByaanConnectionWorkspace",
+      "binding": "()=>void disconnect()",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "disabled||!agreed||review?.revision!==data.revision",
       "review": "source-inventoried"
     },
     {

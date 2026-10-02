@@ -1,3 +1,4 @@
+import {byaanConnectionEn} from './byaan-connection';
 import {platformWorkspaceEn} from './platform-workspace';
 import {appointmentCreateEn} from './appointment-create';
 import {calendarConnectionEn} from './calendar-connection';
@@ -69,7 +70,7 @@ const merchantUxEn: MerchantUxCopy = {
   campaignPerformance: campaignPerformanceEn,
   campaignWorkspace: campaignWorkspaceEn,
   serviceCatalog: serviceCatalogEn,
-  platformWorkspace:platformWorkspaceEn,
+  platformWorkspace:platformWorkspaceEn, byaanConnection:byaanConnectionEn,
   appointmentCreate:appointmentCreateEn,calendarConnection:calendarConnectionEn,calendarWorkspace:calendarWorkspaceEn,
   bookingWorkspace:bookingWorkspaceEn,
   staffWorkspace:staffWorkspaceEn,
