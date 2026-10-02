@@ -11,6 +11,11 @@ const sourceDate = new Date(inventory.generatedAt).toLocaleDateString("ar-SA", {
   day: "numeric",
 });
 const specifics = {
+  ...Object.fromEntries(['/merchant/services','/merchant/services/new','/merchant/services/:id/edit','/merchant/services/:id','/merchant/service-categories','/merchant/service-packages'].map(route=>[route,{
+    level:'تفصيلي',implemented:true,
+    sections:['مكونات التطبيق الفعلية للقائمة ومحرر الخدمة والتفاصيل والتصنيفات والباقات بكل حقولها واختياراتها','بحث وحالات وصفحات ومراجعة الحفظ والتعطيل ببصمة النسخة، وإحصاءات الحجوزات والتقييمات مع توضيح البيانات غير الصالحة','موك أب محلي بتيننتين ولغتين و16حالة، وتنقل يحفظ البيانات والفلاتر مع عزل رسائل الإطار'],
+    gaps:['راجع tenant-service-prototype-2026-10-02 وتقارير260–268؛ المقاسات480/390/320 مفحوصة في Chromium، وSafari/iPhone الفعلي غير مختبرين.','بيانات الموك أب مؤقتة وليست حجوزات أو تحصيلًا حقيقيًا. إكمال الحجز ليس تحويل مبيعات، والتقييمات تعد السجلات العامة الصحيحة. لا إيصال idempotency دائمًا للحفظ الفعلي.']
+  }])),
   ...Object.fromEntries(['/merchant/campaigns','/merchant/campaigns/new','/merchant/campaigns/:id','/merchant/campaigns/:id/edit','/merchant/campaigns/:id/report'].map(route=>[route,{
     level:'تفصيلي',implemented:true,
     sections:['مكونات التطبيق الفعلية للقائمة والأداء والتفاصيل والتقرير والمحرر، مع البحث والحالات والصفحات والتصدير الكامل','حقول الرسالة والصورة والجمهور المخصص والجدولة بتوقيت المتجر، والتحقق بجانب الحقول ومراجعة مستقلة للحفظ والإرسال','موك أب بتيننتين ولغتين و20 حالة، وحفظ وتنقل ومراجعات محلية؛ تقاعد نموذج الحملات اليدوي القديم'],

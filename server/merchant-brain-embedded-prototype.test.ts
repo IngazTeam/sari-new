@@ -13,6 +13,15 @@ beforeEach(()=>{
 });
 afterEach(()=>dom.window.close());
 const send=(data:any,origin='http://127.0.0.1:4329',source=frame.contentWindow)=>w.dispatchEvent(new w.MessageEvent('message',{origin,source,data}));
+it('syncs service routes and editor queries only from the owned service frame',()=>{
+ frame.setAttribute('src','./service-workspace.html?embed=brain');w.history.replaceState(null,'','#/page/merchant/services');w.syncServicePreviewContext=vi.fn();
+ const message={type:'sary-brain-preview',action:'serviceState',search:'path=/merchant/service-packages&edit=new&q=sample&tenant=270&lang=en'};
+ for(const search of ['path=/merchant/services/2147483648','path=/merchant/settings','edit=0','edit=2147483648','status=draft','tenant=258','page=1000001','q=a&q=b','token=secret','path=https://evil.test','path=/merchant/services/1/report'])send({...message,search});
+ send(message,'https://evil.test');send(message,undefined,w);expect(w.location.hash).toBe('#/page/merchant/services');send(message);expect(w.location.hash).toBe('#/page/merchant/service-packages?edit=new&q=sample&tenant=270&lang=en');expect(w.syncServicePreviewContext).toHaveBeenCalledOnce();expect(frame.isConnected).toBe(true);
+ frame.setAttribute('src','./campaign-workspace.html?embed=brain');send({...message,search:'path=/merchant/services/new'});expect(w.location.hash).toContain('service-packages');
+ expect(previewPolicy('/service-workspace.html',new URLSearchParams('embed=brain'))).toContain("frame-ancestors 'self'");expect(previewPolicy('/service-workspace.html',new URLSearchParams())).toContain("frame-ancestors 'none'");expect(previewPolicy('/service-workspace.html',new URLSearchParams())).toContain("connect-src 'none'");
+});
+it('restricts service external tools to bookings and recovery destinations',()=>{frame.setAttribute('src','./service-workspace.html?embed=brain');const message={type:'sary-brain-preview',action:'serviceTool',route:'/merchant/bookings'};send(message,'https://evil.test');send(message,undefined,w);send({...message,route:'/merchant/settings'});expect(w.location.hash).toBe('');send(message);expect(w.location.hash).toBe('#/page/merchant/bookings');});
 it('syncs campaign pages and filters only from the owned frame without replacing its local model',()=>{
   frame.setAttribute('src','./campaign-workspace.html?embed=brain');w.history.replaceState(null,'','#/page/merchant/campaigns');
   const message={type:'sary-brain-preview',action:'campaignState',search:'path=%2Fmerchant%2Fcampaigns%2F3%2Freport&view=results&page=2&tenant=259&lang=en'};

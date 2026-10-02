@@ -1,0 +1,32 @@
+import {useEffect,useMemo,useState,useSyncExternalStore} from 'react';
+import {createRoot} from 'react-dom/client';import {createPortal} from 'react-dom';import {Toaster,toast} from 'sonner';
+import ServicesManagement from '../../../client/src/pages/merchant/ServicesManagement';
+import ServiceForm from '../../../client/src/pages/merchant/ServiceForm';
+import ServiceCategories from '../../../client/src/pages/merchant/ServiceCategories';
+import ServicePackages from '../../../client/src/pages/merchant/ServicePackages';
+import ServiceDetails from '../../../client/src/pages/ServiceDetails';
+import {WorkspaceState} from '../../../client/src/components/merchant/WorkspaceState';
+import {useMerchantViewport} from '../../../client/src/lib/merchant-viewport';
+import {ServicePreviewModel,serviceModes,type ServiceMode} from './service-preview-model';
+import {ServicePreviewContext} from './service-preview-api';import {ServicePreviewLanguage} from './service-preview-i18n';
+import {usePreviewSearch,previewNavigation,updateServiceSearch,validServicePath,Link} from './service-preview-router';
+const labels={ar:['عادية','فارغة','تحميل','تعذر القراءة','دون صلاحية','جلسة منتهية','بيانات متجر آخر','فشل مع بيانات قديمة','قراءة فقط','بيانات قديمة غير صالحة','علاقات غير متاحة','تعذر قراءة الاختيارات','فشل الإجراء','تعارض النسخة','حفظ معلق','حفظ بنتيجة غير مؤكدة'],en:['Normal','Empty','Loading','Read failed','Forbidden','Session expired','Another store snapshot','Error with stale data','Read only','Invalid legacy data','Unavailable references','Choices unavailable','Action failed','Save conflict','Pending save','Uncertain save']};
+function PendingControl({model,ar}:{model:ServicePreviewModel;ar:boolean}){
+ const [target,setTarget]=useState<Element|null>(null);useEffect(()=>{setTarget(model.pending?document.querySelector('[role="dialog"]'):null);},[model,model.pending]);
+ return model.pending&&target?createPortal(<div className="service-preview-controls"><p>{ar?'أداة محاكاة التأخير فقط':'Local delay simulation control'}</p><button type="button" onClick={model.finishPending}>{ar?'أكمل الحفظ المحلي':'Complete local save'}</button></div>,target):null;
+}
+function Preview(){
+ useMerchantViewport();const search=usePreviewSearch(),{path,params}=previewNavigation(search),language=params.get('lang')==='en'?'en':'ar',ar=language==='ar';
+ const merchantId=params.get('tenant')==='270'?270:269,raw=params.get('scenario'),mode:ServiceMode=serviceModes.includes(raw as ServiceMode)?raw as ServiceMode:'normal';
+ const [generation,setGeneration]=useState(0),model=useMemo(()=>new ServicePreviewModel(merchantId,mode),[merchantId,mode,generation]);useSyncExternalStore(model.subscribe,model.snapshot);useEffect(()=>()=>model.dispose(),[model]);
+ useEffect(()=>{document.documentElement.lang=language;document.documentElement.dir=ar?'rtl':'ltr';},[language,ar]);
+ const change=(key:string,value:string)=>{const next=new URLSearchParams(search);next.set(key,value);updateServiceSearch(next);};
+ const page=!validServicePath(path)?<WorkspaceState kind="missing"/>:path==='/merchant/services'?<ServicesManagement/>:path==='/merchant/service-categories'?<ServiceCategories/>:path==='/merchant/service-packages'?<ServicePackages/>:path.endsWith('/new')||path.endsWith('/edit')?<ServiceForm/>:<ServiceDetails/>;
+ return <ServicePreviewLanguage.Provider value={language}><ServicePreviewContext.Provider value={model}><main className="mw-main service-preview-main" onClickCapture={event=>{const anchor=(event.target as HTMLElement).closest?.('a[href="/login"],a[href="/support"]');if(anchor){event.preventDefault();if(anchor.getAttribute('href')==='/login')model.complete();else toast.info(ar?'معاينة محلية؛ لم يُرسل طلب دعم.':'Local preview; no support request was sent.');}}}>
+  <aside className="service-preview-controls" aria-label={ar?'خيارات الموك أب':'Preview controls'}><h2>{ar?'موك أب الخدمات الفعلي':'Actual service preview'}</h2><p>{ar?'شاشات التطبيق ببيانات توضيحية في الذاكرة. الإضافة والتعديل والتعطيل محاكاة محلية؛ لا إنشاء لحجوزات أو تعديل لبيانات متجرك. تغيير التيننت أو الحالة أو إعادة التحميل يعيد بيانات المثال.':'Application screens with in-memory sample data. Creates, edits and deactivation are local simulations; no real bookings or store data changes. Switching tenant or scenario, or reloading, resets samples.'}</p>
+  <div className="service-preview-options"><label>{ar?'حالة التجربة':'Scenario'}<select data-service-scenario value={mode} onChange={e=>change('scenario',e.target.value)}>{serviceModes.map((item,i)=><option key={item} value={item}>{labels[language][i]}</option>)}</select></label><label>{ar?'لغة اللوحة':'Interface language'}<select data-service-language value={language} onChange={e=>change('lang',e.target.value)}><option value="ar">العربية</option><option value="en">English</option></select></label><label>{ar?'تيننت المحاكاة':'Simulated tenant'}<select data-service-tenant value={merchantId} onChange={e=>change('tenant',e.target.value)}><option value="269">A · 269</option><option value="270">B · 270</option></select></label><button type="button" onClick={()=>setGeneration(n=>n+1)}>{ar?'إعادة بيانات المثال':'Reset sample data'}</button><button type="button" onClick={model.complete}>{ar?'استعادة الحالة محليًا':'Recover local state'}</button></div>
+  <nav aria-label={ar?'صفحات الخدمات':'Service pages'}><Link href="/merchant/services">{ar?'الخدمات':'Services'}</Link><Link href="/merchant/services/new">{ar?'إضافة خدمة':'Create service'}</Link><Link href="/merchant/services/1/edit">{ar?'تعديل المثال':'Edit sample'}</Link><Link href="/merchant/services/1">{ar?'تفاصيل المثال':'Sample details'}</Link><Link href="/merchant/service-categories">{ar?'التصنيفات':'Categories'}</Link><Link href="/merchant/service-packages">{ar?'الباقات':'Packages'}</Link></nav><p role="status">{ar?'عمليات محلية: ':'Local operations: '}{model.operations} · {ar?'محاولات الاستعادة: ':'Recovery attempts: '}{model.retries}</p></aside>
+  <Toaster richColors position="bottom-center"/><div key={`${merchantId}:${mode}:${generation}:${path}`} className="service-preview-workspace">{page}</div><PendingControl model={model} ar={ar}/>
+ </main></ServicePreviewContext.Provider></ServicePreviewLanguage.Provider>;
+}
+createRoot(document.getElementById('service-preview')!).render(<Preview/>);

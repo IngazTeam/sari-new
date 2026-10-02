@@ -184,6 +184,17 @@ function syncCampaignPreviewContext(route){
   params.set('path',path);
   if(standalone)standalone.setAttribute('href','./campaign-workspace.html?'+params.toString());
 }
+function syncServicePreviewContext(route){
+  if(location.hash!=='#/page'+route||!/^\/merchant\/(?:services|service-categories|service-packages)(?:\/|\?|$)/.test(route))return;
+  const [path,search]=route.split('?'),page=TenantPages.find(path),frame=$('#main iframe[data-brain-preview]');
+  if(!page||!frame)return;
+  ui.page=page;ui.section=page.group;
+  $('#main').dataset.pageRoute=page.route;
+  document.title=`${page.title} · ساري`;
+  const standalone=$('#main .page-local-note a'),params=new URLSearchParams(search);
+  params.set('path',path);
+  if(standalone)standalone.setAttribute('href','./service-workspace.html?'+params.toString());
+}
 function onRoute(){
   const legacyInbox=location.hash.match(/^#\/inbox(?:\/[^?]*)?(\?.*)?$/);
   if(legacyInbox)history.replaceState(null,'','#/page/merchant/conversations'+(legacyInbox[1]||''));
