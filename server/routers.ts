@@ -1,3 +1,4 @@
+import {abandonedCartsRouter} from './routers-abandoned-carts';
 import { referralsRouter } from './routers-referrals';
 import { discountsRouter } from './routers-discounts';
 import { sallaDashboardProcedures } from './routers-salla-dashboard';
@@ -163,8 +164,6 @@ import {
   deleteWhatsAppConnectionRequest,
   deleteWhatsAppInstance,
   generateReferralCode,
-  getAbandonedCartById,
-  getAbandonedCartsByMerchantId,
   getActiveStaffByMerchant,
   getActiveSubscriptionByMerchantId,
   getActiveWhatsAppInstancesCount,
@@ -249,7 +248,6 @@ import {
   getWhatsAppRequestsByMerchantId,
   getWhatsappConnectionByMerchantId,
   incrementReferralCount,
-  markAbandonedCartRecovered,
   markConvertedToSignup,
   markSignupPromptShown,
   rejectWhatsAppConnectionRequest,
@@ -1677,73 +1675,7 @@ export const appRouter = router({
   referrals: referralsRouter,
 
   // Abandoned Carts Management
-  abandonedCarts: router({
-    // List abandoned carts for merchant
-    list: protectedProcedure
-      .input(z.object({ merchantId: z.number() }))
-      .query(async ({ input, ctx }) => {
-        const merchant = await getMerchantById(input.merchantId);
-        if (!merchant || merchant.userId !== ctx.user.id) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
-        }
-
-        return await getAbandonedCartsByMerchantId(input.merchantId);
-      }),
-
-    // Get statistics
-    getStats: protectedProcedure
-      .input(z.object({ merchantId: z.number() }))
-      .query(async ({ input, ctx }) => {
-        const merchant = await getMerchantById(input.merchantId);
-        if (!merchant || merchant.userId !== ctx.user.id) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
-        }
-
-        const { getCartRecoveryStats } = await import('./automation/abandoned-cart-recovery');
-        return await getCartRecoveryStats(input.merchantId);
-      }),
-
-    // Mark cart as recovered
-    markRecovered: protectedProcedure
-      .input(z.object({ cartId: z.number() }))
-      .mutation(async ({ input, ctx }) => {
-        const cart = await getAbandonedCartById(input.cartId);
-        if (!cart) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Cart not found' });
-        }
-
-        const merchant = await getMerchantById(cart.merchantId);
-        if (!merchant || merchant.userId !== ctx.user.id) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
-        }
-
-        return await markAbandonedCartRecovered(input.cartId);
-      }),
-
-    // Send reminder manually
-    sendReminder: protectedProcedure
-      .input(z.object({ cartId: z.number() }))
-      .mutation(async ({ input, ctx }) => {
-        const cart = await getAbandonedCartById(input.cartId);
-        if (!cart) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Cart not found' });
-        }
-
-        const merchant = await getMerchantById(cart.merchantId);
-        if (!merchant || merchant.userId !== ctx.user.id) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
-        }
-
-        const { sendCartReminder } = await import('./automation/abandoned-cart-recovery');
-        const success = await sendCartReminder(input.cartId);
-
-        if (!success) {
-          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to send reminder' });
-        }
-
-        return { success: true };
-      }),
-  }),
+  abandonedCarts: abandonedCartsRouter,
 
   // Canonical occasion router: tenant scope comes only from the session.
   occasionCampaigns: occasionCampaignsRouter,

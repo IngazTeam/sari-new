@@ -7,7 +7,9 @@
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { protectedProcedure, router } from "./_core/trpc";
+import { protectedProcedure, merchantProcedure, router } from "./_core/trpc";
+import {cartWorkspaceInput} from '../shared/abandoned-cart-workspace';
+import {readCartWorkspace,CartWorkspaceError} from './abandoned-cart-workspace-store';
 import {
   getAbandonedCartById,
   getAbandonedCartsByMerchantId,
@@ -16,6 +18,7 @@ import {
 } from './db';
 
 export const abandonedCartsRouter = router({
+    workspace: merchantProcedure.input(cartWorkspaceInput).query(async({ctx,input})=>{try{return await readCartWorkspace(ctx.user.id,ctx.merchantId,input);}catch(error){throw new TRPCError({code:error instanceof CartWorkspaceError&&error.reason==='forbidden'?'FORBIDDEN':'INTERNAL_SERVER_ERROR',message:'تعذر قراءة السلات لهذا المتجر. حدّث الصفحة وحاول مجددًا.'});}}),
     // List abandoned carts for merchant
     list: protectedProcedure
         .input(z.object({ merchantId: z.number() }))

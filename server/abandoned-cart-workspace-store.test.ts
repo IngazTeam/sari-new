@@ -1,0 +1,14 @@
+import {beforeEach,expect,it,vi} from 'vitest';
+const m=vi.hoisted(()=>({pool:vi.fn(),getConnection:vi.fn(),query:vi.fn(),execute:vi.fn(),beginTransaction:vi.fn(),commit:vi.fn(),rollback:vi.fn(),release:vi.fn(),destroy:vi.fn()}));
+vi.mock('./db/connection',()=>({getPool:m.pool}));
+import {readCartWorkspace} from './abandoned-cart-workspace-store';
+import {cartWorkspaceInput} from '../shared/abandoned-cart-workspace';
+let role:any,active:number,status:string,account:string;
+beforeEach(()=>{vi.resetAllMocks();role='manager';active=1;status='active';account='active';m.pool.mockResolvedValue(m);m.getConnection.mockResolvedValue(m);m.execute.mockImplementation(async(sql:string)=>sql.includes('FROM users')?[[{account_status:account}]]:sql.includes('FROM merchants')?[[{userId:7,status}]]:sql.includes('FROM merchant_members')?[[{role,is_active:active}]]:[[]]);});
+const read=()=>readCartWorkspace(7,20,cartWorkspaceInput.parse({}));
+it('reads complete scoped source with no reminder, discount, or recovery writes',async()=>{expect(await read()).toMatchObject({total:0,canManage:true});expect(m.execute.mock.calls.every(([sql])=>sql.startsWith('SELECT'))).toBe(true);expect(m.execute.mock.calls.filter(([sql])=>sql.includes('FOR SHARE'))).toHaveLength(3);expect(m.execute.mock.calls.find(([sql])=>sql.includes('FROM abandoned_carts'))).toEqual([expect.stringContaining('WHERE merchantId=? ORDER BY createdAt DESC,id DESC'),[20]]);expect(m.commit).toHaveBeenCalledOnce();});
+it.each(['viewer','sales_supervisor'])('allows %s read but not campaigns management',async r=>{role=r;expect((await read()).canManage).toBe(false);});
+it.each(['revoked','suspended','blocked','unknown'])('rejects %s before source query',async state=>{if(state==='revoked')active=0;if(state==='suspended')status='suspended';if(state==='blocked')account='deletion_pending';if(state==='unknown')role='unknown';await expect(read()).rejects.toMatchObject({reason:'forbidden'});expect(m.execute.mock.calls.some(([sql])=>sql.includes('abandoned_carts'))).toBe(false);expect(m.rollback).toHaveBeenCalledOnce();});
+it('does not turn absent storage into a zero total',async()=>{m.pool.mockResolvedValue(null);await expect(read()).rejects.toMatchObject({reason:'unavailable'});});
+it('destroys connection on uncertain commit',async()=>{m.commit.mockRejectedValue(Error('PRIVATE'));await expect(read()).rejects.toMatchObject({reason:'unavailable'});expect(m.destroy).toHaveBeenCalledOnce();expect(m.release).not.toHaveBeenCalled();expect(m.rollback).not.toHaveBeenCalled();});
+it('destroys failed rollback instead of reusing a tainted connection',async()=>{m.execute.mockRejectedValue(Error());m.rollback.mockRejectedValue(Error());await expect(read()).rejects.toMatchObject({reason:'unavailable'});expect(m.destroy).toHaveBeenCalledOnce();});
