@@ -3,7 +3,7 @@ import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { loadPreviewLocales } from './preview-locales.mjs';
-const routes=JSON.parse(readFileSync('docs/audits/tenant-features-2026-09-30/coverage.json','utf8')).routes.filter(row=>/^\/merchant\/(?:services(?:\/|$)|service-categories$|service-packages$)/.test(row.route));
+const routes=JSON.parse(readFileSync('docs/audits/tenant-features-2026-09-30/coverage.json','utf8')).routes.filter(row=>/^\/merchant\/(?:services(?:\/|$)|service-categories$|service-packages$|staff$)/.test(row.route));
 const sources=[...new Set(routes.flatMap(route=>route.files)),'client/src/components/merchant/WorkspaceState.tsx','client/src/components/QueryStateCard.tsx',...readdirSync('client/src/components/ui').filter(file=>file.endsWith('.tsx')).map(file=>'client/src/components/ui/'+file)];
 const namespaces=new Set(['merchantUx','common']);for(const file of sources.filter(file=>!file.startsWith('client/src/components/ui/')))for(const match of readFileSync(file,'utf8').matchAll(/\bt\(['"]([a-zA-Z][\w]*)\./g))namespaces.add(match[1]);
 const copy=await loadPreviewLocales([...namespaces]);
@@ -16,5 +16,5 @@ const candidates=new Set();for(const file of [...sources,'prototypes/tenant-dash
 writeFileSync('prototypes/tenant-dashboard/site/service-preview.css',compiler.build([...candidates])+readFileSync('client/src/styles/merchant-workspace.css','utf8')+readFileSync('client/src/styles/merchant-mobile.css','utf8')+'\nbody.merchant-surface{width:100%;max-width:none;margin:0;border:0;border-radius:0;box-shadow:none}');
 writeFileSync("prototypes/tenant-dashboard/site/service-preview.css",readFileSync("prototypes/tenant-dashboard/site/service-preview.css","utf8")+readFileSync("prototypes/tenant-dashboard/src/service-preview.css","utf8"));
 
-for(const file of readdirSync('client/src/styles').filter(file=>/^service.*\.css$/.test(file)))writeFileSync('prototypes/tenant-dashboard/site/service-preview.css',readFileSync('prototypes/tenant-dashboard/site/service-preview.css','utf8')+readFileSync('client/src/styles/'+file,'utf8'));
+for(const file of readdirSync('client/src/styles').filter(file=>/^(?:service|staff).*\.css$/.test(file)))writeFileSync('prototypes/tenant-dashboard/site/service-preview.css',readFileSync('prototypes/tenant-dashboard/site/service-preview.css','utf8')+readFileSync('client/src/styles/'+file,'utf8'));
 console.log('Actual service pages preview built; '+namespaces.size+' locale namespaces.');

@@ -13,6 +13,11 @@ beforeEach(()=>{
 });
 afterEach(()=>dom.window.close());
 const send=(data:any,origin='http://127.0.0.1:4329',source=frame.contentWindow)=>w.dispatchEvent(new w.MessageEvent('message',{origin,source,data}));
+it('syncs provider editing in the same service frame without allowing extra paths or scopes',()=>{
+ frame.setAttribute('src','./service-workspace.html?embed=brain');w.history.replaceState(null,'','#/page/merchant/staff');w.syncServicePreviewContext=vi.fn();
+ const message={type:'sary-brain-preview',action:'serviceState',search:'path=/merchant/staff&edit=31&q=provider&tenant=270&lang=en'};
+ send({...message,search:'path=/merchant/staff/31&edit=31'});send(message,'https://evil.test');send(message,undefined,w);expect(w.location.hash).toBe('#/page/merchant/staff');send(message);expect(w.location.hash).toBe('#/page/merchant/staff?edit=31&q=provider&tenant=270&lang=en');expect(w.syncServicePreviewContext).toHaveBeenCalledOnce();expect(frame.isConnected).toBe(true);
+});
 it('syncs service routes and editor queries only from the owned service frame',()=>{
  frame.setAttribute('src','./service-workspace.html?embed=brain');w.history.replaceState(null,'','#/page/merchant/services');w.syncServicePreviewContext=vi.fn();
  const message={type:'sary-brain-preview',action:'serviceState',search:'path=/merchant/service-packages&edit=new&q=sample&tenant=270&lang=en'};

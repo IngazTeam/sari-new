@@ -1,7 +1,7 @@
 import React, { useSyncExternalStore } from 'react';
 const reserved=['path','lang','tenant','scenario','embed'];
 const subscribe=(fn:()=>void)=>{window.addEventListener('popstate',fn);return()=>window.removeEventListener('popstate',fn);};
-export const validServicePath=(path:string)=>/^\/merchant\/(?:services(?:\/new|\/[1-9]\d*(?:\/edit)?)?|service-categories|service-packages)$/.test(path)&&path.length<=100&&(!/\/services\/\d/.test(path)||Number(path.split('/')[3])<=2147483647);
+export const validServicePath=(path:string)=>/^\/merchant\/(?:services(?:\/new|\/[1-9]\d*(?:\/edit)?)?|service-categories|service-packages|staff)$/.test(path)&&path.length<=100&&(!/\/services\/\d/.test(path)||Number(path.split('/')[3])<=2147483647);
 export function previewNavigation(search:string){const params=new URLSearchParams(search),path=params.get('path')??'/merchant/services',app=new URLSearchParams(params);for(const key of reserved)app.delete(key);return {path,search:app.toString(),params};}
 export function servicePreviewHref(href:string,current:string){
   const [path,query='']=href.split('?');if(!validServicePath(path))return null;

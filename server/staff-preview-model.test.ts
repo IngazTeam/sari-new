@@ -1,0 +1,22 @@
+import {describe,it,expect} from 'vitest';
+import {readFileSync} from 'node:fs';
+import {ServicePreviewModel,serviceModes} from '../prototypes/tenant-dashboard/src/service-preview-model';
+import {servicePreviewHref,previewNavigation} from '../prototypes/tenant-dashboard/src/service-preview-router';
+const read=(m:ServicePreviewModel)=>m.read('staff.list',{});
+describe('actual provider preview model',()=>{
+ it.each(serviceModes)('provides scoped %s provider state',mode=>{for(const id of [269,270]){const model=new ServicePreviewModel(id,mode),result=read(model);if(mode==='loading')expect(result.isLoading).toBe(true);else if(['failure','stale-error'].includes(mode))expect(result.error).toBeTruthy();else expect(result.data.merchantId).toBe(mode==='foreign'?999:id);if(mode==='empty')expect(result.data.staff).toHaveLength(0);if(mode==='readonly')expect(result.data.canManage).toBe(false);if(mode==='legacy')expect(result.data.staff[0]).toMatchObject({isActive:9,workingHours:'legacy format'});}});
+ it('creates, edits, archives and restores with independent tenant data',async()=>{
+  const m=new ServicePreviewModel(269),other=new ServicePreviewModel(270);const created=await m.mutate('staff.create',{name:'Provider test',phone:'',workingHours:{monday:{start:'10:00',end:'17:00'}}});
+  const record=()=>read(m).data.staff.find((row:any)=>row.id===created.staffId);expect(record()).toMatchObject({id:32,name:'Provider test',phone:null,isActive:1});
+  const old=record().definition;await m.mutate('staff.update',{staffId:32,expectedDefinition:old,name:'Updated',email:'staff@example.test'});expect(record().workingHours).toContain('monday');
+  await expect(m.mutate('staff.delete',{staffId:32,expectedDefinition:old})).rejects.toMatchObject({data:{code:'CONFLICT'}});
+  await m.mutate('staff.delete',{staffId:32,expectedDefinition:record().definition});expect(record().isActive).toBe(0);
+  await m.mutate('staff.update',{staffId:32,expectedDefinition:record().definition,isActive:true,email:''});expect(record()).toMatchObject({email:null,isActive:1});expect(read(other).data.staff).toHaveLength(31);
+ });
+ it('updates actual service reference choices when a provider is deactivated',async()=>{const m=new ServicePreviewModel(269),first=read(m).data.staff[0];await m.mutate('staff.delete',{staffId:first.id,expectedDefinition:first.definition});expect(m.read('services.catalogChoices',{kind:'staff'}).data.rows.some((row:any)=>row.id===first.id)).toBe(false);expect(m.read('services.catalogEditor',{entity:'service',id:1}).data.record.unavailableReferences).toBe(1);});
+ it.each([{merchantId:1},{name:' '},{name:'p',phone:'bad'},{name:'p',workingHours:{monday:{start:'24:00',end:'25:00'}}}])('rejects invalid provider payload %j',async input=>{const m=new ServicePreviewModel(269);await expect(m.mutate('staff.create',input)).rejects.toBeTruthy();expect(m.operations).toBe(0);});
+ it('enforces list filters and rejects query scope injection',()=>{const m=new ServicePreviewModel(269);expect(m.read('staff.list',{activeOnly:true}).data.staff).toHaveLength(25);expect(m.read('staff.list',{merchantId:999}).error).toBeTruthy();});
+ it('exposes uncertain persisted writes without retrying them automatically',async()=>{const m=new ServicePreviewModel(269,'uncertain-save');await expect(m.mutate('staff.create',{name:'Uncertain'})).rejects.toBeTruthy();expect(m.operations).toBe(1);expect((await m.refetch('staff.list',{})).data.staff).toHaveLength(32);});
+ it('completes only explicitly released pending saves and cancels disposed ones',async()=>{const m=new ServicePreviewModel(269,'pending-save'),promise=m.mutate('staff.create',{name:'Pending'});expect(m.pending).toBe(1);m.finishPending();await expect(promise).resolves.toMatchObject({staffId:32});const other=new ServicePreviewModel(270,'pending-save'),late=other.mutate('staff.create',{name:'Discarded'}),result=expect(late).rejects.toMatchObject({data:{code:'CONFLICT'}});other.dispose();await result;expect(other.operations).toBe(0);});
+ it('routes the real provider page through the existing embedded service workspace',()=>{expect(previewNavigation(servicePreviewHref('/merchant/staff?edit=1','?lang=en&tenant=270&embed=brain')!).path).toBe('/merchant/staff');const entry=readFileSync('prototypes/tenant-dashboard/src/service-preview.tsx','utf8'),pages=readFileSync('prototypes/tenant-dashboard/site/pages.js','utf8');expect(entry).toContain("path==='/merchant/staff'?<StaffManagement/>");expect(pages.indexOf('service-workspace.html')).toBeLessThan(pages.indexOf("if(mode!=='normal')"));});
+});
