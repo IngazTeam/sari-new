@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-02T09:16:04.988Z",
+  "generatedAt": "2026-10-02T12:11:35.547Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -5606,148 +5606,351 @@
     },
     {
       "file": "client/src/pages/merchant/ZidIntegration.tsx",
-      "hash": "85ddc7144279",
+      "hash": "b46a73d43c79",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [
+        "client/src/components/merchant/ZidWorkspacePage.tsx"
+      ],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/components/merchant/ZidWorkspacePage.tsx",
+      "hash": "1fd9aebec339",
       "queries": [
-        "zid.getConnection",
-        "zid.getSyncLogs",
-        "zid.getSyncStats",
-        "zid.getNotificationHealth"
+        "auth.me",
+        "merchants.getCurrent"
+      ],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [
+        {
+          "query": "auth.me",
+          "binding": "user",
+          "line": 6,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        },
+        {
+          "query": "merchants.getCurrent",
+          "binding": "merchant",
+          "line": 6,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": "!!user.data?.id&&!user.error&&!user.isFetching"
+        }
+      ],
+      "conditions": [],
+      "imports": [
+        "client/src/components/merchant/ZidWorkspace.tsx"
+      ],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/components/merchant/ZidWorkspace.tsx",
+      "hash": "4cf5f62c489d",
+      "queries": [
+        "zid.workspace"
       ],
       "mutations": [
-        "zid.beginOAuth",
-        "zid.disconnect",
-        "zid.syncNow",
-        "zid.updateSettings",
-        "zid.acknowledgeNotificationIncidents",
-        "zid.rotateWebhookCredentials"
+        "zid.saveWorkspaceSettings",
+        "zid.disconnectWorkspace",
+        "zid.rotateWorkspaceWebhook",
+        "zid.beginOAuth"
       ],
       "imperativeReads": [],
       "browserRequests": [],
       "sections": [
         {
-          "label": "تكامل زد (Zid)",
-          "line": 220,
+          "label": "",
+          "line": 67,
           "tag": "h1"
         },
         {
-          "label": "حالة الاتصال",
-          "line": 235,
-          "tag": "CardTitle"
+          "label": "",
+          "line": 70,
+          "tag": "h2"
         },
         {
-          "label": "الإعدادات",
-          "line": 282,
-          "tag": "TabsTrigger"
+          "label": "",
+          "line": 72,
+          "tag": "h2"
         },
         {
-          "label": "Webhooks",
-          "line": 286,
-          "tag": "TabsTrigger"
+          "label": "",
+          "line": 76,
+          "tag": "h2"
         },
         {
-          "label": "سجل المزامنة",
-          "line": 290,
-          "tag": "TabsTrigger"
+          "label": "",
+          "line": 77,
+          "tag": "h2"
         },
         {
-          "label": "إعدادات المزامنة",
-          "line": 300,
-          "tag": "CardTitle"
+          "label": "",
+          "line": 80,
+          "tag": "h2"
         },
         {
-          "label": "إعدادات Webhooks",
-          "line": 422,
-          "tag": "CardTitle"
+          "label": "",
+          "line": 81,
+          "tag": "h2"
         },
         {
-          "label": "سجل المزامنة",
-          "line": 513,
-          "tag": "CardTitle"
+          "label": "",
+          "line": 83,
+          "tag": "h2"
         },
         {
-          "label": "ربط متجر زد",
-          "line": 554,
-          "tag": "CardTitle"
+          "label": "save remove rotate",
+          "line": 84,
+          "tag": "DialogTitle"
+        }
+      ],
+      "choices": [
+        {
+          "name": "settingKeys",
+          "line": 24,
+          "values": [
+            "autoSync",
+            "syncProducts",
+            "syncOrders",
+            "syncCustomers",
+            "notifyMerchantOrders"
+          ]
+        }
+      ],
+      "handlers": [],
+      "queryStates": [
+        {
+          "query": "zid.workspace",
+          "binding": "query",
+          "line": 30,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        }
+      ],
+      "conditions": [],
+      "imports": [
+        "client/src/lib/zid-oauth-navigation.ts",
+        "client/src/lib/zid-workspace.ts",
+        "client/src/lib/zid-workspace-labels.ts",
+        "client/src/components/merchant/ZidSyncPanel.tsx",
+        "client/src/components/merchant/ZidLogList.tsx",
+        "client/src/components/merchant/ZidNotificationReview.tsx"
+      ],
+      "controlCount": 20
+    },
+    {
+      "file": "client/src/lib/zid-oauth-navigation.ts",
+      "hash": "3e5b99d21a97",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/lib/zid-workspace.ts",
+      "hash": "5df49f1ef88b",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/lib/zid-workspace-labels.ts",
+      "hash": "693332cfeb15",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/components/merchant/ZidSyncPanel.tsx",
+      "hash": "4bde249a8f4f",
+      "queries": [
+        "zid.latestSyncRequest",
+        "zid.syncRequest"
+      ],
+      "mutations": [
+        "zid.requestSync"
+      ],
+      "imperativeReads": [
+        {
+          "procedure": "zid.syncRequest",
+          "method": "fetch",
+          "expression": "utils.zid.syncRequest.fetch",
+          "line": 27,
+          "provenance": "trpc-utility-static"
+        }
+      ],
+      "browserRequests": [],
+      "sections": [
+        {
+          "label": "",
+          "line": 46,
+          "tag": "h2"
         },
         {
-          "label": "تأكيد الهوية قبل الإجراء",
-          "line": 592,
-          "tag": "AlertDialogTitle"
+          "label": "",
+          "line": 48,
+          "tag": "h3"
         },
         {
-          "label": "تأكيد اكتمال المراجعة",
-          "line": 632,
-          "tag": "AlertDialogTitle"
+          "label": "",
+          "line": 52,
+          "tag": "summary"
+        },
+        {
+          "label": "",
+          "line": 53,
+          "tag": "DialogTitle"
         }
       ],
       "choices": [],
       "handlers": [
         {
-          "name": "closeSensitiveAction",
-          "line": 165,
+          "name": "open",
+          "line": 45,
           "calls": []
-        },
-        {
-          "name": "submitSensitiveAction",
-          "line": 170,
-          "calls": [
-            "beginOAuthMutation",
-            "disconnectMutation",
-            "rotateWebhookMutation"
-          ]
-        },
-        {
-          "name": "handleSync",
-          "line": 184,
-          "calls": [
-            "syncMutation"
-          ]
-        },
-        {
-          "name": "handleSaveSettings",
-          "line": 188,
-          "calls": [
-            "updateSettingsMutation"
-          ]
         }
       ],
       "queryStates": [
         {
-          "query": "zid.getConnection",
-          "binding": "{ data: connection, isLoading, refetch }",
-          "line": 59,
-          "errorSignal": false,
+          "query": "zid.latestSyncRequest",
+          "binding": "latest",
+          "line": 17,
+          "errorSignal": true,
           "loadingSignal": true,
-          "enabled": null
-        },
-        {
-          "query": "zid.getSyncLogs",
-          "binding": "{ data: syncLogs }",
-          "line": 64,
-          "errorSignal": false,
-          "loadingSignal": false,
-          "enabled": "connection?.connected "
-        },
-        {
-          "query": "zid.getSyncStats",
-          "binding": "{ data: syncStats }",
-          "line": 71,
-          "errorSignal": false,
-          "loadingSignal": false,
-          "enabled": "connection?.connected "
-        },
-        {
-          "query": "zid.getNotificationHealth",
-          "binding": "{ data: notificationHealth }",
-          "line": 77,
-          "errorSignal": false,
-          "loadingSignal": false,
-          "enabled": "connection?.connected"
+          "enabled": "loaded&&!pending"
         }
       ],
       "conditions": [],
-      "imports": [],
-      "controlCount": 25
+      "imports": [
+        "client/src/lib/zid-workspace-labels.ts",
+        "client/src/lib/zid-workspace.ts"
+      ],
+      "controlCount": 8
+    },
+    {
+      "file": "client/src/components/merchant/ZidLogList.tsx",
+      "hash": "0f0406b53398",
+      "queries": [
+        "zid.logsWorkspace"
+      ],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [
+        {
+          "label": "",
+          "line": 18,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 20,
+          "tag": "h3"
+        },
+        {
+          "label": "·",
+          "line": 20,
+          "tag": "h3"
+        }
+      ],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [
+        {
+          "query": "zid.logsWorkspace",
+          "binding": "query",
+          "line": 14,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        }
+      ],
+      "conditions": [],
+      "imports": [
+        "client/src/lib/zid-workspace.ts",
+        "client/src/lib/zid-workspace-labels.ts"
+      ],
+      "controlCount": 7
+    },
+    {
+      "file": "client/src/components/merchant/ZidNotificationReview.tsx",
+      "hash": "6b3687a27e4f",
+      "queries": [
+        "zid.notificationReview"
+      ],
+      "mutations": [
+        "zid.acknowledgeReviewedNotifications"
+      ],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [
+        {
+          "label": "",
+          "line": 19,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 22,
+          "tag": "DialogTitle"
+        }
+      ],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [
+        {
+          "query": "zid.notificationReview",
+          "binding": "query",
+          "line": 12,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        }
+      ],
+      "conditions": [],
+      "imports": [
+        "client/src/lib/zid-workspace-labels.ts"
+      ],
+      "controlCount": 5
     },
     {
       "file": "client/src/components/merchant/WorkspaceState.tsx",
@@ -5768,176 +5971,92 @@
     },
     {
       "file": "client/src/pages/ZidCallback.tsx",
-      "hash": "c7868b383392",
-      "queries": [],
+      "hash": "63909406d98e",
+      "queries": [
+        "auth.me",
+        "merchants.getCurrent",
+        "zid.workspace"
+      ],
       "mutations": [
         "zid.handleOAuthCallback"
       ],
-      "imperativeReads": [],
+      "imperativeReads": [
+        {
+          "procedure": "zid.workspace",
+          "method": "fetch",
+          "expression": "utils.zid.workspace.fetch",
+          "line": 32,
+          "provenance": "trpc-utility-static"
+        }
+      ],
       "browserRequests": [],
       "sections": [
         {
-          "label": "loading جارٍ ربط المتجر success اكتمل الربط error تعذر الربط",
-          "line": 60,
+          "label": "",
+          "line": 39,
           "tag": "h1"
         }
       ],
       "choices": [],
       "handlers": [],
-      "queryStates": [],
-      "conditions": [],
-      "imports": [],
-      "controlCount": 1
-    },
-    {
-      "file": "client/src/pages/ZidProducts.tsx",
-      "hash": "3bb8ea1c4d65",
-      "queries": [
-        "zid.getConnection"
-      ],
-      "mutations": [
-        "zid.syncNow"
-      ],
-      "imperativeReads": [],
-      "browserRequests": [],
-      "sections": [
-        {
-          "label": "مزامنة المنتجات من Zid",
-          "line": 74,
-          "tag": "h1"
-        },
-        {
-          "label": "مزامنة المنتجات من Zid",
-          "line": 95,
-          "tag": "h1"
-        },
-        {
-          "label": "مزامنة المنتجات",
-          "line": 101,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "ملاحظات:",
-          "line": 144,
-          "tag": "h3"
-        }
-      ],
-      "choices": [],
-      "handlers": [
-        {
-          "name": "handleSync",
-          "line": 50,
-          "calls": [
-            "syncProductsMutation"
-          ]
-        }
-      ],
       "queryStates": [
         {
-          "query": "zid.getConnection",
-          "binding": "{\n    data: status,\n    isLoading: statusLoading,\n    error: statusError,\n    refetch,\n  }",
-          "line": 31,
+          "query": "auth.me",
+          "binding": "user",
+          "line": 16,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
+        },
+        {
+          "query": "merchants.getCurrent",
+          "binding": "merchant",
+          "line": 16,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": "!!user.data?.id&&!user.error"
         }
       ],
       "conditions": [],
       "imports": [
-        "client/src/hooks/use-toast.ts"
+        "client/src/lib/zid-oauth-navigation.ts",
+        "client/src/lib/zid-workspace.ts",
+        "client/src/lib/zid-workspace-labels.ts"
       ],
-      "controlCount": 2
+      "controlCount": 1
     },
     {
-      "file": "client/src/hooks/use-toast.ts",
-      "hash": "f9bb878946fd",
+      "file": "client/src/pages/ZidProducts.tsx",
+      "hash": "6a5318549eb2",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
       "browserRequests": [],
       "sections": [],
       "choices": [],
-      "handlers": [
-        {
-          "name": "addToRemoveQueue",
-          "line": 56,
-          "calls": []
-        },
-        {
-          "name": "update",
-          "line": 141,
-          "calls": []
-        }
-      ],
+      "handlers": [],
       "queryStates": [],
       "conditions": [],
-      "imports": [],
+      "imports": [
+        "client/src/components/merchant/ZidWorkspacePage.tsx"
+      ],
       "controlCount": 0
     },
     {
       "file": "client/src/pages/ZidSyncLogs.tsx",
-      "hash": "ab7afb129f5f",
-      "queries": [
-        "zid.getSyncLogs",
-        "zid.getSyncStats"
-      ],
+      "hash": "f26fbabe6d24",
+      "queries": [],
       "mutations": [],
       "imperativeReads": [],
       "browserRequests": [],
-      "sections": [
-        {
-          "label": "سجل المزامنة",
-          "line": 67,
-          "tag": "h1"
-        },
-        {
-          "label": "إجمالي المزامنات",
-          "line": 76,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "مزامنات ناجحة",
-          "line": 85,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "مزامنات فاشلة",
-          "line": 97,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "سجل العمليات",
-          "line": 112,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "",
-          "line": 133,
-          "tag": "h3"
-        }
-      ],
+      "sections": [],
       "choices": [],
       "handlers": [],
-      "queryStates": [
-        {
-          "query": "zid.getSyncLogs",
-          "binding": "{ data: logs, isLoading }",
-          "line": 10,
-          "errorSignal": false,
-          "loadingSignal": true,
-          "enabled": null
-        },
-        {
-          "query": "zid.getSyncStats",
-          "binding": "{ data: stats }",
-          "line": 11,
-          "errorSignal": false,
-          "loadingSignal": false,
-          "enabled": null
-        }
-      ],
+      "queryStates": [],
       "conditions": [],
-      "imports": [],
+      "imports": [
+        "client/src/components/merchant/ZidWorkspacePage.tsx"
+      ],
       "controlCount": 0
     },
     {
@@ -6093,6 +6212,32 @@
         "client/src/hooks/use-toast.ts"
       ],
       "controlCount": 4
+    },
+    {
+      "file": "client/src/hooks/use-toast.ts",
+      "hash": "f9bb878946fd",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [
+        {
+          "name": "addToRemoveQueue",
+          "line": 56,
+          "calls": []
+        },
+        {
+          "name": "update",
+          "line": 141,
+          "calls": []
+        }
+      ],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 0
     },
     {
       "file": "client/src/pages/WooCommerceOrders.tsx",
@@ -20796,50 +20941,85 @@
         "ZidIntegration"
       ],
       "files": [
-        "client/src/pages/merchant/ZidIntegration.tsx"
+        "client/src/pages/merchant/ZidIntegration.tsx",
+        "client/src/components/merchant/ZidWorkspacePage.tsx",
+        "client/src/components/merchant/ZidWorkspace.tsx",
+        "client/src/lib/zid-oauth-navigation.ts",
+        "client/src/lib/zid-workspace.ts",
+        "client/src/lib/zid-workspace-labels.ts",
+        "client/src/components/merchant/ZidSyncPanel.tsx",
+        "client/src/components/merchant/ZidLogList.tsx",
+        "client/src/components/merchant/ZidNotificationReview.tsx"
       ],
       "controls": [
-        "acbcb6288f26",
-        "8996c7658b80",
-        "b0a0250fb9d4",
-        "27e617d88199",
-        "c214c985a735",
-        "2128e9b7d27e",
-        "f9b4be6c5bf2",
-        "691138649961",
-        "4b06f5b60137",
-        "792feb55413b",
-        "557bcfbb28ec",
-        "df3c36341fb4",
-        "6d42da87470c",
-        "168d140174d7",
-        "623fe46364e3",
-        "bf131ab2d203",
-        "5dce5d3b4d11",
-        "8ee755e7c723",
-        "b4f78040f4c1",
-        "676ba29a1594",
-        "88e73e60af24",
-        "6179c60e0fb4",
-        "e7fb59ecf9b0",
-        "21bbee4f6cc5",
-        "c2e0b3382790"
+        "4e41f41bf758",
+        "9379091de841",
+        "bee1f89e2104",
+        "462095a943bc",
+        "7559e4f07593",
+        "e5508866eca9",
+        "ec1f86073f7a",
+        "4308c81f5f06",
+        "2c43d7fe7f04",
+        "08aba2501092",
+        "236a4e39dcc2",
+        "53ee9f44dc6c",
+        "5a0e55d9bcf2",
+        "00e4bcf1b95d",
+        "6422f185edc6",
+        "d29ff3d1799c",
+        "b53889ae958c",
+        "f76c240fd721",
+        "7399c29c8166",
+        "ddd1a84d910c",
+        "065ea6c7e830",
+        "2536287a780e",
+        "b7a3e12da619",
+        "84c788d31c20",
+        "5cf2fdaa76b9",
+        "fbb15a2c2d75",
+        "c32e3e6cd989",
+        "127daf078818",
+        "3e70df91220f",
+        "2146d840edf6",
+        "63a68b22d1e9",
+        "6219e910be87",
+        "b1e08ec24482",
+        "0750ae5a2715",
+        "a2e5e5fff2f5",
+        "1758f888b5c6",
+        "91aef3cf7dcd",
+        "74847eae57f6",
+        "53c4d6344dc2",
+        "059578b4bcd5"
       ],
       "queries": [
-        "zid.getConnection",
-        "zid.getSyncLogs",
-        "zid.getSyncStats",
-        "zid.getNotificationHealth"
+        "auth.me",
+        "merchants.getCurrent",
+        "zid.workspace",
+        "zid.latestSyncRequest",
+        "zid.syncRequest",
+        "zid.logsWorkspace",
+        "zid.notificationReview"
       ],
       "mutations": [
+        "zid.saveWorkspaceSettings",
+        "zid.disconnectWorkspace",
+        "zid.rotateWorkspaceWebhook",
         "zid.beginOAuth",
-        "zid.disconnect",
-        "zid.syncNow",
-        "zid.updateSettings",
-        "zid.acknowledgeNotificationIncidents",
-        "zid.rotateWebhookCredentials"
+        "zid.requestSync",
+        "zid.acknowledgeReviewedNotifications"
       ],
-      "imperativeReads": [],
+      "imperativeReads": [
+        {
+          "file": "client/src/components/merchant/ZidSyncPanel.tsx",
+          "procedure": "zid.syncRequest",
+          "method": "fetch",
+          "expression": "utils.zid.syncRequest.fetch",
+          "line": 27,
+          "provenance": "trpc-utility-static"
+        }
+      ],
       "browserRequests": []
     },
     {
@@ -20850,50 +21030,85 @@
         "ZidIntegration"
       ],
       "files": [
-        "client/src/pages/merchant/ZidIntegration.tsx"
+        "client/src/pages/merchant/ZidIntegration.tsx",
+        "client/src/components/merchant/ZidWorkspacePage.tsx",
+        "client/src/components/merchant/ZidWorkspace.tsx",
+        "client/src/lib/zid-oauth-navigation.ts",
+        "client/src/lib/zid-workspace.ts",
+        "client/src/lib/zid-workspace-labels.ts",
+        "client/src/components/merchant/ZidSyncPanel.tsx",
+        "client/src/components/merchant/ZidLogList.tsx",
+        "client/src/components/merchant/ZidNotificationReview.tsx"
       ],
       "controls": [
-        "acbcb6288f26",
-        "8996c7658b80",
-        "b0a0250fb9d4",
-        "27e617d88199",
-        "c214c985a735",
-        "2128e9b7d27e",
-        "f9b4be6c5bf2",
-        "691138649961",
-        "4b06f5b60137",
-        "792feb55413b",
-        "557bcfbb28ec",
-        "df3c36341fb4",
-        "6d42da87470c",
-        "168d140174d7",
-        "623fe46364e3",
-        "bf131ab2d203",
-        "5dce5d3b4d11",
-        "8ee755e7c723",
-        "b4f78040f4c1",
-        "676ba29a1594",
-        "88e73e60af24",
-        "6179c60e0fb4",
-        "e7fb59ecf9b0",
-        "21bbee4f6cc5",
-        "c2e0b3382790"
+        "4e41f41bf758",
+        "9379091de841",
+        "bee1f89e2104",
+        "462095a943bc",
+        "7559e4f07593",
+        "e5508866eca9",
+        "ec1f86073f7a",
+        "4308c81f5f06",
+        "2c43d7fe7f04",
+        "08aba2501092",
+        "236a4e39dcc2",
+        "53ee9f44dc6c",
+        "5a0e55d9bcf2",
+        "00e4bcf1b95d",
+        "6422f185edc6",
+        "d29ff3d1799c",
+        "b53889ae958c",
+        "f76c240fd721",
+        "7399c29c8166",
+        "ddd1a84d910c",
+        "065ea6c7e830",
+        "2536287a780e",
+        "b7a3e12da619",
+        "84c788d31c20",
+        "5cf2fdaa76b9",
+        "fbb15a2c2d75",
+        "c32e3e6cd989",
+        "127daf078818",
+        "3e70df91220f",
+        "2146d840edf6",
+        "63a68b22d1e9",
+        "6219e910be87",
+        "b1e08ec24482",
+        "0750ae5a2715",
+        "a2e5e5fff2f5",
+        "1758f888b5c6",
+        "91aef3cf7dcd",
+        "74847eae57f6",
+        "53c4d6344dc2",
+        "059578b4bcd5"
       ],
       "queries": [
-        "zid.getConnection",
-        "zid.getSyncLogs",
-        "zid.getSyncStats",
-        "zid.getNotificationHealth"
+        "auth.me",
+        "merchants.getCurrent",
+        "zid.workspace",
+        "zid.latestSyncRequest",
+        "zid.syncRequest",
+        "zid.logsWorkspace",
+        "zid.notificationReview"
       ],
       "mutations": [
+        "zid.saveWorkspaceSettings",
+        "zid.disconnectWorkspace",
+        "zid.rotateWorkspaceWebhook",
         "zid.beginOAuth",
-        "zid.disconnect",
-        "zid.syncNow",
-        "zid.updateSettings",
-        "zid.acknowledgeNotificationIncidents",
-        "zid.rotateWebhookCredentials"
+        "zid.requestSync",
+        "zid.acknowledgeReviewedNotifications"
       ],
-      "imperativeReads": [],
+      "imperativeReads": [
+        {
+          "file": "client/src/components/merchant/ZidSyncPanel.tsx",
+          "procedure": "zid.syncRequest",
+          "method": "fetch",
+          "expression": "utils.zid.syncRequest.fetch",
+          "line": 27,
+          "provenance": "trpc-utility-static"
+        }
+      ],
       "browserRequests": []
     },
     {
@@ -20907,7 +21122,10 @@
       "files": [
         "client/src/components/merchant/WorkspaceState.tsx",
         "client/src/lib/merchant-viewport.ts",
-        "client/src/pages/ZidCallback.tsx"
+        "client/src/pages/ZidCallback.tsx",
+        "client/src/lib/zid-oauth-navigation.ts",
+        "client/src/lib/zid-workspace.ts",
+        "client/src/lib/zid-workspace-labels.ts"
       ],
       "controls": [
         "efa0ae8d2a9b",
@@ -20920,13 +21138,26 @@
         "0da8aaca8584",
         "9b15991becb0",
         "8179a71d3d3b",
-        "9c381a70a8f7"
+        "8d7e64857565"
       ],
-      "queries": [],
+      "queries": [
+        "auth.me",
+        "merchants.getCurrent",
+        "zid.workspace"
+      ],
       "mutations": [
         "zid.handleOAuthCallback"
       ],
-      "imperativeReads": [],
+      "imperativeReads": [
+        {
+          "file": "client/src/pages/ZidCallback.tsx",
+          "procedure": "zid.workspace",
+          "method": "fetch",
+          "expression": "utils.zid.workspace.fetch",
+          "line": 32,
+          "provenance": "trpc-utility-static"
+        }
+      ],
       "browserRequests": []
     },
     {
@@ -20938,19 +21169,84 @@
       ],
       "files": [
         "client/src/pages/ZidProducts.tsx",
-        "client/src/hooks/use-toast.ts"
+        "client/src/components/merchant/ZidWorkspacePage.tsx",
+        "client/src/components/merchant/ZidWorkspace.tsx",
+        "client/src/lib/zid-oauth-navigation.ts",
+        "client/src/lib/zid-workspace.ts",
+        "client/src/lib/zid-workspace-labels.ts",
+        "client/src/components/merchant/ZidSyncPanel.tsx",
+        "client/src/components/merchant/ZidLogList.tsx",
+        "client/src/components/merchant/ZidNotificationReview.tsx"
       ],
       "controls": [
-        "ff0956d35c86",
-        "5b4163b0c1a6"
+        "4e41f41bf758",
+        "9379091de841",
+        "bee1f89e2104",
+        "462095a943bc",
+        "7559e4f07593",
+        "e5508866eca9",
+        "ec1f86073f7a",
+        "4308c81f5f06",
+        "2c43d7fe7f04",
+        "08aba2501092",
+        "236a4e39dcc2",
+        "53ee9f44dc6c",
+        "5a0e55d9bcf2",
+        "00e4bcf1b95d",
+        "6422f185edc6",
+        "d29ff3d1799c",
+        "b53889ae958c",
+        "f76c240fd721",
+        "7399c29c8166",
+        "ddd1a84d910c",
+        "065ea6c7e830",
+        "2536287a780e",
+        "b7a3e12da619",
+        "84c788d31c20",
+        "5cf2fdaa76b9",
+        "fbb15a2c2d75",
+        "c32e3e6cd989",
+        "127daf078818",
+        "3e70df91220f",
+        "2146d840edf6",
+        "63a68b22d1e9",
+        "6219e910be87",
+        "b1e08ec24482",
+        "0750ae5a2715",
+        "a2e5e5fff2f5",
+        "1758f888b5c6",
+        "91aef3cf7dcd",
+        "74847eae57f6",
+        "53c4d6344dc2",
+        "059578b4bcd5"
       ],
       "queries": [
-        "zid.getConnection"
+        "auth.me",
+        "merchants.getCurrent",
+        "zid.workspace",
+        "zid.latestSyncRequest",
+        "zid.syncRequest",
+        "zid.logsWorkspace",
+        "zid.notificationReview"
       ],
       "mutations": [
-        "zid.syncNow"
+        "zid.saveWorkspaceSettings",
+        "zid.disconnectWorkspace",
+        "zid.rotateWorkspaceWebhook",
+        "zid.beginOAuth",
+        "zid.requestSync",
+        "zid.acknowledgeReviewedNotifications"
       ],
-      "imperativeReads": [],
+      "imperativeReads": [
+        {
+          "file": "client/src/components/merchant/ZidSyncPanel.tsx",
+          "procedure": "zid.syncRequest",
+          "method": "fetch",
+          "expression": "utils.zid.syncRequest.fetch",
+          "line": 27,
+          "provenance": "trpc-utility-static"
+        }
+      ],
       "browserRequests": []
     },
     {
@@ -20961,15 +21257,85 @@
         "ZidSyncLogs"
       ],
       "files": [
-        "client/src/pages/ZidSyncLogs.tsx"
+        "client/src/pages/ZidSyncLogs.tsx",
+        "client/src/components/merchant/ZidWorkspacePage.tsx",
+        "client/src/components/merchant/ZidWorkspace.tsx",
+        "client/src/lib/zid-oauth-navigation.ts",
+        "client/src/lib/zid-workspace.ts",
+        "client/src/lib/zid-workspace-labels.ts",
+        "client/src/components/merchant/ZidSyncPanel.tsx",
+        "client/src/components/merchant/ZidLogList.tsx",
+        "client/src/components/merchant/ZidNotificationReview.tsx"
       ],
-      "controls": [],
+      "controls": [
+        "4e41f41bf758",
+        "9379091de841",
+        "bee1f89e2104",
+        "462095a943bc",
+        "7559e4f07593",
+        "e5508866eca9",
+        "ec1f86073f7a",
+        "4308c81f5f06",
+        "2c43d7fe7f04",
+        "08aba2501092",
+        "236a4e39dcc2",
+        "53ee9f44dc6c",
+        "5a0e55d9bcf2",
+        "00e4bcf1b95d",
+        "6422f185edc6",
+        "d29ff3d1799c",
+        "b53889ae958c",
+        "f76c240fd721",
+        "7399c29c8166",
+        "ddd1a84d910c",
+        "065ea6c7e830",
+        "2536287a780e",
+        "b7a3e12da619",
+        "84c788d31c20",
+        "5cf2fdaa76b9",
+        "fbb15a2c2d75",
+        "c32e3e6cd989",
+        "127daf078818",
+        "3e70df91220f",
+        "2146d840edf6",
+        "63a68b22d1e9",
+        "6219e910be87",
+        "b1e08ec24482",
+        "0750ae5a2715",
+        "a2e5e5fff2f5",
+        "1758f888b5c6",
+        "91aef3cf7dcd",
+        "74847eae57f6",
+        "53c4d6344dc2",
+        "059578b4bcd5"
+      ],
       "queries": [
-        "zid.getSyncLogs",
-        "zid.getSyncStats"
+        "auth.me",
+        "merchants.getCurrent",
+        "zid.workspace",
+        "zid.latestSyncRequest",
+        "zid.syncRequest",
+        "zid.logsWorkspace",
+        "zid.notificationReview"
       ],
-      "mutations": [],
-      "imperativeReads": [],
+      "mutations": [
+        "zid.saveWorkspaceSettings",
+        "zid.disconnectWorkspace",
+        "zid.rotateWorkspaceWebhook",
+        "zid.beginOAuth",
+        "zid.requestSync",
+        "zid.acknowledgeReviewedNotifications"
+      ],
+      "imperativeReads": [
+        {
+          "file": "client/src/components/merchant/ZidSyncPanel.tsx",
+          "procedure": "zid.syncRequest",
+          "method": "fetch",
+          "expression": "utils.zid.syncRequest.fetch",
+          "line": 27,
+          "provenance": "trpc-utility-static"
+        }
+      ],
       "browserRequests": []
     },
     {
@@ -44487,199 +44853,144 @@
       "review": "source-inventoried"
     },
     {
-      "id": "acbcb6288f26",
-      "file": "client/src/pages/merchant/ZidIntegration.tsx",
-      "line": 282,
-      "tag": "TabsTrigger",
-      "role": "",
-      "kind": "action",
-      "label": "الإعدادات",
-      "section": "الإعدادات",
-      "binding": "settings",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [
-        "connection?.connected"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "8996c7658b80",
-      "file": "client/src/pages/merchant/ZidIntegration.tsx",
-      "line": 286,
-      "tag": "TabsTrigger",
-      "role": "",
-      "kind": "action",
-      "label": "Webhooks",
-      "section": "Webhooks",
-      "binding": "webhooks",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [
-        "connection?.connected"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "b0a0250fb9d4",
-      "file": "client/src/pages/merchant/ZidIntegration.tsx",
-      "line": 290,
-      "tag": "TabsTrigger",
-      "role": "",
-      "kind": "action",
-      "label": "سجل المزامنة",
-      "section": "سجل المزامنة",
-      "binding": "logs",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [
-        "connection?.connected"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "27e617d88199",
-      "file": "client/src/pages/merchant/ZidIntegration.tsx",
-      "line": 313,
-      "tag": "Switch",
-      "role": "",
-      "kind": "field",
-      "label": "",
-      "section": "إعدادات المزامنة",
-      "binding": "autoSync",
-      "type": "checkbox",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [
-        "connection?.connected"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "c214c985a735",
-      "file": "client/src/pages/merchant/ZidIntegration.tsx",
-      "line": 323,
-      "tag": "Switch",
-      "role": "",
-      "kind": "field",
-      "label": "",
-      "section": "إعدادات المزامنة",
-      "binding": "syncProducts",
-      "type": "checkbox",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [
-        "connection?.connected"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "2128e9b7d27e",
-      "file": "client/src/pages/merchant/ZidIntegration.tsx",
-      "line": 333,
-      "tag": "Switch",
-      "role": "",
-      "kind": "field",
-      "label": "",
-      "section": "إعدادات المزامنة",
-      "binding": "syncOrders",
-      "type": "checkbox",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [
-        "connection?.connected"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "f9b4be6c5bf2",
-      "file": "client/src/pages/merchant/ZidIntegration.tsx",
-      "line": 343,
-      "tag": "Switch",
-      "role": "",
-      "kind": "field",
-      "label": "",
-      "section": "إعدادات المزامنة",
-      "binding": "syncCustomers",
-      "type": "checkbox",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [
-        "connection?.connected"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "691138649961",
-      "file": "client/src/pages/merchant/ZidIntegration.tsx",
-      "line": 353,
-      "tag": "Switch",
-      "role": "",
-      "kind": "field",
-      "label": "",
-      "section": "إعدادات المزامنة",
-      "binding": "notifyMerchantOrders",
-      "type": "checkbox",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [
-        "connection?.connected"
-      ],
-      "disabled": "!autoSync || !syncOrders",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "4b06f5b60137",
-      "file": "client/src/pages/merchant/ZidIntegration.tsx",
-      "line": 385,
+      "id": "4e41f41bf758",
+      "file": "client/src/components/merchant/ZidWorkspace.tsx",
+      "line": 67,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "راجعت هذه الحالات",
-      "section": "إعدادات المزامنة",
-      "binding": "() => setAcknowledgeReviewOpen(true)",
+      "label": "",
+      "section": "ZidWorkspace",
+      "binding": "()=>void refresh()",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "busy||query.isFetching",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "9379091de841",
+      "file": "client/src/components/merchant/ZidWorkspace.tsx",
+      "line": 68,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ZidWorkspace",
+      "binding": "/merchant/platform-integrations",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "bee1f89e2104",
+      "file": "client/src/components/merchant/ZidWorkspace.tsx",
+      "line": 68,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ZidWorkspace",
+      "binding": "/merchant/zid/settings",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "462095a943bc",
+      "file": "client/src/components/merchant/ZidWorkspace.tsx",
+      "line": 68,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ZidWorkspace",
+      "binding": "/merchant/zid/products",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "7559e4f07593",
+      "file": "client/src/components/merchant/ZidWorkspace.tsx",
+      "line": 68,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ZidWorkspace",
+      "binding": "/merchant/zid/sync-logs",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "e5508866eca9",
+      "file": "client/src/components/merchant/ZidWorkspace.tsx",
+      "line": 70,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ZidWorkspace",
+      "binding": "/merchant/products",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "view==='products'",
+        "view==='history'"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "ec1f86073f7a",
+      "file": "client/src/components/merchant/ZidWorkspace.tsx",
+      "line": 71,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ZidWorkspace",
+      "binding": "()=>setTab(value)",
       "type": "button",
       "options": [],
       "min": "",
@@ -44688,136 +44999,46 @@
       "required": false,
       "conditional": true,
       "conditions": [
-        "(notificationHealth?.needsReview || 0) > 0"
+        "view==='products'",
+        "view==='history'"
       ],
-      "disabled": "",
+      "disabled": "busy",
       "review": "source-inventoried"
     },
     {
-      "id": "792feb55413b",
-      "file": "client/src/pages/merchant/ZidIntegration.tsx",
-      "line": 398,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "حفظ الإعدادات",
-      "section": "إعدادات المزامنة",
-      "binding": "handleSaveSettings",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [
-        "connection?.connected"
-      ],
-      "disabled": "updateSettingsMutation.isPending",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "557bcfbb28ec",
-      "file": "client/src/pages/merchant/ZidIntegration.tsx",
-      "line": 402,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "مزامنة الآن",
-      "section": "إعدادات المزامنة",
-      "binding": "handleSync",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [
-        "connection?.connected"
-      ],
-      "disabled": "syncMutation.isPending",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "df3c36341fb4",
-      "file": "client/src/pages/merchant/ZidIntegration.tsx",
-      "line": 410,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "فصل المتجر",
-      "section": "إعدادات المزامنة",
-      "binding": "() => setSensitiveAction('disconnect')",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [
-        "connection?.connected"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "6d42da87470c",
-      "file": "client/src/pages/merchant/ZidIntegration.tsx",
-      "line": 459,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "تدوير بيانات Webhook إنشاء بيانات Webhook",
-      "section": "إعدادات Webhooks",
-      "binding": "() => setSensitiveAction('rotate')",
-      "type": "button",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [
-        "connection?.connected"
-      ],
-      "disabled": "rotateWebhookMutation.isPending",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "168d140174d7",
-      "file": "client/src/pages/merchant/ZidIntegration.tsx",
-      "line": 499,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "دليل إعداد Webhooks في زد",
-      "section": "إعدادات Webhooks",
-      "binding": "",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [
-        "connection?.connected"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "623fe46364e3",
-      "file": "client/src/pages/merchant/ZidIntegration.tsx",
-      "line": 500,
+      "id": "4308c81f5f06",
+      "file": "client/src/components/merchant/ZidWorkspace.tsx",
+      "line": 73,
       "tag": "a",
       "role": "",
       "kind": "action",
-      "label": "دليل إعداد Webhooks في زد",
-      "section": "إعدادات Webhooks",
-      "binding": "https://docs.zid.sa/webhooks",
+      "label": "",
+      "section": "ZidWorkspace",
+      "binding": "url",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "url",
+        "data.present"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "2c43d7fe7f04",
+      "file": "client/src/components/merchant/ZidWorkspace.tsx",
+      "line": 73,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ZidWorkspace",
+      "binding": "event=>open('remove',event.currentTarget)",
       "type": "text",
       "options": [],
       "min": "",
@@ -44826,67 +45047,22 @@
       "required": false,
       "conditional": false,
       "conditions": [
-        "connection?.connected"
+        "data.present",
+        "tab==='overview'"
       ],
-      "disabled": "",
+      "disabled": "disabled",
       "review": "source-inventoried"
     },
     {
-      "id": "bf131ab2d203",
-      "file": "client/src/pages/merchant/ZidIntegration.tsx",
-      "line": 568,
+      "id": "08aba2501092",
+      "file": "client/src/components/merchant/ZidWorkspace.tsx",
+      "line": 73,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "الربط الآمن مع زد",
-      "section": "ربط متجر زد",
-      "binding": "() => setSensitiveAction('connect')",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [
-        "connection?.connected"
-      ],
-      "disabled": "beginOAuthMutation.isPending",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "5dce5d3b4d11",
-      "file": "client/src/pages/merchant/ZidIntegration.tsx",
-      "line": 575,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "فتح لوحة تحكم زد",
-      "section": "ربط متجر زد",
-      "binding": "",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [
-        "connection?.connected"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "8ee755e7c723",
-      "file": "client/src/pages/merchant/ZidIntegration.tsx",
-      "line": 576,
-      "tag": "a",
-      "role": "",
-      "kind": "action",
-      "label": "فتح لوحة تحكم زد",
-      "section": "ربط متجر زد",
-      "binding": "https://web.zid.sa/market/app-store",
+      "label": "",
+      "section": "ZidWorkspace",
+      "binding": "event=>open('connect',event.currentTarget)",
       "type": "text",
       "options": [],
       "min": "",
@@ -44895,20 +45071,169 @@
       "required": false,
       "conditional": false,
       "conditions": [
-        "connection?.connected"
+        "data.present",
+        "tab==='overview'"
+      ],
+      "disabled": "disabled",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "236a4e39dcc2",
+      "file": "client/src/components/merchant/ZidWorkspace.tsx",
+      "line": 78,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "autoSync notifyMerchantOrders",
+      "section": "ZidWorkspace",
+      "binding": "draft?.settings[key]??false",
+      "type": "checkbox",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "tab==='settings'",
+        "tab==='overview'"
+      ],
+      "disabled": "disabled||!editReady",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "53ee9f44dc6c",
+      "file": "client/src/components/merchant/ZidWorkspace.tsx",
+      "line": 79,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ZidWorkspace",
+      "binding": "event=>open('save',event.currentTarget)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "tab==='settings'",
+        "tab==='overview'",
+        "view==='products'",
+        "view==='history'"
+      ],
+      "disabled": "disabled||!editReady||!draftChanged||draftStale",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "5a0e55d9bcf2",
+      "file": "client/src/components/merchant/ZidWorkspace.tsx",
+      "line": 79,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ZidWorkspace",
+      "binding": "()=>setDraft({revision:data.revision,settings:{...data.settings}})",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "tab==='settings'",
+        "tab==='overview'",
+        "view==='products'",
+        "view==='history'"
+      ],
+      "disabled": "disabled||!draftChanged&&!draftStale",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "00e4bcf1b95d",
+      "file": "client/src/components/merchant/ZidWorkspace.tsx",
+      "line": 80,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ZidWorkspace",
+      "binding": "event=>open('rotate',event.currentTarget)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "tab==='settings'",
+        "tab==='overview'",
+        "view==='products'",
+        "view==='history'"
+      ],
+      "disabled": "disabled||!editReady||data.state!=='configured'||!!credentials",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "6422f185edc6",
+      "file": "client/src/components/merchant/ZidWorkspace.tsx",
+      "line": 83,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ZidWorkspace",
+      "binding": "()=>void copyCredentials()",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "credentials&&credentials.revision===data.revision"
       ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "b4f78040f4c1",
-      "file": "client/src/pages/merchant/ZidIntegration.tsx",
-      "line": 590,
-      "tag": "AlertDialogContent",
+      "id": "d29ff3d1799c",
+      "file": "client/src/components/merchant/ZidWorkspace.tsx",
+      "line": 83,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ZidWorkspace",
+      "binding": "()=>setCredentials(null)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "credentials&&credentials.revision===data.revision"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "b53889ae958c",
+      "file": "client/src/components/merchant/ZidWorkspace.tsx",
+      "line": 84,
+      "tag": "DialogContent",
       "role": "",
       "kind": "dialog",
-      "label": "تأكيد الهوية قبل الإجراء connect ستبدأ عملية ربط متجر زد ومنح الصلاحيات. disconnect سيُحذف اتصال زد واعتماداته من ساري. rotate ستُبطل كلمة مرور Webhook الحالية فورًا. إذا مر أكثر من خمس دقائق على تسجيل الدخول، أدخل كلمة ",
-      "section": "ربط متجر زد",
+      "label": "save remove rotate save",
+      "section": "ZidWorkspace",
       "binding": "",
       "type": "text",
       "options": [],
@@ -44922,36 +45247,340 @@
       "review": "source-inventoried"
     },
     {
-      "id": "676ba29a1594",
-      "file": "client/src/pages/merchant/ZidIntegration.tsx",
-      "line": 603,
+      "id": "f76c240fd721",
+      "file": "client/src/components/merchant/ZidWorkspace.tsx",
+      "line": 86,
       "tag": "Input",
       "role": "",
       "kind": "field",
-      "label": "كلمة المرور الحالية",
-      "section": "تأكيد الهوية قبل الإجراء",
-      "binding": "reauthPassword",
+      "label": "",
+      "section": "save remove rotate",
+      "binding": "password",
       "type": "password",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "128",
       "required": false,
+      "conditional": true,
+      "conditions": [
+        "review?.action==='save'"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "7399c29c8166",
+      "file": "client/src/components/merchant/ZidWorkspace.tsx",
+      "line": 87,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "save remove rotate",
+      "binding": "()=>{setReview(null);setPassword('');}",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "ddd1a84d910c",
+      "file": "client/src/components/merchant/ZidWorkspace.tsx",
+      "line": 87,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "save remove rotate",
+      "section": "save remove rotate",
+      "binding": "()=>void execute()",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "disabled||review?.snapshot.revision!==data.revision||review?.action==='save'&&review.draft?.revision!==data.revision",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "065ea6c7e830",
+      "file": "client/src/components/merchant/ZidSyncPanel.tsx",
+      "line": 51,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ZidSyncPanel",
+      "binding": "()=>void recover()",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "(pending||shown||latestInvalid)"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "2536287a780e",
+      "file": "client/src/components/merchant/ZidSyncPanel.tsx",
+      "line": 51,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ZidSyncPanel",
+      "binding": "event=>open(pending.resource,event.currentTarget)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "pending"
+      ],
+      "disabled": "disabled||waiting||pending.revision!==connection.revision",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "b7a3e12da619",
+      "file": "client/src/components/merchant/ZidSyncPanel.tsx",
+      "line": 51,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "all",
+      "section": "ZidSyncPanel",
+      "binding": "event=>open(resource,event.currentTarget)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!waiting",
+        "pending"
+      ],
+      "disabled": "disabled||!enabled.length||resource!=='all'&&!enabled.includes(resource)",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "84c788d31c20",
+      "file": "client/src/components/merchant/ZidSyncPanel.tsx",
+      "line": 52,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ZidSyncPanel",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "pending&&!waiting"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "5cf2fdaa76b9",
+      "file": "client/src/components/merchant/ZidSyncPanel.tsx",
+      "line": 52,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ZidSyncPanel",
+      "binding": "stopTracking",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "pending&&!waiting"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "fbb15a2c2d75",
+      "file": "client/src/components/merchant/ZidSyncPanel.tsx",
+      "line": 53,
+      "tag": "DialogContent",
+      "role": "",
+      "kind": "dialog",
+      "label": "all",
+      "section": "ZidSyncPanel",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "c32e3e6cd989",
+      "file": "client/src/components/merchant/ZidSyncPanel.tsx",
+      "line": 53,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ZidSyncPanel",
+      "binding": "()=>setReview(null)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "127daf078818",
+      "file": "client/src/components/merchant/ZidSyncPanel.tsx",
+      "line": 53,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ZidSyncPanel",
+      "binding": "()=>void send()",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "disabled||review?.revision!==connection.revision",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "3e70df91220f",
+      "file": "client/src/components/merchant/ZidLogList.tsx",
+      "line": 18,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "ZidLogList",
+      "binding": "search",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "100",
+      "required": false,
       "conditional": false,
       "conditions": [],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "88e73e60af24",
-      "file": "client/src/pages/merchant/ZidIntegration.tsx",
-      "line": 613,
-      "tag": "AlertDialogCancel",
+      "id": "2146d840edf6",
+      "file": "client/src/components/merchant/ZidLogList.tsx",
+      "line": 18,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "copy.state",
+      "section": "ZidLogList",
+      "binding": "state",
+      "type": "text",
+      "options": [
+        {
+          "value": "all",
+          "label": ""
+        },
+        {
+          "value": "value",
+          "label": ""
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "63a68b22d1e9",
+      "file": "client/src/components/merchant/ZidLogList.tsx",
+      "line": 18,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "copy.kind",
+      "section": "ZidLogList",
+      "binding": "kind",
+      "type": "text",
+      "options": [
+        {
+          "value": "all",
+          "label": ""
+        },
+        {
+          "value": "value",
+          "label": ""
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "6219e910be87",
+      "file": "client/src/components/merchant/ZidLogList.tsx",
+      "line": 18,
+      "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "تراجع",
-      "section": "تأكيد الهوية قبل الإجراء",
-      "binding": "",
+      "label": "",
+      "section": "ZidLogList",
+      "binding": "()=>void query.refetch()",
       "type": "text",
       "options": [],
       "min": "",
@@ -44960,19 +45589,92 @@
       "required": false,
       "conditional": true,
       "conditions": [],
-      "disabled": "sensitiveActionPending",
+      "disabled": "query.isFetching",
       "review": "source-inventoried"
     },
     {
-      "id": "6179c60e0fb4",
-      "file": "client/src/pages/merchant/ZidIntegration.tsx",
-      "line": 614,
-      "tag": "AlertDialogAction",
+      "id": "b1e08ec24482",
+      "file": "client/src/components/merchant/ZidLogList.tsx",
+      "line": 20,
+      "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "تأكيد وتنفيذ",
-      "section": "تأكيد الهوية قبل الإجراء",
-      "binding": "(event) => {\r\n                event.preventDefault();\r\n                submitSensitiveAction();\r\n              }",
+      "label": "",
+      "section": "ZidLogList",
+      "binding": "reset",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "!data.rows.length",
+        "!data",
+        "query.isLoading||query.isFetching&&!data"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "0750ae5a2715",
+      "file": "client/src/components/merchant/ZidLogList.tsx",
+      "line": 21,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "·",
+      "binding": "()=>navigate(page-1)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "!data",
+        "query.isLoading||query.isFetching&&!data"
+      ],
+      "disabled": "page<=1||query.isFetching",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "a2e5e5fff2f5",
+      "file": "client/src/components/merchant/ZidLogList.tsx",
+      "line": 21,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "·",
+      "binding": "()=>navigate(page+1)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "!data",
+        "query.isLoading||query.isFetching&&!data"
+      ],
+      "disabled": "page>=data.pagination.pages||query.isFetching",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "1758f888b5c6",
+      "file": "client/src/components/merchant/ZidNotificationReview.tsx",
+      "line": 20,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ZidNotificationReview",
+      "binding": "()=>setReview(data)",
       "type": "text",
       "options": [],
       "min": "",
@@ -44980,19 +45682,44 @@
       "maxLength": "",
       "required": false,
       "conditional": true,
-      "conditions": [],
-      "disabled": "sensitiveActionPending || (reauthPassword.length > 0 && reauthPassword.length < 8)",
+      "conditions": [
+        "!data.rows.length",
+        "!data",
+        "query.isLoading"
+      ],
+      "disabled": "busy||blocked||query.isFetching",
       "review": "source-inventoried"
     },
     {
-      "id": "e7fb59ecf9b0",
-      "file": "client/src/pages/merchant/ZidIntegration.tsx",
-      "line": 630,
-      "tag": "AlertDialogContent",
+      "id": "91aef3cf7dcd",
+      "file": "client/src/components/merchant/ZidNotificationReview.tsx",
+      "line": 21,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ZidNotificationReview",
+      "binding": "()=>void reload()",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "busy||query.isFetching",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "74847eae57f6",
+      "file": "client/src/components/merchant/ZidNotificationReview.tsx",
+      "line": 22,
+      "tag": "DialogContent",
       "role": "",
       "kind": "dialog",
-      "label": "تأكيد اكتمال المراجعة استخدم هذا الإجراء بعد مراجعة الطلبات وحالة واتساب فقط. سيُخفي التنبيهات الملتبسة دون إعادة إرسال أي رسالة، ولا يمكن التراجع عنه من هذه الصفحة. إلغاء تأكيد المراجعة دون إرسال",
-      "section": "تأكيد الهوية قبل الإجراء",
+      "label": ": ·",
+      "section": "ZidNotificationReview",
       "binding": "",
       "type": "text",
       "options": [],
@@ -45006,15 +45733,15 @@
       "review": "source-inventoried"
     },
     {
-      "id": "21bbee4f6cc5",
-      "file": "client/src/pages/merchant/ZidIntegration.tsx",
-      "line": 638,
-      "tag": "AlertDialogCancel",
+      "id": "53c4d6344dc2",
+      "file": "client/src/components/merchant/ZidNotificationReview.tsx",
+      "line": 22,
+      "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "إلغاء",
-      "section": "تأكيد اكتمال المراجعة",
-      "binding": "",
+      "label": "",
+      "section": "ZidNotificationReview",
+      "binding": "()=>setReview(null)",
       "type": "text",
       "options": [],
       "min": "",
@@ -45023,19 +45750,19 @@
       "required": false,
       "conditional": true,
       "conditions": [],
-      "disabled": "acknowledgeIncidentsMutation.isPending",
+      "disabled": "busy",
       "review": "source-inventoried"
     },
     {
-      "id": "c2e0b3382790",
-      "file": "client/src/pages/merchant/ZidIntegration.tsx",
-      "line": 641,
-      "tag": "AlertDialogAction",
+      "id": "059578b4bcd5",
+      "file": "client/src/components/merchant/ZidNotificationReview.tsx",
+      "line": 22,
+      "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "تأكيد المراجعة دون إرسال",
-      "section": "تأكيد اكتمال المراجعة",
-      "binding": "(event) => {\r\n                event.preventDefault();\r\n                acknowledgeIncidentsMutation.mutate();\r\n              }",
+      "label": "",
+      "section": "ZidNotificationReview",
+      "binding": "()=>void acknowledge()",
       "type": "text",
       "options": [],
       "min": "",
@@ -45044,7 +45771,7 @@
       "required": false,
       "conditional": true,
       "conditions": [],
-      "disabled": "acknowledgeIncidentsMutation.isPending",
+      "disabled": "busy||blocked",
       "review": "source-inventoried"
     },
     {
@@ -45284,59 +46011,15 @@
       "review": "source-inventoried"
     },
     {
-      "id": "9c381a70a8f7",
+      "id": "8d7e64857565",
       "file": "client/src/pages/ZidCallback.tsx",
-      "line": 94,
-      "tag": "Button",
+      "line": 39,
+      "tag": "Link",
       "role": "",
       "kind": "action",
-      "label": "العودة إلى الإعدادات",
-      "section": "loading جارٍ ربط المتجر success اكتمل الربط error تعذر الربط",
-      "binding": "() => navigate(\"/merchant/zid/settings\")",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [
-        "status === \"error\""
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "ff0956d35c86",
-      "file": "client/src/pages/ZidProducts.tsx",
-      "line": 81,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "الذهاب إلى الإعدادات",
-      "section": "مزامنة المنتجات من Zid",
-      "binding": "() => navigate(\"/merchant/zid/settings\")",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "5b4163b0c1a6",
-      "file": "client/src/pages/ZidProducts.tsx",
-      "line": 116,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "جاري المزامنة... بدء المزامنة",
-      "section": "مزامنة المنتجات",
-      "binding": "handleSync",
+      "label": "",
+      "section": "ZidCallback",
+      "binding": "/merchant/zid/settings",
       "type": "text",
       "options": [],
       "min": "",
@@ -45345,7 +46028,7 @@
       "required": false,
       "conditional": true,
       "conditions": [],
-      "disabled": "syncProductsMutation.isPending",
+      "disabled": "",
       "review": "source-inventoried"
     },
     {

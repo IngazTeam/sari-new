@@ -1,3 +1,4 @@
+import {navigateZidAuthorization} from '@/lib/zid-oauth-navigation';
 import {useEffect,useRef,useState} from 'react';
 import {Link} from 'wouter';
 import {useTranslation} from 'react-i18next';
@@ -44,9 +45,7 @@ export function ZidWorkspace({actorId,merchantId,view='overview'}:{actorId:numbe
   const input={revision:review.snapshot.revision,...(password?{password}:{})};
   try{
    if(review.action==='connect'){
-    const result=await begin.mutateAsync(input);if(!alive.current)return;const url=new URL(result.authorizationUrl);
-    if(url.origin!=='https://oauth.zid.sa'||url.pathname!=='/oauth/authorize'||url.username||url.password)throw Error('Invalid authorization destination');
-    setPassword('');window.location.assign(url.href);return;
+    const result=await begin.mutateAsync(input);if(!alive.current)return;setPassword('');navigateZidAuthorization(result.authorizationUrl);return;
    }
    const result=review.action==='save'?zidSettingsReceipt.parse(await save.mutateAsync({revision:review.snapshot.revision,settings:review.draft!.settings})):review.action==='remove'?zidDisconnectReceipt.parse(await remove.mutateAsync(input)):zidWebhookReceipt.parse(await rotate.mutateAsync(input));
    if(!alive.current)return;if(result.actorId!==actorId||result.merchantId!==merchantId)throw Error('Unconfirmed scope');

@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-02T09:16:04.988Z",
+  "generatedAt": "2026-10-02T12:11:35.547Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 401,
-      "controls": 2418
+      "files": 409,
+      "controls": 2431
     }
   },
   "addedFiles": [
@@ -98,6 +98,14 @@
     "client/src/components/ByaanSalesReview.tsx",
     "client/src/lib/byaan-resync-request.ts",
     "client/src/lib/byaan-data-labels.ts",
+    "client/src/components/merchant/ZidWorkspacePage.tsx",
+    "client/src/components/merchant/ZidWorkspace.tsx",
+    "client/src/lib/zid-oauth-navigation.ts",
+    "client/src/lib/zid-workspace.ts",
+    "client/src/lib/zid-workspace-labels.ts",
+    "client/src/components/merchant/ZidSyncPanel.tsx",
+    "client/src/components/merchant/ZidLogList.tsx",
+    "client/src/components/merchant/ZidNotificationReview.tsx",
     "client/src/components/merchant/WorkspaceState.tsx",
     "client/src/hooks/use-toast.ts",
     "client/src/_core/hooks/useAuth.ts",
@@ -276,6 +284,10 @@
     "client/src/pages/SallaIntegration.tsx",
     "client/src/pages/merchant/ByaanIntegration.tsx",
     "client/src/pages/ByaanDashboard.tsx",
+    "client/src/pages/merchant/ZidIntegration.tsx",
+    "client/src/pages/ZidCallback.tsx",
+    "client/src/pages/ZidProducts.tsx",
+    "client/src/pages/ZidSyncLogs.tsx",
     "client/src/pages/merchant/AnalyticsDashboard.tsx",
     "client/src/pages/merchant/Analytics.tsx",
     "client/src/pages/merchant/OverviewAnalytics.tsx",
@@ -722,47 +734,138 @@
     {
       "route": "/merchant/integrations/zid",
       "controlsBefore": 25,
-      "controlsNow": 25,
-      "removedQueries": [],
-      "addedQueries": [],
-      "removedMutations": [],
-      "addedMutations": []
+      "controlsNow": 40,
+      "removedQueries": [
+        "zid.getConnection",
+        "zid.getSyncLogs",
+        "zid.getSyncStats",
+        "zid.getNotificationHealth"
+      ],
+      "addedQueries": [
+        "auth.me",
+        "merchants.getCurrent",
+        "zid.workspace",
+        "zid.latestSyncRequest",
+        "zid.syncRequest",
+        "zid.logsWorkspace",
+        "zid.notificationReview"
+      ],
+      "removedMutations": [
+        "zid.disconnect",
+        "zid.syncNow",
+        "zid.updateSettings",
+        "zid.acknowledgeNotificationIncidents",
+        "zid.rotateWebhookCredentials"
+      ],
+      "addedMutations": [
+        "zid.saveWorkspaceSettings",
+        "zid.disconnectWorkspace",
+        "zid.rotateWorkspaceWebhook",
+        "zid.requestSync",
+        "zid.acknowledgeReviewedNotifications"
+      ]
     },
     {
       "route": "/merchant/zid/settings",
       "controlsBefore": 25,
-      "controlsNow": 25,
-      "removedQueries": [],
-      "addedQueries": [],
-      "removedMutations": [],
-      "addedMutations": []
+      "controlsNow": 40,
+      "removedQueries": [
+        "zid.getConnection",
+        "zid.getSyncLogs",
+        "zid.getSyncStats",
+        "zid.getNotificationHealth"
+      ],
+      "addedQueries": [
+        "auth.me",
+        "merchants.getCurrent",
+        "zid.workspace",
+        "zid.latestSyncRequest",
+        "zid.syncRequest",
+        "zid.logsWorkspace",
+        "zid.notificationReview"
+      ],
+      "removedMutations": [
+        "zid.disconnect",
+        "zid.syncNow",
+        "zid.updateSettings",
+        "zid.acknowledgeNotificationIncidents",
+        "zid.rotateWebhookCredentials"
+      ],
+      "addedMutations": [
+        "zid.saveWorkspaceSettings",
+        "zid.disconnectWorkspace",
+        "zid.rotateWorkspaceWebhook",
+        "zid.requestSync",
+        "zid.acknowledgeReviewedNotifications"
+      ]
     },
     {
       "route": "/merchant/zid/callback",
       "controlsBefore": 1,
       "controlsNow": 11,
       "removedQueries": [],
-      "addedQueries": [],
+      "addedQueries": [
+        "auth.me",
+        "merchants.getCurrent",
+        "zid.workspace"
+      ],
       "removedMutations": [],
       "addedMutations": []
     },
     {
       "route": "/merchant/zid/products",
       "controlsBefore": 2,
-      "controlsNow": 2,
-      "removedQueries": [],
-      "addedQueries": [],
-      "removedMutations": [],
-      "addedMutations": []
+      "controlsNow": 40,
+      "removedQueries": [
+        "zid.getConnection"
+      ],
+      "addedQueries": [
+        "auth.me",
+        "merchants.getCurrent",
+        "zid.workspace",
+        "zid.latestSyncRequest",
+        "zid.syncRequest",
+        "zid.logsWorkspace",
+        "zid.notificationReview"
+      ],
+      "removedMutations": [
+        "zid.syncNow"
+      ],
+      "addedMutations": [
+        "zid.saveWorkspaceSettings",
+        "zid.disconnectWorkspace",
+        "zid.rotateWorkspaceWebhook",
+        "zid.beginOAuth",
+        "zid.requestSync",
+        "zid.acknowledgeReviewedNotifications"
+      ]
     },
     {
       "route": "/merchant/zid/sync-logs",
       "controlsBefore": 0,
-      "controlsNow": 0,
-      "removedQueries": [],
-      "addedQueries": [],
+      "controlsNow": 40,
+      "removedQueries": [
+        "zid.getSyncLogs",
+        "zid.getSyncStats"
+      ],
+      "addedQueries": [
+        "auth.me",
+        "merchants.getCurrent",
+        "zid.workspace",
+        "zid.latestSyncRequest",
+        "zid.syncRequest",
+        "zid.logsWorkspace",
+        "zid.notificationReview"
+      ],
       "removedMutations": [],
-      "addedMutations": []
+      "addedMutations": [
+        "zid.saveWorkspaceSettings",
+        "zid.disconnectWorkspace",
+        "zid.rotateWorkspaceWebhook",
+        "zid.beginOAuth",
+        "zid.requestSync",
+        "zid.acknowledgeReviewedNotifications"
+      ]
     },
     {
       "route": "/merchant/woocommerce/settings",

@@ -2,7 +2,7 @@
 
 هذا حصر مصدر قابل لإعادة التوليد، وليس ادعاءً بأن كل مسار عمل اختُبر أو أُعيد تصميمه. يشمل المكونات الفرعية المحلية، الحقول، الأزرار، النوافذ، التبويبات، واجهات القراءة والتعديل. العناصر الديناميكية تحتاج مراجعة إضافية.
 
-- 126 مسارًا مسجلًا، 401 ملف واجهة متصلًا، 2418 عنصر تحكم في المصدر.
+- 126 مسارًا مسجلًا، 409 ملف واجهة متصلًا، 2431 عنصر تحكم في المصدر.
 - 0 رابطًا حرفيًا غير مطابق، و0 ملف صفحة غير متصل بالمسارات المحصورة.
 
 | الصفحة | الملفات | عناصر التحكم | القراءة / التعديل | موك أب للصفحة |
@@ -25,11 +25,11 @@
 | /merchant/salla — ربط سلة | 7 | 42 | 9 / 4 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/integrations/byaan — ربط بيان | 4 | 18 | 3 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/byaan-dashboard — بيان: الدورات والمتدربون | 7 | 33 | 7 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/integrations/zid — ربط زد | 1 | 25 | 4 / 6 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/zid/settings — ربط زد | 1 | 25 | 4 / 6 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/zid/callback — نتيجة تفويض زد | 3 | 11 | 0 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/zid/products — منتجات زد | 2 | 2 | 1 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/zid/sync-logs — سجل مزامنة زد | 1 | 0 | 2 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/integrations/zid — ربط زد | 9 | 40 | 7 / 6 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/zid/settings — ربط زد | 9 | 40 | 7 / 6 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/zid/callback — نتيجة تفويض زد | 6 | 11 | 3 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/zid/products — منتجات زد | 9 | 40 | 7 / 6 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/zid/sync-logs — سجل مزامنة زد | 9 | 40 | 7 / 6 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/woocommerce/settings — ربط WooCommerce | 1 | 10 | 1 / 6 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/woocommerce/products — منتجات WooCommerce | 2 | 4 | 2 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/woocommerce/orders — طلبات WooCommerce | 2 | 14 | 1 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -1271,35 +1271,65 @@
 | 82 | Button | تسمية ديناميكية / تحتاج مراجعة | enrollment |
 | 88 | summary | تسمية ديناميكية / تحتاج مراجعة | ByaanSalesReview |
 
-## client/src/pages/merchant/ZidIntegration.tsx
+## client/src/components/merchant/ZidWorkspace.tsx
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 282 | TabsTrigger | الإعدادات | الإعدادات |
-| 286 | TabsTrigger | Webhooks | Webhooks |
-| 290 | TabsTrigger | سجل المزامنة | سجل المزامنة |
-| 313 | Switch | تسمية ديناميكية / تحتاج مراجعة | إعدادات المزامنة |
-| 323 | Switch | تسمية ديناميكية / تحتاج مراجعة | إعدادات المزامنة |
-| 333 | Switch | تسمية ديناميكية / تحتاج مراجعة | إعدادات المزامنة |
-| 343 | Switch | تسمية ديناميكية / تحتاج مراجعة | إعدادات المزامنة |
-| 353 | Switch | تسمية ديناميكية / تحتاج مراجعة | إعدادات المزامنة |
-| 385 | Button | راجعت هذه الحالات | إعدادات المزامنة |
-| 398 | Button | حفظ الإعدادات | إعدادات المزامنة |
-| 402 | Button | مزامنة الآن | إعدادات المزامنة |
-| 410 | Button | فصل المتجر | إعدادات المزامنة |
-| 459 | Button | تدوير بيانات Webhook إنشاء بيانات Webhook | إعدادات Webhooks |
-| 499 | Button | دليل إعداد Webhooks في زد | إعدادات Webhooks |
-| 500 | a | دليل إعداد Webhooks في زد | إعدادات Webhooks |
-| 568 | Button | الربط الآمن مع زد | ربط متجر زد |
-| 575 | Button | فتح لوحة تحكم زد | ربط متجر زد |
-| 576 | a | فتح لوحة تحكم زد | ربط متجر زد |
-| 590 | AlertDialogContent | تأكيد الهوية قبل الإجراء connect ستبدأ عملية ربط متجر زد ومنح الصلاحيات. disconnect سيُحذف اتصال زد واعتماداته من ساري. rotate ستُبطل كلمة مرور Webhook الحالية فورًا. إذا مر أكثر من خمس دقائق على تسجيل الدخول، أدخل كلمة  | ربط متجر زد |
-| 603 | Input | كلمة المرور الحالية | تأكيد الهوية قبل الإجراء |
-| 613 | AlertDialogCancel | تراجع | تأكيد الهوية قبل الإجراء |
-| 614 | AlertDialogAction | تأكيد وتنفيذ | تأكيد الهوية قبل الإجراء |
-| 630 | AlertDialogContent | تأكيد اكتمال المراجعة استخدم هذا الإجراء بعد مراجعة الطلبات وحالة واتساب فقط. سيُخفي التنبيهات الملتبسة دون إعادة إرسال أي رسالة، ولا يمكن التراجع عنه من هذه الصفحة. إلغاء تأكيد المراجعة دون إرسال | تأكيد الهوية قبل الإجراء |
-| 638 | AlertDialogCancel | إلغاء | تأكيد اكتمال المراجعة |
-| 641 | AlertDialogAction | تأكيد المراجعة دون إرسال | تأكيد اكتمال المراجعة |
+| 67 | Button | تسمية ديناميكية / تحتاج مراجعة | ZidWorkspace |
+| 68 | Link | تسمية ديناميكية / تحتاج مراجعة | ZidWorkspace |
+| 68 | Link | تسمية ديناميكية / تحتاج مراجعة | ZidWorkspace |
+| 68 | Link | تسمية ديناميكية / تحتاج مراجعة | ZidWorkspace |
+| 68 | Link | تسمية ديناميكية / تحتاج مراجعة | ZidWorkspace |
+| 70 | Link | تسمية ديناميكية / تحتاج مراجعة | ZidWorkspace |
+| 71 | button | تسمية ديناميكية / تحتاج مراجعة | ZidWorkspace |
+| 73 | a | تسمية ديناميكية / تحتاج مراجعة | ZidWorkspace |
+| 73 | Button | تسمية ديناميكية / تحتاج مراجعة | ZidWorkspace |
+| 73 | Button | تسمية ديناميكية / تحتاج مراجعة | ZidWorkspace |
+| 78 | input | autoSync notifyMerchantOrders | ZidWorkspace |
+| 79 | Button | تسمية ديناميكية / تحتاج مراجعة | ZidWorkspace |
+| 79 | Button | تسمية ديناميكية / تحتاج مراجعة | ZidWorkspace |
+| 80 | Button | تسمية ديناميكية / تحتاج مراجعة | ZidWorkspace |
+| 83 | Button | تسمية ديناميكية / تحتاج مراجعة | ZidWorkspace |
+| 83 | Button | تسمية ديناميكية / تحتاج مراجعة | ZidWorkspace |
+| 84 | DialogContent | save remove rotate save | ZidWorkspace |
+| 86 | Input | تسمية ديناميكية / تحتاج مراجعة | save remove rotate |
+| 87 | Button | تسمية ديناميكية / تحتاج مراجعة | save remove rotate |
+| 87 | Button | save remove rotate | save remove rotate |
+
+## client/src/components/merchant/ZidSyncPanel.tsx
+
+| السطر | النوع | التسمية | القسم |
+|---:|---|---|---|
+| 51 | Button | تسمية ديناميكية / تحتاج مراجعة | ZidSyncPanel |
+| 51 | Button | تسمية ديناميكية / تحتاج مراجعة | ZidSyncPanel |
+| 51 | Button | all | ZidSyncPanel |
+| 52 | summary | تسمية ديناميكية / تحتاج مراجعة | ZidSyncPanel |
+| 52 | Button | تسمية ديناميكية / تحتاج مراجعة | ZidSyncPanel |
+| 53 | DialogContent | all | ZidSyncPanel |
+| 53 | Button | تسمية ديناميكية / تحتاج مراجعة | ZidSyncPanel |
+| 53 | Button | تسمية ديناميكية / تحتاج مراجعة | ZidSyncPanel |
+
+## client/src/components/merchant/ZidLogList.tsx
+
+| السطر | النوع | التسمية | القسم |
+|---:|---|---|---|
+| 18 | input | تسمية ديناميكية / تحتاج مراجعة | ZidLogList |
+| 18 | select | copy.state | ZidLogList |
+| 18 | select | copy.kind | ZidLogList |
+| 18 | Button | تسمية ديناميكية / تحتاج مراجعة | ZidLogList |
+| 20 | Button | تسمية ديناميكية / تحتاج مراجعة | ZidLogList |
+| 21 | Button | تسمية ديناميكية / تحتاج مراجعة | · |
+| 21 | Button | تسمية ديناميكية / تحتاج مراجعة | · |
+
+## client/src/components/merchant/ZidNotificationReview.tsx
+
+| السطر | النوع | التسمية | القسم |
+|---:|---|---|---|
+| 20 | Button | تسمية ديناميكية / تحتاج مراجعة | ZidNotificationReview |
+| 21 | Button | تسمية ديناميكية / تحتاج مراجعة | ZidNotificationReview |
+| 22 | DialogContent | : · | ZidNotificationReview |
+| 22 | Button | تسمية ديناميكية / تحتاج مراجعة | ZidNotificationReview |
+| 22 | Button | تسمية ديناميكية / تحتاج مراجعة | ZidNotificationReview |
 
 ## client/src/components/merchant/WorkspaceState.tsx
 
@@ -1320,14 +1350,7 @@
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 94 | Button | العودة إلى الإعدادات | loading جارٍ ربط المتجر success اكتمل الربط error تعذر الربط |
-
-## client/src/pages/ZidProducts.tsx
-
-| السطر | النوع | التسمية | القسم |
-|---:|---|---|---|
-| 81 | Button | الذهاب إلى الإعدادات | مزامنة المنتجات من Zid |
-| 116 | Button | جاري المزامنة... بدء المزامنة | مزامنة المنتجات |
+| 39 | Link | تسمية ديناميكية / تحتاج مراجعة | ZidCallback |
 
 ## client/src/pages/merchant/WooCommerceSettings.tsx
 

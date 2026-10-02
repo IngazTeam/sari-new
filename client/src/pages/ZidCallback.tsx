@@ -1,3 +1,4 @@
+import {readZidCallbackParameters,scrubZidCallbackParameters} from '@/lib/zid-oauth-navigation';
 import {useEffect,useRef,useState} from 'react';
 import {Link} from 'wouter';
 import {useTranslation} from 'react-i18next';
@@ -11,11 +12,11 @@ import '@/styles/zid-workspace.css';
 const fresh={retry:false,staleTime:0,refetchOnMount:'always' as const,refetchOnWindowFocus:false};
 export default function ZidCallback(){
  const {t,i18n}=useTranslation(),copy=zidWorkspaceLabels(t),locale=i18n.language.startsWith('ar')?'ar':'en';
- const [parameters]=useState(()=>new URLSearchParams(window.location.search)),[status,setStatus]=useState<'loading'|'success'|'error'|'invalid'>('loading');
+ const [parameters]=useState(readZidCallbackParameters),[status,setStatus]=useState<'loading'|'success'|'error'|'invalid'>('loading');
  const user=trpc.auth.me.useQuery(undefined,fresh),merchant=trpc.merchants.getCurrent.useQuery(undefined,{...fresh,enabled:!!user.data?.id&&!user.error});
  const mutation=trpc.zid.handleOAuthCallback.useMutation({retry:false}),utils=trpc.useUtils();
  const alive=useRef(true),started=useRef(false),scope=useRef(''),attemptScope=useRef<string|null>(null);scope.current=user.data?.id+':'+merchant.data?.id;
- useEffect(()=>{alive.current=true;window.history.replaceState(window.history.state,document.title,window.location.pathname);return()=>{alive.current=false;};},[]);
+ useEffect(()=>{alive.current=true;scrubZidCallbackParameters();return()=>{alive.current=false;};},[]);
  useEffect(()=>{
   if(started.current)return;
   const code=parameters.get('code'),state=parameters.get('state');
