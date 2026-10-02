@@ -1,3 +1,5 @@
+import {zidNoticeReviewInput} from '../../shared/zid-notification-review';
+import {readZidNoticeReview,acknowledgeReviewedZidNotices} from './zid-notification-review';
 import { z } from 'zod';
 import { permissionProcedure, router } from '../_core/trpc';
 import { TRPCError } from '@trpc/server';
@@ -131,6 +133,8 @@ async function reviewedWrite<T>(work:()=>Promise<T>){
 
 // Zid Integration Router
 export const zidRouter = router({
+  notificationReview:zidDashboardProcedure.query(({ctx})=>reviewedWrite(()=>readZidNoticeReview(ctx.user.id,ctx.merchantId))),
+  acknowledgeReviewedNotifications:zidDashboardProcedure.input(zidNoticeReviewInput).mutation(({ctx,input})=>reviewedWrite(()=>acknowledgeReviewedZidNotices(ctx.user.id,ctx.merchantId,input))),
   requestSync:zidDashboardProcedure.input(zidSyncRequest).mutation(({ctx,input})=>reviewedWrite(()=>requestReviewedZidSync(ctx.user.id,ctx.merchantId,input))),
   syncRequest:zidDashboardProcedure.input(zidSyncLookup).query(({ctx,input})=>reviewedWrite(()=>readZidSyncRequest(ctx.user.id,ctx.merchantId,input))),
   latestSyncRequest:zidDashboardProcedure.query(({ctx})=>reviewedWrite(()=>readLatestZidSyncRequest(ctx.user.id,ctx.merchantId))),

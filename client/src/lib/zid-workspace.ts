@@ -1,0 +1,10 @@
+import {zidWorkspaceSchema,zidLogsWorkspaceSchema,zidLogsInput} from '@shared/zid-workspace';
+import {zidSyncRequest,zidSyncReceipt} from '@shared/zid-sync-request';
+export function scopedZidWorkspace(value:unknown,actorId:number,merchantId:number){const parsed=zidWorkspaceSchema.safeParse(value);return parsed.success&&parsed.data.actorId===actorId&&parsed.data.merchantId===merchantId?parsed.data:null;}
+export function scopedZidLogs(value:unknown,actorId:number,merchantId:number,selection:unknown){const parsed=zidLogsWorkspaceSchema.safeParse(value),input=zidLogsInput.parse(selection);return parsed.success&&parsed.data.actorId===actorId&&parsed.data.merchantId===merchantId&&JSON.stringify(parsed.data.selection)===JSON.stringify(input)?parsed.data:null;}
+export function scopedZidSync(value:unknown,actorId:number,merchantId:number,intent?:unknown){const parsed=zidSyncReceipt.safeParse(value);if(!parsed.success||parsed.data.actorId!==actorId||parsed.data.merchantId!==merchantId)return null;if(intent){const request=zidSyncRequest.parse(intent);if(parsed.data.requestId!==request.requestId||parsed.data.revision!==request.revision||parsed.data.resource!==request.resource)return null;}return parsed.data;}
+type Storage=Pick<globalThis.Storage,'getItem'|'setItem'|'removeItem'>;
+const key=(actorId:number,merchantId:number)=>`sari:zid:sync:${actorId}:${merchantId}`;
+export function pendingZidSync(storage:Storage,actorId:number,merchantId:number){const raw=storage.getItem(key(actorId,merchantId));return raw?zidSyncRequest.parse(JSON.parse(raw)):null;}
+export function saveZidSync(storage:Storage,actorId:number,merchantId:number,value:unknown){const request=zidSyncRequest.parse(value),raw=JSON.stringify(request);storage.setItem(key(actorId,merchantId),raw);if(storage.getItem(key(actorId,merchantId))!==raw)throw Error('Request storage unavailable');return request;}
+export function clearZidSync(storage:Storage,actorId:number,merchantId:number,requestId:string){if(pendingZidSync(storage,actorId,merchantId)?.requestId===requestId)storage.removeItem(key(actorId,merchantId));}

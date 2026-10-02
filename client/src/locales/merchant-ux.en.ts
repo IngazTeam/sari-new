@@ -1,3 +1,4 @@
+import {zidWorkspaceEn} from './zid-workspace';
 import {sallaWorkspaceEn} from './salla-workspace';
 import {byaanDataEn} from './byaan-data';
 import {byaanConnectionEn} from './byaan-connection';
@@ -54,6 +55,7 @@ import { subscriptionWorkspaceEn } from './subscription-workspace';
 import { whatsappWorkspaceEn } from './whatsapp-workspace';
 
 const merchantUxEn: MerchantUxCopy = {
+  zidWorkspace:zidWorkspaceEn,
   sallaWorkspace:sallaWorkspaceEn,
   groupConversation: groupConversationEn,
   subscriptionWorkspace: subscriptionWorkspaceEn,

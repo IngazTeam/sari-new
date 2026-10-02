@@ -22,9 +22,9 @@ export async function zidConnectionWriter(tx:Pick<PoolConnection,'execute'>,acto
  const role=members.length===1&&members[0].is_active===1?members[0].role:members.length===0&&merchant.userId===actorId?'owner':null;
  if(!role||!hasPermission(role as MerchantRole,'integrations.manage'))throw new ZidConnectionFault('forbidden');
 }
-export async function zidConnectionTransaction<T>(actorId:number,merchantId:number,work:(tx:PoolConnection)=>Promise<T>){
+export async function zidConnectionTransaction<T>(actorId:number,merchantId:number,work:(tx:PoolConnection)=>Promise<T>,consistentRead=false){
  bookingReadId.parse(actorId);bookingReadId.parse(merchantId);let tx:PoolConnection|undefined,committing=false,reusable=true;
- try{const pool=await getPool();if(!pool)throw new ZidConnectionFault('unavailable');tx=await pool.getConnection();await tx.beginTransaction();const value=await work(tx);committing=true;await tx.commit();return value;}
+ try{const pool=await getPool();if(!pool)throw new ZidConnectionFault('unavailable');tx=await pool.getConnection();if(consistentRead)await tx.query('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');await tx.beginTransaction();const value=await work(tx);committing=true;await tx.commit();return value;}
  catch(error){if(tx){if(committing)reusable=false;else try{await tx.rollback();}catch{reusable=false;}}if(error instanceof ZidConnectionFault)throw error;throw new ZidConnectionFault('unavailable');}
  finally{if(tx){if(reusable)tx.release();else tx.destroy();}}
 }
