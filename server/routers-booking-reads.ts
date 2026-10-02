@@ -1,5 +1,8 @@
 import { TRPCError } from '@trpc/server';
 import { merchantProcedure } from './_core/trpc';
+import { hasPermission } from './_core/permissions';
+import { bookingWorkspaceInput } from '../shared/booking-workspace';
+import { readBookingWorkspace, readBookingDetails, BookingWorkspaceMissingError } from './booking-workspace';
 import { bookingReadIdentity, bookingListInput, bookingServiceInput, bookingCustomerInput, bookingStatsInput, bookingAvailabilityInput, bookingSlotsInput } from '../shared/booking-read';
 import { getBookingById, getBookingsByMerchant, getBookingsByService, getBookingsByCustomer, getBookingStats, getServiceById, getStaffMemberById, checkBookingConflict, getAvailableTimeSlots } from './db';
 
@@ -7,6 +10,7 @@ import { getBookingById, getBookingsByMerchant, getBookingsByService, getBooking
 async function read<T>(run: () => Promise<T>): Promise<T> {
   try { return await run(); }
   catch (error) {
+    if (error instanceof BookingWorkspaceMissingError) throw new TRPCError({ code: 'NOT_FOUND', message: error.message });
     if (error instanceof TRPCError) throw error;
     throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Booking data unavailable' });
   }
@@ -24,6 +28,12 @@ async function references(merchantId: number, input: { serviceId?: number; staff
   }
 }
 export const bookingReadProcedures = {
+  workspace: merchantProcedure.input(bookingWorkspaceInput).query(({ ctx, input }) => read(async () => ({
+    ...await readBookingWorkspace(ctx.user.id, ctx.merchantId, input), canManage: hasPermission(ctx.merchantRole, 'orders.manage'),
+  }))),
+  details: merchantProcedure.input(bookingReadIdentity).query(({ ctx, input }) => read(async () => ({
+    ...await readBookingDetails(ctx.user.id, ctx.merchantId, input), canManage: hasPermission(ctx.merchantRole, 'orders.manage'),
+  }))),
   getById: merchantProcedure.input(bookingReadIdentity).query(({ ctx, input }) => read(async () => {
     const booking = await getBookingById(input.bookingId, ctx.merchantId);
     if (!booking || booking.merchantId !== ctx.merchantId) throw new TRPCError({ code: 'NOT_FOUND', message: 'Booking not found' });
