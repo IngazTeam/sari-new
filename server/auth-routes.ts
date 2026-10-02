@@ -1,3 +1,4 @@
+import { calendarOAuthCallback } from './calendar-oauth-api';
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import {
@@ -233,44 +234,8 @@ router.post('/verify', async (req, res) => {
 
 export default router;
 
-// Google Calendar OAuth Callback
-router.get('/oauth/google/calendar/callback', async (req, res) => {
-  const { code, state } = req.query;
-
-  if (!code || !state) {
-    return res.status(400).send('Missing code or state parameter');
-  }
-
-  const merchantId = parseInt(state as string);
-  if (isNaN(merchantId)) {
-    return res.status(400).send('Invalid merchant ID');
-  }
-
-  // SECURITY: Verify the requesting user owns this merchant
-  try {
-    const user = await authenticateRequest(req);
-    const merchant = await getMerchantById(merchantId);
-    if (!merchant || merchant.userId !== user.id) {
-      return res.status(403).send('Access denied');
-    }
-  } catch {
-    return res.status(401).send('Authentication required');
-  }
-
-  try {
-    const googleCalendar = await import('./_core/googleCalendar');
-    const result = await (googleCalendar as any).handleOAuthCallback(code as string, merchantId);
-
-    if (result.success) {
-      res.redirect('/merchant/calendar/settings?success=true');
-    } else {
-      res.redirect(`/merchant/calendar/settings?error=${encodeURIComponent(result.message)}`);
-    }
-  } catch (error: any) {
-    console.error('[OAuth Callback] Error:', error);
-    res.redirect(`/merchant/calendar/settings?error=${encodeURIComponent('حدث خطأ')}`);
-  }
-});
+// Calendar consumes a session-bound state before exchanging any code.
+router.get('/oauth/google/calendar/callback', calendarOAuthCallback);
 
 // Google Sheets consumes a session-bound state before exchanging any code.
 router.get('/oauth/google/sheets/callback', sheetsOAuthCallback);

@@ -1,3 +1,4 @@
+import { calendarConnectionProcedures } from './routers-calendar-connection';
 import { staffRouter } from './routers-staff';
 import { conversationImportProcedures } from './routers-conversation-import';
 import { conversationConnectionProcedures } from './routers-conversation-connection';
@@ -3810,51 +3811,7 @@ export const appRouter = router({
 
   // Google Calendar Integration
   calendar: router({
-    // Get authorization URL
-    getAuthUrl: protectedProcedure.query(async ({ ctx }) => {
-      const merchant = await getMerchantByUserId(ctx.user.id);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-
-      const { getAuthUrl } = await import('./_core/googleCalendar');
-      const authUrl = getAuthUrl(merchant.id.toString());
-
-      return { authUrl };
-    }),
-
-    // Handle OAuth callback (called from backend route)
-    handleCallback: protectedProcedure
-      .input(z.object({
-        code: z.string(),
-        calendarId: z.string().optional(),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-
-        const { getTokensFromCode } = await import('./_core/googleCalendar');
-        const tokens = await getTokensFromCode(input.code);
-
-        // Save integration
-        const existing = await getGoogleIntegration(merchant.id, 'calendar');
-
-        if (existing) {
-          await updateGoogleIntegration(existing.id, {
-            credentials: JSON.stringify(tokens),
-            calendarId: input.calendarId || existing.calendarId,
-            isActive: 1,
-          });
-        } else {
-          await createGoogleIntegration({
-            merchantId: merchant.id,
-            integrationType: 'calendar',
-            credentials: JSON.stringify(tokens),
-            calendarId: input.calendarId || 'primary',
-            isActive: 1,
-          });
-        }
-
-        return { success: true };
-      }),
+    ...calendarConnectionProcedures,
 
     ...calendarAppointmentProcedures,
 
@@ -3875,18 +3832,7 @@ export const appRouter = router({
         return stats;
       }),
 
-    // Disconnect Google Calendar
-    disconnect: protectedProcedure.mutation(async ({ ctx }) => {
-      const merchant = await getMerchantByUserId(ctx.user.id);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-      const integration = await getGoogleIntegration(merchant.id, 'calendar');
-      if (integration) {
-        await deleteGoogleIntegration(integration.id);
-      }
-
-      return { success: true };
-    }),
 
 
   }),

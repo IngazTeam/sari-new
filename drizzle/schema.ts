@@ -2169,6 +2169,21 @@ export const sheetsOauthStates = mysqlTable("sheets_oauth_states", {
 	uniqueIndex("uq_sheets_oauth_merchant_user").on(table.merchantId, table.userId),
 ]);
 
+export const calendarOauthStates = mysqlTable("calendar_oauth_states", {
+	id: int().autoincrement().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	userId: int("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	stateHash: char("state_hash", { length: 64 }).notNull(),
+	sessionHash: char("session_hash", { length: 64 }).notNull(),
+	sourceHash: char("source_hash", { length: 64 }).notNull(),
+	expiresAt: timestamp("expires_at", { mode: "string" }).notNull(),
+	consumedAt: timestamp("consumed_at", { mode: "string" }),
+	createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+}, table => [
+	uniqueIndex("uq_calendar_oauth_state").on(table.stateHash),
+	uniqueIndex("uq_calendar_oauth_merchant_user").on(table.merchantId, table.userId),
+]);
+
 export const googleIntegrations = mysqlTable("google_integrations", {
 	id: int().autoincrement().notNull().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),

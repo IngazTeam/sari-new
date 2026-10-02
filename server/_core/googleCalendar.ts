@@ -9,7 +9,7 @@ import { calendarTimestamp } from '../calendar-evidence';
 
 // OAuth2 Configuration
 const SCOPES = ['https://www.googleapis.com/auth/calendar'];
-const REDIRECT_URI = process.env.GOOGLE_CALENDAR_REDIRECT_URI || 'http://localhost:3000/api/google/calendar/callback';
+const REDIRECT_URI = process.env.GOOGLE_CALENDAR_REDIRECT_URI || 'http://localhost:3000/api/auth/oauth/google/calendar/callback';
 
 /**
  * Create OAuth2 client
@@ -22,8 +22,8 @@ export async function createOAuth2Client() {
   let clientId: string | undefined;
   let clientSecret: string | undefined;
   
-  // @ts-ignore
-  if (settings && settings.enabled as any) {
+  if (settings) {
+    if (settings.isEnabled !== 1) throw new Error('Google OAuth is disabled');
     clientId = settings.clientId;
     clientSecret = settings.clientSecret;
   } else {

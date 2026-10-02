@@ -50,6 +50,11 @@ const dispatchCredentials = {
   access_token: "synthetic",
   expiry_date: Date.now() + 3600000,
 };
+it('honors the database enable flag and does not fall back when explicitly disabled',async()=>{
+  mocks.settings.mockResolvedValue({isEnabled:0,clientId:'configured',clientSecret:'configured'});
+  vi.stubEnv('GOOGLE_CLIENT_ID','environment-client');vi.stubEnv('GOOGLE_CLIENT_SECRET','environment-secret');
+  try{await expect(createOAuth2Client()).rejects.toThrow('Google OAuth is disabled');}finally{vi.unstubAllEnvs();}
+});
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.free.mockResolvedValue({
@@ -60,7 +65,7 @@ beforeEach(() => {
     },
   });
   mocks.settings.mockResolvedValue({
-    enabled: true,
+    isEnabled: 1,
     clientId: "synthetic-client",
     clientSecret: "synthetic-secret",
   });
@@ -295,7 +300,7 @@ describe("Google calendar provider contract", () => {
       operation = validateAndRefreshCredentials(input);
     await Promise.resolve();
     expect(mocks.setCredentials).not.toHaveBeenCalled();
-    done({ enabled: true, clientId: "fixture", clientSecret: "fixture" });
+    done({ isEnabled: 1, clientId: "fixture", clientSecret: "fixture" });
     const result = await operation;
     expect(result).toMatchObject(input);
     expect(result.expiry_date).toBeGreaterThan(Date.now());
