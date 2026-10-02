@@ -1,3 +1,4 @@
+import {prepareCalendlyNotification} from './calendly-notification';
 import {parseCalendlyCanonicalPair} from './calendly-canonical';
 import {calendlyStamp} from './calendly-workspace';
 import {assertCalendlyWorkerConnection,assertCalendlyReceiptLease,CalendlyWorkerAuthorityError} from './calendly-worker-authority';
@@ -259,60 +260,13 @@ export async function applyCanonicalAppointment(
   }
 }
 
-function buildBookingMessage(appointment: AppointmentRow): string {
-  const startsAt = new Date(appointment.start_at);
-  const date = new Intl.DateTimeFormat('ar-SA', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-    timeZone: 'Asia/Riyadh',
-  }).format(startsAt);
-  return [
-    `مرحباً ${cleanText(appointment.customer_name, 100, 'عميلنا')}،`,
-    `تم تأكيد موعدك: ${cleanText(appointment.event_name, 120, 'موعد Calendly')}.`,
-    `الموعد: ${date}`,
-  ].join('\n');
-}
-
-async function deliverNotification(row: ReceiptRow): Promise<void> {
-  if (!row.notification_required) return;
-  const pool = await getPool();
-  if (!pool) throw new CalendlyReceiptError('database_unavailable');
-  const [rows] = await pool.execute<AppointmentRow[]>(
-    `SELECT id, customer_name, customer_phone, event_name, start_at, status
-       FROM calendly_appointments
-      WHERE merchant_id = ? AND invitee_uri = ? LIMIT 1`,
-    [row.merchant_id, row.invitee_uri],
-  );
-  const appointment = rows[0];
-  if (!appointment || appointment.status !== 'active' || !appointment.customer_phone) return;
-  try {
-    const result = await sendMerchantWhatsApp({
-      merchantId: Number(row.merchant_id),
-      idempotencyKey: `calendly:${row.merchant_id}:${row.event_key}`,
-      to: appointment.customer_phone,
-      kind: 'text',
-      text: buildBookingMessage(appointment),
-      retryFailed: true,
-    });
-    if (!result.accepted) {
-      if (result.errorCode === 'delivery_in_progress') {
-        throw new CalendlyReceiptError('ambiguous_notification_delivery', true);
-      }
-      throw new CalendlyReceiptError(result.errorCode || 'notification_rejected');
-    }
-    await pool.execute(
-      `UPDATE calendly_appointments
-          SET notification_sent_at = COALESCE(notification_sent_at, NOW(3))
-        WHERE id = ? AND merchant_id = ?`,
-      [appointment.id, row.merchant_id],
-    );
-  } catch (error) {
-    if (error instanceof CalendlyReceiptError) throw error;
-    if (error instanceof WhatsAppDeliveryStateError) {
-      throw new CalendlyReceiptError('ambiguous_notification_delivery', true);
-    }
-    throw new CalendlyReceiptError('notification_service_unavailable');
-  }
+export async function deliverCalendlyNotification(row: ReceiptRow): Promise<void> {
+ if(!row.notification_required)return;
+ try{
+  const input=await prepareCalendlyNotification(row.merchant_id,row.id,row.processing_token);if(!input)return;
+  const result=await sendMerchantWhatsApp(input);
+  if(!result.accepted||!result.providerMessageId)throw new CalendlyReceiptError('notification_outcome_unconfirmed',true);
+ }catch(error){if(error instanceof CalendlyReceiptError)throw error;if(error instanceof WhatsAppDeliveryStateError)throw new CalendlyReceiptError('ambiguous_notification_delivery',true);throw new CalendlyReceiptError('notification_authority_unavailable',true);}
 }
 
 export async function enqueueCalendlyWebhookReceipt(input: {
@@ -433,7 +387,7 @@ export async function processCalendlyReceipt(row: ReceiptRow): Promise<void> {
       if(!Array.isArray(memberships)||!memberships.some(member=>member?.user===integration.storeUrl)||(canonical.invitee as any).event!==canonical.event.uri)throw new CalendlyReceiptError('provider_account_mismatch',true);
       await applyCanonicalAppointment(row, integration, canonical.event, canonical.invitee);
     }
-    await check();await deliverNotification(row);
+    await check();await deliverCalendlyNotification(row);
   });
 }
 

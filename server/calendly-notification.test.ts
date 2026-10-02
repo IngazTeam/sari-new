@@ -1,0 +1,10 @@
+import {beforeEach,it,expect,vi} from 'vitest';
+const m=vi.hoisted(()=>({pool:vi.fn(),primary:vi.fn()}));
+vi.mock('./db',()=>({getPool:m.pool,getPrimaryWhatsAppInstance:m.primary,getWhatsAppInstanceById:vi.fn()}));
+import {sendMerchantWhatsApp} from './channels/whatsapp/service';
+import {validCalendlyNotificationTransport,sameCalendlyNotificationRequest} from './integrations/calendly-notification';
+import type {SendMerchantWhatsAppInput} from './channels/whatsapp/types';
+const base=():SendMerchantWhatsAppInput=>({merchantId:20,idempotencyKey:'calendly:20:'+'a'.repeat(64),kind:'text',to:'+966500000001',text:'Local message',retryFailed:false,calendlyGuard:{receiptId:3,appointmentId:4,processingToken:'LOCAL_PROCESSING_TOKEN',connectionRevision:'b'.repeat(64),appointmentRevision:'c'.repeat(64)}});
+beforeEach(()=>vi.resetAllMocks());
+it.each([{calendlyGuard:undefined},{retryFailed:true},{kind:'image',mediaUrl:'https://example.test/file'},{messageId:1},{wooOrderGuard:{}},{idempotencyKey:'other:20:'+'a'.repeat(64)},{idempotencyKey:'calendly:21:'+'a'.repeat(64)}])('blocks malformed or legacy transport %j before any database or provider lookup',async change=>{const value={...base(),...change} as SendMerchantWhatsAppInput;expect(validCalendlyNotificationTransport(value)).toBe(false);expect((await sendMerchantWhatsApp(value)).accepted).toBe(false);expect(m.pool).not.toHaveBeenCalled();expect(m.primary).not.toHaveBeenCalled();});
+it('requires durable delivery content to match before accepting a prior delivery as duplicate',()=>{const value=base();expect(sameCalendlyNotificationRequest(value,value)).toBe(true);for(const change of [{text:'Changed'},{to:'+966500000002'},{kind:'image'},{calendlyGuard:{...value.calendlyGuard!,appointmentId:9}},{calendlyGuard:undefined}])expect(sameCalendlyNotificationRequest(value,{...value,...change})).toBe(false);});

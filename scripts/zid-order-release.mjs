@@ -24,6 +24,7 @@ export const requiredReleaseCapabilities = Object.freeze([
   'woocommerce-dashboard-reviewed-writes-0191',
   'calendly-dashboard-authority-v1',
   'calendly-worker-authority-v1',
+  'calendly-notification-authority-v1',
 ]);
 
 export function assertZidOrderReleaseCompatible(directory) {

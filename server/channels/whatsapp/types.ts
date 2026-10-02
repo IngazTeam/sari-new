@@ -64,5 +64,6 @@ export type SendMerchantWhatsAppInput = WhatsAppSendRequest & {
   appointmentReminderGuard?: import('../../appointment-reminders').AppointmentReminderGuard;
   bookingNoticeGuard?: import('../../booking-reschedule-notification').BookingNoticeGuard;
   sallaOrderGuard?: import('../../integrations/salla-order-projection').SallaOrderNoticeGuard;
+  calendlyGuard?: import('../../integrations/calendly-notification').CalendlyNotificationGuard;
   wooOrderGuard?: import('../../integrations/woocommerce-order-notification').WooOrderNotificationGuard;
 };
