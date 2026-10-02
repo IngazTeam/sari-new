@@ -6111,10 +6111,10 @@ export async function createBooking(data:import('../shared/booking-creation').Cr
   return createAtomicBooking(data);
 }
 
-export async function getBookingById(id: number) {
+export async function getBookingById(id: number, merchantId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const results = await db.select().from(bookings).where(eq(bookings.id, id));
+  const results = await db.select().from(bookings).where(and(eq(bookings.id, id), merchantId === undefined ? undefined : eq(bookings.merchantId, merchantId)));
   return results[0];
 }
 
@@ -6246,9 +6246,9 @@ export async function getBookingStats(merchantId: number, filters?: {
   };
 }
 
-export async function checkBookingConflict(serviceId:number,staffId:number|null,bookingDate:string,startTime:string,endTime:string,excludeBookingId?:number) {
+export async function checkBookingConflict(serviceId:number,staffId:number|null,bookingDate:string,startTime:string,endTime:string,excludeBookingId?:number,merchantId?:number) {
   const {checkBookingCapacity}=await import('./booking-capacity');
-  return checkBookingCapacity({serviceId,staffId:staffId??undefined,bookingDate,startTime,endTime},excludeBookingId);
+  return checkBookingCapacity({serviceId,staffId:staffId??undefined,bookingDate,startTime,endTime},excludeBookingId,merchantId);
 }
 
 export async function markBookingReminderSent(bookingId: number, type: '24h' | '1h') {
@@ -6320,17 +6320,20 @@ export async function createTimeSlot(data: {
 export async function getAvailableTimeSlots(
   serviceId: number,
   date: string,
-  staffId?: number
+  staffId?: number,
+  merchantId?: number
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
   const service=await getServiceById(serviceId);
+  if(merchantId!==undefined&&(!Number.isSafeInteger(merchantId)||merchantId<=0||!service||service.merchantId!==merchantId))throw new Error('Booking scope unavailable');
   if(!service||service.isActive!==1)return [];
 
   const conditions = [
     eq(bookingTimeSlots.serviceId, serviceId),
     eq(bookingTimeSlots.merchantId,service.merchantId),
+    sql`EXISTS (SELECT 1 FROM services s WHERE s.id=${bookingTimeSlots.serviceId} AND s.merchant_id=${bookingTimeSlots.merchantId} AND s.is_active=1)`,
     eq(bookingTimeSlots.slotDate, date as any),
     eq(bookingTimeSlots.isAvailable, 1),
     eq(bookingTimeSlots.isBlocked, 0),

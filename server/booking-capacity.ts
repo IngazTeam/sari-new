@@ -234,14 +234,16 @@ export async function createBookingInCapacityTransaction(
 
 export async function checkBookingCapacity(
   raw: BookingSchedule,
-  excludeBookingId?: number
+  excludeBookingId?: number,
+  merchantId?: number
 ) {
+  if (merchantId !== undefined) positive(merchantId);
   const input = bookingScheduleSchema.parse(raw),
     pool = await getPool();
   if (!pool) throw unavailable();
   const [services] = await pool.execute<any[]>(
-    "SELECT * FROM services WHERE id=? AND is_active=1",
-    [input.serviceId]
+    `SELECT * FROM services WHERE id=? AND is_active=1${merchantId === undefined ? '' : ' AND merchant_id=?'}`,
+    merchantId === undefined ? [input.serviceId] : [input.serviceId, merchantId]
   );
   if (services.length !== 1) throw unavailable();
   await validateBookingStaff(
