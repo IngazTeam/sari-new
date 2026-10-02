@@ -1,4 +1,6 @@
 import {calendlyResourceUri,calendlyBookingUrl} from '../../shared/calendly-provider';
+import {calendlyAppointmentsInput,calendlyReceiptsInput} from '../../shared/calendly-workspace';
+import {readCalendlyWorkspace,readCalendlyAppointments,readCalendlyReceipts} from './calendly-workspace';
 import {withCalendlyDashboardAuthority,assertCalendlyDashboardAuthority,CalendlyAuthorityError} from './calendly-dashboard-authority';
 import crypto from 'node:crypto';
 import { z } from 'zod';
@@ -103,6 +105,9 @@ async function withCalendlyConnectionLock<T>(merchantId: number, action: () => P
 }
 
 export const calendlyRouter = router({
+  getWorkspace:calendlyDashboardProcedure.input(noInput).query(({ctx})=>readCalendlyWorkspace(ctx.user.id,ctx.merchantId)),
+  getAppointmentsWorkspace:calendlyDashboardProcedure.input(calendlyAppointmentsInput).query(({ctx,input})=>readCalendlyAppointments(ctx.user.id,ctx.merchantId,input)),
+  getReceiptsWorkspace:calendlyDashboardProcedure.input(calendlyReceiptsInput).query(({ctx,input})=>readCalendlyReceipts(ctx.user.id,ctx.merchantId,input)),
   getConnection: calendlyDashboardProcedure.input(noInput).query(async ({ ctx }) => {
     const merchantId = ctx.merchantId;
     const integration = await getIntegrationByType(merchantId, 'calendly');

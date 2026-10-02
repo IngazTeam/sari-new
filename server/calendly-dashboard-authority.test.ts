@@ -27,4 +27,3 @@ it('allows an authorized bounded request with pinned origin and no redirect',asy
  expect(await withCalendlyDashboardAuthority(scope,()=>calendlyApiRequest('/users/me',token))).toEqual({resource:{name:'Local'}});expect(fetcher).toHaveBeenCalledWith(new URL('https://api.calendly.com/users/me'),expect.objectContaining({redirect:'error',method:'GET'}));expect(m.access).toHaveBeenCalledTimes(3);
 });
 it('rejects a mismatched merchant before resolving membership',async()=>{await expect(withCalendlyDashboardAuthority(scope,()=>assertCalendlyDashboardAuthority(21))).rejects.toMatchObject({code:'FORBIDDEN'});expect(m.access).not.toHaveBeenCalled();});
-
