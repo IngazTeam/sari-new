@@ -20,7 +20,7 @@ export async function zidConnectionDefinition(tx:Executor,merchantId:number,lock
  const canonical=await rows(tx,`SELECT id,is_active AS active,store_name AS storeName,store_url AS storeUrl,created_at AS createdAt,last_sync_at AS lastSyncAt,webhook_endpoint_id AS endpoint,
   CASE WHEN JSON_TYPE(JSON_EXTRACT(${settingsJson},'$.storeId'))='STRING' THEN JSON_UNQUOTE(JSON_EXTRACT(${settingsJson},'$.storeId')) ELSE NULL END AS storeId,
   (COALESCE(LENGTH(access_token),0)>0 AND JSON_TYPE(JSON_EXTRACT(${settingsJson},'$.managerToken'))='STRING' AND COALESCE(LENGTH(JSON_UNQUOTE(JSON_EXTRACT(${settingsJson},'$.managerToken'))),0)>0) AS credentialsStored,
-  ${validSettings} AS settingsValid,${flagSql},SHA2(COALESCE(access_token,''),256) AS tokenVersion,SHA2(COALESCE(refresh_token,''),256) AS refreshVersion,SHA2(COALESCE(settings,''),256) AS settingsVersion
+  ${validSettings} AS settingsValid,${flagSql},SHA2(COALESCE(access_token,''),256) AS tokenVersion,SHA2(COALESCE(refresh_token,''),256) AS refreshVersion,SHA2(COALESCE(settings,''),256) AS settingsVersion,SHA2(COALESCE(webhook_auth_hash,''),256) AS webhookVersion
   FROM platform_integrations WHERE merchant_id=? AND platform_type='zid'`+suffix,[merchantId]);
  if(canonical.length>1)throw new ZidWorkspaceFault();let row=canonical[0]??null,source:'canonical'|'legacy'|null=row?'canonical':null;
  if(!row){const legacy=await rows(tx,`SELECT id,is_active AS active,store_id AS storeId,store_name AS storeName,store_url AS storeUrl,created_at AS createdAt,NULL AS lastSyncAt,NULL AS endpoint,

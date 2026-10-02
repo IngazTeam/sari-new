@@ -4,6 +4,8 @@ import { TRPCError } from '@trpc/server';
 import { safePlatformUrl } from '../../shared/platform-workspace';
 import { zidLogsInput } from '../../shared/zid-workspace';
 import { readZidWorkspace, readZidLogsWorkspace } from './zid-workspace';
+import { zidSettingsInput, zidReviewedSensitiveInput } from '../../shared/zid-connection';
+import { saveZidWorkspaceSettings, disconnectReviewedZid, rotateReviewedZidWebhook, ZidConnectionFault } from './zid-connection';
 import { resolveMerchantAccess } from '../accounts/merchant-access';
 import { hasPermission } from '../_core/permissions';
 import { encryptSecret } from '../security/secrets';
@@ -177,10 +179,23 @@ const zidDashboardProcedure=permissionProcedure('integrations.manage').use(async
   const result=await next();if(!result.ok&&result.error.code==='INTERNAL_SERVER_ERROR')throw unavailable();return result;
 });
 
+async function reviewedWrite<T>(work:()=>Promise<T>){
+  try{return await work();}catch(error){if(error instanceof ZidConnectionFault){const code=error.reason==='forbidden'?'FORBIDDEN':error.reason==='missing'?'NOT_FOUND':error.reason==='unavailable'?'INTERNAL_SERVER_ERROR':error.reason==='changed'||error.reason==='conflict'?'CONFLICT':'PRECONDITION_FAILED';throw new TRPCError({code,message:error.message});}throw error;}
+}
+
 // Zid Integration Router
 export const zidRouter = router({
   workspace: zidDashboardProcedure.query(({ctx})=>readZidWorkspace(ctx.user.id,ctx.merchantId)),
   logsWorkspace: zidDashboardProcedure.input(zidLogsInput).query(({ctx,input})=>readZidLogsWorkspace(ctx.user.id,ctx.merchantId,input)),
+  saveWorkspaceSettings:zidDashboardProcedure.input(zidSettingsInput).mutation(({ctx,input})=>reviewedWrite(()=>saveZidWorkspaceSettings(ctx.user.id,ctx.merchantId,input))),
+  disconnectWorkspace:zidDashboardProcedure.input(zidReviewedSensitiveInput).mutation(async({ctx,input})=>{
+    await requireZidReauthentication({userId:ctx.user.id,merchantId:ctx.merchantId,sessionId:ctx.session?.sessionId,password:input.password,ipAddress:requestIp(ctx)});
+    return reviewedWrite(()=>disconnectReviewedZid(ctx.user.id,ctx.merchantId,input.revision));
+  }),
+  rotateWorkspaceWebhook:zidDashboardProcedure.input(zidReviewedSensitiveInput).mutation(async({ctx,input})=>{
+    await requireZidReauthentication({userId:ctx.user.id,merchantId:ctx.merchantId,sessionId:ctx.session?.sessionId,password:input.password,ipAddress:requestIp(ctx)});
+    return reviewedWrite(()=>rotateReviewedZidWebhook(ctx.user.id,ctx.merchantId,input.revision));
+  }),
   // Get connection status
   getConnection: zidDashboardProcedure
     .query(async ({ ctx }) => {
