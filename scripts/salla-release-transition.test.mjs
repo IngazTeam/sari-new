@@ -131,6 +131,15 @@ for (const body of ['{', 'null', '[]', '{"version":1}', '{"version":1,"capabilit
 }
 
 for (const entry of Object.keys(sources)) {
+  test(`${entry}: previous Zid dashboard writers stop before the reviewed dashboard activation`, t => {
+    const f = fixture(t);
+    const oldOAuth = f.release('previous Zid dashboard release', marker(requiredReleaseCapabilities.filter(value => value !== 'zid-dashboard-reviewed-writes-0190')));
+    const before = ['sari', 'sari-inbound'].map(name => application(oldOAuth, name));
+    const after = ['sari', 'sari-inbound'].map(name => application(oldOAuth, name, 'stopped', 0));
+    const result = shell(f, entry, { before, after });
+    assert.equal(result.status, 0, result.stderr);
+    assert.deepEqual(result.trace.filter(line => !line.startsWith('describe ')), ['jlist ', 'stop sari', 'stop sari-inbound', 'jlist ', 'save ', 'MIGRATE']);
+  });
   test(`${entry}: previous OAuth writers stop before the reviewed-attempt migration`, t => {
     const f = fixture(t);
     const oldOAuth = f.release('previous OAuth release', marker(requiredReleaseCapabilities.filter(value => value !== 'zid-oauth-reviewed-admission-0189')));

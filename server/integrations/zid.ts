@@ -10,7 +10,6 @@ import { zidSettingsInput, zidReviewedSensitiveInput, zidOAuthBeginInput, zidCon
 import { saveZidWorkspaceSettings, disconnectReviewedZid, rotateReviewedZidWebhook, ZidConnectionFault } from './zid-connection';
 import { resolveMerchantAccess } from '../accounts/merchant-access';
 import { hasPermission } from '../_core/permissions';
-import { rotateZidWebhookCredentials } from '../webhooks/zid-security';
 import {
   beginZidOAuth,
   consumeZidOAuthState,
@@ -25,29 +24,24 @@ import {
   getDb,
   getOrderCountByMerchant,
   getProductCountByMerchant,
-  updateIntegrationSettings,
   updateProductInventoryFromZid,
   upsertOrderFromZid,
   upsertProductFromZid,
 } from '../db';
 import {
   createZidSyncLog,
-  deleteAllZidConnections,
   getZidSyncLogs,
 } from '../db_zid';
-import {runReviewedZidSync} from './zid-reviewed-sync';
 import {requestReviewedZidSync,readZidSyncRequest,readLatestZidSyncRequest,ZidSyncRequestFault} from './zid-sync-request';
 import {zidSyncRequest,zidSyncLookup} from '../../shared/zid-sync-request';
 import { assertRecentReauthentication, ReauthenticationError } from '../security/reauthentication';
 import {
   fetchZidStoreIdentity,
-  ZidProductSyncError,
 } from './zid-product-sync';
 import { parseZidSettings } from './zid-settings';
 import { requireZidOrderStoreId } from './zid-commerce-normalization';
 import { requireZidProductStore } from './zid-product-normalization';
 import {
-  acknowledgeZidOrderNotificationIncidents,
   getZidOrderNotificationHealth,
 } from './zid-order-notification-outbox';
 const sensitiveActionInput = z.object({
@@ -131,6 +125,9 @@ async function reviewedWrite<T>(work:()=>Promise<T>){
   try{return await work();}catch(error){if(error instanceof ZidConnectionFault)throw connectionError(error);if(error instanceof ZidSyncRequestFault)throw new TRPCError({code:error.reason==='unavailable'?'INTERNAL_SERVER_ERROR':error.reason==='missing'?'NOT_FOUND':error.reason==='rate_limited'?'TOO_MANY_REQUESTS':'CONFLICT',message:error.message});throw error;}
 }
 
+// Old tabs must reload instead of bypassing reviewed versions or durable requests.
+function retiredZidWrite():never{throw new TRPCError({code:'PRECONDITION_FAILED',message:'zid_dashboard:reload'});}
+
 // Zid Integration Router
 export const zidRouter = router({
   notificationReview:zidDashboardProcedure.query(({ctx})=>reviewedWrite(()=>readZidNoticeReview(ctx.user.id,ctx.merchantId))),
@@ -184,11 +181,7 @@ export const zidRouter = router({
       return getZidOrderNotificationHealth(merchant.id);
     }),
 
-  acknowledgeNotificationIncidents: zidDashboardProcedure
-    .mutation(async ({ ctx }) => {
-      const merchant = {id:ctx.merchantId};
-      return acknowledgeZidOrderNotificationIncidents(merchant.id);
-    }),
+  acknowledgeNotificationIncidents: zidDashboardProcedure.input(z.object({}).strict().optional()).mutation(retiredZidWrite),
 
   beginOAuth: zidDashboardProcedure
     .input(zidOAuthBeginInput)
@@ -266,81 +259,13 @@ export const zidRouter = router({
       }
     }),
 
-  // Disconnect from Zid store
-  disconnect: zidDashboardProcedure
-    .input(sensitiveActionInput)
-    .mutation(async ({ ctx, input }) => {
-      await requireZidReauthentication({
-        userId: ctx.user.id,
-        merchantId: ctx.merchantId,
-        sessionId: ctx.session?.sessionId,
-        password: input?.password,
-        ipAddress: requestIp(ctx),
-      });
-      const merchant = {id:ctx.merchantId};
-      await deleteAllZidConnections(merchant.id);
-      return { success: true, message: 'تم فصل متجر زد' };
-    }),
-
-  // Manual sync retains its legacy response shape while enforcing continued authority.
-  syncNow: zidDashboardProcedure
-    .input(zidSyncInput)
-    .mutation(async ({ctx,input})=>{
-      try{return await reviewedWrite(()=>runReviewedZidSync(ctx.user.id,ctx.merchantId,{resource:input?.resource??'all',revision:input?.revision}));}
-      catch(error){if(error instanceof TRPCError)throw error;if(error instanceof ZidProductSyncError&&error.code==='busy')throw new TRPCError({code:'CONFLICT',message:'توجد مزامنة قيد التنفيذ بالفعل'});throw new TRPCError({code:'INTERNAL_SERVER_ERROR',message: 'فشلت مزامنة متجر زد'});}
-    }),
-
-  // Update settings
-  updateSettings: zidDashboardProcedure
-    .input(z.object({
-      autoSync: z.boolean(),
-      syncProducts: z.boolean(),
-      syncOrders: z.boolean(),
-      syncCustomers: z.boolean(),
-      notifyMerchantOrders: z.boolean(),
-    }).strict())
-    .mutation(async ({ ctx, input }) => {
-      const merchant = {id:ctx.merchantId};
-      const integration = await getIntegrationByType(merchant.id, 'zid');
-
-      if (!integration) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'لم يتم العثور على تكامل زد',
-        });
-      }
-
-      await updateIntegrationSettings(integration.id, {
-        autoSync: input.autoSync,
-        syncProducts: input.syncProducts,
-        syncOrders: input.syncOrders,
-        syncCustomers: input.syncCustomers,
-        notifyMerchantOrders: input.notifyMerchantOrders,
-      });
-
-      return { success: true };
-    }),
-
-  rotateWebhookCredentials: zidDashboardProcedure
-    .input(sensitiveActionInput)
-    .mutation(async ({ ctx, input }) => {
-      await requireZidReauthentication({
-        userId: ctx.user.id,
-        merchantId: ctx.merchantId,
-        sessionId: ctx.session?.sessionId,
-        password: input?.password,
-        ipAddress: requestIp(ctx),
-      });
-      const merchant = {id:ctx.merchantId};
-      try {
-        return await rotateZidWebhookCredentials(merchant.id);
-      } catch (error: any) {
-        if (error?.message === 'ZID_INTEGRATION_NOT_ACTIVE') {
-          throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'اربط متجر زد النشط أولاً' });
-        }
-        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'تعذر إنشاء بيانات Webhook' });
-      }
-    }),
+  // Compatibility procedure names reject all writes, without starting proof or work.
+  disconnect: zidDashboardProcedure.input(sensitiveActionInput).mutation(retiredZidWrite),
+  syncNow: zidDashboardProcedure.input(zidSyncInput).mutation(retiredZidWrite),
+  updateSettings: zidDashboardProcedure.input(z.object({
+    autoSync:z.boolean(),syncProducts:z.boolean(),syncOrders:z.boolean(),syncCustomers:z.boolean(),notifyMerchantOrders:z.boolean(),
+  }).strict()).mutation(retiredZidWrite),
+  rotateWebhookCredentials: zidDashboardProcedure.input(sensitiveActionInput).mutation(retiredZidWrite),
 
   // Get sync logs
   getSyncLogs: zidDashboardProcedure

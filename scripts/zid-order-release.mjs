@@ -16,6 +16,7 @@ export const requiredReleaseCapabilities = Object.freeze([
   'salla-sheet-receipts-0142',
   'salla-notice-receipts-0143',
   'zid-oauth-reviewed-admission-0189',
+  'zid-dashboard-reviewed-writes-0190',
 ]);
 
 export function assertZidOrderReleaseCompatible(directory) {
