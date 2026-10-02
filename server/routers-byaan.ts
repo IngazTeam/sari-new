@@ -14,6 +14,9 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { merchantProcedure, permissionProcedure, router } from "./_core/trpc";
 import { getPool } from './db';
+import { hasPermission } from './_core/permissions';
+import { byaanDataInput, byaanFaqChangeInput } from '../shared/byaan-data-workspace';
+import { readByaanDataWorkspace } from './integrations/byaan-data-workspace';
 import { readByaanConnectionWorkspace } from './integrations/byaan-connection-workspace';
 import { ByaanDashboardFault, requireActiveByaanMerchant, toggleByaanDashboardFaq } from './integrations/byaan-dashboard-access';
 import { byaanSalesReviewInput } from '../shared/byaan-sales-review';
@@ -29,6 +32,7 @@ async function dashboardGuard<T>(operation: () => Promise<T>): Promise<T> {
   catch (error) {
     const reason = error instanceof ByaanDashboardFault ? error.reason : 'unavailable';
     const faults = {
+      stale: ['CONFLICT', 'تغير السؤال منذ المراجعة، حدّث البيانات وراجع التغيير'],
       unavailable: ['INTERNAL_SERVER_ERROR', 'Byaan dashboard data unavailable'],
       inactive: ['PRECONDITION_FAILED', 'يلزم ربط بيان وتوثيق ملكية النطاق للوصول إلى هذه البيانات'],
       forbidden: ['FORBIDDEN', 'ليست لديك صلاحية إدارة معرفة بيان'],
@@ -112,6 +116,14 @@ import('./cron/memory-cleanup').then(({ registerMemoryCleanup }) => {
 // ═══════════════════════════════════════════════════════════════
 
 export const byaanRouter = router({
+  dataWorkspace: merchantProcedure.input(byaanDataInput).query(async ({ ctx, input }) => dashboardGuard(async () => {
+    const permission = input.kind === 'trainees' ? 'customers.manage' : 'bot_settings.manage';
+    if (!hasPermission(ctx.merchantRole, permission)) throw new ByaanDashboardFault('forbidden');
+    return readByaanDataWorkspace(ctx.user.id, ctx.merchantId, input);
+  })),
+  changeFaq: permissionProcedure('bot_settings.manage').input(byaanFaqChangeInput).mutation(async ({ ctx, input }) =>
+    dashboardGuard(async () => ({ actorId: ctx.user.id, merchantId: ctx.merchantId, faqId: input.faqId, ...await toggleByaanDashboardFaq(ctx.user.id, ctx.merchantId, input) }))),
+
 
   recoverEnrollmentProjection: permissionProcedure('orders.manage').input(byaanEnrollmentRecoveryInput).mutation(async ({ ctx, input }) => {
     try {

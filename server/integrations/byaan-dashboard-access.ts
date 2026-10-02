@@ -2,11 +2,9 @@ import { getPool } from '../db/connection';
 import { hasPermission, type MerchantRole } from '../_core/permissions';
 import { bookingReadId } from '../../shared/booking-read';
 
-export class ByaanDashboardFault extends Error {
-  constructor(readonly reason: 'unavailable' | 'inactive' | 'forbidden' | 'missing' | 'rate_limited' | 'provider') {
-    super(`byaan_dashboard:${reason}`);
-  }
-}
+import { ByaanDashboardFault } from './byaan-dashboard-fault';
+export { ByaanDashboardFault } from './byaan-dashboard-fault';
+import { byaanFaqRevision } from './byaan-data-values';
 type Executor = { execute: (sql: string, params?: any[]) => Promise<any> };
 async function rows(tx: Executor, sql: string, params: any[]): Promise<any[]> {
   const result = await tx.execute(sql, params);
@@ -27,7 +25,7 @@ export async function requireActiveByaanMerchant(merchantId: number) {
 }
 
 /** Recheck authority and connection under the same locks as the FAQ update. */
-export async function toggleByaanDashboardFaq(actorId: number, merchantId: number, input: { faqId: number; field: 'is_active' | 'use_in_bot'; value: boolean }) {
+export async function toggleByaanDashboardFaq(actorId: number, merchantId: number, input: { faqId: number; field: 'is_active' | 'use_in_bot'; value: boolean; revision?: string }) {
   bookingReadId.parse(actorId); bookingReadId.parse(merchantId); bookingReadId.parse(input.faqId);
   const pool = await getPool();
   if (!pool) throw new ByaanDashboardFault('unavailable');
@@ -45,8 +43,9 @@ export async function toggleByaanDashboardFaq(actorId: number, merchantId: numbe
     }
     const connections = await rows(tx, 'SELECT is_active AS active,verified_at AS verifiedAt FROM byaan_connections WHERE merchant_id=? FOR UPDATE', [merchantId]);
     if (merchant.source !== 'byaan' || connections.length !== 1 || connections[0].active !== 1 || !connections[0].verifiedAt) throw new ByaanDashboardFault('inactive');
-    const faqs = await rows(tx, 'SELECT id FROM byaan_faqs WHERE id=? AND merchant_id=? FOR UPDATE', [input.faqId, merchantId]);
+    const faqs = await rows(tx, 'SELECT id,merchant_id AS merchantId,question,answer,category,is_active AS isActive,use_in_bot AS useInBot,synced_at AS syncedAt FROM byaan_faqs WHERE id=? AND merchant_id=? FOR UPDATE', [input.faqId, merchantId]);
     if (faqs.length !== 1) throw new ByaanDashboardFault('missing');
+    if (input.revision !== undefined && input.revision !== byaanFaqRevision(faqs[0])) throw new ByaanDashboardFault('stale');
     // Fixed SQL statements: never use a client-supplied identifier in SQL.
     const statement = input.field === 'is_active'
       ? 'UPDATE byaan_faqs SET is_active=? WHERE id=? AND merchant_id=?'
