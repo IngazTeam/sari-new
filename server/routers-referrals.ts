@@ -1,3 +1,5 @@
+import {referralWorkspaceInput} from '../shared/referral-workspace';
+import {readReferralWorkspace,ReferralWorkspaceError} from './referral-workspace-store';
 /**
  * Referrals Router Module
  * Handles referral code and rewards management
@@ -7,7 +9,7 @@
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
+import { merchantProcedure, protectedProcedure, router } from "./_core/trpc";
 import {
   claimReward,
   createReferral,
@@ -26,6 +28,10 @@ import {
 } from './db';
 
 export const referralsRouter = router({
+    workspace: merchantProcedure.input(referralWorkspaceInput).query(async({ctx,input})=>{
+        try { return await readReferralWorkspace(ctx.user.id,ctx.merchantId,input); }
+        catch(error) { throw new TRPCError({code:error instanceof ReferralWorkspaceError&&error.reason==='forbidden'?'FORBIDDEN':'INTERNAL_SERVER_ERROR',message:'تعذر قراءة برنامج الإحالات لهذا المتجر. حاول تحديث الصفحة.'}); }
+    }),
     // Get my referral code (auto-generate if doesn't exist)
     getMyCode: protectedProcedure.query(async ({ ctx }) => {
         const merchant = await getMerchantByUserId(ctx.user.id);
