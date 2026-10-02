@@ -1,4 +1,5 @@
 export const referralWorkspaceEn = {
+ codeId:'Code ID',storedState:'Saved reward status',notRecorded:'Not recorded',
  title:'Referrals and rewards', description:'Review invitations, referrals and recorded rewards in one place.', eyebrow:'Growth · Referrals',
  codes:'Referral codes', referrals:'Referrals', rewards:'Rewards', all:'All', active:'Active', inactive:'Disabled', pending:'Pending', completed:'Recorded complete', claimed:'Recorded as used', expired:'Expired', invalid:'Needs data review',
  refresh:'Refresh', search:'Search name, code, phone or ID', searchAction:'Search', state:'Status', matches:'Matching records', previous:'Previous', next:'Next', page:'Page', of:'of', clear:'Clear filters', empty:'No records in this section yet.', noResults:'No matching records.', outOfRange:'This page is outside the results.', first:'First page',
@@ -11,6 +12,7 @@ export const referralWorkspaceEn = {
 };
 export type ReferralWorkspaceCopy = typeof referralWorkspaceEn;
 export const referralWorkspaceAr: ReferralWorkspaceCopy = {
+ codeId:'معرّف الكود',storedState:'حالة المكافأة المخزنة',notRecorded:'لم يُسجل',
  title:'الإحالات والمكافآت', description:'راجع الدعوات والإحالات والمكافآت المسجلة من مكان واحد.', eyebrow:'النمو · الإحالات',
  codes:'أكواد الإحالة', referrals:'الإحالات', rewards:'المكافآت', all:'الكل', active:'مفعّل', inactive:'معطّل', pending:'بانتظار الإكمال', completed:'مسجلة كمكتملة', claimed:'مسجلة كمستخدمة', expired:'منتهية', invalid:'تحتاج مراجعة البيانات',
  refresh:'تحديث', search:'بحث بالاسم أو الكود أو الهاتف أو المعرّف', searchAction:'بحث', state:'الحالة', matches:'السجلات المطابقة', previous:'السابق', next:'التالي', page:'صفحة', of:'من', clear:'مسح الفلاتر', empty:'لا توجد سجلات في هذا القسم بعد.', noResults:'لا توجد نتائج مطابقة.', outOfRange:'هذه الصفحة خارج النتائج.', first:'الصفحة الأولى',

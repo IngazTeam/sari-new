@@ -13,6 +13,12 @@ beforeEach(()=>{
 });
 afterEach(()=>dom.window.close());
 const send=(data:any,origin='http://127.0.0.1:4329',source=frame.contentWindow)=>w.dispatchEvent(new w.MessageEvent('message',{origin,source,data}));
+it('keeps referral tab, state and code only from its owned frame and valid route',()=>{
+ frame.setAttribute('src','./service-workspace.html?embed=brain');w.history.replaceState(null,'','#/page/merchant/referrals');w.syncServicePreviewContext=vi.fn();
+ const message={type:'sary-brain-preview',action:'serviceState',search:'path=/merchant/referrals&tab=rewards&state=expired&ref=SARY-DEMO-270&page=2&tenant=269&lang=en'};
+ for(const search of [message.search+'&merchantId=999',message.search+'&tab=codes','path=/merchant/referrals&state=paid','path=/merchant/referrals&ref=%3Cscript%3E','path=/merchant/services&tab=rewards'])send({...message,search});
+ send(message,'https://evil.test');send(message,undefined,w);expect(w.location.hash).toBe('#/page/merchant/referrals');send(message);expect(w.location.hash).toBe('#/page/merchant/referrals?tab=rewards&state=expired&ref=SARY-DEMO-270&page=2&tenant=269&lang=en');expect(w.syncServicePreviewContext).toHaveBeenCalledOnce();
+});
 it('preserves Calendly context from its owned frame without copying token parameters',()=>{
  frame.setAttribute('src','./service-workspace.html?embed=brain');w.history.replaceState(null,'','#/page/merchant/integrations/calendly');w.syncServicePreviewContext=vi.fn();
  const message={type:'sary-brain-preview',action:'serviceState',search:'path=/merchant/integrations/calendly&tenant=270&lang=en&scenario=destination-missing'};

@@ -1,4 +1,5 @@
 export function referralWorkspaceLabels(t:(key:string)=>string){return {
+codeId:t('merchantUx.referralWorkspace.codeId'),storedState:t('merchantUx.referralWorkspace.storedState'),notRecorded:t('merchantUx.referralWorkspace.notRecorded'),
 title:t('merchantUx.referralWorkspace.title'),
 description:t('merchantUx.referralWorkspace.description'),
 eyebrow:t('merchantUx.referralWorkspace.eyebrow'),

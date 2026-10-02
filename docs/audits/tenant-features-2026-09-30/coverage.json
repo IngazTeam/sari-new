@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-02T23:08:34.638Z",
+  "generatedAt": "2026-10-02T23:26:02.659Z",
   "definition": "Every registered route is accounted for; source inventory and design completion are different statuses.",
   "routes": [
     {
@@ -34634,7 +34634,7 @@
       ],
       "imperativeReads": [],
       "browserRequests": [],
-      "design": "تفصيلي جزئي",
+      "design": "تفصيلي",
       "productionChanged": true,
       "designSections": [
         "كل الأكواد والإحالات والمكافآت ببحث وفلاتر وصفحات وتفاصيل، مع فصل العداد عن المبيعات ومنح المزايا",
@@ -34643,7 +34643,7 @@
       ],
       "acceptancePlan": "الدخول والإعداد والتنقل والبحث والحفظ والتحقق من الحالة.",
       "gaps": [
-        "راجع tenant-referral-program-2026-10-03. الموك أب التفصيلي المشترك في المرحلة التالية.",
+        "راجع tenant-referral-program-2026-10-03. الموك أب يستخدم الصفحة الفعلية بتيننتين ولغتين وحالات القراءة والفشل والمراجعة. راجع tenant-referral-prototype-2026-10-03.",
         "لا منح فعلي لمزايا المكافآت ولا ترحيل تلقائي للأكواد القديمة، والإشعارات best-effort دون إيصال؛ لا Safari/iPhone فعلي أو نشر."
       ],
       "controlDetails": [

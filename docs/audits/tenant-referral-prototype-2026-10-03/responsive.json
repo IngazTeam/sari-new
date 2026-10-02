@@ -1,0 +1,116 @@
+{
+  "environment": "Chromium authored iframe; CSS 320/390/768/1440, heights 550/844. Root reserves 30px scrollbar gutter. No native Safari/iPhone.",
+  "accepted": [
+    {
+      "label": "ar-list-320",
+      "raw": false,
+      "rows": 25,
+      "scroll": 290,
+      "small": [],
+      "state": null,
+      "width": 290
+    },
+    {
+      "label": "ar-invitation-review-320",
+      "raw": false,
+      "rows": 25,
+      "scroll": 290,
+      "small": [],
+      "state": "open",
+      "width": 290
+    },
+    {
+      "label": "en-list-390",
+      "raw": false,
+      "rows": 25,
+      "scroll": 360,
+      "small": [],
+      "state": null,
+      "width": 360
+    },
+    {
+      "label": "en-claim-390",
+      "raw": false,
+      "rows": 4,
+      "scroll": 360,
+      "small": [],
+      "state": "open",
+      "width": 360
+    },
+    {
+      "label": "en-tenantB-readonly-320",
+      "raw": false,
+      "rows": 25,
+      "scroll": 290,
+      "small": [],
+      "state": null,
+      "width": 290
+    },
+    {
+      "label": "en-stale-error-320",
+      "raw": false,
+      "rows": 0,
+      "scroll": 290,
+      "small": [],
+      "state": "error",
+      "width": 290
+    },
+    {
+      "label": "en-empty-390",
+      "raw": false,
+      "rows": 0,
+      "scroll": 360,
+      "small": [],
+      "state": null,
+      "width": 360
+    },
+    {
+      "label": "en-list-768",
+      "raw": false,
+      "rows": 25,
+      "scroll": 738,
+      "small": [],
+      "state": null,
+      "width": 738
+    },
+    {
+      "label": "en-rewards-1440",
+      "raw": false,
+      "rows": 4,
+      "scroll": 1410,
+      "small": [],
+      "state": null,
+      "width": 1410
+    },
+    {
+      "label": "en-claim-320-height550-final",
+      "raw": false,
+      "rows": 4,
+      "scroll": 290,
+      "small": [],
+      "state": "open",
+      "width": 290
+    }
+  ],
+  "discarded": [
+    {
+      "label": "en-created-390",
+      "raw": false,
+      "rows": 0,
+      "scroll": 360,
+      "small": [
+        {
+          "height": 42.73486328125,
+          "text": "Cancel"
+        },
+        {
+          "height": 42.73486328125,
+          "text": "Close"
+        }
+      ],
+      "state": "closed",
+      "width": 360,
+      "reason": "Closing dialog animation, data-state=closed. Excluded from acceptance."
+    }
+  ]
+}
