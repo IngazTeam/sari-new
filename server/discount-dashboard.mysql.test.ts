@@ -18,16 +18,16 @@ describe.skipIf(!process.env.DATABASE_URL)('discount dashboard selected-tenant s
     expect(selected.discountCode).toMatchObject({ merchantId: other.merchantId, code: 'LOCAL10', value: 10, minOrderAmount: 0 });
     expect((await caller().list()).map(row => row.id)).toEqual([selected.discountCode.id]);
     await expect(caller().getById({ id: own.discountCode.id })).rejects.toMatchObject({ code: 'NOT_FOUND' });
-    await expect(caller().update({ id: own.discountCode.id, isActive: false })).rejects.toMatchObject({ code: 'NOT_FOUND' });
-    await expect(caller().delete({ id: own.discountCode.id })).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    await expect(caller().update({ id: own.discountCode.id, expectedRevision: 'a'.repeat(64), isActive: false })).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    await expect(caller().delete({ id: own.discountCode.id, expectedRevision: 'a'.repeat(64) })).rejects.toMatchObject({ code: 'NOT_FOUND' });
     expect((await caller(owner.merchantId).list())[0].isActive).toBe(1);
   });
   it('scopes updates/deletion and preserves the other tenant and zero minimum', async () => {
     const own = await caller(owner.merchantId).create(draft), selected = await caller().create(draft);
-    await caller().update({ id: selected.discountCode.id, isActive: false, maxUses: 3, expiresAt: '2030-02-28' });
+    await caller().update({ id: selected.discountCode.id, expectedRevision: (await caller().getById({id:selected.discountCode.id})).revision, isActive: false, maxUses: 3, expiresAt: '2030-02-28' });
     expect(await caller().getById({ id: selected.discountCode.id })).toMatchObject({ isActive: 0, maxUses: 3, expiresAt: '2030-02-28 00:00:00', minOrderAmount: 0 });
     expect(await caller().getStats()).toEqual({ total: 1, active: 0, used: 0 });
-    await caller().delete({ id: selected.discountCode.id }); expect(await caller().list()).toEqual([]); expect((await caller(owner.merchantId).list())[0].id).toBe(own.discountCode.id);
+    await caller().delete({ id: selected.discountCode.id, expectedRevision: (await caller().getById({id:selected.discountCode.id})).revision }); expect(await caller().list()).toEqual([]); expect((await caller(owner.merchantId).list())[0].id).toBe(own.discountCode.id);
   });
   it('serializes duplicate creation and reports conflict without inserting twice', async () => {
     const result = await Promise.allSettled([caller().create(draft), caller().create({ ...draft, code: 'local10' })]);
@@ -66,6 +66,22 @@ describe.skipIf(!process.env.DATABASE_URL)('discount dashboard selected-tenant s
   it('refuses fractional amounts and impossible dates without a row', async () => {
     for (const patch of [{ value: 10.5 }, { expiresAt: '2026-02-30' }]) await expect(caller().create({ ...draft, ...patch })).rejects.toMatchObject({ code: 'BAD_REQUEST' });
     expect(await caller().list()).toEqual([]);
+  });
+  it('rejects stale activation and deletion after usage changes, and supports explicit clearing', async () => {
+    const { discountCode } = await caller().create({ ...draft, maxUses: 3, expiresAt: '2030-02-28' });
+    const before = await caller().getById({ id: discountCode.id });
+    await q('UPDATE discount_codes SET usedCount=1 WHERE merchantId=? AND id=?', [other.merchantId, before.id]);
+    await expect(caller().update({ id: before.id, expectedRevision: before.revision, isActive: false })).rejects.toMatchObject({ code: 'CONFLICT' });
+    await expect(caller().delete({ id: before.id, expectedRevision: before.revision })).rejects.toMatchObject({ code: 'CONFLICT' });
+    const latest = await caller().getById({ id: before.id }); expect(latest.isActive).toBe(1);
+    await caller().update({ id: latest.id, expectedRevision: latest.revision, maxUses: null, expiresAt: null });
+    expect(await caller().getById({ id: before.id })).toMatchObject({ maxUses: null, expiresAt: null, usedCount: 1 });
+  });
+  it('refuses legacy unreviewed update and deletion inputs before modifying the code', async () => {
+    const { discountCode } = await caller().create(draft);
+    await expect(caller().update({ id: discountCode.id, isActive: false } as any)).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+    await expect(caller().delete({ id: discountCode.id } as any)).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+    expect((await caller().list())[0].isActive).toBe(1);
   });
   it('reads complete paged workspace counts and legacy faults without disclosing the other merchant', async () => {
     for (let i = 1; i <= 31; i++) await q("INSERT INTO discount_codes (merchantId,code,type,value,isActive,usedCount) VALUES (?,?,'percentage',10,1,?)", [other.merchantId, 'SEARCH' + String(i).padStart(2, '0'), i]);

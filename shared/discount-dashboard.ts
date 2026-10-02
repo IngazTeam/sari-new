@@ -13,8 +13,9 @@ export const discountCreateInput = z.object({
   minOrderAmount: wholeAmount.optional(), maxUses: discountRecordId.optional(), expiresAt: discountExpiryDate.optional(),
 }).strict().refine(data => data.type !== 'percentage' || data.value <= 100, { path: ['value'], message: 'discounts:invalid_percentage' });
 export const discountUpdateInput = z.object({
-  id: discountRecordId, isActive: z.boolean().optional(), maxUses: discountRecordId.optional(), expiresAt: discountExpiryDate.optional(),
+  id: discountRecordId, expectedRevision: z.string().regex(/^[a-f0-9]{64}$/), isActive: z.boolean().optional(), maxUses: discountRecordId.nullable().optional(), expiresAt: discountExpiryDate.nullable().optional(),
 }).strict().refine(data => data.isActive !== undefined || data.maxUses !== undefined || data.expiresAt !== undefined, 'discounts:empty_update');
 export const discountTargetInput = z.object({ id: discountRecordId }).strict();
+export const discountDeleteInput = discountTargetInput.extend({ expectedRevision: z.string().regex(/^[a-f0-9]{64}$/) }).strict();
 export type DiscountCreateInput = z.infer<typeof discountCreateInput>;
 export type DiscountUpdateInput = z.infer<typeof discountUpdateInput>;

@@ -1,0 +1,9 @@
+import { expect, it } from 'vitest';
+import { blankDiscount, discountNavigation, discountTemplate, parseDiscountDraft, scopedDiscountWorkspace } from '../client/src/lib/discount-workspace';
+it('parses Arabic digits precisely and refuses truncated or fractional input', () => {
+  expect(parseDiscountDraft({ ...blankDiscount(), code: ' local10 ', value: '١٠', maxUses: '۱۲' }).parsed).toMatchObject({ success: true, data: { code: 'LOCAL10', value: 10, maxUses: 12 } });
+  for (const value of ['1e2', '10.5', '1x', 'Infinity', '-1']) expect(parseDiscountDraft({ ...blankDiscount(), code: 'LOCAL10', value }).errors.value).toBe('invalidValue');
+});
+it('distinguishes clearing an existing limit from leaving a new optional field empty', () => { const d = { ...blankDiscount(), code: 'LOCAL10', value: '10' }; expect(parseDiscountDraft(d).parsed).toMatchObject({ success: true, data: { maxUses: undefined } }); expect(parseDiscountDraft(d, { id: 1, revision: 'a'.repeat(64) }).parsed).toMatchObject({ success: true, data: { maxUses: null, expiresAt: null } }); });
+it('calculates template expiry when selected rather than at bundle import', () => { expect(discountTemplate('templateFlash', new Date('2026-10-03T12:00Z')).expiresAt).toBe('2026-10-06'); expect(discountTemplate('templateFlash', new Date('2026-11-03T12:00Z')).expiresAt).toBe('2026-11-06'); for (const key of ['template10', 'template25', 'template50', 'templateWelcome', 'templateSeasonal', 'templateFlash']) expect(parseDiscountDraft(discountTemplate(key)).parsed.success).toBe(true); });
+it('bounds malformed URL selections and fails closed on untrusted snapshots', () => { const selection = discountNavigation('?page=-1&status=wrong&origin=unknown&q=hello'); expect(selection).toEqual({ page: 1, status: 'all', origin: 'all', query: 'hello' }); expect(scopedDiscountWorkspace({ actorId: 99 }, 7, 20, selection)).toBeNull(); });

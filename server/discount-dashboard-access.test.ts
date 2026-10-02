@@ -6,7 +6,7 @@ import { discountsRouter } from './routers-discounts';
 import { appRouter } from './routers';
 import { DiscountDashboardError } from './discount-dashboard-store';
 const draft = { code: 'LOCAL10', type: 'percentage' as const, value: 10 };
-const calls = [['list', undefined, 'list'], ['getStats', undefined, 'list'], ['getById', { id: 4 }, 'get'], ['workspace', {}, 'workspace'], ['create', draft, 'create'], ['update', { id: 4, isActive: false }, 'update'], ['delete', { id: 4 }, 'remove']] as const;
+const calls = [['list', undefined, 'list'], ['getStats', undefined, 'list'], ['getById', { id: 4 }, 'get'], ['workspace', {}, 'workspace'], ['create', draft, 'create'], ['update', { id: 4, expectedRevision: 'a'.repeat(64), isActive: false }, 'update'], ['delete', { id: 4, expectedRevision: 'a'.repeat(64) }, 'remove']] as const;
 beforeEach(() => { vi.resetAllMocks(); m.access.mockResolvedValue({ merchantId: 20, role: 'owner' }); m.list.mockResolvedValue([{ id: 4, merchantId: 20, isActive: 1, usedCount: 2 }]); m.get.mockResolvedValue({ id: 4, merchantId: 20 }); m.create.mockResolvedValue({ id: 5, merchantId: 20 }); });
 for (const mounted of [false, true]) describe(`discount tenant access mounted=${mounted}`, () => {
   const caller = (user: any = { id: 7, role: 'user' }, selection: any = '20') => {

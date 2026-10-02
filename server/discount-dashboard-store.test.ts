@@ -1,7 +1,7 @@
 import { beforeEach, expect, it, vi } from 'vitest';
 const m = vi.hoisted(() => ({ pool: vi.fn(), connection: vi.fn(), execute: vi.fn(), query: vi.fn(), beginTransaction: vi.fn(), commit: vi.fn(), rollback: vi.fn(), release: vi.fn(), destroy: vi.fn() }));
 vi.mock('./db/connection', () => ({ getPool: m.pool }));
-import { createDashboardDiscount, listDashboardDiscounts, updateDashboardDiscount, deleteDashboardDiscount } from './discount-dashboard-store';
+import { createDashboardDiscount, getDashboardDiscount, listDashboardDiscounts, updateDashboardDiscount, deleteDashboardDiscount } from './discount-dashboard-store';
 const input = { code: 'SAVE10', type: 'percentage' as const, value: 10 };
 let role: any, active: number, status: string, account: string;
 beforeEach(() => {
@@ -21,10 +21,10 @@ it.each(['revoked', 'viewer', 'suspended', 'blocked', 'unknown'])('rechecks %s a
   await expect(createDashboardDiscount(7, 20, input)).rejects.toMatchObject({ reason: 'forbidden' }); expect(m.execute.mock.calls.some(([sql]) => sql.startsWith('INSERT'))).toBe(false); expect(m.rollback).toHaveBeenCalledOnce();
 });
 it('retains authority locks until commit and restricts both target writes by tenant', async () => {
-  await updateDashboardDiscount(7, 20, { id: 4, isActive: false }); await deleteDashboardDiscount(7, 20, 4);
+  const revision = (await getDashboardDiscount(7, 20, 4)).revision; await updateDashboardDiscount(7, 20, { id: 4, expectedRevision: revision, isActive: false }); await deleteDashboardDiscount(7, 20, 4, revision);
   const writes = m.execute.mock.calls.filter(([sql]) => /^(UPDATE|DELETE)/.test(sql)); expect(writes).toHaveLength(2);
   for (const [sql, args] of writes) { expect(sql).toContain('WHERE merchantId=? AND id=?'); expect(args.slice(-2)).toEqual([20, 4]); }
-  expect(m.execute.mock.calls.some(([sql]) => sql.includes('FROM merchant_members') && sql.endsWith('FOR SHARE'))).toBe(true); expect(m.commit).toHaveBeenCalledTimes(2);
+  expect(m.execute.mock.calls.some(([sql]) => sql.includes('FROM merchant_members') && sql.endsWith('FOR SHARE'))).toBe(true); expect(m.commit).toHaveBeenCalledTimes(3);
 });
 it('destroys a connection after unknown COMMIT without reporting success or retrying', async () => { m.commit.mockRejectedValue(Error('lost ack')); await expect(createDashboardDiscount(7, 20, input)).rejects.toMatchObject({ reason: 'unavailable' }); expect(m.destroy).toHaveBeenCalledOnce(); expect(m.release).not.toHaveBeenCalled(); expect(m.rollback).not.toHaveBeenCalled(); expect(m.execute.mock.calls.filter(([sql]) => sql.startsWith('INSERT'))).toHaveLength(1); });
 it('destroys a connection after rollback failure', async () => { m.execute.mockRejectedValue(Error('PRIVATE SQL')); m.rollback.mockRejectedValue(Error()); await expect(listDashboardDiscounts(7, 20)).rejects.toMatchObject({ reason: 'unavailable' }); expect(m.destroy).toHaveBeenCalledOnce(); });

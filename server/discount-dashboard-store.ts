@@ -3,11 +3,11 @@ import type { DiscountCode } from '../drizzle/schema';
 import { discountCreateInput, discountUpdateInput, discountRecordId, type DiscountCreateInput, type DiscountUpdateInput } from '../shared/discount-dashboard';
 import { ALL_ROLES, hasPermission, type MerchantRole } from './_core/permissions';
 import { getPool } from './db/connection';
-import { projectDiscountWorkspace } from './discount-workspace-source';
+import { discountRow, projectDiscountWorkspace } from './discount-workspace-source';
 import type { DiscountSelection } from '../shared/discount-workspace';
 
 export class DiscountDashboardError extends Error {
-  constructor(readonly reason: 'unavailable' | 'forbidden' | 'missing' | 'duplicate') { super(`discounts:${reason}`); }
+  constructor(readonly reason: 'unavailable' | 'forbidden' | 'missing' | 'duplicate' | 'stale') { super(`discounts:${reason}`); }
 }
 async function rows(tx: PoolConnection, sql: string, args: any[]): Promise<any[]> {
   const [data] = await tx.execute(sql, args);
@@ -60,7 +60,7 @@ export function readDiscountWorkspace(actorId: number, merchantId: number, input
   });
 }
 export function getDashboardDiscount(actorId: number, merchantId: number, id: number) {
-  discountRecordId.parse(id); return transaction(actorId, merchantId, false, tx => target(tx, merchantId, id));
+  discountRecordId.parse(id); return transaction(actorId, merchantId, false, async tx => { const row = await target(tx, merchantId, id); return { ...row, revision: discountRow(row, new Date()).revision }; });
 }
 export function createDashboardDiscount(actorId: number, merchantId: number, input: DiscountCreateInput) {
   const data = discountCreateInput.parse(input);
@@ -75,19 +75,21 @@ export function createDashboardDiscount(actorId: number, merchantId: number, inp
 export function updateDashboardDiscount(actorId: number, merchantId: number, input: DiscountUpdateInput) {
   const data = discountUpdateInput.parse(input);
   return transaction(actorId, merchantId, true, async tx => {
-    await target(tx, merchantId, data.id, true);
+    const current = await target(tx, merchantId, data.id, true);
+    if (discountRow(current, new Date()).revision !== data.expectedRevision) throw new DiscountDashboardError('stale');
     const fields: string[] = [], values: any[] = [];
     if (data.isActive !== undefined) { fields.push('isActive=?'); values.push(data.isActive ? 1 : 0); }
     if (data.maxUses !== undefined) { fields.push('maxUses=?'); values.push(data.maxUses); }
-    if (data.expiresAt !== undefined) { fields.push('expiresAt=?'); values.push(data.expiresAt + ' 00:00:00'); }
+    if (data.expiresAt !== undefined) { fields.push('expiresAt=?'); values.push(data.expiresAt === null ? null : data.expiresAt + ' 00:00:00'); }
     await tx.execute(`UPDATE discount_codes SET ${fields.join(',')},updatedAt=UTC_TIMESTAMP() WHERE merchantId=? AND id=?`, [...values, merchantId, data.id]);
     return target(tx, merchantId, data.id);
   });
 }
-export function deleteDashboardDiscount(actorId: number, merchantId: number, id: number) {
+export function deleteDashboardDiscount(actorId: number, merchantId: number, id: number, expectedRevision: string) {
   discountRecordId.parse(id);
   return transaction(actorId, merchantId, true, async tx => {
-    await target(tx, merchantId, id, true);
+    const current = await target(tx, merchantId, id, true);
+    if (discountRow(current, new Date()).revision !== expectedRevision) throw new DiscountDashboardError('stale');
     const [result] = await tx.execute<any>('DELETE FROM discount_codes WHERE merchantId=? AND id=?', [merchantId, id]);
     if (result.affectedRows !== 1) throw new DiscountDashboardError('unavailable');
   });

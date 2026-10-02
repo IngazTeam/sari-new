@@ -2,7 +2,7 @@
 
 هذا حصر مصدر قابل لإعادة التوليد، وليس ادعاءً بأن كل مسار عمل اختُبر أو أُعيد تصميمه. يشمل المكونات الفرعية المحلية، الحقول، الأزرار، النوافذ، التبويبات، واجهات القراءة والتعديل. العناصر الديناميكية تحتاج مراجعة إضافية.
 
-- 126 مسارًا مسجلًا، 428 ملف واجهة متصلًا، 2497 عنصر تحكم في المصدر.
+- 126 مسارًا مسجلًا، 433 ملف واجهة متصلًا، 2509 عنصر تحكم في المصدر.
 - 0 رابطًا حرفيًا غير مطابق، و0 ملف صفحة غير متصل بالمسارات المحصورة.
 
 | الصفحة | الملفات | عناصر التحكم | القراءة / التعديل | موك أب للصفحة |
@@ -36,7 +36,7 @@
 | /merchant/woocommerce/analytics — تحليلات WooCommerce | 13 | 78 | 13 / 6 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/integrations/calendly — ربط Calendly | 7 | 46 | 8 / 5 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/chat-orders — مدخل لوحة التاجر | 0 | 0 | 0 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/discounts — كوبونات الخصم | 1 | 16 | 2 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/discounts — كوبونات الخصم | 7 | 28 | 3 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/referrals — إحالات التجار | 2 | 2 | 4 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/abandoned-carts — السلات المتروكة | 7 | 2 | 4 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/occasion-campaigns — حملات المناسبات | 1 | 4 | 3 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -1541,26 +1541,43 @@
 | 36 | a | · | CalendlyLists |
 | 36 | Button | تسمية ديناميكية / تحتاج مراجعة | CalendlyLists |
 
-## client/src/pages/DiscountCodes.tsx
+## client/src/components/merchant/DiscountWorkspace.tsx
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 258 | Button | تسمية ديناميكية / تحتاج مراجعة | DiscountCodes |
-| 261 | DialogContent | percentage (%) | DiscountCodes |
-| 269 | Input | تسمية ديناميكية / تحتاج مراجعة | DiscountCodes |
-| 280 | Select | تسمية ديناميكية / تحتاج مراجعة | DiscountCodes |
-| 302 | Input | percentage (%) | DiscountCodes |
-| 314 | Input | 100 | DiscountCodes |
-| 326 | Input | 100 | DiscountCodes |
-| 337 | Input | تسمية ديناميكية / تحتاج مراجعة | DiscountCodes |
-| 347 | Button | تسمية ديناميكية / تحتاج مراجعة | DiscountCodes |
-| 350 | Button | تسمية ديناميكية / تحتاج مراجعة | DiscountCodes |
-| 414 | button | تسمية ديناميكية / تحتاج مراجعة | DiscountCodes |
-| 490 | Button | t(                             code.isActive                               ? 'merchantUx.actions.deactivateNamed'                               : 'merchantUx.actions.activateNamed',                             { name | DiscountCodes |
-| 508 | Button | تسمية ديناميكية / تحتاج مراجعة | DiscountCodes |
-| 529 | AlertDialogContent | تسمية ديناميكية / تحتاج مراجعة | DiscountCodes |
-| 537 | AlertDialogCancel | تسمية ديناميكية / تحتاج مراجعة | DiscountCodes |
-| 538 | AlertDialogAction | تسمية ديناميكية / تحتاج مراجعة | DiscountCodes |
+| 61 | Button | تسمية ديناميكية / تحتاج مراجعة | DiscountWorkspace |
+| 61 | Button | تسمية ديناميكية / تحتاج مراجعة | DiscountWorkspace |
+| 64 | input | تسمية ديناميكية / تحتاج مراجعة | DiscountWorkspace |
+| 64 | Button | تسمية ديناميكية / تحتاج مراجعة | DiscountWorkspace |
+| 64 | select | all | DiscountWorkspace |
+| 64 | select | all manual automatic | DiscountWorkspace |
+| 64 | Button | تسمية ديناميكية / تحتاج مراجعة | DiscountWorkspace |
+| 66 | Button | تسمية ديناميكية / تحتاج مراجعة | · |
+| 66 | Button | تسمية ديناميكية / تحتاج مراجعة | DiscountWorkspace |
+| 66 | Button | تسمية ديناميكية / تحتاج مراجعة | DiscountWorkspace |
+| 67 | Button | تسمية ديناميكية / تحتاج مراجعة | DiscountWorkspace |
+| 67 | Button | تسمية ديناميكية / تحتاج مراجعة | DiscountWorkspace |
+| 68 | DialogContent | create edit details | DiscountWorkspace |
+| 70 | Button | تسمية ديناميكية / تحتاج مراجعة | DiscountWorkspace |
+| 70 | Button | تسمية ديناميكية / تحتاج مراجعة | DiscountWorkspace |
+| 70 | Button | تسمية ديناميكية / تحتاج مراجعة | DiscountWorkspace |
+| 70 | Button | تسمية ديناميكية / تحتاج مراجعة | DiscountWorkspace |
+| 71 | Button | تسمية ديناميكية / تحتاج مراجعة | DiscountWorkspace |
+
+## client/src/components/merchant/DiscountEditor.tsx
+
+| السطر | النوع | التسمية | القسم |
+|---:|---|---|---|
+| 28 | input | تسمية ديناميكية / تحتاج مراجعة | DiscountEditor |
+| 29 | Button | تسمية ديناميكية / تحتاج مراجعة | DiscountEditor |
+| 29 | Button | تسمية ديناميكية / تحتاج مراجعة | DiscountEditor |
+| 30 | Button | تسمية ديناميكية / تحتاج مراجعة | DiscountEditor |
+| 30 | Button | تسمية ديناميكية / تحتاج مراجعة | DiscountEditor |
+| 32 | select | template10 template25 template50 templateWelcome templateSeasonal templateFlash | DiscountEditor |
+| 32 | select | تسمية ديناميكية / تحتاج مراجعة | DiscountEditor |
+| 33 | summary | تسمية ديناميكية / تحتاج مراجعة | DiscountEditor |
+| 34 | Button | تسمية ديناميكية / تحتاج مراجعة | DiscountEditor |
+| 34 | Button | تسمية ديناميكية / تحتاج مراجعة | DiscountEditor |
 
 ## client/src/pages/merchant/Referrals.tsx
 

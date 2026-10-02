@@ -1932,6 +1932,35 @@
           "api": "woocommerce.requestReviewedConnection"
         }
       ]
+    },
+    {
+      "routes": [
+        "/merchant/discounts"
+      ],
+      "removed": [
+        "discounts.list",
+        "discounts.getStats"
+      ],
+      "required": [
+        "discounts.workspace",
+        "discounts.create",
+        "discounts.update",
+        "discounts.delete"
+      ],
+      "note": "The scoped workspace replaces separate list/stat reads with complete counts and 25-row filtered pages. Create templates and all existing mutations remain reachable. Update and delete now require the exact reviewed revision; nullable limits can be explicitly cleared.",
+      "evidence": [
+        "docs/audits/tenant-discount-workspace-2026-10-03/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "client/src/components/merchant/DiscountWorkspace.tsx",
+          "contains": "expectedRevision: submitted.row.revision"
+        },
+        {
+          "file": "shared/discount-dashboard.ts",
+          "contains": "discountDeleteInput"
+        }
+      ]
     }
   ]
 }
