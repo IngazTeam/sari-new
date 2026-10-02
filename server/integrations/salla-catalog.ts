@@ -28,6 +28,15 @@ export async function sallaCatalogAuthority(merchantId:number,accessToken:string
 export async function assertCatalogReadAuthority(a:SallaOrderAuthority) {
   const pool=await getPool();if(!pool)throw Error('Database unavailable');await assertSallaOrderAuthority(pool,a);
 }
+/** A dashboard request reserves its log atomically. A supplied log is checked
+ * before any provider read; trusted system work creates its own log as usual. */
+export async function beginSallaCatalogSync(a:SallaOrderAuthority,kind:'full_sync'|'stock_sync',prepared?:number) {
+  return transaction(async c=>{
+    await assertSallaOrderAuthority(c,a,true);
+    if(prepared!==undefined){internal.parse(prepared);const [rows]=await c.execute<any[]>("SELECT id FROM sync_logs WHERE id=? AND merchantId=? AND syncType=? AND status='in_progress' FOR SHARE",[prepared,a.merchantId,kind]);if(rows.length!==1)throw Error('Prepared sync log unavailable');return prepared;}
+    const [result]=await c.execute<any>("INSERT INTO sync_logs(merchantId,syncType,status,itemsSynced,startedAt) VALUES (?,?,'in_progress',0,UTC_TIMESTAMP())",[a.merchantId,kind]);return internal.parse(Number(result.insertId));
+  });
+}
 async function transaction<T>(work:(c:PoolConnection)=>Promise<T>) {
   const pool=await getPool();if(!pool)throw Error('Database unavailable');const c=await pool.getConnection();let reusable=true,committing=false;
   try{await c.beginTransaction();const result=await work(c);committing=true;await c.commit();committing=false;return result;}

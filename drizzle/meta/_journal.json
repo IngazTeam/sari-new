@@ -1317,6 +1317,13 @@
       "when": 1795392000049,
       "tag": "0187_byaan_resync_requests",
       "breakpoints": true
+    },
+    {
+      "idx": 188,
+      "version": "5",
+      "when": 1795392000050,
+      "tag": "0188_salla_sync_requests",
+      "breakpoints": true
     }
   ]
 }

@@ -4072,6 +4072,17 @@ export const byaanResyncRequests = mysqlTable("byaan_resync_requests", {
   updatedAt: datetime("updated_at", { mode: 'string', fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
 }, table => [uniqueIndex("uq_byaan_resync_request").on(table.merchantId, table.requestId), index("idx_byaan_resync_rate").on(table.merchantId, table.createdAt)]);
 
+export const sallaSyncRequests = mysqlTable('salla_sync_requests', {
+  id:int().autoincrement().primaryKey(),
+  merchantId:int('merchant_id').notNull().references(()=>merchants.id,{onDelete:'cascade'}),
+  actorId:int('actor_id').notNull().references(()=>users.id,{onDelete:'cascade'}),
+  requestId:char('request_id',{length:36}).notNull(),connectionRevision:char('connection_revision',{length:64}).notNull(),
+  syncType:varchar('sync_type',{length:8}).notNull(),syncLogId:int('sync_log_id').references(()=>syncLogs.id,{onDelete:'set null'}),
+  state:varchar({length:16}).notNull(),leaseUntil:datetime('lease_until',{mode:'string',fsp:3}).notNull(),
+  createdAt:datetime('created_at',{mode:'string',fsp:3}).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+  updatedAt:datetime('updated_at',{mode:'string',fsp:3}).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+},table=>[uniqueIndex('uq_salla_sync_request').on(table.merchantId,table.requestId),uniqueIndex('uq_salla_sync_log').on(table.syncLogId),index('idx_salla_sync_active').on(table.merchantId,table.state,table.leaseUntil),index('idx_salla_sync_rate').on(table.merchantId,table.createdAt)]);
+
 export const byaanWebhookReceipts = mysqlTable("byaan_webhook_receipts", {
 	id: int().autoincrement().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),

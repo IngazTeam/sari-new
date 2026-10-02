@@ -1,0 +1,22 @@
+CREATE TABLE IF NOT EXISTS `salla_sync_requests` (
+  `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `merchant_id` INT NOT NULL,
+  `actor_id` INT NOT NULL,
+  `request_id` CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `connection_revision` CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `sync_type` VARCHAR(8) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `sync_log_id` INT NULL,
+  `state` VARCHAR(16) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `lease_until` DATETIME(3) NOT NULL,
+  `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  `updated_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  UNIQUE KEY `uq_salla_sync_request` (`merchant_id`,`request_id`),
+  UNIQUE KEY `uq_salla_sync_log` (`sync_log_id`),
+  KEY `idx_salla_sync_active` (`merchant_id`,`state`,`lease_until`),
+  KEY `idx_salla_sync_rate` (`merchant_id`,`created_at`),
+  CONSTRAINT `fk_salla_sync_merchant` FOREIGN KEY (`merchant_id`) REFERENCES `merchants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_salla_sync_actor` FOREIGN KEY (`actor_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_salla_sync_log` FOREIGN KEY (`sync_log_id`) REFERENCES `sync_logs` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `chk_salla_sync_state` CHECK (`state` IN ('pending','success','failed','interrupted')),
+  CONSTRAINT `chk_salla_sync_type` CHECK (`sync_type` IN ('full','stock'))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

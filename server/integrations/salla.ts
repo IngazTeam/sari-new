@@ -2,7 +2,7 @@ import { sallaShippingSchema, type SallaShipping } from '../../shared/salla-orde
 import { sallaExternalId } from '../../shared/salla-sales-observations';
 import axios from 'axios';
 import { createSyncLog, updateSyncLog } from '../db';
-import { sallaCatalogAuthority, assertCatalogReadAuthority, persistSallaCatalogRead, listSallaCatalogPage, finishSallaCatalogSync, type SallaCatalogReceipt,type SallaCatalogGuard } from './salla-catalog';
+import { sallaCatalogAuthority, assertCatalogReadAuthority, persistSallaCatalogRead, listSallaCatalogPage, finishSallaCatalogSync,beginSallaCatalogSync, type SallaCatalogReceipt,type SallaCatalogGuard } from './salla-catalog';
 import { readSallaProductPage, readSallaProductResponse } from './salla-product-normalization';
 import type { SallaOrderAuthority } from './salla-order-projection';
 import { readSallaCreationAcknowledgement, readSallaCreatedOrder, sallaOrderPhone } from './salla-order-result';
@@ -65,10 +65,10 @@ export class SallaIntegration {
   }
 
   /** Only authenticated reads of the current store may project catalog data. */
-  async fullSync(): Promise<{ success: boolean; synced: number }> {
+  async fullSync(preparedRevision?:number): Promise<{ success: boolean; synced: number }> {
     await this.catalogGuard?.();
     const authority = await sallaCatalogAuthority(this.merchantId, this.accessToken);
-    const revision = await createSyncLog(this.merchantId, 'full_sync', 'in_progress');
+    const revision = await beginSallaCatalogSync(authority,'full_sync',preparedRevision);
     let synced = 0;
     try {
       const seen = new Set<string>();
@@ -97,10 +97,10 @@ export class SallaIntegration {
   }
 
   /** Refresh only verified products from this store, never another integration's IDs. */
-  async syncStock(): Promise<{ success: boolean; updated: number }> {
+  async syncStock(preparedRevision?:number): Promise<{ success: boolean; updated: number }> {
     await this.catalogGuard?.();
     const authority = await sallaCatalogAuthority(this.merchantId, this.accessToken);
-    const revision = await createSyncLog(this.merchantId, 'stock_sync', 'in_progress');
+    const revision = await beginSallaCatalogSync(authority,'stock_sync',preparedRevision);
     let updated = 0, cursor = 0, read = 0;
     try {
       while (true) {
