@@ -73,6 +73,8 @@ describe('complete tenant page prototype', () => {
         ["/merchant/virtual-team", "personas.html?embed=brain"],
       ]);
       const destination = page.redirect || page.route;
+      if (/^\/merchant\/campaigns(?:\/|$)/.test(destination)) embeddedPages.set(destination, 'campaign-workspace.html?embed=brain&path=' + encodeURIComponent(destination));
+      if (/^\/merchant\/(?:services(?:\/|$)|service-categories$|service-packages$|staff$|bookings$|calendar(?:\/settings)?$)/.test(destination)) embeddedPages.set(destination, 'service-workspace.html?embed=brain&path=' + encodeURIComponent(destination));
       if (embeddedPages.has(destination)) {
         await vi.waitFor(() =>
           expect(
@@ -137,14 +139,14 @@ describe('complete tenant page prototype', () => {
     await vi.waitFor(() => expect(w.document.querySelectorAll('.ow-list > li')).toHaveLength(25));
   });
 
-  it('persists new records and renders user input as text, never executable HTML', () => {
-    route('/merchant/service-categories'); click('primary');
-    input('#dialog #page-f0', '<img src=x onerror=alert(1)>'); submit('create');
-    expect(w.document.querySelectorAll('tbody tr')).toHaveLength(9);
-    expect(text()).toContain('<img src=x onerror=alert(1)>');
-    expect(w.document.querySelector('#main img[src=x]')).toBeNull();
-    route('/merchant/tools'); route('/merchant/service-categories');
-    expect(w.document.querySelectorAll('tbody tr')).toHaveLength(9);
+  it('opens the actual category editor and retains its filters without the retired create form', () => {
+    route('/merchant/service-categories?edit=new&q=test');
+    const frame = w.document.querySelector('#main iframe');
+    const url = new URL(frame.getAttribute('src'), w.location.href);
+    expect(url.pathname).toBe('/service-workspace.html');
+    expect(Object.fromEntries(url.searchParams)).toEqual({ edit: 'new', q: 'test', embed: 'brain', path: '/merchant/service-categories' });
+    expect(w.document.querySelector('[data-page-form="create"]')).toBeNull();
+    expect(errors).toEqual([]);
   });
 
   it('preserves unchecked form settings after save and reopening', () => {
@@ -185,15 +187,13 @@ describe('complete tenant page prototype', () => {
     expect(text()).toContain('غير متصل');
   });
 
-  it('prevents advancing an empty campaign and reviews the drafted message before completion', () => {
-    route('/merchant/campaigns/new'); submit('compose');
-    expect(w.document.querySelector('[aria-current=step]').textContent).toContain('الجمهور');
-    input('#page-f0', 'حملة المراجعة'); submit('compose');
-    expect(w.document.querySelector('[aria-current=step]').textContent).toContain('الرسالة');
-    submit('compose');
-    expect(w.document.querySelector('[aria-current=step]').textContent).toContain('الرسالة');
-    input('#page-f0', 'رسالة حملة توضيحية'); submit('compose');
-    expect(text()).toContain('راجع قبل الحفظ');
-    expect(text()).toContain('رسالة حملة توضيحية');
+  it('opens the actual campaign editor with its scenario and language instead of the retired wizard', () => {
+    route('/merchant/campaigns/new?lang=en&scenario=empty');
+    const frame = w.document.querySelector('#main iframe');
+    const url = new URL(frame.getAttribute('src'), w.location.href);
+    expect(url.pathname).toBe('/campaign-workspace.html');
+    expect(Object.fromEntries(url.searchParams)).toEqual({ lang: 'en', scenario: 'empty', embed: 'brain', path: '/merchant/campaigns/new' });
+    expect(w.document.querySelector('[data-page-form="compose"]')).toBeNull();
+    expect(errors).toEqual([]);
   });
 });

@@ -51,6 +51,8 @@ node prototypes/tenant-dashboard/build-pages.mjs
 
 ## ما نُفّذ في التطبيق
 
+موك أب الخدمات والحجوزات والتقويم يستخدم الشاشات الفعلية عبر `node prototypes/tenant-dashboard/build-service-preview.mjs`، وفحص أنواعه بـ `node node_modules/typescript/bin/tsc --noEmit -p prototypes/tenant-dashboard/tsconfig.service-preview.json`. التقويم وإعداداته والإنشاء والمراجعة والتذكيرات والربط والفصل أمثلة محلية في الذاكرة، دون Google أو إرسال. يتوفر 105 مواعيد و12 مثال خصائص و20 حالة وتيننتان ولغتان. إعادة تحميل الصفحة تعيد أمثلة البيانات؛ زر إعادة المثال ينظف معرّف طلبه المعلق فقط. راجع تقرير `tenant-calendar-prototype-2026-10-02` وحدود Safari/iPhone.
+
 موك أب التقارير يستخدم مكوّن التطبيق نفسه مع16 حالة محلية: `node prototypes/tenant-dashboard/build-reports.mjs`. فحص أنواعه: `node node_modules/typescript/bin/tsc --noEmit -p prototypes/tenant-dashboard/tsconfig.reports.json`. تفاصيل المطابقة وحدود التنزيل والمتصفح في `docs/audits/tenant-report-prototype-2026-09-30/REPORT.md`.
 
 لتحديث موك أب الطلبات من مكونات التطبيق: `node prototypes/tenant-dashboard/build-orders.mjs`. المحاكاة محلية في الذاكرة؛ حدود المطابقة الحالية موثقة في `docs/audits/tenant-order-prototype-2026-09-30/REPORT.md`.

@@ -1,0 +1,6 @@
+{
+  "extends": "../../tsconfig.json",
+  "include": ["src/service-preview*.ts", "src/service-preview*.tsx", "src/booking-preview-model.ts", "src/calendar-preview*.ts", "../../server/_core/types/*.d.ts"],
+  "exclude": ["../../node_modules", "../../dist"],
+  "compilerOptions": { "incremental": false, "target": "ES2022" }
+}

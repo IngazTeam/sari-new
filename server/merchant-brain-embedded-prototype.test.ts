@@ -13,6 +13,14 @@ beforeEach(()=>{
 });
 afterEach(()=>dom.window.close());
 const send=(data:any,origin='http://127.0.0.1:4329',source=frame.contentWindow)=>w.dispatchEvent(new w.MessageEvent('message',{origin,source,data}));
+it('syncs calendar details, period, request and connection routes only from the owned local frame',()=>{
+ frame.setAttribute('src','./service-workspace.html?embed=brain');w.history.replaceState(null,'','#/page/merchant/calendar');w.syncServicePreviewContext=vi.fn();
+ const message={type:'sary-brain-preview',action:'serviceState',search:'path=/merchant/calendar&view=week&date=2026-10-03&sync=create_unknown&appointment=3&tenant=270&lang=en'};
+ for(const search of ['path=/merchant/calendar/settings/secret','path=/merchant/calendar&appointment=0','path=/merchant/calendar&date=2026-02-30','path=/merchant/calendar&sync=paid','path=/merchant/calendar&request=bad','path=/merchant/calendar&create=2','path=/merchant/calendar&appointment=1&appointment=2','path=/merchant/calendar&token=secret'])send({...message,search});
+ send(message,'https://evil.test');send(message,undefined,w);expect(w.location.hash).toBe('#/page/merchant/calendar');send(message);expect(w.location.hash).toContain('view=week&date=2026-10-03&sync=create_unknown&appointment=3');
+ send({...message,search:'path=/merchant/calendar&create=1&request=00000000-0000-4000-8000-000000000285'});expect(w.location.hash).toContain('create=1&request=00000000-0000-4000-8000-000000000285');
+ send({...message,search:'path=/merchant/calendar/settings&oauth=connected'});expect(w.location.hash).toBe('#/page/merchant/calendar/settings?oauth=connected');expect(frame.isConnected).toBe(true);
+});
 it('syncs booking detail and complete filters only from the owned preview frame',()=>{
  frame.setAttribute('src','./service-workspace.html?embed=brain');w.history.replaceState(null,'','#/page/merchant/bookings');w.syncServicePreviewContext=vi.fn();
  const message={type:'sary-brain-preview',action:'serviceState',search:'path=/merchant/bookings&booking=7&status=pending&payment=unpaid&from=2026-10-02&to=2026-10-20&service=1&staff=2&page=2&tenant=270&lang=en'};
