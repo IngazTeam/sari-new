@@ -16,6 +16,7 @@ import {
   appointmentRequestLookupSchema,
 } from "../shared/appointment-request";
 import { readAppointmentCreationRequest } from "./appointment-creation-requests";
+import { appointmentSlotsView, appointmentRequestView, appointmentReceiptView } from '../shared/appointment-workspace';
 
 export const calendarAppointmentProcedures = {
   getReminderReview: permissionProcedure("orders.manage")
@@ -40,13 +41,15 @@ export const calendarAppointmentProcedures = {
     .mutation(async ({ ctx, input }) => {
       try {
         const { requestId, ...fields } = input;
-        return await bookCalendarAppointment(
+        const result = await bookCalendarAppointment(
           {
             ...fields,
             merchantId: ctx.merchantId,
           },
           { requestId, actorUserId: ctx.user.id }
         );
+        if(result.requestId!==requestId)throw Error('Appointment request mismatch');
+        return appointmentReceiptView.parse({...result,actorId:ctx.user.id,merchantId:ctx.merchantId,checkedAt:new Date().toISOString()});
       } catch {
         throw new TRPCError({
           code: "CONFLICT",
@@ -59,10 +62,12 @@ export const calendarAppointmentProcedures = {
     .input(appointmentRequestLookupSchema)
     .query(async ({ ctx, input }) => {
       try {
-        return await readAppointmentCreationRequest(ctx.merchantId, {
+        const result = await readAppointmentCreationRequest(ctx.merchantId, {
           ...input,
           actorUserId: ctx.user.id,
         });
+        if(result.requestId!==input.requestId)throw Error('Appointment request mismatch');
+        return appointmentRequestView.parse({...result,actorId:ctx.user.id,merchantId:ctx.merchantId,checkedAt:new Date().toISOString()});
       } catch {
         throw new TRPCError({
           code: "CONFLICT",
@@ -87,7 +92,8 @@ export const calendarAppointmentProcedures = {
     .input(appointmentAvailabilitySchema)
     .query(async ({ ctx, input }) => {
       try {
-        return await getCalendarAvailability(ctx.merchantId, input);
+        const result=await getCalendarAvailability(ctx.merchantId,input);
+        return appointmentSlotsView.parse({...result,selection:input,actorId:ctx.user.id,merchantId:ctx.merchantId,checkedAt:new Date().toISOString()});
       } catch {
         throw new TRPCError({
           code: "PRECONDITION_FAILED",
