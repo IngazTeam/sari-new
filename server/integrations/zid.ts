@@ -34,6 +34,8 @@ import {
   getZidSyncLogs,
 } from '../db_zid';
 import {runReviewedZidSync} from './zid-reviewed-sync';
+import {requestReviewedZidSync,readZidSyncRequest,readLatestZidSyncRequest,ZidSyncRequestFault} from './zid-sync-request';
+import {zidSyncRequest,zidSyncLookup} from '../../shared/zid-sync-request';
 import { assertRecentReauthentication, ReauthenticationError } from '../security/reauthentication';
 import {
   fetchZidStoreIdentity,
@@ -124,11 +126,14 @@ const zidDashboardProcedure=permissionProcedure('integrations.manage').use(async
 
 function connectionError(error:ZidConnectionFault){const code=error.reason==='forbidden'?'FORBIDDEN':error.reason==='missing'?'NOT_FOUND':error.reason==='unavailable'?'INTERNAL_SERVER_ERROR':error.reason==='changed'||error.reason==='conflict'?'CONFLICT':'PRECONDITION_FAILED';return new TRPCError({code,message:error.message});}
 async function reviewedWrite<T>(work:()=>Promise<T>){
-  try{return await work();}catch(error){if(error instanceof ZidConnectionFault)throw connectionError(error);throw error;}
+  try{return await work();}catch(error){if(error instanceof ZidConnectionFault)throw connectionError(error);if(error instanceof ZidSyncRequestFault)throw new TRPCError({code:error.reason==='unavailable'?'INTERNAL_SERVER_ERROR':error.reason==='missing'?'NOT_FOUND':error.reason==='rate_limited'?'TOO_MANY_REQUESTS':'CONFLICT',message:error.message});throw error;}
 }
 
 // Zid Integration Router
 export const zidRouter = router({
+  requestSync:zidDashboardProcedure.input(zidSyncRequest).mutation(({ctx,input})=>reviewedWrite(()=>requestReviewedZidSync(ctx.user.id,ctx.merchantId,input))),
+  syncRequest:zidDashboardProcedure.input(zidSyncLookup).query(({ctx,input})=>reviewedWrite(()=>readZidSyncRequest(ctx.user.id,ctx.merchantId,input))),
+  latestSyncRequest:zidDashboardProcedure.query(({ctx})=>reviewedWrite(()=>readLatestZidSyncRequest(ctx.user.id,ctx.merchantId))),
   workspace: zidDashboardProcedure.query(({ctx})=>readZidWorkspace(ctx.user.id,ctx.merchantId)),
   logsWorkspace: zidDashboardProcedure.input(zidLogsInput).query(({ctx,input})=>readZidLogsWorkspace(ctx.user.id,ctx.merchantId,input)),
   saveWorkspaceSettings:zidDashboardProcedure.input(zidSettingsInput).mutation(({ctx,input})=>reviewedWrite(()=>saveZidWorkspaceSettings(ctx.user.id,ctx.merchantId,input))),

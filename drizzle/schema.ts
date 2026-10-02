@@ -4084,6 +4084,15 @@ export const sallaSyncRequests = mysqlTable('salla_sync_requests', {
   updatedAt:datetime('updated_at',{mode:'string',fsp:3}).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
 },table=>[uniqueIndex('uq_salla_sync_request').on(table.merchantId,table.requestId),uniqueIndex('uq_salla_sync_log').on(table.syncLogId),index('idx_salla_sync_active').on(table.merchantId,table.state,table.leaseUntil),index('idx_salla_sync_rate').on(table.merchantId,table.createdAt)]);
 
+export const zidSyncRequests=mysqlTable('zid_sync_requests',{
+ id:int().autoincrement().primaryKey(),merchantId:int('merchant_id').notNull().references(()=>merchants.id,{onDelete:'cascade'}),actorId:int('actor_id').notNull().references(()=>users.id,{onDelete:'cascade'}),
+ requestId:char('request_id',{length:36}).notNull(),connectionRevision:char('connection_revision',{length:64}).notNull(),executionRevision:char('execution_revision',{length:64}).notNull(),resource:varchar({length:16}).notNull(),resourceMask:tinyint('resource_mask').notNull(),
+ state:varchar({length:16}).notNull(),leaseUntil:datetime('lease_until',{mode:'string',fsp:3}).notNull(),createdAt:datetime('created_at',{mode:'string',fsp:3}).notNull().default(sql`CURRENT_TIMESTAMP(3)`),updatedAt:datetime('updated_at',{mode:'string',fsp:3}).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+},t=>[uniqueIndex('uq_zid_sync_request').on(t.merchantId,t.requestId),index('idx_zid_sync_active').on(t.merchantId,t.state,t.leaseUntil),index('idx_zid_sync_rate').on(t.merchantId,t.createdAt),check('chk_zid_sync_request_state',sql`${t.state} IN ('pending','success','failed','interrupted')`),check('chk_zid_sync_request_resource',sql`${t.resource} IN ('all','products','orders','customers') AND ${t.resourceMask} BETWEEN 1 AND 7`)]);
+export const zidSyncRequestResources=mysqlTable('zid_sync_request_resources',{
+ requestPk:int('request_pk').notNull().references(()=>zidSyncRequests.id,{onDelete:'cascade'}),resource:varchar({length:16}).notNull(),logId:int('log_id').references(()=>zidSyncLogs.id,{onDelete:'set null'}),started:tinyint().notNull().default(0),
+},t=>[primaryKey({columns:[t.requestPk,t.resource]}),uniqueIndex('uq_zid_sync_request_log').on(t.logId),check('chk_zid_sync_resource',sql`${t.resource} IN ('products','orders','customers') AND ${t.started} IN (0,1)`)]);
+
 export const byaanWebhookReceipts = mysqlTable("byaan_webhook_receipts", {
 	id: int().autoincrement().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),

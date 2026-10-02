@@ -1,4 +1,4 @@
-import {createZidSyncReview,type ZidSyncResource} from './zid-sync-review';
+import {createZidSyncReview,type ZidSyncResource,type ZidSyncLifecycle} from './zid-sync-review';
 import {withZidSyncLock} from './zid-sync-lock';
 import {getValidZidApiCredentials} from './zid-token-manager';
 import {fetchAllZidProducts,fetchZidStoreIdentity} from './zid-product-sync';
@@ -7,9 +7,9 @@ import {requireZidProductStore} from './zid-product-normalization';
 import {upsertNormalizedProductsFromZid,upsertNormalizedOrdersFromZid,upsertNormalizedCustomersFromZid} from '../db';
 
 /** Every dashboard provider request, batch persistence and completion checks the same selected authority. */
-export async function runReviewedZidSync(actorId:number,merchantId:number,input:{resource:ZidSyncResource;revision?:string},fetchImpl?:typeof fetch){
+export async function runReviewedZidSync(actorId:number,merchantId:number,input:{resource:ZidSyncResource;revision?:string},fetchImpl?:typeof fetch,lifecycle?:ZidSyncLifecycle){
  return withZidSyncLock(merchantId,async()=>{
-  const review=await createZidSyncReview(actorId,merchantId,input.resource,input.revision);
+  const review=await createZidSyncReview(actorId,merchantId,input.resource,input.revision,lifecycle);
   const credentials=await getValidZidApiCredentials({merchantId,fetchImpl,beforeRead:review.beforeCredentials,afterRefresh:review.afterRefresh});
   const apiCredentials={authorizationToken:credentials.authorizationToken,managerToken:credentials.managerToken};
   const provider={credentials:apiCredentials,fetchImpl,beforeRequest:review.checkpoint};

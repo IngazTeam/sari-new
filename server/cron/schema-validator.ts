@@ -10,6 +10,7 @@
  * - Called once from server startup after DB connection is established
  */
 
+import {ZID_SYNC_REQUIREMENTS} from '../integrations/zid-sync-schema';
 import { inspectSchemaRequirements, type SchemaRequirement } from '../db/schema-readiness';
 import { WHATSAPP_PRIMARY_SCHEMA_REQUIREMENTS } from '../channels/whatsapp/schema-readiness';
 import { SALLA_CREATION_EFFECT_REQUIREMENTS } from '../integrations/salla-creation-effects';
@@ -19,6 +20,7 @@ import { BYAAN_SALES_OPERATION_REQUIREMENTS } from '../integrations/byaan-sales-
 // These names are the deployed Drizzle names, including legacy camelCase tables.
 export const CRITICAL_SCHEMA_REQUIREMENTS: readonly SchemaRequirement[] = [
   ...SALLA_CREATION_EFFECT_REQUIREMENTS,
+  ...ZID_SYNC_REQUIREMENTS,
   ...CONVERSION_HISTORY_REQUIREMENTS,
   ...BYAAN_SALES_OPERATION_REQUIREMENTS,
   {table:'zid_products',columns:['zid_store_id','track_inventory','has_variants'],uniqueIndexes:[{name:'zid_products_merchant_store_product_unique',columns:['merchant_id','zid_store_id','zid_product_id']}]},
