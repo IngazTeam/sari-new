@@ -1,4 +1,11 @@
 export const wooWorkspaceEn={
+ orderDetailsHint:"Review the saved order and all its items. Each action checks the latest permitted version before execution.",
+ noteInvalid:"Use a customer note of at most 1,000 characters.",
+ chooseStatus:"Choose a valid order status.",
+ clearNote:"The existing note will be cleared.",
+ statusUnavailable:"A configured connection and a known provider version are required. Sync the order before changing its status.",
+ editReview:"Edit the action",
+ orderDateHint:"Leave both dates empty for all orders, or select a UTC period of up to 366 days.",
  productDetails:"Product details",
  timelineDetails:"View period values",
  dataQuality:"Data quality",
@@ -230,6 +237,13 @@ export const wooWorkspaceEn={
   "order_notify": "Customer notification"
 };
 export const wooWorkspaceAr:Record<keyof typeof wooWorkspaceEn,string>={
+ orderDetailsHint:"راجع الطلب المحفوظ وكل بنوده. تتحقق كل عملية من النسخة المسموح بها قبل التنفيذ.",
+ noteInvalid:"اكتب ملاحظة لا تتجاوز 1000 حرف.",
+ chooseStatus:"اختر حالة صحيحة للطلب.",
+ clearNote:"ستُحذف الملاحظة الحالية.",
+ statusUnavailable:"يلزم ربط جاهز ونسخة معروفة من المزوّد. زامن الطلب قبل تغيير حالته.",
+ editReview:"تعديل العملية",
+ orderDateHint:"اترك التاريخين فارغين لكل الطلبات، أو اختر فترة حسب UTC لا تتجاوز 366 يومًا.",
  productDetails:"تفاصيل المنتج",
  timelineDetails:"عرض قيم الفترة",
  dataQuality:"جودة البيانات",

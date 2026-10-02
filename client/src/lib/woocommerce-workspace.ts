@@ -26,9 +26,9 @@ export const scopedWooAnalytics=(value:unknown,actorId:number,merchantId:number,
 export const scopedWooIncidents=(value:unknown,actorId:number,merchantId:number,input:unknown)=>selected(wooIncidentsWorkspace,wooIncidentsInput,value,actorId,merchantId,input);
 export function scopedWooOrderAction(value:unknown,actorId:number,merchantId:number,orderId:number){const result=scoped(wooOrderActionWorkspace,value,actorId,merchantId);return result&&(!result.order||result.order.id===orderId)?result:null;}
 export const scopedWooReview=(value:unknown,actorId:number,merchantId:number)=>scoped(wooOperationReviewWorkspace,value,actorId,merchantId);
-export const wooOperationTracking=z.object({requestId:z.string().uuid().toLowerCase(),revision:z.string().regex(/^[a-f0-9]{64}$/),kind:z.enum(wooOperationKinds)}).strict();
+export const wooOperationTracking=z.object({requestId:z.string().uuid().toLowerCase(),revision:z.string().regex(/^[a-f0-9]{64}$/),kind:z.enum(wooOperationKinds),targetOrderId:bookingReadId.optional()}).strict().refine(value=>value.targetOrderId===undefined||value.kind==='order_status'||value.kind==='order_notify','Unexpected operation target');
 export type WooOperationTracking=z.infer<typeof wooOperationTracking>;
-export function scopedWooOperation(value:unknown,actorId:number,merchantId:number,tracked?:WooOperationTracking){const result=scoped(wooOperationReceipt,value,actorId,merchantId);return result&&(!tracked||result.requestId===tracked.requestId&&result.kind===tracked.kind&&result.revision===tracked.revision)?result:null;}
+export function scopedWooOperation(value:unknown,actorId:number,merchantId:number,tracked?:WooOperationTracking){const result=scoped(wooOperationReceipt,value,actorId,merchantId);return result&&(!tracked||result.requestId===tracked.requestId&&result.kind===tracked.kind&&result.revision===tracked.revision&&(tracked.targetOrderId===undefined||!result.result||'orderId'in result.result&&result.result.orderId===tracked.targetOrderId))?result:null;}
 type Storage=Pick<globalThis.Storage,'getItem'|'setItem'|'removeItem'>;
 function key(actorId:number,merchantId:number){bookingReadId.parse(actorId);bookingReadId.parse(merchantId);return `sari:woo:operation:${actorId}:${merchantId}`;}
 /** Recovery persists metadata only. Credentials, messages and recipient details never enter storage. */

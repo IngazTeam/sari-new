@@ -31,10 +31,10 @@ export function useWooOperation(actorId:number,merchantId:number,enabled:boolean
  const waiting=receipt?.outcome==='pending'||blocker?.outcome==='pending';
  useEffect(()=>{if(!enabled||!loaded||!waiting&&!tracked)return;const timer=setInterval(()=>{if(!receipt||receipt.outcome==='pending'||blocker?.outcome==='pending')void recover();},5000);return()=>clearInterval(timer);},[enabled,loaded,tracked?.requestId,receipt?.outcome,blocker?.outcome]);
  const canStart=enabled&&loaded&&!busy&&!sourceInvalid&&!blockerQuery.isFetching&&!blockerQuery.isLoading&&!notice&&!waiting&&!blocker?.reviewRequired&&(!tracked||!!receipt&&!receipt.reviewRequired);
- async function execute(kind:WooOperationKind,revision:string,send:(requestId:string)=>Promise<unknown>){
+ async function execute(kind:WooOperationKind,revision:string,send:(requestId:string)=>Promise<unknown>,targetOrderId?:number){
   if(locked.current||!canStart)return false;locked.current=true;setBusy(true);setNotice(null);let intent:WooOperationTracking|undefined;
   try{
-   try{intent=saveWooTracking(sessionStorage,actorId,merchantId,{requestId:crypto.randomUUID(),kind,revision});setTracked(intent);setReceipt(null);}catch{setNotice('storage');return false;}
+   try{intent=saveWooTracking(sessionStorage,actorId,merchantId,{requestId:crypto.randomUUID(),kind,revision,...(targetOrderId===undefined?{}:{targetOrderId})});setTracked(intent);setReceipt(null);}catch{setNotice('storage');return false;}
    const result=await send(intent.requestId);if(!alive.current)return false;await accept(result,intent);await blockerQuery.refetch();return true;
   }catch(error){
    if(alive.current){const code=(error as any)?.data?.code,message=(error as any)?.message;

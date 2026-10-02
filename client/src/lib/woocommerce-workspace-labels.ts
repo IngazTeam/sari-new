@@ -1,4 +1,11 @@
 export function wooWorkspaceLabels(t:(key:string)=>string){return {
+ orderDetailsHint:t("merchantUx.wooWorkspace.orderDetailsHint"),
+ noteInvalid:t("merchantUx.wooWorkspace.noteInvalid"),
+ chooseStatus:t("merchantUx.wooWorkspace.chooseStatus"),
+ clearNote:t("merchantUx.wooWorkspace.clearNote"),
+ statusUnavailable:t("merchantUx.wooWorkspace.statusUnavailable"),
+ editReview:t("merchantUx.wooWorkspace.editReview"),
+ orderDateHint:t("merchantUx.wooWorkspace.orderDateHint"),
  productDetails:t("merchantUx.wooWorkspace.productDetails"),
  timelineDetails:t("merchantUx.wooWorkspace.timelineDetails"),
  dataQuality:t("merchantUx.wooWorkspace.dataQuality"),
