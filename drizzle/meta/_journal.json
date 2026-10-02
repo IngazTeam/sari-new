@@ -1345,6 +1345,13 @@
       "when": 1795392000053,
       "tag": "0191_woocommerce_operations",
       "breakpoints": true
+    },
+    {
+      "idx": 192,
+      "version": "5",
+      "when": 1795392000054,
+      "tag": "0192_calendly_operations",
+      "breakpoints": true
     }
   ]
 }
