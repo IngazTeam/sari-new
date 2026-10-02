@@ -1,3 +1,4 @@
+import {assertWooDashboardAuthority} from './integrations/woocommerce-dashboard-authority';
 import axios, { type Method } from 'axios';
 import dns from 'node:dns/promises';
 import https from 'node:https';
@@ -197,7 +198,11 @@ export class WooCommerceClient {
     params?: Record<string, string | number | boolean>;
     body?: Record<string, unknown>;
   } = {}): Promise<{ body: unknown; headers: Record<string, unknown> }> {
-    let response;
+    let response,httpsAgent;
+    await assertWooDashboardAuthority();
+    try{httpsAgent=await createPinnedWooHttpsAgent(this.storeUrl);}catch(error){if(error instanceof WooCommerceApiError)throw error;throw new WooCommerceApiError('network');}
+    // DNS resolution can wait. Check immediately before sending credentials, then after the response.
+    await assertWooDashboardAuthority();
     try {
       response = await axios.request<ArrayBuffer>({
         url: this.trustedUrl(endpoint),
@@ -212,12 +217,13 @@ export class WooCommerceClient {
         maxBodyLength: 64 * 1024,
         responseType: 'arraybuffer',
         validateStatus: () => true,
-        httpsAgent: await createPinnedWooHttpsAgent(this.storeUrl),
+        httpsAgent,
       });
     } catch (error) {
       if (error instanceof WooCommerceApiError) throw error;
       throw new WooCommerceApiError('network');
     }
+    await assertWooDashboardAuthority();
     if (response.status === 404) throw new WooCommerceApiError('not_found', 404);
     if (response.status < 200 || response.status >= 300) throw new WooCommerceApiError('status', response.status);
     return { body: parseBoundedJson(response.data), headers: response.headers as Record<string, unknown> };

@@ -3,6 +3,7 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { merchantProcedure, permissionProcedure, router } from './_core/trpc';
 import type {Permission} from './_core/permissions';
+import {withWooDashboardAuthority,assertWooDashboardAuthority} from './integrations/woocommerce-dashboard-authority';
 import {
   createWooCommerceSyncLog,
   getDb,
@@ -68,10 +69,10 @@ const dateRangeInput = z.object({
 // Preserve member read access to catalog/orders; integration metadata needs its own permission.
 function wooAccessProcedure(permission?:Permission){
   const procedure=permission?permissionProcedure(permission):merchantProcedure;
-  return procedure.use(async({next})=>{
+  return procedure.use(async({ctx,type,next})=>{
     const unavailable=()=>new TRPCError({code:'INTERNAL_SERVER_ERROR',message:'تعذر تأكيد بيانات WooCommerce. حدّث الصفحة وحاول مجددًا.'});
     try{if(!await getDb())throw unavailable();}catch{throw unavailable();}
-    const result=await next();if(!result.ok&&result.error.code==='INTERNAL_SERVER_ERROR')throw unavailable();return result;
+    const result=type==='mutation'&&permission?await withWooDashboardAuthority({actorId:ctx.user.id,merchantId:ctx.merchantId,permission},next):await next();if(!result.ok&&result.error.code==='INTERNAL_SERVER_ERROR')throw unavailable();return result;
   });
 }
 
@@ -122,7 +123,7 @@ async function withWooCommerceRequestLock<T>(
 ): Promise<T> {
   return withWooCommerceRequestAbortSignal(
     ctx,
-    signal => withWooCommerceLock(merchantId, action, signal),
+    signal => withWooCommerceLock(merchantId, async()=>{await assertWooDashboardAuthority(merchantId);return action();}, signal),
   );
 }
 
@@ -576,6 +577,7 @@ export const woocommerceRouter = router({
       const message = input.message || defaultMessage;
       const messageDigest = crypto.createHash('sha256').update(message, 'utf8').digest('hex').slice(0, 24);
       try {
+        await assertWooDashboardAuthority(merchantId);
         const sent = await sendMerchantWhatsApp({
           merchantId,
           idempotencyKey: `woo-order:${merchantId}:${order.wooOrderId}:${order.status}:${messageDigest}`,

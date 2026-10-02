@@ -1,3 +1,4 @@
+import {assertWooDashboardWrite} from './integrations/woocommerce-dashboard-authority';
 import {writeServiceCatalog,archiveServiceCatalog} from './service-catalog-write';
 import type {ZidWriteGuard} from './integrations/zid-sync-review';
 import { normalizeProductMoneyWrite } from '../shared/product-money';
@@ -8872,9 +8873,7 @@ export async function updateWooCommerceSettings(merchantId: number, data: Partia
     || data.webhookSigningSecret !== undefined
     || data.connectionStatus !== undefined
   ) throw new Error('WOOCOMMERCE_VERIFIED_CONNECTION_UPDATE_REQUIRED');
-  await requireDb().update(woocommerceSettings).set({
-    ...data,
-  }).where(eq(woocommerceSettings.merchantId, merchantId));
+  await requireDb().transaction(async tx=>{await assertWooDashboardWrite(tx,merchantId);await tx.update(woocommerceSettings).set({...data}).where(eq(woocommerceSettings.merchantId,merchantId));});
 }
 
 export type WooCommerceWebhookRegistrationInput = {
@@ -8905,6 +8904,7 @@ export async function saveVerifiedWooCommerceSettings(
     || data.webhookSigningSecret.length > 512
   ) throw new Error('WOOCOMMERCE_WEBHOOK_REGISTRATION_INVALID');
   await requireDb().transaction(async tx => {
+    await assertWooDashboardWrite(tx, data.merchantId);
     const current = await tx.select({ id: woocommerceSettings.id, storeUrl: woocommerceSettings.storeUrl })
       .from(woocommerceSettings)
       .where(eq(woocommerceSettings.merchantId, data.merchantId))
@@ -8977,6 +8977,7 @@ export async function deleteWooCommerceSettings(merchantId: number) {
 
 export async function deleteWooCommerceIntegration(merchantId: number): Promise<void> {
   await requireDb().transaction(async tx => {
+    await assertWooDashboardWrite(tx, merchantId);
     await tx.delete(woocommerceWebhookReceipts).where(eq(woocommerceWebhookReceipts.merchantId, merchantId));
     await tx.delete(woocommerceWebhookRegistrations).where(eq(woocommerceWebhookRegistrations.merchantId, merchantId));
     await tx.delete(woocommerceWebhooks).where(eq(woocommerceWebhooks.merchantId, merchantId));
@@ -8999,7 +9000,7 @@ export async function updateWooCommerceConnectionStatus(merchantId: number, stat
     if (storeInfo.currency) updateData.storeCurrency = storeInfo.currency;
   }
 
-  await requireDb().update(woocommerceSettings).set(updateData).where(eq(woocommerceSettings.merchantId, merchantId));
+  await requireDb().transaction(async tx=>{await assertWooDashboardWrite(tx,merchantId);await tx.update(woocommerceSettings).set(updateData).where(eq(woocommerceSettings.merchantId,merchantId));});
 }
 
 // WooCommerce Products
@@ -9032,6 +9033,7 @@ export async function upsertWooCommerceProductsSnapshot(
   reconcileMissing = true,
 ): Promise<void> {
   await requireDb().transaction(async tx => {
+    await assertWooDashboardWrite(tx, merchantId);
     for (const row of rows) {
       if (row.merchantId !== merchantId || !row.providerUpdatedAt) throw new Error('WOOCOMMERCE_TENANT_MISMATCH');
       await tx.insert(woocommerceProducts).values(row).onDuplicateKeyUpdate({
@@ -9137,6 +9139,7 @@ export async function upsertWooCommerceOrdersSnapshot(
   reconcileMissing = true,
 ): Promise<void> {
   await requireDb().transaction(async tx => {
+    await assertWooDashboardWrite(tx, merchantId);
     for (const row of rows) {
       if (row.merchantId !== merchantId || !row.providerUpdatedAt) throw new Error('WOOCOMMERCE_TENANT_MISMATCH');
       await tx.insert(woocommerceOrders).values(row).onDuplicateKeyUpdate({
@@ -9178,6 +9181,7 @@ export async function reconcileWooCommerceSnapshotAndWebhookIncidents(input: {
   ) throw new Error('WOOCOMMERCE_RECONCILIATION_INVALID');
 
   return requireDb().transaction(async tx => {
+    await assertWooDashboardWrite(tx, input.merchantId);
     for (const row of input.products) {
       if (row.merchantId !== input.merchantId || !row.providerUpdatedAt) throw new Error('WOOCOMMERCE_RECONCILIATION_INVALID');
       await tx.insert(woocommerceProducts).values(row).onDuplicateKeyUpdate({
@@ -9293,12 +9297,17 @@ export async function getWooCommerceOrdersStats(merchantId: number) {
 
 // WooCommerce Sync Logs
 export async function createWooCommerceSyncLog(data: NewWooCommerceSyncLog) {
-  const [result] = await requireDb().insert(woocommerceSyncLogs).values(data);
+  const [result] = await requireDb().transaction(async tx=>{await assertWooDashboardWrite(tx,data.merchantId);return tx.insert(woocommerceSyncLogs).values(data);});
   return (result as any).insertId;
 }
 
 export async function updateWooCommerceSyncLog(id: number, data: Partial<NewWooCommerceSyncLog>) {
-  await requireDb().update(woocommerceSyncLogs).set(data).where(eq(woocommerceSyncLogs.id, id));
+  await requireDb().transaction(async tx=>{
+    const [record]=await tx.select({merchantId:woocommerceSyncLogs.merchantId}).from(woocommerceSyncLogs).where(eq(woocommerceSyncLogs.id,id)).limit(1);
+    if(!record)throw Error('WOOCOMMERCE_SYNC_LOG_MISSING');await assertWooDashboardWrite(tx,record.merchantId);
+    if(data.merchantId!==undefined&&data.merchantId!==record.merchantId)throw Error('WOOCOMMERCE_TENANT_MISMATCH');
+    await tx.update(woocommerceSyncLogs).set(data).where(and(eq(woocommerceSyncLogs.id,id),eq(woocommerceSyncLogs.merchantId,record.merchantId)));
+  });
 }
 
 export async function getWooCommerceSyncLogs(merchantId: number, limit: number = 50) {

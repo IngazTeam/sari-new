@@ -17,6 +17,7 @@ export const requiredReleaseCapabilities = Object.freeze([
   'salla-notice-receipts-0143',
   'zid-oauth-reviewed-admission-0189',
   'zid-dashboard-reviewed-writes-0190',
+  'woocommerce-dashboard-authority-v1',
 ]);
 
 export function assertZidOrderReleaseCompatible(directory) {
