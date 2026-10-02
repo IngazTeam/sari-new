@@ -1,3 +1,4 @@
+import {SallaPreviewStore,sallaPreviewQueries,sallaPreviewMutations} from './salla-preview-model';
 import {ByaanDataPreviewStore,byaanDataQueries,byaanDataMutations} from './byaan-data-preview-model';
 import {ByaanConnectionPreviewStore,byaanConnectionQueries,byaanConnectionMutations} from './byaan-connection-preview-model';
 import {platformPreviewRead,platformPreviewQueries,platformPreviewMutations,type PlatformSample} from './platform-preview-model';
@@ -11,8 +12,8 @@ import {staffWorkspaceSnapshot} from '../../../shared/staff-workspace';
 import {z} from 'zod';
 export const serviceModes=['normal','empty','loading','failure','forbidden','session','foreign','stale-error','readonly','legacy','unavailable-reference','choices-error','action-failure','save-conflict','pending-save','uncertain-save','unlinked','oauth-disabled','destination-missing','credentials-invalid'] as const;
 export type ServiceMode=typeof serviceModes[number];
-export const serviceQueries=['auth.me','merchants.getCurrent','services.catalogWorkspace','services.catalogEditor','services.catalogChoices','services.detailsWorkspace','staff.list',...bookingPreviewQueries,...calendarPreviewQueries,...platformPreviewQueries,...byaanConnectionQueries,...byaanDataQueries] as const;
-export const serviceMutations=['services.create','services.update','services.delete','serviceCategories.create','serviceCategories.update','serviceCategories.delete','servicePackages.create','servicePackages.update','servicePackages.delete','staff.create','staff.update','staff.delete',...bookingPreviewMutations,...calendarPreviewMutations,...platformPreviewMutations,...byaanConnectionMutations,...byaanDataMutations] as const;
+export const serviceQueries=['auth.me','merchants.getCurrent','services.catalogWorkspace','services.catalogEditor','services.catalogChoices','services.detailsWorkspace','staff.list',...bookingPreviewQueries,...calendarPreviewQueries,...platformPreviewQueries,...byaanConnectionQueries,...byaanDataQueries,...sallaPreviewQueries] as const;
+export const serviceMutations=['services.create','services.update','services.delete','serviceCategories.create','serviceCategories.update','serviceCategories.delete','servicePackages.create','servicePackages.update','servicePackages.delete','staff.create','staff.update','staff.delete',...bookingPreviewMutations,...calendarPreviewMutations,...platformPreviewMutations,...byaanConnectionMutations,...byaanDataMutations,...sallaPreviewMutations] as const;
 type Entity=CatalogRecord['entity'];type Row={id:number;entity:Entity;fields:any;version:number};
 const fault=(code='INTERNAL_SERVER_ERROR')=>({message:'Local service simulation',data:{code}});
 const normalize={service:normalizeCatalogService,category:normalizeCatalogCategory,package:normalizeCatalogPackage};
@@ -20,7 +21,7 @@ const normalize={service:normalizeCatalogService,category:normalizeCatalogCatego
 export class ServicePreviewModel{
  readonly actorId:number;operations=0;retries=0;pending=0;private revision=0;private recovered=false;private disposed=false;private nextId=32;
  private listeners=new Set<()=>void>();private cache=new Map<string,any>();private rows=new Map<string,Row>();private waiting:Array<{resolve:()=>void;reject:(e:any)=>void}>=[];
- private byaanData:ByaanDataPreviewStore;private byaan:ByaanConnectionPreviewStore;private bookings:BookingPreviewStore;private calendar:CalendarPreviewStore;
+ private salla:SallaPreviewStore;private byaanData:ByaanDataPreviewStore;private byaan:ByaanConnectionPreviewStore;private bookings:BookingPreviewStore;private calendar:CalendarPreviewStore;
  private staffRows=new Map<number,{fields:any;version:number}>();private nextStaffId=32;
  constructor(readonly merchantId:number,readonly mode:ServiceMode='normal',readonly now=new Date().toISOString(),readonly platformSample:PlatformSample='byaan'){
   if(![269,270].includes(merchantId))throw Error('Unknown simulated tenant');this.actorId=merchantId+1000;
@@ -31,6 +32,7 @@ export class ServicePreviewModel{
   }
   if(mode!=='empty')for(let id=1;id<=31;id++)this.staffRows.set(id,{version:0,fields:{id,merchantId,name:`${merchantId===269?'نواة · Nawa':'مدار · Madar'} · مقدم خدمة ${id}`,phone:null,email:`provider${id}@example.test`,role:'استشارات · Consultant',workingHours:JSON.stringify({sunday:{start:'09:00',end:'17:00'}}),googleCalendarId:null,isActive:id%5===0?0:1,specialization:null,bio:null,avatar:null,serviceIds:null}});
   this.byaan=new ByaanConnectionPreviewStore(this.actorId,merchantId,now,mode,platformSample);
+  this.salla=new SallaPreviewStore(this.actorId,merchantId,now,()=>this.activeMode,this.byaan,platformSample);
   this.byaanData=new ByaanDataPreviewStore(this.actorId,merchantId,now,()=>this.activeMode,this.byaan);
   this.calendar=new CalendarPreviewStore({actorId:this.actorId,merchantId,now,mode:()=>this.activeMode,reference:(kind,id)=>{const fields=kind==='staff'?this.staffRows.get(id)?.fields:this.rows.get('service:'+id)?.fields;return fields?{name:fields.name,isActive:kind==='staff'?fields.isActive===1:fields.isActive===true,...kind==='service'?{durationMinutes:fields.durationMinutes}:{}}:null;}});
   this.bookings=new BookingPreviewStore({actorId:this.actorId,merchantId,now,mode:()=>this.activeMode,reference:(kind,id)=>{const fields=kind==='staff'?this.staffRows.get(id)?.fields:this.rows.get('service:'+id)?.fields;return fields?{name:fields.name,isActive:kind==='staff'?fields.isActive===1:fields.isActive===true}:null;}});
@@ -40,6 +42,7 @@ export class ServicePreviewModel{
  invalidate=async()=>{this.emit();};get activeMode(){return this.recovered?'normal':this.mode;}
  complete=()=>{this.recovered=true;this.emit();};finishPending=()=>{for(const item of this.waiting.splice(0))item.resolve();};
  dispose=()=>{this.disposed=true;for(const item of this.waiting.splice(0))item.reject(fault('CONFLICT'));};
+ async fetchSalla(name:string,input?:any){this.cache.delete(JSON.stringify([name,input]));return this.read(name,input);}
  async refetch(name:string,input?:any){this.retries++;this.complete();return this.read(name,input);}
  private owned(entity:Entity,id:number){const row=Number.isInteger(id)&&id>0?this.rows.get(entity+':'+id):undefined;if(!row)throw fault('NOT_FOUND');return row;}
  private scope(){return {actorId:this.actorId,merchantId:this.merchantId,canManage:this.activeMode!=='readonly',checkedAt:this.now};}
@@ -72,6 +75,7 @@ export class ServicePreviewModel{
   if(name==='auth.me')return this.activeMode==='session'?null:{id:this.actorId,name:'Local account'};
   if(name==='merchants.getCurrent')return {id:this.merchantId};
   if(name.startsWith('integrations.'))return this.byaan.read(name);
+  if(name.startsWith('salla.'))return this.salla.read(name,input);
   if(name.startsWith('byaan.'))return this.byaanData.read(name,input);
   if(name.startsWith('sheets.'))return platformPreviewRead(name,this.actorId,this.merchantId,this.now,this.activeMode,this.platformSample);
   if(name.startsWith('calendar.'))return this.calendar.read(name,input);
@@ -95,15 +99,16 @@ export class ServicePreviewModel{
  }
  read(name:string,input?:any){
   if(!serviceQueries.includes(name as any)&&name!=='services.catalogRecord')throw Error('Unmapped read');const key=JSON.stringify([name,input]);if(this.cache.has(key))return this.cache.get(key);
-  const mode=this.activeMode,workspace=name.startsWith('byaan.')||name.startsWith('integrations.')||name.startsWith('sheets.')||name.startsWith('calendar.')||name.startsWith('services.')||name.startsWith('bookings.')||name==='staff.list',loading=workspace&&mode==='loading';let data:any,error:any=mode==='forbidden'&&name==='merchants.getCurrent'?fault('FORBIDDEN'):workspace&&(['failure','stale-error'].includes(mode)||mode==='choices-error'&&name==='services.catalogChoices')?fault():null;
-  if(mode==='readonly'&&(name.startsWith('integrations.')||name.startsWith('sheets.')))error=fault('FORBIDDEN');
+  const mode=this.activeMode,workspace=name.startsWith('salla.')||name.startsWith('byaan.')||name.startsWith('integrations.')||name.startsWith('sheets.')||name.startsWith('calendar.')||name.startsWith('services.')||name.startsWith('bookings.')||name==='staff.list',loading=workspace&&mode==='loading';let data:any,error:any=mode==='forbidden'&&name==='merchants.getCurrent'?fault('FORBIDDEN'):workspace&&(['failure','stale-error'].includes(mode)||mode==='choices-error'&&name==='services.catalogChoices')?fault():null;
+  if(mode==='readonly'&&(name.startsWith('salla.')||name.startsWith('integrations.')||name.startsWith('sheets.'))||mode==='foreign'&&name.startsWith('salla.')&&['effectReviewAccess','listEffects','listEffectReviews'].includes(name.split('.')[1]))error=fault('FORBIDDEN');
   try{data=this.fixture(name,input);}catch(e){error=e;}if(mode==='foreign'&&workspace&&data)data=name==='byaan.dashboardOverview'?{...data,connection:{...data.connection,merchantId:999}}:{...data,merchantId:999};
-  const result={data:loading||error&&mode!=='stale-error'?undefined:data,error,isLoading:loading,isFetching:loading,isError:!!error,isFetchedAfterMount:!loading,dataUpdatedAt:loading?0:Date.parse(this.now)};this.cache.set(key,result);return result;
+  const result={data:loading||error&&mode!=='stale-error'?undefined:data,error,isLoading:loading,isFetching:loading,isError:!!error,isFetchedAfterMount:!loading,dataUpdatedAt:loading?0:Date.parse(this.now)+this.revision};this.cache.set(key,result);return result;
  }
  async mutate(name:string,input:any){
   if(!serviceMutations.includes(name as any))throw Error('Unmapped mutation');if(this.disposed||['readonly','forbidden','session','foreign','failure','stale-error'].includes(this.activeMode))throw fault('FORBIDDEN');
   if(this.activeMode==='action-failure')throw fault();if(this.activeMode==='save-conflict'){this.complete();throw fault('CONFLICT');}
   if(this.activeMode==='pending-save'){this.pending++;this.emit();try{await new Promise<void>((resolve,reject)=>this.waiting.push({resolve,reject}));}finally{this.pending--;this.emit();}}if(this.disposed)throw fault('CONFLICT');
+  if(name.startsWith('salla.')){const before=this.salla.writes,result=this.salla.mutate(name,input);this.operations+=this.salla.writes-before;this.emit();if(this.activeMode==='uncertain-save')throw fault();return result;}
   if(name.startsWith('integrations.')){const before=this.byaan.writes,result=this.byaan.mutate(name,input);this.operations+=name==='integrations.testByaanConnection'?1:this.byaan.writes-before;this.emit();if(this.activeMode==='uncertain-save')throw fault();return result;}
   if(name.startsWith('byaan.')){const before=this.byaanData.writes,result=this.byaanData.mutate(name,input);this.operations+=this.byaanData.writes-before;this.emit();if(this.activeMode==='uncertain-save')throw fault();return result;}
   if(name.startsWith('calendar.')){const before=this.calendar.writes,result=this.calendar.mutate(name,input);this.operations+=this.calendar.writes-before;this.emit();if(this.activeMode==='uncertain-save')throw fault();return result;}

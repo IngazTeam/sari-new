@@ -2,7 +2,7 @@
 
 هذا حصر مصدر قابل لإعادة التوليد، وليس ادعاءً بأن كل مسار عمل اختُبر أو أُعيد تصميمه. يشمل المكونات الفرعية المحلية، الحقول، الأزرار، النوافذ، التبويبات، واجهات القراءة والتعديل. العناصر الديناميكية تحتاج مراجعة إضافية.
 
-- 126 مسارًا مسجلًا، 396 ملف واجهة متصلًا، 2398 عنصر تحكم في المصدر.
+- 126 مسارًا مسجلًا، 401 ملف واجهة متصلًا، 2418 عنصر تحكم في المصدر.
 - 0 رابطًا حرفيًا غير مطابق، و0 ملف صفحة غير متصل بالمسارات المحصورة.
 
 | الصفحة | الملفات | عناصر التحكم | القراءة / التعديل | موك أب للصفحة |
@@ -22,7 +22,7 @@
 | /merchant/products/upload — استيراد المنتجات | 13 | 75 | 10 / 7 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/conversations — المحادثات | 25 | 109 | 13 / 10 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/whatsapp — أرقام واتساب | 2 | 23 | 8 / 6 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/salla — ربط سلة | 2 | 22 | 5 / 4 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/salla — ربط سلة | 7 | 42 | 9 / 4 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/integrations/byaan — ربط بيان | 4 | 18 | 3 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/byaan-dashboard — بيان: الدورات والمتدربون | 7 | 33 | 7 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/integrations/zid — ربط زد | 1 | 25 | 4 / 6 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -1143,21 +1143,25 @@
 | 119 | AlertDialogCancel | تسمية ديناميكية / تحتاج مراجعة | WhatsAppInstancesPage |
 | 119 | AlertDialogAction | تسمية ديناميكية / تحتاج مراجعة | WhatsAppInstancesPage |
 
-## client/src/pages/SallaIntegration.tsx
+## client/src/components/merchant/SallaWorkspace.tsx
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 149 | a | تسمية ديناميكية / تحتاج مراجعة | هل أنت متأكد من فصل المتجر؟ |
-| 199 | Button | مزامنة المخزون | هل أنت متأكد من فصل المتجر؟ |
-| 211 | Button | مزامنة كاملة | هل أنت متأكد من فصل المتجر؟ |
-| 223 | Button | فصل المتجر | هل أنت متأكد من فصل المتجر؟ |
-| 258 | Input | اذهب إلى الإعدادات → API | ربط متجر Salla |
-| 270 | Input | Personal Access Token | ربط متجر Salla |
-| 280 | Button | جاري الربط... ربط المتجر | ربط متجر Salla |
-| 369 | Input | Callback URL (OAuth Redirect) | روابط OAuth & Webhook |
-| 376 | Button | Callback URL (OAuth Redirect) | روابط OAuth & Webhook |
-| 395 | Input | Webhook URL | روابط OAuth & Webhook |
-| 402 | Button | Webhook URL | روابط OAuth & Webhook |
+| 52 | Button | تسمية ديناميكية / تحتاج مراجعة | SallaWorkspace |
+| 53 | Link | تسمية ديناميكية / تحتاج مراجعة | SallaWorkspace |
+| 53 | Link | تسمية ديناميكية / تحتاج مراجعة | SallaWorkspace |
+| 53 | Link | تسمية ديناميكية / تحتاج مراجعة | SallaWorkspace |
+| 55 | button | تسمية ديناميكية / تحتاج مراجعة | SallaWorkspace |
+| 57 | a | تسمية ديناميكية / تحتاج مراجعة | SallaWorkspace |
+| 57 | Button | تسمية ديناميكية / تحتاج مراجعة | SallaWorkspace |
+| 57 | Input | تسمية ديناميكية / تحتاج مراجعة | SallaWorkspace |
+| 57 | Button | visible?copy.hide:copy.show | SallaWorkspace |
+| 57 | Button | register | SallaWorkspace |
+| 61 | summary | تسمية ديناميكية / تحتاج مراجعة | SallaWorkspace |
+| 61 | Button | تسمية ديناميكية / تحتاج مراجعة | SallaWorkspace |
+| 63 | DialogContent | remove | SallaWorkspace |
+| 63 | Button | تسمية ديناميكية / تحتاج مراجعة | SallaWorkspace |
+| 63 | Button | remove | SallaWorkspace |
 
 ## client/src/components/SallaEffectReview.tsx
 
@@ -1174,6 +1178,32 @@
 | 98 | Button | تسمية ديناميكية / تحتاج مراجعة | SallaEffectReview |
 | 99 | Button | تسمية ديناميكية / تحتاج مراجعة | SallaEffectReview |
 | 109 | summary | تسمية ديناميكية / تحتاج مراجعة | SallaEffectReview |
+
+## client/src/components/merchant/SallaSyncPanel.tsx
+
+| السطر | النوع | التسمية | القسم |
+|---:|---|---|---|
+| 50 | Button | تسمية ديناميكية / تحتاج مراجعة | SallaSyncPanel |
+| 50 | Button | تسمية ديناميكية / تحتاج مراجعة | SallaSyncPanel |
+| 50 | Button | تسمية ديناميكية / تحتاج مراجعة | SallaSyncPanel |
+| 50 | Button | تسمية ديناميكية / تحتاج مراجعة | SallaSyncPanel |
+| 51 | summary | تسمية ديناميكية / تحتاج مراجعة | SallaSyncPanel |
+| 51 | Button | تسمية ديناميكية / تحتاج مراجعة | SallaSyncPanel |
+| 52 | DialogContent | full | SallaSyncPanel |
+| 52 | Button | تسمية ديناميكية / تحتاج مراجعة | SallaSyncPanel |
+| 52 | Button | تسمية ديناميكية / تحتاج مراجعة | SallaSyncPanel |
+
+## client/src/components/merchant/SallaLogList.tsx
+
+| السطر | النوع | التسمية | القسم |
+|---:|---|---|---|
+| 18 | input | تسمية ديناميكية / تحتاج مراجعة | SallaLogList |
+| 18 | select | copy.state | SallaLogList |
+| 18 | select | copy.kind | SallaLogList |
+| 18 | Button | تسمية ديناميكية / تحتاج مراجعة | SallaLogList |
+| 20 | Button | تسمية ديناميكية / تحتاج مراجعة | SallaLogList |
+| 21 | Button | تسمية ديناميكية / تحتاج مراجعة | · |
+| 21 | Button | تسمية ديناميكية / تحتاج مراجعة | · |
 
 ## client/src/components/merchant/ByaanConnectionWorkspace.tsx
 

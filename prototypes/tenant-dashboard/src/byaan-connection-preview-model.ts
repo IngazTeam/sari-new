@@ -13,6 +13,12 @@ export class ByaanConnectionPreviewStore {
     this.counts={catalog:this.platform.stats.products,activeTrainees:this.platform.source==='byaan'?this.platform.stats.customers:0,activeFaqs:this.platform.source==='byaan'?35:0,sitePages:this.platform.source==='byaan'?5:0};
   }
   updateDataCounts(value:Partial<typeof this.counts>){Object.assign(this.counts,value);}
+  updateSalla(value:Partial<PlatformWorkspace['platforms'][number]>,source?:PlatformWorkspace['source']){
+    Object.assign(this.platform.platforms.find(p=>p.platform==='salla')!,value);
+    if(source!==undefined)this.platform.source=source;
+    this.platform.occupied=this.platform.platforms.filter(p=>p.occupiesSlot).length;this.platform.conflict=this.platform.occupied>1;
+    this.platform=platformWorkspaceSchema.parse(this.platform);
+  }
   private revision(){return [this.merchantId,19,this.version,0,0,0,0,0].map(n=>n.toString(16).padStart(8,'0')).join('');}
   read(name:string) {
     if(name==='integrations.workspace')return platformWorkspaceSchema.parse(this.platform);

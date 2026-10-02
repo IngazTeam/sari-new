@@ -13,6 +13,10 @@ beforeEach(()=>{
 });
 afterEach(()=>dom.window.close());
 const send=(data:any,origin='http://127.0.0.1:4329',source=frame.contentWindow)=>w.dispatchEvent(new w.MessageEvent('message',{origin,source,data}));
+it.each(['salla','salla-paused','salla-error','salla-unknown','salla-identity-missing','salla-events-pending'])('preserves the actual Salla route and %s sample from the owned frame only',connection=>{
+ frame.setAttribute('src','./service-workspace.html?embed=brain');w.history.replaceState(null,'','#/page/merchant/salla');w.syncServicePreviewContext=vi.fn();
+ const message={type:'sary-brain-preview',action:'serviceState',search:`path=/merchant/salla&connection=${connection}&tenant=270&lang=en`};send(message,'https://evil.test');send(message,undefined,w);expect(w.location.hash).toBe('#/page/merchant/salla');send(message);expect(w.location.hash).toBe(`#/page/merchant/salla?connection=${connection}&tenant=270&lang=en`);expect(frame.isConnected).toBe(true);
+});
 it('syncs a scoped integration sample without replacing the actual frame and rejects unknown sources',()=>{
  frame.setAttribute('src','./service-workspace.html?embed=brain');w.history.replaceState(null,'','#/page/merchant/platform-integrations');w.syncServicePreviewContext=vi.fn();
  const message={type:'sary-brain-preview',action:'serviceState',search:'path=/merchant/platform-integrations&connection=conflict&tenant=270&lang=en'};

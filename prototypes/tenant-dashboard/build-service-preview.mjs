@@ -3,7 +3,7 @@ import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { loadPreviewLocales } from './preview-locales.mjs';
-const routes=JSON.parse(readFileSync('docs/audits/tenant-features-2026-09-30/coverage.json','utf8')).routes.filter(row=>/^\/merchant\/(?:services(?:\/|$)|service-categories$|service-packages$|staff$|bookings$|integrations\/byaan$|byaan-dashboard$|platform-integrations$|calendar(?:\/settings)?$)/.test(row.route));
+const routes=JSON.parse(readFileSync('docs/audits/tenant-features-2026-09-30/coverage.json','utf8')).routes.filter(row=>/^\/merchant\/(?:services(?:\/|$)|service-categories$|service-packages$|staff$|bookings$|integrations\/byaan$|byaan-dashboard$|salla$|platform-integrations$|calendar(?:\/settings)?$)/.test(row.route));
 const sources=[...new Set(routes.flatMap(route=>route.files)),'client/src/components/merchant/WorkspaceState.tsx','client/src/components/QueryStateCard.tsx',...readdirSync('client/src/components/ui').filter(file=>file.endsWith('.tsx')).map(file=>'client/src/components/ui/'+file)];
 const namespaces=new Set(['merchantUx','common']);for(const file of sources.filter(file=>!file.startsWith('client/src/components/ui/')))for(const match of readFileSync(file,'utf8').matchAll(/\bt\(['"]([a-zA-Z][\w]*)\./g))namespaces.add(match[1]);
 const copy=await loadPreviewLocales([...namespaces]);
@@ -17,6 +17,6 @@ writeFileSync('prototypes/tenant-dashboard/site/service-preview.css',compiler.bu
 writeFileSync("prototypes/tenant-dashboard/site/service-preview.css",readFileSync("prototypes/tenant-dashboard/site/service-preview.css","utf8")+readFileSync("prototypes/tenant-dashboard/src/service-preview.css","utf8"));
 
 // Booking overrides extend the service catalog primitives, matching the app's cascade.
-const workspaceStyles=readdirSync('client/src/styles').filter(file=>/^(?:service|staff|booking|calendar|appointment|platform|byaan).*\.css$/.test(file)).sort((a,b)=>Number(/^(booking|calendar|appointment|byaan)/.test(a))-Number(/^(booking|calendar|appointment|byaan)/.test(b))||a.localeCompare(b));
+const workspaceStyles=readdirSync('client/src/styles').filter(file=>/^(?:service|staff|booking|calendar|appointment|platform|byaan|salla).*\.css$/.test(file)).sort((a,b)=>Number(/^(booking|calendar|appointment|byaan|salla)/.test(a))-Number(/^(booking|calendar|appointment|byaan|salla)/.test(b))||a.localeCompare(b));
 for(const file of workspaceStyles)writeFileSync('prototypes/tenant-dashboard/site/service-preview.css',readFileSync('prototypes/tenant-dashboard/site/service-preview.css','utf8')+readFileSync('client/src/styles/'+file,'utf8'));
 console.log('Actual service pages preview built; '+namespaces.size+' locale namespaces.');

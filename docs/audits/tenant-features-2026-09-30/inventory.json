@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-02T07:21:00.036Z",
+  "generatedAt": "2026-10-02T09:16:04.988Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -4934,102 +4934,106 @@
     },
     {
       "file": "client/src/pages/SallaIntegration.tsx",
-      "hash": "cc2ce3db4c7e",
+      "hash": "5593c5ddd79a",
       "queries": [
-        "salla.getConnection",
-        "salla.getSyncLogs"
+        "auth.me",
+        "merchants.getCurrent"
+      ],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [
+        {
+          "query": "auth.me",
+          "binding": "user",
+          "line": 6,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        },
+        {
+          "query": "merchants.getCurrent",
+          "binding": "merchant",
+          "line": 6,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": "!!user.data?.id&&!user.error&&!user.isFetching"
+        }
+      ],
+      "conditions": [],
+      "imports": [
+        "client/src/components/merchant/SallaWorkspace.tsx"
+      ],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/components/merchant/SallaWorkspace.tsx",
+      "hash": "870fabdbcaee",
+      "queries": [
+        "salla.workspace"
       ],
       "mutations": [
-        "salla.connect",
-        "salla.disconnect",
-        "salla.syncNow"
+        "salla.registerConnection",
+        "salla.disconnect"
       ],
       "imperativeReads": [],
       "browserRequests": [],
       "sections": [
         {
-          "label": "ربط متجر سلة",
-          "line": 132,
+          "label": "",
+          "line": 52,
           "tag": "h1"
         },
         {
-          "label": "هل أنت متأكد من فصل المتجر؟",
-          "line": 147,
-          "tag": "CardTitle"
+          "label": "",
+          "line": 56,
+          "tag": "h2"
         },
         {
-          "label": "ربط متجر Salla",
-          "line": 239,
-          "tag": "CardTitle"
+          "label": "",
+          "line": 60,
+          "tag": "h2"
         },
         {
-          "label": "انسخ الـ Token والصقه هنا",
-          "line": 301,
-          "tag": "CardTitle"
+          "label": "",
+          "line": 61,
+          "tag": "summary"
         },
         {
-          "label": "روابط OAuth & Webhook",
-          "line": 360,
-          "tag": "CardTitle"
+          "label": "",
+          "line": 62,
+          "tag": "h2"
         },
         {
-          "label": "آخر 20 عملية مزامنة",
-          "line": 423,
-          "tag": "CardTitle"
+          "label": "",
+          "line": 63,
+          "tag": "DialogTitle"
         }
       ],
       "choices": [],
-      "handlers": [
-        {
-          "name": "handleCopy",
-          "line": 27,
-          "calls": []
-        },
-        {
-          "name": "handleConnect",
-          "line": 96,
-          "calls": [
-            "connectMutation"
-          ]
-        },
-        {
-          "name": "handleDisconnect",
-          "line": 111,
-          "calls": [
-            "disconnectMutation"
-          ]
-        },
-        {
-          "name": "handleSync",
-          "line": 117,
-          "calls": [
-            "syncMutation"
-          ]
-        }
-      ],
+      "handlers": [],
       "queryStates": [
         {
-          "query": "salla.getConnection",
-          "binding": "{ data: connection, isLoading, refetch }",
-          "line": 39,
-          "errorSignal": false,
+          "query": "salla.workspace",
+          "binding": "query",
+          "line": 26,
+          "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
-        },
-        {
-          "query": "salla.getSyncLogs",
-          "binding": "{ data: syncLogs }",
-          "line": 43,
-          "errorSignal": false,
-          "loadingSignal": false,
-          "enabled": "!!connection?.connected "
         }
       ],
       "conditions": [],
       "imports": [
-        "client/src/components/SallaEffectReview.tsx"
+        "client/src/components/SallaEffectReview.tsx",
+        "client/src/lib/salla-workspace.ts",
+        "client/src/lib/salla-workspace-labels.ts",
+        "client/src/components/merchant/SallaSyncPanel.tsx",
+        "client/src/components/merchant/SallaLogList.tsx"
       ],
-      "controlCount": 11
+      "controlCount": 15
     },
     {
       "file": "client/src/components/SallaEffectReview.tsx",
@@ -5087,6 +5091,148 @@
       "conditions": [],
       "imports": [],
       "controlCount": 11
+    },
+    {
+      "file": "client/src/lib/salla-workspace.ts",
+      "hash": "3be4b4ec5278",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/lib/salla-workspace-labels.ts",
+      "hash": "f7c8996544d5",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/components/merchant/SallaSyncPanel.tsx",
+      "hash": "f0453be63c82",
+      "queries": [
+        "salla.latestSyncRequest",
+        "salla.syncRequest"
+      ],
+      "mutations": [
+        "salla.requestSync"
+      ],
+      "imperativeReads": [
+        {
+          "procedure": "salla.syncRequest",
+          "method": "fetch",
+          "expression": "utils.salla.syncRequest.fetch",
+          "line": 27,
+          "provenance": "trpc-utility-static"
+        }
+      ],
+      "browserRequests": [],
+      "sections": [
+        {
+          "label": "",
+          "line": 45,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 47,
+          "tag": "h3"
+        },
+        {
+          "label": "",
+          "line": 51,
+          "tag": "summary"
+        },
+        {
+          "label": "",
+          "line": 52,
+          "tag": "DialogTitle"
+        }
+      ],
+      "choices": [],
+      "handlers": [
+        {
+          "name": "open",
+          "line": 44,
+          "calls": []
+        }
+      ],
+      "queryStates": [
+        {
+          "query": "salla.latestSyncRequest",
+          "binding": "latest",
+          "line": 17,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": "loaded&&!pending"
+        }
+      ],
+      "conditions": [],
+      "imports": [
+        "client/src/lib/salla-workspace-labels.ts",
+        "client/src/lib/salla-workspace.ts"
+      ],
+      "controlCount": 9
+    },
+    {
+      "file": "client/src/components/merchant/SallaLogList.tsx",
+      "hash": "abd33ce64b09",
+      "queries": [
+        "salla.logsWorkspace"
+      ],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [
+        {
+          "label": "",
+          "line": 18,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 20,
+          "tag": "h3"
+        },
+        {
+          "label": "·",
+          "line": 20,
+          "tag": "h3"
+        }
+      ],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [
+        {
+          "query": "salla.logsWorkspace",
+          "binding": "query",
+          "line": 14,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        }
+      ],
+      "conditions": [],
+      "imports": [
+        "client/src/lib/salla-workspace.ts",
+        "client/src/lib/salla-workspace-labels.ts"
+      ],
+      "controlCount": 7
     },
     {
       "file": "client/src/pages/merchant/ByaanIntegration.tsx",
@@ -20439,20 +20585,29 @@
       ],
       "files": [
         "client/src/pages/SallaIntegration.tsx",
-        "client/src/components/SallaEffectReview.tsx"
+        "client/src/components/merchant/SallaWorkspace.tsx",
+        "client/src/components/SallaEffectReview.tsx",
+        "client/src/lib/salla-workspace.ts",
+        "client/src/lib/salla-workspace-labels.ts",
+        "client/src/components/merchant/SallaSyncPanel.tsx",
+        "client/src/components/merchant/SallaLogList.tsx"
       ],
       "controls": [
-        "6e56d8268289",
-        "f1afc05beb0f",
-        "7918c6b49cbd",
-        "1095131d246f",
-        "555a581dc53c",
-        "5651886703a4",
-        "8c0fda5a2761",
-        "38041d224c5c",
-        "36eccc0c5e65",
-        "6b9d2d5e3d60",
-        "ff3075c953d4",
+        "ad1f3c158ae5",
+        "2eda85583442",
+        "da67b41beb6c",
+        "c13c558df8ab",
+        "782d5f5f2367",
+        "8b6df469d1b0",
+        "c7cb5d3fa5a1",
+        "1d8e1d1ca1b2",
+        "f5c5d5a53e54",
+        "f83315584f84",
+        "54a9d6caa88c",
+        "dc183d88d85d",
+        "2831faa56720",
+        "33efcbbc09f5",
+        "968bfebb8859",
         "dbac8c516821",
         "c8843d8cc3c9",
         "17af6b65b4ec",
@@ -20463,22 +20618,51 @@
         "251d4dfb6e47",
         "ca06aa10f989",
         "c6a868831e2f",
-        "b24c418b4a44"
+        "b24c418b4a44",
+        "51f3ed7be584",
+        "ae3b97f00536",
+        "2767c7852194",
+        "b0cfa6a463cd",
+        "18a0f06c4dd8",
+        "43fa3cc6d5ca",
+        "91c8bcd16b5a",
+        "dbe10d24639f",
+        "7ef77e1cb3a5",
+        "5c41ef88f6bf",
+        "c3c8f8195ace",
+        "046da4f1a53a",
+        "855aa75980ec",
+        "6e59a7506aa3",
+        "e9ccac1a3aa2",
+        "dc249148dcb4"
       ],
       "queries": [
-        "salla.getConnection",
-        "salla.getSyncLogs",
+        "auth.me",
+        "merchants.getCurrent",
+        "salla.workspace",
         "salla.listEffects",
         "salla.listEffectReviews",
-        "salla.effectReviewAccess"
+        "salla.effectReviewAccess",
+        "salla.latestSyncRequest",
+        "salla.syncRequest",
+        "salla.logsWorkspace"
       ],
       "mutations": [
-        "salla.connect",
+        "salla.registerConnection",
         "salla.disconnect",
-        "salla.syncNow",
-        "salla.checkEffect"
+        "salla.checkEffect",
+        "salla.requestSync"
       ],
-      "imperativeReads": [],
+      "imperativeReads": [
+        {
+          "file": "client/src/components/merchant/SallaSyncPanel.tsx",
+          "procedure": "salla.syncRequest",
+          "method": "fetch",
+          "expression": "utils.salla.syncRequest.fetch",
+          "line": 27,
+          "provenance": "trpc-utility-static"
+        }
+      ],
       "browserRequests": []
     },
     {
@@ -42140,15 +42324,144 @@
       "review": "source-inventoried"
     },
     {
-      "id": "6e56d8268289",
-      "file": "client/src/pages/SallaIntegration.tsx",
-      "line": 149,
+      "id": "ad1f3c158ae5",
+      "file": "client/src/components/merchant/SallaWorkspace.tsx",
+      "line": 52,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "SallaWorkspace",
+      "binding": "()=>void refresh()",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "!!busy||query.isFetching",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "2eda85583442",
+      "file": "client/src/components/merchant/SallaWorkspace.tsx",
+      "line": 53,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "SallaWorkspace",
+      "binding": "/merchant/platform-integrations",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "da67b41beb6c",
+      "file": "client/src/components/merchant/SallaWorkspace.tsx",
+      "line": 53,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "SallaWorkspace",
+      "binding": "/merchant/products",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "c13c558df8ab",
+      "file": "client/src/components/merchant/SallaWorkspace.tsx",
+      "line": 53,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "SallaWorkspace",
+      "binding": "/merchant/test-sari",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "782d5f5f2367",
+      "file": "client/src/components/merchant/SallaWorkspace.tsx",
+      "line": 55,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "SallaWorkspace",
+      "binding": "()=>setTab(value)",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "!!busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "8b6df469d1b0",
+      "file": "client/src/components/merchant/SallaWorkspace.tsx",
+      "line": 57,
       "tag": "a",
       "role": "",
       "kind": "action",
       "label": "",
-      "section": "هل أنت متأكد من فصل المتجر؟",
-      "binding": "connection.storeUrl",
+      "section": "SallaWorkspace",
+      "binding": "url",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "url",
+        "data.present"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "c7cb5d3fa5a1",
+      "file": "client/src/components/merchant/SallaWorkspace.tsx",
+      "line": 57,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "SallaWorkspace",
+      "binding": "()=>setReview(data)",
       "type": "text",
       "options": [],
       "min": "",
@@ -42157,21 +42470,94 @@
       "required": false,
       "conditional": false,
       "conditions": [
-        "connection?.connected"
+        "data.present",
+        "tab==='overview'"
+      ],
+      "disabled": "disabled",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "1d8e1d1ca1b2",
+      "file": "client/src/components/merchant/SallaWorkspace.tsx",
+      "line": 57,
+      "tag": "Input",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "SallaWorkspace",
+      "binding": "token",
+      "type": "visible?'text':'password'",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "8192",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "data.present",
+        "tab==='overview'"
+      ],
+      "disabled": "!!busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "f5c5d5a53e54",
+      "file": "client/src/components/merchant/SallaWorkspace.tsx",
+      "line": 57,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "visible?copy.hide:copy.show",
+      "section": "SallaWorkspace",
+      "binding": "()=>setVisible(v=>!v)",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "data.present",
+        "tab==='overview'"
       ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "f1afc05beb0f",
-      "file": "client/src/pages/SallaIntegration.tsx",
-      "line": 199,
+      "id": "f83315584f84",
+      "file": "client/src/components/merchant/SallaWorkspace.tsx",
+      "line": 57,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "مزامنة المخزون",
-      "section": "هل أنت متأكد من فصل المتجر؟",
-      "binding": "() => handleSync('stock')",
+      "label": "register",
+      "section": "SallaWorkspace",
+      "binding": "",
+      "type": "submit",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "data.present",
+        "tab==='overview'"
+      ],
+      "disabled": "disabled",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "54a9d6caa88c",
+      "file": "client/src/components/merchant/SallaWorkspace.tsx",
+      "line": 61,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "SallaWorkspace",
+      "binding": "",
       "type": "text",
       "options": [],
       "min": "",
@@ -42180,68 +42566,22 @@
       "required": false,
       "conditional": true,
       "conditions": [
-        "connection?.connected"
+        "tab==='overview'"
       ],
-      "disabled": "syncMutation.isPending",
+      "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "7918c6b49cbd",
-      "file": "client/src/pages/SallaIntegration.tsx",
-      "line": 211,
+      "id": "dc183d88d85d",
+      "file": "client/src/components/merchant/SallaWorkspace.tsx",
+      "line": 61,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "مزامنة كاملة",
-      "section": "هل أنت متأكد من فصل المتجر؟",
-      "binding": "() => handleSync('full')",
+      "label": "",
+      "section": "SallaWorkspace",
+      "binding": "()=>void copyUrl()",
       "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [
-        "connection?.connected"
-      ],
-      "disabled": "syncMutation.isPending",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "1095131d246f",
-      "file": "client/src/pages/SallaIntegration.tsx",
-      "line": 223,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "فصل المتجر",
-      "section": "هل أنت متأكد من فصل المتجر؟",
-      "binding": "handleDisconnect",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [
-        "connection?.connected"
-      ],
-      "disabled": "disconnectMutation.isPending",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "555a581dc53c",
-      "file": "client/src/pages/SallaIntegration.tsx",
-      "line": 258,
-      "tag": "Input",
-      "role": "",
-      "kind": "field",
-      "label": "اذهب إلى الإعدادات → API",
-      "section": "ربط متجر Salla",
-      "binding": "storeUrl",
-      "type": "url",
       "options": [],
       "min": "",
       "max": "",
@@ -42249,67 +42589,42 @@
       "required": false,
       "conditional": false,
       "conditions": [
-        "connection?.connected"
+        "tab==='overview'"
       ],
-      "disabled": "isConnecting",
+      "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "5651886703a4",
-      "file": "client/src/pages/SallaIntegration.tsx",
-      "line": 270,
-      "tag": "Input",
+      "id": "2831faa56720",
+      "file": "client/src/components/merchant/SallaWorkspace.tsx",
+      "line": 63,
+      "tag": "DialogContent",
       "role": "",
-      "kind": "field",
-      "label": "Personal Access Token",
-      "section": "ربط متجر Salla",
-      "binding": "accessToken",
-      "type": "password",
+      "kind": "dialog",
+      "label": "remove",
+      "section": "SallaWorkspace",
+      "binding": "",
+      "type": "text",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": false,
-      "conditions": [
-        "connection?.connected"
-      ],
-      "disabled": "isConnecting",
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "8c0fda5a2761",
-      "file": "client/src/pages/SallaIntegration.tsx",
-      "line": 280,
+      "id": "33efcbbc09f5",
+      "file": "client/src/components/merchant/SallaWorkspace.tsx",
+      "line": 63,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "جاري الربط... ربط المتجر",
-      "section": "ربط متجر Salla",
-      "binding": "handleConnect",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [
-        "connection?.connected"
-      ],
-      "disabled": "isConnecting || !storeUrl || !accessToken",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "38041d224c5c",
-      "file": "client/src/pages/SallaIntegration.tsx",
-      "line": 369,
-      "tag": "Input",
-      "role": "",
-      "kind": "field",
-      "label": "Callback URL (OAuth Redirect)",
-      "section": "روابط OAuth & Webhook",
-      "binding": "callbackUrl",
+      "label": "",
+      "section": "SallaWorkspace",
+      "binding": "()=>setReview(null)",
       "type": "text",
       "options": [],
       "min": "",
@@ -42318,19 +42633,19 @@
       "required": false,
       "conditional": true,
       "conditions": [],
-      "disabled": "",
+      "disabled": "!!busy",
       "review": "source-inventoried"
     },
     {
-      "id": "36eccc0c5e65",
-      "file": "client/src/pages/SallaIntegration.tsx",
-      "line": 376,
+      "id": "968bfebb8859",
+      "file": "client/src/components/merchant/SallaWorkspace.tsx",
+      "line": 63,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "Callback URL (OAuth Redirect)",
-      "section": "روابط OAuth & Webhook",
-      "binding": "() => handleCopy(callbackUrl, 'callback')",
+      "label": "remove",
+      "section": "SallaWorkspace",
+      "binding": "()=>void disconnect()",
       "type": "text",
       "options": [],
       "min": "",
@@ -42339,49 +42654,7 @@
       "required": false,
       "conditional": true,
       "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "6b9d2d5e3d60",
-      "file": "client/src/pages/SallaIntegration.tsx",
-      "line": 395,
-      "tag": "Input",
-      "role": "",
-      "kind": "field",
-      "label": "Webhook URL",
-      "section": "روابط OAuth & Webhook",
-      "binding": "webhookUrl",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "ff3075c953d4",
-      "file": "client/src/pages/SallaIntegration.tsx",
-      "line": 402,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "Webhook URL",
-      "section": "روابط OAuth & Webhook",
-      "binding": "() => handleCopy(webhookUrl, 'webhook')",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "",
+      "disabled": "disabled||review?.revision!==data.revision",
       "review": "source-inventoried"
     },
     {
@@ -42683,6 +42956,384 @@
       "conditional": true,
       "conditions": [],
       "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "51f3ed7be584",
+      "file": "client/src/components/merchant/SallaSyncPanel.tsx",
+      "line": 50,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "SallaSyncPanel",
+      "binding": "()=>void recover()",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "(pending||shown||latestInvalid)"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "ae3b97f00536",
+      "file": "client/src/components/merchant/SallaSyncPanel.tsx",
+      "line": 50,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "SallaSyncPanel",
+      "binding": "event=>open(pending.syncType,event.currentTarget)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "pending"
+      ],
+      "disabled": "disabled||waiting||pending.revision!==connection.revision",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "2767c7852194",
+      "file": "client/src/components/merchant/SallaSyncPanel.tsx",
+      "line": 50,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "SallaSyncPanel",
+      "binding": "event=>open('full',event.currentTarget)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "!waiting",
+        "pending"
+      ],
+      "disabled": "disabled",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "b0cfa6a463cd",
+      "file": "client/src/components/merchant/SallaSyncPanel.tsx",
+      "line": 50,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "SallaSyncPanel",
+      "binding": "event=>open('stock',event.currentTarget)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "!waiting",
+        "pending"
+      ],
+      "disabled": "disabled||connection.counts.linkedProducts===0",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "18a0f06c4dd8",
+      "file": "client/src/components/merchant/SallaSyncPanel.tsx",
+      "line": 51,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "SallaSyncPanel",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "pending&&!waiting"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "43fa3cc6d5ca",
+      "file": "client/src/components/merchant/SallaSyncPanel.tsx",
+      "line": 51,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "SallaSyncPanel",
+      "binding": "stopTracking",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "pending&&!waiting"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "91c8bcd16b5a",
+      "file": "client/src/components/merchant/SallaSyncPanel.tsx",
+      "line": 52,
+      "tag": "DialogContent",
+      "role": "",
+      "kind": "dialog",
+      "label": "full",
+      "section": "SallaSyncPanel",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "dbe10d24639f",
+      "file": "client/src/components/merchant/SallaSyncPanel.tsx",
+      "line": 52,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "SallaSyncPanel",
+      "binding": "()=>setReview(null)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "7ef77e1cb3a5",
+      "file": "client/src/components/merchant/SallaSyncPanel.tsx",
+      "line": 52,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "SallaSyncPanel",
+      "binding": "()=>void send()",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "disabled||review?.revision!==connection.revision",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "5c41ef88f6bf",
+      "file": "client/src/components/merchant/SallaLogList.tsx",
+      "line": 18,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "SallaLogList",
+      "binding": "search",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "100",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "c3c8f8195ace",
+      "file": "client/src/components/merchant/SallaLogList.tsx",
+      "line": 18,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "copy.state",
+      "section": "SallaLogList",
+      "binding": "state",
+      "type": "text",
+      "options": [
+        {
+          "value": "all",
+          "label": ""
+        },
+        {
+          "value": "value",
+          "label": ""
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "046da4f1a53a",
+      "file": "client/src/components/merchant/SallaLogList.tsx",
+      "line": 18,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "copy.kind",
+      "section": "SallaLogList",
+      "binding": "kind",
+      "type": "text",
+      "options": [
+        {
+          "value": "all",
+          "label": ""
+        },
+        {
+          "value": "value",
+          "label": ""
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "855aa75980ec",
+      "file": "client/src/components/merchant/SallaLogList.tsx",
+      "line": 18,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "SallaLogList",
+      "binding": "()=>void query.refetch()",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "query.isFetching",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "6e59a7506aa3",
+      "file": "client/src/components/merchant/SallaLogList.tsx",
+      "line": 20,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "SallaLogList",
+      "binding": "reset",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "!data.rows.length",
+        "!data",
+        "query.isLoading||query.isFetching&&!data"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "e9ccac1a3aa2",
+      "file": "client/src/components/merchant/SallaLogList.tsx",
+      "line": 21,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "·",
+      "binding": "()=>navigate(page-1)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "!data",
+        "query.isLoading||query.isFetching&&!data"
+      ],
+      "disabled": "page<=1||query.isFetching",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "dc249148dcb4",
+      "file": "client/src/components/merchant/SallaLogList.tsx",
+      "line": 21,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "·",
+      "binding": "()=>navigate(page+1)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "!data",
+        "query.isLoading||query.isFetching&&!data"
+      ],
+      "disabled": "page>=data.pagination.pages||query.isFetching",
       "review": "source-inventoried"
     },
     {
