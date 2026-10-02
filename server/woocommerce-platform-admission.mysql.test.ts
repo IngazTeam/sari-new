@@ -1,0 +1,26 @@
+import {afterAll,afterEach,beforeEach,describe,expect,it} from 'vitest';
+import {getPool,closeDb,getDb} from './db/connection';
+import {createDisposableMerchant,cleanupDisposableMerchants} from './tests/helpers/disposable-merchant';
+import {saveVerifiedWooCommerceSettings,deleteWooCommerceIntegration} from './db';
+import {withWooDashboardAuthority} from './integrations/woocommerce-dashboard-authority';
+import {WOOCOMMERCE_WEBHOOK_TOPICS} from './webhooks/woocommerce-security';
+describe.skipIf(!process.env.DATABASE_URL)('WooCommerce atomic platform admission MySQL',()=>{
+ let own:Awaited<ReturnType<typeof createDisposableMerchant>>,other:typeof own;
+ const q=async(query:string,args:any[]=[]) => (await(await getPool())!.execute<any>(query,args))[0];
+ beforeEach(async()=>{await getDb();own=await createDisposableMerchant('woo-admission');other=await createDisposableMerchant('woo-other');});
+ afterEach(async()=>cleanupDisposableMerchants([own.userId,other.userId]));afterAll(closeDb);
+ const save=()=>withWooDashboardAuthority({actorId:own.userId,merchantId:own.merchantId,permission:'integrations.manage'},()=>saveVerifiedWooCommerceSettings({merchantId:own.merchantId,storeUrl:'https://local.example.test',consumerKey:'SYNTHETIC_KEY',consumerSecret:'SYNTHETIC_SECRET',isActive:1,connectionStatus:'connected',webhookEndpointId:String(own.merchantId).padStart(43,'a'),webhookSigningSecret:'SYNTHETIC_SIGNING_SECRET'.repeat(2)},WOOCOMMERCE_WEBHOOK_TOPICS.map((topic,i)=>({topic,webhookId:String(i+1)}))));
+ const zid=(merchantId=own.merchantId,active=1)=>q("INSERT INTO platform_integrations(merchant_id,platform_type,access_token,is_active) VALUES (?,'zid','SYNTHETIC',?)",[merchantId,active]);
+ it.each(['salla','zid','legacy','shopify','byaan-pending','byaan-active','unknown'])('refuses conflicting %s inside the final save transaction',async kind=>{
+  if(kind==='salla')await q("INSERT INTO salla_connections(merchantId,storeUrl,accessToken,syncStatus) VALUES (?,'local.example.test','SYNTHETIC','paused')",[own.merchantId]);
+  else if(kind==='zid'||kind==='unknown')await zid(own.merchantId,kind==='unknown'?2:1);
+  else if(kind==='legacy')await q("INSERT INTO zid_settings(merchant_id,store_id,access_token,manager_token,is_active) VALUES (?,'1','SYNTHETIC','SYNTHETIC',1)",[own.merchantId]);
+  else if(kind==='shopify')await q("INSERT INTO platform_integrations(merchant_id,platform_type,access_token,is_active) VALUES (?,'shopify','SYNTHETIC',1)",[own.merchantId]);
+  else await q("INSERT INTO byaan_connections(merchant_id,tenant_domain,is_active,verified_at) VALUES (?,?,?,?)",[own.merchantId,'woo-admission-'+own.merchantId+'.example.test',kind==='byaan-pending'?0:1,kind==='byaan-pending'?null:'2026-10-02 00:00:00']);
+  await expect(save()).rejects.toMatchObject({code:'CONFLICT'});expect(await q('SELECT id FROM woocommerce_settings WHERE merchant_id=?',[own.merchantId])).toHaveLength(0);expect(await q('SELECT id FROM woocommerce_webhook_registrations WHERE merchant_id=?',[own.merchantId])).toHaveLength(0);
+ });
+ it('allows an explicitly disabled canonical Zid record to shadow active legacy credentials',async()=>{await zid(own.merchantId,0);await q("INSERT INTO zid_settings(merchant_id,store_id,access_token,manager_token,is_active) VALUES (?,'1','SYNTHETIC','SYNTHETIC',1)",[own.merchantId]);await save();expect((await q('SELECT integration_source AS source FROM merchants WHERE id=?',[own.merchantId]))[0].source).toBe('woocommerce');});
+ it('ignores other tenants and atomically updates the selected source on save and disconnect',async()=>{await zid(other.merchantId);await save();expect((await q('SELECT integration_source AS source FROM merchants WHERE id=?',[own.merchantId]))[0].source).toBe('woocommerce');await deleteWooCommerceIntegration(own.merchantId);expect((await q('SELECT integration_source AS source FROM merchants WHERE id=?',[own.merchantId]))[0].source).toBe('none');expect(await q('SELECT id FROM platform_integrations WHERE merchant_id=?',[other.merchantId])).toHaveLength(1);});
+ it('rechecks competing admission after waiting for the shared merchant lock',async()=>{const c=await(await getPool())!.getConnection();await c.beginTransaction();await c.execute('SELECT id FROM merchants WHERE id=? FOR UPDATE',[own.merchantId]);await c.execute("INSERT INTO platform_integrations(merchant_id,platform_type,access_token,is_active) VALUES (?,'zid','SYNTHETIC',1)",[own.merchantId]);let settled=false;const attempt=save().then(()=>({ok:true}),error=>({error})).finally(()=>settled=true);try{await new Promise(r=>setTimeout(r,40));expect(settled).toBe(false);await c.commit();const result=await attempt;expect(result).toMatchObject({error:{code:'CONFLICT'}});}finally{await c.rollback();c.release();await attempt;}expect(await q('SELECT id FROM woocommerce_settings WHERE merchant_id=?',[own.merchantId])).toHaveLength(0);});
+ it('retains the prior Woo definition when a competing platform blocks credential replacement',async()=>{await save();await zid();await expect(save()).rejects.toMatchObject({code:'CONFLICT'});expect(await q('SELECT id FROM woocommerce_settings WHERE merchant_id=?',[own.merchantId])).toHaveLength(1);expect(await q('SELECT id FROM woocommerce_webhook_registrations WHERE merchant_id=?',[own.merchantId])).toHaveLength(6);});
+});

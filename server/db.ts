@@ -1,4 +1,5 @@
 import {assertWooDashboardWrite} from './integrations/woocommerce-dashboard-authority';
+import {assertWooPlatformAdmission,lockWooPlatformMerchant} from './integrations/woocommerce-platform-admission';
 import {writeServiceCatalog,archiveServiceCatalog} from './service-catalog-write';
 import type {ZidWriteGuard} from './integrations/zid-sync-review';
 import { normalizeProductMoneyWrite } from '../shared/product-money';
@@ -8905,6 +8906,7 @@ export async function saveVerifiedWooCommerceSettings(
   ) throw new Error('WOOCOMMERCE_WEBHOOK_REGISTRATION_INVALID');
   await requireDb().transaction(async tx => {
     await assertWooDashboardWrite(tx, data.merchantId);
+    await assertWooPlatformAdmission(tx, data.merchantId);
     const current = await tx.select({ id: woocommerceSettings.id, storeUrl: woocommerceSettings.storeUrl })
       .from(woocommerceSettings)
       .where(eq(woocommerceSettings.merchantId, data.merchantId))
@@ -8935,6 +8937,7 @@ export async function saveVerifiedWooCommerceSettings(
       topic: registration.topic,
       webhookId: registration.webhookId,
     })));
+    await tx.execute(sql`UPDATE merchants SET integration_source='woocommerce' WHERE id=${data.merchantId}`);
   });
 }
 
@@ -8978,6 +8981,7 @@ export async function deleteWooCommerceSettings(merchantId: number) {
 export async function deleteWooCommerceIntegration(merchantId: number): Promise<void> {
   await requireDb().transaction(async tx => {
     await assertWooDashboardWrite(tx, merchantId);
+    await lockWooPlatformMerchant(tx, merchantId);
     await tx.delete(woocommerceWebhookReceipts).where(eq(woocommerceWebhookReceipts.merchantId, merchantId));
     await tx.delete(woocommerceWebhookRegistrations).where(eq(woocommerceWebhookRegistrations.merchantId, merchantId));
     await tx.delete(woocommerceWebhooks).where(eq(woocommerceWebhooks.merchantId, merchantId));
@@ -8985,6 +8989,7 @@ export async function deleteWooCommerceIntegration(merchantId: number): Promise<
     await tx.delete(woocommerceProducts).where(eq(woocommerceProducts.merchantId, merchantId));
     await tx.delete(woocommerceOrders).where(eq(woocommerceOrders.merchantId, merchantId));
     await tx.delete(woocommerceSettings).where(eq(woocommerceSettings.merchantId, merchantId));
+    await tx.execute(sql`UPDATE merchants SET integration_source='none' WHERE id=${merchantId} AND integration_source='woocommerce'`);
   });
 }
 
