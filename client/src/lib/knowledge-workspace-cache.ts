@@ -1,5 +1,6 @@
 import { clearSalesPolicyDrafts } from './sales-policy-draft';
 import { clearConversationDrafts } from './conversation-draft';
+import { clearTestWorkspaceDrafts } from './test-workspace-draft';
 export type KnowledgeDraft = {
   name: string;
   content: string;
@@ -91,6 +92,7 @@ export function clearKnowledgeWorkspace() {
   epoch++;
   clearSalesPolicyDrafts();
   clearConversationDrafts();
+  clearTestWorkspaceDrafts();
   drafts.clear();
   window.removeEventListener('beforeunload', warn);
   try {

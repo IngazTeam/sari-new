@@ -49,6 +49,7 @@ vi.mock("react-i18next", () => ({
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 import TestSari from "../client/src/pages/merchant/TestSari";
 import PreviewChat from "../client/src/components/PreviewChat";
+import { clearTestWorkspaceDrafts, readTestWorkspaceDraft, cacheTestWorkspaceDraft, testDraftEpoch } from "../client/src/lib/test-workspace-draft";
 let container: HTMLDivElement, root: Root;
 const flush = () =>
   act(async () => {
@@ -77,6 +78,7 @@ async function fill(el: HTMLInputElement, value: string) {
 beforeEach(() => {
   vi.clearAllMocks();
   sessionStorage.clear();
+  clearTestWorkspaceDrafts();
   vi.stubGlobal("React", React);
   Object.assign(globalThis, {
     IS_REACT_ACT_ENVIRONMENT: true,
@@ -164,6 +166,43 @@ async function send() {
   );
 }
 describe("rendered production test workspace", () => {
+  it("preserves unsent text across a route unmount without creating or sending anything", async () => {
+    await renderPage();
+    await fill(container.querySelector("input")!, "مسودة محلية <script> كنص");
+    expect(container.textContent).toContain(ar.testSariPage.draftMemoryHint);
+    await act(async () => root.render(React.createElement("div", null, "another route")));
+    expect(readTestWorkspaceDraft("1:20:test-sari-session", null)?.message).toBe("مسودة محلية <script> كنص");
+    const unload = new Event("beforeunload", { cancelable: true });
+    window.dispatchEvent(unload);
+    expect(unload.defaultPrevented).toBe(true);
+    await renderPage();
+    expect(container.querySelector("input")!.value).toBe("مسودة محلية <script> كنص");
+    expect(sessionStorage.length).toBe(0);
+    expect(mocks.create).not.toHaveBeenCalled();
+    expect(mocks.send).not.toHaveBeenCalled();
+    expect(mocks.save).not.toHaveBeenCalled();
+  });
+  it("restores a draft with its saved session but does not carry it to another session", async () => {
+    sessionStorage.setItem("sary:test-session:v1:1:20:test-sari-session", "12");
+    cacheTestWorkspaceDraft("1:20:test-sari-session", { conversationId: 12, message: "تابع السؤال", dealValue: "149", scenarioId: "complaint" }, testDraftEpoch());
+    await renderPage();
+    expect(container.querySelector("input")!.value).toBe("تابع السؤال");
+    expect(container.textContent).toContain("رد محفوظ");
+    expect(mocks.send).not.toHaveBeenCalled();
+    await act(async () => root.render(React.createElement("div")));
+    sessionStorage.setItem("sary:test-session:v1:1:20:test-sari-session", "13");
+    await renderPage();
+    expect(container.querySelector("input")!.value).toBe("");
+  });
+  it("clears the cached text after submission and never resurrects it on return", async () => {
+    await renderPage();
+    await send();
+    expect(readTestWorkspaceDraft("1:20:test-sari-session", 41)).toBeNull();
+    await act(async () => root.render(React.createElement("div")));
+    await renderPage();
+    expect(container.querySelector("input")!.value).toBe("");
+    expect(mocks.send).toHaveBeenCalledTimes(1);
+  });
   it("restores the scoped reference without creating a session or repeating a reply", async () => {
     sessionStorage.setItem("sary:test-session:v1:1:20:test-sari-session", "12");
     await renderPage();

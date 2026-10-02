@@ -5,6 +5,7 @@ import {
   rememberTestSessionReference,
 } from "@/lib/test-session-reference";
 import { TestSariSession, loadedTestFeedback } from "@/lib/test-sari-session";
+import { cacheTestWorkspaceDraft, readTestWorkspaceDraft, testDraftEpoch } from "@/lib/test-workspace-draft";
 import { KnowledgeWorkspaceScope } from "@/components/KnowledgeWorkspaceScope";
 import { testDealValue } from "@shared/test-sari-workspace";
 import { useState, useRef, useEffect, useSyncExternalStore } from "react";
@@ -75,6 +76,9 @@ function TestSariWorkspace({ scopeKey }: { scopeKey: string }) {
   const { t, i18n } = useTranslation();
   const merchantId = Number(scopeKey.split(":")[1]);
   const [epoch] = useState(knowledgeCacheEpoch);
+  const [draftEpoch] = useState(testDraftEpoch);
+  const [initialReference] = useState(() => readTestSessionReference(scopeKey));
+  const [initialDraft] = useState(() => readTestWorkspaceDraft(scopeKey, initialReference));
   const [storageFailed, setStorageFailed] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [pendingOpen, setPendingOpen] = useState<number | null>(null);
@@ -138,11 +142,11 @@ function TestSariWorkspace({ scopeKey }: { scopeKey: string }) {
     },
   ];
 
-  const [inputMessage, setInputMessage] = useState("");
-  const [dealValue, setDealValue] = useState("");
+  const [inputMessage, setInputMessage] = useState(initialDraft?.message ?? "");
+  const [dealValue, setDealValue] = useState(initialDraft?.dealValue ?? "");
   const [dealError, setDealError] = useState(false);
   const [showDealDialog, setShowDealDialog] = useState(false);
-  const [scenarioId, setScenarioId] = useState("");
+  const [scenarioId, setScenarioId] = useState(initialDraft?.scenarioId ?? "");
   const [pendingReset, setPendingReset] = useState<string | null>(null);
   const selectedScenario = EXAMPLE_SCENARIOS.find(s => s.id === scenarioId);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -177,9 +181,14 @@ function TestSariWorkspace({ scopeKey }: { scopeKey: string }) {
   useEffect(() => {
     if (initialized.current) return;
     initialized.current = true;
-    const previous = readTestSessionReference(scopeKey);
-    if (previous) void session.restore(previous, merchantId);
-  }, [session, scopeKey, merchantId]);
+    if (initialReference) void session.restore(initialReference, merchantId);
+  }, [session, initialReference, merchantId]);
+  useEffect(() => {
+    cacheTestWorkspaceDraft(scopeKey, {
+      conversationId: state.conversationId ?? initialReference,
+      message: inputMessage, dealValue, scenarioId,
+    }, draftEpoch);
+  }, [scopeKey, draftEpoch, initialReference, state.conversationId, inputMessage, dealValue, scenarioId]);
   useEffect(() => {
     if (state.conversationId)
       setStorageFailed(
@@ -258,6 +267,7 @@ function TestSariWorkspace({ scopeKey }: { scopeKey: string }) {
     setDealError(false);
     if (await session.markDeal(value)) {
       setShowDealDialog(false);
+      setDealValue("");
       toast.success(
         t("testSariPage.dealRecorded", {
           value: session.snapshot().deal?.value.toFixed(2),
@@ -278,7 +288,10 @@ function TestSariWorkspace({ scopeKey }: { scopeKey: string }) {
         setInputMessage("");
         setScenarioId("");
       }
-      if (failed === "deal") setShowDealDialog(false);
+      if (failed === "deal") {
+        setShowDealDialog(false);
+        setDealValue("");
+      }
     }
   };
   const handleRating = async (id: string, rating: "positive" | "negative") => {
@@ -386,6 +399,9 @@ function TestSariWorkspace({ scopeKey }: { scopeKey: string }) {
         <p role="status" className="text-sm">
           {t("testSariPage.storageUnavailable")}
         </p>
+      )}
+      {(inputMessage.trim() || dealValue.trim()) && (
+        <p className="text-sm text-muted-foreground">{t("testSariPage.draftMemoryHint")}</p>
       )}
 
       <Card className="flex min-w-0 flex-col gap-0 overflow-hidden rounded-2xl py-0">

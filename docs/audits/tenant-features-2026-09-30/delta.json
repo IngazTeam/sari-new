@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-02T19:49:32.708Z",
+  "generatedAt": "2026-10-02T20:08:14.766Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,7 +10,7 @@
     },
     "after": {
       "routes": 126,
-      "files": 427,
+      "files": 428,
       "controls": 2497
     }
   },
@@ -23,6 +23,7 @@
     "client/src/lib/knowledge-workspace-cache.ts",
     "client/src/lib/sales-policy-draft.ts",
     "client/src/lib/conversation-draft.ts",
+    "client/src/lib/test-workspace-draft.ts",
     "client/src/lib/setup-website-draft.ts",
     "client/src/lib/setup-website-product.ts",
     "client/src/lib/test-sari-session.ts",

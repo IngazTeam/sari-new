@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-02T19:49:32.708Z",
+  "generatedAt": "2026-10-02T20:08:14.766Z",
   "definition": "Every registered route is accounted for; source inventory and design completion are different statuses.",
   "routes": [
     {
@@ -24,6 +24,7 @@
         "client/src/lib/knowledge-workspace-cache.ts",
         "client/src/lib/sales-policy-draft.ts",
         "client/src/lib/conversation-draft.ts",
+        "client/src/lib/test-workspace-draft.ts",
         "client/src/lib/setup-website-draft.ts",
         "client/src/lib/setup-website-product.ts",
         "client/src/pages/setup-wizard/ProductsServicesStep.tsx",
@@ -10055,6 +10056,7 @@
         "client/src/lib/knowledge-workspace-cache.ts",
         "client/src/lib/sales-policy-draft.ts",
         "client/src/lib/conversation-draft.ts",
+        "client/src/lib/test-workspace-draft.ts",
         "client/src/components/merchant/ProductCatalogWorkspace.tsx",
         "client/src/lib/product-workspace-cache.ts",
         "client/src/lib/product-workspace-model.ts",
@@ -12718,6 +12720,7 @@
         "client/src/lib/knowledge-workspace-cache.ts",
         "client/src/lib/sales-policy-draft.ts",
         "client/src/lib/conversation-draft.ts",
+        "client/src/lib/test-workspace-draft.ts",
         "client/src/components/merchant/ProductImportWorkspace.tsx",
         "client/src/lib/product-import-workspace.ts",
         "client/src/components/merchant/ProductWorkspaceView.tsx",
@@ -34347,6 +34350,7 @@
         "client/src/lib/knowledge-workspace-cache.ts",
         "client/src/lib/sales-policy-draft.ts",
         "client/src/lib/conversation-draft.ts",
+        "client/src/lib/test-workspace-draft.ts",
         "client/src/lib/assistant-draft-cache.ts"
       ],
       "controls": [
@@ -35563,6 +35567,7 @@
         "client/src/lib/knowledge-workspace-cache.ts",
         "client/src/lib/sales-policy-draft.ts",
         "client/src/lib/conversation-draft.ts",
+        "client/src/lib/test-workspace-draft.ts",
         "client/src/components/merchant/MessageWorkspace.tsx",
         "client/src/lib/message-labels.ts",
         "client/src/lib/message-export.ts"
@@ -35873,6 +35878,7 @@
         "client/src/lib/knowledge-workspace-cache.ts",
         "client/src/lib/sales-policy-draft.ts",
         "client/src/lib/conversation-draft.ts",
+        "client/src/lib/test-workspace-draft.ts",
         "client/src/components/merchant/OverviewWorkspace.tsx",
         "client/src/lib/overview-labels.ts",
         "client/src/lib/overview-export.ts",
@@ -36084,6 +36090,7 @@
         "client/src/lib/knowledge-workspace-cache.ts",
         "client/src/lib/sales-policy-draft.ts",
         "client/src/lib/conversation-draft.ts",
+        "client/src/lib/test-workspace-draft.ts",
         "client/src/components/merchant/OrderWorkspace.tsx",
         "client/src/lib/order-status-cache.ts",
         "client/src/components/merchant/OrderReport.tsx",
@@ -39426,36 +39433,37 @@
         "client/src/lib/knowledge-workspace-cache.ts",
         "client/src/lib/sales-policy-draft.ts",
         "client/src/lib/conversation-draft.ts",
+        "client/src/lib/test-workspace-draft.ts",
         "client/src/lib/test-session-reference.ts",
         "client/src/lib/test-sari-session.ts",
         "client/src/components/KnowledgeWorkspaceScope.tsx"
       ],
       "controls": [
-        "3833c944c871",
-        "eed82a60d3ea",
-        "d1b99992fe81",
-        "da1d72546055",
-        "6aa92974f265",
-        "ff5bcf9fcbe5",
-        "9c8024da3c0d",
-        "32b5f3f3cd2c",
-        "5d43a0d13f8e",
-        "787b6675bba2",
-        "779df8939320",
-        "ecf08413175d",
-        "6bb3df08c6f2",
-        "7a8ad7d93291",
-        "2a052e987512",
-        "9645f006b09e",
-        "212087eb9000",
-        "9d135a1f70e3",
-        "328cebbb389b",
-        "bd68069f0c54",
-        "3b72195f9e1e",
-        "81a32401d0db",
-        "34d08235c5a0",
-        "adf537f4b453",
-        "472f6dfb9d66",
+        "f1f6ff989ce3",
+        "2275ba70b6d7",
+        "a49a2daef111",
+        "bd7500230fc9",
+        "e863adcf4306",
+        "18eaa7545e01",
+        "50151aab4415",
+        "e34238b3df7d",
+        "1a32f452a0a8",
+        "8965e0b09ae8",
+        "db9b72819a08",
+        "bad6b55560c4",
+        "114c77ac6f7b",
+        "a823eda265c9",
+        "3a28cef24ea5",
+        "20bdf7861264",
+        "d6d1234e84a8",
+        "d44ed2dbcc7f",
+        "be41f9da5c7d",
+        "67151899e69b",
+        "6c719b9d4950",
+        "77b93083c880",
+        "a75cf95e8faf",
+        "e452c90cae78",
+        "0b1b69fc83cd",
         "482d44df034c",
         "71afacd556ee",
         "c6187126205c",
@@ -39482,7 +39490,7 @@
           "procedure": "testSari.feedback",
           "method": "fetch",
           "expression": "operations.current.utils.testSari.feedback.fetch",
-          "line": 166,
+          "line": 170,
           "provenance": "trpc-utility-static"
         },
         {
@@ -39490,7 +39498,7 @@
           "procedure": "testSari.transcript",
           "method": "fetch",
           "expression": "operations.current.utils.testSari.transcript.fetch",
-          "line": 168,
+          "line": 172,
           "provenance": "trpc-utility-static"
         },
         {
@@ -39516,15 +39524,15 @@
       "acceptancePlan": "الدخول والإعداد والتنقل والبحث والحفظ والتحقق من الحالة.",
       "gaps": [
         "راجع tenant-test-session-recovery-2026-09-30 وtenant-test-session-prototype-2026-09-30؛ نجحت استعادة جلسة وتقييم وصفقة محليًا وفحص 480.",
-        "الموك أب يستخدم أمثلة محلية. لا يثبت توليد المزود أو حفظ رد غير مؤكد مرة واحدة عبر إعادة التحميل. تبقى حماية المسودة عبر كل التنقلات الداخلية واستعادة عمليات التوليد الدائمة.",
+        "أضيف حفظ مسودة النص وقيمة الصفقة أثناء التنقل في ذاكرة التبويب، مع عزل الحساب والتيننت والجلسة ومسح الخروج؛ راجع tenant-test-draft-navigation-2026-10-02. تبقى مطابقة الموك أب واستعادة عمليات التوليد الدائمة. لا تستعاد المسودة بعد إعادة التحميل ولا تُرسل تلقائيًا.",
         "الموك أب لا يحاكي كل أعطال حفظ الرسائل أو مصدر الرد/حارس الأمان بالتفصيل، وSafari/iPhone و320/390 في هذه المرحلة غير مثبتة.",
         "عناصر المصدر أدناه من تاريخ اللقطة أعلى السجل. الحصر الساكن لا يثبت اكتمال الاختبارات الوظيفية."
       ],
       "controlDetails": [
         {
-          "id": "3833c944c871",
+          "id": "f1f6ff989ce3",
           "file": "client/src/pages/merchant/TestSari.tsx",
-          "line": 307,
+          "line": 320,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -39543,9 +39551,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "eed82a60d3ea",
+          "id": "2275ba70b6d7",
           "file": "client/src/pages/merchant/TestSari.tsx",
-          "line": 314,
+          "line": 327,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -39564,9 +39572,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "d1b99992fe81",
+          "id": "a49a2daef111",
           "file": "client/src/pages/merchant/TestSari.tsx",
-          "line": 363,
+          "line": 376,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -39587,9 +39595,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "da1d72546055",
+          "id": "bd7500230fc9",
           "file": "client/src/pages/merchant/TestSari.tsx",
-          "line": 418,
+          "line": 434,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -39610,9 +39618,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "6aa92974f265",
+          "id": "e863adcf4306",
           "file": "client/src/pages/merchant/TestSari.tsx",
-          "line": 499,
+          "line": 515,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -39633,9 +39641,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "ff5bcf9fcbe5",
+          "id": "18eaa7545e01",
           "file": "client/src/pages/merchant/TestSari.tsx",
-          "line": 527,
+          "line": 543,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -39656,9 +39664,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "9c8024da3c0d",
+          "id": "50151aab4415",
           "file": "client/src/pages/merchant/TestSari.tsx",
-          "line": 588,
+          "line": 604,
           "tag": "Input",
           "role": "",
           "kind": "field",
@@ -39677,9 +39685,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "32b5f3f3cd2c",
+          "id": "e34238b3df7d",
           "file": "client/src/pages/merchant/TestSari.tsx",
-          "line": 603,
+          "line": 619,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -39698,9 +39706,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "5d43a0d13f8e",
+          "id": "1a32f452a0a8",
           "file": "client/src/pages/merchant/TestSari.tsx",
-          "line": 629,
+          "line": 645,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -39719,9 +39727,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "787b6675bba2",
+          "id": "8965e0b09ae8",
           "file": "client/src/pages/merchant/TestSari.tsx",
-          "line": 647,
+          "line": 663,
           "tag": "DialogContent",
           "role": "",
           "kind": "dialog",
@@ -39740,9 +39748,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "779df8939320",
+          "id": "db9b72819a08",
           "file": "client/src/pages/merchant/TestSari.tsx",
-          "line": 663,
+          "line": 679,
           "tag": "Input",
           "role": "",
           "kind": "field",
@@ -39761,9 +39769,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "ecf08413175d",
+          "id": "bad6b55560c4",
           "file": "client/src/pages/merchant/TestSari.tsx",
-          "line": 692,
+          "line": 708,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -39784,9 +39792,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "6bb3df08c6f2",
+          "id": "114c77ac6f7b",
           "file": "client/src/pages/merchant/TestSari.tsx",
-          "line": 704,
+          "line": 720,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -39805,9 +39813,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "7a8ad7d93291",
+          "id": "a823eda265c9",
           "file": "client/src/pages/merchant/TestSari.tsx",
-          "line": 711,
+          "line": 727,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -39826,9 +39834,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "2a052e987512",
+          "id": "3a28cef24ea5",
           "file": "client/src/pages/merchant/TestSari.tsx",
-          "line": 727,
+          "line": 743,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -39847,9 +39855,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "9645f006b09e",
+          "id": "20bdf7861264",
           "file": "client/src/pages/merchant/TestSari.tsx",
-          "line": 742,
+          "line": 758,
           "tag": "Select",
           "role": "",
           "kind": "field",
@@ -39873,9 +39881,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "212087eb9000",
+          "id": "d6d1234e84a8",
           "file": "client/src/pages/merchant/TestSari.tsx",
-          "line": 769,
+          "line": 785,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -39896,9 +39904,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "9d135a1f70e3",
+          "id": "d44ed2dbcc7f",
           "file": "client/src/pages/merchant/TestSari.tsx",
-          "line": 787,
+          "line": 803,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -39917,9 +39925,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "328cebbb389b",
+          "id": "be41f9da5c7d",
           "file": "client/src/pages/merchant/TestSari.tsx",
-          "line": 838,
+          "line": 854,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -39940,9 +39948,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "bd68069f0c54",
+          "id": "67151899e69b",
           "file": "client/src/pages/merchant/TestSari.tsx",
-          "line": 886,
+          "line": 902,
           "tag": "DialogContent",
           "role": "",
           "kind": "dialog",
@@ -39961,9 +39969,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "3b72195f9e1e",
+          "id": "6c719b9d4950",
           "file": "client/src/pages/merchant/TestSari.tsx",
-          "line": 900,
+          "line": 916,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -39982,9 +39990,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "81a32401d0db",
+          "id": "77b93083c880",
           "file": "client/src/pages/merchant/TestSari.tsx",
-          "line": 910,
+          "line": 926,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -40003,9 +40011,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "34d08235c5a0",
+          "id": "a75cf95e8faf",
           "file": "client/src/pages/merchant/TestSari.tsx",
-          "line": 928,
+          "line": 944,
           "tag": "DialogContent",
           "role": "",
           "kind": "dialog",
@@ -40024,9 +40032,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "adf537f4b453",
+          "id": "e452c90cae78",
           "file": "client/src/pages/merchant/TestSari.tsx",
-          "line": 944,
+          "line": 960,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -40045,9 +40053,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "472f6dfb9d66",
+          "id": "0b1b69fc83cd",
           "file": "client/src/pages/merchant/TestSari.tsx",
-          "line": 953,
+          "line": 969,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -40189,6 +40197,7 @@
         "client/src/lib/knowledge-workspace-cache.ts",
         "client/src/lib/sales-policy-draft.ts",
         "client/src/lib/conversation-draft.ts",
+        "client/src/lib/test-workspace-draft.ts",
         "client/src/components/merchant/TestMetricsWorkspace.tsx",
         "client/src/lib/test-metrics-labels.ts",
         "client/src/lib/overview-labels.ts",
@@ -40561,6 +40570,7 @@
         "client/src/lib/knowledge-workspace-cache.ts",
         "client/src/lib/sales-policy-draft.ts",
         "client/src/lib/conversation-draft.ts",
+        "client/src/lib/test-workspace-draft.ts",
         "client/src/components/merchant/AssistantDraftReview.tsx",
         "client/src/components/merchant/AssistantPersonalityFields.tsx",
         "client/src/lib/assistant-draft-cache.ts",
@@ -42009,6 +42019,7 @@
         "client/src/lib/knowledge-workspace-cache.ts",
         "client/src/lib/sales-policy-draft.ts",
         "client/src/lib/conversation-draft.ts",
+        "client/src/lib/test-workspace-draft.ts",
         "client/src/components/merchant/AssistantOptionReview.tsx",
         "client/src/components/merchant/AssistantOptionRecovery.tsx",
         "client/src/hooks/useReviewedAssistantOption.ts",
@@ -42403,6 +42414,7 @@
         "client/src/lib/knowledge-workspace-cache.ts",
         "client/src/lib/sales-policy-draft.ts",
         "client/src/lib/conversation-draft.ts",
+        "client/src/lib/test-workspace-draft.ts",
         "client/src/components/merchant/VirtualAgentReview.tsx",
         "client/src/lib/virtual-team-draft.ts",
         "client/src/components/merchant/AssistantReplyPreview.tsx",
@@ -43702,6 +43714,7 @@
         "client/src/lib/knowledge-workspace-cache.ts",
         "client/src/lib/sales-policy-draft.ts",
         "client/src/lib/conversation-draft.ts",
+        "client/src/lib/test-workspace-draft.ts",
         "client/src/components/KnowledgeActivityWorkspace.tsx",
         "client/src/components/KnowledgeRemovalWorkspace.tsx",
         "client/src/lib/knowledge-removal-attempt.ts",
@@ -54168,7 +54181,8 @@
         "client/src/components/KnowledgeWorkspaceScope.tsx",
         "client/src/lib/knowledge-workspace-cache.ts",
         "client/src/lib/sales-policy-draft.ts",
-        "client/src/lib/conversation-draft.ts"
+        "client/src/lib/conversation-draft.ts",
+        "client/src/lib/test-workspace-draft.ts"
       ],
       "controls": [
         "0661c31defc7",
@@ -54456,6 +54470,7 @@
         "client/src/lib/knowledge-workspace-cache.ts",
         "client/src/lib/sales-policy-draft.ts",
         "client/src/lib/conversation-draft.ts",
+        "client/src/lib/test-workspace-draft.ts",
         "client/src/components/merchant/MessageWorkspace.tsx",
         "client/src/lib/message-labels.ts",
         "client/src/lib/message-export.ts"
@@ -54766,6 +54781,7 @@
         "client/src/lib/knowledge-workspace-cache.ts",
         "client/src/lib/sales-policy-draft.ts",
         "client/src/lib/conversation-draft.ts",
+        "client/src/lib/test-workspace-draft.ts",
         "client/src/components/merchant/QuotationWorkspace.tsx",
         "client/src/lib/quotation-editor-cache.ts",
         "client/src/lib/quotation-display.ts",
@@ -55969,6 +55985,7 @@
         "client/src/lib/knowledge-workspace-cache.ts",
         "client/src/lib/sales-policy-draft.ts",
         "client/src/lib/conversation-draft.ts",
+        "client/src/lib/test-workspace-draft.ts",
         "client/src/components/merchant/PipelineWorkspace.tsx",
         "client/src/lib/pipeline-labels.ts",
         "client/src/components/merchant/PipelineReport.tsx"
@@ -56338,6 +56355,7 @@
         "client/src/lib/knowledge-workspace-cache.ts",
         "client/src/lib/sales-policy-draft.ts",
         "client/src/lib/conversation-draft.ts",
+        "client/src/lib/test-workspace-draft.ts",
         "client/src/components/merchant/QuotationTemplateWorkspace.tsx",
         "client/src/lib/quotation-template-cache.ts",
         "client/src/components/merchant/QuotationTemplateReport.tsx"
@@ -58170,6 +58188,7 @@
         "client/src/lib/knowledge-workspace-cache.ts",
         "client/src/lib/sales-policy-draft.ts",
         "client/src/lib/conversation-draft.ts",
+        "client/src/lib/test-workspace-draft.ts",
         "client/src/components/merchant/QuickResponseWorkspace.tsx",
         "client/src/components/merchant/AssistantOptionReview.tsx"
       ],
@@ -58957,6 +58976,7 @@
         "client/src/lib/knowledge-workspace-cache.ts",
         "client/src/lib/sales-policy-draft.ts",
         "client/src/lib/conversation-draft.ts",
+        "client/src/lib/test-workspace-draft.ts",
         "client/src/components/merchant/InsightsWorkspace.tsx",
         "client/src/components/merchant/KeywordReviewDialog.tsx",
         "client/src/components/merchant/InsightReportDetails.tsx"
@@ -59755,6 +59775,7 @@
         "client/src/lib/knowledge-workspace-cache.ts",
         "client/src/lib/sales-policy-draft.ts",
         "client/src/lib/conversation-draft.ts",
+        "client/src/lib/test-workspace-draft.ts",
         "client/src/components/merchant/MessageWorkspace.tsx",
         "client/src/lib/message-labels.ts",
         "client/src/lib/message-export.ts"
@@ -60065,6 +60086,7 @@
         "client/src/lib/knowledge-workspace-cache.ts",
         "client/src/lib/sales-policy-draft.ts",
         "client/src/lib/conversation-draft.ts",
+        "client/src/lib/test-workspace-draft.ts",
         "client/src/components/merchant/MessageWorkspace.tsx",
         "client/src/lib/message-labels.ts",
         "client/src/lib/message-export.ts"
@@ -60375,6 +60397,7 @@
         "client/src/lib/knowledge-workspace-cache.ts",
         "client/src/lib/sales-policy-draft.ts",
         "client/src/lib/conversation-draft.ts",
+        "client/src/lib/test-workspace-draft.ts",
         "client/src/components/merchant/PerformanceWorkspace.tsx",
         "client/src/lib/performance-labels.ts",
         "client/src/lib/performance-report.ts",
@@ -60639,6 +60662,7 @@
         "client/src/lib/knowledge-workspace-cache.ts",
         "client/src/lib/sales-policy-draft.ts",
         "client/src/lib/conversation-draft.ts",
+        "client/src/lib/test-workspace-draft.ts",
         "client/src/components/merchant/DataSyncWorkspace.tsx",
         "client/src/lib/inventory-export-attempt.ts",
         "client/src/components/merchant/ProductWorkspaceView.tsx"
@@ -61780,6 +61804,7 @@
         "client/src/lib/knowledge-workspace-cache.ts",
         "client/src/lib/sales-policy-draft.ts",
         "client/src/lib/conversation-draft.ts",
+        "client/src/lib/test-workspace-draft.ts",
         "client/src/lib/merchant-selection.ts",
         "client/src/components/KnowledgeReceiptView.tsx",
         "client/src/lib/merchant-date.ts",
@@ -63565,6 +63590,7 @@
         "client/src/lib/knowledge-workspace-cache.ts",
         "client/src/lib/sales-policy-draft.ts",
         "client/src/lib/conversation-draft.ts",
+        "client/src/lib/test-workspace-draft.ts",
         "client/src/components/merchant/AssistantOptionReview.tsx",
         "client/src/components/merchant/AssistantOptionRecovery.tsx",
         "client/src/hooks/useReviewedAssistantOption.ts",
@@ -73142,6 +73168,7 @@
         "client/src/lib/knowledge-workspace-cache.ts",
         "client/src/lib/sales-policy-draft.ts",
         "client/src/lib/conversation-draft.ts",
+        "client/src/lib/test-workspace-draft.ts",
         "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
         "client/src/components/merchant/ProductWorkspaceView.tsx"
       ],
@@ -74121,6 +74148,7 @@
         "client/src/lib/knowledge-workspace-cache.ts",
         "client/src/lib/sales-policy-draft.ts",
         "client/src/lib/conversation-draft.ts",
+        "client/src/lib/test-workspace-draft.ts",
         "client/src/components/merchant/InventorySheetWorkspace.tsx",
         "client/src/lib/inventory-sheet-workspace.ts",
         "client/src/components/merchant/ProductWorkspaceView.tsx"
@@ -77307,6 +77335,7 @@
         "client/src/lib/knowledge-workspace-cache.ts",
         "client/src/lib/sales-policy-draft.ts",
         "client/src/lib/conversation-draft.ts",
+        "client/src/lib/test-workspace-draft.ts",
         "client/src/lib/assistant-draft-cache.ts"
       ],
       "controls": [
@@ -79669,6 +79698,7 @@
         "client/src/lib/knowledge-workspace-cache.ts",
         "client/src/lib/sales-policy-draft.ts",
         "client/src/lib/conversation-draft.ts",
+        "client/src/lib/test-workspace-draft.ts",
         "client/src/components/merchant/ReportsWorkspace.tsx",
         "client/src/lib/report-export.ts",
         "client/src/lib/merchant-report-document.ts",
@@ -81851,6 +81881,7 @@
         "client/src/lib/knowledge-workspace-cache.ts",
         "client/src/lib/sales-policy-draft.ts",
         "client/src/lib/conversation-draft.ts",
+        "client/src/lib/test-workspace-draft.ts",
         "client/src/components/merchant/CustomerListWorkspace.tsx",
         "client/src/components/merchant/CustomerWorkspaceView.tsx"
       ],
@@ -82203,6 +82234,7 @@
         "client/src/lib/knowledge-workspace-cache.ts",
         "client/src/lib/sales-policy-draft.ts",
         "client/src/lib/conversation-draft.ts",
+        "client/src/lib/test-workspace-draft.ts",
         "client/src/components/WebsiteReportsWorkspace.tsx",
         "client/src/hooks/useWebsiteReportsCopy.ts",
         "client/src/components/KnowledgeWebsiteWorkspace.tsx",
@@ -84609,6 +84641,7 @@
         "client/src/lib/knowledge-workspace-cache.ts",
         "client/src/lib/sales-policy-draft.ts",
         "client/src/lib/conversation-draft.ts",
+        "client/src/lib/test-workspace-draft.ts",
         "client/src/components/merchant/CustomerDetailWorkspace.tsx",
         "client/src/components/merchant/CustomerAnnotations.tsx",
         "client/src/lib/customer-workspace-cache.ts",
@@ -85213,6 +85246,7 @@
         "client/src/lib/knowledge-workspace-cache.ts",
         "client/src/lib/sales-policy-draft.ts",
         "client/src/lib/conversation-draft.ts",
+        "client/src/lib/test-workspace-draft.ts",
         "client/src/components/merchant/InsightsWorkspace.tsx",
         "client/src/components/merchant/KeywordReviewDialog.tsx",
         "client/src/components/merchant/InsightReportDetails.tsx"
@@ -86030,6 +86064,7 @@
         "client/src/lib/knowledge-workspace-cache.ts",
         "client/src/lib/sales-policy-draft.ts",
         "client/src/lib/conversation-draft.ts",
+        "client/src/lib/test-workspace-draft.ts",
         "client/src/components/merchant/MessageWorkspace.tsx",
         "client/src/lib/message-labels.ts",
         "client/src/lib/message-export.ts"
@@ -86340,6 +86375,7 @@
         "client/src/lib/knowledge-workspace-cache.ts",
         "client/src/lib/sales-policy-draft.ts",
         "client/src/lib/conversation-draft.ts",
+        "client/src/lib/test-workspace-draft.ts",
         "client/src/components/merchant/MessageWorkspace.tsx",
         "client/src/lib/message-labels.ts",
         "client/src/lib/message-export.ts"
@@ -86669,6 +86705,7 @@
         "client/src/lib/knowledge-workspace-cache.ts",
         "client/src/lib/sales-policy-draft.ts",
         "client/src/lib/conversation-draft.ts",
+        "client/src/lib/test-workspace-draft.ts",
         "client/src/components/merchant/InsightsWorkspace.tsx",
         "client/src/components/merchant/KeywordReviewDialog.tsx",
         "client/src/components/merchant/InsightReportDetails.tsx"
@@ -87467,6 +87504,7 @@
         "client/src/lib/knowledge-workspace-cache.ts",
         "client/src/lib/sales-policy-draft.ts",
         "client/src/lib/conversation-draft.ts",
+        "client/src/lib/test-workspace-draft.ts",
         "client/src/components/merchant/TestMetricsWorkspace.tsx",
         "client/src/lib/test-metrics-labels.ts",
         "client/src/lib/overview-labels.ts",
