@@ -2,6 +2,8 @@ import { z } from 'zod';
 import { permissionProcedure, router } from '../_core/trpc';
 import { TRPCError } from '@trpc/server';
 import { safePlatformUrl } from '../../shared/platform-workspace';
+import { zidLogsInput } from '../../shared/zid-workspace';
+import { readZidWorkspace, readZidLogsWorkspace } from './zid-workspace';
 import { resolveMerchantAccess } from '../accounts/merchant-access';
 import { hasPermission } from '../_core/permissions';
 import { encryptSecret } from '../security/secrets';
@@ -177,6 +179,8 @@ const zidDashboardProcedure=permissionProcedure('integrations.manage').use(async
 
 // Zid Integration Router
 export const zidRouter = router({
+  workspace: zidDashboardProcedure.query(({ctx})=>readZidWorkspace(ctx.user.id,ctx.merchantId)),
+  logsWorkspace: zidDashboardProcedure.input(zidLogsInput).query(({ctx,input})=>readZidLogsWorkspace(ctx.user.id,ctx.merchantId,input)),
   // Get connection status
   getConnection: zidDashboardProcedure
     .query(async ({ ctx }) => {
