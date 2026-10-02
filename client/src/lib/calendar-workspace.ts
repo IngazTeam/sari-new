@@ -3,6 +3,7 @@ import {
   calendarDetailsInput,
 } from "@shared/calendar-workspace";
 import { serviceBookingDate } from "@shared/service-details-workspace";
+import { appointmentRequestLookupSchema } from "@shared/appointment-request";
 export type CalendarView = "month" | "week" | "day" | "range";
 export const riyadhDay = (now = new Date()) =>
   new Date(now.getTime() + 3 * 3600000).toISOString().slice(0, 10);
@@ -53,6 +54,12 @@ export function calendarNavigation(search: string, now = new Date()) {
     identity = calendarDetailsInput.safeParse({
       appointmentId: positive(selected),
     });
+  const create = p.get("create"),
+    request = p.get("request");
+  const parsedRequest =
+    request === null
+      ? null
+      : appointmentRequestLookupSchema.safeParse({ requestId: request });
   const duplicates = [
     "view",
     "date",
@@ -65,14 +72,25 @@ export function calendarNavigation(search: string, now = new Date()) {
     "staff",
     "page",
     "appointment",
+    "create",
+    "request",
   ].some(key => p.getAll(key).length > 1);
   return {
     selection:
-      !duplicates && view && date.success && parsed.success
+      !duplicates &&
+      (create === null || create === "1") &&
+      (create !== null || request === null) &&
+      (!parsedRequest || parsedRequest.success) &&
+      !(create && selected) &&
+      view &&
+      date.success &&
+      parsed.success
         ? parsed.data
         : null,
     view,
     anchor,
+    create: create === "1",
+    requestId: parsedRequest?.success ? parsedRequest.data.requestId : null,
     appointment:
       selected === null
         ? null

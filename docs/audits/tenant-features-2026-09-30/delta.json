@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-02T03:15:59.606Z",
+  "generatedAt": "2026-10-02T03:46:38.276Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 386,
-      "controls": 2353
+      "files": 389,
+      "controls": 2369
     }
   },
   "addedFiles": [
@@ -185,6 +185,11 @@
     "client/src/lib/calendar-workspace.ts",
     "client/src/lib/booking-workspace.ts",
     "client/src/lib/calendar-workspace-labels.ts",
+    "client/src/components/merchant/AppointmentCreateWorkspace.tsx",
+    "client/src/lib/appointment-create.ts",
+    "client/src/lib/appointment-create-labels.ts",
+    "client/src/components/merchant/CatalogChoicePicker.tsx",
+    "client/src/lib/service-editor-labels.ts",
     "client/src/components/merchant/StaffWorkspace.tsx",
     "client/src/lib/staff-workspace.ts",
     "client/src/lib/staff-workspace-labels.ts",
@@ -194,8 +199,6 @@
     "client/src/lib/service-catalog-navigation.ts",
     "client/src/lib/service-editor-form.ts",
     "client/src/components/merchant/ServiceEditorWorkspace.tsx",
-    "client/src/lib/service-editor-labels.ts",
-    "client/src/components/merchant/CatalogChoicePicker.tsx",
     "client/src/components/merchant/ServiceDetailsWorkspace.tsx",
     "client/src/lib/service-details-labels.ts",
     "client/src/components/merchant/BookingWorkspace.tsx",
@@ -1448,7 +1451,7 @@
     {
       "route": "/merchant/calendar",
       "controlsBefore": 16,
-      "controlsNow": 38,
+      "controlsNow": 62,
       "removedQueries": [
         "calendar.listAppointments",
         "calendar.getStatus"
@@ -1457,10 +1460,16 @@
         "auth.me",
         "merchants.getCurrent",
         "calendar.workspace",
-        "calendar.details"
+        "calendar.details",
+        "calendar.getBookingRequest",
+        "services.catalogEditor",
+        "calendar.getAvailableSlots",
+        "services.catalogChoices"
       ],
       "removedMutations": [],
-      "addedMutations": []
+      "addedMutations": [
+        "calendar.bookAppointment"
+      ]
     },
     {
       "route": "/merchant/staff",

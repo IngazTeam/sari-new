@@ -28,6 +28,7 @@ import { WorkspaceState, workspaceFailureKind } from "./WorkspaceState";
 import "@/styles/service-catalog-workspace.css";
 import "@/styles/booking-workspace.css";
 import "@/styles/calendar-workspace.css";
+import { AppointmentCreateWorkspace } from "./AppointmentCreateWorkspace";
 
 export function CalendarWorkspace({
   actorId,
@@ -92,6 +93,8 @@ export function CalendarWorkspace({
       staff: null,
       page: null,
       appointment: null,
+      create: null,
+      request: null,
       view: null,
       date: null,
       from: null,
@@ -107,6 +110,25 @@ export function CalendarWorkspace({
         merchantId={merchantId}
         id={nav.appointment}
         back={() => change({ appointment: null })}
+      />
+    );
+  if (nav.create)
+    return (
+      <AppointmentCreateWorkspace
+        key={`${actorId}:${merchantId}:new`}
+        actorId={actorId}
+        merchantId={merchantId}
+        canManage={!!data?.canManage}
+        current={!!data && !query.isFetching}
+        requestId={nav.requestId}
+        retainRequest={id => change({ request: id })}
+        refresh={() => {
+          void query.refetch();
+        }}
+        leave={() => change({ create: null, request: null })}
+        openAppointment={id =>
+          change({ create: null, request: null, appointment: id })
+        }
       />
     );
   if (query.error)
@@ -175,6 +197,15 @@ export function CalendarWorkspace({
         </Button>
       </header>
       <nav className="sc-nav">
+        {data.canManage && (
+          <Button
+            onClick={() =>
+              change({ create: "1", request: null, appointment: null })
+            }
+          >
+            {t("merchantUx.appointmentCreate.title")}
+          </Button>
+        )}
         <Link href="/merchant/bookings">{text("bookings")}</Link>
         <Link href="/merchant/services">{text("services")}</Link>
         <Link href="/merchant/staff">{text("providers")}</Link>

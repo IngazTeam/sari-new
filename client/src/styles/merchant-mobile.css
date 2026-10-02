@@ -55,10 +55,12 @@ body.merchant-surface .mw-form-dialog > :is([data-slot="dialog-header"], [data-s
   body.merchant-surface[data-mw-keyboard] .mw-bottom-nav { display: none; }
 }
 @media (max-width: 900px) {
-  body.merchant-surface .mw-assistant-savebar {
+  body.merchant-surface .mw-assistant-savebar,
+  body.merchant-surface .merchant-workspace .bw-save {
     bottom: calc(74px + env(safe-area-inset-bottom, 0px));
   }
-  body.merchant-surface[data-mw-keyboard] .mw-assistant-savebar { bottom: 12px; }
+  body.merchant-surface[data-mw-keyboard] .mw-assistant-savebar,
+  body.merchant-surface[data-mw-keyboard] .merchant-workspace .bw-save { bottom: 12px; }
 }
 @media (max-width: 620px) {
   .mw-inbox-main {

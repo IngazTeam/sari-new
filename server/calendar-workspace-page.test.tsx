@@ -84,6 +84,7 @@ vi.mock("@/components/AppointmentReminderReview", () => ({
   ),
 }));
 import CalendarPage from "../client/src/pages/CalendarPage";
+vi.mock('@/components/merchant/AppointmentCreateWorkspace',()=>({AppointmentCreateWorkspace:({actorId,merchantId,requestId,canManage,retainRequest,openAppointment}:any)=><div data-create-scope={`${actorId}:${merchantId}`} data-create-request={requestId} data-create-manage={String(canManage)}><button onClick={()=>retainRequest('d4d3fd6f-bf97-435f-9562-25e527589490')}>retain request</button><button onClick={()=>openAppointment(31)}>open created</button></div>}));
 import {
   calendarNavigation,
   calendarPeriod,
@@ -214,6 +215,12 @@ const tools = async () => {
   });
 };
 describe("calendar workspace interface", () => {
+  it('opens creation in the same scope and preserves its request until opening the result',async()=>{
+    memory.navigate('/merchant/calendar?date=2026-10-02&create=1');await render();
+    expect(container.querySelector('[data-create-scope]')?.getAttribute('data-create-scope')).toBe('7:20');
+    await click(button('retain request'));expect(container.querySelector('[data-create-request]')?.getAttribute('data-create-request')).toBe('d4d3fd6f-bf97-435f-9562-25e527589490');
+    await click(button('open created'));expect(container.querySelector('[data-create-scope]')).toBeNull();expect(container.textContent).toContain('Customer fixture');
+  });
   it("renders scoped counts, rows, links and complete daily counts", async () => {
     await render();
     expect(container.textContent).toContain("Customer fixture");

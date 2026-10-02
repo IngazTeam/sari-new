@@ -2,7 +2,7 @@
 
 هذا حصر مصدر قابل لإعادة التوليد، وليس ادعاءً بأن كل مسار عمل اختُبر أو أُعيد تصميمه. يشمل المكونات الفرعية المحلية، الحقول، الأزرار، النوافذ، التبويبات، واجهات القراءة والتعديل. العناصر الديناميكية تحتاج مراجعة إضافية.
 
-- 126 مسارًا مسجلًا، 386 ملف واجهة متصلًا، 2353 عنصر تحكم في المصدر.
+- 126 مسارًا مسجلًا، 389 ملف واجهة متصلًا، 2369 عنصر تحكم في المصدر.
 - 0 رابطًا حرفيًا غير مطابق، و0 ملف صفحة غير متصل بالمسارات المحصورة.
 
 | الصفحة | الملفات | عناصر التحكم | القراءة / التعديل | موك أب للصفحة |
@@ -79,7 +79,7 @@
 | /merchant/notifications — الإشعارات | 1 | 4 | 2 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/language-settings — لغة المساعد | 9 | 8 | 3 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/calendar/settings — ربط Google Calendar | 3 | 13 | 3 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/calendar — التقويم | 7 | 38 | 6 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/calendar — التقويم | 12 | 62 | 10 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/staff — مقدمو الخدمات | 4 | 32 | 3 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/team — الفريق والصلاحيات | 1 | 8 | 1 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/services — الخدمات | 5 | 27 | 3 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -2722,35 +2722,36 @@
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 166 | Button | refresh | title |
-| 178 | Link | bookings | title |
-| 179 | Link | services | title |
-| 180 | Link | providers | title |
-| 182 | Link | settings | title |
-| 212 | Button | previousPeriod | — |
-| 221 | Button | today | — |
-| 230 | Button | nextPeriod | — |
-| 243 | Button | تسمية ديناميكية / تحتاج مراجعة | — |
-| 255 | summary | overview | overview |
-| 259 | button | dayLabel(day) +                   " · " +                   text("dayCount", { count: counts.get(day) ?? 0 }) | overview |
-| 315 | input | search | overview |
-| 324 | select | status all | overview |
-| 342 | select | sync all | overview |
-| 361 | input | تسمية ديناميكية / تحتاج مراجعة | overview |
-| 377 | Button | search | overview |
-| 378 | Button | search | overview |
-| 412 | Button | first | outOfRange empty |
-| 471 | Button | view | notSet |
-| 485 | Button | previous | notSet |
-| 498 | Button | next | notSet |
-| 608 | Button | back | notSet |
-| 620 | Button | refresh | appointmentNumber |
-| 668 | summary | manage | manage |
-| 685 | summary | advanced | advanced |
-| 789 | Button | refresh | advanced |
-| 798 | textarea | cancelReason | advanced |
-| 807 | input | cancelAttest | advanced |
-| 817 | Button | cancellingAction cancel | advanced |
+| 188 | Button | refresh | title |
+| 201 | Button | تسمية ديناميكية / تحتاج مراجعة | title |
+| 209 | Link | bookings | title |
+| 210 | Link | services | title |
+| 211 | Link | providers | title |
+| 213 | Link | settings | title |
+| 243 | Button | previousPeriod | — |
+| 252 | Button | today | — |
+| 261 | Button | nextPeriod | — |
+| 274 | Button | تسمية ديناميكية / تحتاج مراجعة | — |
+| 286 | summary | overview | overview |
+| 290 | button | dayLabel(day) +                   " · " +                   text("dayCount", { count: counts.get(day) ?? 0 }) | overview |
+| 346 | input | search | overview |
+| 355 | select | status all | overview |
+| 373 | select | sync all | overview |
+| 392 | input | تسمية ديناميكية / تحتاج مراجعة | overview |
+| 408 | Button | search | overview |
+| 409 | Button | search | overview |
+| 443 | Button | first | outOfRange empty |
+| 502 | Button | view | notSet |
+| 516 | Button | previous | notSet |
+| 529 | Button | next | notSet |
+| 639 | Button | back | notSet |
+| 651 | Button | refresh | appointmentNumber |
+| 699 | summary | manage | manage |
+| 716 | summary | advanced | advanced |
+| 820 | Button | refresh | advanced |
+| 829 | textarea | cancelReason | advanced |
+| 838 | input | cancelAttest | advanced |
+| 848 | Button | cancellingAction cancel | advanced |
 
 ## client/src/components/AppointmentSyncReview.tsx
 
@@ -2770,6 +2771,39 @@
 |---:|---|---|---|
 | 73 | Button | تسمية ديناميكية / تحتاج مراجعة | AppointmentReminderReview |
 | 138 | summary | تسمية ديناميكية / تحتاج مراجعة | AppointmentReminderReview |
+
+## client/src/components/merchant/AppointmentCreateWorkspace.tsx
+
+| السطر | النوع | التسمية | القسم |
+|---:|---|---|---|
+| 403 | textarea | تسمية ديناميكية / تحتاج مراجعة | AppointmentCreateWorkspace |
+| 405 | input | تسمية ديناميكية / تحتاج مراجعة | AppointmentCreateWorkspace |
+| 502 | Button | back | service * optional |
+| 517 | Button | refresh | title |
+| 564 | summary | request | request |
+| 571 | Button | open | request |
+| 578 | Button | verify | request |
+| 588 | Button | retry | request |
+| 635 | summary | availability | availability |
+| 636 | Button | loading check | availability |
+| 660 | Button | تسمية ديناميكية / تحتاج مراجعة | availability |
+| 689 | Button | review | phone |
+| 710 | DialogContent | leave leaveTitle review leave leaveHint reviewHint review cancel save saving leave confirm | phone |
+| 734 | Button | cancel | leave leaveTitle review |
+| 741 | Button | save saving leave confirm | leave leaveTitle review |
+
+## client/src/components/merchant/CatalogChoicePicker.tsx
+
+| السطر | النوع | التسمية | القسم |
+|---:|---|---|---|
+| 15 | Button | resetSelection | CatalogChoicePicker |
+| 15 | Button | label('removeSelection',{name:names[id]??label('unavailableSelection',{id})}) | CatalogChoicePicker |
+| 16 | Button | cancel choose | CatalogChoicePicker |
+| 17 | input | searchChoices | CatalogChoicePicker |
+| 17 | Button | searchChoices | CatalogChoicePicker |
+| 18 | Button | label('chooseNamed',{name:row.name}) | CatalogChoicePicker |
+| 18 | Button | previous | CatalogChoicePicker |
+| 18 | Button | next | CatalogChoicePicker |
 
 ## client/src/components/merchant/StaffWorkspace.tsx
 
@@ -2871,19 +2905,6 @@
 | 72 | DialogContent | reload reloadTitle reviewTitle reload reloadHint reviewHint review descriptionField — categoryId noSelection staffIds ، noSelection requiresAppointment yes no bufferTimeMinutes maxBookingsPerDay advanceBookingDays displa | preview |
 | 72 | Button | cancel | reload reloadTitle reviewTitle |
 | 72 | Button | reload confirm | reload reloadTitle reviewTitle |
-
-## client/src/components/merchant/CatalogChoicePicker.tsx
-
-| السطر | النوع | التسمية | القسم |
-|---:|---|---|---|
-| 15 | Button | resetSelection | CatalogChoicePicker |
-| 15 | Button | label('removeSelection',{name:names[id]??label('unavailableSelection',{id})}) | CatalogChoicePicker |
-| 16 | Button | cancel choose | CatalogChoicePicker |
-| 17 | input | searchChoices | CatalogChoicePicker |
-| 17 | Button | searchChoices | CatalogChoicePicker |
-| 18 | Button | label('chooseNamed',{name:row.name}) | CatalogChoicePicker |
-| 18 | Button | previous | CatalogChoicePicker |
-| 18 | Button | next | CatalogChoicePicker |
 
 ## client/src/components/merchant/ServiceDetailsWorkspace.tsx
 
