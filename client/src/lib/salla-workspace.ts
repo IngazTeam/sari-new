@@ -1,0 +1,10 @@
+import {sallaWorkspaceSchema,sallaLogsWorkspaceSchema,sallaLogsInput} from '@shared/salla-workspace';
+import {sallaSyncRequest,sallaSyncReceipt} from '@shared/salla-sync-request';
+export function scopedSallaWorkspace(value:unknown,actorId:number,merchantId:number){const parsed=sallaWorkspaceSchema.safeParse(value);return parsed.success&&parsed.data.actorId===actorId&&parsed.data.merchantId===merchantId?parsed.data:null;}
+export function scopedSallaLogs(value:unknown,actorId:number,merchantId:number,selection:unknown){const parsed=sallaLogsWorkspaceSchema.safeParse(value),input=sallaLogsInput.parse(selection);return parsed.success&&parsed.data.actorId===actorId&&parsed.data.merchantId===merchantId&&JSON.stringify(parsed.data.selection)===JSON.stringify(input)?parsed.data:null;}
+export function scopedSallaSync(value:unknown,actorId:number,merchantId:number,intent?:unknown){const parsed=sallaSyncReceipt.safeParse(value);if(!parsed.success||parsed.data.actorId!==actorId||parsed.data.merchantId!==merchantId)return null;if(intent){const request=sallaSyncRequest.parse(intent);if(parsed.data.requestId!==request.requestId||parsed.data.revision!==request.revision||parsed.data.syncType!==request.syncType)return null;}return parsed.data;}
+type Storage=Pick<globalThis.Storage,'getItem'|'setItem'|'removeItem'>;
+const key=(actorId:number,merchantId:number)=>`sari:salla:sync:${actorId}:${merchantId}`;
+export function pendingSallaSync(storage:Storage,actorId:number,merchantId:number){const raw=storage.getItem(key(actorId,merchantId));return raw?sallaSyncRequest.parse(JSON.parse(raw)):null;}
+export function saveSallaSync(storage:Storage,actorId:number,merchantId:number,value:unknown){const request=sallaSyncRequest.parse(value),raw=JSON.stringify(request);storage.setItem(key(actorId,merchantId),raw);if(storage.getItem(key(actorId,merchantId))!==raw)throw Error('Request storage unavailable');return request;}
+export function clearSallaSync(storage:Storage,actorId:number,merchantId:number,requestId:string){if(pendingSallaSync(storage,actorId,merchantId)?.requestId===requestId)storage.removeItem(key(actorId,merchantId));}

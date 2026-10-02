@@ -1,3 +1,4 @@
+import {sallaWorkspaceEn} from './salla-workspace';
 import {byaanDataEn} from './byaan-data';
 import {byaanConnectionEn} from './byaan-connection';
 import {platformWorkspaceEn} from './platform-workspace';
@@ -53,6 +54,7 @@ import { subscriptionWorkspaceEn } from './subscription-workspace';
 import { whatsappWorkspaceEn } from './whatsapp-workspace';
 
 const merchantUxEn: MerchantUxCopy = {
+  sallaWorkspace:sallaWorkspaceEn,
   groupConversation: groupConversationEn,
   subscriptionWorkspace: subscriptionWorkspaceEn,
   whatsappWorkspace: whatsappWorkspaceEn,
