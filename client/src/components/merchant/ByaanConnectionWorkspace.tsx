@@ -52,10 +52,10 @@ export function ByaanConnectionWorkspace({actorId,merchantId}:{actorId:number;me
   async function saveDomain() {
     if(lock.current||!data||data.present||data.blockingPlatforms.length||blocked||query.isFetching)return;
     const value=byaanDomainInput.safeParse(domain);if(!value.success){setFieldError(true);return;}
-    lock.current=true;setBusy('register');setFieldError(false);setNotice(null);const expected=data.revision;
+    lock.current=true;setBusy('register');setFieldError(false);setNotice(null);
     try {
       const result=await register.mutateAsync({tenantDomain:value.data});if(!current())return;
-      if(revision.current!==expected||result.tenantDomain!==value.data||typeof result.success!=='boolean'||result.pendingVerification!==!result.success)throw Error('uncertain');
+      if(result.tenantDomain!==value.data||typeof result.success!=='boolean'||result.pendingVerification!==!result.success)throw Error('uncertain');
       const checked=await query.refetch();if(!current())return;
       const saved=!checked.error&&scoped(checked.data,actorId,merchantId);
       if(!saved||!saved.present||saved.tenantDomain!==value.data)throw Error('uncertain');
