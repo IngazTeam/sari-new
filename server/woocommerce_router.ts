@@ -1,7 +1,9 @@
 import crypto from 'node:crypto';
 import {wooSyncRequest} from '../shared/woocommerce-sync-request';
 import {wooOperationLookup} from '../shared/woocommerce-operation';
-import {requestReviewedWooSync} from './integrations/woocommerce-sync-request';
+import {requestReviewedWooSync,requestReviewedWooReconciliation} from './integrations/woocommerce-sync-request';
+import {wooIncidentsInput,wooReconciliationRequest} from '../shared/woocommerce-incidents';
+import {readWooIncidentsWorkspace} from './integrations/woocommerce-incidents';
 import {WooOperationFault,readWooOperation,readBlockingWooOperation,acknowledgeWooOperation} from './integrations/woocommerce-operation';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
@@ -358,6 +360,8 @@ async function runFullWooCommerceReconciliation(ctx: WooCommerceRequestAbortCont
 }
 
 export const woocommerceRouter = router({
+  getIncidentsWorkspace: wooAccessProcedure('integrations.manage').input(wooIncidentsInput).query(({ctx,input})=>readWooIncidentsWorkspace(ctx.user.id,tenantId(ctx),input)),
+  requestReviewedReconciliation: wooAccessProcedure('integrations.manage').input(wooReconciliationRequest).mutation(({ctx,input})=>reviewedWooAction(()=>requestReviewedWooReconciliation(ctx.user.id,tenantId(ctx),input))),
   requestReviewedSync: wooAccessProcedure('integrations.manage').input(wooSyncRequest).mutation(({ctx,input})=>reviewedWooAction(()=>requestReviewedWooSync(ctx.user.id,tenantId(ctx),input))),
   getOperation: wooAccessProcedure().input(wooOperationLookup).query(({ctx,input})=>reviewedWooAction(()=>readWooOperation(ctx.user.id,tenantId(ctx),input))),
   getBlockingOperation: wooAccessProcedure().input(noInput).query(({ctx})=>reviewedWooAction(()=>readBlockingWooOperation(ctx.user.id,tenantId(ctx)))),
