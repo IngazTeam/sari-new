@@ -1,3 +1,4 @@
+import {calendarConnectionEn} from './calendar-connection';
 import {calendarWorkspaceEn} from './calendar-workspace';
 import {bookingWorkspaceEn} from './booking-workspace';
 import {staffWorkspaceEn} from './staff-workspace';
@@ -66,7 +67,7 @@ const merchantUxEn: MerchantUxCopy = {
   campaignPerformance: campaignPerformanceEn,
   campaignWorkspace: campaignWorkspaceEn,
   serviceCatalog: serviceCatalogEn,
-  calendarWorkspace:calendarWorkspaceEn,
+  calendarConnection:calendarConnectionEn,calendarWorkspace:calendarWorkspaceEn,
   bookingWorkspace:bookingWorkspaceEn,
   staffWorkspace:staffWorkspaceEn,
   serviceEditor: serviceEditorEn,

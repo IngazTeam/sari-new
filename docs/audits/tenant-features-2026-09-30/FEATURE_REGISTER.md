@@ -2,7 +2,7 @@
 
 هذا حصر مصدر قابل لإعادة التوليد، وليس ادعاءً بأن كل مسار عمل اختُبر أو أُعيد تصميمه. يشمل المكونات الفرعية المحلية، الحقول، الأزرار، النوافذ، التبويبات، واجهات القراءة والتعديل. العناصر الديناميكية تحتاج مراجعة إضافية.
 
-- 126 مسارًا مسجلًا، 383 ملف واجهة متصلًا، 2343 عنصر تحكم في المصدر.
+- 126 مسارًا مسجلًا، 385 ملف واجهة متصلًا، 2353 عنصر تحكم في المصدر.
 - 0 رابطًا حرفيًا غير مطابق، و0 ملف صفحة غير متصل بالمسارات المحصورة.
 
 | الصفحة | الملفات | عناصر التحكم | القراءة / التعديل | موك أب للصفحة |
@@ -78,7 +78,7 @@
 | /merchant/privacy-center — الخصوصية | 2 | 12 | 1 / 4 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/notifications — الإشعارات | 1 | 4 | 2 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/language-settings — لغة المساعد | 9 | 8 | 3 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/calendar/settings — ربط Google Calendar | 1 | 3 | 1 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/calendar/settings — ربط Google Calendar | 3 | 13 | 3 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/calendar — التقويم | 7 | 38 | 6 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/staff — مقدمو الخدمات | 4 | 32 | 3 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/team — الفريق والصلاحيات | 1 | 8 | 1 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -2700,13 +2700,23 @@
 | 192 | Button | عرض التغييرات الجديدة | إعدادات اللغة |
 | 232 | Button | common.loading languageSettingsPage.text7 | إعدادات اللغة |
 
-## client/src/pages/CalendarSettings.tsx
+## client/src/components/merchant/CalendarConnectionWorkspace.tsx
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 87 | Calendar | تسمية ديناميكية / تحتاج مراجعة | حالة الاتصال |
-| 126 | Button | جاري الفصل... فصل الاتصال | حالة الاتصال |
-| 153 | Button | جاري الاتصال... ربط Google Calendar | حالة الاتصال |
+| 220 | Button | تسمية ديناميكية / تحتاج مراجعة | CalendarConnectionWorkspace |
+| 221 | Link | تسمية ديناميكية / تحتاج مراجعة | CalendarConnectionWorkspace |
+| 226 | Button | تسمية ديناميكية / تحتاج مراجعة | CalendarConnectionWorkspace |
+| 302 | Button | connect | CalendarConnectionWorkspace |
+| 314 | Button | تسمية ديناميكية / تحتاج مراجعة | CalendarConnectionWorkspace |
+| 335 | Button | تسمية ديناميكية / تحتاج مراجعة | CalendarConnectionWorkspace |
+| 336 | Link | تسمية ديناميكية / تحتاج مراجعة | CalendarConnectionWorkspace |
+| 343 | summary | تسمية ديناميكية / تحتاج مراجعة | CalendarConnectionWorkspace |
+| 347 | a | تسمية ديناميكية / تحتاج مراجعة | CalendarConnectionWorkspace |
+| 365 | DialogContent | disconnect | CalendarConnectionWorkspace |
+| 392 | input | تسمية ديناميكية / تحتاج مراجعة | CalendarConnectionWorkspace |
+| 401 | Button | تسمية ديناميكية / تحتاج مراجعة | CalendarConnectionWorkspace |
+| 411 | Button | disconnect | CalendarConnectionWorkspace |
 
 ## client/src/components/merchant/CalendarWorkspace.tsx
 

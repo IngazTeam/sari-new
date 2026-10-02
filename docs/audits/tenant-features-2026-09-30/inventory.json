@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-02T02:40:10.025Z",
+  "generatedAt": "2026-10-02T03:07:33.021Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -13614,60 +13614,112 @@
     },
     {
       "file": "client/src/pages/CalendarSettings.tsx",
-      "hash": "f4e0c07075ee",
+      "hash": "373335bbcaf3",
       "queries": [
-        "calendar.getStatus"
+        "auth.me",
+        "merchants.getCurrent"
+      ],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [
+        {
+          "query": "auth.me",
+          "binding": "user",
+          "line": 8,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        },
+        {
+          "query": "merchants.getCurrent",
+          "binding": "merchant",
+          "line": 14,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": "!!user.data?.id && !user.error && !user.isFetching"
+        }
+      ],
+      "conditions": [],
+      "imports": [
+        "client/src/components/merchant/CalendarConnectionWorkspace.tsx"
+      ],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/components/merchant/CalendarConnectionWorkspace.tsx",
+      "hash": "0386093a91dd",
+      "queries": [
+        "calendar.settings"
       ],
       "mutations": [
+        "calendar.beginOAuth",
         "calendar.disconnect"
       ],
       "imperativeReads": [],
       "browserRequests": [],
       "sections": [
         {
-          "label": "ربط Google Calendar",
-          "line": 77,
+          "label": "",
+          "line": 216,
           "tag": "h1"
         },
         {
-          "label": "حالة الاتصال",
-          "line": 86,
-          "tag": "CardTitle"
+          "label": "",
+          "line": 255,
+          "tag": "h2"
         },
         {
-          "label": "التذكيرات التلقائية",
-          "line": 175,
-          "tag": "CardTitle"
+          "label": "",
+          "line": 330,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 343,
+          "tag": "summary"
+        },
+        {
+          "label": "",
+          "line": 376,
+          "tag": "DialogTitle"
         }
       ],
       "choices": [],
-      "handlers": [
-        {
-          "name": "handleConnect",
-          "line": 27,
-          "calls": []
-        },
-        {
-          "name": "handleDisconnect",
-          "line": 60,
-          "calls": [
-            "disconnectMutation"
-          ]
-        }
-      ],
+      "handlers": [],
       "queryStates": [
         {
-          "query": "calendar.getStatus",
-          "binding": "{ data: status, isLoading, refetch }",
-          "line": 16,
-          "errorSignal": false,
+          "query": "calendar.settings",
+          "binding": "query",
+          "line": 35,
+          "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
         }
       ],
       "conditions": [],
+      "imports": [
+        "client/src/lib/calendar-connection.ts"
+      ],
+      "controlCount": 13
+    },
+    {
+      "file": "client/src/lib/calendar-connection.ts",
+      "hash": "aa122f4754ed",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
       "imports": [],
-      "controlCount": 3
+      "controlCount": 0
     },
     {
       "file": "client/src/pages/CalendarPage.tsx",
@@ -23445,17 +23497,32 @@
         "CalendarSettings"
       ],
       "files": [
-        "client/src/pages/CalendarSettings.tsx"
+        "client/src/pages/CalendarSettings.tsx",
+        "client/src/components/merchant/CalendarConnectionWorkspace.tsx",
+        "client/src/lib/calendar-connection.ts"
       ],
       "controls": [
-        "6a9561cb683e",
-        "6cdae59142d9",
-        "069a9c2b0d8c"
+        "16846bcdab7d",
+        "b5c5344e5f2e",
+        "c8985fc4cc4d",
+        "b8fb86e5e600",
+        "51ec87153f29",
+        "97b9a4ba7b7a",
+        "c827aaa5dc14",
+        "70dea98122cc",
+        "e3b40a091af4",
+        "d1803b9be8e3",
+        "da244a2f5799",
+        "b29532b0d37d",
+        "29fec06f212a"
       ],
       "queries": [
-        "calendar.getStatus"
+        "auth.me",
+        "merchants.getCurrent",
+        "calendar.settings"
       ],
       "mutations": [
+        "calendar.beginOAuth",
         "calendar.disconnect"
       ],
       "imperativeReads": [],
@@ -65516,14 +65583,14 @@
       "review": "source-inventoried"
     },
     {
-      "id": "6a9561cb683e",
-      "file": "client/src/pages/CalendarSettings.tsx",
-      "line": 87,
-      "tag": "Calendar",
+      "id": "16846bcdab7d",
+      "file": "client/src/components/merchant/CalendarConnectionWorkspace.tsx",
+      "line": 220,
+      "tag": "Button",
       "role": "",
-      "kind": "field",
+      "kind": "action",
       "label": "",
-      "section": "حالة الاتصال",
+      "section": "CalendarConnectionWorkspace",
       "binding": "",
       "type": "text",
       "options": [],
@@ -65537,38 +65604,57 @@
       "review": "source-inventoried"
     },
     {
-      "id": "6cdae59142d9",
-      "file": "client/src/pages/CalendarSettings.tsx",
-      "line": 126,
-      "tag": "Button",
+      "id": "b5c5344e5f2e",
+      "file": "client/src/components/merchant/CalendarConnectionWorkspace.tsx",
+      "line": 221,
+      "tag": "Link",
       "role": "",
       "kind": "action",
-      "label": "جاري الفصل... فصل الاتصال",
-      "section": "حالة الاتصال",
-      "binding": "handleDisconnect",
+      "label": "",
+      "section": "CalendarConnectionWorkspace",
+      "binding": "/merchant/calendar",
       "type": "text",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": true,
-      "conditions": [
-        "status?.connected"
-      ],
-      "disabled": "disconnectMutation.isPending",
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "069a9c2b0d8c",
-      "file": "client/src/pages/CalendarSettings.tsx",
-      "line": 153,
+      "id": "c8985fc4cc4d",
+      "file": "client/src/components/merchant/CalendarConnectionWorkspace.tsx",
+      "line": 226,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "جاري الاتصال... ربط Google Calendar",
-      "section": "حالة الاتصال",
-      "binding": "handleConnect",
+      "label": "",
+      "section": "CalendarConnectionWorkspace",
+      "binding": "() => void refresh()",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "!!busy || query.isFetching",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "b8fb86e5e600",
+      "file": "client/src/components/merchant/CalendarConnectionWorkspace.tsx",
+      "line": 302,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "connect",
+      "section": "CalendarConnectionWorkspace",
+      "binding": "() => void start()",
       "type": "text",
       "options": [],
       "min": "",
@@ -65576,10 +65662,199 @@
       "maxLength": "",
       "required": false,
       "conditional": true,
+      "conditions": [],
+      "disabled": "disabled || !data.oauthReady",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "51ec87153f29",
+      "file": "client/src/components/merchant/CalendarConnectionWorkspace.tsx",
+      "line": 314,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "CalendarConnectionWorkspace",
+      "binding": "event => {\n                opener.current = event.currentTarget;\n                setReview(data.digest);\n                setReviewed(false);\n              }",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
       "conditions": [
-        "status?.connected"
+        "data.active"
       ],
-      "disabled": "isConnecting",
+      "disabled": "disabled",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "97b9a4ba7b7a",
+      "file": "client/src/components/merchant/CalendarConnectionWorkspace.tsx",
+      "line": 335,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "CalendarConnectionWorkspace",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "c827aaa5dc14",
+      "file": "client/src/components/merchant/CalendarConnectionWorkspace.tsx",
+      "line": 336,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "CalendarConnectionWorkspace",
+      "binding": "/merchant/calendar",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "70dea98122cc",
+      "file": "client/src/components/merchant/CalendarConnectionWorkspace.tsx",
+      "line": 343,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "CalendarConnectionWorkspace",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "e3b40a091af4",
+      "file": "client/src/components/merchant/CalendarConnectionWorkspace.tsx",
+      "line": 347,
+      "tag": "a",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "CalendarConnectionWorkspace",
+      "binding": "https://myaccount.google.com/connections",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "d1803b9be8e3",
+      "file": "client/src/components/merchant/CalendarConnectionWorkspace.tsx",
+      "line": 365,
+      "tag": "DialogContent",
+      "role": "",
+      "kind": "dialog",
+      "label": "disconnect",
+      "section": "CalendarConnectionWorkspace",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "da244a2f5799",
+      "file": "client/src/components/merchant/CalendarConnectionWorkspace.tsx",
+      "line": 392,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "CalendarConnectionWorkspace",
+      "binding": "reviewed",
+      "type": "checkbox",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "!!busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "b29532b0d37d",
+      "file": "client/src/components/merchant/CalendarConnectionWorkspace.tsx",
+      "line": 401,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "CalendarConnectionWorkspace",
+      "binding": "() => {\n                setReview(null);\n                setReviewed(false);\n              }",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "!!busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "29fec06f212a",
+      "file": "client/src/components/merchant/CalendarConnectionWorkspace.tsx",
+      "line": 411,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "disconnect",
+      "section": "CalendarConnectionWorkspace",
+      "binding": "() => void remove()",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "disabled || !reviewed || review !== data.digest",
       "review": "source-inventoried"
     },
     {
