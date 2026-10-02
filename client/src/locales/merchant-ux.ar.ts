@@ -1,3 +1,4 @@
+import {staffWorkspaceAr} from './staff-workspace';
 import {serviceDetailsAr} from './service-details-workspace';
 import {serviceCollectionAr,serviceCategoryAr,servicePackageAr} from './service-collection-workspace';
 import { campaignEditorWorkspaceAr } from './campaign-editor-workspace';
@@ -63,6 +64,7 @@ const merchantUxAr: MerchantUxCopy = {
   campaignPerformance: campaignPerformanceAr,
   campaignWorkspace: campaignWorkspaceAr,
   serviceCatalog: serviceCatalogAr,
+  staffWorkspace:staffWorkspaceAr,
   serviceEditor: serviceEditorAr,
   serviceDetails: serviceDetailsAr,
   serviceCollection: serviceCollectionAr,serviceCategory: serviceCategoryAr,servicePackage: servicePackageAr,

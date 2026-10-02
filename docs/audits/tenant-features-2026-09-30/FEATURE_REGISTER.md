@@ -2,7 +2,7 @@
 
 هذا حصر مصدر قابل لإعادة التوليد، وليس ادعاءً بأن كل مسار عمل اختُبر أو أُعيد تصميمه. يشمل المكونات الفرعية المحلية، الحقول، الأزرار، النوافذ، التبويبات، واجهات القراءة والتعديل. العناصر الديناميكية تحتاج مراجعة إضافية.
 
-- 126 مسارًا مسجلًا، 373 ملف واجهة متصلًا، 2292 عنصر تحكم في المصدر.
+- 126 مسارًا مسجلًا، 376 ملف واجهة متصلًا، 2313 عنصر تحكم في المصدر.
 - 0 رابطًا حرفيًا غير مطابق، و0 ملف صفحة غير متصل بالمسارات المحصورة.
 
 | الصفحة | الملفات | عناصر التحكم | القراءة / التعديل | موك أب للصفحة |
@@ -80,7 +80,7 @@
 | /merchant/language-settings — لغة المساعد | 9 | 8 | 3 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/calendar/settings — ربط Google Calendar | 1 | 3 | 1 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/calendar — التقويم | 3 | 16 | 4 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/staff — مقدمو الخدمات | 1 | 11 | 1 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/staff — مقدمو الخدمات | 4 | 32 | 3 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/team — الفريق والصلاحيات | 1 | 8 | 1 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/services — الخدمات | 5 | 27 | 3 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/services/new — إضافة وتعديل خدمة | 5 | 22 | 4 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -2739,21 +2739,42 @@
 | 73 | Button | تسمية ديناميكية / تحتاج مراجعة | AppointmentReminderReview |
 | 138 | summary | تسمية ديناميكية / تحتاج مراجعة | AppointmentReminderReview |
 
-## client/src/pages/StaffManagement.tsx
+## client/src/components/merchant/StaffWorkspace.tsx
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 153 | Button | إضافة مقدم خدمة | مقدّمو الخدمات |
-| 156 | DialogContent | تعديل بيانات مقدم الخدمة إضافة مقدم خدمة جديد الشخص الذي يقدم الخدمة ويتم حجز المواعيد عنده (حلاق، مدرب، طبيب، إلخ) الاسم * رقم الجوال * البريد الإلكتروني التخصص / نوع الخدمة * سيظهر للعميل عند اختيار مقدم الخدمة أثناء ا | مقدّمو الخدمات |
-| 169 | Input | الاسم * | تعديل بيانات مقدم الخدمة إضافة مقدم خدمة جديد |
-| 180 | Input | رقم الجوال * | تعديل بيانات مقدم الخدمة إضافة مقدم خدمة جديد |
-| 191 | Input | البريد الإلكتروني | تعديل بيانات مقدم الخدمة إضافة مقدم خدمة جديد |
-| 202 | Input | التخصص / نوع الخدمة * | تعديل بيانات مقدم الخدمة إضافة مقدم خدمة جديد |
-| 215 | Button | إلغاء | تعديل بيانات مقدم الخدمة إضافة مقدم خدمة جديد |
-| 222 | Button | جاري الحفظ... تحديث إضافة | تعديل بيانات مقدم الخدمة إضافة مقدم خدمة جديد |
-| 304 | Button | إضافة مقدم خدمة | قائمة مقدمي الخدمات |
-| 354 | Button | تسمية ديناميكية / تحتاج مراجعة | قائمة مقدمي الخدمات |
-| 363 | Button | تسمية ديناميكية / تحتاج مراجعة | قائمة مقدمي الخدمات |
+| 38 | Button | refresh | title |
+| 38 | Button | create | title |
+| 39 | Link | services | title |
+| 39 | Link | bookings | title |
+| 43 | input | search | title |
+| 43 | Button | search | title |
+| 43 | select | status all active inactive unknown | title |
+| 43 | Button | search | title |
+| 45 | Button | first | outOfRange noResults empty |
+| 45 | Button | edit view | unknown |
+| 45 | Button | archive activate | unknown |
+| 46 | Button | previous | unknown |
+| 46 | Button | next | unknown |
+| 48 | DialogContent | archiveTitle activateTitle archiveHint activateHint changed refresh cancel saving confirm | unknown |
+| 48 | Button | refresh | archiveTitle activateTitle |
+| 48 | Button | cancel | archiveTitle activateTitle |
+| 48 | Button | saving confirm | archiveTitle activateTitle |
+| 64 | input | * optional invalid | archiveTitle activateTitle |
+| 67 | Button | back | archiveTitle activateTitle |
+| 67 | Button | refresh | edit view create |
+| 67 | Button | reload | edit view create |
+| 70 | select | isActive unknown active inactive invalidStatus | basics |
+| 71 | summary | hours | hours |
+| 71 | Button | resetHours | hours |
+| 71 | input | تسمية ديناميكية / تحتاج مراجعة | hours |
+| 71 | input | text(day)+' · '+text(key) | hours |
+| 72 | summary | advanced | advanced |
+| 73 | summary | legacy | legacy |
+| 74 | Button | review | legacy |
+| 76 | DialogContent | save reviewTitle reload reloadTitle leaveTitle save reviewHint reload reloadHint leaveHint save name role phone email googleCalendarId none status active inactive hours none changed cancel saving save reload leave | legacy |
+| 76 | Button | cancel | hours |
+| 76 | Button | saving save reload leave | hours |
 
 ## client/src/pages/merchant/TeamManagement.tsx
 
@@ -2804,20 +2825,20 @@
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 47 | textarea | description descriptionField * | ServiceEditorWorkspace |
-| 47 | input | description descriptionField * | ServiceEditorWorkspace |
-| 49 | select | تسمية ديناميكية / تحتاج مراجعة | ServiceEditorWorkspace |
-| 66 | Link | back | ServiceEditorWorkspace |
-| 66 | Button | refresh | editTitle title |
-| 67 | Button | reload | editTitle title |
-| 67 | Button | viewList | editTitle title |
-| 67 | Link | viewList | editTitle title |
-| 68 | select | priceType | basics |
-| 69 | summary | advanced advancedHint | advanced advancedHint |
-| 70 | Button | review | advanced advancedHint |
-| 71 | DialogContent | reload reloadTitle reviewTitle reload reloadHint reviewHint review descriptionField — categoryId noSelection staffIds ، noSelection requiresAppointment yes no bufferTimeMinutes maxBookingsPerDay advanceBookingDays displa | preview |
-| 71 | Button | cancel | reload reloadTitle reviewTitle |
-| 71 | Button | reload confirm | reload reloadTitle reviewTitle |
+| 48 | textarea | description descriptionField * | ServiceEditorWorkspace |
+| 48 | input | description descriptionField * | ServiceEditorWorkspace |
+| 50 | select | تسمية ديناميكية / تحتاج مراجعة | ServiceEditorWorkspace |
+| 67 | Link | back | ServiceEditorWorkspace |
+| 67 | Button | refresh | editTitle title |
+| 68 | Button | reload | editTitle title |
+| 68 | Button | viewList | editTitle title |
+| 68 | Link | viewList | editTitle title |
+| 69 | select | priceType | basics |
+| 70 | summary | advanced advancedHint | advanced advancedHint |
+| 71 | Button | review | advanced advancedHint |
+| 72 | DialogContent | reload reloadTitle reviewTitle reload reloadHint reviewHint review descriptionField — categoryId noSelection staffIds ، noSelection requiresAppointment yes no bufferTimeMinutes maxBookingsPerDay advanceBookingDays displa | preview |
+| 72 | Button | cancel | reload reloadTitle reviewTitle |
+| 72 | Button | reload confirm | reload reloadTitle reviewTitle |
 
 ## client/src/components/merchant/CatalogChoicePicker.tsx
 
@@ -2964,19 +2985,19 @@
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 45 | textarea | description descriptionField * | ServiceCollectionEditor |
-| 45 | input | description descriptionField * | ServiceCollectionEditor |
-| 47 | select | isActive | ServiceCollectionEditor |
-| 66 | Link | back | ServiceCollectionEditor |
-| 66 | Button | refresh | category categoryEdit categoryCreate packageEdit packageCreate |
-| 67 | Button | reload | category categoryEdit categoryCreate packageEdit packageCreate |
-| 67 | Button | viewList | category categoryEdit categoryCreate packageEdit packageCreate |
-| 67 | Link | viewList | category categoryEdit categoryCreate packageEdit packageCreate |
-| 69 | summary | advanced advancedHint | advanced advancedHint |
-| 70 | Button | review | advanced advancedHint |
-| 71 | DialogContent | reload reloadTitle reviewTitle reload reloadHint reviewHint review descriptionField emptyValue review stale cancel reload confirm | preview |
-| 71 | Button | cancel | reload reloadTitle reviewTitle |
-| 71 | Button | reload confirm | reload reloadTitle reviewTitle |
+| 46 | textarea | description descriptionField * | ServiceCollectionEditor |
+| 46 | input | description descriptionField * | ServiceCollectionEditor |
+| 48 | select | isActive | ServiceCollectionEditor |
+| 67 | Link | back | ServiceCollectionEditor |
+| 67 | Button | refresh | category categoryEdit categoryCreate packageEdit packageCreate |
+| 68 | Button | reload | category categoryEdit categoryCreate packageEdit packageCreate |
+| 68 | Button | viewList | category categoryEdit categoryCreate packageEdit packageCreate |
+| 68 | Link | viewList | category categoryEdit categoryCreate packageEdit packageCreate |
+| 70 | summary | advanced advancedHint | advanced advancedHint |
+| 71 | Button | review | advanced advancedHint |
+| 72 | DialogContent | reload reloadTitle reviewTitle reload reloadHint reviewHint review descriptionField emptyValue review stale cancel reload confirm | preview |
+| 72 | Button | cancel | reload reloadTitle reviewTitle |
+| 72 | Button | reload confirm | reload reloadTitle reviewTitle |
 
 ## client/src/components/merchant/SheetsSettingsWorkspace.tsx
 

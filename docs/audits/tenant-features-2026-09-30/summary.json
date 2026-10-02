@@ -1,12 +1,12 @@
 {
   "routes": 126,
-  "files": 373,
-  "controls": 2292,
+  "files": 376,
+  "controls": 2313,
   "browserRequests": 4,
   "imperativeReads": 40,
   "unresolvedReads": 0,
-  "queryCalls": 318,
+  "queryCalls": 320,
   "errorSignalMissing": 110,
   "choices": 64,
-  "conditions": 1195
+  "conditions": 1208
 }
