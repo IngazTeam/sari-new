@@ -1,3 +1,4 @@
+import {platformWorkspaceAr} from './platform-workspace';
 import {appointmentCreateAr} from './appointment-create';
 import {calendarConnectionAr} from './calendar-connection';
 import {calendarWorkspaceAr} from './calendar-workspace';
@@ -68,6 +69,7 @@ const merchantUxAr: MerchantUxCopy = {
   campaignPerformance: campaignPerformanceAr,
   campaignWorkspace: campaignWorkspaceAr,
   serviceCatalog: serviceCatalogAr,
+  platformWorkspace:platformWorkspaceAr,
   appointmentCreate:appointmentCreateAr,calendarConnection:calendarConnectionAr,calendarWorkspace:calendarWorkspaceAr,
   bookingWorkspace:bookingWorkspaceAr,
   staffWorkspace:staffWorkspaceAr,

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-02T03:46:38.276Z",
+  "generatedAt": "2026-10-02T04:46:21.309Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -16711,179 +16711,131 @@
     },
     {
       "file": "client/src/pages/PlatformIntegrations.tsx",
-      "hash": "1b5c5d5a92a3",
+      "hash": "677bbd5e1da5",
       "queries": [
-        "integrations.getByaanStatus",
-        "sheets.getStatus",
-        "integrations.getCurrentPlatform",
-        "salla.getConnection",
-        "zid.getConnection",
-        "woocommerce.getSettings"
+        "auth.me",
+        "merchants.getCurrent"
       ],
-      "mutations": [
-        "integrations.testByaanConnection",
-        "salla.disconnect",
-        "zid.disconnect",
-        "woocommerce.disconnect"
-      ],
+      "mutations": [],
       "imperativeReads": [],
       "browserRequests": [],
-      "sections": [
-        {
-          "label": "ربط منصات التجارة الإلكترونية",
-          "line": 225,
-          "tag": "h1"
-        },
-        {
-          "label": "مربوط",
-          "line": 244,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "منصات أخرى متاحة اختر منصة للربط",
-          "line": 300,
-          "tag": "h2"
-        },
-        {
-          "label": "",
-          "line": 313,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "خدمات Google",
-          "line": 335,
-          "tag": "h2"
-        },
-        {
-          "label": "Google Sheets مربوط",
-          "line": 343,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "منصة التجارة الإلكترونية السعودية الرائدة",
-          "line": 370,
-          "tag": "CardTitle"
-        }
-      ],
-      "choices": [
-        {
-          "name": "platforms",
-          "line": 172,
-          "values": [
-            {
-              "id": "salla",
-              "name": "سلة",
-              "description": "منصة التجارة الإلكترونية السعودية الرائدة",
-              "logo": "🛍️",
-              "connected": "sallaConnection?.connected",
-              "storeUrl": "sallaConnection?.storeUrl",
-              "setupUrl": "/merchant/salla"
-            },
-            {
-              "id": "zid",
-              "name": "زد",
-              "description": "منصة سعودية لإنشاء المتاجر الإلكترونية",
-              "logo": "🏪",
-              "connected": "zidStatus?.connected",
-              "storeUrl": "zidStatus?.storeUrl",
-              "setupUrl": "/merchant/integrations/zid"
-            },
-            {
-              "id": "woocommerce",
-              "name": "ووكومرس",
-              "description": "إضافة ووردبريس للتجارة الإلكترونية",
-              "logo": "🛒",
-              "connected": "wooSettings?.isActive === 1",
-              "storeUrl": "wooSettings?.storeUrl",
-              "setupUrl": "/merchant/woocommerce/settings"
-            },
-            {
-              "id": "shopify",
-              "name": "شوبيفاي",
-              "description": "منصة عالمية للتجارة الإلكترونية",
-              "logo": "🏬",
-              "connected": "false",
-              "setupUrl": "",
-              "unavailable": "true"
-            },
-            {
-              "id": "byaan",
-              "name": "بيان",
-              "description": "منصة إدارة المراكز التدريبية — دورات، متدربين، تسجيلات",
-              "logo": "🎓",
-              "connected": "currentPlatform?.platform === 'byaan'",
-              "storeUrl": "currentPlatform?.platform === 'byaan' ? currentPlatform.storeUrl : undefined",
-              "setupUrl": "/merchant/integrations/byaan"
-            }
-          ]
-        }
-      ],
-      "handlers": [
-        {
-          "name": "handleDisconnect",
-          "line": 141,
-          "calls": [
-            "disconnectSalla",
-            "disconnectZid",
-            "disconnectWoo"
-          ]
-        }
-      ],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
       "queryStates": [
         {
-          "query": "integrations.getByaanStatus",
-          "binding": "{ data: status, isLoading }",
-          "line": 23,
-          "errorSignal": false,
-          "loadingSignal": true,
-          "enabled": null
-        },
-        {
-          "query": "sheets.getStatus",
-          "binding": "{ data: sheetsStatus, error: sheetsError, isLoading: sheetsLoading }",
-          "line": 85,
+          "query": "auth.me",
+          "binding": "user",
+          "line": 8,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
         },
         {
-          "query": "integrations.getCurrentPlatform",
-          "binding": "{ data: currentPlatform, isLoading }",
-          "line": 89,
-          "errorSignal": false,
+          "query": "merchants.getCurrent",
+          "binding": "merchant",
+          "line": 14,
+          "errorSignal": true,
           "loadingSignal": true,
-          "enabled": null
-        },
-        {
-          "query": "salla.getConnection",
-          "binding": "{ data: sallaConnection }",
-          "line": 92,
-          "errorSignal": false,
-          "loadingSignal": false,
-          "enabled": "!currentPlatform || currentPlatform.platform === 'salla' "
-        },
-        {
-          "query": "zid.getConnection",
-          "binding": "{ data: zidStatus }",
-          "line": 97,
-          "errorSignal": false,
-          "loadingSignal": false,
-          "enabled": "!currentPlatform || currentPlatform.platform === 'zid' "
-        },
-        {
-          "query": "woocommerce.getSettings",
-          "binding": "{ data: wooSettings }",
-          "line": 102,
-          "errorSignal": false,
-          "loadingSignal": false,
-          "enabled": "!currentPlatform || currentPlatform.platform === 'woocommerce' "
+          "enabled": "!!user.data?.id && !user.error && !user.isFetching"
         }
       ],
       "conditions": [],
       "imports": [
+        "client/src/components/merchant/PlatformIntegrationsWorkspace.tsx"
+      ],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/components/merchant/PlatformIntegrationsWorkspace.tsx",
+      "hash": "82a99cb56d45",
+      "queries": [
+        "integrations.workspace",
+        "sheets.getStatus"
+      ],
+      "mutations": [
+        "integrations.testByaanConnection"
+      ],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [
+        {
+          "label": "",
+          "line": 44,
+          "tag": "h1"
+        },
+        {
+          "label": "",
+          "line": 48,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 52,
+          "tag": "h3"
+        },
+        {
+          "label": "",
+          "line": 63,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 64,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 65,
+          "tag": "summary"
+        },
+        {
+          "label": "",
+          "line": 72,
+          "tag": "h3"
+        }
+      ],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [
+        {
+          "query": "integrations.workspace",
+          "binding": "query",
+          "line": 22,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        },
+        {
+          "query": "sheets.getStatus",
+          "binding": "query",
+          "line": 69,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        }
+      ],
+      "conditions": [],
+      "imports": [
+        "client/src/lib/platform-workspace-labels.ts",
         "client/src/components/merchant/CalendarConnectionCard.tsx"
       ],
-      "controlCount": 7
+      "controlCount": 12
+    },
+    {
+      "file": "client/src/lib/platform-workspace-labels.ts",
+      "hash": "0eff9ccf0acb",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 0
     },
     {
       "file": "client/src/components/merchant/CalendarConnectionCard.tsx",
@@ -24919,37 +24871,37 @@
       ],
       "files": [
         "client/src/pages/PlatformIntegrations.tsx",
+        "client/src/components/merchant/PlatformIntegrationsWorkspace.tsx",
+        "client/src/lib/platform-workspace-labels.ts",
         "client/src/components/merchant/CalendarConnectionCard.tsx",
         "client/src/lib/calendar-connection.ts"
       ],
       "controls": [
-        "49f5fa958015",
-        "0666df803da9",
-        "d50e989356d9",
-        "93813230beae",
-        "462915175a79",
-        "5cc03af2c7be",
-        "48512bf5f086",
+        "a2f23611711e",
+        "c8e2159622a2",
+        "1f349befb851",
+        "34f34cc87554",
+        "90e73117238a",
+        "2c9f69210002",
+        "e478c179cf60",
+        "f7fd00b5f1b5",
+        "67472d7a8a61",
+        "157724b03941",
+        "98d4af0057c4",
+        "91a213b8b479",
         "cd13479e62ad",
         "ce9fd2db7255",
         "7f2f5df92f27"
       ],
       "queries": [
-        "integrations.getByaanStatus",
-        "sheets.getStatus",
-        "integrations.getCurrentPlatform",
-        "salla.getConnection",
-        "zid.getConnection",
-        "woocommerce.getSettings",
         "auth.me",
         "merchants.getCurrent",
+        "integrations.workspace",
+        "sheets.getStatus",
         "calendar.settings"
       ],
       "mutations": [
-        "integrations.testByaanConnection",
-        "salla.disconnect",
-        "zid.disconnect",
-        "woocommerce.disconnect"
+        "integrations.testByaanConnection"
       ],
       "imperativeReads": [],
       "browserRequests": []
@@ -74992,36 +74944,15 @@
       "review": "source-inventoried"
     },
     {
-      "id": "49f5fa958015",
-      "file": "client/src/pages/PlatformIntegrations.tsx",
-      "line": 58,
+      "id": "a2f23611711e",
+      "file": "client/src/components/merchant/PlatformIntegrationsWorkspace.tsx",
+      "line": 44,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "جاري الفحص... اختبار الاتصال",
-      "section": "PlatformIntegrations",
-      "binding": "() => testMutation.mutate()",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "testMutation.isPending",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "0666df803da9",
-      "file": "client/src/pages/PlatformIntegrations.tsx",
-      "line": 258,
-      "tag": "a",
-      "role": "",
-      "kind": "action",
       "label": "",
-      "section": "مربوط",
-      "binding": "connectedPlatform.storeUrl",
+      "section": "PlatformIntegrationsWorkspace",
+      "binding": "refresh",
       "type": "text",
       "options": [],
       "min": "",
@@ -75029,90 +74960,62 @@
       "maxLength": "",
       "required": false,
       "conditional": false,
-      "conditions": [
-        "connectedPlatform.storeUrl",
-        "connectedPlatform"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "d50e989356d9",
-      "file": "client/src/pages/PlatformIntegrations.tsx",
-      "line": 274,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "إدارة الإعدادات",
-      "section": "مربوط",
-      "binding": "() => (window.location.href = connectedPlatform.setupUrl)",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [
-        "connectedPlatform"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "93813230beae",
-      "file": "client/src/pages/PlatformIntegrations.tsx",
-      "line": 280,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "جاري الفصل... فصل المنصة",
-      "section": "مربوط",
-      "binding": "() => handleDisconnect(connectedPlatform.id)",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [
-        "connectedPlatform"
-      ],
-      "disabled": "isDisconnecting",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "462915175a79",
-      "file": "client/src/pages/PlatformIntegrations.tsx",
-      "line": 319,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "غير متاح حاليًا غير متاح (افصل المنصة الحالية أولاً) ربط الآن",
-      "section": "PlatformIntegrations",
-      "binding": "() => (window.location.href = platform.setupUrl)",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
       "conditions": [],
-      "disabled": "!!connectedPlatform || platform.unavailable",
+      "disabled": "busy||query.isFetching",
       "review": "source-inventoried"
     },
     {
-      "id": "5cc03af2c7be",
-      "file": "client/src/pages/PlatformIntegrations.tsx",
-      "line": 355,
+      "id": "c8e2159622a2",
+      "file": "client/src/components/merchant/PlatformIntegrationsWorkspace.tsx",
+      "line": 45,
       "tag": "Link",
       "role": "",
       "kind": "action",
-      "label": "تعذر التحقق من اتصال Google Sheets إدارة الإعدادات ربط Google Sheets",
-      "section": "Google Sheets مربوط",
-      "binding": "/merchant/sheets/settings",
+      "label": "",
+      "section": "PlatformIntegrationsWorkspace",
+      "binding": "/merchant/integrations-dashboard",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "1f349befb851",
+      "file": "client/src/components/merchant/PlatformIntegrationsWorkspace.tsx",
+      "line": 45,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "PlatformIntegrationsWorkspace",
+      "binding": "/merchant/calendar",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "34f34cc87554",
+      "file": "client/src/components/merchant/PlatformIntegrationsWorkspace.tsx",
+      "line": 54,
+      "tag": "a",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "PlatformIntegrationsWorkspace",
+      "binding": "href",
       "type": "text",
       "options": [],
       "min": "",
@@ -75120,19 +75023,135 @@
       "maxLength": "",
       "required": false,
       "conditional": true,
+      "conditions": [
+        "href",
+        "row.present"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "90e73117238a",
+      "file": "client/src/components/merchant/PlatformIntegrationsWorkspace.tsx",
+      "line": 56,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "PlatformIntegrationsWorkspace",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "path&&!blocked"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "2c9f69210002",
+      "file": "client/src/components/merchant/PlatformIntegrationsWorkspace.tsx",
+      "line": 56,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "PlatformIntegrationsWorkspace",
+      "binding": "path",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "path&&!blocked"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "e478c179cf60",
+      "file": "client/src/components/merchant/PlatformIntegrationsWorkspace.tsx",
+      "line": 57,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "PlatformIntegrationsWorkspace",
+      "binding": "/support",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "row.platform==='shopify'&&row.present"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "f7fd00b5f1b5",
+      "file": "client/src/components/merchant/PlatformIntegrationsWorkspace.tsx",
+      "line": 58,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "PlatformIntegrationsWorkspace",
+      "binding": "()=>{void check();}",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "row.platform==='byaan'&&row.occupiesSlot&&data.source==='byaan'"
+      ],
+      "disabled": "busy||query.isFetching",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "67472d7a8a61",
+      "file": "client/src/components/merchant/PlatformIntegrationsWorkspace.tsx",
+      "line": 65,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "PlatformIntegrationsWorkspace",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
       "conditions": [],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "48512bf5f086",
-      "file": "client/src/pages/PlatformIntegrations.tsx",
-      "line": 356,
+      "id": "157724b03941",
+      "file": "client/src/components/merchant/PlatformIntegrationsWorkspace.tsx",
+      "line": 72,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "تعذر التحقق من اتصال Google Sheets إدارة الإعدادات ربط Google Sheets",
-      "section": "Google Sheets مربوط",
+      "label": "",
+      "section": "PlatformIntegrationsWorkspace",
       "binding": "",
       "type": "text",
       "options": [],
@@ -75142,6 +75161,50 @@
       "required": false,
       "conditional": true,
       "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "98d4af0057c4",
+      "file": "client/src/components/merchant/PlatformIntegrationsWorkspace.tsx",
+      "line": 72,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "PlatformIntegrationsWorkspace",
+      "binding": "/merchant/sheets/settings",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "91a213b8b479",
+      "file": "client/src/components/merchant/PlatformIntegrationsWorkspace.tsx",
+      "line": 72,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "PlatformIntegrationsWorkspace",
+      "binding": "()=>{void query.refetch();}",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!loading&&!data"
+      ],
       "disabled": "",
       "review": "source-inventoried"
     },

@@ -2,7 +2,7 @@
 
 هذا حصر مصدر قابل لإعادة التوليد، وليس ادعاءً بأن كل مسار عمل اختُبر أو أُعيد تصميمه. يشمل المكونات الفرعية المحلية، الحقول، الأزرار، النوافذ، التبويبات، واجهات القراءة والتعديل. العناصر الديناميكية تحتاج مراجعة إضافية.
 
-- 126 مسارًا مسجلًا، 389 ملف واجهة متصلًا، 2369 عنصر تحكم في المصدر.
+- 126 مسارًا مسجلًا، 391 ملف واجهة متصلًا، 2374 عنصر تحكم في المصدر.
 - 0 رابطًا حرفيًا غير مطابق، و0 ملف صفحة غير متصل بالمسارات المحصورة.
 
 | الصفحة | الملفات | عناصر التحكم | القراءة / التعديل | موك أب للصفحة |
@@ -102,7 +102,7 @@
 | /merchant/loyalty/rewards — مكافآت الولاء | 2 | 19 | 1 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/loyalty/customers — عملاء الولاء | 2 | 14 | 2 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/integrations-dashboard — صحة التكاملات | 6 | 8 | 3 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/platform-integrations — التكاملات | 3 | 10 | 9 / 4 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/platform-integrations — التكاملات | 5 | 15 | 5 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/notification-settings — تفضيلات الإشعارات | 1 | 17 | 1 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/currency-settings — عملة المتجر | 1 | 2 | 1 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/push-notifications — إشعارات المتصفح | 1 | 3 | 3 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -3284,17 +3284,22 @@
 | 238 | Button | إعدادات | IntegrationsDashboard |
 | 359 | Button | تم الحل | الأخطاء غير المحلولة |
 
-## client/src/pages/PlatformIntegrations.tsx
+## client/src/components/merchant/PlatformIntegrationsWorkspace.tsx
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 58 | Button | جاري الفحص... اختبار الاتصال | PlatformIntegrations |
-| 258 | a | تسمية ديناميكية / تحتاج مراجعة | مربوط |
-| 274 | Button | إدارة الإعدادات | مربوط |
-| 280 | Button | جاري الفصل... فصل المنصة | مربوط |
-| 319 | Button | غير متاح حاليًا غير متاح (افصل المنصة الحالية أولاً) ربط الآن | PlatformIntegrations |
-| 355 | Link | تعذر التحقق من اتصال Google Sheets إدارة الإعدادات ربط Google Sheets | Google Sheets مربوط |
-| 356 | Button | تعذر التحقق من اتصال Google Sheets إدارة الإعدادات ربط Google Sheets | Google Sheets مربوط |
+| 44 | Button | تسمية ديناميكية / تحتاج مراجعة | PlatformIntegrationsWorkspace |
+| 45 | Link | تسمية ديناميكية / تحتاج مراجعة | PlatformIntegrationsWorkspace |
+| 45 | Link | تسمية ديناميكية / تحتاج مراجعة | PlatformIntegrationsWorkspace |
+| 54 | a | تسمية ديناميكية / تحتاج مراجعة | PlatformIntegrationsWorkspace |
+| 56 | Button | تسمية ديناميكية / تحتاج مراجعة | PlatformIntegrationsWorkspace |
+| 56 | Link | تسمية ديناميكية / تحتاج مراجعة | PlatformIntegrationsWorkspace |
+| 57 | Link | تسمية ديناميكية / تحتاج مراجعة | PlatformIntegrationsWorkspace |
+| 58 | Button | تسمية ديناميكية / تحتاج مراجعة | PlatformIntegrationsWorkspace |
+| 65 | summary | تسمية ديناميكية / تحتاج مراجعة | PlatformIntegrationsWorkspace |
+| 72 | Button | تسمية ديناميكية / تحتاج مراجعة | PlatformIntegrationsWorkspace |
+| 72 | Link | تسمية ديناميكية / تحتاج مراجعة | PlatformIntegrationsWorkspace |
+| 72 | Button | تسمية ديناميكية / تحتاج مراجعة | PlatformIntegrationsWorkspace |
 
 ## client/src/components/merchant/CalendarConnectionCard.tsx
 
