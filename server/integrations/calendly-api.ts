@@ -1,3 +1,4 @@
+import {assertCalendlyDashboardAuthority,CalendlyAuthorityError} from './calendly-dashboard-authority';
 const CALENDLY_API_ORIGIN = 'https://api.calendly.com';
 const CALENDLY_TIMEOUT_MS = 12_000;
 const CALENDLY_MAX_RESPONSE_BYTES = 2 * 1024 * 1024;
@@ -37,6 +38,7 @@ export async function calendlyApiRequest<T>(
     throw new CalendlyApiError(401, 'invalid_access_token');
   }
   const url = normalizeCalendlyApiUrl(endpointOrUri);
+  await assertCalendlyDashboardAuthority();
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), CALENDLY_TIMEOUT_MS);
   try {
@@ -51,6 +53,7 @@ export async function calendlyApiRequest<T>(
       signal: controller.signal,
       redirect: 'error',
     });
+    await assertCalendlyDashboardAuthority();
     if (response.status === 204) return undefined as T;
     const contentLength = Number(response.headers.get('content-length') || 0);
     if (Number.isFinite(contentLength) && contentLength > CALENDLY_MAX_RESPONSE_BYTES) {
@@ -62,11 +65,15 @@ export async function calendlyApiRequest<T>(
     }
     if (!response.ok) throw new CalendlyApiError(response.status, `provider_http_${response.status}`);
     try {
-      return JSON.parse(text) as T;
-    } catch {
+      const value=JSON.parse(text) as T;
+      await assertCalendlyDashboardAuthority();
+      return value;
+    } catch (error) {
+      if(error instanceof CalendlyAuthorityError)throw error;
       throw new CalendlyApiError(502, 'invalid_provider_response');
     }
   } catch (error) {
+    if (error instanceof CalendlyAuthorityError) throw error;
     if (error instanceof CalendlyApiError) throw error;
     if ((error as Error)?.name === 'AbortError') throw new CalendlyApiError(504, 'provider_timeout');
     throw new CalendlyApiError(502, 'provider_unavailable');

@@ -1,3 +1,4 @@
+import {withCalendlyDashboardAuthority,assertCalendlyDashboardAuthority,CalendlyAuthorityError} from './calendly-dashboard-authority';
 import crypto from 'node:crypto';
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
@@ -77,9 +78,9 @@ function safeCalendlyMessage(error: unknown, fallback: string): string {
 
 const noInput=z.object({}).strict().optional();
 const unavailable=()=>new TRPCError({code:'INTERNAL_SERVER_ERROR',message:'calendly_dashboard:unavailable'});
-const calendlyDashboardProcedure=permissionProcedure('integrations.manage').use(async({next})=>{
+const calendlyDashboardProcedure=permissionProcedure('integrations.manage').use(async({ctx,next})=>{
   try{if(!await getDb())throw unavailable();}catch{throw unavailable();}
-  const result=await next();if(!result.ok&&result.error.code==='INTERNAL_SERVER_ERROR')throw unavailable();return result;
+  const result=await withCalendlyDashboardAuthority({actorId:ctx.user.id,merchantId:ctx.merchantId},next);if(!result.ok&&result.error.code==='INTERNAL_SERVER_ERROR')throw unavailable();return result;
 });
 
 async function withCalendlyConnectionLock<T>(merchantId: number, action: () => Promise<T>): Promise<T> {
@@ -92,6 +93,7 @@ async function withCalendlyConnectionLock<T>(merchantId: number, action: () => P
     const [rows] = await connection.query<any[]>('SELECT GET_LOCK(?, 20) AS acquired', [lockName]);
     acquired = Number(rows[0]?.acquired) === 1;
     if (!acquired) throw new TRPCError({ code: 'CONFLICT', message: 'عملية ربط Calendly أخرى قيد التنفيذ' });
+    await assertCalendlyDashboardAuthority(merchantId);
     return await action();
   } finally {
     if (acquired) await connection.query('SELECT RELEASE_LOCK(?)', [lockName]).catch(() => undefined);
@@ -127,6 +129,7 @@ export const calendlyRouter = router({
         const endpointId = crypto.randomBytes(32).toString('base64url');
         const signingKey = crypto.randomBytes(48).toString('base64url');
         let subscriptionUri: string | null = null;
+        let persistenceStarted=false;
         try {
           const user = await getCalendlyCurrentUser(input.apiKey);
           const callbackUrl = `${calendlyWebhookOrigin()}/api/webhooks/calendly/${endpointId}`;
@@ -137,6 +140,8 @@ export const calendlyRouter = router({
             organizationUri: user.current_organization,
             userUri: user.uri,
           });
+          await assertCalendlyDashboardAuthority(merchantId);
+          persistenceStarted=true;
           const integration = await replaceCalendlyIntegration({
             merchantId: merchantId,
             storeName: typeof user.name === 'string' ? user.name.slice(0, 255) : 'Calendly User',
@@ -157,9 +162,11 @@ export const calendlyRouter = router({
           }
           return { success: true, message: 'تم ربط Calendly وتسجيل Webhook آمن تلقائيًا' };
         } catch (error) {
-          if (subscriptionUri) {
+          // A failed commit/read can still have installed this subscription. Never delete it blindly.
+          if (subscriptionUri&&!persistenceStarted) {
             await deleteCalendlyWebhookSubscription(input.apiKey, subscriptionUri).catch(() => undefined);
           }
+          if(error instanceof CalendlyAuthorityError)throw error;
           throw new TRPCError({
             code: 'BAD_REQUEST',
             message: safeCalendlyMessage(error, 'تعذر ربط Calendly أو تسجيل Webhook'),
@@ -184,6 +191,7 @@ export const calendlyRouter = router({
 
   syncNow: calendlyDashboardProcedure.input(noInput).mutation(async ({ ctx }) => {
     const merchantId = ctx.merchantId;
+    return withCalendlyConnectionLock(merchantId,async()=>{
     const integration = await getIntegrationByType(merchantId, 'calendly');
     if (!integration?.accessToken || !integration.isActive) {
       throw new TRPCError({ code: 'NOT_FOUND', message: 'لم يتم العثور على تكامل Calendly نشط' });
@@ -193,11 +201,13 @@ export const calendlyRouter = router({
       await updateIntegrationLastSync(integration.id);
       return { success: true, message: `تمت مزامنة ${syncedEvents} مدعو بنجاح` };
     } catch (error) {
+      if(error instanceof CalendlyAuthorityError)throw error;
       throw new TRPCError({
         code: 'INTERNAL_SERVER_ERROR',
         message: safeCalendlyMessage(error, 'فشلت مزامنة Calendly'),
       });
     }
+    });
   }),
 
   updateSettings: calendlyDashboardProcedure
@@ -206,10 +216,12 @@ export const calendlyRouter = router({
     }).strict())
     .mutation(async ({ ctx, input }) => {
       const merchantId = ctx.merchantId;
+      return withCalendlyConnectionLock(merchantId,async()=>{
       const integration = await getIntegrationByType(merchantId, 'calendly');
       if (!integration) throw new TRPCError({ code: 'NOT_FOUND', message: 'لم يتم العثور على تكامل Calendly' });
       await updateIntegrationSettings(integration.id, input);
       return { success: true };
+      });
     }),
 
   getUpcomingEvents: calendlyDashboardProcedure

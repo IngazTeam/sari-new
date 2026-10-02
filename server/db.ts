@@ -1,3 +1,4 @@
+import {assertCalendlyDashboardWrite,calendlyDashboardScope,CalendlyAuthorityError} from './integrations/calendly-dashboard-authority';
 import {assertWooDashboardWrite} from './integrations/woocommerce-dashboard-authority';
 import {assertWooPlatformAdmission,lockWooPlatformMerchant} from './integrations/woocommerce-platform-admission';
 import {writeServiceCatalog,archiveServiceCatalog} from './service-catalog-write';
@@ -6756,7 +6757,7 @@ export async function replaceCalendlyIntegration(data: {
   settings: string;
 }): Promise<PlatformIntegration | undefined> {
   const database = await getDb();
-  if (!database) return undefined;
+  if (!database) throw Error('Calendly database unavailable');
   const protectedValues = {
     storeName: data.storeName,
     storeUrl: data.storeUrl,
@@ -6768,6 +6769,7 @@ export async function replaceCalendlyIntegration(data: {
     isActive: 1,
   };
   await database.transaction(async tx => {
+    await assertCalendlyDashboardWrite(tx,data.merchantId);
     const [existing] = await tx.select({ id: platformIntegrations.id, storeUrl: platformIntegrations.storeUrl })
       .from(platformIntegrations)
       .where(and(
@@ -6810,7 +6812,8 @@ export async function replaceCalendlyIntegration(data: {
  */
 export async function deleteIntegrationByType(merchantId: number, type: 'zid' | 'calendly' | 'shopify' | 'woocommerce'): Promise<void> {
   const db = await getDb();
-  if (!db) return;
+  if (!db) {if(type==='calendly')throw Error('Calendly database unavailable');return;}
+  if(type==='calendly'){await db.transaction(async tx=>{await assertCalendlyDashboardWrite(tx,merchantId);await tx.delete(platformIntegrations).where(and(eq(platformIntegrations.merchantId,merchantId),eq(platformIntegrations.platformType,'calendly')));});return;}
 
   await db.delete(platformIntegrations)
     .where(and(
@@ -6824,7 +6827,14 @@ export async function deleteIntegrationByType(merchantId: number, type: 'zid' | 
  */
 export async function updateIntegrationLastSync(integrationId: number): Promise<void> {
   const db = await getDb();
-  if (!db) return;
+  const scope=calendlyDashboardScope();
+  if(!db){if(scope)throw Error('Calendly database unavailable');return;}
+  if(scope){await db.transaction(async tx=>{
+    await assertCalendlyDashboardWrite(tx,scope.merchantId);
+    const [current]=await tx.select().from(platformIntegrations).where(and(eq(platformIntegrations.id,integrationId),eq(platformIntegrations.merchantId,scope.merchantId),eq(platformIntegrations.platformType,'calendly'))).limit(1).for('update');
+    if(!current?.isActive)throw new CalendlyAuthorityError();
+    await tx.update(platformIntegrations).set({lastSyncAt:new Date().toISOString().slice(0,19).replace('T',' ')}).where(eq(platformIntegrations.id,current.id));
+  });return;}
 
   await db.update(platformIntegrations)
     .set({ lastSyncAt: new Date().toISOString().slice(0, 19).replace('T', ' ') })
@@ -6836,7 +6846,15 @@ export async function updateIntegrationLastSync(integrationId: number): Promise<
  */
 export async function updateIntegrationSettings(integrationId: number, settings: Record<string, any>): Promise<void> {
   const db = await getDb();
-  if (!db) return;
+  const scope=calendlyDashboardScope();
+  if(!db){if(scope)throw Error('Calendly database unavailable');return;}
+  if(scope){await db.transaction(async tx=>{
+    await assertCalendlyDashboardWrite(tx,scope.merchantId);
+    const [current]=await tx.select().from(platformIntegrations).where(and(eq(platformIntegrations.id,integrationId),eq(platformIntegrations.merchantId,scope.merchantId),eq(platformIntegrations.platformType,'calendly'))).limit(1).for('update');
+    if(!current)throw new CalendlyAuthorityError();
+    const merged={...parseIntegrationSettings(current.settings),...settings};
+    await tx.update(platformIntegrations).set({settings:protectIntegrationSettings(JSON.stringify(merged))}).where(eq(platformIntegrations.id,current.id));
+  });return;}
 
   const existing = await db.select({ settings: platformIntegrations.settings })
     .from(platformIntegrations)

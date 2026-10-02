@@ -1,3 +1,4 @@
+import {assertCalendlyDashboardAuthority,assertCalendlyDashboardWrite,calendlyMysqlExecutor} from './calendly-dashboard-authority';
 import crypto from 'node:crypto';
 import type { RowDataPacket } from 'mysql2/promise';
 import { getIntegrationByType, getPool } from '../db';
@@ -534,7 +535,15 @@ async function persistSyncAppointment(
     throw new CalendlyReceiptError('invalid_event_range', true);
   }
   const providerUpdatedAt = mysqlTimestamp(invitee.updated_at || event.updated_at || Date.now(), 'invalid_provider_timestamp');
-  await pool.execute(
+  await assertCalendlyDashboardAuthority(integration.merchantId);
+  const connection=await pool.getConnection();
+  try{
+   await connection.beginTransaction();
+   await assertCalendlyDashboardWrite(calendlyMysqlExecutor(connection),integration.merchantId);
+   const [connections]=await connection.execute<RowDataPacket[]>("SELECT store_url,webhook_endpoint_id,is_active FROM platform_integrations WHERE id=? AND merchant_id=? AND platform_type='calendly' FOR UPDATE",[integration.id,integration.merchantId]);
+   const current=connections[0];
+   if(!current?.is_active||current.store_url!==integration.storeUrl||current.webhook_endpoint_id!==integration.webhookEndpointId)throw new CalendlyReceiptError('connection_changed',true);
+   await connection.execute(
     `INSERT INTO calendly_appointments
        (merchant_id, integration_id, event_uri, invitee_uri, event_name, customer_name,
         customer_email, customer_phone, start_at, end_at, status, location, provider_updated_at, cancelled_at)
@@ -564,6 +573,8 @@ async function persistSyncAppointment(
         : null,
     ],
   );
+   await connection.commit();
+  }catch(error){await connection.rollback();throw error;}finally{connection.release();}
 }
 
 export async function syncCalendlyAppointments(integration: PlatformIntegration): Promise<number> {

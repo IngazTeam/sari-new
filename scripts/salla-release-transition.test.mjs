@@ -176,6 +176,15 @@ for (const entry of Object.keys(sources)) {
     assert.equal(result.status, 0, result.stderr);
     assert.deepEqual(result.trace.filter(line => !line.startsWith('describe ')), ['jlist ', 'stop sari', 'stop sari-inbound', 'jlist ', 'save ', 'MIGRATE']);
   });
+  test(`${entry}: previous Calendly dashboard writers stop before authority enforcement`, t => {
+    const f = fixture(t);
+    const previous = f.release('previous Calendly dashboard release', marker(requiredReleaseCapabilities.filter(value => value !== 'calendly-dashboard-authority-v1')));
+    const before = ['sari', 'sari-inbound'].map(name => application(previous, name));
+    const after = ['sari', 'sari-inbound'].map(name => application(previous, name, 'stopped', 0));
+    const result = shell(f, entry, { before, after });
+    assert.equal(result.status, 0, result.stderr);
+    assert.deepEqual(result.trace.filter(line => !line.startsWith('describe ')), ['jlist ', 'stop sari', 'stop sari-inbound', 'jlist ', 'save ', 'MIGRATE']);
+  });
   test(`${entry}: previous Zid dashboard writers stop before the reviewed dashboard activation`, t => {
     const f = fixture(t);
     const oldOAuth = f.release('previous Zid dashboard release', marker(requiredReleaseCapabilities.filter(value => value !== 'zid-dashboard-reviewed-writes-0190')));

@@ -21,4 +21,12 @@ for(const mounted of [false,true]){
  it(`distinguishes provider failures from empty event lists (${mounted})`,async()=>{expect(await caller().getUpcomingEvents({limit:5})).toEqual([]);expect(await caller().getEventTypes()).toEqual([]);m.request.mockRejectedValue(Error('PRIVATE_API'));m.list.mockRejectedValue(Error('PRIVATE_API'));await expect(caller().getUpcomingEvents({limit:5})).rejects.toMatchObject({message:'calendly_dashboard:unavailable'});await expect(caller().getEventTypes()).rejects.toMatchObject({message:'calendly_dashboard:unavailable'});m.request.mockResolvedValue({wrong:[]});await expect(caller().getUpcomingEvents({limit:5})).rejects.toMatchObject({message:'calendly_dashboard:unavailable'});});
  it(`does not call the provider for inactive or missing connections (${mounted})`,async()=>{for(const row of [undefined,{isActive:0,accessToken:'PRIVATE',storeUrl:'https://api.calendly.com/users/LOCAL_123456'}]){m.integration.mockResolvedValue(row);expect(await caller().getUpcomingEvents({limit:5})).toEqual([]);expect(await caller().getEventTypes()).toEqual([]);}expect(m.request).not.toHaveBeenCalled();expect(m.list).not.toHaveBeenCalled();});
  it(`rejects malformed selection and token before reading credentials (${mounted})`,async()=>{await expect(caller(undefined,'bad').getConnection()).rejects.toMatchObject({code:'BAD_REQUEST'});for(const apiKey of ['', 'x'.repeat(4097),'a'.repeat(20)+'\u0001'])await expect(caller().connect({apiKey})).rejects.toMatchObject({code:'BAD_REQUEST'});expect(m.integration).not.toHaveBeenCalled();});
+ it.each(['connect','disconnect','syncNow','updateSettings'] as const)(`rechecks authority after waiting for the lock on %s (${mounted})`,async name=>{
+  m.lock.mockImplementation(async(sql:string)=>{if(sql.includes('GET_LOCK'))m.access.mockResolvedValue(null);return [[{acquired:1}]];});
+  await expect(call(name)).rejects.toMatchObject({code:'FORBIDDEN'});expect(m.integration).not.toHaveBeenCalled();expect(m.current).not.toHaveBeenCalled();expect(m.sync).not.toHaveBeenCalled();expect(m.release).toHaveBeenCalledOnce();
+ });
+ it(`does not delete the new remote subscription after an ambiguous local save (${mounted})`,async()=>{
+  m.replace.mockRejectedValue(Error('commit acknowledgement lost'));await expect(call('connect')).rejects.toMatchObject({code:'BAD_REQUEST'});expect(m.create).toHaveBeenCalledOnce();expect(m.delete).not.toHaveBeenCalled();
+ });
+
 }
