@@ -25,6 +25,7 @@ export const requiredReleaseCapabilities = Object.freeze([
   'calendly-dashboard-authority-v1',
   'calendly-worker-authority-v1',
   'calendly-notification-authority-v1',
+  'calendly-dashboard-reviewed-writes-0192',
 ]);
 
 export function assertZidOrderReleaseCompatible(directory) {

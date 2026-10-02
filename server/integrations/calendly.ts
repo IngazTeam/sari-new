@@ -3,8 +3,6 @@ import {calendlySyncCommand} from '../../shared/calendly-sync';
 import {requestReviewedCalendlySync} from './calendly-sync';
 import {calendlyConnectionCommand,calendlyConnectionPreviewInput} from '../../shared/calendly-connection';
 import {previewCalendlyConnection,requestReviewedCalendlyConnection} from './calendly-connection';
-import {calendlyWebhookOrigin} from './calendly-origin';
-import {withCalendlyConnectionLock} from './calendly-lock';
 import {calendlySettingsCommand} from '../../shared/calendly-settings';
 import {calendlyOperationLookup} from '../../shared/calendly-operation';
 import {saveReviewedCalendlySettings} from './calendly-settings';
@@ -12,32 +10,21 @@ import {readCalendlyOperation,readBlockingCalendlyOperation,acknowledgeCalendlyO
 import {calendlyResourceUri,calendlyBookingUrl} from '../../shared/calendly-provider';
 import {calendlyAppointmentsInput,calendlyReceiptsInput} from '../../shared/calendly-workspace';
 import {readCalendlyWorkspace,readCalendlyAppointments,readCalendlyReceipts} from './calendly-workspace';
-import {withCalendlyDashboardAuthority,assertCalendlyDashboardAuthority,CalendlyAuthorityError} from './calendly-dashboard-authority';
-import crypto from 'node:crypto';
+import {withCalendlyDashboardAuthority} from './calendly-dashboard-authority';
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { permissionProcedure, router } from '../_core/trpc';
 import {
-  deleteIntegrationByType,
   getIntegrationByType,
   getDb,
-  getPool,
-  replaceCalendlyIntegration,
-  updateIntegrationLastSync,
-  updateIntegrationSettings,
 } from '../db';
 import {
-  CalendlyApiError,
   calendlyApiRequest,
-  createCalendlyWebhookSubscription,
-  deleteCalendlyWebhookSubscription,
-  getCalendlyCurrentUser,
   listCalendlyCollection,
 } from './calendly-api';
 import {
   getCalendlyAppointmentStats,
   getCalendlyWebhookHealth,
-  syncCalendlyAppointments,
 } from './calendly-webhook-receipts';
 
 const apiKeySchema = z.string()
@@ -59,16 +46,8 @@ function integrationSettings(value: string | null): {
   }
 }
 
-function safeCalendlyMessage(error: unknown, fallback: string): string {
-  if (error instanceof CalendlyApiError && error.status === 403) {
-    return 'يتطلب Calendly خطة تدعم Webhooks وصلاحيات webhooks:write وscheduled_events:read وinvitees:read';
-  }
-  if (error instanceof CalendlyApiError && error.status === 401) return 'رمز Calendly غير صالح أو منتهي';
-  if (error instanceof Error && error.message.startsWith('CALENDLY_WEBHOOK_BASE_URL_')) {
-    return 'عنوان Webhook الآمن غير مضبوط في الخادم';
-  }
-  return fallback;
-}
+/** Stale clients must upgrade; legacy writes cannot bypass reviewed admission. */
+function retiredCalendlyWrite():never{throw new TRPCError({code:'PRECONDITION_FAILED',message:'calendly_dashboard:review_required'});}
 
 const noInput=z.object({}).strict().optional();
 const unavailable=()=>new TRPCError({code:'INTERNAL_SERVER_ERROR',message:'calendly_dashboard:unavailable'});
@@ -109,109 +88,10 @@ export const calendlyRouter = router({
     };
   }),
 
-  connect: calendlyDashboardProcedure
-    .input(z.object({ apiKey: apiKeySchema }).strict())
-    .mutation(async ({ ctx, input }) => {
-      const merchantId = ctx.merchantId;
-      return withCalendlyConnectionLock(merchantId, async () => {
-        const previous = await getIntegrationByType(merchantId, 'calendly');
-        const endpointId = crypto.randomBytes(32).toString('base64url');
-        const signingKey = crypto.randomBytes(48).toString('base64url');
-        let subscriptionUri: string | null = null;
-        let persistenceStarted=false;
-        try {
-          const user = await getCalendlyCurrentUser(input.apiKey);
-          const callbackUrl = `${calendlyWebhookOrigin()}/api/webhooks/calendly/${endpointId}`;
-          subscriptionUri = await createCalendlyWebhookSubscription({
-            accessToken: input.apiKey,
-            callbackUrl,
-            signingKey,
-            organizationUri: user.current_organization,
-            userUri: user.uri,
-          });
-          await assertCalendlyDashboardAuthority(merchantId);
-          persistenceStarted=true;
-          const integration = await replaceCalendlyIntegration({
-            merchantId: merchantId,
-            storeName: typeof user.name === 'string' ? user.name.slice(0, 255) : 'Calendly User',
-            storeUrl: user.uri,
-            accessToken: input.apiKey,
-            webhookEndpointId: endpointId,
-            webhookSigningSecret: signingKey,
-            webhookSubscriptionUri: subscriptionUri,
-            settings: JSON.stringify({
-              syncToWhatsApp: false,
-            }),
-          });
-          if (!integration) throw new Error('DATABASE_UNAVAILABLE');
-          if (previous?.accessToken && previous.webhookSubscriptionUri && previous.webhookSubscriptionUri !== subscriptionUri) {
-            await deleteCalendlyWebhookSubscription(previous.accessToken, previous.webhookSubscriptionUri).catch(() => {
-              console.warn('[Calendly] previous webhook cleanup deferred');
-            });
-          }
-          return { success: true, message: 'تم ربط Calendly وتسجيل Webhook آمن تلقائيًا' };
-        } catch (error) {
-          // A failed commit/read can still have installed this subscription. Never delete it blindly.
-          if (subscriptionUri&&!persistenceStarted) {
-            await deleteCalendlyWebhookSubscription(input.apiKey, subscriptionUri).catch(() => undefined);
-          }
-          if(error instanceof CalendlyAuthorityError)throw error;
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: safeCalendlyMessage(error, 'تعذر ربط Calendly أو تسجيل Webhook'),
-          });
-        }
-      });
-    }),
-
-  disconnect: calendlyDashboardProcedure.input(noInput).mutation(async ({ ctx }) => {
-    const merchantId = ctx.merchantId;
-    return withCalendlyConnectionLock(merchantId, async () => {
-      const integration = await getIntegrationByType(merchantId, 'calendly');
-      if (integration?.accessToken && integration.webhookSubscriptionUri) {
-        await deleteCalendlyWebhookSubscription(integration.accessToken, integration.webhookSubscriptionUri).catch(() => {
-          console.warn('[Calendly] remote webhook cleanup failed during disconnect');
-        });
-      }
-      await deleteIntegrationByType(merchantId, 'calendly');
-      return { success: true, message: 'تم فصل حساب Calendly وإبطال نقطة الاستقبال المحلية' };
-    });
-  }),
-
-  syncNow: calendlyDashboardProcedure.input(noInput).mutation(async ({ ctx }) => {
-    const merchantId = ctx.merchantId;
-    return withCalendlyConnectionLock(merchantId,async()=>{
-    const integration = await getIntegrationByType(merchantId, 'calendly');
-    if (!integration?.accessToken || !integration.isActive) {
-      throw new TRPCError({ code: 'NOT_FOUND', message: 'لم يتم العثور على تكامل Calendly نشط' });
-    }
-    try {
-      const syncedEvents = await syncCalendlyAppointments(integration);
-      await updateIntegrationLastSync(integration.id);
-      return { success: true, message: `تمت مزامنة ${syncedEvents} مدعو بنجاح` };
-    } catch (error) {
-      if(error instanceof CalendlyAuthorityError)throw error;
-      throw new TRPCError({
-        code: 'INTERNAL_SERVER_ERROR',
-        message: safeCalendlyMessage(error, 'فشلت مزامنة Calendly'),
-      });
-    }
-    });
-  }),
-
-  updateSettings: calendlyDashboardProcedure
-    .input(z.object({
-      syncToWhatsApp: z.boolean(),
-    }).strict())
-    .mutation(async ({ ctx, input }) => {
-      const merchantId = ctx.merchantId;
-      return withCalendlyConnectionLock(merchantId,async()=>{
-      const integration = await getIntegrationByType(merchantId, 'calendly');
-      if (!integration) throw new TRPCError({ code: 'NOT_FOUND', message: 'لم يتم العثور على تكامل Calendly' });
-      await updateIntegrationSettings(integration.id, input);
-      return { success: true };
-      });
-    }),
+  connect:calendlyDashboardProcedure.input(z.object({apiKey:apiKeySchema}).strict()).mutation(retiredCalendlyWrite),
+  disconnect:calendlyDashboardProcedure.input(noInput).mutation(retiredCalendlyWrite),
+  syncNow:calendlyDashboardProcedure.input(noInput).mutation(retiredCalendlyWrite),
+  updateSettings:calendlyDashboardProcedure.input(z.object({syncToWhatsApp:z.boolean()}).strict()).mutation(retiredCalendlyWrite),
 
   getUpcomingEvents: calendlyDashboardProcedure
     .input(z.object({ limit: z.number().int().min(1).max(20).default(5) }).strict())

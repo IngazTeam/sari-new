@@ -4,7 +4,6 @@ import {calendlyStamp} from './calendly-workspace';
 import {assertCalendlyWorkerConnection,assertCalendlyReceiptLease,CalendlyWorkerAuthorityError} from './calendly-worker-authority';
 import {calendlyOperationTransaction} from './calendly-operation';
 import {withCalendlyProviderCheckpoint} from './calendly-provider-checkpoint';
-import {assertCalendlyDashboardAuthority,assertCalendlyDashboardWrite,calendlyMysqlExecutor} from './calendly-dashboard-authority';
 import crypto from 'node:crypto';
 import type { RowDataPacket } from 'mysql2/promise';
 import { getIntegrationByType, getPool } from '../db';
@@ -15,7 +14,6 @@ import {
   CalendlyApiError,
   getCalendlyInvitee,
   getCalendlyScheduledEvent,
-  listCalendlyCollection,
   type CalendlyInvitee,
   type CalendlyScheduledEvent,
 } from './calendly-api';
@@ -485,99 +483,8 @@ export async function getCalendlyWebhookHealth(merchantId: number): Promise<{
   };
 }
 
-async function persistSyncAppointment(
-  integration: PlatformIntegration,
-  event: CalendlyScheduledEvent,
-  invitee: CalendlyInvitee,
-): Promise<void> {
-  const synthetic: ReceiptRow = {
-    id: 0,
-    merchant_id: integration.merchantId,
-    integration_id: integration.id,
-    event_key: crypto.createHash('sha256').update(`sync\0${invitee.uri}`).digest('hex'),
-    event_type: invitee.status === 'canceled' ? 'invitee.canceled' : 'invitee.created',
-    event_uri: event.uri,
-    invitee_uri: invitee.uri,
-    signature_timestamp: Math.floor(Date.now() / 1000),
-    attempt_count: 1,
-    effect_applied: 0,
-    notification_required: 0,
-    processing_token: '',
-  } as ReceiptRow;
-  assertCanonicalResources(synthetic, event, invitee);
-  const pool = await getPool();
-  if (!pool) throw new CalendlyReceiptError('database_unavailable');
-  const startAt = mysqlTimestamp(event.start_time, 'invalid_event_start');
-  const endAt = mysqlTimestamp(event.end_time, 'invalid_event_end');
-  if (new Date(endAt).getTime() <= new Date(startAt).getTime()) {
-    throw new CalendlyReceiptError('invalid_event_range', true);
-  }
-  const providerUpdatedAt = mysqlTimestamp(invitee.updated_at || event.updated_at || Date.now(), 'invalid_provider_timestamp');
-  await assertCalendlyDashboardAuthority(integration.merchantId);
-  const connection=await pool.getConnection();
-  try{
-   await connection.beginTransaction();
-   await assertCalendlyDashboardWrite(calendlyMysqlExecutor(connection),integration.merchantId);
-   const [connections]=await connection.execute<RowDataPacket[]>("SELECT store_url,webhook_endpoint_id,is_active FROM platform_integrations WHERE id=? AND merchant_id=? AND platform_type='calendly' FOR UPDATE",[integration.id,integration.merchantId]);
-   const current=connections[0];
-   if(!current?.is_active||current.store_url!==integration.storeUrl||current.webhook_endpoint_id!==integration.webhookEndpointId)throw new CalendlyReceiptError('connection_changed',true);
-   await connection.execute(
-    `INSERT INTO calendly_appointments
-       (merchant_id, integration_id, event_uri, invitee_uri, event_name, customer_name,
-        customer_email, customer_phone, start_at, end_at, status, location, provider_updated_at, cancelled_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-     ON DUPLICATE KEY UPDATE
-       integration_id = IF(VALUES(provider_updated_at) >= provider_updated_at, VALUES(integration_id), integration_id),
-       event_uri = IF(VALUES(provider_updated_at) >= provider_updated_at, VALUES(event_uri), event_uri),
-       event_name = IF(VALUES(provider_updated_at) >= provider_updated_at, VALUES(event_name), event_name),
-       customer_name = IF(VALUES(provider_updated_at) >= provider_updated_at, VALUES(customer_name), customer_name),
-       customer_email = IF(VALUES(provider_updated_at) >= provider_updated_at, VALUES(customer_email), customer_email),
-       customer_phone = IF(VALUES(provider_updated_at) >= provider_updated_at, VALUES(customer_phone), customer_phone),
-       start_at = IF(VALUES(provider_updated_at) >= provider_updated_at, VALUES(start_at), start_at),
-       end_at = IF(VALUES(provider_updated_at) >= provider_updated_at, VALUES(end_at), end_at),
-       status = IF(VALUES(provider_updated_at) >= provider_updated_at, VALUES(status), status),
-       location = IF(VALUES(provider_updated_at) >= provider_updated_at, VALUES(location), location),
-       cancelled_at = IF(VALUES(provider_updated_at) >= provider_updated_at, VALUES(cancelled_at), cancelled_at),
-       provider_updated_at = GREATEST(provider_updated_at, VALUES(provider_updated_at))`,
-    [
-      integration.merchantId, integration.id, event.uri, invitee.uri,
-      cleanText(event.name, 255, 'Calendly'), cleanText(invitee.name, 255, 'Calendly invitee'),
-      normalizeEmail(invitee.email), normalizePhone(invitee.text_reminder_number), startAt, endAt,
-      invitee.status === 'canceled' ? 'cancelled' : 'active', locationText(event), providerUpdatedAt,
-      invitee.status === 'canceled'
-        ? invitee.cancellation?.canceled_at
-          ? mysqlTimestamp(invitee.cancellation.canceled_at, 'invalid_cancellation_time')
-          : providerUpdatedAt
-        : null,
-    ],
-  );
-   await connection.commit();
-  }catch(error){await connection.rollback();throw error;}finally{connection.release();}
-}
-
-export async function syncCalendlyAppointments(integration: PlatformIntegration): Promise<number> {
-  if (!integration.accessToken || !integration.storeUrl) throw new CalendlyReceiptError('connection_inactive');
-  await ensureCalendlySchema();
-  const events = await listCalendlyCollection<CalendlyScheduledEvent>(
-    integration.accessToken,
-    `/scheduled_events?user=${encodeURIComponent(integration.storeUrl)}&status=active&count=100`,
-    250,
-  );
-  let synced = 0;
-  for (const event of events) {
-    if(synced>=1_000)throw new CalendlyApiError(502,'collection_limit_exceeded');
-    const invitees = await listCalendlyCollection<CalendlyInvitee>(
-      integration.accessToken,
-      `${event.uri}/invitees?status=active&count=100`,
-      Math.max(1, 1_000 - synced),
-    );
-    for (const invitee of invitees) {
-      await persistSyncAppointment(integration, event, invitee);
-      synced += 1;
-    }
-  }
-  return synced;
-}
+/** Retired compatibility entry: callers must use reviewed, bounded, atomic synchronization. */
+export async function syncCalendlyAppointments(_integration:PlatformIntegration):Promise<never>{throw new CalendlyReceiptError('reviewed_operation_required',true);}
 
 export async function getCalendlyAppointmentStats(merchantId: number): Promise<{
   total: number;
