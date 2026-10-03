@@ -1,3 +1,4 @@
+import {promotionWriteError} from '@/lib/promotion-write-error';
 import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -83,7 +84,7 @@ export default function PromotionsPage() {
       setFormData(defaultFormData);
       refetch();
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err) => toast.error(promotionWriteError(err,t)),
   });
 
   const updateMutation = trpc.promotions.update.useMutation({
@@ -93,7 +94,7 @@ export default function PromotionsPage() {
       setFormData(defaultFormData);
       refetch();
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err) => toast.error(promotionWriteError(err,t)),
   });
 
   const toggleMutation = trpc.promotions.toggleActive.useMutation({
@@ -101,7 +102,7 @@ export default function PromotionsPage() {
       toast.success('تم تحديث الحالة');
       refetch();
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err) => toast.error(promotionWriteError(err,t)),
   });
 
   const deleteMutation = trpc.promotions.delete.useMutation({
@@ -110,7 +111,7 @@ export default function PromotionsPage() {
       setDeleteConfirm(null);
       refetch();
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err) => toast.error(promotionWriteError(err,t)),
   });
 
   const handleSubmit = () => {
@@ -340,10 +341,12 @@ export default function PromotionsPage() {
                         <Label className="font-medium">إنشاء كود خصم تلقائي</Label>
                       </div>
                       <Switch
+                        aria-label={t('merchantUx.promotionWrites.codeLabel')}
                         checked={formData.autoGenerateCode}
                         onCheckedChange={(v) => setFormData(d => ({ ...d, autoGenerateCode: v }))}
                       />
                     </div>
+                    <p className="text-sm leading-relaxed">{t('merchantUx.promotionWrites.codeHelp')}</p>
                     {formData.autoGenerateCode && (
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1">

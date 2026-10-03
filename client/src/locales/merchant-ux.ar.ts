@@ -1,3 +1,4 @@
+import {promotionWritesAr} from './promotion-writes';
 import {occasionWorkspaceAr} from './occasion-workspace';
 import { cartWorkspaceAr } from './cart-workspace';
 import { referralWorkspaceAr } from './referral-workspace';
@@ -62,6 +63,7 @@ import { whatsappWorkspaceAr } from './whatsapp-workspace';
 
 const merchantUxAr: MerchantUxCopy = {
   calendlyAccess: {"linkUnavailable":"رابط الحجز غير متاح أو غير صالح.","unavailable":"تعذر تأكيد بيانات Calendly. حدّث الحالة قبل إجراء تغييرات.","retry":"تحديث الحالة","loading":"جارٍ التحميل…","actionFailed":"تعذر تأكيد النتيجة. حدّث الحالة قبل إعادة المحاولة.","forbidden":"تحتاج صلاحية إدارة التكاملات لهذا المتجر."},
+  promotionWrites: promotionWritesAr,
   occasionWorkspace: occasionWorkspaceAr,
   cartWorkspace: cartWorkspaceAr,
   referralWorkspace: referralWorkspaceAr,

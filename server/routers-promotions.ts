@@ -7,7 +7,7 @@ import {readPromotionWorkspace,PromotionWorkspaceError} from './promotion-worksp
 import {writePromotion,PromotionWriteError} from './promotion-writes';
 import {getPromotionById,getPromotionsByMerchant,countActivePromotions} from './db';
 import {databaseTimeEpoch} from './db/time';
-const error=(e:unknown)=>new TRPCError({code:e instanceof PromotionWriteError?e.reason==='forbidden'?'FORBIDDEN':e.reason==='missing'?'NOT_FOUND':e.reason==='invalid'?'BAD_REQUEST':e.reason==='limit'?'PRECONDITION_FAILED':'INTERNAL_SERVER_ERROR':'INTERNAL_SERVER_ERROR',message:e instanceof PromotionWriteError?e.message:'promotion_write:unavailable'});
+const error=(e:unknown)=>new TRPCError({code:e instanceof PromotionWriteError?e.reason==='forbidden'?'FORBIDDEN':e.reason==='missing'?'NOT_FOUND':e.reason==='invalid'||e.reason.startsWith('code_')?'BAD_REQUEST':e.reason==='limit'?'PRECONDITION_FAILED':'INTERNAL_SERVER_ERROR':'INTERNAL_SERVER_ERROR',message:e instanceof PromotionWriteError?e.message:'promotion_write:unavailable'});
 export const promotionsRouter=router({
  workspace:permissionProcedure('analytics.read').input(promotionWorkspaceInput).query(async({ctx,input})=>{
   try{return await readPromotionWorkspace(ctx.user.id,ctx.merchantId,input);}catch(e){throw new TRPCError({code:e instanceof PromotionWorkspaceError&&e.reason==='forbidden'?'FORBIDDEN':'INTERNAL_SERVER_ERROR',message:'promotion_workspace:unavailable'});}

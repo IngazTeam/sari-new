@@ -5,7 +5,7 @@ import {ALL_ROLES,hasPermission,type MerchantRole} from './_core/permissions';
 import {promotionMutationInput,promotionWriteFields,type PromotionMutation} from '../shared/promotion-write';
 import {PROMOTION_SELECT,PROMOTION_FIELDS} from './promotion-workspace-source';
 import {databaseTimeEpoch} from './db/time';
-export class PromotionWriteError extends Error{constructor(readonly reason:'forbidden'|'missing'|'invalid'|'limit'|'unavailable'|'unknown'){super(`promotion_write:${reason}`);}}
+export class PromotionWriteError extends Error{constructor(readonly reason:'forbidden'|'missing'|'invalid'|'limit'|'unavailable'|'unknown'|'code_scope'|'code_start'|'code_quantity'|'code_expired'){super(`promotion_write:${reason}`);}}
 const invalid=():never=>{throw new PromotionWriteError('invalid');};
 const rows=async(tx:PoolConnection,sql:string,args:any[]=[])=>{const [result]=await tx.execute(sql,args);if(!Array.isArray(result))throw new PromotionWriteError('unavailable');return result as any[];};
 const editable=['title','description','bannerImageUrl','type','value','scope','productIds','categoryIds','minOrderAmount','minQuantity','startsAt','expiresAt'] as const;
@@ -41,6 +41,13 @@ async function checkTargets(tx:PoolConnection,merchantId:number,ids:number[],kin
  if(found.length!==ids.length)return invalid();
 }
 function serializePromotion(row:any){return {...row,...Object.fromEntries(['startsAt','expiresAt','createdAt','updatedAt'].map(k=>[k,row[k]===null?null:new Date(databaseTimeEpoch(row[k])).toISOString().slice(0,19).replace('T',' ')]))};}
+/** The current coupon schema cannot enforce product scope, a future start or quantity. */
+export function assertPromotionCodeTerms(value:any,now=Date.now()){
+ if(value.scope!=='all')throw new PromotionWriteError('code_scope');
+ if(value.startsAt!==null&&databaseTimeEpoch(value.startsAt)>now)throw new PromotionWriteError('code_start');
+ if(value.minQuantity!==null&&value.minQuantity>1)throw new PromotionWriteError('code_quantity');
+ if(value.expiresAt!==null&&databaseTimeEpoch(value.expiresAt)<=now)throw new PromotionWriteError('code_expired');
+}
 /** Parent-first serialization prevents slot races and keeps discount creation atomic. */
 export async function writePromotion(actorId:number,merchantId:number,raw:PromotionMutation){
  const input=promotionMutationInput.parse(raw);let tx:PoolConnection|undefined,committing=false,reusable=true;
@@ -70,8 +77,9 @@ export async function writePromotion(actorId:number,merchantId:number,raw:Promot
   if(consumes({...value,isActive:active})&&source.filter(r=>r.id!==id&&consumes(r)).length>=5)throw new PromotionWriteError('limit');
   let discountId=before?.autoDiscountCodeId??null;
   if(input.action==='create'&&input.data.autoGenerateCode){
+   assertPromotionCodeTerms(value,now);
    const type=input.data.autoCodeType??'percentage',amount=input.data.autoCodeValue;
-   if(value.scope!=='all'||amount===undefined||amount<1||type==='percentage'&&amount>100)return invalid();
+   if(amount===undefined||amount<1||type==='percentage'&&amount>100)return invalid();
    const [discount]=await tx.execute<any>("INSERT INTO discount_codes (merchantId,code,type,value,minOrderAmount,expiresAt,isActive,is_auto_generated) VALUES (?,?,?,?,?,?,1,1)",[merchantId,'PROMO'+randomBytes(12).toString('hex').toUpperCase(),type,amount,value.minOrderAmount??0,value.expiresAt]);
    discountId=Number(discount.insertId);if(!Number.isInteger(discountId)||discountId<=0)throw new PromotionWriteError('unavailable');
   }
