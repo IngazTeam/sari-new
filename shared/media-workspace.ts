@@ -29,7 +29,7 @@ export const mediaWorkspaceSchema = z.object({
   totalSizeBytes: count.nullable(), invalidSizeCount: count,
   pendingUploadCount: count, pendingUploadBytes: count.nullable(), pendingPages: count, currentRequestPage: count,
   pendingUploads: z.array(z.object({ requestKey: z.string().uuid(), actorId: mediaId, originalName: z.string().max(255),
-    category: z.enum(mediaCategories), fileSize: count, createdAt: z.string().datetime(), canClose: z.boolean() }).strict()).max(10),
+    category: z.enum(mediaCategories), fileSize: count, createdAt: z.string().datetime(), canRead: z.boolean(), canClose: z.boolean() }).strict()).max(10),
   maxFileBytes: z.literal(5242880), maxStorageBytes: z.literal(52428800),
   storageEvidence: z.literal('registered_metadata'), referenceEvidence: z.literal('not_scanned'),
   allowedUploadCategories: z.array(z.enum(mediaCategories)).max(4),

@@ -79,6 +79,7 @@ export async function readMediaWorkspace(actorId: number, merchantId: number, in
       const metadata = typeof row.metadata_json === 'string' ? JSON.parse(row.metadata_json) : row.metadata_json;
       return { requestKey: row.request_key, actorId: row.actor_id, originalName: metadata.originalName, category: metadata.category,
         fileSize: row.reserved_bytes, createdAt: new Date(databaseTimeEpoch(row.created_at)).toISOString(),
+        canRead: row.actor_id === actorId || hasPermission(authority.role, 'settings.manage'),
         canClose: authority.active && authority.allowedUploadCategories.length > 0 && (row.actor_id === actorId || hasPermission(authority.role, 'settings.manage')) };
     });
     const counts = { product: 0, promotion: 0, template: 0, general: 0, other: 0 };

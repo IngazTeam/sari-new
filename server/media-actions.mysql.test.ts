@@ -96,6 +96,18 @@ describe.skipIf(!process.env.DATABASE_URL)('reviewed media requests on MySQL wit
     await q('UPDATE merchant_members SET is_active=0 WHERE merchant_id=? AND user_id=?', [owner.merchantId, other.userId]);
     expect(await closeMediaRequest(owner.userId, owner.merchantId, { requestKey: value.requestKey })).toMatchObject({ state: 'cancelled', actorId: other.userId, closedBy: owner.userId });
   });
+  it('exposes receipt read controls only to the uploader or a settings manager', async () => {
+    storage.put.mockRejectedValue(Error('unknown')); const value = input();
+    await expect(upload(value)).rejects.toMatchObject({ reason: 'unknown' });
+    await q("INSERT INTO merchant_members (merchant_id,user_id,role,is_active) VALUES (?,?,'sales_supervisor',1)", [owner.merchantId, other.userId]);
+    const selected = () => readMediaWorkspace(other.userId, owner.merchantId, mediaWorkspaceInput.parse({}));
+    expect((await workspace()).pendingUploads[0]).toMatchObject({ canRead: true, canClose: true });
+    expect((await selected()).pendingUploads[0]).toMatchObject({ canRead: false, canClose: false });
+    await expect(readMediaReceipt(other.userId, owner.merchantId, { requestKey: value.requestKey })).rejects.toMatchObject({ reason: 'forbidden' });
+    await q("UPDATE merchant_members SET role='manager' WHERE merchant_id=? AND user_id=?", [owner.merchantId, other.userId]);
+    expect((await selected()).pendingUploads[0]).toMatchObject({ canRead: true, canClose: true });
+    expect(await readMediaReceipt(other.userId, owner.merchantId, { requestKey: value.requestKey })).toMatchObject({ state: 'uploading', actorId: owner.userId });
+  });
   it('holds authority through storage I/O so closure waits and recovers a completed upload', async () => {
     let entered!: () => void, release!: () => void;
     const inStorage = new Promise<void>(r => entered = r), gate = new Promise<void>(r => release = r);

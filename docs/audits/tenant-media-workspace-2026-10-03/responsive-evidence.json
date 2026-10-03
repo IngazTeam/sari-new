@@ -1,0 +1,98 @@
+{
+  "engine": "Codex IAB Chromium, CSS iframe dimensions; not native Safari/iPhone",
+  "measurements": [
+    {
+      "label": "upload-empty-ar-320x550",
+      "client": 290,
+      "dialog": {
+        "bottom": 534,
+        "client": 226,
+        "height": 518,
+        "scroll": 226,
+        "width": 258,
+        "x": 46,
+        "y": 16
+      },
+      "focus": "تأكيد الرفع",
+      "height": 550,
+      "rawKeys": false,
+      "scroll": 290,
+      "width": 320
+    },
+    {
+      "label": "long-details-ar-320x550",
+      "client": 290,
+      "dialog": {
+        "bottom": 534,
+        "client": 226,
+        "height": 518,
+        "scroll": 226,
+        "width": 258,
+        "x": 46,
+        "y": 16
+      },
+      "focus": "التفاصيل",
+      "height": 550,
+      "rawKeys": false,
+      "scroll": 290,
+      "width": 320
+    },
+    {
+      "label": "list-ar-320x550",
+      "client": 290,
+      "dialog": null,
+      "focus": "قائمة",
+      "height": 550,
+      "rawKeys": false,
+      "scroll": 290,
+      "width": 320
+    },
+    {
+      "label": "list-ar-768x550",
+      "client": 738,
+      "dialog": null,
+      "focus": "\nانتقل إلى المحتوىساريشريك يومكمساحة العملنظرة عامةالمحادثاتالمبيعاتالكتالوجالعم",
+      "height": 550,
+      "rawKeys": false,
+      "scroll": 738,
+      "width": 768
+    },
+    {
+      "label": "list-ar-1440x550",
+      "client": 1410,
+      "dialog": null,
+      "focus": "\nانتقل إلى المحتوىساريشريك يومكمساحة العملنظرة عامةالمحادثاتالمبيعاتالكتالوجالعم",
+      "height": 550,
+      "rawKeys": false,
+      "scroll": 1410,
+      "width": 1440
+    },
+    {
+      "label": "long-details-ar-390x844",
+      "client": 360,
+      "dialog": {
+        "bottom": 828,
+        "client": 296,
+        "height": 812,
+        "scroll": 296,
+        "width": 328,
+        "x": 46,
+        "y": 16
+      },
+      "focus": "التفاصيل",
+      "height": 844,
+      "rawKeys": false,
+      "scroll": 360,
+      "width": 390
+    }
+  ],
+  "fileChooser": "Tool timeout: browser upload selection not verified",
+  "actions": [
+    "search exact ID",
+    "remove synthetic registration, stored copy not deleted",
+    "read pending receipt",
+    "close synthetic reservation",
+    "pagination: 26 records across 2 pages",
+    "grid/list"
+  ]
+}
