@@ -98,6 +98,7 @@ export function clearKnowledgeWorkspace() {
   try {
     const keys = Array.from({ length: sessionStorage.length }, (_, index) => sessionStorage.key(index));
     keys.filter((key): key is string => !!key && key.startsWith('sary:website-analysis:v1:')).forEach(key => sessionStorage.removeItem(key));
+    keys.filter((key): key is string => !!key && key.startsWith('sary:competitor-analysis:v1:')).forEach(key => sessionStorage.removeItem(key));
     keys.filter((key): key is string => !!key && key.startsWith('sary:assistant-option-draft:v1:')).forEach(key => sessionStorage.removeItem(key));
     keys.filter((key): key is string => !!key && key.startsWith('sary:virtual-team-draft:v1:')).forEach(key => sessionStorage.removeItem(key));
     keys.filter((key): key is string => !!key && key.startsWith('sary:setup-draft:v1:')).forEach(key => sessionStorage.removeItem(key));

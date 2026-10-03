@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto';
 import { competitorAnalysisStart, competitorAnalysisAttempt } from '../shared/competitor-analysis-job';
 import { beginCompetitorAnalysisJob, readCompetitorAnalysisJob, closeCompetitorAnalysisAttempt, CompetitorJobError } from './competitor-analysis-jobs';
 import { runCompetitorAnalysisWorker } from './competitor-analysis-worker';
@@ -490,10 +489,10 @@ export const websiteAnalysisRouter = router({
    * إضافة منافس
    */
   addCompetitor: permissionProcedure('bot_settings.manage')
-    .input(competitorAnalysisStart.extend({requestId: z.string().uuid().optional()}))
+    .input(competitorAnalysisStart)
     .mutation(async ({ctx,input}) => {
       try {
-        const accepted = await beginCompetitorAnalysisJob(ctx.user.id,ctx.merchantId,{...input,requestId:input.requestId ?? randomUUID()});
+        const accepted = await beginCompetitorAnalysisJob(ctx.user.id,ctx.merchantId,input);
         if (accepted.created && accepted.execution && accepted.url) {
           void runCompetitorAnalysisWorker(accepted.execution,accepted.url).catch(()=>console.error('[CompetitorAnalysis] Worker unavailable'));
         }

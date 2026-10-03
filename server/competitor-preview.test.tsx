@@ -40,6 +40,7 @@ import {
 } from "../prototypes/tenant-dashboard/src/service-preview-model";
 let root: Root, host: HTMLDivElement, model: ServicePreviewModel;
 beforeEach(() => {
+  sessionStorage.clear();
   vi.stubGlobal("React", React);
   (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
   state.language = "en";
@@ -195,6 +196,7 @@ it("creates one pending example and reconciles an uncertain result without dupli
   model = new ServicePreviewModel(269, "uncertain-save");
   await expect(
     model.mutate("websiteAnalysis.addCompetitor", {
+      requestId:crypto.randomUUID(),
       name: "New synthetic",
       url: "https://example.test",
     })
@@ -217,10 +219,19 @@ it("keeps read-only authority after refreshing", async () => {
   ).toBe(false);
   await expect(
     model.mutate("websiteAnalysis.addCompetitor", {
+      requestId:crypto.randomUUID(),
       name: "No",
       url: "https://example.test",
     })
   ).rejects.toMatchObject({ data: { code: "FORBIDDEN" } });
+});
+it('recovers a lost accepted request by the same id without adding twice',async()=>{
+  model=new ServicePreviewModel(269,'uncertain-save');const requestId=crypto.randomUUID(),input={requestId,name:'Local',url:'https://example.test/'};
+  await expect(model.mutate('websiteAnalysis.addCompetitor',input)).rejects.toBeTruthy();const first=(await model.refetch('websiteAnalysis.competitorAnalysisAttempt',{requestId})).data;expect(first).toMatchObject({requestId,state:'running'});
+  expect(await model.mutate('websiteAnalysis.addCompetitor',input)).toMatchObject({created:false,requestId});expect(model.operations).toBe(1);
+});
+it('closes a missing preview reference and rejects late admission',async()=>{
+  const requestId=crypto.randomUUID();expect(await model.mutate('websiteAnalysis.closeCompetitorAnalysisAttempt',{requestId})).toMatchObject({state:'closed'});await expect(model.mutate('websiteAnalysis.addCompetitor',{requestId,name:'Late',url:'https://example.test/'})).rejects.toMatchObject({data:{code:'CONFLICT'}});expect(list().stats.total).toBe(32);
 });
 it("keeps products expanded when paging and restores the selected report in the URL", async () => {
   await render();

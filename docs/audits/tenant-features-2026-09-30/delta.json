@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-03T22:04:47.808Z",
+  "generatedAt": "2026-10-03T22:51:31.964Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 473,
-      "controls": 2686
+      "files": 474,
+      "controls": 2690
     }
   },
   "addedFiles": [
@@ -309,6 +309,7 @@
     "client/src/components/merchant/CompetitorWorkspace.tsx",
     "client/src/lib/competitor-workspace-labels.ts",
     "client/src/lib/competitor-workspace.ts",
+    "client/src/lib/competitor-analysis-attempt.ts",
     "client/src/components/merchant/CustomerDetailWorkspace.tsx",
     "client/src/components/merchant/CustomerAnnotations.tsx",
     "client/src/lib/customer-workspace-cache.ts"
@@ -2540,7 +2541,7 @@
     {
       "route": "/merchant/competitor-analysis",
       "controlsBefore": 8,
-      "controlsNow": 29,
+      "controlsNow": 33,
       "removedQueries": [
         "websiteAnalysis.listCompetitors"
       ],
@@ -2548,12 +2549,14 @@
         "auth.me",
         "merchants.getCurrent",
         "websiteAnalysis.competitorWorkspace",
+        "websiteAnalysis.competitorAnalysisAttempt",
         "websiteAnalysis.competitorDetail"
       ],
       "removedMutations": [
         "websiteAnalysis.deleteCompetitor"
       ],
       "addedMutations": [
+        "websiteAnalysis.closeCompetitorAnalysisAttempt",
         "websiteAnalysis.deleteReviewedCompetitor"
       ]
     },

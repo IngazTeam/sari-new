@@ -12681,6 +12681,19 @@
     "reviewedReset": "I reviewed the audit history; start a new check"
   },
   "competitorWorkspaceUx": {
+    "attemptTitle": "Latest analysis request",
+    "attemptStorage": "The browser could not save the request reference. Retry; analysis will not start without a recoverable reference.",
+    "attemptUnavailable": "The request has not been verified yet. Check its status before starting another analysis.",
+    "attemptAbsent": "No accepted request was found. Close this reference to prevent late acceptance before starting another request.",
+    "attemptClosed": "This reference was closed without starting analysis. You can create a new request.",
+    "attemptRunning": "Analysis is running. You can leave and return to follow it without sending another request.",
+    "attemptInterrupted": "Analysis was interrupted. Late results cannot be saved; review the report and start a new attempt if needed.",
+    "attemptCompleted": "Analysis completed. Open the report to review the result and its limits.",
+    "attemptFailed": "Analysis could not finish. Review the report; you can create a new request.",
+    "attemptCheck": "Check request",
+    "attemptClose": "Close unaccepted reference",
+    "attemptNew": "New analysis request",
+
     "title": "Competitors",
     "help": "Review websites and extracted products, then decide what to improve.",
     "evidence": "Website estimates do not measure sales proficiency or conversion, or verify security or browser compatibility.",
@@ -12746,7 +12759,7 @@
     "start": "Add and start analysis",
     "addHelp": "Sary will read and analyze this website. This may take time and use your AI allowance.",
     "busy": "Processing…",
-    "addFailed": "Could not confirm creation. Refresh the list to check before trying again.",
+    "addFailed": "Analysis acceptance is unconfirmed. Check the saved request before starting another.",
     "added": "Competitor added. Follow the analysis result in the list.",
     "remove": "Delete report",
     "removeHelp": "This deletes this report and all its saved products. Review the details before confirming.",

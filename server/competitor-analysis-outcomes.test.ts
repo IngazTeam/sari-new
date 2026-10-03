@@ -120,6 +120,7 @@ it.each([
   { merchantId: 30 },
   { actorId: 8 },
   { requestId: "bad" },
+  { requestId: undefined },
   { name: "" },
   { name: "x".repeat(256) },
 ])("rejects malformed or forged command %j", async patch => {

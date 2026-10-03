@@ -1,4 +1,8 @@
-import { z } from "zod";
+import {
+  competitorAnalysisStart,
+  competitorAnalysisAttempt,
+  competitorAnalysisReceipt,
+} from "../../../shared/competitor-analysis-job";
 import {
   competitorSelection,
   competitorDetailSelection,
@@ -11,9 +15,11 @@ import type { ServiceMode } from "./service-preview-model";
 export const competitorPreviewQueries = [
   "websiteAnalysis.competitorWorkspace",
   "websiteAnalysis.competitorDetail",
+  "websiteAnalysis.competitorAnalysisAttempt",
 ] as const;
 export const competitorPreviewMutations = [
   "websiteAnalysis.addCompetitor",
+  "websiteAnalysis.closeCompetitorAnalysisAttempt",
   "websiteAnalysis.deleteReviewedCompetitor",
 ] as const;
 const fault = (reason: string, code = "BAD_REQUEST") => ({
@@ -23,6 +29,10 @@ const fault = (reason: string, code = "BAD_REQUEST") => ({
 export class CompetitorPreviewStore {
   writes = 0;
   private rows = new Map<number, CompetitorDetail>();
+  private attempts = new Map<
+    string,
+    { competitorId: number | null; name: string; url: string }
+  >();
   constructor(
     readonly actorId: number,
     readonly merchantId: number,
@@ -143,6 +153,30 @@ export class CompetitorPreviewStore {
   }
   read(name: string, input: unknown) {
     const canManage = this.mode() !== "readonly";
+    if (name === "websiteAnalysis.competitorAnalysisAttempt") {
+      const { requestId } = competitorAnalysisAttempt.parse(input),
+        saved = this.attempts.get(requestId);
+      const report = saved?.competitorId
+        ? this.rows.get(saved.competitorId)
+        : null;
+      return competitorAnalysisReceipt.parse({
+        actorId: this.actorId,
+        merchantId: this.merchantId,
+        requestId,
+        state: !saved
+          ? "idle"
+          : saved.competitorId === null
+            ? "closed"
+            : report?.report.status === "completed"
+              ? "completed"
+              : report?.report.status === "failed"
+                ? "failed"
+                : "running",
+        competitorId: saved?.competitorId ?? null,
+        reportAvailable: !!report,
+      });
+    }
+
     if (name === "websiteAnalysis.competitorWorkspace") {
       const selection = competitorSelection.parse(input),
         all = Array.from(this.rows.values()).map(d => d.report);
@@ -196,21 +230,39 @@ export class CompetitorPreviewStore {
   }
   mutate(name: string, input: unknown) {
     if (this.mode() === "readonly") throw fault("forbidden", "FORBIDDEN");
+    if (name === "websiteAnalysis.closeCompetitorAnalysisAttempt") {
+      const { requestId } = competitorAnalysisAttempt.parse(input);
+      if (!this.attempts.has(requestId)) {
+        this.attempts.set(requestId, { competitorId: null, name: "", url: "" });
+        this.writes++;
+      }
+      return this.read("websiteAnalysis.competitorAnalysisAttempt", {
+        requestId,
+      });
+    }
     if (name === "websiteAnalysis.addCompetitor") {
-      const p = z
-        .object({
-          name: z.string().trim().min(1).max(255),
-          url: z
-            .string()
-            .url()
-            .max(500)
-            .refine(v => {
-              const u = new URL(v);
-              return u.protocol === "https:" && !u.username && !u.password;
-            }),
-        })
-        .strict()
-        .parse(input);
+      const p = competitorAnalysisStart.parse(input),
+        previous = this.attempts.get(p.requestId);
+      const parsedUrl = new URL(p.url);
+      if (
+        parsedUrl.protocol !== "https:" ||
+        parsedUrl.username ||
+        parsedUrl.password
+      )
+        throw fault("website");
+      if (previous) {
+        if (
+          previous.competitorId === null ||
+          previous.name !== p.name ||
+          previous.url !== p.url
+        )
+          throw fault("stale", "CONFLICT");
+        return {
+          competitorId: previous.competitorId,
+          requestId: p.requestId,
+          created: false,
+        };
+      }
       const id = Math.max(0, ...Array.from(this.rows.keys())) + 1;
       this.writes++;
       this.rows.set(id, {
@@ -256,7 +308,12 @@ export class CompetitorPreviewStore {
           evidence: "extracted_not_current",
         },
       });
-      return { competitorId: id, status: "analyzing" };
+      this.attempts.set(p.requestId, {
+        competitorId: id,
+        name: p.name,
+        url: p.url,
+      });
+      return { competitorId: id, requestId: p.requestId, created: true };
     }
     if (name !== "websiteAnalysis.deleteReviewedCompetitor")
       throw fault("unmapped");

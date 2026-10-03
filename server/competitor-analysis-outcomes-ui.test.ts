@@ -18,6 +18,10 @@ const m = vi.hoisted(() => ({
   add: vi.fn(),
   remove: vi.fn(),
   options: null as any,
+  receipt: null as any,
+  receiptError: null as any,
+  receiptRefresh: vi.fn(),
+  closeAttempt: vi.fn(),
 }));
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
@@ -58,6 +62,17 @@ vi.mock("@/lib/trpc", () => ({
           refetch: m.detailRefresh,
         }),
       },
+      competitorAnalysisAttempt: {
+        useQuery: () => ({
+          data: m.receipt,
+          error: m.receiptError,
+          isFetching: false,
+          refetch: m.receiptRefresh,
+        }),
+      },
+      closeCompetitorAnalysisAttempt: {
+        useMutation: () => ({ mutateAsync: m.closeAttempt }),
+      },
       addCompetitor: { useMutation: () => ({ mutateAsync: m.add }) },
       deleteReviewedCompetitor: {
         useMutation: () => ({ mutateAsync: m.remove }),
@@ -68,6 +83,7 @@ vi.mock("@/lib/trpc", () => ({
 import { CompetitorWorkspace } from "../client/src/components/merchant/CompetitorWorkspace";
 let host: HTMLDivElement, root: Root;
 beforeEach(() => {
+  sessionStorage.clear();
   vi.stubGlobal("React", React);
   (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
   vi.clearAllMocks();
@@ -76,11 +92,18 @@ beforeEach(() => {
     search: "",
     error: null,
     detailError: null,
+    receipt: null,
+    receiptError: null,
     ...competitorViewFixture(),
   });
   m.refresh.mockResolvedValue({ error: null });
   m.detailRefresh.mockResolvedValue({ error: null });
-  m.add.mockResolvedValue({ competitorId: 9, status: "analyzing" });
+  m.add.mockImplementation(async input => ({
+    competitorId: 9,
+    requestId: input.requestId,
+    created: true,
+  }));
+  m.receiptRefresh.mockResolvedValue({ error: null });
   m.remove.mockResolvedValue({ merchantId: 20, id: 8, success: true });
   host = document.createElement("div");
   document.body.append(host);
@@ -192,13 +215,14 @@ it("submits trimmed fields once and refreshes the list on confirmed creation", a
   await fill("competitor-url", " https://example.test ");
   await click(c.start);
   expect(m.add).toHaveBeenCalledExactlyOnceWith({
+    requestId: expect.any(String),
     name: "New name",
     url: "https://example.test",
   });
   expect(m.refresh).toHaveBeenCalledOnce();
   expect(host.textContent).toContain(c.added);
 });
-it("blocks repeated creation after an uncertain result until the list is refreshed", async () => {
+it("blocks repeated creation after an uncertain result until its receipt is resolved", async () => {
   m.add.mockRejectedValue(Error("PRIVATE_PROVIDER"));
   await render();
   const c = en.competitorWorkspaceUx;
@@ -208,8 +232,33 @@ it("blocks repeated creation after an uncertain result until the list is refresh
   await click(c.start);
   expect(document.body.textContent).toContain(c.addFailed);
   expect(document.body.textContent).not.toContain("PRIVATE_PROVIDER");
-  expect(button(c.start).disabled).toBe(true);
+  expect(button(c.add).disabled).toBe(true);
   expect(m.add).toHaveBeenCalledOnce();
+  await click(c.refresh);
+  expect(button(c.add).disabled).toBe(true);
+});
+const savedRequest='c74cbdba-a168-48b6-adab-e3e2c8c611c0';
+function restoreAttempt(state='running') {
+  sessionStorage.setItem('sary:competitor-analysis:v1:7:20',savedRequest);
+  m.receipt={actorId:7,merchantId:20,requestId:savedRequest,state,competitorId:['idle','closed'].includes(state)?null:8,reportAvailable:!['idle','closed'].includes(state)};
+}
+it('restores a running reference without creating another report',async()=>{
+  restoreAttempt();await render();expect(host.textContent).toContain(en.competitorWorkspaceUx.attemptRunning);expect(button(en.competitorWorkspaceUx.add).disabled).toBe(true);expect(m.add).not.toHaveBeenCalled();expect(m.receiptRefresh).toHaveBeenCalled();
+});
+it('allows a new explicit request after a verified terminal receipt',async()=>{
+  restoreAttempt('completed');await render();await click(en.competitorWorkspaceUx.attemptNew);expect(sessionStorage.getItem('sary:competitor-analysis:v1:7:20')).toBeNull();expect(document.querySelector('#competitor-name')).toBeTruthy();expect(m.add).not.toHaveBeenCalled();
+});
+it.each(['foreign','read-error'])('does not allow clearing an unverified %s receipt',async mode=>{
+  restoreAttempt('completed');if(mode==='foreign')m.receipt.merchantId=30;else m.receiptError=Error('PRIVATE');await render();expect(host.textContent).toContain(en.competitorWorkspaceUx.attemptUnavailable);expect(button(en.competitorWorkspaceUx.attemptNew)).toBeUndefined();expect(host.textContent).not.toContain('PRIVATE');
+});
+it.each(['closed','running'])('retains the reference after close resolves to %s until its state is reviewed',async state=>{
+  restoreAttempt('idle');m.closeAttempt.mockImplementation(async()=>{m.receipt={...m.receipt,state,competitorId:state==='closed'?null:8,reportAvailable:state==='running'};return m.receipt;});await render();await click(en.competitorWorkspaceUx.attemptClose);expect(m.closeAttempt).toHaveBeenCalledWith({requestId:savedRequest});expect(sessionStorage.getItem('sary:competitor-analysis:v1:7:20')).toBe(savedRequest);expect(m.add).not.toHaveBeenCalled();expect(host.textContent).toContain(state==='closed'?en.competitorWorkspaceUx.attemptClosed:en.competitorWorkspaceUx.attemptRunning);
+});
+it('keeps an absent reference when its close response is lost',async()=>{
+  restoreAttempt('idle');m.closeAttempt.mockRejectedValue(Error('PRIVATE'));await render();await click(en.competitorWorkspaceUx.attemptClose);expect(sessionStorage.getItem('sary:competitor-analysis:v1:7:20')).toBe(savedRequest);expect(button(en.competitorWorkspaceUx.attemptNew)).toBeUndefined();expect(host.textContent).toContain(en.competitorWorkspaceUx.attemptUnavailable);
+});
+it('does not submit an analysis if the browser cannot save its recovery reference',async()=>{
+  await render();const c=en.competitorWorkspaceUx;await click(c.add);await fill('competitor-name','Name');await fill('competitor-url','https://example.test');const spy=vi.spyOn(Storage.prototype,'setItem').mockImplementation(()=>{throw Error('blocked');});await click(c.start);expect(m.add).not.toHaveBeenCalled();expect(document.body.textContent).toContain(c.attemptStorage);spy.mockRestore();
 });
 it("requires review acknowledgement and sends the exact revision for deletion", async () => {
   m.search = "?report=8";

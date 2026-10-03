@@ -10,6 +10,22 @@
   font-size: 0.88rem;
   line-height: 1.9;
 }
+.cmp-attempt-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-block-start: 0.8rem;
+}
+@media (max-width: 480px) {
+  .cmp-attempt-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+  .cmp-attempt-actions button[data-slot="button"] {
+    width: 100%;
+    min-height: 44px;
+  }
+}
 .cmp-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

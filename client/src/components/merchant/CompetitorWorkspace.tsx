@@ -21,6 +21,13 @@ import {
   competitorFields,
 } from "@/lib/competitor-workspace";
 import { catalogHref } from "@/lib/service-catalog-navigation";
+import {
+  readCompetitorAttempt,
+  rememberCompetitorAttempt,
+  forgetCompetitorAttempt,
+  scopedCompetitorReceipt,
+} from "@/lib/competitor-analysis-attempt";
+import { knowledgeCacheEpoch } from "@/lib/knowledge-workspace-cache";
 import "@/styles/service-catalog-workspace.css";
 import "@/styles/competitor-workspace.css";
 
@@ -61,6 +68,36 @@ export function CompetitorWorkspace({
   const data = query.error
     ? null
     : scopedCompetitors(query.data, actorId, merchantId, selection);
+  const attemptScope = `${actorId}:${merchantId}`;
+  const [attempt, setAttempt] = useState(() => {
+    try {
+      return { id: readCompetitorAttempt(attemptScope), storageError: false };
+    } catch {
+      return { id: null, storageError: true };
+    }
+  });
+  const attemptQuery = trpc.websiteAnalysis.competitorAnalysisAttempt.useQuery(
+    { requestId: attempt.id || "00000000-0000-4000-8000-000000000000" },
+    {
+      enabled: !!attempt.id && !!data,
+      retry: false,
+      staleTime: 0,
+      refetchOnMount: "always",
+      refetchInterval: q => (q.state.data?.state === "running" ? 5000 : false),
+    }
+  );
+  const receipt = attemptQuery.error
+    ? null
+    : scopedCompetitorReceipt(
+        attemptQuery.data,
+        actorId,
+        merchantId,
+        attempt.id
+      );
+  const closeAttempt =
+    trpc.websiteAnalysis.closeCompetitorAnalysisAttempt.useMutation({
+      retry: false,
+    });
   const detailQuery = trpc.websiteAnalysis.competitorDetail.useQuery(
     { id: selected || 1, productPage },
     {
@@ -112,6 +149,9 @@ export function CompetitorWorkspace({
     urlField = useRef<HTMLInputElement>(null),
     feedback = useRef<HTMLParagraphElement>(null),
     opener = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    if (attempt.id && !busy) void attemptQuery.refetch();
+  }, [attempt.id, busy]);
   scope.current = `${actorId}:${merchantId}:${search}:${locale}`;
   useEffect(() => {
     alive.current = true;
@@ -175,7 +215,14 @@ export function CompetitorWorkspace({
     setAck(false);
   };
   async function submitAdd() {
-    if (lock.current || blocked || !data?.canManage) return;
+    if (
+      lock.current ||
+      blocked ||
+      attempt.id ||
+      attempt.storageError ||
+      !data?.canManage
+    )
+      return;
     const invalid = competitorFields(name, url);
     setErrors(invalid);
     if (invalid.name || invalid.url) return;
@@ -184,8 +231,31 @@ export function CompetitorWorkspace({
     setFailure("");
     const view = scope.current,
       token = ++epoch.current;
+    let requestId: string;
     try {
-      await add.mutateAsync({ name: name.trim(), url: url.trim() });
+      requestId = crypto.randomUUID();
+      rememberCompetitorAttempt(attemptScope, requestId, knowledgeCacheEpoch());
+      setAttempt({ id: requestId, storageError: false });
+    } catch {
+      setAttempt(current => ({ ...current, storageError: true }));
+      setFailure(c.attemptStorage);
+      lock.current = false;
+      setBusy(false);
+      return;
+    }
+    try {
+      const accepted = await add.mutateAsync({
+        requestId,
+        name: name.trim(),
+        url: url.trim(),
+      });
+      if (
+        accepted.requestId !== requestId ||
+        !Number.isInteger(accepted.competitorId) ||
+        accepted.competitorId <= 0 ||
+        typeof accepted.created !== "boolean"
+      )
+        throw Error("Unverified receipt");
       if (!alive.current || view !== scope.current || token !== epoch.current)
         return;
       setAdding(false);
@@ -197,10 +267,61 @@ export function CompetitorWorkspace({
       if (alive.current && view === scope.current && token === epoch.current) {
         setFailure(c.addFailed);
         setBlocked(true);
+        setAdding(false);
       }
     } finally {
       lock.current = false;
       if (alive.current) setBusy(false);
+    }
+  }
+  async function closeUnacceptedAttempt() {
+    if (
+      lock.current ||
+      !attempt.id ||
+      !data?.canManage ||
+      receipt?.state !== "idle" ||
+      attemptQuery.isFetching
+    )
+      return;
+    const view = scope.current,
+      token = ++epoch.current;
+    lock.current = true;
+    setBusy(true);
+    setFailure("");
+    try {
+      const result = await closeAttempt.mutateAsync({ requestId: attempt.id });
+      if (!alive.current || scope.current !== view || epoch.current !== token)
+        return;
+      if (!scopedCompetitorReceipt(result, actorId, merchantId, attempt.id))
+        throw Error();
+      await attemptQuery.refetch();
+      await refresh();
+    } catch {
+      if (alive.current && scope.current === view && epoch.current === token)
+        setFailure(c.attemptUnavailable);
+    } finally {
+      lock.current = false;
+      if (alive.current) setBusy(false);
+    }
+  }
+  function startNextAttempt() {
+    if (
+      busy ||
+      attemptQuery.isFetching ||
+      !attempt.id ||
+      !receipt ||
+      !["completed", "failed", "interrupted", "closed"].includes(receipt.state)
+    )
+      return;
+    try {
+      forgetCompetitorAttempt(attemptScope, attempt.id, knowledgeCacheEpoch());
+      setAttempt({ id: null, storageError: false });
+      remember();
+      setName("");
+      setUrl("");
+      setAdding(true);
+    } catch {
+      setAttempt(current => ({ ...current, storageError: true }));
     }
   }
   async function submitDelete() {
@@ -298,7 +419,9 @@ export function CompetitorWorkspace({
           </Button>
           {data?.canManage && (
             <Button
-              disabled={busy || query.isFetching}
+              disabled={
+                busy || query.isFetching || !!attempt.id || attempt.storageError
+              }
               onClick={() => {
                 remember();
                 setErrors({ name: false, url: false });
@@ -311,6 +434,80 @@ export function CompetitorWorkspace({
           )}
         </div>
       </header>
+      {(attempt.id || attempt.storageError) && (
+        <section className="cmp-evidence" aria-label={c.attemptTitle}>
+          <h2>{c.attemptTitle}</h2>
+          <p role="status">
+            {attempt.storageError
+              ? c.attemptStorage
+              : !receipt
+                ? c.attemptUnavailable
+                : receipt.state === "idle"
+                  ? c.attemptAbsent
+                  : receipt.state === "closed"
+                    ? c.attemptClosed
+                    : receipt.state === "running"
+                      ? c.attemptRunning
+                      : receipt.state === "interrupted"
+                        ? c.attemptInterrupted
+                        : receipt.state === "completed"
+                          ? c.attemptCompleted
+                          : c.attemptFailed}
+          </p>
+          {feedbackNode}
+          <div className="cmp-attempt-actions">
+            <Button
+              variant="outline"
+              disabled={busy || attemptQuery.isFetching}
+              onClick={() => {
+                if (attempt.storageError) {
+                  try {
+                    setAttempt({
+                      id: readCompetitorAttempt(attemptScope),
+                      storageError: false,
+                    });
+                  } catch {
+                    setFailure(c.attemptStorage);
+                  }
+                } else void attemptQuery.refetch();
+              }}
+            >
+              {c.attemptCheck}
+            </Button>
+            {data && receipt?.reportAvailable && (
+              <Button
+                variant="outline"
+                disabled={busy}
+                onClick={() =>
+                  change({ report: receipt.competitorId, products: null })
+                }
+              >
+                {c.details}
+              </Button>
+            )}
+            {data?.canManage && receipt?.state === "idle" && (
+              <Button
+                disabled={busy || attemptQuery.isFetching}
+                onClick={() => void closeUnacceptedAttempt()}
+              >
+                {c.attemptClose}
+              </Button>
+            )}
+            {data?.canManage &&
+              receipt &&
+              ["completed", "failed", "interrupted", "closed"].includes(
+                receipt.state
+              ) && (
+                <Button
+                  disabled={busy || attemptQuery.isFetching}
+                  onClick={startNextAttempt}
+                >
+                  {c.attemptNew}
+                </Button>
+              )}
+          </div>
+        </section>
+      )}
       {notice && (
         <p role="status" className="sc-feedback">
           {notice}
@@ -584,7 +781,13 @@ export function CompetitorWorkspace({
             )}
             <Button
               type="submit"
-              disabled={busy || blocked || !data?.canManage}
+              disabled={
+                busy ||
+                blocked ||
+                !!attempt.id ||
+                attempt.storageError ||
+                !data?.canManage
+              }
             >
               {busy ? c.busy : c.start}
             </Button>

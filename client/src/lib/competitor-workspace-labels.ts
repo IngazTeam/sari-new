@@ -1,5 +1,18 @@
 import type { TFunction } from "i18next";
 export const competitorLabels = (t: TFunction) => ({
+  attemptTitle: t("competitorWorkspaceUx.attemptTitle"),
+  attemptStorage: t("competitorWorkspaceUx.attemptStorage"),
+  attemptUnavailable: t("competitorWorkspaceUx.attemptUnavailable"),
+  attemptAbsent: t("competitorWorkspaceUx.attemptAbsent"),
+  attemptClosed: t("competitorWorkspaceUx.attemptClosed"),
+  attemptRunning: t("competitorWorkspaceUx.attemptRunning"),
+  attemptInterrupted: t("competitorWorkspaceUx.attemptInterrupted"),
+  attemptCompleted: t("competitorWorkspaceUx.attemptCompleted"),
+  attemptFailed: t("competitorWorkspaceUx.attemptFailed"),
+  attemptCheck: t("competitorWorkspaceUx.attemptCheck"),
+  attemptClose: t("competitorWorkspaceUx.attemptClose"),
+  attemptNew: t("competitorWorkspaceUx.attemptNew"),
+
   title: t("competitorWorkspaceUx.title"),
   help: t("competitorWorkspaceUx.help"),
   evidence: t("competitorWorkspaceUx.evidence"),
