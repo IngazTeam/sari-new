@@ -10,9 +10,13 @@ const m = vi.hoisted(() => ({
   add: null as any,
   remove: null as any,
   toast: vi.fn(),
+  error: null as any,
+  refresh: vi.fn(),
+  options: null as any,
 }));
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
+    i18n: { language: m.locale },
     t: (key: string, args: any = {}) => {
       const dict = m.locale === "ar" ? ar : en;
       let value =
@@ -30,7 +34,17 @@ vi.mock("@/lib/trpc", () => ({
       websiteAnalysis: { listCompetitors: { invalidate: vi.fn() } },
     }),
     websiteAnalysis: {
-      listCompetitors: { useQuery: () => ({ data: m.rows, isLoading: false }) },
+      listCompetitors: {
+        useQuery: (_input: unknown, options: unknown) => {
+          m.options = options;
+          return {
+            data: m.rows,
+            isLoading: false,
+            error: m.error,
+            refetch: m.refresh,
+          };
+        },
+      },
       addCompetitor: {
         useMutation: (callbacks: any) => {
           m.add = callbacks;
@@ -50,9 +64,10 @@ import CompetitorAnalysis from "../client/src/pages/CompetitorAnalysis";
 let host: HTMLDivElement, root: Root;
 const secret = "PRIVATE_HISTORICAL_ERROR_430";
 beforeEach(() => {
-  vi.stubGlobal('React', React);
+  vi.stubGlobal("React", React);
   vi.clearAllMocks();
   m.locale = "en";
+  m.error = null;
   m.rows = [
     {
       id: 8,
@@ -92,6 +107,56 @@ it.each(["ar", "en"])(
     expect(m.toast.mock.calls).toEqual([[copy.addFailed], [copy.deleteFailed]]);
   }
 );
+it.each(["ar", "en"])(
+  "shows a translated load failure instead of cached data or an empty list (%s)",
+  async locale => {
+    m.locale = locale;
+    m.error = Error(secret);
+    await render();
+    const copy = (locale === "ar" ? ar : en).competitorAnalysisPage;
+    expect(host.textContent).toContain(copy.listFailed);
+    expect(host.textContent).not.toContain(secret);
+    expect(host.textContent).not.toContain("Fixture");
+    expect(host.textContent).not.toContain(copy.text18);
+    const retry = Array.from(host.querySelectorAll("button")).find(
+      b => b.textContent === copy.retry
+    )!;
+    await act(async () => retry.click());
+    expect(m.refresh).toHaveBeenCalledOnce();
+  }
+);
+it("renders malformed historical fields without crashing or a clickable unsafe link", async () => {
+  Object.assign(m.rows[0], {
+    status: "completed",
+    url: "javascript:alert(1)",
+    strengths: null,
+    weaknesses: {},
+    createdAt: "broken",
+    overallScore: 101,
+    seoScore: NaN,
+    avgPrice: Infinity,
+    productCount: 3,
+  });
+  await render();
+  expect(host.textContent).toContain(en.competitorAnalysisPage.urlUnavailable);
+  expect(host.textContent).toContain(en.competitorAnalysisPage.dateUnavailable);
+  expect(host.textContent).toContain(en.competitorAnalysisPage.estimatesHelp);
+  expect(host.textContent).toContain(en.competitorAnalysisPage.unavailable);
+  expect(host.textContent).not.toMatch(/NaN|Infinity|Invalid Date|undefined/);
+  expect(host.querySelector('a[href^="javascript:"]')).toBeNull();
+  expect(host.querySelector("[role=progressbar]")).toBeNull();
+});
+it("refreshes pending results and stops polling terminal reports", async () => {
+  await render();
+  const interval = m.options.refetchInterval;
+  expect(interval({ state: { data: [{ status: "analyzing" }] } })).toBe(5000);
+  expect(interval({ state: { data: [{ status: "pending" }] } })).toBe(5000);
+  expect(
+    interval({
+      state: { data: [{ status: "completed" }, { status: "failed" }] },
+    })
+  ).toBe(false);
+});
 it.each(["pending", "analyzing", "failed"])(
   "disables deletion only while the report is still %s",
   async status => {

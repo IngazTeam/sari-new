@@ -7273,7 +7273,7 @@ export async function updateCompetitorAnalysis(
  */
 export async function getCompetitorAnalysisById(id: number): Promise<any | null> {
   const db = await getDb();
-  if (!db) return null;
+  if (!db) throw new Error('Competitor storage unavailable');
 
   const result = await db.select().from(competitorAnalyses).where(eq(competitorAnalyses.id, id));
 
@@ -7296,7 +7296,7 @@ export async function getCompetitorAnalysisById(id: number): Promise<any | null>
  */
 export async function getCompetitorAnalysesByMerchant(merchantId: number): Promise<any[]> {
   const db = await getDb();
-  if (!db) return [];
+  if (!db) throw new Error('Competitor storage unavailable');
 
   const result = await db
     .select()

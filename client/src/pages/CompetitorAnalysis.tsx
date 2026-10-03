@@ -34,9 +34,11 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { useTranslation } from 'react-i18next';
+import { QueryStateCard } from '@/components/QueryStateCard';
+import { competitorCard } from '@/lib/competitor-card';
 
 export default function CompetitorAnalysis() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [name, setName] = useState('');
   const [url, setUrl] = useState('');
@@ -44,7 +46,11 @@ export default function CompetitorAnalysis() {
   const utils = trpc.useUtils();
 
   // Queries
-  const { data: competitors, isLoading } = trpc.websiteAnalysis.listCompetitors.useQuery();
+  const { data, isLoading, error: listError, refetch } = trpc.websiteAnalysis.listCompetitors.useQuery(undefined, {
+    retry: false,
+    refetchInterval: query => query.state.data?.some(row => row.status === 'pending' || row.status === 'analyzing') ? 5000 : false,
+  });
+  const competitors = !listError ? data?.map(competitorCard) : undefined;
 
   // Mutations
   const addMutation = trpc.websiteAnalysis.addCompetitor.useMutation({
@@ -90,16 +96,11 @@ export default function CompetitorAnalysis() {
     }
   };
 
-  const getScoreColor = (score: number) => {
+  const getScoreColor = (score: number | null) => {
+    if (score === null) return 'text-muted-foreground';
     if (score >= 80) return 'text-green-600';
     if (score >= 60) return 'text-yellow-600';
     return 'text-red-600';
-  };
-
-  const getScoreBgColor = (score: number) => {
-    if (score >= 80) return 'bg-green-100';
-    if (score >= 60) return 'bg-yellow-100';
-    return 'bg-red-100';
   };
 
   return (
@@ -108,7 +109,7 @@ export default function CompetitorAnalysis() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold mb-2">{t('competitorAnalysisPage.text4')}</h1>
-          <p className="text-muted-foreground">{t('competitorAnalysis.auto_0')}</p>
+          <p className="text-muted-foreground">{t('competitorAnalysisPage.estimatesHelp')}</p>
         </div>
 
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
@@ -158,7 +159,9 @@ export default function CompetitorAnalysis() {
       </div>
 
       {/* Competitors List */}
-      {isLoading ? (
+      {listError ? (
+        <QueryStateCard kind="error" title={t('competitorAnalysisPage.listFailed')} description={t('competitorAnalysisPage.listFailedHelp')} retryLabel={t('competitorAnalysisPage.retry')} onRetry={() => void refetch()} />
+      ) : isLoading ? (
         <div className="flex justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
@@ -171,15 +174,15 @@ export default function CompetitorAnalysis() {
                   <div className="flex-1">
                     <CardTitle className="text-lg">{competitor.name}</CardTitle>
                     <CardDescription className="flex items-center gap-1 mt-1">
-                      <a 
+                      {competitor.url ? <a
                         href={competitor.url} 
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="hover:underline flex items-center gap-1"
                       >
-                        {new URL(competitor.url).hostname}
+                        {competitor.hostname}
                         <ExternalLink className="h-3 w-3" />
-                      </a>
+                      </a> : <span>{t('competitorAnalysisPage.urlUnavailable')}</span>}
                     </CardDescription>
                   </div>
                   <Button
@@ -226,10 +229,10 @@ export default function CompetitorAnalysis() {
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-sm font-medium">{t('competitorAnalysisPage.text13')}</span>
                         <span className={`text-2xl font-bold ${getScoreColor(competitor.overallScore)}`}>
-                          {competitor.overallScore}
+                          {competitor.overallScore ?? t('competitorAnalysisPage.unavailable')}
                         </span>
                       </div>
-                      <Progress value={competitor.overallScore} className="h-2" />
+                      {competitor.overallScore !== null && <Progress value={competitor.overallScore} className="h-2" />}
                     </div>
 
                     {/* Detailed Scores */}
@@ -237,47 +240,48 @@ export default function CompetitorAnalysis() {
                       <div className="flex items-center justify-between">
                         <span className="text-muted-foreground">SEO:</span>
                         <span className={`font-medium ${getScoreColor(competitor.seoScore)}`}>
-                          {competitor.seoScore}
+                          {competitor.seoScore ?? t('competitorAnalysisPage.unavailable')}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-muted-foreground">{t('competitorAnalysisPage.text14')}</span>
                         <span className={`font-medium ${getScoreColor(competitor.performanceScore)}`}>
-                          {competitor.performanceScore}
+                          {competitor.performanceScore ?? t('competitorAnalysisPage.unavailable')}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-muted-foreground">UX:</span>
                         <span className={`font-medium ${getScoreColor(competitor.uxScore)}`}>
-                          {competitor.uxScore}
+                          {competitor.uxScore ?? t('competitorAnalysisPage.unavailable')}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-muted-foreground">{t('competitorAnalysisPage.text15')}</span>
                         <span className={`font-medium ${getScoreColor(competitor.contentScore)}`}>
-                          {competitor.contentScore}
+                          {competitor.contentScore ?? t('competitorAnalysisPage.unavailable')}
                         </span>
                       </div>
                     </div>
 
                     {/* Pricing */}
-                    {competitor.productCount > 0 && (
+                    {competitor.productCount !== null && competitor.productCount > 0 && (
                       <div className="pt-3 border-t">
                         <div className="text-sm text-muted-foreground mb-2">
-                          {competitor.productCount} منتج
+                          {t('competitorAnalysisPage.savedProducts', { count: competitor.productCount })}
                         </div>
                         <div className="flex items-center justify-between text-sm">
                           <span className="text-muted-foreground">{t('competitorAnalysisPage.text16')}</span>
                           <span className="font-medium">
-                            {competitor.avgPrice?.toFixed(2)} {competitor.currency}
+                            {competitor.avgPrice !== null && competitor.currency ? `${competitor.avgPrice.toFixed(2)} ${competitor.currency}` : t('competitorAnalysisPage.unavailable')}
                           </span>
                         </div>
                         <div className="flex items-center justify-between text-sm">
                           <span className="text-muted-foreground">{t('competitorAnalysisPage.text17')}</span>
                           <span className="font-medium">
-                            {competitor.minPrice?.toFixed(2)} - {competitor.maxPrice?.toFixed(2)} {competitor.currency}
+                            {competitor.minPrice !== null && competitor.maxPrice !== null && competitor.currency ? `${competitor.minPrice.toFixed(2)} – ${competitor.maxPrice.toFixed(2)} ${competitor.currency}` : t('competitorAnalysisPage.unavailable')}
                           </span>
                         </div>
+                        <p className="text-xs text-muted-foreground mt-2">{t('competitorAnalysisPage.pricingHelp')}</p>
                       </div>
                     )}
 
@@ -312,7 +316,7 @@ export default function CompetitorAnalysis() {
                 )}
 
                 {/* Error Message */}
-                {competitor.status === 'failed' && competitor.errorMessage && (
+                {competitor.status === 'failed' && (
                   <div className="bg-red-50 p-3 rounded-lg">
                     <div className="flex items-start gap-2">
                       <AlertCircle className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
@@ -323,7 +327,7 @@ export default function CompetitorAnalysis() {
 
                 {/* Date */}
                 <div className="text-xs text-muted-foreground pt-2 border-t">
-                  {new Date(competitor.createdAt).toLocaleDateString('ar-SA')}
+                  {competitor.createdAt?.toLocaleDateString(i18n.language.startsWith('ar') ? 'ar-SA' : 'en-GB') ?? t('competitorAnalysisPage.dateUnavailable')}
                 </div>
               </CardContent>
             </Card>

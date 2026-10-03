@@ -5719,6 +5719,15 @@
     "text28": "Most Popular"
   },
   "competitorAnalysisPage": {
+    "estimatesHelp": "Estimates of competitor website content, not a measure of sales proficiency.",
+    "listFailed": "Could not load competitors",
+    "listFailedHelp": "We could not verify the current list. Retry to access your results.",
+    "retry": "Retry",
+    "urlUnavailable": "Website link unavailable",
+    "unavailable": "Unavailable",
+    "dateUnavailable": "Date unavailable",
+    "savedProducts": "Previously recorded count: {{count}}",
+    "pricingHelp": "A historical price summary; current prices and matching product currencies are not verified.",
     "addFailed": "Could not start the analysis. Check the competitor name and website URL, then try again.",
     "deleteFailed": "Could not delete the competitor. Wait for the analysis to finish, refresh, and try again.",
     "analysisFailed": "The analysis did not finish. Some results may have been saved; they do not form a complete comparison.",
