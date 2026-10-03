@@ -8,6 +8,7 @@ import {
 import {
   readCompetitorWorkspace,
   readCompetitorDetail,
+  deleteReviewedCompetitor,
 } from "./competitor-workspace";
 describe.skipIf(!process.env.DATABASE_URL)(
   "competitor selected-tenant read source",
@@ -59,6 +60,125 @@ describe.skipIf(!process.env.DATABASE_URL)(
     });
     afterEach(() => cleanupDisposableMerchants([owner.userId, other.userId]));
     afterAll(closeDb);
+    const remove = async (
+      id: number,
+      revision?: string,
+      actor = owner.userId,
+      merchant = owner.merchantId
+    ) =>
+      deleteReviewedCompetitor(actor, merchant, {
+        id,
+        expectedRevision: revision ?? (await detail(id)).revision,
+        acknowledged: true,
+      });
+    it("deletes only the reviewed report and all scoped children with one audit record", async () => {
+      const id = await create(),
+        keep = await create("Keep");
+      await product(id, 12);
+      await product(id, null);
+      await product(keep, 50);
+      expect(await remove(id)).toEqual({
+        merchantId: owner.merchantId,
+        id,
+        success: true,
+      });
+      expect(
+        await q("SELECT id FROM competitor_products WHERE competitor_id=?", [
+          id,
+        ])
+      ).toHaveLength(0);
+      expect((await detail(keep)).report.products).toBe(1);
+      const logs = await q(
+        "SELECT details FROM sari_activity_log WHERE merchant_id=? AND action_type='competitor_report_delete'",
+        [owner.merchantId]
+      );
+      expect(logs).toHaveLength(1);
+      expect(JSON.parse(logs[0].details)).toEqual({
+        id,
+        products: 2,
+        actorId: owner.userId,
+      });
+    });
+    it("detects edits to the report and to a product beyond the visible page", async () => {
+      const id = await create();
+      const initial = (await detail(id)).revision;
+      await q(
+        "UPDATE competitor_analyses SET strengths='[\"Changed\"]' WHERE id=?",
+        [id]
+      );
+      await expect(remove(id, initial)).rejects.toMatchObject({
+        reason: "stale",
+      });
+      let last = 0;
+      for (let i = 0; i < 26; i++) last = await product(id, 10);
+      const reviewed = (await detail(id)).revision;
+      await q(
+        "UPDATE competitor_products SET description='Changed' WHERE id=?",
+        [last]
+      );
+      await expect(remove(id, reviewed)).rejects.toMatchObject({
+        reason: "stale",
+      });
+      expect((await detail(id)).report.products).toBe(26);
+    });
+    it.each(["pending", "analyzing"])(
+      "blocks %s deletion even with a matching revision",
+      async status => {
+        const id = await create("Running", status);
+        await expect(remove(id)).rejects.toMatchObject({ reason: "running" });
+        expect((await detail(id)).report.status).toBe(status);
+      }
+    );
+    it("blocks cross-tenant cascade and cannot delete another tenant report", async () => {
+      const id = await create(),
+        foreign = await create("Foreign", "failed", other.merchantId);
+      const child = await product(id, 10, "SAR", other.merchantId);
+      await expect(remove(id)).rejects.toMatchObject({ reason: "reference" });
+      expect(
+        await q("SELECT id FROM competitor_products WHERE id=?", [child])
+      ).toHaveLength(1);
+      await expect(remove(foreign, "a".repeat(64))).rejects.toMatchObject({
+        reason: "missing",
+      });
+    });
+    it("rechecks write authority after review and rejects pending tenants", async () => {
+      const id = await create(),
+        revision = (await detail(id)).revision;
+      await q(
+        "INSERT INTO merchant_members (merchant_id,user_id,role,is_active) VALUES (?,?,'viewer',1)",
+        [owner.merchantId, owner.userId]
+      );
+      await expect(remove(id, revision)).rejects.toMatchObject({
+        reason: "forbidden",
+      });
+      await q(
+        "UPDATE merchant_members SET role='owner' WHERE merchant_id=? AND user_id=?",
+        [owner.merchantId, owner.userId]
+      );
+      await q("UPDATE merchants SET status='pending' WHERE id=?", [
+        owner.merchantId,
+      ]);
+      await expect(remove(id, revision)).rejects.toMatchObject({
+        reason: "forbidden",
+      });
+      expect((await detail(id)).report.id).toBe(id);
+    });
+    it("serializes concurrent confirmations without duplicate deletion audit", async () => {
+      const id = await create("Failed", "failed"),
+        revision = (await detail(id)).revision;
+      const results = await Promise.allSettled([
+        remove(id, revision),
+        remove(id, revision),
+      ]);
+      expect(results.filter(r => r.status === "fulfilled")).toHaveLength(1);
+      expect(results.filter(r => r.status === "rejected")).toHaveLength(1);
+      expect(
+        await q(
+          "SELECT id FROM sari_activity_log WHERE merchant_id=? AND action_type='competitor_report_delete'",
+          [owner.merchantId]
+        )
+      ).toHaveLength(1);
+    });
     it("covers 106 reports and literal filters with independent full statistics and stable ordering", async () => {
       const first = await create("Needle_%_", "failed");
       for (let i = 0; i < 105; i++)

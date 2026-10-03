@@ -17,3 +17,10 @@ export const competitorDetailSelection = z
   })
   .strict();
 export const COMPETITOR_PAGE_SIZE = 25;
+export const competitorDeleteInput = z
+  .object({
+    id: z.number().int().positive().max(2147483647),
+    expectedRevision: z.string().regex(/^[a-f0-9]{64}$/),
+    acknowledged: z.literal(true),
+  })
+  .strict();

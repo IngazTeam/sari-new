@@ -1,4 +1,5 @@
 import type { PoolConnection } from "mysql2/promise";
+import { createHash } from "node:crypto";
 import { getPool } from "./db/connection";
 import { databaseTimeEpoch } from "./db/time";
 import {
@@ -12,10 +13,19 @@ import {
   competitorSelection,
   competitorDetailSelection,
   COMPETITOR_PAGE_SIZE,
+  competitorDeleteInput,
 } from "../shared/competitor-workspace";
 
 export class CompetitorWorkspaceError extends Error {
-  constructor(readonly reason: "forbidden" | "missing" | "unavailable") {
+  constructor(
+    readonly reason:
+      | "forbidden"
+      | "missing"
+      | "unavailable"
+      | "stale"
+      | "running"
+      | "reference"
+  ) {
     super("competitor_workspace:" + reason);
   }
 }
@@ -209,6 +219,68 @@ function notes(value: unknown) {
   }
   return { items: [] as string[], invalid: true };
 }
+// Hash the persisted report and all children, not only the currently visible product page.
+async function deletionSnapshot(
+  tx: PoolConnection,
+  merchantId: number,
+  id: number,
+  lock = false
+) {
+  const suffix = lock ? " FOR UPDATE" : "";
+  const [report] = await rows(
+    tx,
+    "SELECT * FROM competitor_analyses WHERE merchant_id=? AND id=?" + suffix,
+    [merchantId, id]
+  );
+  if (!report) throw new CompetitorWorkspaceError("missing");
+  const products = await rows(
+    tx,
+    "SELECT * FROM competitor_products WHERE competitor_id=? ORDER BY id" +
+      suffix,
+    [id]
+  );
+  return {
+    report,
+    products,
+    revision: createHash("sha256")
+      .update(JSON.stringify([report, products]))
+      .digest("hex"),
+  };
+}
+export async function deleteReviewedCompetitor(
+  actorId: number,
+  merchantId: number,
+  value: unknown
+) {
+  const input = competitorDeleteInput.parse(value);
+  return readSnapshot(actorId, merchantId, async (tx, canManage) => {
+    if (!canManage) throw new CompetitorWorkspaceError("forbidden");
+    const review = await deletionSnapshot(tx, merchantId, input.id, true);
+    if (review.products.some(p => p.merchant_id !== merchantId))
+      throw new CompetitorWorkspaceError("reference");
+    if (!["completed", "failed"].includes(review.report.status))
+      throw new CompetitorWorkspaceError("running");
+    if (review.revision !== input.expectedRevision)
+      throw new CompetitorWorkspaceError("stale");
+    await tx.execute(
+      "DELETE FROM competitor_analyses WHERE merchant_id=? AND id=?",
+      [merchantId, input.id]
+    );
+    await tx.execute(
+      "INSERT INTO sari_activity_log (merchant_id,action_type,description,details) VALUES (?,'competitor_report_delete',?,?)",
+      [
+        merchantId,
+        `Competitor report #${input.id} deleted after review`,
+        JSON.stringify({
+          id: input.id,
+          products: review.products.length,
+          actorId,
+        }),
+      ]
+    );
+    return { merchantId, id: input.id, success: true as const };
+  });
+}
 export async function readCompetitorDetail(
   actorId: number,
   merchantId: number,
@@ -248,9 +320,11 @@ export async function readCompetitorDetail(
       (total, group) => total + Number(group.count),
       0
     );
+    const deletion = await deletionSnapshot(tx, merchantId, selection.id);
     return {
       merchantId,
       canManage,
+      revision: deletion.revision,
       report,
       notes: {
         strengths: notes(raw.strengths),
