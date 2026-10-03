@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({ audience: vi.fn(), guard: vi.fn(), enqueue: vi.fn(), complete: vi.fn(), campaign: vi.fn(), execute: vi.fn(), due: vi.fn() }));
-vi.mock('./db', () => ({ getPool: vi.fn().mockResolvedValue({ getConnection: vi.fn().mockResolvedValue({ execute: mocks.execute, beginTransaction: vi.fn(), commit: vi.fn(), rollback: vi.fn(), release: vi.fn() }) }),
+vi.mock('./db', () => ({ getPool: vi.fn().mockResolvedValue({ getConnection: vi.fn().mockResolvedValue({ execute: mocks.execute, beginTransaction: vi.fn(), commit: vi.fn(), rollback: vi.fn(), release: vi.fn(),destroy:vi.fn() }) }),
   getMerchantById: vi.fn().mockResolvedValue({ id: 7, status: 'active' }), getCampaignById: mocks.campaign, getDispatchableOccasionCampaigns: mocks.due,
   getPrimaryWhatsAppInstance: vi.fn().mockResolvedValue({ status:'active' }), getActiveSubscriptionByMerchantId: vi.fn().mockResolvedValue({ id:1 }),
 }));
@@ -13,8 +13,16 @@ const now = new Date('2026-09-23T09:00:00Z');
 beforeEach(() => {
   for (const mock of Object.values(mocks)) mock.mockReset();
   mocks.due.mockResolvedValue([{ id: 9, merchantId: 7 }]);
-  mocks.execute.mockImplementation(async (sql: string) => sql.includes('FROM occasion_campaigns oc') ? [[{ id:9, merchantId:7, campaignId:77, occasionType:'national_day', year:2026, enabled:1, discountPercentage:23, status:'pending', merchantStatus:'active' }]] : [[{ id:77 }]]);
-  mocks.campaign.mockResolvedValue({ id:77, merchantId:7, name:'Fixture', message:'Fixture', imageUrl:null, targetAudience:'{"purchaseCountMin":2}', scheduledAt:null, status:'draft' });
+  mocks.execute.mockImplementation(async(sql:string)=>{
+    if(sql.includes('FROM merchants'))return [[{id:7,status:'active',businessName:'Fixture shop'}]];
+    if(sql.includes('SELECT campaign_id FROM occasion_campaigns'))return [[{campaign_id:77}]];
+    if(sql.includes('FROM occasion_campaigns'))return [[{id:9,merchantId:7,campaignId:77,occasionType:'national_day',year:2026,enabled:1,discountPercentage:23,status:'pending',discountCode:'CODE',messageTemplate:null,recipientCount:0,sentAt:null}]];
+    if(sql.includes('FROM campaigns'))return [[{id:77,merchantId:7,status:'draft',message:'Fixture',imageUrl:null,targetAudience:'{}'}]];
+    if(sql.includes('FROM discount_codes'))return [[{type:'percentage',value:23,minOrderAmount:0,maxUses:2000,usedCount:0,isActive:1,expiresAt:'2026-09-23 20:59:59',customer_phone:null}]];
+    if(sql.includes('FROM campaign_delivery_outbox'))return [[]];
+    throw Error('Unexpected SQL');
+  });
+  mocks.campaign.mockResolvedValue({ id:77, merchantId:7, name:'Fixture', message:'Fixture', imageUrl:null, targetAudience:'{}', scheduledAt:null, status:'draft' });
   mocks.audience.mockResolvedValue({ customers: [{ id:501, customerPhone:'966500000001' }], recipientCount:1 });
   mocks.guard.mockResolvedValue({ allowed:['966500000001'], blocked:[], warnings:[] });
   mocks.complete.mockResolvedValue(true);
@@ -23,7 +31,7 @@ describe('occasion admission retains audience and pending state', () => {
   it('uses the full canonical audience and definition rather than the general conversation list', async () => {
     const customers = Array.from({ length:600 }, (_,i) => ({ id:501+i, customerPhone:String(99900000000+i) }));
     mocks.audience.mockResolvedValue({ customers, recipientCount:600 }); mocks.guard.mockResolvedValue({ allowed:customers.map(row=>row.customerPhone), blocked:[], warnings:[] });
-    expect(await checkAndSendOccasionCampaigns(now)).toEqual({ checked:1,queued:1,completed:0,deferred:0,failed:0,limited:false }); expect(mocks.audience).toHaveBeenCalledWith(7, '{"purchaseCountMin":2}', now);
+    expect(await checkAndSendOccasionCampaigns(now)).toEqual({ checked:1,queued:1,completed:0,deferred:0,failed:0,limited:false }); expect(mocks.audience).toHaveBeenCalledWith(7, '{}', now);
     expect(mocks.enqueue.mock.calls[0][0].recipients).toHaveLength(600); expect(mocks.enqueue.mock.calls[0][0].expectedDefinition).toMatch(/^[a-f0-9]{64}$/);
   });
   it.each(['quiet_hours','rate_limit'])('keeps the entire occasion pending on %s', async reason => {

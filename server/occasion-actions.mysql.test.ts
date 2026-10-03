@@ -3,6 +3,7 @@ import {getPool,closeDb} from './db/connection';
 import {createDisposableMerchant,cleanupDisposableMerchants} from './tests/helpers/disposable-merchant';
 import {occasionCampaignsRouter} from './routers-occasion-campaigns';
 import {reviewOccasionAction,applyOccasionAction} from './occasion-actions';
+import {getOccasionEndDate} from '../shared/occasion-calendar';
 import {getUpcomingOccasions} from './automation/occasion-campaigns';
 import {occasionWorkspaceInput} from '../shared/occasion-workspace';
 import {readOccasionWorkspace} from './occasion-workspace-store';
@@ -30,10 +31,13 @@ describe.skipIf(!process.env.DATABASE_URL)('reviewed occasions on disposable MyS
  it('reviews an existing prepared envelope and rejects changes to its actual discount or audience',async()=>{
   const {id}=await draft(),raw=(await read(id))[0];
   const campaign=await q("INSERT INTO campaigns (merchantId,name,message,targetAudience,status) VALUES (?,'Prepared','Exact saved message','{}','draft')",[other.merchantId]);
-  await q("INSERT INTO discount_codes (merchantId,code,type,value,minOrderAmount,maxUses,usedCount,isActive,expiresAt) VALUES (?,'OCCASION_LOCAL','percentage',?,0,2000,0,1,'2037-01-01 00:00:00')",[other.merchantId,raw.discountPercentage]);
+  await q("INSERT INTO discount_codes (merchantId,code,type,value,minOrderAmount,maxUses,usedCount,isActive,expiresAt) VALUES (?,'OCCASION_LOCAL','percentage',?,0,2000,0,1,?)",[other.merchantId,raw.discountPercentage,new Date(Math.floor(getOccasionEndDate(raw.occasionType,new Date(getUpcomingOccasions().find(o=>o.type===raw.occasionType)!.date+'T09:00:00Z')).getTime()/1000)*1000)]);
   await q("UPDATE occasion_campaigns SET campaign_id=?,discountCode='OCCASION_LOCAL' WHERE id=?",[campaign.insertId,id]);
   const target={action:'toggle' as const,id,enabled:true},r=await caller().reviewAction(target);
   expect(r).toMatchObject({eligible:true,terms:{messagePreview:'Exact saved message',messageSource:'linked_campaign'}});
+  await q("UPDATE discount_codes SET expiresAt=DATE_ADD(expiresAt,INTERVAL 1 DAY) WHERE merchantId=? AND code='OCCASION_LOCAL'",[other.merchantId]);
+  expect((await caller().reviewAction(target))).toMatchObject({eligible:false,reason:'invalid'});
+  await q("UPDATE discount_codes SET expiresAt=DATE_SUB(expiresAt,INTERVAL 1 DAY) WHERE merchantId=? AND code='OCCASION_LOCAL'",[other.merchantId]);
   await q("UPDATE discount_codes SET maxUses=10 WHERE merchantId=? AND code='OCCASION_LOCAL'",[other.merchantId]);
   await expect(caller().applyAction({target,reviewRevision:r.reviewRevision,acknowledged:true})).rejects.toMatchObject({code:'CONFLICT'});
   expect((await caller().reviewAction(target))).toMatchObject({eligible:false,reason:'invalid'});

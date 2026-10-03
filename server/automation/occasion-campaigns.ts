@@ -5,6 +5,8 @@
  * provider directly.
  */
 
+import {validPreparedOccasion} from '../occasion-envelope-policy';
+import {assertCampaignContent} from '../campaign-content';
 import { randomBytes } from 'node:crypto';
 import type { PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import {
@@ -41,7 +43,10 @@ type LockedOccasionRow = RowDataPacket & {
   discountPercentage: number;
   status: string;
   businessName: string;
-  merchantStatus: string;
+  discountCode: string|null;
+  messageTemplate:string|null;
+  recipientCount:number;
+  sentAt:string|null;
 };
 
 async function createUniqueDiscountCode(
@@ -79,83 +84,101 @@ async function ensureOccasionOutboxSchema(): Promise<void> {
  * Create one canonical campaign envelope and discount under an occasion-row
  * lock. Concurrent cron processes converge on the same campaign id.
  */
+export class OccasionEnvelopeStateUnknownError extends Error {
+  constructor(){super('occasion_envelope_state_unknown');this.name='OccasionEnvelopeStateUnknownError';}
+}
 export async function prepareOccasionCampaignEnvelope(input: {
   occasionCampaignId: number;
   merchantId: number;
   occasion: DetectedOccasion;
   now?: Date;
 }): Promise<{ campaignId: number; created: boolean }> {
+  const now=input.now??new Date();
+  if(![input.merchantId,input.occasionCampaignId].every(id=>Number.isInteger(id)&&id>0&&id<=2147483647)
+    ||!(now instanceof Date)||!Number.isFinite(now.getTime()))throw new CampaignDispatchConflictError();
+  const occasion=detectCurrentOccasions(now).find(o=>o.type===input.occasion.type&&o.year===input.occasion.year);
+  if(!occasion)throw new CampaignDispatchConflictError();
   await ensureOccasionOutboxSchema();
   const pool = await getPool();
   if (!pool) throw new Error('Database unavailable');
   const connection = await pool.getConnection();
+  let committing=false,reusable=true;
   try {
     await connection.beginTransaction();
-    const [rows] = await connection.execute<LockedOccasionRow[]>(
-      `SELECT oc.id, oc.merchantId, oc.campaign_id AS campaignId, oc.occasionType,
-              oc.year, oc.enabled, oc.discountPercentage, oc.status,
-              m.businessName, m.status AS merchantStatus
-         FROM occasion_campaigns oc
-         INNER JOIN merchants m ON m.id = oc.merchantId
-        WHERE oc.id = ? AND oc.merchantId = ? LIMIT 1 FOR UPDATE`,
-      [input.occasionCampaignId, input.merchantId],
-    );
-    const row = rows[0];
-    if (!row || Number(row.merchantId) !== input.merchantId
-      || Number(row.enabled) !== 1
-      || row.status !== 'pending'
-      || row.merchantStatus !== 'active'
-      || row.occasionType !== input.occasion.type
-      || Number(row.year) !== input.occasion.year
-      || Number(row.discountPercentage) < 5
-      || Number(row.discountPercentage) > 50) {
-      throw new CampaignDispatchConflictError();
+    // Explicit parent -> campaign -> occasion order matches reviewed actions and transport.
+    const [merchants]=await connection.execute<RowDataPacket[]>(
+      'SELECT id,status,businessName FROM merchants WHERE id=? FOR UPDATE',[input.merchantId]);
+    const merchant=merchants[0];
+    if(merchants.length!==1||merchant.id!==input.merchantId||merchant.status!=='active'
+      ||typeof merchant.businessName!=='string'||!merchant.businessName.trim()||merchant.businessName.length>255)throw new CampaignDispatchConflictError();
+    const [hints]=await connection.execute<RowDataPacket[]>(
+      'SELECT campaign_id FROM occasion_campaigns WHERE id=? AND merchantId=?',[input.occasionCampaignId,input.merchantId]);
+    if(hints.length!==1)throw new CampaignDispatchConflictError();
+    const campaignId=hints[0].campaign_id;
+    let campaign:RowDataPacket|undefined;
+    if(campaignId!==null){
+      const [campaigns]=await connection.execute<RowDataPacket[]>(
+        'SELECT id,merchantId,status,message,imageUrl,targetAudience FROM campaigns WHERE id=? AND merchantId=? FOR UPDATE',[campaignId,input.merchantId]);
+      if(campaigns.length!==1||campaigns[0].id!==campaignId||campaigns[0].merchantId!==input.merchantId)throw new CampaignDispatchConflictError();
+      campaign=campaigns[0];
     }
-
-    if (row.campaignId) {
-      const [campaigns] = await connection.execute<RowDataPacket[]>(
-        `SELECT id FROM campaigns WHERE id = ? AND merchantId = ? LIMIT 1`,
-        [row.campaignId, row.merchantId],
-      );
-      if (!campaigns[0]) throw new CampaignDispatchConflictError();
-      await connection.commit();
-      return { campaignId: Number(row.campaignId), created: false };
+    const [rows]=await connection.execute<LockedOccasionRow[]>(
+      'SELECT id,merchantId,campaign_id AS campaignId,occasionType,year,enabled,discountPercentage,status,discountCode,messageTemplate,recipientCount,sentAt FROM occasion_campaigns WHERE id=? AND merchantId=? FOR UPDATE',
+      [input.occasionCampaignId,input.merchantId]);
+    const row=rows[0];
+    if(rows.length!==1||row.id!==input.occasionCampaignId||row.merchantId!==input.merchantId||row.campaignId!==campaignId
+      ||row.enabled!==1||row.status!=='pending'||row.occasionType!==occasion.type||row.year!==occasion.year
+      ||!Number.isInteger(row.discountPercentage)||row.discountPercentage<5||row.discountPercentage>50
+      ||row.messageTemplate!==null||row.recipientCount!==0||row.sentAt!==null)throw new CampaignDispatchConflictError();
+    row.businessName=merchant.businessName;
+    if(campaign){
+      if(typeof row.discountCode!=='string'||!row.discountCode.trim())throw new CampaignDispatchConflictError();
+      const [discounts]=await connection.execute<RowDataPacket[]>(
+        'SELECT id,type,value,minOrderAmount,maxUses,usedCount,isActive,expiresAt,customer_phone FROM discount_codes WHERE merchantId=? AND code=? FOR SHARE',[input.merchantId,row.discountCode]);
+      const [outbox]=await connection.execute<RowDataPacket[]>('SELECT id FROM campaign_delivery_outbox WHERE campaign_id=? LIMIT 1 FOR UPDATE',[campaignId]);
+      if(outbox.length||discounts.length!==1||!validPreparedOccasion(campaign,discounts[0],row.discountPercentage,row.occasionType,now,now))throw new CampaignDispatchConflictError();
+      committing=true;await connection.commit();
+      return {campaignId:Number(campaignId),created:false};
     }
+    if(row.discountCode!==null)throw new CampaignDispatchConflictError();
 
-    const now = input.now ?? new Date();
     const discountCode = await createUniqueDiscountCode(
       connection,
       row,
-      getOccasionEndDate(row.occasionType, now),
+      new Date(Math.floor(getOccasionEndDate(row.occasionType, now).getTime()/1000)*1000),
     );
     const message = generateOccasionMessage(
-      input.occasion.name,
+      occasion.name,
       null,
       discountCode,
       Number(row.discountPercentage),
       row.businessName,
     );
+    assertCampaignContent(message,null);
     const [inserted] = await connection.execute<ResultSetHeader>(
       `INSERT INTO campaigns
         (merchantId, name, message, imageUrl, targetAudience, status, scheduledAt, sentCount, totalRecipients, createdAt, updatedAt)
        VALUES (?, ?, ?, NULL, '{}', 'draft', NULL, 0, 0, NOW(), NOW())`,
-      [row.merchantId, `مناسبة: ${input.occasion.name} ${row.year}`, message],
+      [row.merchantId, `مناسبة: ${occasion.name} ${row.year}`, message],
     );
-    const campaignId = Number(inserted.insertId);
+    const createdCampaignId = Number(inserted.insertId);
+    if(inserted.affectedRows!==1||!Number.isInteger(createdCampaignId)||createdCampaignId<=0)throw new CampaignDispatchConflictError();
     const [linked] = await connection.execute<ResultSetHeader>(
       `UPDATE occasion_campaigns
           SET campaign_id = ?, discountCode = ?, updatedAt = NOW()
-        WHERE id = ? AND merchantId = ? AND status = 'pending' AND campaign_id IS NULL`,
-      [campaignId, discountCode, row.id, row.merchantId],
+        WHERE id = ? AND merchantId = ? AND status = 'pending' AND campaign_id IS NULL AND enabled = 1`,
+      [createdCampaignId, discountCode, row.id, row.merchantId],
     );
     if (linked.affectedRows !== 1) throw new CampaignDispatchConflictError();
-    await connection.commit();
-    return { campaignId, created: true };
+    committing=true;await connection.commit();
+    return { campaignId:createdCampaignId, created: true };
   } catch (error) {
-    try { await connection.rollback(); } catch { /* preserve original */ }
+    if(committing)reusable=false;
+    else try { await connection.rollback(); } catch { reusable=false; }
+    if(committing)throw new OccasionEnvelopeStateUnknownError();
     throw error;
   } finally {
-    connection.release();
+    if(reusable)connection.release();else connection.destroy();
   }
 }
 

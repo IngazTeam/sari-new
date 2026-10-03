@@ -1,3 +1,4 @@
+import {validPreparedOccasion} from './occasion-envelope-policy';
 import {createHash} from 'node:crypto';
 import type {PoolConnection} from 'mysql2/promise';
 import {getPool} from './db/connection';
@@ -65,10 +66,7 @@ async function snapshot(tx:PoolConnection,actorId:number,merchantId:number,busin
   const discount=discounts.length===1?discounts[0]:null;
   let preparedValid=true;
   if(target.action==='toggle'&&target.enabled&&linked){
-    let audience:any;try{audience=typeof linked.targetAudience==='string'?JSON.parse(linked.targetAudience):linked.targetAudience;}catch{audience=null;}
-    const expiry=discount?.expiresAt instanceof Date?discount.expiresAt.getTime():typeof discount?.expiresAt==='string'?Date.parse(discount.expiresAt.replace(' ','T')+'Z'):NaN;
-    preparedValid=!!discount&&discount.type==='percentage'&&discount.value===discountPercent&&discount.minOrderAmount===0&&discount.maxUses===2000&&Number.isInteger(discount.usedCount)&&discount.usedCount>=0&&discount.usedCount<2000&&discount.isActive===1&&discount.customer_phone===null&&expiry>now.getTime()
-      &&linked.imageUrl===null&&audience!==null&&typeof audience==='object'&&!Array.isArray(audience)&&Object.keys(audience).length===0;
+    preparedValid=!!available&&validPreparedOccasion(linked,discount,discountPercent!,type as any,new Date(available.date+'T09:00:00Z'),now);
   }
   let reason:'ready'|'duplicate'|'not_available'|'in_progress'|'invalid'|'no_change'='ready';
   if(target.action==='create')reason=row?'duplicate':!available?'not_available':'ready';
