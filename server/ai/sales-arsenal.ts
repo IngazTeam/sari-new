@@ -1,3 +1,4 @@
+import {selectSalesCart,salesCartPrompt,type SalesCartEvidence} from './cart-sales-evidence';
 /** Fresh factual sales context and tactics subordinate to the current customer decision. */
 
 import {
@@ -45,7 +46,7 @@ export interface SalesArsenal {
   loyaltyPoints: number;
   loyaltyTier: { name: string; icon: string; discount: number } | null;
   availableRewards: { name: string; pointsCost: number }[];
-  abandonedCart: { items: string[]; total: number } | null;
+  abandonedCart: SalesCartEvidence | null;
   bestSellers: { name: string; price: number }[];
   totalProducts: number;
   // v6 enhancements
@@ -115,17 +116,7 @@ export async function loadArsenal(
   try {
     // 3. Abandoned cart for this customer
     const carts = await getAbandonedCartsByMerchantId(merchantId);
-    const customerCart = carts.find((c: any) => 
-      c.customerPhone === customerPhone && !c.recovered && !c.reminderSent
-    );
-    if (customerCart) {
-      let items: string[] = [];
-      try { items = JSON.parse(customerCart.items || '[]').map((i: any) => i.name || i); } catch { items = []; }
-      arsenal.abandonedCart = {
-        items,
-        total: Number(customerCart.totalAmount || 0),
-      };
-    }
+    arsenal.abandonedCart = selectSalesCart(carts,{merchantId,customerPhone});
   } catch { /* silent */ }
 
   try {
@@ -202,7 +193,8 @@ export function selectPersuasion(
     strategy: 'value_comparison', prompt: '\nعالج السبب الحالي للاعتراض أو المقارنة بخصائص موثقة مرتبطة بالاحتياج. إن لم يتضح السبب اسأل عنه مرة واحدة. لا تفترض أن الخصم أو الشهادة أو رأي عملاء آخرين هو الحل.\n',
   };
   if (arsenal.abandonedCart && /السلة|سلتي|cart/i.test(turn.customerMessage) && !used.includes('cart_recovery')) {
-    return { strategy: 'cart_recovery', prompt: buildCartRecoveryPrompt(arsenal.abandonedCart) };
+    const prompt=salesCartPrompt(arsenal.abandonedCart);
+    if(prompt)return { strategy: 'cart_recovery', prompt };
   }
   if (/نقاط|ولاء|مكافآت|points|loyalty|rewards/i.test(turn.customerMessage) && (arsenal.loyaltyPoints || 0) > 0) {
     return { strategy: 'loyalty_reward', prompt: buildLoyaltyPrompt(arsenal.loyaltyPoints, arsenal.loyaltyTier, arsenal.availableRewards) };
@@ -216,16 +208,6 @@ export function selectPersuasion(
 // ═══════════════════════════════════════════════════════════════
 // Prompt Builders
 // ═══════════════════════════════════════════════════════════════
-
-function buildCartRecoveryPrompt(cart: { items: string[]; total: number }): string {
-  // SEC-V6-01 FIX: sanitize cart item names
-  const safeItems = cart.items.map(i => sanitizeForArsenalPrompt(i));
-  let prompt = `\n## 🛒 فرصة بيع — سلة مهجورة:\nهذا العميل عنده سلة مهجورة فيها: ${safeItems.join('، ')} بمبلغ ${cart.total} ريال.\n`;
-  prompt += `- اذكر السلة بشكل طبيعي: "لاحظت إنك ما كملت طلبك السابق..."\n`;
-  prompt += `- اسأل إذا يحتاج مساعدة لإكمال الطلب\n`;
-  prompt += `- ⚠️ لا تضغط — اجعلها محادثة طبيعية\n`;
-  return prompt;
-}
 
 function buildEmpathyPrompt(): string {
   let prompt = `\n## ⚠️ العميل غاضب/محبط — استراتيجية التعاطف:\n`;

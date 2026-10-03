@@ -1,3 +1,4 @@
+import {selectSalesCart} from './cart-sales-evidence';
 /** Fast-path sales context: fresh offers, cart and loyalty scoped to the current customer. */
 
 import {
@@ -35,17 +36,7 @@ export async function loadLightweightArsenal(
   try {
     // 2. Abandoned cart for this customer
     const carts = await getAbandonedCartsByMerchantId(merchantId);
-    const customerCart = carts.find((c: any) =>
-      c.customerPhone === customerPhone && !c.recovered && !c.reminderSent
-    );
-    if (customerCart) {
-      let items: string[] = [];
-      try { items = JSON.parse(customerCart.items || '[]').map((i: any) => i.name || i); } catch { items = []; }
-      arsenal.abandonedCart = {
-        items,
-        total: Number(customerCart.totalAmount || 0),
-      };
-    }
+    arsenal.abandonedCart = selectSalesCart(carts,{merchantId,customerPhone});
   } catch { /* silent */ }
 
   try {
