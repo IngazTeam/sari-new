@@ -18,10 +18,6 @@ import {
   createExtractedProduct,
   createWebsiteAnalysis,
   createWebsiteInsight,
-  deleteCompetitorAnalysis,
-  getCompetitorAnalysesByMerchant,
-  getCompetitorAnalysisById,
-  getCompetitorProductsByCompetitorId,
   getExtractedProductsByAnalysisId,
   getInsightsByAnalysisId,
   getMerchantById,
@@ -42,11 +38,6 @@ async function reportOperation<T>(operation: () => Promise<T>): Promise<T> {
     console.error('[WebsiteReports] Operation failed');
     throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Website report operation unavailable' });
   }
-}
-
-// Historic provider/SQL errors are not tenant-facing report content.
-function publicCompetitor(competitor: any) {
-  return { ...competitor, errorMessage: competitor.status === 'failed' ? 'COMPETITOR_ANALYSIS_FAILED' : null };
 }
 
 export const websiteAnalysisRouter = router({
@@ -596,175 +587,10 @@ export const websiteAnalysisRouter = router({
       }
     }),
 
-  /**
-   * قائمة المنافسين
-   */
-  listCompetitors: merchantProcedure.query(async ({ ctx }) => reportOperation(async () => {
-    const merchant = await getMerchantById(ctx.merchantId);
-    if (!merchant) {
-      throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-    }
-
-    return (await getCompetitorAnalysesByMerchant(merchant.id)).map(publicCompetitor);
-  })),
-
-  /**
-   * الحصول على تحليل منافس
-   */
-  getCompetitor: merchantProcedure
-    .input(z.object({
-      id: z.number(),
-    }))
-    .query(async ({ ctx, input }) => reportOperation(async () => {
-      const competitor = await getCompetitorAnalysisById(input.id);
-
-      if (!competitor) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Competitor not found' });
-      }
-
-      // Verify ownership
-      const merchant = await getMerchantById(ctx.merchantId);
-      if (!merchant || competitor.merchantId !== merchant.id) {
-        throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
-      }
-
-      return publicCompetitor(competitor);
-    })),
-
-  /**
-   * الحصول على منتجات المنافس
-   */
-  getCompetitorProducts: merchantProcedure
-    .input(z.object({
-      competitorId: z.number(),
-    }))
-    .query(async ({ ctx, input }) => {
-      // Verify ownership
-      const competitor = await getCompetitorAnalysisById(input.competitorId);
-      if (!competitor) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Competitor not found' });
-      }
-
-      const merchant = await getMerchantById(ctx.merchantId);
-      if (!merchant || competitor.merchantId !== merchant.id) {
-        throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
-      }
-
-      return await getCompetitorProductsByCompetitorId(input.competitorId);
-    }),
-
-  /**
-   * مقارنة مع المنافسين
-   */
-  compareWithCompetitors: permissionProcedure('bot_settings.manage')
-    .input(z.object({
-      analysisId: z.number(),
-      competitorIds: z.array(z.number()),
-    }))
-    .query(async ({ ctx, input }) => {
-      // Verify ownership
-      const analysis = await getWebsiteAnalysisById(input.analysisId);
-      if (!analysis) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Analysis not found' });
-      }
-
-      const merchant = await getMerchantById(ctx.merchantId);
-      if (!merchant || analysis.merchantId !== merchant.id) {
-        throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
-      }
-
-      // Get competitor analyses
-      const competitors = await Promise.all(
-        input.competitorIds.map(id => getCompetitorAnalysisById(id))
-      );
-
-      // Filter out null values and verify ownership
-      const validCompetitors = competitors.filter(
-        c => c && c.merchantId === merchant.id
-      );
-
-      if (validCompetitors.length === 0) {
-        return { strengths: [], weaknesses: [], opportunities: [] };
-      }
-
-      // Convert to WebsiteAnalysisResult format
-      const merchantAnalysis: analyzer.WebsiteAnalysisResult = {
-        title: analysis.title || '',
-        description: analysis.description || '',
-        industry: analysis.industry || '',
-        language: analysis.language || '',
-        seoScore: analysis.seoScore,
-        seoIssues: analysis.seoIssues || [],
-        metaTags: analysis.metaTags || {},
-        performanceScore: analysis.performanceScore,
-        loadTime: analysis.loadTime || 0,
-        pageSize: analysis.pageSize || 0,
-        uxScore: analysis.uxScore,
-        mobileOptimized: analysis.mobileOptimized,
-        hasContactInfo: analysis.hasContactInfo,
-        hasWhatsapp: analysis.hasWhatsapp,
-        contentQuality: analysis.contentQuality,
-        wordCount: analysis.wordCount,
-        imageCount: analysis.imageCount,
-        videoCount: analysis.videoCount,
-        overallScore: analysis.overallScore,
-      };
-
-      const competitorAnalyses: analyzer.WebsiteAnalysisResult[] = validCompetitors.map(c => ({
-        title: c.name,
-        description: '',
-        industry: c.industry || '',
-        language: '',
-        seoScore: c.seoScore,
-        seoIssues: [],
-        metaTags: {},
-        performanceScore: c.performanceScore,
-        loadTime: 0,
-        pageSize: 0,
-        uxScore: c.uxScore,
-        mobileOptimized: false,
-        hasContactInfo: false,
-        hasWhatsapp: false,
-        contentQuality: c.contentScore,
-        wordCount: 0,
-        imageCount: 0,
-        videoCount: 0,
-        overallScore: c.overallScore,
-      }));
-
-      // Compare
-      const comparison = await analyzer.compareWithCompetitors(
-        merchantAnalysis,
-        competitorAnalyses,
-        merchant.id,
-      );
-
-      return comparison;
-    }),
-
-  /**
-   * حذف منافس
-   */
-  deleteCompetitor: permissionProcedure('bot_settings.manage')
-    .input(z.object({
-      id: z.number(),
-    }))
-    .mutation(async ({ ctx, input }) => reportOperation(async () => {
-      // Verify ownership
-      const competitor = await getCompetitorAnalysisById(input.id);
-      if (!competitor) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Competitor not found' });
-      }
-
-      const merchant = await getMerchantById(ctx.merchantId);
-      if (!merchant || competitor.merchantId !== merchant.id) {
-        throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
-      }
-
-      if (competitor.status === 'pending' || competitor.status === 'analyzing') {
-        throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'Wait for competitor analysis to settle before deletion' });
-      }
-      await deleteCompetitorAnalysis(input.id);
-      return { success: true };
-    })),
+  // Retired unbounded reads, unfenced deletion and side-effecting comparison query.
+  listCompetitors: merchantProcedure.query(() => { throw new TRPCError({code:'PRECONDITION_FAILED',message:'competitor_workspace:upgrade_required'}); }),
+  getCompetitor: merchantProcedure.input(z.object({id:z.number()})).query(() => { throw new TRPCError({code:'PRECONDITION_FAILED',message:'competitor_workspace:upgrade_required'}); }),
+  getCompetitorProducts: merchantProcedure.input(z.object({competitorId:z.number()})).query(() => { throw new TRPCError({code:'PRECONDITION_FAILED',message:'competitor_workspace:upgrade_required'}); }),
+  compareWithCompetitors: permissionProcedure('bot_settings.manage').input(z.object({analysisId:z.number(),competitorIds:z.array(z.number())})).query(() => { throw new TRPCError({code:'PRECONDITION_FAILED',message:'competitor_workspace:upgrade_required'}); }),
+  deleteCompetitor: permissionProcedure('bot_settings.manage').input(z.object({id:z.number()})).mutation(() => { throw new TRPCError({code:'PRECONDITION_FAILED',message:'competitor_workspace:upgrade_required'}); }),
 });

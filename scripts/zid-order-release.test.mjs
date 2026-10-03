@@ -7,7 +7,7 @@ import { spawnSync } from 'node:child_process';
 import { assertZidOrderReleaseCompatible, assertManagedWritersStopped, assertManagedWriterCompatibility } from './zid-order-release.mjs';
 import { managedRelease } from './sary-update-ops.mjs';
 
-for (const capability of ['website-analysis-durable-jobs-0200','website-analysis-request-links-0201']) test(`refuses a website analysis worker without ${capability}`,()=>{
+for (const capability of ['website-analysis-durable-jobs-0200','website-analysis-request-links-0201','competitor-reviewed-workspace-v1']) test(`refuses a website analysis worker without ${capability}`,()=>{
   const root=fs.mkdtempSync(path.join(os.tmpdir(),'sari-website-release-test-'));fs.mkdirSync(path.join(root,'scripts'));
   const file=path.join(root,'scripts/zid-order-store-capability.json');
   try {const marker=JSON.parse(fs.readFileSync('scripts/zid-order-store-capability.json','utf8'));marker.capabilities=marker.capabilities.filter(c=>c!==capability);fs.writeFileSync(file,JSON.stringify(marker));assert.throws(()=>assertZidOrderReleaseCompatible(root));}

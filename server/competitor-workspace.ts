@@ -193,6 +193,8 @@ export async function readCompetitorWorkspace(
       args
     );
     return {
+      actorId,
+      selection,
       merchantId,
       canManage,
       rows: values.map(project),
@@ -322,6 +324,7 @@ export async function readCompetitorDetail(
     );
     const deletion = await deletionSnapshot(tx, merchantId, selection.id);
     return {
+      actorId,
       merchantId,
       canManage,
       revision: deletion.revision,

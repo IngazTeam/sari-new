@@ -162,52 +162,10 @@ it("does not return raw admission errors or replace intentional not-found respon
     code: "NOT_FOUND",
   });
 });
-it("does not expose historical provider errors in list or detail results", async () => {
-  expect((await caller().listCompetitors())[0]).toMatchObject({
-    errorMessage: "COMPETITOR_ANALYSIS_FAILED",
-    name: "Fixture",
-  });
-  expect(await caller().getCompetitor({ id: 8 })).toMatchObject({
-    errorMessage: "COMPETITOR_ANALYSIS_FAILED",
-  });
-  m.rows[0].status = "completed";
-  expect((await caller().listCompetitors())[0].errorMessage).toBeNull();
-});
-it.each(["list", "read", "remove"] as const)(
-  "does not expose raw storage errors through %s",
-  async target => {
-    m[target].mockRejectedValue(Error(secret));
-    const call =
-      target === "list"
-        ? caller().listCompetitors()
-        : target === "read"
-          ? caller().getCompetitor({ id: 8 })
-          : caller().deleteCompetitor({ id: 8 });
-    await expect(call).rejects.toMatchObject({
-      code: "INTERNAL_SERVER_ERROR",
-      message: "Website report operation unavailable",
-    });
-  }
-);
-it.each(["pending", "analyzing"])(
-  "blocks deletion of a %s report before storage",
-  async status => {
-    m.rows[0].status = status;
-    await expect(caller().deleteCompetitor({ id: 8 })).rejects.toMatchObject({
-      code: "PRECONDITION_FAILED",
-    });
-    expect(m.remove).not.toHaveBeenCalled();
-  }
-);
-it("rejects foreign report reads and deletion before returning content or changing it", async () => {
-  m.rows[0].merchantId = 99;
-  await expect(caller().getCompetitor({ id: 8 })).rejects.toMatchObject({
-    code: "FORBIDDEN",
-  });
-  await expect(caller().deleteCompetitor({ id: 8 })).rejects.toMatchObject({
-    code: "FORBIDDEN",
-  });
-  expect(m.remove).not.toHaveBeenCalled();
+it.each(['list','detail','products','compare','delete'])('retires the old %s entry without accessing old storage or a provider',async method=>{
+ const api=caller(); const call=method==='list'?api.listCompetitors():method==='detail'?api.getCompetitor({id:8}):method==='products'?api.getCompetitorProducts({competitorId:8}):method==='compare'?api.compareWithCompetitors({analysisId:8,competitorIds:[8]}):api.deleteCompetitor({id:8});
+ await expect(call).rejects.toMatchObject({code:'PRECONDITION_FAILED',message:'competitor_workspace:upgrade_required'});
+ for(const fn of [m.list,m.read,m.remove,m.analyze])expect(fn).not.toHaveBeenCalled();
 });
 it.each(["viewer", "sales_supervisor"])(
   "blocks %s creation and deletion before side effects",
