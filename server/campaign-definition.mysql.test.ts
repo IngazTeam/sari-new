@@ -1,13 +1,15 @@
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getPool, closeDb } from './db/connection';
-import { getCampaignById, updateEditableCampaign, setPendingOccasionEnabled } from './db';
+import { getCampaignById, updateEditableCampaign } from './db';
 import { createDisposableMerchant, cleanupDisposableMerchants } from './tests/helpers/disposable-merchant';
+import {reviewOccasionAction,applyOccasionAction} from './occasion-actions';
 import { campaignDefinitionKey } from './campaign-definition';
 import { enqueueCampaignDeliveries, completeCampaignWithoutRecipients, CampaignDispatchConflictError } from './automation/campaign-delivery-outbox';
 
 describe.skipIf(!process.env.DATABASE_URL)('campaign definition admission race in local MySQL', () => {
   let owner: Awaited<ReturnType<typeof createDisposableMerchant>>, other: typeof owner, id: number, expectedDefinition: string;
   const q = async (sql: string, params: any[] = []) => (await (await getPool())!.execute<any>(sql, params))[0];
+  const pause=async(id:number,merchantId=owner.merchantId)=>{const target={action:'toggle' as const,id,enabled:false},review=await reviewOccasionAction(owner.userId,merchantId,target);return applyOccasionAction(owner.userId,merchantId,{target,reviewRevision:review.reviewRevision,acknowledged:true});};
   const queued = () => q('SELECT * FROM campaign_delivery_outbox WHERE campaign_id=?', [id]);
   const enqueue = (merchantId = owner.merchantId, definition = expectedDefinition) => enqueueCampaignDeliveries({ campaignId: id, merchantId, expectedDefinition: definition, recipients: [{ phone: '99900000001' }] });
   const occasion = async (enabled = 1, merchantId = owner.merchantId) => Number((await q("INSERT INTO occasion_campaigns (merchantId,campaign_id,occasionType,year,enabled,discountPercentage,status) VALUES (?,?,'national_day',2026,?,23,'pending')", [merchantId,id,enabled])).insertId);
@@ -33,7 +35,7 @@ describe.skipIf(!process.env.DATABASE_URL)('campaign definition admission race i
   it('claims an enabled occasion together with its campaign and refuses late toggles', async () => {
     const oc = await occasion(); expect(await enqueue()).toEqual({ queued: 1 });
     expect(await q('SELECT status,enabled FROM occasion_campaigns WHERE id=?', [oc])).toEqual([expect.objectContaining({ status: 'sending', enabled: 1 })]);
-    expect(await setPendingOccasionEnabled(oc, owner.merchantId, false)).toBe(false);
+    await expect(pause(oc)).rejects.toMatchObject({reason:'invalid'});
   });
   it('rejects a foreign merchant linked to the campaign', async () => {
     await occasion(1, other.merchantId); await expect(enqueue()).rejects.toBeInstanceOf(CampaignDispatchConflictError); expect(await queued()).toEqual([]);
@@ -48,15 +50,16 @@ describe.skipIf(!process.env.DATABASE_URL)('campaign definition admission race i
       expect(await sending).toMatchObject({ error: expect.any(CampaignDispatchConflictError) }); expect(await queued()).toEqual([]);
     } finally { await connection.rollback(); connection.release(); await sending; }
   });
-  it('allows idempotent pending toggles only for the owning tenant', async () => {
-    const oc = await occasion(); expect(await setPendingOccasionEnabled(oc, other.merchantId, false)).toBe(false);
-    expect(await setPendingOccasionEnabled(oc, owner.merchantId, false)).toBe(true);
-    expect(await setPendingOccasionEnabled(oc, owner.merchantId, false)).toBe(true);
-    expect(await setPendingOccasionEnabled(oc, owner.merchantId, true)).toBe(true);
+  it('requires a fresh reviewed pause for the owning tenant and rejects replay',async()=>{
+    const oc=await occasion();await expect(pause(oc,other.merchantId)).rejects.toMatchObject({reason:'forbidden'});
+    const target={action:'toggle' as const,id:oc,enabled:false},review=await reviewOccasionAction(owner.userId,owner.merchantId,target),value={target,reviewRevision:review.reviewRevision,acknowledged:true as const};
+    expect((await applyOccasionAction(owner.userId,owner.merchantId,value)).enabled).toBe(false);
+    await expect(applyOccasionAction(owner.userId,owner.merchantId,value)).rejects.toMatchObject({reason:'stale'});
+    expect(await q('SELECT enabled FROM occasion_campaigns WHERE id=?',[oc])).toEqual([{enabled:0}]);
   });
   it.each(['sending','completed','failed'])('refuses toggling a %s occasion', async status => {
     const oc = await occasion(); await q('UPDATE occasion_campaigns SET status=? WHERE id=?', [status,oc]);
-    expect(await setPendingOccasionEnabled(oc, owner.merchantId, false)).toBe(false);
+    await expect(pause(oc)).rejects.toMatchObject({reason:'invalid'});
   });
   it.each([
     ['name', 'Renamed'], ['message', 'Changed message'], ['imageUrl', 'https://example.test/changed.png'],

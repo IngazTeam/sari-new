@@ -11,12 +11,9 @@ describe('occasion policy and generated content',()=>{
 });
 describe.skipIf(!process.env.DATABASE_URL)('occasion persistence on disposable tenants',()=>{
   let owner:Awaited<ReturnType<typeof createDisposableMerchant>>,id:number;
-  beforeEach(async()=>{owner=await createDisposableMerchant('occasion-storage');id=(await db.createOccasionCampaign({merchantId:owner.merchantId,occasionType:'national_day',year:2026,enabled:1,discountPercentage:23,status:'pending'}))!.id;});
+  beforeEach(async()=>{owner=await createDisposableMerchant('occasion-storage');const [result]=await (await db.getPool())!.execute<any>("INSERT INTO occasion_campaigns (merchantId,occasionType,year,enabled,discountPercentage,status) VALUES (?,'national_day',2026,0,23,'pending')",[owner.merchantId]);id=Number(result.insertId);});
   afterEach(async()=>{await cleanupDisposableMerchants([owner.userId]);});afterAll(db.closeDb);
   it('creates and retrieves its exact scoped fixture',async()=>{expect(await db.getOccasionCampaignById(id)).toMatchObject({id,merchantId:owner.merchantId,occasionType:'national_day',year:2026,status:'pending'});});
   it('lists its own non-empty records',async()=>{expect(await db.getOccasionCampaignsByMerchantId(owner.merchantId)).toEqual([expect.objectContaining({id,merchantId:owner.merchantId})]);});
   it('finds a definition by tenant, type and year',async()=>{expect(await db.getOccasionCampaignByTypeAndYear(owner.merchantId,'national_day',2026)).toMatchObject({id});expect(await db.getOccasionCampaignByTypeAndYear(owner.merchantId,'ramadan',2026)).toBeUndefined();});
-  it('toggles only the pending fixture',async()=>{expect(await db.setPendingOccasionEnabled(id,owner.merchantId,false)).toBe(true);expect(await db.getOccasionCampaignById(id)).toMatchObject({enabled:0,status:'pending'});});
-  it('retains the legacy internal completion helper and exact acceptance count',async()=>{await db.markOccasionCampaignSent(id,150);expect(await db.getOccasionCampaignById(id)).toMatchObject({status:'completed',recipientCount:150,sentAt:expect.any(String)});});
-  it('computes exact statistics from the fixture',async()=>{expect(await db.getOccasionCampaignsStats(owner.merchantId)).toEqual({totalCampaigns:1,completedCampaigns:0,acceptedRecipients:0});await db.markOccasionCampaignSent(id,150);expect(await db.getOccasionCampaignsStats(owner.merchantId)).toEqual({totalCampaigns:1,completedCampaigns:1,acceptedRecipients:150});});
 });

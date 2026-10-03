@@ -116,7 +116,6 @@ import {
   InsertOrderTrackingLog,
   occasionCampaigns,
   OccasionCampaign,
-  InsertOccasionCampaign,
   businessTemplates,
   BusinessTemplate,
   InsertBusinessTemplate,
@@ -2729,16 +2728,7 @@ export async function getReferralsByCodeId(referralCodeId: number): Promise<Refe
 // Occasion Campaigns Functions
 // ============================================
 
-/**
- * Create a new occasion campaign
- */
-export async function createOccasionCampaign(data: InsertOccasionCampaign): Promise<OccasionCampaign | undefined> {
-  const db = await getDb();
-  if (!db) throw new Error('Database not available');
 
-  const [campaign] = await db.insert(occasionCampaigns).values(data);
-  return getOccasionCampaignById(campaign.insertId);
-}
 
 /**
  * Get occasion campaign by ID
@@ -2785,56 +2775,13 @@ export async function getOccasionCampaignByTypeAndYear(
   return campaign;
 }
 
-/**
- * Update occasion campaign
- */
-export async function updateOccasionCampaign(id: number, data: Partial<InsertOccasionCampaign>): Promise<void> {
-  const db = await getDb();
-  if (!db) throw new Error('Database not available');
 
-  await db.update(occasionCampaigns).set(data).where(eq(occasionCampaigns.id, id));
-}
 
-/** Compare lifecycle in the write; a dispatcher may have claimed it after the UI read. */
-export async function setPendingOccasionEnabled(id: number, merchantId: number, enabled: boolean): Promise<boolean> {
-  if (!Number.isSafeInteger(id) || id <= 0 || !Number.isSafeInteger(merchantId) || merchantId <= 0 || typeof enabled !== 'boolean') {
-    throw new Error('Invalid occasion toggle scope');
-  }
-  const database = await getDb();
-  if (!database) throw new Error('Database not available');
-  const [result] = await database.update(occasionCampaigns).set({ enabled: enabled ? 1 : 0 }).where(and(
-    eq(occasionCampaigns.id, id), eq(occasionCampaigns.merchantId, merchantId), eq(occasionCampaigns.status, 'pending'),
-  ));
-  return result.affectedRows > 0;
-}
 
-/**
- * Legacy compatibility helper: mark occasion processing completed. The count
- * represents provider acceptance, not delivery or reading.
- */
-export async function markOccasionCampaignSent(id: number, recipientCount: number): Promise<void> {
-  const db = await getDb();
-  if (!db) throw new Error('Database not available');
 
-  await db
-    .update(occasionCampaigns)
-    .set({
-      status: 'completed',
-      sentAt: formatDateForDB(new Date()),
-      recipientCount,
-    })
-    .where(eq(occasionCampaigns.id, id));
-}
 
-/**
- * Get enabled occasion campaigns for all merchants
- */
-export async function getEnabledOccasionCampaigns(): Promise<OccasionCampaign[]> {
-  const db = await getDb();
-  if (!db) throw new Error('Database not available');
 
-  return db.select().from(occasionCampaigns).where(eq(occasionCampaigns.enabled, 1));
-}
+
 
 /**
  * Return only campaigns the merchant explicitly enabled and which have not
@@ -2863,24 +2810,7 @@ export async function getDispatchableOccasionCampaigns(
     .limit(safeLimit);
 }
 
-/**
- * Get occasion campaigns statistics for a merchant
- */
-export async function getOccasionCampaignsStats(merchantId: number) {
-  const db = await getDb();
-  if (!db) throw new Error('Database not available');
 
-  const campaigns = await getOccasionCampaignsByMerchantId(merchantId);
-
-  const completedCampaigns = campaigns.filter((campaign) => campaign.status === 'completed');
-  const acceptedRecipients = campaigns.reduce((sum, campaign) => sum + campaign.recipientCount, 0);
-
-  return {
-    totalCampaigns: campaigns.length,
-    completedCampaigns: completedCampaigns.length,
-    acceptedRecipients,
-  };
-}
 
 
 // ==================== WhatsApp Instances ====================

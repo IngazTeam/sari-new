@@ -7,7 +7,7 @@ import { spawnSync } from 'node:child_process';
 import { assertZidOrderReleaseCompatible, assertManagedWritersStopped, assertManagedWriterCompatibility } from './zid-order-release.mjs';
 import { managedRelease } from './sary-update-ops.mjs';
 
-for (const capability of ['merchant-referral-program-0193','abandoned-cart-reminder-admission-0194','abandoned-cart-reminder-transport-0194','abandoned-cart-reviewed-writes-only-0194']) test(`refuses releases without ${capability}`,()=>{
+for (const capability of ['merchant-referral-program-0193','abandoned-cart-reminder-admission-0194','abandoned-cart-reminder-transport-0194','abandoned-cart-reviewed-writes-only-0194','occasion-reviewed-writes-only-v1']) test(`refuses releases without ${capability}`,()=>{
   const root=fs.mkdtempSync(path.join(os.tmpdir(),'sari-referral-release-test-'));fs.mkdirSync(path.join(root,'scripts'));
   const file=path.join(root,'scripts/zid-order-store-capability.json');
   try {const marker=JSON.parse(fs.readFileSync('scripts/zid-order-store-capability.json','utf8'));marker.capabilities=marker.capabilities.filter(c=>c!==capability);fs.writeFileSync(file,JSON.stringify(marker));assert.throws(()=>assertZidOrderReleaseCompatible(root));}
