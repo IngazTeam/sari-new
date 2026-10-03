@@ -1,0 +1,170 @@
+{
+  "engine": "Codex IAB Chromium, CSS iframe dimensions; not native Safari/iPhone",
+  "measurements": [
+    {
+      "label": "grid-ar-390",
+      "client": 360,
+      "dialog": null,
+      "focus": "خيارات الموك أبموك أب مكتبة الوسائطملفات وإيصالات توضيحية في",
+      "height": 844,
+      "rawKeys": false,
+      "scroll": 360,
+      "width": 390
+    },
+    {
+      "label": "details-ar-390x844-before-test-wrapper-script-fix",
+      "client": 360,
+      "dialog": {
+        "bottom": 828,
+        "client": 296,
+        "height": 812,
+        "scroll": 296,
+        "width": 328,
+        "x": 46,
+        "y": 16
+      },
+      "focus": "التفاصيل",
+      "height": 844,
+      "rawKeys": false,
+      "scroll": 360,
+      "width": 390
+    },
+    {
+      "label": "details-ar-320x550",
+      "client": 290,
+      "dialog": {
+        "bottom": 534,
+        "client": 226,
+        "height": 518,
+        "scroll": 226,
+        "width": 258,
+        "x": 46,
+        "y": 16
+      },
+      "focus": "التفاصيل",
+      "height": 550,
+      "rawKeys": false,
+      "scroll": 290,
+      "width": 320
+    },
+    {
+      "label": "uncertain-removal-en-B-320x550",
+      "client": 290,
+      "dialog": {
+        "bottom": 534,
+        "client": 226,
+        "height": 518,
+        "scroll": 232,
+        "width": 258,
+        "x": 16,
+        "y": 16
+      },
+      "focus": "Preview controlsActual media library previewTemporary in-mem",
+      "height": 550,
+      "rawKeys": false,
+      "scroll": 290,
+      "width": 320
+    },
+    {
+      "label": "uncertain-en-before-fix",
+      "client": 290,
+      "dialog": {
+        "bottom": 534,
+        "client": 226,
+        "height": 518,
+        "scroll": 232,
+        "width": 258,
+        "x": 16,
+        "y": 16
+      },
+      "focus": "Preview controlsActual media library previewTemporary in-mem",
+      "height": 550,
+      "rawKeys": false,
+      "scroll": 290,
+      "width": 320
+    },
+    {
+      "label": "uncertain-removal-en-B-320x550-fixed",
+      "client": 290,
+      "dialog": {
+        "bottom": 534,
+        "client": 226,
+        "height": 518,
+        "scroll": 226,
+        "width": 258,
+        "x": 16,
+        "y": 16
+      },
+      "focus": "The result could not be confirmed. Check the saved request.",
+      "height": 550,
+      "rawKeys": false,
+      "scroll": 290,
+      "width": 320
+    },
+    {
+      "label": "recovery-footer-en-B-320x550-final",
+      "client": 290,
+      "dialog": {
+        "bottom": 534,
+        "client": 226,
+        "height": 518,
+        "scroll": 226,
+        "width": 258,
+        "x": 16,
+        "y": 16
+      },
+      "focus": "The result could not be confirmed. Check the saved request.",
+      "height": 550,
+      "rawKeys": false,
+      "scroll": 290,
+      "width": 320
+    },
+    {
+      "label": "pending-receipts-en-320",
+      "client": 290,
+      "dialog": null,
+      "focus": "Preview controlsActual media library previewTemporary in-mem",
+      "height": 550,
+      "rawKeys": false,
+      "scroll": 290,
+      "width": 320
+    },
+    {
+      "label": "list-en-390x844",
+      "client": 360,
+      "dialog": null,
+      "focus": "List",
+      "height": 844,
+      "rawKeys": false,
+      "scroll": 360,
+      "width": 390
+    },
+    {
+      "label": "list-en-768x844",
+      "client": 738,
+      "dialog": null,
+      "focus": "List",
+      "height": 844,
+      "rawKeys": false,
+      "scroll": 738,
+      "width": 768
+    },
+    {
+      "label": "list-en-1440x844",
+      "client": 1410,
+      "dialog": null,
+      "focus": "List",
+      "height": 844,
+      "rawKeys": false,
+      "scroll": 1410,
+      "width": 1440
+    }
+  ],
+  "states": [
+    "Arabic grid/details",
+    "English tenant B lost removal response, recovered once",
+    "12 pending receipts across 2 pages",
+    "read-only has no upload/removal controls",
+    "foreign and stale-error hide rows"
+  ]
+}

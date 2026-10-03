@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-03T09:30:26.710Z",
+  "generatedAt": "2026-10-03T11:44:29.314Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 455,
-      "controls": 2607
+      "files": 458,
+      "controls": 2621
     }
   },
   "addedFiles": [
@@ -233,6 +233,9 @@
     "client/src/components/merchant/QuotationTemplateWorkspace.tsx",
     "client/src/lib/quotation-template-cache.ts",
     "client/src/components/merchant/QuotationTemplateReport.tsx",
+    "client/src/components/merchant/MediaWorkspace.tsx",
+    "client/src/lib/media-workspace-labels.ts",
+    "client/src/lib/media-workspace.ts",
     "client/src/components/merchant/QuickResponseWorkspace.tsx",
     "client/src/components/merchant/InsightsWorkspace.tsx",
     "client/src/components/merchant/KeywordReviewDialog.tsx",
@@ -364,6 +367,7 @@
     "client/src/pages/merchant/SalesHub.tsx",
     "client/src/pages/merchant/SalesPipeline.tsx",
     "client/src/pages/merchant/QuotationTemplates.tsx",
+    "client/src/pages/merchant/MediaLibrary.tsx",
     "client/src/pages/merchant/QuickResponses.tsx",
     "client/src/pages/merchant/InsightsDashboard.tsx",
     "client/src/pages/merchant/PerformanceMetrics.tsx",
@@ -1621,11 +1625,26 @@
     {
       "route": "/merchant/media-library",
       "controlsBefore": 23,
-      "controlsNow": 23,
-      "removedQueries": [],
-      "addedQueries": [],
-      "removedMutations": [],
-      "addedMutations": []
+      "controlsNow": 37,
+      "removedQueries": [
+        "media.list",
+        "media.getStats"
+      ],
+      "addedQueries": [
+        "auth.me",
+        "merchants.getCurrent",
+        "media.workspace",
+        "media.requestReceipt"
+      ],
+      "removedMutations": [
+        "media.upload",
+        "media.delete"
+      ],
+      "addedMutations": [
+        "media.uploadReviewed",
+        "media.removeReviewed",
+        "media.closeRequest"
+      ]
     },
     {
       "route": "/merchant/scheduled-messages",

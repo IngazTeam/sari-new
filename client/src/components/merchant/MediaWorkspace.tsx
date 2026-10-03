@@ -34,13 +34,14 @@ export function MediaWorkspace({ actorId, merchantId }: { actorId: number; merch
   const [modal, setModal] = useState<Modal | null>(null), [file, setFile] = useState<ChosenFile | null>(null), [category, setCategory] = useState<typeof mediaCategories[number]>('general');
   const [busy, setBusy] = useState(false), [reading, setReading] = useState(false), [dragging, setDragging] = useState(false);
   const [failure, setFailure] = useState(''), [notice, setNotice] = useState(''), [fileError, setFileError] = useState(''), [categoryError, setCategoryError] = useState(''), [searchText, setSearchText] = useState<string | null>(null);
-  const live = useRef(true), lock = useRef(false), scope = useRef(''), picker = useRef<HTMLInputElement>(null), title = useRef<HTMLHeadingElement>(null), opener = useRef<HTMLElement | null>(null), reader = useRef<FileReader | null>(null);
+  const live = useRef(true), lock = useRef(false), scope = useRef(''), picker = useRef<HTMLInputElement>(null), title = useRef<HTMLHeadingElement>(null), failureTarget = useRef<HTMLParagraphElement>(null), opener = useRef<HTMLElement | null>(null), reader = useRef<FileReader | null>(null);
   scope.current = `${actorId}:${merchantId}:${key}:${locale}`;
   const view = new URLSearchParams(search).get('view') === 'list' ? 'list' : 'grid';
   useEffect(() => { live.current = true; return () => { live.current = false; reader.current?.abort(); }; }, []);
   useEffect(() => () => { if (file?.preview) URL.revokeObjectURL(file.preview); }, [file]);
   useEffect(() => { setModal(null); setFile(null); setSearchText(null); setFailure(''); }, [key, locale]);
   useEffect(() => { if (query.error) { setModal(null); setFile(null); } }, [query.error]);
+  useEffect(() => { if (failure && !busy && !reading) failureTarget.current?.focus(); }, [failure, busy, reading]);
   const writable = !!data && !busy && !reading && !query.isFetching && !pending;
   const currentRow = modal && 'row' in modal ? data?.rows.find(r => r.id === modal.row.id && r.revision === modal.row.revision) : undefined;
   const number = (n: number) => n.toLocaleString(locale);
@@ -124,7 +125,7 @@ export function MediaWorkspace({ actorId, merchantId }: { actorId: number; merch
     <header className="sc-header"><div><p className="sc-eyebrow">{c.eyebrow}</p><h1>{c.title}</h1><p>{c.intro}</p></div><div className="sc-actions">
       <Button variant="outline" disabled={busy || reading || query.isFetching} onClick={() => void refresh()}><RefreshCw aria-hidden="true" />{c.refresh}</Button>
       {!!data?.allowedUploadCategories.length && <Button disabled={!writable} onClick={() => open({ kind: 'upload' })}><Upload aria-hidden="true" />{c.upload}</Button>}</div></header>
-    {notice && <p className="sc-feedback" role="status">{notice}</p>}{!modal && pendingPanel}{!modal && failure && <p role="alert" className="sc-feedback">{failure}</p>}
+    {notice && <p className="sc-feedback" role="status">{notice}</p>}{!modal && pendingPanel}{!modal && failure && <p ref={failureTarget} tabIndex={-1} role="alert" className="sc-feedback">{failure}</p>}
     {query.error ? <WorkspaceState inline kind={workspaceFailureKind(query.error)} onRetry={() => void refresh()} /> : !data ? <WorkspaceState inline kind={query.isLoading || query.isFetching ? 'loading' : 'error'} onRetry={() => void refresh()} /> : <>
       {!data.allowedUploadCategories.length && <p className="sc-muted">{c.readonly}</p>}
       <dl className="sc-summary"><div><dt>{c.total}</dt><dd>{number(data.total)}</dd></div><div><dt>{c.registeredSize}</dt><dd>{size(data.totalSizeBytes)}</dd></div><div><dt>{c.pendingCount}</dt><dd>{number(data.pendingUploadCount)}</dd></div></dl><p className="sc-muted">{c.spaceHint}</p>
@@ -145,7 +146,7 @@ export function MediaWorkspace({ actorId, merchantId }: { actorId: number; merch
     </>}
     <Dialog open={!!modal} onOpenChange={isOpen => { if (!isOpen && !busy && !reading) { setModal(null); setFile(null); } }}><DialogContent closeLabel={c.close} className="sc-dialog ml-dialog" dir={locale === 'ar' ? 'rtl' : 'ltr'} onOpenAutoFocus={event => { event.preventDefault(); title.current?.focus(); }} onCloseAutoFocus={event => { event.preventDefault(); opener.current?.isConnected && opener.current.focus(); }}>
       <DialogHeader><DialogTitle ref={title} tabIndex={-1}>{modal?.kind === 'upload' ? c.uploadTitle : modal?.kind === 'remove' ? c.removeTitle : modal?.kind === 'close' ? c.closeRequestTitle : c.details}</DialogTitle><DialogDescription>{modal?.kind === 'upload' ? c.uploadHint : modal?.kind === 'remove' ? c.removeHint : modal?.kind === 'close' ? c.closeRequestHint : c.previewHint}</DialogDescription></DialogHeader>
-      {failure && <p role="alert" className="sc-feedback">{failure}</p>}{notice && <p role="status">{notice}</p>}{pending && modal?.kind !== 'close' && pendingPanel}
+      {failure && <p ref={failureTarget} tabIndex={-1} role="alert" className="sc-feedback">{failure}</p>}{notice && <p role="status">{notice}</p>}{pending && modal?.kind !== 'close' && pendingPanel}
       {modal?.kind === 'upload' && <div className="ml-upload"><div className={`ml-drop ${dragging ? 'ml-dragging' : ''}`} onDragOver={e => { e.preventDefault(); if (writable) setDragging(true); }} onDragLeave={() => setDragging(false)} onDrop={e => { e.preventDefault(); setDragging(false); void choose(e.dataTransfer.files); }}>
         {file ? <><Thumbnail url={file.preview} kind={file.file.type === 'application/pdf' ? 'pdf' : 'image'} name={file.file.name} c={c} /><p>{c.reviewUpload}: <strong>{mediaFileName(file.file.name)}</strong></p><p>{size(file.file.size)}</p></> : <><Upload aria-hidden="true" /><p>{c.dropHint}</p></>}
         <Button variant="outline" disabled={!writable} onClick={() => picker.current?.click()} aria-describedby={fileError ? 'media-file-error' : undefined}>{reading ? c.reading : file ? c.replace : c.chooseFile}</Button>
@@ -156,14 +157,15 @@ export function MediaWorkspace({ actorId, merchantId }: { actorId: number; merch
       </div>}
       {modal && 'row' in modal && <div className="ml-detail"><h2>{modal.row.originalName || c.unknown}</h2>{modal.row.originalName&&modal.row.originalName.length>100&&<details><summary>{c.fullName}</summary><p className="ml-full-name">{modal.row.originalName}</p></details>}{modal.kind === 'details' && <Thumbnail url={modal.row.previewUrl} name={modal.row.originalName || ''} kind={modal.row.kind} c={c} />}
         <dl className="sc-facts">{[[c.size, size(modal.row.fileSize)], [c.category, modal.row.category ? c[modal.row.category] : c.other], [c.created, stamp(modal.row.createdAt)], [c.mime, modal.row.mimeType || c.unknown]].map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
-        {!currentRow && <p role="alert" className="ml-issue">{c.stale}</p>}
+        {!currentRow && !pending && <p role="alert" className="ml-issue">{c.stale}</p>}
         {modal.kind === 'details' && <>{modal.row.previewUrl && <><div className="sc-actions"><Button variant="outline" asChild><a href={modal.row.previewUrl} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer"><ExternalLink aria-hidden="true" />{c.open}</a></Button><Button variant="outline" onClick={() => void copy(modal.row.previewUrl!)}><Copy aria-hidden="true" />{c.copy}</Button></div><label><span>{c.link}</span><input readOnly value={modal.row.previewUrl} dir="ltr" onFocus={e => e.target.select()} /></label></>}
           {!!modal.row.issues.length && <p className="ml-issue">{c.needsReview}</p>}<details><summary>{c.technical}</summary><dl className="sc-facts"><div><dt>{c.storageKey}</dt><dd>{modal.row.fileName || c.unknown}</dd></div><div><dt>ID</dt><dd>{modal.row.id}</dd></div></dl></details></>}
       </div>}
       {modal?.kind === 'close' && <details><summary>{c.request}</summary><code>{modal.requestKey}</code></details>}
       <div className="ml-dialog-footer"><Button variant="outline" disabled={busy || reading} onClick={() => { setModal(null); setFile(null); }}>{modal?.kind === 'details' ? c.close : c.cancel}</Button>
-        {modal?.kind === 'upload' && <Button disabled={!writable} onClick={() => void submit()}>{busy ? c.uploading : c.confirmUpload}</Button>}
-        {modal?.kind === 'remove' && <Button disabled={!writable || !currentRow?.canDelete} onClick={() => void submit()}>{busy ? c.saving : c.confirmRemove}</Button>}
+        {modal?.kind === 'upload' && (!pending || busy) && <Button disabled={!writable} onClick={() => void submit()}>{busy ? c.uploading : c.confirmUpload}</Button>}
+        {modal?.kind === 'remove' && (!pending || busy) && <Button disabled={!writable || !currentRow?.canDelete} onClick={() => void submit()}>{busy ? c.saving : c.confirmRemove}</Button>}
+        {pending && !busy && (modal?.kind === 'upload' || modal?.kind === 'remove') && <Button disabled={reading} onClick={() => void recover(pending)}>{c.checkResult}</Button>}
         {modal?.kind === 'close' && <Button disabled={busy || reading} onClick={() => void recover(modal.requestKey, modal.actorId, true)}>{busy ? c.saving : c.confirmClose}</Button>}
       </div>
     </DialogContent></Dialog>

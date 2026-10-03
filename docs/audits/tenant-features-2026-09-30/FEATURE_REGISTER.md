@@ -2,7 +2,7 @@
 
 هذا حصر مصدر قابل لإعادة التوليد، وليس ادعاءً بأن كل مسار عمل اختُبر أو أُعيد تصميمه. يشمل المكونات الفرعية المحلية، الحقول، الأزرار، النوافذ، التبويبات، واجهات القراءة والتعديل. العناصر الديناميكية تحتاج مراجعة إضافية.
 
-- 126 مسارًا مسجلًا، 455 ملف واجهة متصلًا، 2607 عنصر تحكم في المصدر.
+- 126 مسارًا مسجلًا، 458 ملف واجهة متصلًا، 2621 عنصر تحكم في المصدر.
 - 0 رابطًا حرفيًا غير مطابق، و0 ملف صفحة غير متصل بالمسارات المحصورة.
 
 | الصفحة | الملفات | عناصر التحكم | القراءة / التعديل | موك أب للصفحة |
@@ -62,7 +62,7 @@
 | /merchant/sales-pipeline — فرص البيع | 9 | 13 | 3 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/acquisition-report — مصادر العملاء | 1 | 0 | 2 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/quotation-templates — قوالب عروض الأسعار | 9 | 35 | 5 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/media-library — مكتبة الوسائط | 1 | 23 | 2 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/media-library — مكتبة الوسائط | 5 | 37 | 4 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/scheduled-messages — الرسائل المجدولة | 1 | 13 | 1 / 4 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/sari-personality — مدخل لوحة التاجر | 0 | 0 | 0 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/quick-responses — الردود السريعة | 8 | 31 | 3 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -2769,33 +2769,47 @@
 | 128 | button | السابق | quotationTemplates.noMatches quotationTemplates.empty |
 | 141 | button | التالي | quotationTemplates.noMatches quotationTemplates.empty |
 
-## client/src/pages/merchant/MediaLibrary.tsx
+## client/src/components/merchant/MediaWorkspace.tsx
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 180 | Button | جاري الرفع... رفع ملف | مكتبة الوسائط |
-| 192 | input | تسمية ديناميكية / تحتاج مراجعة | مكتبة الوسائط |
-| 262 | Button | اختر ملف | مكتبة الوسائط |
-| 273 | select | التصنيف: | مكتبة الوسائط |
-| 294 | button | تسمية ديناميكية / تحتاج مراجعة | مكتبة الوسائط |
-| 315 | Input | بحث... | مكتبة الوسائط |
-| 325 | button | تسمية ديناميكية / تحتاج مراجعة | مكتبة الوسائط |
-| 334 | button | تسمية ديناميكية / تحتاج مراجعة | مكتبة الوسائط |
-| 372 | button | تسمية ديناميكية / تحتاج مراجعة | مكتبة الوسائط |
-| 388 | button | تسمية ديناميكية / تحتاج مراجعة | مكتبة الوسائط |
-| 398 | button | تسمية ديناميكية / تحتاج مراجعة | مكتبة الوسائط |
-| 424 | button | تأكيد | مكتبة الوسائط |
-| 430 | button | إلغاء | مكتبة الوسائط |
-| 438 | button | تسمية ديناميكية / تحتاج مراجعة | مكتبة الوسائط |
-| 490 | button | تسمية ديناميكية / تحتاج مراجعة | مكتبة الوسائط |
-| 499 | button | تسمية ديناميكية / تحتاج مراجعة | مكتبة الوسائط |
-| 510 | button | تأكيد | مكتبة الوسائط |
-| 511 | button | إلغاء | مكتبة الوسائط |
-| 514 | button | تسمية ديناميكية / تحتاج مراجعة | مكتبة الوسائط |
-| 545 | Button | رفع أول ملف | لا توجد نتائج لا توجد ملفات بعد |
-| 559 | DialogContent | نسخ الرابط فتح | لا توجد نتائج لا توجد ملفات بعد |
-| 572 | Button | نسخ الرابط | MediaLibrary |
-| 585 | a | فتح | MediaLibrary |
+| 122 | summary | تسمية ديناميكية / تحتاج مراجعة | MediaWorkspace |
+| 122 | Button | تسمية ديناميكية / تحتاج مراجعة | MediaWorkspace |
+| 123 | Button | تسمية ديناميكية / تحتاج مراجعة | MediaWorkspace |
+| 126 | Button | تسمية ديناميكية / تحتاج مراجعة | MediaWorkspace |
+| 127 | Button | تسمية ديناميكية / تحتاج مراجعة | MediaWorkspace |
+| 133 | input | c.searchHint | MediaWorkspace |
+| 134 | Button | تسمية ديناميكية / تحتاج مراجعة | MediaWorkspace |
+| 135 | select | تسمية ديناميكية / تحتاج مراجعة | MediaWorkspace |
+| 137 | Button | تسمية ديناميكية / تحتاج مراجعة | MediaWorkspace |
+| 137 | Button | تسمية ديناميكية / تحتاج مراجعة | MediaWorkspace |
+| 138 | Button | تسمية ديناميكية / تحتاج مراجعة | MediaWorkspace |
+| 138 | Button | تسمية ديناميكية / تحتاج مراجعة | MediaWorkspace |
+| 140 | button | `${c.preview}: ${row.originalName \|\| '#' + row.id}` | MediaWorkspace |
+| 142 | Button | # | MediaWorkspace |
+| 142 | Button | تسمية ديناميكية / تحتاج مراجعة | MediaWorkspace |
+| 143 | Button | تسمية ديناميكية / تحتاج مراجعة | MediaWorkspace |
+| 143 | Button | تسمية ديناميكية / تحتاج مراجعة | MediaWorkspace |
+| 144 | Button | تسمية ديناميكية / تحتاج مراجعة | MediaWorkspace |
+| 144 | Button | تسمية ديناميكية / تحتاج مراجعة | MediaWorkspace |
+| 145 | Button | تسمية ديناميكية / تحتاج مراجعة | MediaWorkspace |
+| 145 | Button | تسمية ديناميكية / تحتاج مراجعة | MediaWorkspace |
+| 147 | DialogContent | upload remove close close upload : row details details ID details upload remove upload remove close | MediaWorkspace |
+| 152 | Button | تسمية ديناميكية / تحتاج مراجعة | upload remove close |
+| 153 | input | c.chooseFile | upload remove close |
+| 155 | select | تسمية ديناميكية / تحتاج مراجعة | upload remove close |
+| 158 | summary | تسمية ديناميكية / تحتاج مراجعة | MediaWorkspace |
+| 161 | Button | تسمية ديناميكية / تحتاج مراجعة | MediaWorkspace |
+| 161 | a | تسمية ديناميكية / تحتاج مراجعة | MediaWorkspace |
+| 161 | Button | تسمية ديناميكية / تحتاج مراجعة | MediaWorkspace |
+| 161 | input | تسمية ديناميكية / تحتاج مراجعة | MediaWorkspace |
+| 162 | summary | تسمية ديناميكية / تحتاج مراجعة | MediaWorkspace |
+| 164 | summary | تسمية ديناميكية / تحتاج مراجعة | MediaWorkspace |
+| 165 | Button | details | MediaWorkspace |
+| 166 | Button | تسمية ديناميكية / تحتاج مراجعة | MediaWorkspace |
+| 167 | Button | تسمية ديناميكية / تحتاج مراجعة | MediaWorkspace |
+| 168 | Button | تسمية ديناميكية / تحتاج مراجعة | MediaWorkspace |
+| 169 | Button | تسمية ديناميكية / تحتاج مراجعة | MediaWorkspace |
 
 ## client/src/pages/merchant/ScheduledMessages.tsx
 
