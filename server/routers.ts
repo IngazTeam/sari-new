@@ -1,3 +1,4 @@
+import {scheduledActionProcedures} from './routers-scheduled-message-actions';
 import {scheduledMessageWorkspaceProcedure} from './routers-scheduled-message-workspace';
 import {abandonedCartsRouter} from './routers-abandoned-carts';
 import { referralsRouter } from './routers-referrals';
@@ -2905,6 +2906,7 @@ export const appRouter = router({
   // Scheduled Messages
   scheduledMessages: router({
     workspace: scheduledMessageWorkspaceProcedure,
+    ...scheduledActionProcedures,
     // List all scheduled messages
     list: protectedProcedure.query(async ({ ctx }) => {
       const merchant = await getMerchantByUserId(ctx.user.id);
