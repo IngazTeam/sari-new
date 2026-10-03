@@ -220,128 +220,68 @@ export async function evolveKnowledge(
 ): Promise<EvolveResult> {
   const result: EvolveResult = { added: 0, merged: 0, evolved: 0, conflicts: 0, unchanged: 0 };
 
-  // Get existing sections (full content for comparison)
+  // Match within the same parent. A root, a child and a sibling in another
+  // group must never overwrite one another merely because their text overlaps.
   const existingSections = await getSectionsByMerchantId(merchantId);
-
-  for (const newSection of newSections) {
+  const parentOf = (item: KnowledgeSection) => (item as any).parent_id ?? item.parentId ?? null;
+  const disabled = (item: KnowledgeSection) => {
+    const value = (item as any).use_in_bot ?? item.useInBot;
+    return value === false || value === 0;
+  };
+  async function apply(section: ClassifiedSection, parentId: number | null, inheritedReview: boolean): Promise<void> {
     await assertIntakeCheckpoint(merchantId);
-    // Find matching existing section by type + similarity
-    const match = findBestMatch(newSection, existingSections);
-
+    const match = findBestMatch(section, existingSections.filter(item => parentOf(item) === parentId));
+    let sectionId: number;
+    let reviewChildren = inheritedReview || !!match && (match.status === 'pending_review' || disabled(match));
+    async function add(review: boolean, previous?: KnowledgeSection) {
+      const values: InsertKnowledgeSection = {
+        merchantId, parentId, sectionType: section.sectionType,
+        title: previous ? `⚠️ تعارض: ${section.title}`.substring(0, 500) : section.title,
+        content: section.content, summary: section.summary, source, sourceUrl,
+        confidence: section.confidence, status: review ? 'pending_review' : 'auto_approved',
+        useInBot: !review, injectAs: section.sectionType === 'opportunities' ? 'none' : 'fact',
+      };
+      const id = await createSection(values);
+      if (!Number.isSafeInteger(id) || id <= 0) throw new KnowledgeAnalysisError('evolution');
+      await logChange({ merchantId, sectionId: id, action: review ? 'conflict' : 'add',
+        reason: review ? `يحتاج مراجعة: ${section.title}` : `قسم جديد مكتشف: ${section.title}`,
+        ...(previous ? { oldContent: previous.content } : {}), newContent: section.content, source });
+      // Include successful writes in this pass so duplicate siblings do not
+      // create duplicate knowledge. These fields are only used for matching.
+      existingSections.push({ ...values, id, parentId, merchantEdited: false } as KnowledgeSection);
+      if (review) result.conflicts++; else result.added++;
+      return id;
+    }
     if (!match) {
-      // === ADD: Brand new section ===
-      const sectionId = await createSection({
-        merchantId,
-        sectionType: newSection.sectionType,
-        title: newSection.title,
-        content: newSection.content,
-        summary: newSection.summary,
-        source,
-        sourceUrl,
-        confidence: newSection.confidence,
-        status: 'auto_approved',
-        useInBot: true,
-        injectAs: newSection.sectionType === 'opportunities' ? 'none' : 'fact',
-      });
-
-      await logChange({
-        merchantId,
-        sectionId,
-        action: 'add',
-        reason: `قسم جديد مكتشف: ${newSection.title}`,
-        newContent: newSection.content,
-        source,
-      });
-
-      result.added++;
-
-      // Handle children
-      if (newSection.children?.length) {
-        for (const child of newSection.children) {
-          const childId = await createSection({
-            merchantId,
-            parentId: sectionId,
-            sectionType: newSection.sectionType,
-            title: child.title,
-            content: child.content,
-            summary: child.summary,
-            source,
-            sourceUrl,
-            confidence: child.confidence,
-            injectAs: 'fact',
+      sectionId = await add(inheritedReview);
+    } else {
+      sectionId = match.id;
+      if ((match as any).merchant_edited || match.merchantEdited) {
+        result.unchanged++;
+      } else {
+        const decision = match.content === section.content ? 'unchanged'
+          : inheritedReview || match.status === 'pending_review' ? 'conflict'
+          : await decideEvolution(merchantId, match, section);
+        if (decision === 'unchanged') result.unchanged++;
+        else if (decision === 'conflict') {
+          sectionId = await add(true, match);
+          reviewChildren = true;
+        } else {
+          await logChange({ merchantId, sectionId: match.id, action: 'evolve',
+            reason: `تطوير: ${section.title}`, oldContent: match.content, newContent: section.content, source });
+          await updateSection(match.id, merchantId, {
+            content: section.content, summary: section.summary, confidence: section.confidence, source, sourceUrl,
           });
-
-          await logChange({
-            merchantId,
-            sectionId: childId,
-            action: 'add',
-            reason: `قسم فرعي جديد: ${child.title} تحت ${newSection.title}`,
-            newContent: child.content,
-            source,
-          });
-
-          result.added++;
+          match.content = section.content; match.summary = section.summary;
+          result.evolved++;
         }
       }
-    } else if ((match as any).merchant_edited || (match as any).merchantEdited) {
-      // === PROTECTED: Merchant edited — don't touch ===
-      result.unchanged++;
-    } else {
-      // Compare content to decide: EVOLVE or CONFLICT
-      const decision = await decideEvolution(merchantId, match, newSection);
-
-      if (decision === 'unchanged') {
-        result.unchanged++;
-      } else if (decision === 'evolve') {
-        // === EVOLVE: New content is better/newer — auto-update ===
-        await logChange({
-          merchantId,
-          sectionId: match.id,
-          action: 'evolve',
-          reason: `تطوير: ${newSection.title}`,
-          oldContent: match.content,
-          newContent: newSection.content,
-          source,
-        });
-
-        await updateSection(match.id, merchantId, {
-          content: newSection.content,
-          summary: newSection.summary,
-          confidence: newSection.confidence,
-          source,
-          sourceUrl,
-        });
-
-        result.evolved++;
-      } else if (decision === 'conflict') {
-        // === CONFLICT: Contradictory info — needs merchant review ===
-        const conflictId = await createSection({
-          merchantId,
-          sectionType: newSection.sectionType,
-          title: `⚠️ تعارض: ${newSection.title}`,
-          content: newSection.content,
-          summary: newSection.summary,
-          source,
-          sourceUrl,
-          confidence: newSection.confidence,
-          status: 'pending_review',
-          useInBot: false,  // Bot keeps old data
-        });
-
-        await logChange({
-          merchantId,
-          sectionId: conflictId,
-          action: 'conflict',
-          reason: `تعارض في "${newSection.title}" — القيمة القديمة: ${match.content.substring(0, 200)}`,
-          oldContent: match.content,
-          newContent: newSection.content,
-          source,
-        });
-
-        result.conflicts++;
-      }
     }
+    // Children are handled for every parent outcome, including unchanged and
+    // merchant-edited parents. The parent itself remains protected.
+    for (const child of section.children || []) await apply(child, sectionId, reviewChildren);
   }
+  for (const section of newSections) await apply(section, null, false);
 
   return result;
 }
@@ -403,9 +343,11 @@ async function decideEvolution(
   newSection: ClassifiedSection
 ): Promise<'unchanged' | 'evolve' | 'conflict'> {
   await assertIntakeCheckpoint(merchantId);
-  // Quick check: if content is very similar, skip AI call
-  const similarity = textSimilarity(existing.content, newSection.content);
-  if (similarity > 0.90) return 'unchanged';
+  // Similar wording does not prove identical facts (a price or negation may
+  // be the only changed token). Only equal text may skip the decision call.
+  if (existing.content.trim() === newSection.content.trim()) return 'unchanged';
+  if (existing.content.length + newSection.content.length > 200000)
+    throw new KnowledgeAnalysisError('evolution');
 
   const systemPrompt = `أنت محلل بيانات. قارن بين نسختين من معلومات تجارية وحدد العلاقة بينهما.
 
@@ -415,36 +357,25 @@ async function decideEvolution(
 - "conflict" إذا هناك تناقض واضح (مثلاً سعر مختلف، معلومة متعارضة)`;
 
   const userPrompt = `النسخة الحالية:
-"${existing.content.substring(0, 1000)}"
+"${existing.content}"
 
 النسخة الجديدة:
-"${newSection.content.substring(0, 1000)}"
+"${newSection.content}"
 
 أجب بكلمة واحدة: unchanged أو evolve أو conflict`;
 
+  let response: string;
   try {
-    const response = await callGPT4(
-      [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
-      {
-        merchantId,
-        taskType: 'sari.knowledge.evolution',
-        model: 'gpt-4o',
-        temperature: 0.1,
-        maxTokens: 10,
-      }
+    response = await callGPT4(
+      [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }],
+      { merchantId, taskType: 'sari.knowledge.evolution', model: 'gpt-4o', temperature: 0.1, maxTokens: 10 }
     );
+  } catch { throw new KnowledgeAnalysisError('evolution'); }
+  await assertIntakeCheckpoint(merchantId);
+  const decision = typeof response === 'string' ? response.trim().toLowerCase() : '';
+  if (decision === 'unchanged' || decision === 'evolve' || decision === 'conflict') return decision;
+  throw new KnowledgeAnalysisError('evolution');
 
-    const decision = response.trim().toLowerCase();
-    if (['unchanged', 'evolve', 'conflict'].includes(decision)) {
-      return decision as 'unchanged' | 'evolve' | 'conflict';
-    }
-    return 'unchanged'; // Default: preserve existing knowledge (safer than evolve)
-  } catch {
-    return 'unchanged'; // On AI failure, preserve existing (P1-5 FIX: was 'evolve')
-  }
 }
 
 // ═══════════════════════════════════════════════════════════════

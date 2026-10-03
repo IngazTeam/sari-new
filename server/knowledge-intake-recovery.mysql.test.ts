@@ -8,7 +8,7 @@ import { ensureKnowledgeIntakeTestSchema } from './tests/helpers/knowledge-intak
 import { reserveIntake, finishIntake, getIntakeReceipt, recoverIntake } from './knowledge/intake-receipt-store';
 import { runIntakeExecution, assertIntakeCheckpoint, renewIntakeLease, runKnowledgeWrite, type IntakeExecution } from './knowledge/intake-execution';
 import { createSection, updateSection, logChange, storeSectionEmbedding, invalidateCache, getSectionById } from './db/knowledge';
-import { classifyContent, ingestContent } from './ai/knowledge-engine';
+import { classifyContent, ingestContent, evolveKnowledge } from './ai/knowledge-engine';
 import { removeKnowledgeSource } from './knowledge/source-lifecycle';
 import { reviewedKnowledgeInput } from './tests/helpers/knowledge-reviewed-input';
 
@@ -41,6 +41,22 @@ describe.skipIf(!process.env.DATABASE_URL)('interrupted knowledge intake recover
     expect(rows).toHaveLength(3);expect(rows.find(r=>r.section_type==='identity').content).toBe('Local source content');
     expect(rows.find(r=>r.section_type==='sales_intel')).toMatchObject({inject_as:'behavior'});
     expect(rows.find(r=>r.section_type==='opportunities')).toMatchObject({inject_as:'none',use_in_bot:0});
+  });
+  it('stores a child under its existing parent with its own type and reuses it on the next pass',async()=>{
+    const parent={sectionType:'services' as const,title:'Local services',content:'Local business offers standard services',summary:'Services',confidence:0.9};
+    const id=await runIntakeExecution(execution,()=>createSection({merchantId:owner.merchantId,...parent,source:'document'}));
+    const value={...parent,children:[{sectionType:'policies' as const,title:'Delivery policy',content:'Delivery requires an appointment',summary:'Delivery',confidence:0.9}]};
+    const first=await runIntakeExecution(execution,()=>evolveKnowledge(owner.merchantId,[value],'document'));expect(first).toMatchObject({added:1,unchanged:1});
+    const second=await runIntakeExecution(execution,()=>evolveKnowledge(owner.merchantId,[value],'document'));expect(second).toMatchObject({added:0,unchanged:2});
+    const [rows]=await (await getPool())!.execute<any[]>('SELECT parent_id,section_type FROM knowledge_sections WHERE merchant_id=? AND parent_id IS NOT NULL',[owner.merchantId]);expect(rows).toEqual([{parent_id:id,section_type:'policies'}]);
+    expect(model.call).not.toHaveBeenCalled();
+  });
+  it('retains a conflicting hierarchy for review without enabling its children for the bot',async()=>{
+    const parent={sectionType:'services' as const,title:'Local services',content:'Local business offers standard services',summary:'Services',confidence:0.9};
+    await runIntakeExecution(execution,()=>createSection({merchantId:owner.merchantId,...parent,source:'document'}));model.call.mockResolvedValueOnce('conflict');
+    const result=await runIntakeExecution(execution,()=>evolveKnowledge(owner.merchantId,[{...parent,content:'Local business offers premium services instead',children:[{sectionType:'policies',title:'Delivery policy',content:'Delivery requires an appointment',summary:'Delivery',confidence:0.9}]}],'document'));
+    expect(result.conflicts).toBe(2);
+    const [rows]=await (await getPool())!.execute<any[]>("SELECT status,use_in_bot,parent_id FROM knowledge_sections WHERE merchant_id=? AND status='pending_review' ORDER BY id",[owner.merchantId]);expect(rows).toHaveLength(2);expect(rows.every(r=>r.use_in_bot===0)).toBe(true);expect(rows[1].parent_id).not.toBeNull();
   });
   it('keeps live work protected and exposes recovery without leaking its execution token', async () => {
     const receipt = await getIntakeReceipt(owner.merchantId, requestId); expect(receipt).toMatchObject({ recovery: 'waiting', recoveredAt: null });
