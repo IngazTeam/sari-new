@@ -27,7 +27,7 @@ const digest=(value:unknown)=>createHash('sha256').update(JSON.stringify(value))
 const stamp=(value:any)=>value===null?null:new Date(databaseTimeEpoch(value)).toISOString();
 /** Lifecycle and usage counters legitimately change; the approved content does not. */
 export function occasionCampaignDigest(row:any){return digest([row.id,row.merchantId,row.name,row.message,row.imageUrl,typeof row.targetAudience==='string'?JSON.parse(row.targetAudience):row.targetAudience,stamp(row.scheduledAt)]);}
-export function occasionDiscountDigest(row:any){return digest([row.id,row.type,row.value,row.minOrderAmount,row.maxUses,row.isActive,stamp(row.expiresAt),row.customer_phone]);}
+export function occasionDiscountDigest(row:any){return digest([row.id,row.code,row.type,row.value,row.minOrderAmount,row.maxUses,row.isActive,stamp(row.expiresAt),row.customer_phone]);}
 export function buildOccasionAuthorization(review:OccasionActionReview,businessName:string,linked:any,discount:any,now:Date){
  if(!review.eligible||review.target.action!=='toggle'||!review.target.enabled||!review.row)throw Error('Invalid authorization review');
  const available=getUpcomingOccasions(now).find(o=>o.type===review.row!.occasionType&&o.year===review.row!.year);if(!available)throw Error('Occasion unavailable');

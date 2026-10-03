@@ -5,6 +5,8 @@
  * provider directly.
  */
 
+import {lockOccasionWorkerAuthority,bindOccasionPreparedEnvelope,OccasionAuthorizationDenied,ensureOccasionAuthorizationSchema} from '../occasion-worker-authority';
+import {performance} from 'node:perf_hooks';
 import {validPreparedOccasion} from '../occasion-envelope-policy';
 import {assertCampaignContent} from '../campaign-content';
 import { randomBytes } from 'node:crypto';
@@ -93,12 +95,13 @@ export async function prepareOccasionCampaignEnvelope(input: {
   occasion: DetectedOccasion;
   now?: Date;
 }): Promise<{ campaignId: number; created: boolean }> {
-  const now=input.now??new Date();
+  const now=input.now??new Date(),started=performance.now(),clock=()=>new Date(now.getTime()+performance.now()-started);
   if(![input.merchantId,input.occasionCampaignId].every(id=>Number.isInteger(id)&&id>0&&id<=2147483647)
     ||!(now instanceof Date)||!Number.isFinite(now.getTime()))throw new CampaignDispatchConflictError();
   const occasion=detectCurrentOccasions(now).find(o=>o.type===input.occasion.type&&o.year===input.occasion.year);
   if(!occasion)throw new CampaignDispatchConflictError();
   await ensureOccasionOutboxSchema();
+  await ensureOccasionAuthorizationSchema();
   const pool = await getPool();
   if (!pool) throw new Error('Database unavailable');
   const connection = await pool.getConnection();
@@ -107,7 +110,7 @@ export async function prepareOccasionCampaignEnvelope(input: {
     await connection.beginTransaction();
     // Explicit parent -> campaign -> occasion order matches reviewed actions and transport.
     const [merchants]=await connection.execute<RowDataPacket[]>(
-      'SELECT id,status,businessName FROM merchants WHERE id=? FOR UPDATE',[input.merchantId]);
+      'SELECT id,userId,status,businessName FROM merchants WHERE id=? FOR UPDATE',[input.merchantId]);
     const merchant=merchants[0];
     if(merchants.length!==1||merchant.id!==input.merchantId||merchant.status!=='active'
       ||typeof merchant.businessName!=='string'||!merchant.businessName.trim()||merchant.businessName.length>255)throw new CampaignDispatchConflictError();
@@ -118,7 +121,7 @@ export async function prepareOccasionCampaignEnvelope(input: {
     let campaign:RowDataPacket|undefined;
     if(campaignId!==null){
       const [campaigns]=await connection.execute<RowDataPacket[]>(
-        'SELECT id,merchantId,status,message,imageUrl,targetAudience FROM campaigns WHERE id=? AND merchantId=? FOR UPDATE',[campaignId,input.merchantId]);
+        'SELECT id,merchantId,name,status,message,imageUrl,targetAudience,scheduledAt FROM campaigns WHERE id=? AND merchantId=? FOR UPDATE',[campaignId,input.merchantId]);
       if(campaigns.length!==1||campaigns[0].id!==campaignId||campaigns[0].merchantId!==input.merchantId)throw new CampaignDispatchConflictError();
       campaign=campaigns[0];
     }
@@ -131,6 +134,7 @@ export async function prepareOccasionCampaignEnvelope(input: {
       ||!Number.isInteger(row.discountPercentage)||row.discountPercentage<5||row.discountPercentage>50
       ||row.messageTemplate!==null||row.recipientCount!==0||row.sentAt!==null)throw new CampaignDispatchConflictError();
     row.businessName=merchant.businessName;
+    const authority=await lockOccasionWorkerAuthority(connection,{merchant,occasion:row,campaign:campaign??null,now:clock,phase:'prepare'});
     if(campaign){
       if(typeof row.discountCode!=='string'||!row.discountCode.trim())throw new CampaignDispatchConflictError();
       const [discounts]=await connection.execute<RowDataPacket[]>(
@@ -170,6 +174,7 @@ export async function prepareOccasionCampaignEnvelope(input: {
       [createdCampaignId, discountCode, row.id, row.merchantId],
     );
     if (linked.affectedRows !== 1) throw new CampaignDispatchConflictError();
+    await bindOccasionPreparedEnvelope(connection,authority,createdCampaignId,discountCode,clock());
     committing=true;await connection.commit();
     return { campaignId:createdCampaignId, created: true };
   } catch (error) {
@@ -246,7 +251,7 @@ export async function checkAndSendOccasionCampaigns(at: Date = new Date()): Prom
           const outcome = await admitOccasionCampaign(campaign.id, campaign.merchantId, occasion, at);
           result[outcome]++;
         } catch (error) {
-          if (error instanceof CampaignDispatchConflictError) result.deferred++;
+          if (error instanceof CampaignDispatchConflictError||error instanceof OccasionAuthorizationDenied) result.deferred++;
           else result.failed++;
         }
       }

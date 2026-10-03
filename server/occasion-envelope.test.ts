@@ -1,3 +1,5 @@
+// Atomic-envelope/admission tests isolate the separately tested persistent authority gate.
+vi.mock('./occasion-worker-authority',()=>({lockOccasionWorkerAuthority:vi.fn().mockResolvedValue({}),bindOccasionPreparedEnvelope:vi.fn(),ensureOccasionAuthorizationSchema:vi.fn(),OccasionAuthorizationDenied:class extends Error{}}));
 import {beforeEach,it,expect,vi} from 'vitest';
 const m=vi.hoisted(()=>({pool:vi.fn(),getConnection:vi.fn(),execute:vi.fn(),beginTransaction:vi.fn(),commit:vi.fn(),rollback:vi.fn(),release:vi.fn(),destroy:vi.fn()}));
 vi.mock('./db',()=>({getPool:m.pool}));

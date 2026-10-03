@@ -64,7 +64,7 @@ async function snapshot(tx:PoolConnection,actorId:number,merchantId:number,busin
   const available=upcoming.find(o=>o.type===type&&o.year===year);
   const discountPercent=target.action==='create'?getOccasionDiscountPercentage(target.occasionType):row!.discountPercentage;
   const discounts=target.action==='toggle'&&target.enabled&&linked&&row?.discountCode
-    ?await rows(tx,'SELECT id,type,value,minOrderAmount,maxUses,usedCount,isActive,expiresAt,customer_phone FROM discount_codes WHERE merchantId=? AND code=? FOR SHARE',[merchantId,row.discountCode]):[];
+    ?await rows(tx,'SELECT id,code,type,value,minOrderAmount,maxUses,usedCount,isActive,expiresAt,customer_phone FROM discount_codes WHERE merchantId=? AND code=? FOR SHARE',[merchantId,row.discountCode]):[];
   const discount=discounts.length===1?discounts[0]:null;
   let preparedValid=true;
   if(target.action==='toggle'&&target.enabled&&linked){
