@@ -138,7 +138,7 @@ export function detectCurrentOccasion(at: Date = new Date()): DetectedOccasion |
   return detectCurrentOccasions(at)[0] ?? null;
 }
 
-/** Return the next start of every supported occasion within the next year. */
+/** Return today's active occasions or the next start within a bounded year. */
 export function getUpcomingOccasions(at: Date = new Date()): UpcomingOccasion[] {
   const start = riyadhNoon(at);
   const upcoming = new Map<OccasionType, UpcomingOccasion>();
@@ -149,7 +149,7 @@ export function getUpcomingOccasions(at: Date = new Date()): UpcomingOccasion[] 
       detectCurrentOccasions(new Date(cursor.getTime() - DAY_MS)).map(item => item.type),
     );
     for (const current of detectCurrentOccasions(cursor)) {
-      if (upcoming.has(current.type) || previousTypes.has(current.type)) continue;
+      if (upcoming.has(current.type) || (offset > 0 && previousTypes.has(current.type))) continue;
       upcoming.set(current.type, {
         ...current,
         date: riyadhDateKey(cursor),
