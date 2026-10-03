@@ -116,15 +116,12 @@ describe.skipIf(!process.env.DATABASE_URL)(
     });
     it("joins an active attempt instead of scheduling another id", async () => {
       await start();
+      const joined = randomUUID();
       expect(
-        await beginWebsiteAnalysisJob(
-          owner.userId,
-          owner.merchantId,
-          randomUUID()
-        )
+        await beginWebsiteAnalysisJob(owner.userId, owner.merchantId, joined)
       ).toMatchObject({
         created: false,
-        jobId,
+        jobId: joined,
         alreadyRunning: true,
         execution: null,
       });

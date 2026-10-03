@@ -5309,4 +5309,9 @@ export const websiteAnalysisJobs = mysqlTable('website_analysis_jobs', {
   resultJson:json('result_json'),issue:varchar({length:32}),
   startedAt:datetime('started_at',{mode:'string',fsp:3}).notNull().default(sql`CURRENT_TIMESTAMP(3)`),updatedAt:datetime('updated_at',{mode:'string',fsp:3}).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
   leaseExpiresAt:datetime('lease_expires_at',{mode:'string',fsp:3}),deadlineAt:datetime('deadline_at',{mode:'string',fsp:3}).notNull(),
-},table=>[uniqueIndex('uq_website_job_request').on(table.merchantId,table.jobId),uniqueIndex('uq_website_job_active').on(table.merchantId,table.activeSlot),index('idx_website_job_history').on(table.merchantId,table.id),check('ck_website_job_active',sql`(${table.state} = 'running' AND ${table.activeSlot} IS NOT NULL AND ${table.activeSlot} = 1) OR (${table.state} <> 'running' AND ${table.activeSlot} IS NULL)`)]);
+},table=>[uniqueIndex('uq_website_job_scope_id').on(table.merchantId,table.id),uniqueIndex('uq_website_job_request').on(table.merchantId,table.jobId),uniqueIndex('uq_website_job_active').on(table.merchantId,table.activeSlot),index('idx_website_job_history').on(table.merchantId,table.id),check('ck_website_job_active',sql`(${table.state} = 'running' AND ${table.activeSlot} IS NOT NULL AND ${table.activeSlot} = 1) OR (${table.state} <> 'running' AND ${table.activeSlot} IS NULL)`)]);
+
+export const websiteAnalysisRequestLinks = mysqlTable('website_analysis_request_links', {
+  merchantId:int('merchant_id').notNull(),requestId:char('request_id',{length:36}).notNull(),
+  jobPk:int('job_pk').notNull(),actorId:int('actor_id').notNull(),createdAt:datetime('created_at',{mode:'string',fsp:3}).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+},table=>[primaryKey({columns:[table.merchantId,table.requestId]}),index('idx_website_request_job').on(table.merchantId,table.jobPk),foreignKey({name:'fk_website_request_job',columns:[table.merchantId,table.jobPk],foreignColumns:[websiteAnalysisJobs.merchantId,websiteAnalysisJobs.id]}).onDelete('cascade')]);

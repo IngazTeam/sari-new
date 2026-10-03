@@ -7,6 +7,7 @@ import { pathToFileURL } from 'node:url';
 // Do not infer compatibility from its age, application name or current DB data.
 export const requiredReleaseCapabilities = Object.freeze([
   'website-analysis-durable-jobs-0200',
+  'website-analysis-request-links-0201',
   'zid-order-store-identity-0127',
   'zid-catalog-store-identity-0129',
   'staff-voice-acceptance-0132',

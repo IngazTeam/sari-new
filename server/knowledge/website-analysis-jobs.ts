@@ -58,6 +58,7 @@ async function ready() {
         "active_slot",
       ],
       uniqueIndexes: [
+        { name: "uq_website_job_scope_id", columns: ["merchant_id", "id"] },
         { name: "uq_website_job_request", columns: ["merchant_id", "job_id"] },
         {
           name: "uq_website_job_active",
@@ -71,6 +72,13 @@ async function ready() {
             "(state = 'running' AND active_slot IS NOT NULL AND active_slot = 1) OR (state <> 'running' AND active_slot IS NULL)",
           enforced: true,
         },
+      ],
+    },
+    {
+      table: "website_analysis_request_links",
+      columns: ["merchant_id", "request_id", "job_pk", "actor_id"],
+      uniqueIndexes: [
+        { name: "PRIMARY", columns: ["merchant_id", "request_id"] },
       ],
     },
   ]);
@@ -258,6 +266,34 @@ function view(merchantId: number, jobId: string, row: any) {
   };
 }
 
+/** Resolve a direct attempt or its durable join. Merchant lock is held by the caller. */
+async function findRequest(
+  tx: PoolConnection,
+  merchantId: number,
+  requestId: string
+) {
+  const [direct] = await rows(
+    tx,
+    `SELECT ${columns} FROM website_analysis_jobs WHERE merchant_id=? AND job_id=?`,
+    [merchantId, requestId]
+  );
+  const [link] = await rows(
+    tx,
+    "SELECT job_pk FROM website_analysis_request_links WHERE merchant_id=? AND request_id=?",
+    [merchantId, requestId]
+  );
+  if (direct && link) throw new WebsiteJobError("unavailable");
+  if (direct || !link) return direct;
+  const [linked] = await rows(
+    tx,
+    `SELECT ${columns} FROM website_analysis_jobs WHERE merchant_id=? AND id=?`,
+    [merchantId, link.job_pk]
+  );
+  // A damaged link must never be interpreted as permission to start a new job.
+  if (!linked) throw new WebsiteJobError("unavailable");
+  return linked;
+}
+
 /** Duplicate starts return the existing receipt and never schedule another provider call. */
 export async function beginWebsiteAnalysisJob(
   actorId: number,
@@ -272,15 +308,11 @@ export async function beginWebsiteAnalysisJob(
       WHERE merchant_id=? AND state='running' AND (lease_expires_at IS NULL OR lease_expires_at<=UTC_TIMESTAMP(3) OR deadline_at<=UTC_TIMESTAMP(3))`,
       [merchantId]
     );
-    const [same] = await rows(
-      tx,
-      `SELECT ${columns} FROM website_analysis_jobs WHERE merchant_id=? AND job_id=? FOR UPDATE`,
-      [merchantId, jobId]
-    );
+    const same = await findRequest(tx, merchantId, jobId);
     if (same)
       return {
         created: false,
-        jobId: same.job_id,
+        jobId,
         alreadyRunning: same.state === "running",
         execution: null,
         merchant: null,
@@ -291,15 +323,20 @@ export async function beginWebsiteAnalysisJob(
       `SELECT ${columns} FROM website_analysis_jobs WHERE merchant_id=? AND active_slot=1 FOR UPDATE`,
       [merchantId]
     );
-    if (active)
+    if (active) {
+      await tx.execute(
+        "INSERT INTO website_analysis_request_links (merchant_id,request_id,job_pk,actor_id) VALUES (?,?,?,?)",
+        [merchantId, jobId, active.id, actorId]
+      );
       return {
         created: false,
-        jobId: active.job_id,
+        jobId,
         alreadyRunning: true,
         execution: null,
         merchant: null,
         websiteUrl: null,
       };
+    }
     const [recent] = await rows(
       tx,
       `SELECT id FROM website_analysis_jobs WHERE merchant_id=? AND started_at>DATE_SUB(UTC_TIMESTAMP(3),INTERVAL 20 SECOND) LIMIT 1`,
@@ -351,11 +388,7 @@ export async function readWebsiteAnalysisJob(
   websiteAnalysisAttempt.parse({ merchantId, jobId });
   return transaction(merchantId, false, async (tx, merchant) => {
     await authorize(tx, merchant, actorId, false);
-    const [row] = await rows(
-      tx,
-      `SELECT ${columns} FROM website_analysis_jobs WHERE merchant_id=? AND job_id=?`,
-      [merchantId, jobId]
-    );
+    const row = await findRequest(tx, merchantId, jobId);
     return view(merchantId, jobId, row);
   });
 }

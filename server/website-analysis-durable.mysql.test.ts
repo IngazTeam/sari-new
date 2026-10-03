@@ -174,15 +174,29 @@ describe.skipIf(!process.env.DATABASE_URL)(
       );
       await caller().reanalyzeWebsite(input());
       await vi.waitFor(() => expect(m.analyze).toHaveBeenCalledOnce());
+      const joined = randomUUID();
       const responses = await Promise.all([
         caller().reanalyzeWebsite(input()),
-        caller().reanalyzeWebsite({ ...input(), jobId: randomUUID() }),
+        caller().reanalyzeWebsite({ ...input(), jobId: joined }),
       ]);
-      expect(
-        responses.every(row => row.jobId === jobId && row.alreadyRunning)
-      ).toBe(true);
+      expect(responses.map(row => row.jobId)).toEqual([jobId, joined]);
+      expect(responses.every(row => row.alreadyRunning)).toBe(true);
       release(sample);
       expect((await terminal()).status).toBe("completed");
+      expect(
+        await caller().getAnalysisStatus({ ...input(), jobId: joined })
+      ).toMatchObject({
+        jobId: joined,
+        status: "completed",
+        title: sample.title,
+      });
+      await query(
+        "UPDATE website_analysis_jobs SET started_at=DATE_SUB(UTC_TIMESTAMP(3),INTERVAL 1 MINUTE) WHERE merchant_id=?",
+        [owner.merchantId]
+      );
+      expect(
+        await caller().reanalyzeWebsite({ ...input(), jobId: joined })
+      ).toMatchObject({ jobId: joined, alreadyRunning: false });
       expect(m.analyze).toHaveBeenCalledOnce();
     });
     it("preserves crawl facts and records partial knowledge without exposing raw processing errors", async () => {
