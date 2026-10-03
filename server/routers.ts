@@ -1,5 +1,4 @@
-import {scheduledActionProcedures} from './routers-scheduled-message-actions';
-import {scheduledMessageWorkspaceProcedure,scheduledMessageHistoryProcedure} from './routers-scheduled-message-workspace';
+import {scheduledMessagesRouter} from './routers-scheduled-messages';
 import {abandonedCartsRouter} from './routers-abandoned-carts';
 import { referralsRouter } from './routers-referrals';
 import { discountsRouter } from './routers-discounts';
@@ -145,7 +144,6 @@ import {
   createProduct,
   createReferral,
   createReward,
-  createScheduledMessage,
   createService,
   createServiceCategory,
   createServicePackage,
@@ -158,7 +156,6 @@ import {
   deleteBooking,
   deleteDiscountCode,
   deleteGoogleIntegration,
-  deleteScheduledMessage,
   deleteService,
   deleteServiceCategory,
   deleteServicePackage,
@@ -221,7 +218,6 @@ import {
   getReviewsByService,
   getRewardById,
   getRewardsByMerchantId,
-  getScheduledMessages,
   getServiceById,
   getServiceCategoriesByMerchant,
   getServiceCategoryById,
@@ -257,7 +253,6 @@ import {
   replyToReview,
   setWhatsAppInstanceAsPrimary,
   shouldBotRespond,
-  toggleScheduledMessage,
   updateBooking,
   updateBotSettings,
   updateConversation,
@@ -267,7 +262,6 @@ import {
   updateGoogleIntegration,
   updateMerchant,
   updatePlan,
-  updateScheduledMessage,
   updateService,
   updateServiceCategory,
   updateServicePackage,
@@ -2903,87 +2897,8 @@ export const appRouter = router({
 
   // Bot Settings — REMOVED inline router (now using modular botSettingsRouter above)
 
-  // Scheduled Messages
-  scheduledMessages: router({
-    workspace: scheduledMessageWorkspaceProcedure,
-    history: scheduledMessageHistoryProcedure,
-    ...scheduledActionProcedures,
-    // List all scheduled messages
-    list: protectedProcedure.query(async ({ ctx }) => {
-      const merchant = await getMerchantByUserId(ctx.user.id);
-      if (!merchant) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-      }
-
-      return await getScheduledMessages(merchant.id);
-    }),
-
-    // Create new scheduled message
-    create: protectedProcedure
-      .input(z.object({
-        title: z.string().min(1).max(255),
-        message: z.string().min(1),
-        dayOfWeek: z.number().min(0).max(6),
-        time: z.string().regex(/^\d{2}:\d{2}$/),
-        isActive: z.boolean().optional(),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        }
-
-        return await createScheduledMessage({
-          ...input,
-          merchantId: merchant.id,
-        });
-      }),
-
-    // Update scheduled message
-    update: protectedProcedure
-      .input(z.object({
-        id: z.number(),
-        title: z.string().min(1).max(255).optional(),
-        message: z.string().min(1).optional(),
-        dayOfWeek: z.number().min(0).max(6).optional(),
-        time: z.string().regex(/^\d{2}:\d{2}$/).optional(),
-        isActive: z.boolean().optional(),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        }
-
-        const { id, ...data } = input;
-        return await updateScheduledMessage(id, merchant.id, data);
-      }),
-
-    // Delete scheduled message
-    delete: protectedProcedure
-      .input(z.object({ id: z.number() }))
-      .mutation(async ({ ctx, input }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        }
-
-        await deleteScheduledMessage(input.id, merchant.id);
-        return { success: true };
-      }),
-
-    // Toggle active status
-    toggle: protectedProcedure
-      .input(z.object({ id: z.number(), isActive: z.boolean() }))
-      .mutation(async ({ ctx, input }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        }
-
-        return await toggleScheduledMessage(input.id, merchant.id, input.isActive);
-      }),
-  }),
+  // Selected-tenant weekly workspace and reviewed actions.
+  scheduledMessages: scheduledMessagesRouter,
 
   // Legacy API retained; shared permissions and atomic settings store.
   personality: personalityRouter,

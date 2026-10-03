@@ -15,6 +15,11 @@ for (const mounted of [false, true]) {
     await caller().actionReceipt({ requestKey }); await caller().resolveActionReceipt({ requestKey });
     expect(mocks.read).toHaveBeenCalledWith(7, 20, { requestKey }); expect(mocks.resolve).toHaveBeenCalledWith(7, 20, { requestKey });
   });
+  it(`retires every legacy entrypoint without applying an unreviewed action mounted=${mounted}`, async () => {
+    const old = { list: undefined, create: { title: 'Weekly', message: 'Hello', dayOfWeek: 4, time: '10:00' }, update: { id: 2, title: 'Changed' }, toggle: { id: 2, isActive: true }, delete: { id: 2 } };
+    for (const [method, input] of Object.entries(old)) await expect((caller() as any)[method](input)).rejects.toMatchObject({ code: 'PRECONDITION_FAILED', message: 'scheduled_action:reload_reviewed_workspace' });
+    expect(mocks.review).not.toHaveBeenCalled(); expect(mocks.apply).not.toHaveBeenCalled();
+  });
   it(`refuses writes without campaign permission but permits scoped recovery for viewers mounted=${mounted}`, async () => {
     mocks.access.mockResolvedValue({ merchantId: 20, role: 'viewer' });
     await expect(caller().reviewAction(target)).rejects.toMatchObject({ code: 'FORBIDDEN' }); expect(mocks.review).not.toHaveBeenCalled();
