@@ -1,3 +1,4 @@
+import {selectSalesPromotions,salesPromotionsPrompt,promotionBannerCaption} from './ai/promotion-evidence';
 import { formatProductPrice, formatMinorMoney, majorToMinor } from '../shared/product-money';
 import { invokeLLM } from "./_core/llm";
 import {
@@ -19,8 +20,6 @@ import {
   searchWooCommerceProducts as searchWooCommerceCatalog,
   getActivePromotionsByMerchant,
   getPromotionById,
-  incrementPromotionViewCount,
-  incrementPromotionClickCount,
 } from './db';
 import { selectSalesDiscounts, salesDiscountPrompt } from './ai/sales-offer-evidence';
 import { filterProductsAvailableForSale } from './ai/product-availability';
@@ -369,54 +368,11 @@ export async function generateAIResponse(
       productsContext += '\n\nقواعد إرسال صور المنتجات:\n- عندما تذكر منتج محدد وله صورة، أضف في نهاية ردك: [SEND_IMAGE:رقم_المنتج]\n- يمكنك إرسال أكثر من صورة: [SEND_IMAGE:1] [SEND_IMAGE:3]\n- أرسل الصورة فقط مع المنتجات التي يسأل عنها العميل مباشرة';
     }
 
-    // Phase 5: Fetch active promotions for this merchant (max 5)
+    // Current definitions are reference facts, never verified views, clicks or sales.
     let promotionsContext = '';
     try {
-      const activePromos = await getActivePromotionsByMerchant(merchantId);
-      if (activePromos.length > 0) {
-        // PEN-PROMO-07: Sanitize merchant-controlled text before injecting into system prompt
-        // Prevents indirect prompt injection via promo title/description
-        const sanitizeForPrompt = (text: string | null | undefined): string => {
-          if (!text) return '';
-          return text
-            .substring(0, 100) // Truncate to prevent bloat
-            .replace(/[\n\r]/g, ' ') // Strip newlines (prevent section breakout)
-            .replace(/---/g, '—') // Prevent Markdown section delimiters
-            .replace(/\[SEND_IMAGE:\d+\]/gi, '')
-            .replace(/\[SEND_PROMO_IMAGE:\d+\]/gi, '')
-            .replace(/\[SEND_DISCOUNT:[^\]]*\]/gi, '')
-            .replace(/تعليمات|أوامر|instructions|system|assistant/gi, '[filtered]')
-            .trim();
-        };
-
-        const promoLines = activePromos.map(p => {
-          const typeMap: Record<string, string> = {
-            percentage: p.value + '% خصم',
-            fixed: p.value + ' ريال خصم',
-            bundle: 'عرض باقة',
-            free_shipping: 'شحن مجاني',
-            custom: 'عرض خاص',
-          };
-          const typeLabel = typeMap[p.type] || p.type;
-          const expiry = p.expiresAt ? ' (ينتهي ' + new Date(p.expiresAt).toLocaleDateString('ar-SA') + ')' : '';
-          const hasBanner = p.bannerImageUrl ? ' 📷' : '';
-          const conditions: string[] = [];
-          if (p.minOrderAmount) conditions.push('حد أدنى: ' + p.minOrderAmount + ' ريال');
-          if (p.minQuantity) conditions.push('حد أدنى: ' + p.minQuantity + ' قطعة');
-          const condStr = conditions.length > 0 ? ' - ' + conditions.join(', ') : '';
-          return '🔥 [#' + p.id + '] "' + sanitizeForPrompt(p.title) + '": ' + typeLabel + condStr + expiry + hasBanner;
-        }).join('\n');
-
-        promotionsContext = '\n\n--- العروض الترويجية النشطة ---\n' + promoLines + '\n\nقواعد ذكر العروض الترويجية:\n- اذكر العرض المناسب حسب اهتمام العميل، لا تذكر الكل مرة واحدة\n- ادمج العرض بشكل طبيعي في الحوار (لا تقرأ من قائمة)\n- إذا العرض فيه صورة بانر 📷: أضف [SEND_PROMO_IMAGE:رقم_العرض]\n- لا تذكر أكثر من عرض واحد في الرد الواحد\n--- نهاية العروض ---';
-
-        // Track view count for each promotion shown to AI
-        for (const p of activePromos) {
-          incrementPromotionViewCount(p.id).catch(() => {});
-        }
-      }
-    } catch (err) {
-      console.warn('[AI] Failed to fetch promotions:', err);
-    }
+      promotionsContext = salesPromotionsPrompt(selectSalesPromotions(await getActivePromotionsByMerchant(merchantId), {merchantId}));
+    } catch { console.warn('[AI] Promotion context unavailable'); }
 
     // بناء سياق المحادثة
     const messages: Array<{ role: 'system' | 'user' | 'assistant', content: string }> = [
@@ -580,30 +536,26 @@ export async function parseAICommands(rawText: string, merchantId: number): Prom
   // Extract [SEND_PROMO_IMAGE:promoId] commands
   const promoImageRegex = /\[SEND_PROMO_IMAGE:(\d+)\]/gi;
   let promoMatch;
+  const queuedPromotionIds = new Set<number>();
   while ((promoMatch = promoImageRegex.exec(rawText)) !== null) {
     if (media.length >= MAX_MEDIA_PER_RESPONSE) {
       console.warn('[AI] ⚠️ Media cap reached, skipping promo image');
       break;
     }
-    const promoId = parseInt(promoMatch[1]);
+    const promoId = Number(promoMatch[1]);
+    if (!Number.isSafeInteger(promoId) || promoId < 1 || promoId > 2147483647 || queuedPromotionIds.has(promoId)) continue;
     try {
-      const promo = await getPromotionById(promoId);
-      // PEN-PROMO-01: Verify promo belongs to THIS merchant to prevent cross-tenant leakage
-      if (promo?.bannerImageUrl && promo.merchantId === merchantId) {
-        media.push({
-          type: 'image',
-          url: promo.bannerImageUrl,
-          caption: promo.title,
-        });
-        // Track click when promo banner is actually sent
-        incrementPromotionClickCount(promoId).catch(() => {});
-        console.log('[AI] 🔥 Queued promo banner: ' + promo.title + ' (ID: ' + promoId + ')');
-      } else if (promo && promo.merchantId !== merchantId) {
-        console.warn('[AI] ⛔ PEN-PROMO-01: Blocked cross-tenant promo access. PromoID=' + promoId + ' belongs to merchant ' + promo.merchantId + ', not ' + merchantId);
+      const record = await getPromotionById(promoId, merchantId);
+      const promo = selectSalesPromotions(record ? [record] : [], {merchantId})[0];
+      // There is no verified current cart here. Scoped banners require an eligibility path.
+      if (promo?.bannerImageUrl && promo.scope === 'all') {
+        const caption = promotionBannerCaption(promo);
+        // Do not silently cut conditions to fit a provider caption limit.
+        if (caption.length > 1024) continue;
+        media.push({type:'image',url:promo.bannerImageUrl,caption});
+        queuedPromotionIds.add(promoId);
       }
-    } catch (err) {
-      console.warn('[AI] Failed to fetch promo image for ID ' + promoId + ':', err);
-    }
+    } catch { console.warn('[AI] Promotion banner unavailable'); }
   }
 
   // Extract [SEND_DISCOUNT:CODE] command

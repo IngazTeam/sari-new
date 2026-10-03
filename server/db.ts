@@ -10945,11 +10945,11 @@ export async function updateEmailTemplate(id: number, data: {
     .where(eq(emailTemplates.id, id));
 }
 
-export async function getPromotionById(id: number): Promise<Promotion | undefined> {
+export async function getPromotionById(id: number, merchantId: number): Promise<Promotion | undefined> {
   const db = await getDb();
   if (!db) return undefined;
 
-  const result = await requireDb().select().from(promotions).where(eq(promotions.id, id)).limit(1);
+  const result = await requireDb().select().from(promotions).where(and(eq(promotions.id, id), eq(promotions.merchantId, merchantId))).limit(1);
   return result.length > 0 ? result[0] : undefined;
 }
 
@@ -10978,20 +10978,3 @@ export async function getActivePromotionsByMerchant(merchantId: number): Promise
     .limit(5); // Max 5 active promotions for AI context
 }
 
-export async function incrementPromotionViewCount(id: number): Promise<void> {
-  const db = await getDb();
-  if (!db) return;
-
-  await requireDb().update(promotions)
-    .set({ viewCount: sql`${promotions.viewCount} + 1` })
-    .where(eq(promotions.id, id));
-}
-
-export async function incrementPromotionClickCount(id: number): Promise<void> {
-  const db = await getDb();
-  if (!db) return;
-
-  await requireDb().update(promotions)
-    .set({ clickCount: sql`${promotions.clickCount} + 1` })
-    .where(eq(promotions.id, id));
-}
