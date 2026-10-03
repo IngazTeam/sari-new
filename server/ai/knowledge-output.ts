@@ -74,3 +74,17 @@ export function parseSalesIntelligence(response: unknown) {
     throw new KnowledgeAnalysisError("sales");
   }
 }
+
+/** Keep the complete supported hierarchy in the sales prompt. Never silently
+ * replace source details with a short summary or discard children. */
+export function formatSalesKnowledge(input: unknown) {
+  try {
+    const value = sections.parse(input);
+    if (!value.length) throw new Error("No knowledge evidence");
+    const result = JSON.stringify(value);
+    if (result.length > 400000) throw new Error("Knowledge evidence too large");
+    return result;
+  } catch {
+    throw new KnowledgeAnalysisError("sales");
+  }
+}

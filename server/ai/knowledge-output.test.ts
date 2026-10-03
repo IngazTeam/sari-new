@@ -3,6 +3,7 @@ import {
   parseKnowledgeSections,
   parseSalesIntelligence,
   KnowledgeAnalysisError,
+  formatSalesKnowledge,
 } from "./knowledge-output";
 const section = {
   sectionType: "identity",
@@ -95,6 +96,35 @@ it.each([
   JSON.stringify({ ...sales, confidence: 100 }),
 ])("rejects invalid sales output (%#)", response =>
   expect(() => parseSalesIntelligence(response)).toThrow(
+    "knowledge_analysis:sales_unavailable"
+  )
+);
+
+it("formats a complete hierarchy as JSON with original source content", () => {
+  const data = [
+    {
+      ...section,
+      content: "Long parent ".repeat(70),
+      children: [{ ...section, content: "Long child ".repeat(70) }],
+    },
+  ];
+  expect(JSON.parse(formatSalesKnowledge(data))).toEqual(
+    data.map(p => ({
+      ...p,
+      content: p.content.trim(),
+      children: p.children.map(c => ({ ...c, content: c.content.trim() })),
+    }))
+  );
+});
+it.each([
+  [],
+  [{ ...section, children: [{ ...section, confidence: "bad" }] }],
+  Array.from({ length: 5 }, () => ({
+    ...section,
+    content: "x".repeat(100000),
+  })),
+])("refuses empty, invalid or oversized sales input (%#)", value =>
+  expect(() => formatSalesKnowledge(value)).toThrow(
     "knowledge_analysis:sales_unavailable"
   )
 );

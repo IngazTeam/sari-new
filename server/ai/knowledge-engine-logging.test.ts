@@ -230,3 +230,45 @@ it("does not write a late sales result after the execution closes", async () => 
   expect(dependencies.callGPT4).toHaveBeenCalledTimes(2);
   expect(dependencies.createSection).not.toHaveBeenCalled();
 });
+
+it("uses full parent and child evidence in sales analysis without copying it to logs", async () => {
+  const child = {
+    ...sections[0],
+    sectionType: "policies" as const,
+    title: "Delivery",
+    content: "Policy detail ".repeat(50) + "IMPORTANT_CHILD_END_446",
+    summary: "Short child summary",
+  };
+  const input = [
+    {
+      ...sections[0],
+      content: "Parent detail ".repeat(50) + "IMPORTANT_PARENT_END_446",
+      children: [child],
+    },
+  ];
+  dependencies.callGPT4.mockResolvedValue(JSON.stringify(sales));
+  expect(await analyzeSalesIntelligence(42, input, context)).toEqual(sales);
+  const prompt = dependencies.callGPT4.mock.calls[0][0][1].content;
+  expect(prompt).toContain("IMPORTANT_CHILD_END_446");
+  expect(prompt).toContain("IMPORTANT_PARENT_END_446");
+  expect(JSON.stringify(output)).not.toContain("IMPORTANT_CHILD_END_446");
+});
+it.each(["empty", "too-large"])(
+  "rejects %s classification input without a paid model call",
+  async kind => {
+    await expect(
+      classifyContent(
+        42,
+        kind === "empty" ? "   " : "x".repeat(100001),
+        context
+      )
+    ).rejects.toMatchObject({ name: "KnowledgeAnalysisError" });
+    expect(dependencies.callGPT4).not.toHaveBeenCalled();
+  }
+);
+it("does not generate sales advice without any knowledge evidence", async () => {
+  await expect(analyzeSalesIntelligence(42, [], context)).rejects.toMatchObject(
+    { name: "KnowledgeAnalysisError", stage: "sales" }
+  );
+  expect(dependencies.callGPT4).not.toHaveBeenCalled();
+});
