@@ -175,7 +175,7 @@ it("limits selection to five, keeps it across pages and allows explicit removal"
   ).toBe(false);
   expect(model.operations).toBe(0);
 });
-it.each(["actor", "merchant", "selection", "error"])(
+it.each(["actor", "merchant", "selection", "error", "report", "metric", "prices", "status"])(
   "hides an invalid comparison result: %s",
   async kind => {
     const original = model.read.bind(model);
@@ -187,6 +187,10 @@ it.each(["actor", "merchant", "selection", "error"])(
       if (kind === "actor") data.actorId++;
       if (kind === "merchant") data.merchantId++;
       if (kind === "selection") data.selection.analysisId++;
+      if (kind === "report") data.baseline.report.id++;
+      if (kind === "metric") data.competitors[0].differences[0].difference = 99;
+      if (kind === "prices") data.baseline.pricing.pricedCount++;
+      if (kind === "status") data.competitors[0].report.status = "failed";
       return {
         ...result,
         data,
