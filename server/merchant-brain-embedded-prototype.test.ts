@@ -285,3 +285,12 @@ it('accepts occasion filters only for the owned local occasion frame',()=>{
  for(const search of [message.search+'&merchantId=999',message.search+'&year=2028','path=/merchant/occasion-campaigns&year=1899','path=/merchant/referrals&year=2027','path=/merchant/occasion-campaigns&state=paid','path=/merchant/occasion-campaigns&historyPage=2'])send({...message,search});
  send(message,'https://evil.test');send(message,undefined,w);expect(w.location.hash).toBe('#/page/merchant/occasion-campaigns');send(message);expect(w.location.hash).toBe('#/page/merchant/occasion-campaigns?state=disabled&year=2027&page=2&tenant=270&lang=en');expect(w.syncServicePreviewContext).toHaveBeenCalledOnce();
 });
+
+it.each(['/merchant/reviews','/merchant/booking-reviews'])('preserves all review filters only from the owned frame %s',path=>{
+ frame.setAttribute('src','./service-workspace.html?embed=brain');w.history.replaceState(null,'','#/page'+path);w.syncServicePreviewContext=vi.fn();
+ const search=`path=${path}&q=Customer&rating=3&reply=pending&visibility=private&integrity=linked&sort=lowest&page=2&tenant=270&lang=en`;
+ const message={type:'sary-brain-preview',action:'serviceState',search};
+ for(const invalid of [search+'&merchantId=999',search+'&rating=4',`path=${path}&rating=6`,`path=${path}&reply=sent`,`path=${path}&visibility=hidden`,`path=${path}&integrity=verified`,`path=${path}&sort=title`,`path=${path}&q=${'x'.repeat(101)}`,'path=/merchant/services&rating=3'])send({...message,search:invalid});
+ send(message,'https://evil.test');send(message,undefined,w);expect(w.location.hash).toBe('#/page'+path);send(message);
+ expect(w.location.hash).toBe('#/page'+path+'?q=Customer&rating=3&reply=pending&visibility=private&integrity=linked&sort=lowest&page=2&tenant=270&lang=en');expect(w.syncServicePreviewContext).toHaveBeenCalledOnce();expect(frame.isConnected).toBe(true);
+});

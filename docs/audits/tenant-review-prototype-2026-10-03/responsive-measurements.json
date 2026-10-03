@@ -1,0 +1,104 @@
+[
+  {
+    "label": "booking en 390 details",
+    "client": 360,
+    "dialog": {
+      "bottom": 828,
+      "client": 296,
+      "height": 812,
+      "scroll": 296,
+      "width": 328,
+      "x": 16,
+      "y": 16
+    },
+    "height": 844,
+    "rawKeys": false,
+    "scroll": 360,
+    "width": 390
+  },
+  {
+    "label": "booking en 320 details",
+    "client": 290,
+    "dialog": {
+      "bottom": 828,
+      "client": 226,
+      "height": 812,
+      "scroll": 226,
+      "width": 258,
+      "x": 16,
+      "y": 16
+    },
+    "height": 844,
+    "rawKeys": false,
+    "scroll": 290,
+    "width": 320
+  },
+  {
+    "label": "booking en 320 short details",
+    "client": 290,
+    "dialog": {
+      "bottom": 534,
+      "client": 226,
+      "height": 518,
+      "scroll": 226,
+      "width": 258,
+      "x": 16,
+      "y": 16
+    },
+    "height": 550,
+    "rawKeys": false,
+    "scroll": 290,
+    "width": 320
+  },
+  {
+    "label": "booking en 768 details",
+    "client": 738,
+    "dialog": {
+      "bottom": 534,
+      "client": 674,
+      "height": 518,
+      "scroll": 674,
+      "width": 706,
+      "x": 16,
+      "y": 16
+    },
+    "height": 550,
+    "rawKeys": false,
+    "scroll": 738,
+    "width": 768
+  },
+  {
+    "label": "booking en 1440 details",
+    "client": 1410,
+    "dialog": {
+      "bottom": 828,
+      "client": 688,
+      "height": 812,
+      "scroll": 688,
+      "width": 720,
+      "x": 345,
+      "y": 16
+    },
+    "height": 844,
+    "rawKeys": false,
+    "scroll": 1410,
+    "width": 1440
+  },
+  {
+    "label": "order ar readonly 320",
+    "client": 290,
+    "dialog": {
+      "bottom": 828,
+      "client": 226,
+      "height": 812,
+      "scroll": 226,
+      "width": 258,
+      "x": 46,
+      "y": 16
+    },
+    "height": 844,
+    "rawKeys": false,
+    "scroll": 290,
+    "width": 320
+  }
+]

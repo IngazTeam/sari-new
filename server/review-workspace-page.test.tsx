@@ -9,7 +9,7 @@ import { projectReview } from './review-workspace';
 const m = vi.hoisted(() => ({ actor: 7, merchant: 20, language: 'en', kind: 'order', source: [] as any[], override: {} as any,
   selection: {} as any, error: null as any, fetching: false, writable: true, refresh: vi.fn(), detail: vi.fn(), save: vi.fn() }));
 vi.mock('@/lib/trpc', () => {
-  const api = (kind: string) => ({ workspace: { useQuery: (selection: any) => { m.kind = kind; m.selection = selection; return { data: snapshot(), error: m.error, isFetching: m.fetching, refetch: m.refresh }; } }, saveReply: { useMutation: () => ({ mutateAsync: m.save }) } });
+  const api = (kind: string) => ({ workspace: { useQuery: (selection: any, options: any) => { if (options?.enabled === false) return { data: undefined, refetch: m.refresh }; m.kind = kind; m.selection = selection; return { data: snapshot(), error: m.error, isFetching: m.fetching, refetch: m.refresh }; } }, saveReply: { useMutation: () => ({ mutateAsync: m.save }) } });
   return { trpc: { auth: { me: { useQuery: () => ({ data: { id: m.actor } }) } }, merchants: { getCurrent: { useQuery: () => ({ data: { id: m.merchant } }) } },
     reviews: api('order'), bookingReviews: api('booking'), useUtils: () => ({ reviews: { detail: { fetch: m.detail } }, bookingReviews: { detail: { fetch: m.detail } } }) } };
 });

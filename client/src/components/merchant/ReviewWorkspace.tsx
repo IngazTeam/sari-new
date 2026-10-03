@@ -16,11 +16,14 @@ import '@/styles/review-workspace.css';
 
 export function ReviewWorkspace({ actorId, merchantId, kind }: { actorId: number; merchantId: number; kind: ReviewKind }) {
   const { t, i18n } = useTranslation(), c = reviewWorkspaceLabels(t), locale = i18n.language.startsWith('ar') ? 'ar' : 'en';
-  const api = kind === 'order' ? trpc.reviews : trpc.bookingReviews, utils = trpc.useUtils();
+  const utils = trpc.useUtils();
   const [path, navigate] = useLocation(), search = useSearch(), selection = reviewNavigation(search), key = reviewSelectionKey(selection);
-  const query = api.workspace.useQuery(selection, { retry: false, staleTime: 0, refetchOnMount: 'always' });
+  const orders = trpc.reviews.workspace.useQuery(selection, { enabled: kind === 'order', retry: false, staleTime: 0, refetchOnMount: 'always' });
+  const bookings = trpc.bookingReviews.workspace.useQuery(selection, { enabled: kind === 'booking', retry: false, staleTime: 0, refetchOnMount: 'always' });
+  const query = kind === 'order' ? orders : bookings;
   const data = query.error ? null : scopedReviewWorkspace(query.data, actorId, merchantId, kind, selection);
-  const saveMutation = api.saveReply.useMutation({ retry: false });
+  const orderSave = trpc.reviews.saveReply.useMutation({ retry: false }), bookingSave = trpc.bookingReviews.saveReply.useMutation({ retry: false });
+  const saveMutation = kind === 'order' ? orderSave : bookingSave;
   const [selected, setSelected] = useState<number | null>(null), [row, setRow] = useState<ReviewRow | null>(null), [canReply, setCanReply] = useState(false);
   const [draft, setDraft] = useState(''), [fieldError, setFieldError] = useState(''), [failure, setFailure] = useState(''), [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false), [blocked, setBlocked] = useState(false), [searchDraft, setSearchDraft] = useState<string | null>(null);

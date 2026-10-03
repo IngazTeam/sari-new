@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-03T13:30:40.619Z",
+  "generatedAt": "2026-10-03T14:43:38.679Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -14595,187 +14595,161 @@
     },
     {
       "file": "client/src/pages/merchant/Reviews.tsx",
-      "hash": "07ae96109e71",
-      "queries": [
-        "merchants.getCurrent",
-        "reviews.list",
-        "reviews.getStats"
-      ],
-      "mutations": [
-        "reviews.reply"
-      ],
+      "hash": "6a99c65f167a",
+      "queries": [],
+      "mutations": [],
       "imperativeReads": [],
       "browserRequests": [],
-      "sections": [
-        {
-          "label": "تقييمات العملاء",
-          "line": 89,
-          "tag": "h1"
-        },
-        {
-          "label": "إجمالي التقييمات",
-          "line": 100,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "متوسط التقييم",
-          "line": 109,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "تقييمات إيجابية",
-          "line": 121,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "تقييمات سلبية",
-          "line": 133,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "فلترة التقييمات",
-          "line": 148,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "",
-          "line": 190,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "لا توجد تقييمات",
-          "line": 238,
-          "tag": "h3"
-        },
-        {
-          "label": "الرد على التقييم",
-          "line": 253,
-          "tag": "DialogTitle"
-        }
-      ],
+      "sections": [],
       "choices": [],
-      "handlers": [
-        {
-          "name": "handleReply",
-          "line": 59,
-          "calls": []
-        },
-        {
-          "name": "submitReply",
-          "line": 63,
-          "calls": [
-            "replyMutation"
-          ]
-        }
-      ],
-      "queryStates": [
-        {
-          "query": "merchants.getCurrent",
-          "binding": "{ data: merchant }",
-          "line": 22,
-          "errorSignal": false,
-          "loadingSignal": false,
-          "enabled": null
-        },
-        {
-          "query": "reviews.list",
-          "binding": "{ data: reviews, isLoading, refetch }",
-          "line": 23,
-          "errorSignal": false,
-          "loadingSignal": true,
-          "enabled": "!!merchant "
-        },
-        {
-          "query": "reviews.getStats",
-          "binding": "{ data: stats }",
-          "line": 27,
-          "errorSignal": false,
-          "loadingSignal": false,
-          "enabled": "!!merchant "
-        }
-      ],
+      "handlers": [],
+      "queryStates": [],
       "conditions": [],
-      "imports": [],
-      "controlCount": 7
+      "imports": [
+        "client/src/components/merchant/ReviewPage.tsx"
+      ],
+      "controlCount": 0
     },
     {
-      "file": "client/src/pages/merchant/BookingReviews.tsx",
-      "hash": "5518dab008da",
+      "file": "client/src/components/merchant/ReviewPage.tsx",
+      "hash": "d7a181348a84",
       "queries": [
-        "bookingReviews.list"
+        "auth.me",
+        "merchants.getCurrent"
       ],
-      "mutations": [
-        "bookingReviews.reply"
-      ],
+      "mutations": [],
       "imperativeReads": [],
       "browserRequests": [],
-      "sections": [
-        {
-          "label": "تقييمات الحجوزات",
-          "line": 159,
-          "tag": "h1"
-        },
-        {
-          "label": "إجمالي التقييمات",
-          "line": 174,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "متوسط التقييم",
-          "line": 184,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "5 نجوم",
-          "line": 194,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "بانتظار الرد",
-          "line": 210,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "قائمة التقييمات",
-          "line": 223,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "تفاصيل التقييم والرد",
-          "line": 345,
-          "tag": "DialogTitle"
-        }
-      ],
+      "sections": [],
       "choices": [],
-      "handlers": [
-        {
-          "name": "handleReply",
-          "line": 123,
-          "calls": [
-            "replyMutation"
-          ]
-        }
-      ],
+      "handlers": [],
       "queryStates": [
         {
-          "query": "bookingReviews.list",
-          "binding": "{ data: reviewsData, isLoading, refetch }",
-          "line": 76,
-          "errorSignal": false,
+          "query": "auth.me",
+          "binding": "user",
+          "line": 6,
+          "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
+        },
+        {
+          "query": "merchants.getCurrent",
+          "binding": "merchant",
+          "line": 7,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": "!!user.data?.id && !user.error && !user.isFetching "
         }
       ],
       "conditions": [],
       "imports": [
-        "client/src/hooks/use-toast.ts",
-        "client/src/lib/i18n.ts"
+        "client/src/components/merchant/ReviewWorkspace.tsx"
       ],
-      "controlCount": 9
+      "controlCount": 0
     },
     {
-      "file": "client/src/hooks/use-toast.ts",
-      "hash": "f9bb878946fd",
+      "file": "client/src/components/merchant/ReviewWorkspace.tsx",
+      "hash": "79cace2b306e",
+      "queries": [
+        "reviews.workspace",
+        "bookingReviews.workspace",
+        "reviews.detail",
+        "bookingReviews.detail"
+      ],
+      "mutations": [
+        "reviews.saveReply",
+        "bookingReviews.saveReply"
+      ],
+      "imperativeReads": [
+        {
+          "procedure": "reviews.detail",
+          "method": "fetch",
+          "expression": "utils.reviews.detail.fetch",
+          "line": 48,
+          "provenance": "trpc-utility-static"
+        },
+        {
+          "procedure": "bookingReviews.detail",
+          "method": "fetch",
+          "expression": "utils.bookingReviews.detail.fetch",
+          "line": 48,
+          "provenance": "trpc-utility-static"
+        }
+      ],
+      "browserRequests": [],
+      "sections": [
+        {
+          "label": "",
+          "line": 78,
+          "tag": "h1"
+        },
+        {
+          "label": "",
+          "line": 83,
+          "tag": "summary"
+        },
+        {
+          "label": "unlinked #",
+          "line": 94,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 104,
+          "tag": "DialogTitle"
+        },
+        {
+          "label": "",
+          "line": 114,
+          "tag": "h3"
+        }
+      ],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [
+        {
+          "query": "reviews.workspace",
+          "binding": "orders",
+          "line": 21,
+          "errorSignal": false,
+          "loadingSignal": false,
+          "enabled": "kind === 'order'"
+        },
+        {
+          "query": "bookingReviews.workspace",
+          "binding": "bookings",
+          "line": 22,
+          "errorSignal": false,
+          "loadingSignal": false,
+          "enabled": "kind === 'booking'"
+        }
+      ],
+      "conditions": [],
+      "imports": [
+        "client/src/lib/review-workspace-labels.ts",
+        "client/src/lib/review-workspace.ts",
+        "client/src/lib/service-catalog-navigation.ts"
+      ],
+      "controlCount": 18
+    },
+    {
+      "file": "client/src/lib/review-workspace-labels.ts",
+      "hash": "295df0b0d4c7",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/lib/review-workspace.ts",
+      "hash": "1d21263c65ec",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
@@ -14784,19 +14758,31 @@
       "choices": [],
       "handlers": [
         {
-          "name": "addToRemoveQueue",
-          "line": 56,
-          "calls": []
-        },
-        {
-          "name": "update",
-          "line": 141,
+          "name": "reviewSelectionKey",
+          "line": 3,
           "calls": []
         }
       ],
       "queryStates": [],
       "conditions": [],
       "imports": [],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/pages/merchant/BookingReviews.tsx",
+      "hash": "e2df503771b0",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [
+        "client/src/components/merchant/ReviewPage.tsx"
+      ],
       "controlCount": 0
     },
     {
@@ -15103,6 +15089,32 @@
         "client/src/hooks/use-toast.ts"
       ],
       "controlCount": 12
+    },
+    {
+      "file": "client/src/hooks/use-toast.ts",
+      "hash": "f9bb878946fd",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [
+        {
+          "name": "addToRemoveQueue",
+          "line": 56,
+          "calls": []
+        },
+        {
+          "name": "update",
+          "line": 141,
+          "calls": []
+        }
+      ],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 0
     },
     {
       "file": "client/src/pages/merchant/NotificationsPage.tsx",
@@ -25961,26 +25973,63 @@
         "Reviews"
       ],
       "files": [
-        "client/src/pages/merchant/Reviews.tsx"
+        "client/src/pages/merchant/Reviews.tsx",
+        "client/src/components/merchant/ReviewPage.tsx",
+        "client/src/components/merchant/ReviewWorkspace.tsx",
+        "client/src/lib/review-workspace-labels.ts",
+        "client/src/lib/review-workspace.ts",
+        "client/src/lib/service-catalog-navigation.ts"
       ],
       "controls": [
-        "ff8887bdca97",
-        "5b6aa1db925b",
-        "f7c19f05a5d1",
-        "0cd354f54725",
-        "75a98db74220",
-        "cfaf2c73900e",
-        "72c842273f9a"
+        "74316d4d5965",
+        "cfa1763f8bd8",
+        "a9acf8d35971",
+        "a576a0ba7c15",
+        "a09419bcc760",
+        "96ef1d348441",
+        "2e65e226adf1",
+        "cc380ea66cfc",
+        "fa352c12fe13",
+        "7cbc7ccc1908",
+        "e04b98f72844",
+        "60a045d504da",
+        "0a7c89ef4d58",
+        "e3d577f277c7",
+        "53df003f5c96",
+        "4b59b29adaff",
+        "a4fe4e4236c8",
+        "fc5ec99b87ff"
       ],
       "queries": [
+        "auth.me",
         "merchants.getCurrent",
-        "reviews.list",
-        "reviews.getStats"
+        "reviews.workspace",
+        "bookingReviews.workspace",
+        "reviews.detail",
+        "bookingReviews.detail"
       ],
       "mutations": [
-        "reviews.reply"
+        "reviews.saveReply",
+        "bookingReviews.saveReply"
       ],
-      "imperativeReads": [],
+      "imperativeReads": [
+        {
+          "file": "client/src/components/merchant/ReviewWorkspace.tsx",
+          "procedure": "reviews.detail",
+          "method": "fetch",
+          "expression": "utils.reviews.detail.fetch",
+          "line": 48,
+          "provenance": "trpc-utility-static"
+        },
+        {
+          "file": "client/src/components/merchant/ReviewWorkspace.tsx",
+          "procedure": "bookingReviews.detail",
+          "method": "fetch",
+          "expression": "utils.bookingReviews.detail.fetch",
+          "line": 48,
+          "provenance": "trpc-utility-static"
+        }
+      ],
       "browserRequests": []
     },
     {
@@ -25992,27 +26041,62 @@
       ],
       "files": [
         "client/src/pages/merchant/BookingReviews.tsx",
-        "client/src/hooks/use-toast.ts",
-        "client/src/lib/i18n.ts"
+        "client/src/components/merchant/ReviewPage.tsx",
+        "client/src/components/merchant/ReviewWorkspace.tsx",
+        "client/src/lib/review-workspace-labels.ts",
+        "client/src/lib/review-workspace.ts",
+        "client/src/lib/service-catalog-navigation.ts"
       ],
       "controls": [
-        "9e2191c1a919",
-        "e2994f16f767",
-        "36acf029b89b",
-        "9d6ce8f1e351",
-        "e28348fb6300",
-        "cd62004fa6c9",
-        "50dea7a210b3",
-        "4ec8e4b761a8",
-        "d6582ffec2f9"
+        "74316d4d5965",
+        "cfa1763f8bd8",
+        "a9acf8d35971",
+        "a576a0ba7c15",
+        "a09419bcc760",
+        "96ef1d348441",
+        "2e65e226adf1",
+        "cc380ea66cfc",
+        "fa352c12fe13",
+        "7cbc7ccc1908",
+        "e04b98f72844",
+        "60a045d504da",
+        "0a7c89ef4d58",
+        "e3d577f277c7",
+        "53df003f5c96",
+        "4b59b29adaff",
+        "a4fe4e4236c8",
+        "fc5ec99b87ff"
       ],
       "queries": [
-        "bookingReviews.list"
+        "auth.me",
+        "merchants.getCurrent",
+        "reviews.workspace",
+        "bookingReviews.workspace",
+        "reviews.detail",
+        "bookingReviews.detail"
       ],
       "mutations": [
-        "bookingReviews.reply"
+        "reviews.saveReply",
+        "bookingReviews.saveReply"
       ],
-      "imperativeReads": [],
+      "imperativeReads": [
+        {
+          "file": "client/src/components/merchant/ReviewWorkspace.tsx",
+          "procedure": "reviews.detail",
+          "method": "fetch",
+          "expression": "utils.reviews.detail.fetch",
+          "line": 48,
+          "provenance": "trpc-utility-static"
+        },
+        {
+          "file": "client/src/components/merchant/ReviewWorkspace.tsx",
+          "procedure": "bookingReviews.detail",
+          "method": "fetch",
+          "expression": "utils.bookingReviews.detail.fetch",
+          "line": 48,
+          "provenance": "trpc-utility-static"
+        }
+      ],
       "browserRequests": []
     },
     {
@@ -73368,61 +73452,15 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ff8887bdca97",
-      "file": "client/src/pages/merchant/Reviews.tsx",
-      "line": 157,
-      "tag": "Select",
+      "id": "74316d4d5965",
+      "file": "client/src/components/merchant/ReviewWorkspace.tsx",
+      "line": 78,
+      "tag": "Button",
       "role": "",
-      "kind": "field",
-      "label": "حسب النجوم",
-      "section": "فلترة التقييمات",
-      "binding": "starFilter",
-      "type": "select",
-      "options": [
-        {
-          "value": "all",
-          "label": "جميع التقييمات"
-        },
-        {
-          "value": "5",
-          "label": "⭐⭐⭐⭐⭐ (5 نجوم)"
-        },
-        {
-          "value": "4",
-          "label": "⭐⭐⭐⭐ (4 نجوم)"
-        },
-        {
-          "value": "3",
-          "label": "⭐⭐⭐ (3 نجوم)"
-        },
-        {
-          "value": "2",
-          "label": "⭐⭐ (نجمتان)"
-        },
-        {
-          "value": "1",
-          "label": "⭐ (نجمة واحدة)"
-        }
-      ],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "5b6aa1db925b",
-      "file": "client/src/pages/merchant/Reviews.tsx",
-      "line": 186,
-      "tag": "Calendar",
-      "role": "",
-      "kind": "field",
+      "kind": "action",
       "label": "",
-      "section": "فلترة التقييمات",
-      "binding": "",
+      "section": "ReviewWorkspace",
+      "binding": "() => void query.refetch()",
       "type": "text",
       "options": [],
       "min": "",
@@ -73431,213 +73469,18 @@
       "required": false,
       "conditional": false,
       "conditions": [],
-      "disabled": "",
+      "disabled": "busy || query.isFetching",
       "review": "source-inventoried"
     },
     {
-      "id": "f7c19f05a5d1",
-      "file": "client/src/pages/merchant/Reviews.tsx",
-      "line": 219,
-      "tag": "Button",
+      "id": "cfa1763f8bd8",
+      "file": "client/src/components/merchant/ReviewWorkspace.tsx",
+      "line": 83,
+      "tag": "summary",
       "role": "",
       "kind": "action",
-      "label": "الرد على التقييم",
-      "section": "Reviews",
-      "binding": "() => handleReply(review.id)",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [
-        "!review.merchantReply"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "0cd354f54725",
-      "file": "client/src/pages/merchant/Reviews.tsx",
-      "line": 251,
-      "tag": "DialogContent",
-      "role": "",
-      "kind": "dialog",
-      "label": "الرد على التقييم اكتب ردك على تقييم العميل. سيتم إرساله عبر WhatsApp. إلغاء جاري الإرسال... إرسال الرد",
-      "section": "لا توجد تقييمات",
-      "binding": "",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "75a98db74220",
-      "file": "client/src/pages/merchant/Reviews.tsx",
-      "line": 259,
-      "tag": "Textarea",
-      "role": "",
-      "kind": "field",
-      "label": "اكتب ردك هنا...",
-      "section": "الرد على التقييم",
-      "binding": "replyText",
-      "type": "textarea",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "cfaf2c73900e",
-      "file": "client/src/pages/merchant/Reviews.tsx",
-      "line": 268,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "إلغاء",
-      "section": "الرد على التقييم",
-      "binding": "() => setReplyDialog({ open: false, reviewId: null })",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "72c842273f9a",
-      "file": "client/src/pages/merchant/Reviews.tsx",
-      "line": 274,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "جاري الإرسال... إرسال الرد",
-      "section": "الرد على التقييم",
-      "binding": "submitReply",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "!replyText.trim() || replyMutation.isPending",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "9e2191c1a919",
-      "file": "client/src/pages/merchant/BookingReviews.tsx",
-      "line": 164,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "تحديث",
-      "section": "تقييمات الحجوزات",
-      "binding": "() => refetch()",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "e2994f16f767",
-      "file": "client/src/pages/merchant/BookingReviews.tsx",
-      "line": 230,
-      "tag": "Input",
-      "role": "",
-      "kind": "field",
-      "label": "بحث بالاسم أو رقم الجوال...",
-      "section": "قائمة التقييمات",
-      "binding": "searchQuery",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "36acf029b89b",
-      "file": "client/src/pages/merchant/BookingReviews.tsx",
-      "line": 237,
-      "tag": "Select",
-      "role": "",
-      "kind": "field",
       "label": "",
-      "section": "قائمة التقييمات",
-      "binding": "ratingFilter",
-      "type": "select",
-      "options": [
-        {
-          "value": "all",
-          "label": "جميع التقييمات"
-        },
-        {
-          "value": "5",
-          "label": "5 نجوم"
-        },
-        {
-          "value": "4",
-          "label": "4 نجوم"
-        },
-        {
-          "value": "3",
-          "label": "3 نجوم"
-        },
-        {
-          "value": "2",
-          "label": "2 نجوم"
-        },
-        {
-          "value": "1",
-          "label": "نجمة واحدة"
-        }
-      ],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "9d6ce8f1e351",
-      "file": "client/src/pages/merchant/BookingReviews.tsx",
-      "line": 285,
-      "tag": "Calendar",
-      "role": "",
-      "kind": "field",
-      "label": "",
-      "section": "قائمة التقييمات",
+      "section": "ReviewWorkspace",
       "binding": "",
       "type": "text",
       "options": [],
@@ -73647,43 +73490,356 @@
       "required": false,
       "conditional": true,
       "conditions": [
-        "filteredReviews.length > 0"
+        "!data",
+        "query.error"
       ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "e28348fb6300",
-      "file": "client/src/pages/merchant/BookingReviews.tsx",
-      "line": 302,
+      "id": "a9acf8d35971",
+      "file": "client/src/components/merchant/ReviewWorkspace.tsx",
+      "line": 85,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "c.searchHint",
+      "section": "ReviewWorkspace",
+      "binding": "searchDraft ?? selection.query",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "100",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!data",
+        "query.error"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "a576a0ba7c15",
+      "file": "client/src/components/merchant/ReviewWorkspace.tsx",
+      "line": 85,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "t('merchantUx.actions.replyNamed', {\r\n                                                        name: review.customerName || review.customerPhone,\r\n                                                    })",
-      "section": "قائمة التقييمات",
-      "binding": "() => {\r\n                                                        // @ts-ignore\r\n                                                        setSelectedReview(review);\r\n                                                        // @ts-ignore\r\n                                                        setReplyText(review.reply || '');\r\n                                                        setShowReplyDialog(true);\r\n                                                    }",
+      "label": "",
+      "section": "ReviewWorkspace",
+      "binding": "",
+      "type": "submit",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!data",
+        "query.error"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "a09419bcc760",
+      "file": "client/src/components/merchant/ReviewWorkspace.tsx",
+      "line": 86,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "ReviewWorkspace",
+      "binding": "selection.rating ?? ''",
+      "type": "text",
+      "options": [
+        {
+          "value": "",
+          "label": ""
+        },
+        {
+          "value": "n",
+          "label": ""
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!data",
+        "query.error"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "96ef1d348441",
+      "file": "client/src/components/merchant/ReviewWorkspace.tsx",
+      "line": 87,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "ReviewWorkspace",
+      "binding": "selection.reply",
+      "type": "text",
+      "options": [
+        {
+          "value": "all",
+          "label": ""
+        },
+        {
+          "value": "pending",
+          "label": ""
+        },
+        {
+          "value": "replied",
+          "label": ""
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!data",
+        "query.error"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "2e65e226adf1",
+      "file": "client/src/components/merchant/ReviewWorkspace.tsx",
+      "line": 88,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "ReviewWorkspace",
+      "binding": "selection.visibility",
+      "type": "text",
+      "options": [
+        {
+          "value": "all",
+          "label": ""
+        },
+        {
+          "value": "public",
+          "label": ""
+        },
+        {
+          "value": "private",
+          "label": ""
+        },
+        {
+          "value": "unknown",
+          "label": ""
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!data",
+        "query.error"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "cc380ea66cfc",
+      "file": "client/src/components/merchant/ReviewWorkspace.tsx",
+      "line": 89,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "ReviewWorkspace",
+      "binding": "selection.integrity",
+      "type": "text",
+      "options": [
+        {
+          "value": "all",
+          "label": ""
+        },
+        {
+          "value": "linked",
+          "label": ""
+        },
+        {
+          "value": "unlinked",
+          "label": ""
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!data",
+        "query.error"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "fa352c12fe13",
+      "file": "client/src/components/merchant/ReviewWorkspace.tsx",
+      "line": 90,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "ReviewWorkspace",
+      "binding": "selection.sort",
+      "type": "text",
+      "options": [
+        {
+          "value": "newest",
+          "label": ""
+        },
+        {
+          "value": "oldest",
+          "label": ""
+        },
+        {
+          "value": "highest",
+          "label": ""
+        },
+        {
+          "value": "lowest",
+          "label": ""
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!data",
+        "query.error"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "7cbc7ccc1908",
+      "file": "client/src/components/merchant/ReviewWorkspace.tsx",
+      "line": 91,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ReviewWorkspace",
+      "binding": "() => change({ q: null, rating: null, reply: null, visibility: null, integrity: null, page: null })",
       "type": "button",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": false,
+      "conditional": true,
       "conditions": [
-        "filteredReviews.length > 0"
+        "(selection.query || selection.rating || selection.reply !== 'all' || selection.visibility !== 'all' || selection.integrity !== 'all')",
+        "!data",
+        "query.error"
       ],
-      "disabled": "",
+      "disabled": "busy",
       "review": "source-inventoried"
     },
     {
-      "id": "cd62004fa6c9",
-      "file": "client/src/pages/merchant/BookingReviews.tsx",
-      "line": 343,
+      "id": "e04b98f72844",
+      "file": "client/src/components/merchant/ReviewWorkspace.tsx",
+      "line": 96,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "#",
+      "section": "unlinked #",
+      "binding": "() => open(r.id)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "!data.rows.length"
+      ],
+      "disabled": "busy || query.isFetching",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "60a045d504da",
+      "file": "client/src/components/merchant/ReviewWorkspace.tsx",
+      "line": 98,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "unlinked #",
+      "binding": "() => change({ page: data.currentPage - 1 })",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "data.pages > 1",
+        "!data",
+        "query.error"
+      ],
+      "disabled": "busy || query.isFetching || data.currentPage <= 1",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "0a7c89ef4d58",
+      "file": "client/src/components/merchant/ReviewWorkspace.tsx",
+      "line": 98,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "unlinked #",
+      "binding": "() => change({ page: data.currentPage + 1 })",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "data.pages > 1",
+        "!data",
+        "query.error"
+      ],
+      "disabled": "busy || query.isFetching || data.currentPage >= data.pages",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "e3d577f277c7",
+      "file": "client/src/components/merchant/ReviewWorkspace.tsx",
+      "line": 101,
       "tag": "DialogContent",
       "role": "",
       "kind": "dialog",
-      "label": "تفاصيل التقييم والرد عميل - ar ar-SA en-US لا يوجد تعليق الرد على التقييم تم الرد بتاريخ {{var0}} إغلاق إرسال الرد",
-      "section": "قائمة التقييمات",
+      "label": "unlinked quality professionalism value : / linked linked",
+      "section": "unlinked #",
       "binding": "",
       "type": "text",
       "options": [],
@@ -73697,38 +73853,15 @@
       "review": "source-inventoried"
     },
     {
-      "id": "50dea7a210b3",
-      "file": "client/src/pages/merchant/BookingReviews.tsx",
-      "line": 366,
-      "tag": "Textarea",
+      "id": "53df003f5c96",
+      "file": "client/src/components/merchant/ReviewWorkspace.tsx",
+      "line": 115,
+      "tag": "textarea",
       "role": "",
       "kind": "field",
-      "label": "الرد على التقييم",
-      "section": "تفاصيل التقييم والرد",
-      "binding": "replyText",
-      "type": "textarea",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [
-        "selectedReview"
-      ],
-      "disabled": "!!selectedReview.reply",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "4ec8e4b761a8",
-      "file": "client/src/pages/merchant/BookingReviews.tsx",
-      "line": 382,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "إغلاق",
-      "section": "تفاصيل التقييم والرد",
-      "binding": "() => setShowReplyDialog(false)",
+      "label": "/",
+      "section": "ReviewWorkspace",
+      "binding": "draft",
       "type": "text",
       "options": [],
       "min": "",
@@ -73737,21 +73870,45 @@
       "required": false,
       "conditional": true,
       "conditions": [
-        "selectedReview"
+        "canReply && data?.canReply",
+        "row.integrity === 'unlinked'",
+        "row",
+        "busy && !row"
       ],
-      "disabled": "",
+      "disabled": "busy || blocked",
       "review": "source-inventoried"
     },
     {
-      "id": "d6582ffec2f9",
-      "file": "client/src/pages/merchant/BookingReviews.tsx",
-      "line": 386,
+      "id": "4b59b29adaff",
+      "file": "client/src/components/merchant/ReviewWorkspace.tsx",
+      "line": 120,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "إرسال الرد",
-      "section": "تفاصيل التقييم والرد",
-      "binding": "handleReply",
+      "label": "",
+      "section": "ReviewWorkspace",
+      "binding": "() => { epoch.current++; setSelected(null); setRow(null); }",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "a4fe4e4236c8",
+      "file": "client/src/components/merchant/ReviewWorkspace.tsx",
+      "line": 121,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ReviewWorkspace",
+      "binding": "() => void load(selected, true)",
       "type": "text",
       "options": [],
       "min": "",
@@ -73760,10 +73917,32 @@
       "required": false,
       "conditional": true,
       "conditions": [
-        "!selectedReview.reply",
-        "selectedReview"
+        "selected !== null && (blocked || !row)"
       ],
-      "disabled": "!replyText.trim() || replyMutation.isPending",
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "fc5ec99b87ff",
+      "file": "client/src/components/merchant/ReviewWorkspace.tsx",
+      "line": 122,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ReviewWorkspace",
+      "binding": "() => void save()",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "row?.integrity === 'linked' && canReply && data?.canReply && !blocked"
+      ],
+      "disabled": "!writable",
       "review": "source-inventoried"
     },
     {
