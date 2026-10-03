@@ -30,8 +30,10 @@ beforeEach(() => {
   m.execute.mockImplementation(async (q: string) => {
     if (q.startsWith("SELECT id,userId"))
       return [[{ id: 20, userId: 7, status: "active", businessName: "Local" }]];
-    if (q.startsWith("SELECT account_status"))
-      return [[{ account_status: "active" }]];
+    if (q.startsWith("SELECT id,account_status"))
+      return [[{ id:7, account_status: "active" }]];
+    if (q.startsWith('SELECT id,merchant_id,provider'))
+      return [[{id:15,merchant_id:20,provider:'meta_cloud',status:'active',is_primary:1,instance_id:'local-order-notice',token:'local-only-token',phone_number_id:'123456'}]];
     if (q.startsWith("SELECT id,merchantId"))
       return [
         [
@@ -57,6 +59,7 @@ beforeEach(() => {
     if (q.startsWith("SELECT DATE_FORMAT"))
       return [[{ now: "2026-09-30T00:00:00.000000Z" }]];
     if (q.startsWith("UPDATE")) return [{ affectedRows: 1 }];
+    if (q.startsWith('INSERT')) return [{affectedRows:1,insertId:42}];
     return [[]];
   });
 });
@@ -76,6 +79,7 @@ describe("atomic order status, notification and receipt", () => {
   it.each([
     "INSERT INTO order_notifications",
     "INSERT INTO order_status_receipts",
+    "INSERT INTO order_notification_authorizations",
   ])("rolls back everything when %s fails", async prefix => {
     const input = await prepared(),
       impl = m.execute.getMockImplementation()!;

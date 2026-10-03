@@ -605,6 +605,7 @@ export const orderNotifications = mysqlTable("order_notifications", {
 	attempts: int().default(0).notNull(),
 	availableAt: timestamp("available_at", { mode: 'string', fsp: 3 }).defaultNow().notNull(),
 	claimedAt: timestamp("claimed_at", { mode: 'string', fsp: 3 }),
+	claimToken: char('claim_token', { length: 36 }),
 	reviewedAt: timestamp("reviewed_at", { mode: 'string', fsp: 3 }),
 	reviewedByUserId: int("reviewed_by_user_id").references(() => users.id, { onDelete: "set null" }),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow(),
@@ -3842,6 +3843,19 @@ export const orderStatusReceipts = mysqlTable('order_status_receipts', {
 	createdAt: timestamp('created_at', { mode: 'string', fsp: 3 }).defaultNow().notNull(),
 }, table => [uniqueIndex('uq_order_status_request').on(table.merchantId, table.requestId),
 	index('idx_order_status_history').on(table.merchantId, table.orderId, table.id)]);
+
+export const orderNotificationAuthorizations = mysqlTable('order_notification_authorizations', {
+	id: int().autoincrement().primaryKey(),
+	notificationId: int('notification_id').notNull(),
+	merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+	orderId: int('order_id').notNull(), actorId: int('actor_id').notNull(), receiptId: int('receipt_id').notNull(),
+	eventKey: char('event_key', { length: 64 }).notNull(), requestKey: char('request_key', { length: 36 }).notNull(),
+	contractDigest: char('contract_digest', { length: 64 }).notNull(), reviewedContract: json('reviewed_contract').notNull(),
+	createdAt: datetime('created_at', { mode: 'string', fsp: 3 }).default(sql`CURRENT_TIMESTAMP(3)`).notNull(),
+}, table => [uniqueIndex('uq_order_notice_authorization').on(table.notificationId),
+	uniqueIndex('uq_order_notice_authorization_event').on(table.merchantId,table.eventKey),
+	uniqueIndex('uq_order_notice_authorization_request').on(table.merchantId,table.requestKey),
+	index('idx_order_notice_authorization_scope').on(table.merchantId,table.orderId,table.id)]);
 
 export const customerWorkspaceTags = mysqlTable('customer_workspace_tags', {
 	id: int().autoincrement().primaryKey(),

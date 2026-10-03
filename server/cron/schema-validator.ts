@@ -97,9 +97,11 @@ export const CRITICAL_SCHEMA_REQUIREMENTS: readonly SchemaRequirement[] = [
   },
   {
     table: 'order_notifications',
-    columns: ['event_key', 'delivery_status', 'attempts', 'available_at', 'claimed_at', 'reviewed_at', 'reviewed_by_user_id'],
+    columns: ['event_key', 'delivery_status', 'attempts', 'available_at', 'claimed_at', 'reviewed_at', 'reviewed_by_user_id', 'claim_token'],
     uniqueIndexes: [{ name: 'uq_order_notification_event', columns: ['merchant_id', 'event_key'] }],
   },
+  { table: 'order_notification_authorizations', columns: ['notification_id','merchant_id','order_id','actor_id','receipt_id','event_key','request_key','contract_digest','reviewed_contract'],
+    uniqueIndexes: [{ name:'uq_order_notice_authorization',columns:['notification_id'] },{ name:'uq_order_notice_authorization_event',columns:['merchant_id','event_key'] },{ name:'uq_order_notice_authorization_request',columns:['merchant_id','request_key'] }] },
   {
     table: 'notification_templates',
     columns: ['merchant_id', 'status', 'template', 'enabled'],

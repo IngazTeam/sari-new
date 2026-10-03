@@ -47,6 +47,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
     beforeEach(async () => {
       owner = await createDisposableMerchant("order-status");
       other = await createDisposableMerchant("status-other");
+      await query("INSERT INTO whatsapp_instances (merchant_id,instance_id,token,provider,status,is_primary,phone_number_id) VALUES (?,'local-notice-review','local-only-token','meta_cloud','active',1,'123456')",[owner.merchantId]);
       id = (
         await query(
           "INSERT INTO orders (merchantId,customerPhone,customerName,items,totalAmount,currency,status,notes) VALUES (?,'+12025550161','Local','[]',3453,'USD','pending','Original notes')",

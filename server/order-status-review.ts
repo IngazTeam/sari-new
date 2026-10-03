@@ -5,6 +5,8 @@ import { assertRuntimeSchema } from "./db/schema-readiness";
 import { hasPermission, type MerchantRole } from "./_core/permissions";
 import { fillOrderNotificationTemplate } from "../shared/order-notification-template";
 import { orderMinor, orderReadInput } from "../shared/order-workspace";
+import { readOrderNoticeChannel, readOrderNoticeOrderDigest, storeOrderNoticeAuthorization, OrderNoticeAuthorityError } from './order-notification-authority';
+import { orderNoticeText } from '../shared/order-notification-actions';
 import {
   orderStatusIntent,
   orderStatusWrite,
@@ -22,6 +24,8 @@ const hash = (v: unknown) =>
   createHash("sha256").update(JSON.stringify(v)).digest("hex");
 async function schema() {
   await assertRuntimeSchema("reviewed order status", [
+    { table: 'order_notification_authorizations', columns: ['notification_id','merchant_id','order_id','actor_id','receipt_id','event_key','request_key','contract_digest','reviewed_contract'],
+      uniqueIndexes: [{name:'uq_order_notice_authorization',columns:['notification_id']},{name:'uq_order_notice_authorization_event',columns:['merchant_id','event_key']},{name:'uq_order_notice_authorization_request',columns:['merchant_id','request_key']}] },
     {
       table: "order_status_receipts",
       columns: ["actor_id", "order_id", "input_hash", "result"],
@@ -47,7 +51,7 @@ async function schema() {
     },
     {
       table: "order_notifications",
-      columns: ["event_key", "delivery_status"],
+      columns: ["event_key", "delivery_status", "claim_token"],
       uniqueIndexes: [
         {
           name: "uq_order_notification_event",
@@ -95,8 +99,8 @@ async function actor(c: PoolConnection, merchantId: number, actorId: number) {
   if (merchants.length !== 1) throw new OrderStatusUnavailable();
   const merchant = merchants[0];
   const [users] = await c.execute<any[]>(
-    "SELECT account_status FROM users WHERE id=? FOR SHARE",
-    [actorId]
+    "SELECT id,account_status FROM users WHERE id IN (?,?) ORDER BY id FOR SHARE",
+    [actorId, merchant.userId]
   );
   const [members] = await c.execute<any[]>(
     "SELECT role,is_active FROM merchant_members WHERE merchant_id=? AND user_id=? FOR SHARE",
@@ -110,7 +114,8 @@ async function actor(c: PoolConnection, merchantId: number, actorId: number) {
         : null;
   if (
     merchant.status === "suspended" ||
-    users[0]?.account_status !== "active" ||
+    users.find(row=>row.id===actorId)?.account_status !== "active" ||
+    users.find(row=>row.id===merchant.userId)?.account_status !== "active" ||
     !role ||
     !hasPermission(role as MerchantRole, "orders.manage")
   )
@@ -151,14 +156,19 @@ async function review(
   )
     throw new OrderStatusPrecondition();
   let notification: OrderStatusReview["notification"] = null;
+  let channel:Awaited<ReturnType<typeof readOrderNoticeChannel>>|null=null;
   if (intent.notify) {
+    if(merchant.status!=='active')throw new OrderStatusPrecondition();
+    try { channel=await readOrderNoticeChannel(c,merchant.id); }
+    catch(error){if(error instanceof OrderNoticeAuthorityError)throw new OrderStatusPrecondition();throw error;}
     const [templates] = await c.execute<any[]>(
       "SELECT template,enabled FROM notification_templates WHERE merchant_id=? AND status=? FOR SHARE",
       [merchant.id, intent.status]
     );
     if (
       templates.length !== 1 ||
-      Number(templates[0].enabled) !== 1 ||
+      templates[0].enabled !== 1 ||
+      !orderNoticeText.safeParse(templates[0].template).success ||
       !/^\+?[0-9]{8,15}$/.test(o.customerPhone)
     )
       throw new OrderStatusPrecondition();
@@ -183,7 +193,7 @@ async function review(
     merchantId: merchant.id,
     actorId,
     intent,
-    digest: hash([merchant.id, actorId, o, intent, notification]),
+    digest: hash([merchant.id, merchant.userId, actorId, o, intent, notification, channel]),
     order: {
       id: o.id,
       number: o.orderNumber,
@@ -263,6 +273,7 @@ export async function writeOrderStatus(
       ]
     );
     if (updated.affectedRows !== 1) throw new OrderStatusConflict();
+    let noticeId:number|null=null,noticeEvent:string|null=null;
     if (current.notification) {
       // Shares the established outbox event identity; an existing event rolls back this write instead of resending.
       const eventKey = createHash("sha256")
@@ -271,7 +282,7 @@ export async function writeOrderStatus(
           "utf8"
         )
         .digest("hex");
-      await c.execute(
+      const [inserted]=await c.execute<any>(
         "INSERT INTO order_notifications (order_id,merchant_id,event_key,customer_phone,status,message,sent,delivery_status) VALUES (?,?,?,?,?,?,0,'pending')",
         [
           input.intent.id,
@@ -282,6 +293,8 @@ export async function writeOrderStatus(
           current.notification.message,
         ]
       );
+      if(inserted.affectedRows!==1||!Number.isSafeInteger(inserted.insertId)||inserted.insertId<=0)throw new OrderStatusUnavailable();
+      noticeId=inserted.insertId;noticeEvent=eventKey;
     }
     const [clock] = await c.execute<any[]>(
       "SELECT DATE_FORMAT(UTC_TIMESTAMP(3),'%Y-%m-%dT%H:%i:%s.%fZ') now"
@@ -299,7 +312,7 @@ export async function writeOrderStatus(
       notificationQueued: !!current.notification,
       committedAt: String(clock[0].now).replace(/(\.\d{3})\d{3}Z$/, "$1Z"),
     });
-    await c.execute(
+    const [storedReceipt]=await c.execute<any>(
       "INSERT INTO order_status_receipts (merchant_id,actor_id,order_id,request_id,input_hash,result) VALUES (?,?,?,?,?,?)",
       [
         merchantId,
@@ -310,6 +323,15 @@ export async function writeOrderStatus(
         JSON.stringify(receipt),
       ]
     );
+    if(storedReceipt.affectedRows!==1||!Number.isSafeInteger(storedReceipt.insertId)||storedReceipt.insertId<=0)throw new OrderStatusUnavailable();
+    if(current.notification&&noticeId&&noticeEvent) {
+      const channel=await readOrderNoticeChannel(c,merchantId),orderDigest=await readOrderNoticeOrderDigest(c,merchantId,input.intent.id);
+      await storeOrderNoticeAuthorization(c,noticeId,storedReceipt.insertId,{
+        version:'order-notice-authority.v1',merchantId,ownerId:merchant.userId,actorId,orderId:input.intent.id,
+        requestKey:input.requestId,inputHash,reviewDigest:current.digest,eventKey:noticeEvent,status:input.intent.status,
+        recipient:current.notification.customerPhone,message:current.notification.message,orderDigest,...channel,
+      });
+    }
     return receipt;
   });
 }
