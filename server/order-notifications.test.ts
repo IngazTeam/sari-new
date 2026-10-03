@@ -101,7 +101,7 @@ describe('Order Notifications System', () => {
     });
 
     it('should get notifications by order', async () => {
-      const notifications = await db.getOrderNotificationsByOrderId(testOrderId);
+      const notifications = await db.getOrderNotificationsByOrderId(testMerchantId, testOrderId);
       
       expect(notifications.length).toBeGreaterThan(0);
       expect(notifications[0].orderId).toBe(testOrderId);
