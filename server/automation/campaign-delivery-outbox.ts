@@ -1,3 +1,5 @@
+import {lockCampaignScheduledAuthority,validScheduledDeliveryWindow,ScheduledMessageAuthorityDenied} from '../scheduled-message-worker-authority';
+import {SCHEDULED_AUTHORITY_REQUIREMENTS} from '../scheduled-message-authorization';
 import {lockCampaignOccasionAuthority,validOccasionAuthorityWindow,OccasionAuthorizationDenied} from '../occasion-worker-authority';
 import {OCCASION_AUTHORIZATION_REQUIREMENTS} from '../occasion-authorization';
 import { campaignDeliveryEvidence } from '../campaign-delivery-evidence';
@@ -133,6 +135,7 @@ class CampaignPostDispatchStateError extends Error {
 async function ensureCampaignOutboxSchema(): Promise<void> {
   await assertRuntimeSchema('campaign delivery outbox', [
     ...OCCASION_AUTHORIZATION_REQUIREMENTS,
+    ...SCHEDULED_AUTHORITY_REQUIREMENTS,
     {
       table: 'campaign_delivery_outbox',
       columns: [
@@ -179,11 +182,11 @@ export async function enqueueCampaignDeliveries(input: {
   let committing=false,reusable=true;
   try {
     await connection.beginTransaction();
-    const [merchants]=await connection.execute<RowDataPacket[]>('SELECT id,userId,status,businessName FROM merchants WHERE id=? FOR UPDATE',[input.merchantId]);
+    const [merchants]=await connection.execute<RowDataPacket[]>('SELECT id,userId,status,businessName,timezone FROM merchants WHERE id=? FOR UPDATE',[input.merchantId]);
     if(merchants.length!==1||merchants[0].status!=='active')throw new CampaignDispatchConflictError();
     const merchant=merchants[0];
     const [campaignRows] = await connection.execute<(RowDataPacket & CampaignDefinition)[]>(
-      `SELECT id, merchantId, name, message, imageUrl, targetAudience, scheduledAt, status FROM campaigns
+      `SELECT id, merchantId, name, message, imageUrl, targetAudience, scheduledAt, status, scheduled_message_occurrence_id FROM campaigns
         WHERE id = ? AND merchantId = ? LIMIT 1 FOR UPDATE`,
       [input.campaignId, input.merchantId],
     );
@@ -194,6 +197,7 @@ export async function enqueueCampaignDeliveries(input: {
     }
     assertCampaignContent(campaign.message, campaign.imageUrl);
     const authority=await lockCampaignOccasionAuthority(connection,merchant,campaign,'admission');
+    const weeklyAuthority=await lockCampaignScheduledAuthority(connection,merchant,campaign,'admission');
     for (const recipient of recipients) {
       await connection.execute(
         `INSERT INTO campaign_delivery_outbox
@@ -218,12 +222,13 @@ export async function enqueueCampaignDeliveries(input: {
       [input.campaignId, input.merchantId],
     );
     if(authority&&!validOccasionAuthorityWindow(authority.contract,new Date()))throw new OccasionAuthorizationDenied();
+    if(weeklyAuthority&&!validScheduledDeliveryWindow(weeklyAuthority,new Date()))throw new ScheduledMessageAuthorityDenied();
     committing=true;await connection.commit();
     return { queued: recipients.length };
   } catch (error) {
     if(committing)reusable=false;else try{await connection.rollback();}catch{reusable=false;}
     if(committing)throw new CampaignAdmissionStateUnknownError();
-    if(error instanceof OccasionAuthorizationDenied)throw new CampaignDispatchConflictError();
+    if(error instanceof OccasionAuthorizationDenied||error instanceof ScheduledMessageAuthorityDenied)throw new CampaignDispatchConflictError();
     throw error;
   } finally {
     if(reusable)connection.release();else connection.destroy();
@@ -240,11 +245,11 @@ export async function completeCampaignWithoutRecipients(campaignId: number, merc
   let committing=false,reusable=true;
   try {
     await connection.beginTransaction();
-    const [merchants]=await connection.execute<RowDataPacket[]>('SELECT id,userId,status,businessName FROM merchants WHERE id=? FOR UPDATE',[merchantId]);
+    const [merchants]=await connection.execute<RowDataPacket[]>('SELECT id,userId,status,businessName,timezone FROM merchants WHERE id=? FOR UPDATE',[merchantId]);
     if(merchants.length!==1||merchants[0].status!=='active')throw new CampaignDispatchConflictError();
     const merchant=merchants[0];
     const [campaignRows] = await connection.execute<(RowDataPacket & CampaignDefinition)[]>(
-      `SELECT id, merchantId, name, message, imageUrl, targetAudience, scheduledAt, status FROM campaigns
+      `SELECT id, merchantId, name, message, imageUrl, targetAudience, scheduledAt, status, scheduled_message_occurrence_id FROM campaigns
         WHERE id = ? AND merchantId = ? LIMIT 1 FOR UPDATE`, [campaignId, merchantId],
     );
     const campaign = campaignRows[0];
@@ -253,6 +258,7 @@ export async function completeCampaignWithoutRecipients(campaignId: number, merc
       return false;
     }
     const authority=await lockCampaignOccasionAuthority(connection,merchant,campaign,'admission');
+    const weeklyAuthority=await lockCampaignScheduledAuthority(connection,merchant,campaign,'admission');
     const [result] = await connection.execute(
       `UPDATE campaigns
           SET status = 'completed', totalRecipients = 0, sentCount = 0, updatedAt = NOW()
@@ -269,12 +275,13 @@ export async function completeCampaignWithoutRecipients(campaignId: number, merc
       );
     }
     if(authority&&!validOccasionAuthorityWindow(authority.contract,new Date()))throw new OccasionAuthorizationDenied();
+    if(weeklyAuthority&&!validScheduledDeliveryWindow(weeklyAuthority,new Date()))throw new ScheduledMessageAuthorityDenied();
     committing=true;await connection.commit();
     return completed;
   } catch (error) {
     if(committing)reusable=false;else try{await connection.rollback();}catch{reusable=false;}
     if(committing)throw new CampaignAdmissionStateUnknownError();
-    if(error instanceof OccasionAuthorizationDenied)return false;
+    if(error instanceof OccasionAuthorizationDenied||error instanceof ScheduledMessageAuthorityDenied)return false;
     throw error;
   } finally {
     if(reusable)connection.release();else connection.destroy();

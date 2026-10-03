@@ -1,121 +1,31 @@
-/**
- * Scheduled Messages Cron Job
- * 
- * يفحص الرسائل المجدولة كل دقيقة ويرسلها تلقائياً عند حلول موعدها
- */
+import { getPool } from '../db/connection';
+import { ensureScheduledAuthoritySchema } from '../scheduled-message-authorization';
+import { prepareScheduledMessage } from '../scheduled-message-preparation';
 
-import { getScheduledMessagesToSend, updateScheduledMessageLastSent, getConversationsByMerchantId, getDb, getActiveSubscriptionByMerchantId } from "../db.js";
-import { sendCampaign as sendWhatsAppCampaign } from "../whatsapp.js";
-
-/**
- * فحص وإرسال الرسائل المجدولة
- */
+/** Weekly definitions prepare tenant campaigns; this job never calls a messaging provider. */
 export async function checkScheduledMessages() {
-  console.log("[Scheduled Messages] Checking for messages to send...");
-  
-  try {
-    // الحصول على الرسائل المجدولة التي حان وقتها
-    const messages = await getScheduledMessagesToSend();
-    
-    console.log(`[Scheduled Messages] Found ${messages.length} messages to send`);
-    
-    if (messages.length === 0) {
-      return { checked: 0, sent: 0, failed: 0 };
+  await ensureScheduledAuthoritySchema(); const pool = await getPool(); if (!pool) throw Error('Scheduled messages unavailable');
+  let cursor = 0, checked = 0, prepared = 0, skipped = 0, failed = 0;
+  // Keyset pages cover all authorized definitions. Legacy enabled rows require an explicit review.
+  for (;;) {
+    const [page] = await pool.execute<any[]>(`SELECT s.id,s.merchant_id FROM scheduled_messages s
+      JOIN scheduled_message_authorizations a ON a.scheduled_message_id=s.id AND a.merchant_id=s.merchant_id AND a.active=1
+      WHERE s.is_active=1 AND s.id>? ORDER BY s.id LIMIT 100`, [cursor]);
+    if (!page.length) break;
+    for (const row of page) {
+      checked++; cursor = row.id;
+      try { if (await prepareScheduledMessage(row.merchant_id, row.id) === 'prepared') prepared++; else skipped++; }
+      catch { failed++; console.error('[Scheduled Messages] preparation unavailable'); }
     }
-    
-    let sent = 0;
-    let failed = 0;
-    
-    // معالجة كل رسالة
-    for (const message of messages) {
-      try {
-        console.log(`[Scheduled Messages] Processing message ${message.id}: ${message.title}`);
-        
-        // SEC-FIX: Verify merchant has active subscription before sending
-        const subscription = await getActiveSubscriptionByMerchantId(message.merchantId);
-        if (!subscription) {
-          console.warn(`[Scheduled Messages] Merchant ${message.merchantId} has no active subscription — skipping message ${message.id}`);
-          failed++;
-          continue;
-        }
-        
-        // التحقق من آخر إرسال (لتجنب الإرسال المتكرر في نفس الدقيقة)
-        if (message.lastSentAt) {
-          const lastSent = new Date(message.lastSentAt);
-          const now = new Date();
-          const diffMinutes = Math.floor((now.getTime() - lastSent.getTime()) / 60000);
-          
-          // إذا تم الإرسال خلال آخر 60 دقيقة، تخطي
-          if (diffMinutes < 60) {
-            console.log(`[Scheduled Messages] Message ${message.id} was sent ${diffMinutes} minutes ago, skipping`);
-            continue;
-          }
-        }
-        
-        // الحصول على قائمة العملاء للتاجر
-        const conversations = await getConversationsByMerchantId(message.merchantId);
-        
-        if (conversations.length === 0) {
-          console.log(`[Scheduled Messages] No customers found for merchant ${message.merchantId}`);
-          // تحديث lastSentAt حتى لو لم يكن هناك عملاء
-          await updateScheduledMessageLastSent(message.id);
-          sent++;
-          continue;
-        }
-        
-        console.log(`[Scheduled Messages] Sending to ${conversations.length} customers`);
-        
-        // إرسال الرسالة لجميع العملاء
-        const recipients = conversations.map(c => c.customerPhone);
-        const results = await sendWhatsAppCampaign(
-          recipients,
-          message.message,
-          undefined, // no image
-          2, // minDelay
-          4  // maxDelay
-        );
-        
-        const successCount = results.filter(r => r.success).length;
-        
-        // تحديث lastSentAt
-        await updateScheduledMessageLastSent(message.id);
-        
-        console.log(`[Scheduled Messages] Message ${message.id} completed: ${successCount}/${conversations.length} sent`);
-        sent++;
-        
-      } catch (error) {
-        console.error(`[Scheduled Messages] Error processing message ${message.id}:`, error);
-        failed++;
-      }
-    }
-    
-    const result = {
-      checked: messages.length,
-      sent,
-      failed
-    };
-    
-    console.log(`[Scheduled Messages] Job completed:`, result);
-    return result;
-    
-  } catch (error) {
-    console.error("[Scheduled Messages] Job error:", error);
-    return { checked: 0, sent: 0, failed: 0, error: String(error) };
   }
+  return { checked, prepared, skipped, failed };
 }
-
-/**
- * Cron Job: يعمل كل دقيقة
- */
+let timer: NodeJS.Timeout | null = null, running = false;
 export function startScheduledMessagesJob() {
-  console.log("[Scheduled Messages Job] Starting cron job (runs every minute)...");
-  
-  // تشغيل فوري عند البدء
-  checkScheduledMessages();
-  
-  // تشغيل كل دقيقة (60000 ms)
-  setInterval(async () => {
-    const result = await checkScheduledMessages();
-    console.log(`[Scheduled Messages Job] Completed:`, result);
-  }, 60000);
+  if (timer) return;
+  const tick = async () => {
+    if (running) return; running = true;
+    try { await checkScheduledMessages(); } catch { console.error('[Scheduled Messages] batch unavailable'); } finally { running = false; }
+  };
+  void tick(); timer = setInterval(tick, 60_000); timer.unref?.();
 }

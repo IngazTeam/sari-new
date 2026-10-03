@@ -3937,45 +3937,6 @@ export async function toggleScheduledMessage(id: number, merchantId: number, isA
   return await updateScheduledMessage(id, merchantId, { isActive });
 }
 
-/**
- * Get all active scheduled messages that should be sent now
- */
-export async function getScheduledMessagesToSend() {
-  const db = await getDb();
-  if (!db) return [];
-
-  const { scheduledMessages } = await import('../drizzle/schema');
-  const now = new Date();
-  const dayOfWeek = now.getDay(); // 0=Sunday, 1=Monday, etc.
-  const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-
-  // Get all active messages for today
-  const results = await db.select().from(scheduledMessages)
-    .where(and(
-      eq(scheduledMessages.isActive, 1),
-      eq(scheduledMessages.dayOfWeek, dayOfWeek),
-      eq(scheduledMessages.time, currentTime)
-    ));
-
-  return results;
-}
-
-/**
- * Update last sent timestamp for a scheduled message
- */
-export async function updateScheduledMessageLastSent(id: number) {
-  const db = await getDb();
-  if (!db) throw new Error('Database not available');
-
-  const { scheduledMessages } = await import('../drizzle/schema');
-  await db.update(scheduledMessages)
-    .set({ lastSentAt: formatDateForDB(new Date()) })
-    .where(eq(scheduledMessages.id, id));
-
-  return true;
-}
-
-
 // ============================================
 // Rewards Functions
 // ============================================

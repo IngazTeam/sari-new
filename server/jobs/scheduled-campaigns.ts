@@ -1,3 +1,4 @@
+import { validateScheduledCampaignAdmission } from '../scheduled-message-preparation';
 /**
  * Scheduled campaign admission.
  *
@@ -50,6 +51,7 @@ export async function checkScheduledCampaigns(): Promise<{
 
   for (const campaign of due) {
     try {
+      if (!await validateScheduledCampaignAdmission(campaign.merchantId, campaign.id)) { failed++; continue; }
       const [subscription, instance] = await Promise.all([
         getActiveSubscriptionByMerchantId(campaign.merchantId),
         getPrimaryWhatsAppInstance(campaign.merchantId),

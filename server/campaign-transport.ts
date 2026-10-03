@@ -1,3 +1,5 @@
+import {lockCampaignScheduledAuthority,validScheduledDeliveryWindow,ScheduledMessageAuthorityDenied} from './scheduled-message-worker-authority';
+import {SCHEDULED_AUTHORITY_REQUIREMENTS} from './scheduled-message-authorization';
 import {lockCampaignOccasionAuthority,validOccasionAuthorityWindow,OccasionAuthorizationDenied} from './occasion-worker-authority';
 import {OCCASION_AUTHORIZATION_REQUIREMENTS} from './occasion-authorization';
 import type { PoolConnection, RowDataPacket } from 'mysql2/promise';
@@ -36,6 +38,7 @@ export async function withCampaignTransportAuthority<T>(input:SendMerchantWhatsA
   if(!validCampaignTransportInput(input))return {allowed:false};
   await assertRuntimeSchema('campaign transport authority',[
     ...OCCASION_AUTHORIZATION_REQUIREMENTS,
+    ...SCHEDULED_AUTHORITY_REQUIREMENTS,
     {table:'campaign_delivery_outbox',columns:['processing_token','claimed_at','quota_reserved','quota_subscription_id','quota_period_start']},
     {table:'whatsapp_message_deliveries',columns:['request_json','provider_message_id']},
   ]);
@@ -48,12 +51,14 @@ export async function withCampaignTransportAuthority<T>(input:SendMerchantWhatsA
     const [merchants]=await c.execute<RowDataPacket[]>('SELECT id,userId,status,businessName,current_subscription_id,timezone FROM merchants WHERE id=? FOR UPDATE',[input.merchantId]);
     const merchant=merchants[0];if(!merchant || merchant.status!=='active')return await denied();
     // Campaign precedes its recipients, matching admission and deletion.
-    const [campaigns]=await c.execute<RowDataPacket[]>('SELECT id,merchantId,name,status,message,imageUrl,targetAudience,scheduledAt FROM campaigns WHERE id=? AND merchantId=? FOR SHARE',[guard.campaignId,input.merchantId]);
+    const [campaigns]=await c.execute<RowDataPacket[]>('SELECT id,merchantId,name,status,message,imageUrl,targetAudience,scheduledAt,scheduled_message_occurrence_id FROM campaigns WHERE id=? AND merchantId=? FOR SHARE',[guard.campaignId,input.merchantId]);
     const campaign=campaigns[0];
     if(!campaign || campaign.status!=='sending' || input.text!==withCampaignOptOutNotice(campaign.message)
       || input.kind!==(campaign.imageUrl?'image':'text') || (input.mediaUrl??null)!==(campaign.imageUrl||null)
       || (input.fileName??null)!==(campaign.imageUrl?'campaign.jpg':null))return await denied();
     const occasionAuthority=await lockCampaignOccasionAuthority(c,merchant,campaign,'dispatch');
+    const weeklyAuthority=await lockCampaignScheduledAuthority(c,merchant,campaign,'dispatch');
+    if(weeklyAuthority&&weeklyAuthority.contract.instanceId!==instanceId)return await denied();
     const [leases]=await c.execute<RowDataPacket[]>(`SELECT status,processing_token,customer_phone,quota_reserved,quota_subscription_id,quota_period_start
       FROM campaign_delivery_outbox WHERE id=? AND campaign_id=? AND merchant_id=? FOR UPDATE`,[guard.deliveryId,guard.campaignId,input.merchantId]);
     const lease=leases[0];
@@ -83,7 +88,8 @@ export async function withCampaignTransportAuthority<T>(input:SendMerchantWhatsA
       AND claimed_at BETWEEN DATE_SUB(UTC_TIMESTAMP(3),INTERVAL 5 MINUTE) AND UTC_TIMESTAMP(3)`,[guard.deliveryId,guard.token]);
     if(fresh.length!==1)return await denied();
     if(occasionAuthority&&!validOccasionAuthorityWindow(occasionAuthority.contract,new Date()))return await denied();
+    if(weeklyAuthority&&!validScheduledDeliveryWindow(weeklyAuthority,new Date()))return await denied();
     const result=await dispatch(c);
     committing=true;await c.commit();return {allowed:true,result};
-  }catch(error){if(committing)reusable=false;else try{await c.rollback();}catch{reusable=false;}if(error instanceof OccasionAuthorizationDenied)return {allowed:false};throw error;}finally{if(reusable)c.release();else c.destroy();}
+  }catch(error){if(committing)reusable=false;else try{await c.rollback();}catch{reusable=false;}if(error instanceof OccasionAuthorizationDenied||error instanceof ScheduledMessageAuthorityDenied)return {allowed:false};throw error;}finally{if(reusable)c.release();else c.destroy();}
 }
