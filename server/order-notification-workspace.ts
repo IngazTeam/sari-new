@@ -8,31 +8,35 @@ import { orderNoticeSelection, orderNoticeDetailInput, orderNoticeWorkspace, ord
 import { defaultTemplates, ORDER_NOTIFICATION_STATUSES } from './notifications/order-notifications';
 
 export class OrderNoticeError extends Error {
-  constructor(readonly reason: 'forbidden' | 'missing' | 'unavailable') { super('order_notice:' + reason); }
+  constructor(readonly reason: 'forbidden' | 'missing' | 'unavailable' | 'stale' | 'reference' | 'unknown') { super('order_notice:' + reason); }
 }
 export async function noticeRows(tx: PoolConnection, sql: string, args: any[] = []) {
   const [r] = await tx.execute(sql, args); if (!Array.isArray(r)) throw new OrderNoticeError('unavailable'); return r as any[];
 }
-export async function withOrderNoticeRead<T>(actorId: number, merchantId: number, operation: (tx: PoolConnection, canManage: boolean) => Promise<T>) {
+export async function withOrderNoticeAuthority<T>(actorId: number, merchantId: number, mode: 'read' | 'write', operation: (tx: PoolConnection, canManage: boolean) => Promise<T>) {
   let tx: PoolConnection | undefined, committing = false, reusable = true;
   try {
     if (![actorId, merchantId].every(n => Number.isInteger(n) && n > 0 && n <= 2147483647)) throw new OrderNoticeError('forbidden');
     const pool = await getPool(); if (!pool) throw new OrderNoticeError('unavailable');
     tx = await pool.getConnection(); await tx.query('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ'); await tx.beginTransaction();
-    const [merchant] = await noticeRows(tx, 'SELECT id,userId,status FROM merchants WHERE id=? FOR SHARE', [merchantId]);
+    const [merchant] = await noticeRows(tx, `SELECT id,userId,status FROM merchants WHERE id=? FOR ${mode === 'write' ? 'UPDATE' : 'SHARE'}`, [merchantId]);
     const users = await noticeRows(tx, 'SELECT id,account_status FROM users WHERE id IN (?,?) ORDER BY id FOR SHARE', [actorId, merchant?.userId || actorId]);
     const members = await noticeRows(tx, 'SELECT role,is_active FROM merchant_members WHERE merchant_id=? AND user_id=? FOR SHARE', [merchantId, actorId]);
     const role = members.length === 1 && members[0].is_active === 1 ? members[0].role : !members.length && merchant?.userId === actorId ? 'owner' : null;
     if (!merchant || !['active', 'pending'].includes(merchant.status) || users.find(u => u.id === actorId)?.account_status !== 'active'
       || users.find(u => u.id === merchant.userId)?.account_status !== 'active' || !ALL_ROLES.includes(role)
       || !hasPermission(role as MerchantRole, 'analytics.read')) throw new OrderNoticeError('forbidden');
-    const result = await operation(tx, merchant.status === 'active' && hasPermission(role as MerchantRole, 'whatsapp.manage'));
+    const canManage = merchant.status === 'active' && hasPermission(role as MerchantRole, 'whatsapp.manage');
+    if (mode === 'write' && !canManage) throw new OrderNoticeError('forbidden');
+    const result = await operation(tx, canManage);
     committing = true; await tx.commit(); return result;
   } catch (e) {
     if (committing) reusable = false; else if (tx) try { await tx.rollback(); } catch { reusable = false; }
+    if (committing && mode === 'write') throw new OrderNoticeError('unknown');
     if (e instanceof OrderNoticeError) throw e; throw new OrderNoticeError('unavailable');
   } finally { if (tx) { if (reusable) tx.release(); else tx.destroy(); } }
 }
+export const withOrderNoticeRead = <T>(actorId:number, merchantId:number, operation:(tx:PoolConnection,canManage:boolean)=>Promise<T>) => withOrderNoticeAuthority(actorId,merchantId,'read',operation);
 const hash = (v: unknown) => createHash('sha256').update(JSON.stringify(v)).digest('hex');
 export function projectNoticeTemplate(raw: any, status: string, actorId: number, merchantId: number) {
   const issues: Array<'status' | 'template' | 'enabled' | 'updatedAt'> = [];

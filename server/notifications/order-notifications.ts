@@ -102,7 +102,7 @@ export const fillTemplate = fillOrderNotificationTemplate;
 export async function getNotificationTemplate(merchantId: number, status: string): Promise<string | null> {
   await ensureTemplateSchema();
   const template = await getNotificationTemplateByStatus(merchantId, status);
-  return template?.enabled ? template.template : null;
+  return template?.enabled === 1 ? template.template : null;
 }
 
 export async function getOrderNotificationTemplateSettings(merchantId: number) {
