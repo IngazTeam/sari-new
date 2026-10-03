@@ -120,7 +120,8 @@ ${content}
       maxTokens: 4000,
     });
 
-    console.log(`[KnowledgeEngine] classifyContent: GPT response length=${response.length}, first 200 chars: ${response.substring(0, 200)}`);
+    // Operational logs must not duplicate tenant documents or model output.
+    console.log(`[KnowledgeEngine] classifyContent: GPT response length=${response.length}`);
 
     // Parse JSON from response (handle potential markdown wrapping)
     let jsonStr = response
@@ -136,7 +137,7 @@ ${content}
     }
 
     const sections: ClassifiedSection[] = JSON.parse(jsonStr);
-    console.log(`[KnowledgeEngine] classifyContent: parsed ${sections.length} sections: ${sections.map(s => `${s.sectionType}:"${s.title}"`).join(', ')}`);
+    console.log(`[KnowledgeEngine] classifyContent: parsed ${sections.length} sections`);
 
     // Validate section types
     const validTypes: SectionType[] = [
@@ -147,9 +148,8 @@ ${content}
     const filtered = sections.filter(s => validTypes.includes(s.sectionType));
     console.log(`[KnowledgeEngine] classifyContent: ${filtered.length} sections passed validation (of ${sections.length})`);
     return filtered;
-  } catch (e: any) {
-    console.error(`[KnowledgeEngine] classifyContent FAILED: ${e.message}`);
-    console.error(`[KnowledgeEngine] Stack: ${e.stack?.substring(0, 300)}`);
+  } catch {
+    console.error('[KnowledgeEngine] classifyContent failed');
     return [];
   }
 }
@@ -219,8 +219,8 @@ ${sectionsText}
       .trim();
 
     return JSON.parse(jsonStr);
-  } catch (e: any) {
-    console.error('[KnowledgeEngine] analyzeSalesIntelligence failed:', e.message);
+  } catch {
+    console.error('[KnowledgeEngine] analyzeSalesIntelligence failed');
     return { usps: [], sellingTips: [], opportunities: [] };
   }
 }
@@ -512,7 +512,7 @@ export async function ingestContent(
   console.log(`[KnowledgeEngine] Starting ingestion for merchant ${merchantId} from ${source}`);
 
   // Step 1: Classify content
-  console.log(`[KnowledgeEngine] Raw content preview (first 500 chars): ${rawContent.substring(0, 500)}`);
+  console.log(`[KnowledgeEngine] Content length: ${rawContent.length} chars`);
   const classifiedSections = await classifyContent(merchantId, rawContent, merchantContext);
   console.log(`[KnowledgeEngine] Classified ${classifiedSections.length} sections`);
   if (classifiedSections.length === 0) {
