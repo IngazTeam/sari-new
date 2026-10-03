@@ -7,7 +7,7 @@ import { normalizeCampaignPhone } from '../automation/campaign-guard';
 const id = z.number().int().positive().safe();
 const effect = z.object({ merchantId:id, instanceRecordId:id, to:z.string().min(1).max(100),
   idempotencyKey:z.string().regex(/^[a-zA-Z0-9:_-]{16,100}$/), kind:z.literal('text'), text:z.string().min(1).max(4096) }).strict();
-const planSchema = z.object({version:z.literal(1),conversationId:id,incomingMessageId:id,
+const planSchema = z.object({version:z.union([z.literal(1),z.literal(2)]),conversationId:id,incomingMessageId:id,
   ownershipVersion:z.number().int().nonnegative().safe(),effects:z.array(effect).min(1).max(16)}).strict();
 const guardSchema = z.object({conversationId:id,incomingMessageId:id,version:z.number().int().nonnegative().safe(),
   reservationDigest:z.string().regex(/^[a-f0-9]{64}$/)}).strict();

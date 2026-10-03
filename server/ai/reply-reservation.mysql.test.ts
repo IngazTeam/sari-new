@@ -101,4 +101,40 @@ describe.skipIf(!process.env.DATABASE_URL)('shared incoming reply ownership with
     expect((await query('SELECT state FROM ai_interaction_jobs WHERE merchant_id=?', [owner.merchantId]))[0].state).toBe('waiting_delivery');
     expect(provider.send).not.toHaveBeenCalled();
   });
+  it('keeps historical text-only replies and new product/document plans sendable', async () => {
+    const p = plan(); p.version = 1;
+    expect(await dispatchReplyPlan(p)).toBe('sent');
+    incomingMessageId = Number((await query("INSERT INTO messages (conversationId,direction,messageType,content) VALUES (?,'incoming','text','صور وتفاصيل')", [conversationId])).insertId);
+    const media = plan(); media.effects.push(...['image', 'document'].map((kind, i) => ({ ...media.effects[0],
+      kind: kind as 'image' | 'document', mediaUrl: `https://example.com/file-${i}`, idempotencyKey: randomUUID() })));
+    expect(await dispatchReplyPlan(media)).toBe('sent'); expect(provider.send).toHaveBeenCalledTimes(4);
+  });
+  it('blocks the entire ambiguous old plan before text, provider I/O, or quota reservation', async () => {
+    const p = plan(); p.version = 1; p.effects.push({ ...p.effects[0], kind: 'image', mediaUrl: 'https://example.com/old.png', idempotencyKey: randomUUID() });
+    await expect(dispatchReplyPlan(p)).rejects.toThrow('media source requires delivery review');
+    expect(await query('SELECT id FROM whatsapp_message_deliveries WHERE merchant_id=?', [owner.merchantId])).toHaveLength(0);
+    expect(await sendMerchantWhatsApp(guarded(p))).toMatchObject({ accepted: false, errorCode: 'reply_media_review_required' });
+    expect((await query('SELECT usage_state FROM ai_interaction_jobs WHERE merchant_id=?', [owner.merchantId]))[0].usage_state).toBe('pending');
+    expect((await query('SELECT messages_used FROM merchant_subscriptions WHERE merchant_id=?', [owner.merchantId]))[0].messages_used).toBe(0);
+    expect(provider.send).not.toHaveBeenCalled();
+    p.version = 2; expect(await dispatchReplyPlan(p)).toBe('reply_reserved'); // No upgrade of stored ownership.
+  });
+  it('does not mint media provenance through the single-effect compatibility path', async () => {
+    const input = guarded(); delete (input.replyGuard as any).reservationDigest;
+    Object.assign(input, { kind: 'image', mediaUrl: 'https://example.com/old.png' });
+    expect(await sendMerchantWhatsApp(input)).toMatchObject({ accepted: false, errorCode: 'reply_media_review_required' });
+    expect(await query('SELECT id FROM ai_interaction_jobs WHERE merchant_id=?', [owner.merchantId])).toHaveLength(0);
+    expect(provider.send).not.toHaveBeenCalled();
+  });
+  it.each(['sent', 'queued', 'failed'] as const)('preserves the existing %s receipt without retrying old media', async status => {
+    const p = plan(); p.version = 1; Object.assign(p.effects[0], { kind: 'image', mediaUrl: 'https://example.com/old.png' });
+    const input = guarded(p), providerId = status === 'sent' ? randomUUID() : null;
+    await query(`INSERT INTO whatsapp_message_deliveries (merchant_id,instance_id,provider,idempotency_key,direction,status,provider_message_id,request_json)
+      VALUES (?,?,'green_api',?,'outgoing',?,?,?)`, [owner.merchantId, instanceId, input.idempotencyKey, status, providerId, JSON.stringify(input)]);
+    expect(await sendMerchantWhatsApp(input)).toMatchObject({ accepted: status === 'sent', duplicate: true, status });
+    if (status === 'failed') expect(await sendMerchantWhatsApp({ ...input, replyGuard: undefined, retryFailed: true })).toMatchObject({ accepted: false, duplicate: true, status });
+    expect(provider.send).not.toHaveBeenCalled();
+    expect((await query('SELECT status,provider_message_id FROM whatsapp_message_deliveries WHERE merchant_id=?', [owner.merchantId]))[0])
+      .toEqual({ status, provider_message_id: providerId });
+  });
 });

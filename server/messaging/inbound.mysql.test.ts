@@ -157,6 +157,16 @@ describe.skipIf(!process.env.DATABASE_URL)('durable inbound queue with real MySQ
     expect((await row(job.id)).status).toBe('review');
     expect(await claimInbound()).toBeNull();
   });
+  it('keeps unmarked historical media in review without upgrading its persisted producer version', async () => {
+    const event = payload(); await enqueueInbound({ payload: event, source: 'webhook' }); const job = (await claimInbound())!;
+    const plan = buildReplyPlan({ merchantId: fixture.merchantId, instanceId, providerAccount: account, eventId: event.idMessage,
+      conversationId, incomingMessageId, to: phone, text: 'Old reply', media: [{ type: 'image', url: 'https://example.com/old.png' }] });
+    plan.version = 1;
+    await executeInbound(job, async () => ({ success: await dispatchReplyPlan(plan) === 'sent' }));
+    expect(provider.send).not.toHaveBeenCalled();
+    expect(await row(job.id)).toMatchObject({ status: 'review', reply_plan_json: { version: 1 } });
+    expect(await claimInbound()).toBeNull();
+  });
   it('suppresses a planned reply when a human takes over before dispatch', async () => {
     const event = payload(); await enqueueInbound({ payload: event, source: 'webhook' }); const job = (await claimInbound())!;
     await (await getPool())!.execute('UPDATE conversations SET human_takeover = 1, human_expires_at = NULL WHERE id = ?', [conversationId]);

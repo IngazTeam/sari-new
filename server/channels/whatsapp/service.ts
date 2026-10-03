@@ -6,6 +6,7 @@ import { assertRuntimeSchema } from '../../db/schema-readiness';
 import { getWhatsAppProvider } from './providers';
 import { currentInboundExecution } from '../../messaging/inbound-context';
 import { whatsAppEventEffectKey } from './effect-key';
+import { ReplyMediaReviewRequired } from '../../messaging/reply-media-provenance';
 import type {
   SendMerchantWhatsAppInput,
   WhatsAppDeliveryStatus,
@@ -285,7 +286,15 @@ async function dispatchMerchantWhatsApp(input: SendMerchantWhatsAppInput): Promi
       return { accepted:false,duplicate:false,status:'failed',errorCode:'salla_cart_superseded' };
     }
     const { canDispatchConversationReply } = await import('../../ai/reply-reservation');
-    if (!await canDispatchConversationReply(input, instance.id)) {
+    let canDispatch = false;
+    try { canDispatch = await canDispatchConversationReply(input, instance.id); }
+    catch (error) {
+      if (!(error instanceof ReplyMediaReviewRequired)) throw error;
+      await pool.execute(`UPDATE whatsapp_message_deliveries SET status='failed',error_code='reply_media_review_required',status_updated_at=NOW()
+        WHERE merchant_id=? AND idempotency_key=? AND status='queued' AND provider_message_id IS NULL`, [input.merchantId, input.idempotencyKey]);
+      return { accepted: false, duplicate: false, status: 'failed', errorCode: error.code };
+    }
+    if (!canDispatch) {
       await pool.execute(`UPDATE whatsapp_message_deliveries SET status='failed',error_code='conversation_superseded',status_updated_at=NOW()
         WHERE merchant_id=? AND idempotency_key=? AND status='queued'`, [input.merchantId, input.idempotencyKey]);
       return { accepted: false, duplicate: false, status: 'failed', errorCode: 'conversation_superseded' };

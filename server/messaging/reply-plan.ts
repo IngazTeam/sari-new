@@ -6,9 +6,10 @@ import { currentInboundExecution } from './inbound-context';
 import { getPool } from '../db/connection';
 import { stageInteraction, finishInteractionDelivery } from '../ai/interaction-jobs';
 import { ReplyReservationConflict, ordinaryReplyDigest } from '../ai/reply-reservation';
+import { assertReplyMediaProvenance } from './reply-media-provenance';
 
 export type ReplyPlan = {
-  version: 1;
+  version: 1 | 2;
   conversationId: number;
   incomingMessageId?: number;
   ownershipVersion?: number;
@@ -45,7 +46,7 @@ export function buildReplyPlan(input: {
       mediaUrl: media.url, text: media.caption, fileName: media.fileName,...media.promotionGuard?{promotionGuard:media.promotionGuard}:{} });
   }
   if (!effects.length) throw new Error('Empty reply plan');
-  return { version: 1, conversationId: input.conversationId, incomingMessageId: input.incomingMessageId, ownershipVersion: input.ownershipVersion ?? 0, effects };
+  return { version: 2, conversationId: input.conversationId, incomingMessageId: input.incomingMessageId, ownershipVersion: input.ownershipVersion ?? 0, effects };
 }
 
 export async function humanOwnsConversation(merchantId: number, conversationId: number): Promise<boolean> {
@@ -68,6 +69,7 @@ export async function dispatchReplyPlan(plan: ReplyPlan, delayMs = 0): Promise<'
   await persistInboundReplyPlan(plan);
   try { await stageInteraction(plan); }
   catch (error) { if (error instanceof ReplyReservationConflict) return 'reply_reserved'; throw error; }
+  assertReplyMediaProvenance(plan);
   // Plans persisted before ownership versioning cannot prove that their context is still current.
   if (!Number.isSafeInteger(plan.ownershipVersion) || plan.ownershipVersion! < 0) {
     await finishInteractionDelivery(plan, false); return 'human_takeover';

@@ -6,6 +6,7 @@ import { policyArtifactDigest } from './learning-policy-evaluation-bundle';
 import { canSendConversationReply } from './conversation-handoff';
 import { assertReplyUsageSchema } from './reply-usage-quota';
 import { reserveOrdinaryReplyUsage } from './ordinary-reply-usage';
+import { assertReplyMediaProvenance, ReplyMediaReviewRequired } from '../messaging/reply-media-provenance';
 
 export class ReplyReservationConflict extends Error {
   constructor() { super('Reply message ownership changed or is unavailable'); }
@@ -71,10 +72,11 @@ export async function canDispatchConversationReply(input: SendMerchantWhatsAppIn
         && plan.incomingMessageId === guard.incomingMessageId && plan.ownershipVersion === guard.version
         && plan.effects.some(e => policyArtifactDigest(e) === policyArtifactDigest(normalized));
       if (!matches) return false;
+      assertReplyMediaProvenance(plan);
       await reserveOrdinaryReplyUsage(c, row, normalized);
       return true;
     });
-  } catch { return false; }
+  } catch (error) { if (error instanceof ReplyMediaReviewRequired) throw error; return false; }
 }
 
 export async function reserveReviewedReply(c: PoolConnection, input: {
