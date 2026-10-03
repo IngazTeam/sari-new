@@ -2,7 +2,7 @@
 
 هذا حصر مصدر قابل لإعادة التوليد، وليس ادعاءً بأن كل مسار عمل اختُبر أو أُعيد تصميمه. يشمل المكونات الفرعية المحلية، الحقول، الأزرار، النوافذ، التبويبات، واجهات القراءة والتعديل. العناصر الديناميكية تحتاج مراجعة إضافية.
 
-- 126 مسارًا مسجلًا، 447 ملف واجهة متصلًا، 2584 عنصر تحكم في المصدر.
+- 126 مسارًا مسجلًا، 454 ملف واجهة متصلًا، 2601 عنصر تحكم في المصدر.
 - 0 رابطًا حرفيًا غير مطابق، و0 ملف صفحة غير متصل بالمسارات المحصورة.
 
 | الصفحة | الملفات | عناصر التحكم | القراءة / التعديل | موك أب للصفحة |
@@ -40,7 +40,7 @@
 | /merchant/referrals — إحالات التجار | 6 | 21 | 3 / 4 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/abandoned-carts — السلات المتروكة | 8 | 39 | 6 / 4 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/occasion-campaigns — حملات المناسبات | 6 | 23 | 4 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/promotions — العروض الترويجية | 1 | 23 | 2 / 4 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/promotions — العروض الترويجية | 9 | 40 | 5 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/analytics — تحليلات المبيعات | 4 | 16 | 9 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/message-analytics — تحليلات الرسائل | 9 | 10 | 3 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/overview-analytics — نظرة الأداء | 10 | 7 | 3 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -1692,33 +1692,60 @@
 | 12 | Button | تسمية ديناميكية / تحتاج مراجعة | OccasionRecord |
 | 12 | Link | تسمية ديناميكية / تحتاج مراجعة | OccasionRecord |
 
-## client/src/pages/merchant/Promotions.tsx
+## client/src/components/merchant/PromotionWorkspace.tsx
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 199 | Button | إنشاء عرض جديد | العروض الترويجية |
-| 204 | DialogContent | تعديل العرض 🔥 إنشاء عرض ترويجي جديد العرض سيظهر للذكاء الاصطناعي ليقترحه على العملاء المهتمين تلقائياً عنوان العرض * وصف العرض نوع العرض percentage fixed القيمة percentage (%) (ريال) نطاق التطبيق حد أدنى للطلب (ريال) حد | العروض الترويجية |
-| 218 | Input | عنوان العرض * | تعديل العرض 🔥 إنشاء عرض ترويجي جديد |
-| 230 | Textarea | وصف العرض | تعديل العرض 🔥 إنشاء عرض ترويجي جديد |
-| 244 | Select | نوع العرض | تعديل العرض 🔥 إنشاء عرض ترويجي جديد |
-| 262 | Input | القيمة percentage (%) (ريال) | تعديل العرض 🔥 إنشاء عرض ترويجي جديد |
-| 277 | Select | نطاق التطبيق | تعديل العرض 🔥 إنشاء عرض ترويجي جديد |
-| 293 | Input | حد أدنى للطلب (ريال) | تعديل العرض 🔥 إنشاء عرض ترويجي جديد |
-| 303 | Input | حد أدنى للكمية | تعديل العرض 🔥 إنشاء عرض ترويجي جديد |
-| 317 | Input | تاريخ البداية | تعديل العرض 🔥 إنشاء عرض ترويجي جديد |
-| 325 | Input | تاريخ الانتهاء | تعديل العرض 🔥 إنشاء عرض ترويجي جديد |
-| 342 | Switch | تسمية ديناميكية / تحتاج مراجعة | تعديل العرض 🔥 إنشاء عرض ترويجي جديد |
-| 351 | Select | نوع الخصم | تعديل العرض 🔥 إنشاء عرض ترويجي جديد |
-| 361 | Input | القيمة | تعديل العرض 🔥 إنشاء عرض ترويجي جديد |
-| 377 | Button | إلغاء | تعديل العرض 🔥 إنشاء عرض ترويجي جديد |
-| 380 | Button | جاري الحفظ... تحديث إنشاء العرض | تعديل العرض 🔥 إنشاء عرض ترويجي جديد |
-| 485 | Switch | تسمية ديناميكية / تحتاج مراجعة | Promotions |
-| 513 | Calendar | تسمية ديناميكية / تحتاج مراجعة | Promotions |
-| 529 | Button | تعديل | Promotions |
-| 536 | Button | تسمية ديناميكية / تحتاج مراجعة | Promotions |
-| 555 | DialogContent | حذف العرض هل أنت متأكد؟ هذا الإجراء لا يمكن التراجع عنه. إلغاء جاري الحذف... حذف | Promotions |
-| 561 | Button | إلغاء | حذف العرض |
-| 562 | Button | جاري الحذف... حذف | حذف العرض |
+| 44 | Button | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
+| 44 | Button | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
+| 47 | Button | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
+| 47 | Button | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
+| 50 | input | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
+| 50 | Button | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
+| 51 | select | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
+| 51 | select | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
+| 51 | select | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
+| 51 | Button | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
+| 52 | Button | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
+| 52 | Button | # | PromotionWorkspace |
+| 52 | Button | # | PromotionWorkspace |
+| 52 | Button | # | PromotionWorkspace |
+| 52 | Button | # | PromotionWorkspace |
+| 53 | Button | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
+| 53 | Button | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
+| 54 | Link | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
+| 56 | DialogContent | details edit review details # details edit : deleted : percentage % · : details edit review create update | PromotionWorkspace |
+| 57 | summary | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
+| 58 | Button | details | PromotionWorkspace |
+| 58 | Button | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
+| 58 | Button | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
+| 58 | Button | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
+| 58 | Button | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
+
+## client/src/components/merchant/PromotionForm.tsx
+
+| السطر | النوع | التسمية | القسم |
+|---:|---|---|---|
+| 11 | select | title type  * textarea | PromotionForm |
+| 11 | textarea | تسمية ديناميكية / تحتاج مراجعة | PromotionForm |
+| 11 | input | تسمية ديناميكية / تحتاج مراجعة | PromotionForm |
+| 13 | summary | تسمية ديناميكية / تحتاج مراجعة | PromotionForm |
+| 13 | summary | تسمية ديناميكية / تحتاج مراجعة | PromotionForm |
+| 14 | input | تسمية ديناميكية / تحتاج مراجعة | PromotionForm |
+
+## client/src/components/merchant/PromotionTargetPicker.tsx
+
+| السطر | النوع | التسمية | القسم |
+|---:|---|---|---|
+| 14 | input | تسمية ديناميكية / تحتاج مراجعة | PromotionTargetPicker |
+| 14 | Button | تسمية ديناميكية / تحتاج مراجعة | PromotionTargetPicker |
+| 15 | Button | تسمية ديناميكية / تحتاج مراجعة | PromotionTargetPicker |
+| 17 | Button | : # | PromotionTargetPicker |
+| 18 | Button | # | PromotionTargetPicker |
+| 19 | input | # · | PromotionTargetPicker |
+| 20 | Button | تسمية ديناميكية / تحتاج مراجعة | PromotionTargetPicker |
+| 20 | Button | تسمية ديناميكية / تحتاج مراجعة | PromotionTargetPicker |
+| 20 | Button | تسمية ديناميكية / تحتاج مراجعة | PromotionTargetPicker |
 
 ## client/src/pages/merchant/AnalyticsDashboard.tsx
 

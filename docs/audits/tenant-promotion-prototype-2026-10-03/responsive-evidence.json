@@ -1,0 +1,146 @@
+[
+  {
+    "label": "ar-list-390",
+    "client": 360,
+    "dialog": null,
+    "height": 844,
+    "rawKeys": false,
+    "scroll": 360,
+    "width": 390
+  },
+  {
+    "label": "ar-edit-390",
+    "client": 360,
+    "dialog": {
+      "bottom": 828,
+      "client": 296,
+      "height": 812,
+      "right": 374,
+      "scroll": 296,
+      "width": 328,
+      "x": 46,
+      "y": 16
+    },
+    "height": 844,
+    "rawKeys": false,
+    "scroll": 360,
+    "width": 390
+  },
+  {
+    "label": "ar-review-390",
+    "client": 360,
+    "dialog": {
+      "bottom": 828,
+      "client": 296,
+      "height": 812,
+      "right": 374,
+      "scroll": 296,
+      "width": 328,
+      "x": 46,
+      "y": 16
+    },
+    "height": 844,
+    "rawKeys": false,
+    "scroll": 360,
+    "width": 390
+  },
+  {
+    "label": "ar-review-320-short",
+    "client": 290,
+    "dialog": {
+      "bottom": 556.0625,
+      "client": 226,
+      "height": 540.0625,
+      "right": 304,
+      "scroll": 226,
+      "width": 258,
+      "x": 46,
+      "y": 16
+    },
+    "height": 550,
+    "rawKeys": false,
+    "scroll": 290,
+    "width": 320
+  },
+  {
+    "label": "en-review-320-short",
+    "client": 290,
+    "dialog": {
+      "bottom": 534,
+      "client": 226,
+      "height": 518,
+      "right": 274,
+      "scroll": 226,
+      "width": 258,
+      "x": 16,
+      "y": 16
+    },
+    "height": 550,
+    "rawKeys": false,
+    "scroll": 290,
+    "width": 320
+  },
+  {
+    "label": "en-uncertain-320-short",
+    "client": 290,
+    "dialog": {
+      "bottom": 534,
+      "client": 226,
+      "height": 518,
+      "right": 274,
+      "scroll": 226,
+      "width": 258,
+      "x": 16,
+      "y": 16
+    },
+    "height": 550,
+    "rawKeys": false,
+    "scroll": 290,
+    "width": 320
+  },
+  {
+    "label": "en-recovered-320-short",
+    "client": 290,
+    "dialog": null,
+    "height": 550,
+    "rawKeys": false,
+    "scroll": 290,
+    "width": 320
+  },
+  {
+    "label": "en-list-768",
+    "client": 738,
+    "dialog": null,
+    "height": 844,
+    "rawKeys": false,
+    "scroll": 738,
+    "width": 768
+  },
+  {
+    "label": "en-list-1440",
+    "client": 1410,
+    "dialog": null,
+    "height": 844,
+    "rawKeys": false,
+    "scroll": 1410,
+    "width": 1440
+  },
+  {
+    "label": "ar-review-320-short-settled",
+    "client": 290,
+    "dialog": {
+      "bottom": 534,
+      "client": 226,
+      "height": 518,
+      "right": 304,
+      "scroll": 226,
+      "width": 258,
+      "x": 46,
+      "y": 16
+    },
+    "height": 550,
+    "rawKeys": false,
+    "scroll": 290,
+    "width": 320
+  }
+]
