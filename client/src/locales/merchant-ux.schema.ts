@@ -72,6 +72,7 @@ import type { SalesExperimentReviewCopy } from './sales-experiment-review';
 import type { SalesExperimentLaunchCopy } from './sales-experiment-launch';
 export type MerchantUxCopy = {
   calendlyAccess: Record<'linkUnavailable'|'unavailable'|'retry'|'loading'|'actionFailed'|'forbidden',string>;
+  cartWorkspace: typeof import('./cart-workspace').cartWorkspaceEn;
   referralWorkspace: typeof import('./referral-workspace').referralWorkspaceEn;
   discountWorkspace: import('./discount-workspace').DiscountWorkspaceCopy;
   calendlyWorkspace: typeof import('./calendly-workspace').calendlyWorkspaceEn;

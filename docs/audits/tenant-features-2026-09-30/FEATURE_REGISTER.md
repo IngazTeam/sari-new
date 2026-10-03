@@ -2,7 +2,7 @@
 
 هذا حصر مصدر قابل لإعادة التوليد، وليس ادعاءً بأن كل مسار عمل اختُبر أو أُعيد تصميمه. يشمل المكونات الفرعية المحلية، الحقول، الأزرار، النوافذ، التبويبات، واجهات القراءة والتعديل. العناصر الديناميكية تحتاج مراجعة إضافية.
 
-- 126 مسارًا مسجلًا، 438 ملف واجهة متصلًا، 2528 عنصر تحكم في المصدر.
+- 126 مسارًا مسجلًا، 443 ملف واجهة متصلًا، 2565 عنصر تحكم في المصدر.
 - 0 رابطًا حرفيًا غير مطابق، و0 ملف صفحة غير متصل بالمسارات المحصورة.
 
 | الصفحة | الملفات | عناصر التحكم | القراءة / التعديل | موك أب للصفحة |
@@ -38,7 +38,7 @@
 | /merchant/chat-orders — مدخل لوحة التاجر | 0 | 0 | 0 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/discounts — كوبونات الخصم | 7 | 28 | 3 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/referrals — إحالات التجار | 6 | 21 | 3 / 4 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/abandoned-carts — السلات المتروكة | 7 | 2 | 4 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/abandoned-carts — السلات المتروكة | 8 | 39 | 6 / 4 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/occasion-campaigns — حملات المناسبات | 1 | 4 | 3 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/promotions — العروض الترويجية | 1 | 23 | 2 / 4 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/analytics — تحليلات المبيعات | 4 | 16 | 9 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -1605,12 +1605,59 @@
 | 83 | Button | create apply | ReferralWorkspace |
 | 84 | Button | تسمية ديناميكية / تحتاج مراجعة | ReferralWorkspace |
 
-## client/src/pages/merchant/AbandonedCartsPage.tsx
+## client/src/components/merchant/CartWorkspace.tsx
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 198 | Button | إعادة إرسال إرسال تذكير | قائمة السلال المهجورة |
-| 207 | Button | تم الاستعادة | قائمة السلال المهجورة |
+| 64 | Button | تسمية ديناميكية / تحتاج مراجعة | CartWorkspace |
+| 66 | Button | تسمية ديناميكية / تحتاج مراجعة | # · |
+| 66 | Button | تسمية ديناميكية / تحتاج مراجعة | # · |
+| 69 | summary | تسمية ديناميكية / تحتاج مراجعة | CartWorkspace |
+| 70 | Button | ( ) | CartWorkspace |
+| 70 | Button | تسمية ديناميكية / تحتاج مراجعة | CartWorkspace |
+| 71 | Button | # | # |
+| 71 | Button | تسمية ديناميكية / تحتاج مراجعة | # |
+| 71 | Button | تسمية ديناميكية / تحتاج مراجعة | # |
+| 71 | Button | تسمية ديناميكية / تحتاج مراجعة | # |
+| 72 | input | تسمية ديناميكية / تحتاج مراجعة | # |
+| 72 | Button | تسمية ديناميكية / تحتاج مراجعة | # |
+| 72 | select | all waiting reminded recovered invalid | # |
+| 72 | Button | تسمية ديناميكية / تحتاج مراجعة | # |
+| 74 | Button | تسمية ديناميكية / تحتاج مراجعة | · |
+| 74 | Button | # | CartWorkspace |
+| 74 | Button | # | CartWorkspace |
+| 74 | Button | # | CartWorkspace |
+| 75 | Button | تسمية ديناميكية / تحتاج مراجعة | CartWorkspace |
+| 75 | Button | تسمية ديناميكية / تحتاج مراجعة | CartWorkspace |
+| 78 | DialogContent | remind recover details recover # · recover remind : · # # : details details recover | CartWorkspace |
+| 81 | summary | تسمية ديناميكية / تحتاج مراجعة | CartWorkspace |
+| 82 | input | تسمية ديناميكية / تحتاج مراجعة | CartWorkspace |
+| 83 | select | تسمية ديناميكية / تحتاج مراجعة | CartWorkspace |
+| 83 | Button | تسمية ديناميكية / تحتاج مراجعة | CartWorkspace |
+| 84 | input | تسمية ديناميكية / تحتاج مراجعة | CartWorkspace |
+| 86 | Button | details | CartWorkspace |
+| 86 | Button | recover | CartWorkspace |
+| 86 | Button | تسمية ديناميكية / تحتاج مراجعة | CartWorkspace |
+
+## client/src/components/merchant/CartSummary.tsx
+
+| السطر | النوع | التسمية | القسم |
+|---:|---|---|---|
+| 8 | summary | تسمية ديناميكية / تحتاج مراجعة | CartSummary |
+| 8 | summary | تسمية ديناميكية / تحتاج مراجعة | CartSummary |
+
+## client/src/components/merchant/CartDiscountPicker.tsx
+
+| السطر | النوع | التسمية | القسم |
+|---:|---|---|---|
+| 12 | input | تسمية ديناميكية / تحتاج مراجعة | CartDiscountPicker |
+| 12 | Button | تسمية ديناميكية / تحتاج مراجعة | CartDiscountPicker |
+| 12 | Button | تسمية ديناميكية / تحتاج مراجعة | CartDiscountPicker |
+| 12 | select | · percentage % percentage · | CartDiscountPicker |
+| 12 | Button | تسمية ديناميكية / تحتاج مراجعة | CartDiscountPicker |
+| 12 | Button | تسمية ديناميكية / تحتاج مراجعة | CartDiscountPicker |
+| 12 | Button | تسمية ديناميكية / تحتاج مراجعة | CartDiscountPicker |
+| 12 | Link | تسمية ديناميكية / تحتاج مراجعة | CartDiscountPicker |
 
 ## client/src/pages/merchant/OccasionCampaignsPage.tsx
 

@@ -1,7 +1,7 @@
 import {beforeEach,expect,it,vi} from 'vitest';
-const m=vi.hoisted(()=>({access:vi.fn(),review:vi.fn(),receipt:vi.fn(),reserve:vi.fn(),send:vi.fn()}));
+const m=vi.hoisted(()=>({access:vi.fn(),review:vi.fn(),receipt:vi.fn(),history:vi.fn(),reserve:vi.fn(),send:vi.fn()}));
 vi.mock('./accounts/merchant-access',()=>({resolveMerchantAccess:m.access}));
-vi.mock('./abandoned-cart-reminder',()=>({reviewCartReminder:m.review,readCartReminderReceipt:m.receipt,reserveCartReminder:m.reserve}));
+vi.mock('./abandoned-cart-reminder',()=>({reviewCartReminder:m.review,readCartReminderReceipt:m.receipt,readCartReminderHistory:m.history,reserveCartReminder:m.reserve}));
 vi.mock('./abandoned-cart-reminder-transport',()=>({sendReviewedCartReminder:m.send}));
 import {abandonedCartsRouter} from './routers-abandoned-carts';
 import {appRouter} from './routers';
@@ -9,6 +9,7 @@ beforeEach(()=>{vi.resetAllMocks();m.access.mockResolvedValue({merchantId:20,rol
 for(const mounted of [false,true]){
  const caller=(user:any={id:7,role:'user'},selection='20')=>{const ctx={user,merchantId:999,merchantRole:'owner',req:{headers:{'x-merchant-id':selection}},res:{}} as any;return mounted?appRouter.createCaller(ctx).abandonedCarts:abandonedCartsRouter.createCaller(ctx);};
  const key='fa84b170-c904-48f0-9dc8-d294f30a4219';
+ it(`reads paged history for the selected viewer only mounted=${mounted}`,async()=>{m.access.mockResolvedValue({merchantId:20,role:'viewer'});await caller().reminderHistory({page:2});expect(m.history).toHaveBeenCalledExactlyOnceWith(7,20,{page:2});m.history.mockClear();await expect(caller().reminderHistory({merchantId:21} as any)).rejects.toMatchObject({code:'BAD_REQUEST'});m.access.mockResolvedValue(null);await expect(caller().reminderHistory({})).rejects.toMatchObject({code:'FORBIDDEN'});expect(m.history).not.toHaveBeenCalled();});
  it(`requires a reviewed explicit send on the selected tenant mounted=${mounted}`,async()=>{const input={cartId:30,operationKey:key,expectedRevision:'a'.repeat(64),confirm:true as const};await caller().sendReviewedReminder(input);expect(m.send).toHaveBeenCalledExactlyOnceWith(7,20,{...input,discountId:null,locale:'ar'});m.send.mockClear();await expect(caller().sendReviewedReminder({...input,confirm:false} as any)).rejects.toMatchObject({code:'BAD_REQUEST'});await expect(caller().sendReviewedReminder({...input,to:'+966500000002'} as any)).rejects.toMatchObject({code:'BAD_REQUEST'});m.access.mockResolvedValue({merchantId:20,role:'viewer'});await expect(caller().sendReviewedReminder(input)).rejects.toMatchObject({code:'FORBIDDEN'});expect(m.send).not.toHaveBeenCalled();});
  it(`scopes preview and restoration to selected membership mounted=${mounted}`,async()=>{await caller().reviewReminder({cartId:30});await caller().reminderReceipt({operationKey:key});expect(m.review).toHaveBeenCalledExactlyOnceWith(7,20,{cartId:30,discountId:null,locale:'ar'});expect(m.receipt).toHaveBeenCalledExactlyOnceWith(7,20,{operationKey:key});expect(m.reserve).not.toHaveBeenCalled();});
  it(`allows read-only restoration but no management preview mounted=${mounted}`,async()=>{m.access.mockResolvedValue({merchantId:20,role:'viewer'});await expect(caller().reviewReminder({cartId:30})).rejects.toMatchObject({code:'FORBIDDEN'});await caller().reminderReceipt({operationKey:key});expect(m.review).not.toHaveBeenCalled();expect(m.receipt).toHaveBeenCalledOnce();});

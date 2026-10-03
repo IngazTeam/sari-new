@@ -1,0 +1,9 @@
+import {useTranslation} from 'react-i18next';
+import {cartWorkspaceLabels} from '@/lib/cart-workspace-labels';
+import {cartStamp} from '@/lib/cart-workspace';
+import type {CartWorkspaceRow} from '@shared/abandoned-cart-workspace';
+export function CartSummary({row}:{row:CartWorkspaceRow}){
+ const {t,i18n}=useTranslation(),c=cartWorkspaceLabels(t),locale=i18n.language.startsWith('ar')?'ar':'en',number=(v:number|null)=>v===null?c.unknown:v.toLocaleString(locale),flag=(v:boolean|null)=>v===null?c.unknown:v?c.yes:c.no;
+ const entries=[[c.name,row.customerName??c.unknown],[c.phone,row.customerPhone??c.unknown],[c.state,c[row.state]],[c.amount,number(row.totalAmount)],[c.reminderFlag,flag(row.reminderSent)],[c.reminderAt,cartStamp(row.reminderSentAt,row.issues.includes('reminder_time')||row.reminderSent?c.unknown:c.notRecorded)],[c.recoveryFlag,flag(row.recovered)],[c.recoveryAt,cartStamp(row.recoveredAt,row.issues.includes('recovery_time')||row.recovered?c.unknown:c.notRecorded)],[c.created,cartStamp(row.createdAt,c.unknown)],[c.updated,cartStamp(row.updatedAt,c.unknown)]];
+ return <><dl className="dc-summary">{entries.map(([label,value])=><div key={label}><dt>{label}</dt><dd><bdi>{value}</bdi></dd></div>)}</dl><p className="sc-muted">{c.unitUnknown}</p><h3>{c.items}</h3>{row.items?<ol className="cw-items">{row.items.map((item,index)=>{const extra=Object.fromEntries(Object.entries(item).filter(([key])=>!['productId','productName','quantity','price'].includes(key)));return <li key={index}><strong><bdi>{item.productName}</bdi></strong><p>#{item.productId} · {c.quantity}: {number(item.quantity)} · {c.price}: {number(item.price)}</p>{Object.keys(extra).length>0&&<details><summary>{c.extra}</summary><pre>{JSON.stringify(extra,null,2)}</pre></details>}</li>;})}</ol>:<p>{c.unknown}</p>}{row.itemsRaw!==null&&<details><summary>{c.raw}</summary><pre>{row.itemsRaw}</pre></details>}</>;
+}

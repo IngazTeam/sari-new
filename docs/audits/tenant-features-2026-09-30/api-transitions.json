@@ -1993,6 +1993,41 @@
           "contains": "withReferralAuthority"
         }
       ]
+    },
+    {
+      "routes": [
+        "/merchant/abandoned-carts"
+      ],
+      "removed": [
+        "abandonedCarts.list",
+        "abandonedCarts.getStats",
+        "abandonedCarts.markRecovered",
+        "abandonedCarts.sendReminder"
+      ],
+      "required": [
+        "abandonedCarts.workspace",
+        "abandonedCarts.reviewRecovery",
+        "abandonedCarts.recordRecovery",
+        "abandonedCarts.reviewReminder",
+        "abandonedCarts.sendReviewedReminder",
+        "abandonedCarts.reminderReceipt",
+        "abandonedCarts.reminderHistory",
+        "discounts.workspace"
+      ],
+      "note": "Full selected-tenant source, versioned record-only recovery, reviewed tenant-channel reminder with optional existing discount, durable quota receipt and complete history replace legacy direct actions. Legacy endpoints are still registered pending retirement; automatic legacy discount/send is not claimed repaired by this interface phase.",
+      "evidence": [
+        "docs/audits/tenant-abandoned-cart-workspace-2026-10-03/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "client/src/pages/merchant/AbandonedCartsPage.tsx",
+          "contains": "<CartWorkspace"
+        },
+        {
+          "file": "server/abandoned-cart-reminder-transport.ts",
+          "contains": "withCartReminderAuthority"
+        }
+      ]
     }
   ]
 }

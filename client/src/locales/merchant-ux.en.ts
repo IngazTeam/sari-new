@@ -1,3 +1,4 @@
+import { cartWorkspaceEn } from './cart-workspace';
 import { referralWorkspaceEn } from './referral-workspace';
 import {discountWorkspaceEn} from './discount-workspace';
 import {calendlyWorkspaceEn} from './calendly-workspace';
@@ -60,6 +61,7 @@ import { whatsappWorkspaceEn } from './whatsapp-workspace';
 
 const merchantUxEn: MerchantUxCopy = {
   calendlyAccess: {"linkUnavailable":"Booking link is unavailable or invalid.","unavailable":"Unable to confirm Calendly data. Refresh before making changes.","retry":"Refresh status","loading":"Loading…","actionFailed":"The result could not be confirmed. Refresh the status before trying again.","forbidden":"You need permission to manage integrations for this store."},
+  cartWorkspace: cartWorkspaceEn,
   referralWorkspace: referralWorkspaceEn,
   discountWorkspace:discountWorkspaceEn,
   calendlyWorkspace:calendlyWorkspaceEn,

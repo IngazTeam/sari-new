@@ -1,0 +1,265 @@
+{
+  "environment": "Chromium IAB, local synthetic tenant; CSS iframe sizes, not native iPhone or Safari",
+  "measurements": [
+    {
+      "label": "carts-ar-320",
+      "dialog": null,
+      "overflow": [
+        {
+          "tag": "HEADER",
+          "text": "النمو · استعادة السلاتالسلات المتروكةراجع السلة، وأرسل تذكيرًا مد"
+        },
+        {
+          "tag": "DIV",
+          "text": "النمو · استعادة السلاتالسلات المتروكةراجع السلة، وأرسل تذكيرًا مد"
+        },
+        {
+          "tag": "P",
+          "text": "النمو · استعادة السلات"
+        },
+        {
+          "tag": "H1",
+          "text": "السلات المتروكة"
+        },
+        {
+          "tag": "P",
+          "text": "راجع السلة، وأرسل تذكيرًا مدروسًا، وتابع النتيجة المسجلة."
+        },
+        {
+          "tag": "BUTTON",
+          "text": "تحديث"
+        },
+        {
+          "tag": "svg",
+          "text": ""
+        },
+        {
+          "tag": "DL",
+          "text": "جاهزة للمراجعة28سُجّل تذكير1سُجّلت استعادة1تحتاج مراجعة البيانات1"
+        }
+      ],
+      "rawKeys": false,
+      "scrollWidth": 290,
+      "smallTargets": [],
+      "width": 290,
+      "discarded": "Incorrect horizontal origin: RTL reserves a 30px left scrollbar gutter."
+    },
+    {
+      "label": "reminder-blocked-ar-320",
+      "dialog": {
+        "height": 812,
+        "scroll": 1564,
+        "width": 258
+      },
+      "origin": 30,
+      "overflow": [],
+      "rawKeys": false,
+      "scrollWidth": 290,
+      "smallTargets": [],
+      "width": 290
+    },
+    {
+      "label": "reminder-blocked-ar-390",
+      "dialog": {
+        "height": 812,
+        "scroll": 1365,
+        "width": 328
+      },
+      "origin": 30,
+      "overflow": [],
+      "rawKeys": false,
+      "scrollWidth": 360,
+      "smallTargets": [],
+      "width": 360
+    },
+    {
+      "label": "final-carts-ar-320",
+      "dialog": null,
+      "origin": 30,
+      "overflow": [],
+      "rawKeys": false,
+      "scrollWidth": 290,
+      "smallTargets": [],
+      "width": 290
+    },
+    {
+      "label": "final-reminder-ar-320",
+      "dialog": {
+        "height": 812,
+        "scroll": 1564,
+        "width": 258
+      },
+      "origin": 30,
+      "overflow": [],
+      "rawKeys": false,
+      "scrollWidth": 290,
+      "smallTargets": [],
+      "width": 290
+    },
+    {
+      "label": "final-reminder-ar-320-h550",
+      "dialog": {
+        "height": 746.90625,
+        "scroll": 1564,
+        "width": 258
+      },
+      "origin": 30,
+      "overflow": [],
+      "rawKeys": false,
+      "scrollWidth": 290,
+      "smallTargets": [],
+      "width": 290,
+      "discarded": "Measured during dialog resize animation; recheck after settling."
+    },
+    {
+      "label": "final-reminder-ar-390",
+      "dialog": {
+        "height": 748.140625,
+        "scroll": 1365,
+        "width": 328
+      },
+      "origin": 30,
+      "overflow": [],
+      "rawKeys": false,
+      "scrollWidth": 360,
+      "smallTargets": [],
+      "width": 360,
+      "discarded": "Measured during dialog resize animation; recheck after settling."
+    },
+    {
+      "label": "settled-reminder-ar-390",
+      "dialog": {
+        "height": 812,
+        "scroll": 1365,
+        "width": 328
+      },
+      "origin": 30,
+      "overflow": [],
+      "rawKeys": false,
+      "scrollWidth": 360,
+      "smallTargets": [],
+      "width": 360
+    },
+    {
+      "label": "settled-reminder-ar-390-h550",
+      "dialog": {
+        "height": 518,
+        "scroll": 1365,
+        "width": 328
+      },
+      "origin": 30,
+      "overflow": [],
+      "rawKeys": false,
+      "scrollWidth": 360,
+      "smallTargets": [],
+      "width": 360
+    },
+    {
+      "label": "details-ar-390-h550",
+      "dialog": {
+        "height": 518,
+        "scroll": 1260,
+        "width": 328
+      },
+      "origin": 30,
+      "overflow": [],
+      "rawKeys": false,
+      "scrollWidth": 360,
+      "smallTargets": [],
+      "width": 360
+    },
+    {
+      "label": "recovery-brief-ar-390-h550",
+      "dialog": {
+        "height": 480.921875,
+        "scroll": 479,
+        "width": 328
+      },
+      "origin": 30,
+      "overflow": [],
+      "rawKeys": false,
+      "scrollWidth": 360,
+      "smallTargets": [],
+      "width": 360
+    },
+    {
+      "label": "carts-ar-768",
+      "dialog": null,
+      "origin": 30,
+      "overflow": [],
+      "rawKeys": false,
+      "scrollWidth": 738,
+      "smallTargets": [],
+      "width": 738
+    },
+    {
+      "label": "carts-ar-1440",
+      "dialog": null,
+      "origin": 30,
+      "overflow": [],
+      "rawKeys": false,
+      "scrollWidth": 1410,
+      "smallTargets": [],
+      "width": 1410
+    },
+    {
+      "label": "carts-page2-ar-1440",
+      "dialog": null,
+      "origin": 30,
+      "overflow": [],
+      "rawKeys": false,
+      "scrollWidth": 1410,
+      "smallTargets": [],
+      "width": 1410
+    },
+    {
+      "label": "invalid-details-ar-1440",
+      "dialog": {
+        "height": 812,
+        "scroll": 971,
+        "width": 672
+      },
+      "origin": 30,
+      "overflow": [],
+      "rawKeys": false,
+      "scrollWidth": 1410,
+      "smallTargets": [],
+      "width": 1410
+    },
+    {
+      "label": "final-recovery-brief-ar-390",
+      "dialog": {
+        "height": 453.734375,
+        "scroll": 452,
+        "width": 328
+      },
+      "origin": 30,
+      "overflow": [],
+      "rawKeys": false,
+      "scrollWidth": 360,
+      "smallTargets": [],
+      "width": 360
+    },
+    {
+      "label": "history-empty-ar-390",
+      "dialog": null,
+      "origin": 30,
+      "overflow": [],
+      "rawKeys": false,
+      "scrollWidth": 360,
+      "smallTargets": [],
+      "width": 360
+    }
+  ],
+  "discardedLabels": [
+    "carts-ar-320",
+    "final-reminder-ar-320-h550",
+    "final-reminder-ar-390"
+  ],
+  "supersededLabels": [
+    "reminder-blocked-ar-320",
+    "reminder-blocked-ar-390"
+  ],
+  "recoveryRecordedOnSyntheticCart": 301,
+  "liveMessagesSent": 0
+}

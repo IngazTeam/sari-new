@@ -1,0 +1,13 @@
+import {useState} from 'react';
+import {useTranslation} from 'react-i18next';
+import {Link} from 'wouter';
+import {trpc} from '@/lib/trpc';
+import {Button} from '@/components/ui/button';
+import {scopedDiscountWorkspace} from '@/lib/discount-workspace';
+import {cartWorkspaceLabels} from '@/lib/cart-workspace-labels';
+import type {DiscountWorkspaceRow} from '@shared/discount-workspace';
+export function CartDiscountPicker({actorId,merchantId,selected,onSelect}:{actorId:number;merchantId:number;selected:DiscountWorkspaceRow|null;onSelect:(row:DiscountWorkspaceRow|null)=>void}){
+ const {t}=useTranslation(),c=cartWorkspaceLabels(t),[draft,setDraft]=useState(''),[search,setSearch]=useState(''),[page,setPage]=useState(1);
+ const input={query:search,status:'available' as const,origin:'all' as const,page},query=trpc.discounts.workspace.useQuery(input,{retry:false,staleTime:0,refetchOnMount:'always'}),data=query.error?null:scopedDiscountWorkspace(query.data,actorId,merchantId,input);
+ return <section className="cw-review"><p>{c.discountHelp}</p><form className="sc-filters" onSubmit={e=>{e.preventDefault();setSearch(draft.trim());setPage(1);}}><label className="dc-field"><span>{c.discountSearch}</span><input value={draft} maxLength={80} onChange={e=>setDraft(e.target.value)}/></label><Button type="submit" variant="outline">{c.searchAction}</Button></form>{query.error||!query.isLoading&&!query.isFetching&&!data?<p role="alert">{c.discountReadFailed} <Button variant="outline" onClick={()=>void query.refetch()}>{c.refresh}</Button></p>:!data?<p role="status">{c.reviewing}</p>:<><label className="dc-field"><span>{c.chooseDiscount}</span><select value={data.rows.some(r=>r.id===selected?.id)?selected!.id:''} disabled={query.isFetching} onChange={e=>onSelect(data.rows.find(r=>r.id===Number(e.target.value))??null)}><option value="">{c.chooseDiscount}</option>{data.rows.map(r=><option key={r.id} value={r.id} disabled={r.type!=='percentage'||(r.minOrderAmount??0)>0}>{r.code} · {r.value}{r.type==='percentage'?'%':''}{r.type!=='percentage'||(r.minOrderAmount??0)>0?' · '+c.discountUnavailable:''}</option>)}</select></label>{!data.rows.length&&<p>{c.discountEmpty}</p>}{data.pages>1&&<div className="sc-actions"><Button variant="outline" disabled={page<=1||query.isFetching} onClick={()=>setPage(page-1)}>{c.previous}</Button><span>{c.page} {page} {c.of} {data.pages}</span><Button variant="outline" disabled={page>=data.pages||query.isFetching} onClick={()=>setPage(page+1)}>{c.next}</Button></div>}</>}{selected&&<p>{c.selectedDiscount}: <bdi>{selected.code}</bdi> · {selected.value}%</p>}<Button variant="outline" asChild><Link href="/merchant/discounts">{c.manageDiscounts}</Link></Button></section>;
+}

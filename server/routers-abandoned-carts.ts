@@ -10,9 +10,9 @@ import { TRPCError } from "@trpc/server";
 import { protectedProcedure, merchantProcedure, permissionProcedure, router } from "./_core/trpc";
 import {cartWorkspaceInput,cartRecoveryReviewInput,cartRecoveryRecordInput} from '../shared/abandoned-cart-workspace';
 import {readCartWorkspace,reviewCartRecovery,recordCartRecovery,CartWorkspaceError} from './abandoned-cart-workspace-store';
-import {cartReminderReviewInput,cartReminderReceiptInput,cartReminderSendInput} from '../shared/abandoned-cart-reminder';
+import {cartReminderHistoryInput,cartReminderReviewInput,cartReminderReceiptInput,cartReminderSendInput} from '../shared/abandoned-cart-reminder';
 import {sendReviewedCartReminder} from './abandoned-cart-reminder-transport';
-import {reviewCartReminder,readCartReminderReceipt} from './abandoned-cart-reminder';
+import {readCartReminderHistory,reviewCartReminder,readCartReminderReceipt} from './abandoned-cart-reminder';
 import {
   getAbandonedCartById,
   getAbandonedCartsByMerchantId,
@@ -22,6 +22,7 @@ import {
 
 async function recoveryGuard<T>(operation:()=>Promise<T>){try{return await operation();}catch(error){const reason=error instanceof CartWorkspaceError?error.reason:'unavailable';throw new TRPCError({code:reason==='forbidden'?'FORBIDDEN':reason==='missing'?'NOT_FOUND':reason==='stale'?'CONFLICT':reason==='invalid'?'PRECONDITION_FAILED':'INTERNAL_SERVER_ERROR',message:reason==='stale'?'تغير السجل. حدّثه وراجعه مجددًا.':'تعذر تأكيد تسجيل الاستعادة. حدّث البيانات وراجع الحالة قبل المحاولة مجددًا.'});}}
 export const abandonedCartsRouter = router({
+    reminderHistory:merchantProcedure.input(cartReminderHistoryInput).query(({ctx,input})=>recoveryGuard(()=>readCartReminderHistory(ctx.user.id,ctx.merchantId,input))),
     sendReviewedReminder:permissionProcedure('campaigns.manage').input(cartReminderSendInput).mutation(({ctx,input})=>recoveryGuard(()=>sendReviewedCartReminder(ctx.user.id,ctx.merchantId,input))),
     reviewReminder:permissionProcedure('campaigns.manage').input(cartReminderReviewInput).mutation(({ctx,input})=>recoveryGuard(()=>reviewCartReminder(ctx.user.id,ctx.merchantId,input))),
     reminderReceipt:merchantProcedure.input(cartReminderReceiptInput).query(({ctx,input})=>recoveryGuard(()=>readCartReminderReceipt(ctx.user.id,ctx.merchantId,input))),
