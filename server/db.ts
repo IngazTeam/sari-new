@@ -154,8 +154,6 @@ import {
   whatsappRequests,
   WhatsAppRequest,
   InsertWhatsAppRequest,
-  orderNotifications,
-  notificationTemplates,
   testConversations,
   testMessages,
   testDeals,
@@ -3306,62 +3304,6 @@ export async function deleteWhatsAppRequest(id: number) {
   if (!db) throw new Error('Database not initialized');
   await db.delete(whatsappRequests).where(eq(whatsappRequests.id, id));
 }
-
-
-// ============================================
-// Order Notifications Functions
-// ============================================
-
-
-
-export async function getOrderNotificationsByOrderId(merchantId: number, orderId: number) {
-  if (![merchantId, orderId].every(id => Number.isInteger(id) && id > 0 && id <= 2147483647)) throw new Error('Invalid notification scope');
-  const db = await getDb();
-  if (!db) throw new Error('Database not initialized');
-  const rows = await db.select({ notification: orderNotifications }).from(orderNotifications)
-    .innerJoin(orders, and(eq(orders.id, orderNotifications.orderId), eq(orders.merchantId, orderNotifications.merchantId)))
-    .where(and(eq(orderNotifications.merchantId, merchantId), eq(orderNotifications.orderId, orderId)))
-    .orderBy(desc(orderNotifications.createdAt), desc(orderNotifications.id));
-  return rows.map(row => row.notification);
-}
-
-export async function getOrderNotificationsByMerchantId(merchantId: number, limit = 50) {
-  if (!Number.isInteger(merchantId) || merchantId <= 0 || merchantId > 2147483647 || !Number.isInteger(limit) || limit < 1 || limit > 100) throw new Error('Invalid notification scope');
-  const db = await getDb();
-  if (!db) throw new Error('Database not initialized');
-  const rows = await db.select({ notification: orderNotifications }).from(orderNotifications)
-    .innerJoin(orders, and(eq(orders.id, orderNotifications.orderId), eq(orders.merchantId, orderNotifications.merchantId)))
-    .where(eq(orderNotifications.merchantId, merchantId))
-    .orderBy(desc(orderNotifications.createdAt), desc(orderNotifications.id)).limit(limit);
-  return rows.map(row => row.notification);
-}
-
-
-// ============================================
-// Notification Templates Functions
-// ============================================
-
-
-
-export async function getNotificationTemplateByStatus(merchantId: number, status: string) {
-  const db = await getDb();
-  if (!db) throw new Error('Database not initialized');
-  const result = await db.select().from(notificationTemplates)
-    .where(and(
-      eq(notificationTemplates.merchantId, merchantId),
-      eq(notificationTemplates.status, status)
-    ))
-    .limit(1);
-  return result[0] || null;
-}
-
-export async function getNotificationTemplatesByMerchantId(merchantId: number) {
-  const db = await getDb();
-  if (!db) throw new Error('Database not initialized');
-  return db.select().from(notificationTemplates).where(eq(notificationTemplates.merchantId, merchantId));
-}
-
-
 
 
 // ============================================

@@ -1,10 +1,3 @@
-import {
-  getNotificationTemplateByStatus,
-  getNotificationTemplatesByMerchantId,
-} from '../db';
-import { assertRuntimeSchema } from '../db/schema-readiness';
-import { fillOrderNotificationTemplate, type OrderNotificationData } from '../../shared/order-notification-template';
-
 export const ORDER_NOTIFICATION_STATUSES = [
   'pending',
   'paid',
@@ -15,14 +8,6 @@ export const ORDER_NOTIFICATION_STATUSES = [
 ] as const;
 
 export type OrderNotificationStatus = typeof ORDER_NOTIFICATION_STATUSES[number];
-
-async function ensureTemplateSchema(): Promise<void> {
-  await assertRuntimeSchema('Order notification templates', [{
-    table: 'notification_templates',
-    columns: ['merchant_id', 'status', 'template', 'enabled'],
-    uniqueIndexes: [{ name: 'uq_notification_template_merchant_status', columns: ['merchant_id', 'status'] }],
-  }]);
-}
 
 // Default notification templates in Arabic
 export const defaultTemplates: Record<OrderNotificationStatus, string> = {
@@ -92,46 +77,3 @@ export const defaultTemplates: Record<OrderNotificationStatus, string> = {
 
 نتطلع لخدمتك قريباً 💙`
 };
-
-// Replace template variables with actual values
-export const fillTemplate = fillOrderNotificationTemplate;
-
-// Get notification template for a specific status
-export async function getNotificationTemplate(merchantId: number, status: string): Promise<string | null> {
-  await ensureTemplateSchema();
-  const template = await getNotificationTemplateByStatus(merchantId, status);
-  return template?.enabled === 1 ? template.template : null;
-}
-
-export async function getOrderNotificationTemplateSettings(merchantId: number) {
-  await ensureTemplateSchema();
-  const stored = await getNotificationTemplatesByMerchantId(merchantId);
-  const byStatus = new Map(stored.map(template => [template.status, template]));
-  return ORDER_NOTIFICATION_STATUSES.map(status => {
-    const template = byStatus.get(status);
-    return {
-      status,
-      template: template?.template || defaultTemplates[status],
-      enabled: template?.enabled === 1,
-      updatedAt: template?.updatedAt || null,
-    };
-  });
-}
-
-export async function prepareOrderStatusNotification(
-  merchantId: number,
-  customerPhone: string,
-  status: string,
-  orderData: OrderNotificationData,
-): Promise<{ customerPhone: string; message: string } | null> {
-  const template = await getNotificationTemplate(merchantId, status);
-  if (!template) return null;
-  const message = fillTemplate(template, orderData);
-  if (!message.trim() || message.length > 4096) {
-    throw new Error('Order notification template exceeds the WhatsApp text limit');
-  }
-  return {
-    customerPhone,
-    message,
-  };
-}

@@ -5,18 +5,7 @@ import { orderNoticeSelection, orderNoticeDetailInput } from '../shared/order-no
 import { readOrderNoticeWorkspace, readOrderNoticeDetail, OrderNoticeError } from './order-notification-workspace';
 import { saveOrderNoticeTemplateInput, acknowledgeOrderNoticesInput } from '../shared/order-notification-actions';
 import { saveReviewedOrderNoticeTemplate, acknowledgeReviewedOrderNotices } from './order-notification-actions';
-import {
-  getOrderNotificationsByMerchantId,
-  getOrderNotificationsByOrderId,
-} from './db';
-import {
-  getOrderNotificationTemplateSettings,
-  ORDER_NOTIFICATION_STATUSES,
-} from './notifications/order-notifications';
-import { getMerchantOrder } from './orders/merchant-order-lifecycle';
-import {
-  getOrderStatusNotificationHealth,
-} from './orders/order-status-notification-outbox';
+import { ORDER_NOTIFICATION_STATUSES } from './notifications/order-notifications';
 
 const notificationStatusSchema = z.enum(ORDER_NOTIFICATION_STATUSES);
 const templateSchema = z.string()
@@ -38,9 +27,7 @@ export const orderNotificationsRouter = router({
   detail: permissionProcedure('analytics.read').input(orderNoticeDetailInput).query(async ({ ctx, input }) => {
     try { return await readOrderNoticeDetail(ctx.user.id, ctx.merchantId, input); } catch (e) { return noticeError(e); }
   }),
-  getTemplates: permissionProcedure('analytics.read').query(async ({ ctx }) => {
-    return getOrderNotificationTemplateSettings(ctx.merchantId);
-  }),
+  getTemplates: permissionProcedure('analytics.read').query(reload),
 
   updateTemplate: permissionProcedure('whatsapp.manage')
     .input(z.object({
@@ -48,27 +35,19 @@ export const orderNotificationsRouter = router({
       template: templateSchema,
       enabled: z.boolean(),
     }).strict())
-    .mutation(() => { throw new TRPCError({code:'PRECONDITION_FAILED',message:'order_notice:reload'}); }),
+    .mutation(reload),
 
-  getHealth: permissionProcedure('analytics.read').query(async ({ ctx }) => {
-    return getOrderStatusNotificationHealth(ctx.merchantId);
-  }),
+  getHealth: permissionProcedure('analytics.read').query(reload),
 
-  acknowledgeIncidents: permissionProcedure('whatsapp.manage').mutation(() => { throw new TRPCError({code:'PRECONDITION_FAILED',message:'order_notice:reload'}); }),
+  acknowledgeIncidents: permissionProcedure('whatsapp.manage').mutation(reload),
 
   getHistory: permissionProcedure('analytics.read')
     .input(z.object({ limit: z.number().int().min(1).max(100).default(50) }).strict())
-    .query(async ({ input, ctx }) => {
-      return getOrderNotificationsByMerchantId(ctx.merchantId, input.limit);
-    }),
+    .query(reload),
 
   getByOrderId: permissionProcedure('analytics.read')
     .input(z.object({ orderId: z.number().int().positive() }).strict())
-    .query(async ({ input, ctx }) => {
-      const order = await getMerchantOrder(ctx.merchantId, input.orderId);
-      if (!order) throw new TRPCError({ code: 'NOT_FOUND', message: 'Order not found' });
-      return getOrderNotificationsByOrderId(ctx.merchantId, order.id);
-    }),
+    .query(reload),
 });
 
 export type OrderNotificationsRouter = typeof orderNotificationsRouter;
@@ -79,3 +58,5 @@ function noticeError(e: unknown): never {
     : e instanceof OrderNoticeError && e.reason === 'reference' ? 'PRECONDITION_FAILED' : 'INTERNAL_SERVER_ERROR',
     message: e instanceof OrderNoticeError && ['stale','reference','unknown'].includes(e.reason) ? e.message : 'order_notice:unavailable' });
 }
+
+function reload(): never { throw new TRPCError({code:'PRECONDITION_FAILED',message:'order_notice:reload'}); }

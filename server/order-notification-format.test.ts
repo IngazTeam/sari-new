@@ -1,17 +1,9 @@
-import { beforeEach, describe, it, expect, vi } from "vitest";
-const m = vi.hoisted(() => ({ template: vi.fn() }));
-vi.mock("./db", () => ({
-  getNotificationTemplateByStatus: m.template,
-  getNotificationTemplatesByMerchantId: vi.fn(),
-  getDb: vi.fn(),
-}));
-vi.mock("./db/schema-readiness", () => ({ assertRuntimeSchema: vi.fn() }));
+import { describe, it, expect } from 'vitest';
 import {
   fillOrderNotificationTemplate as fill,
   type OrderNotificationData,
 } from "../shared/order-notification-template";
 import {
-  prepareOrderStatusNotification,
   defaultTemplates,
 } from "./notifications/order-notifications";
 const data: OrderNotificationData = {
@@ -21,7 +13,6 @@ const data: OrderNotificationData = {
   total: 3453,
   currency: "SAR",
 };
-beforeEach(() => vi.resetAllMocks());
 describe("order notification monetary units and literal substitution", () => {
   it.each([0, 1, 99, 100, 3453, 2147483647, Number.MAX_SAFE_INTEGER])(
     "renders exact cents for %s",
@@ -89,36 +80,5 @@ describe("order notification monetary units and literal substitution", () => {
       if (template.includes("{{total}}"))
         expect(template).toContain("{{total}} {{currency}}");
     }
-  });
-  it("reads only the explicitly enabled owned template and returns a prepared message without sending", async () => {
-    m.template.mockResolvedValue({ enabled: 1, template: "{{total}} ريال" });
-    expect(
-      await prepareOrderStatusNotification(20, "+12025550160", "processing", {
-        ...data,
-        currency: "USD",
-      })
-    ).toEqual({ customerPhone: "+12025550160", message: "34.53 USD" });
-    expect(m.template).toHaveBeenCalledWith(20, "processing");
-  });
-  it.each([null, { enabled: 0, template: "{{total}}" }])(
-    "does not enable or seed a missing/disabled template",
-    async template => {
-      m.template.mockResolvedValue(template);
-      expect(
-        await prepareOrderStatusNotification(20, "local", "cancelled", data)
-      ).toBeNull();
-    }
-  );
-  it("rejects a message exceeding the delivery limit after substitution", async () => {
-    m.template.mockResolvedValue({
-      enabled: 1,
-      template: "{{customerName}}".repeat(25),
-    });
-    await expect(
-      prepareOrderStatusNotification(20, "local", "pending", {
-        ...data,
-        customerName: "a".repeat(255),
-      })
-    ).rejects.toThrow("text limit");
   });
 });

@@ -50,6 +50,7 @@
     "review-aggregate-reference-policy-v1",
     "order-notice-reviewed-writes-only-v1",
     "order-notice-authorizations-0199",
-    "order-notice-reviewed-transport-0199"
+    "order-notice-reviewed-transport-0199",
+    "order-notice-legacy-paths-retired-v1"
   ]
 }
