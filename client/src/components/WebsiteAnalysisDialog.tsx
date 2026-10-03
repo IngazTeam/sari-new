@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
-import { Loader2, CircleAlert, FileSearch } from "lucide-react";
+import { Loader2, CircleAlert, FileSearch, ChevronDown } from "lucide-react";
+import { websiteIndexingOutcome } from "../../../shared/website-analysis-tracking";
 import { Button } from "./ui/button";
 import {
   Dialog,
@@ -26,6 +27,10 @@ export function readWebsiteAnalysisResult(value: unknown) {
     crawl = record(data.crawlStats),
     sales = record(data.salesIntelSummary),
     evolution = record(data.knowledgeEvolution);
+  const indexing=websiteIndexingOutcome.safeParse(data.indexingOutcome);
+  const discovered=count(crawl.pagesDiscovered),attempted=count(crawl.pagesCrawled),read=count(crawl.pagesSuccess),mainWords=count(crawl.mainPageWords),totalWords=count(crawl.totalWords);
+  const inconsistentPages=(discovered!==null&&attempted!==null&&attempted>discovered)||(attempted!==null&&read!==null&&read>attempted)||(discovered!==null&&read!==null&&read>discovered);
+  const inconsistentWords=mainWords!==null&&totalWords!==null&&mainWords>totalWords;
   return {
     title: typeof data.title === "string" ? data.title : "",
     score:
@@ -35,11 +40,12 @@ export function readWebsiteAnalysisResult(value: unknown) {
       data.score <= 100
         ? data.score
         : null,
-    discovered: count(crawl.pagesDiscovered),
-    attempted: count(crawl.pagesCrawled),
-    read: count(crawl.pagesSuccess),
-    mainWords: count(crawl.mainPageWords),
-    totalWords: count(crawl.totalWords),
+    discovered: inconsistentPages?null:discovered,
+    attempted: inconsistentPages?null:attempted,
+    read: inconsistentPages?null:read,
+    mainWords: inconsistentWords?null:mainWords,
+    totalWords: inconsistentWords?null:totalWords,
+    inconsistentCrawl:inconsistentPages||inconsistentWords,
     sections: count(sales.totalSections),
     intel: typeof sales.hasIntel === "boolean" ? sales.hasIntel : null,
     opportunities:
@@ -47,8 +53,12 @@ export function readWebsiteAnalysisResult(value: unknown) {
         ? sales.hasOpportunities
         : null,
     added: count(evolution.added),
+    merged: count(evolution.merged),
     evolved: count(evolution.evolved),
     conflicts: count(evolution.conflicts),
+    unchanged: count(evolution.unchanged),
+    indexing:indexing.success?indexing.data.status:'unknown',
+    indexedSections:indexing.success?indexing.data.indexedSections:null,
     knowledgeIncomplete: !!data.knowledgeError,
   };
 }
@@ -124,7 +134,7 @@ export function WebsiteAnalysisDialog(props: WebsiteAnalysisDialogProps) {
       <DialogContent
         dir={dir}
         closeLabel={t("websiteAnalysisUx.close")}
-        className="sm:max-w-2xl max-h-[85vh] supports-[height:100dvh]:max-h-[85dvh] overflow-y-auto [&>[data-slot=dialog-close]]:right-auto [&>[data-slot=dialog-close]]:end-3"
+        className="sm:max-w-2xl max-h-[85vh] supports-[height:100dvh]:max-h-[85dvh] overflow-y-auto [overflow-wrap:anywhere] [&_button]:max-w-full [&_button]:whitespace-normal [&_button]:h-auto [&_button]:min-h-11 [&>[data-slot=dialog-close]]:right-auto [&>[data-slot=dialog-close]]:end-3"
       >
         <DialogHeader className="text-start sm:text-start pe-7">
           <DialogTitle className="flex items-center gap-2">
@@ -277,6 +287,7 @@ export function WebsiteAnalysisDialog(props: WebsiteAnalysisDialogProps) {
               <p className="text-sm text-muted-foreground">
                 {t("websiteAnalysisUx.crawlHelp")}
               </p>
+              {result.inconsistentCrawl && <p role="alert" className="text-sm text-amber-800 dark:text-amber-200">{t("websiteAnalysisUx.inconsistentCrawl")}</p>}
             </section>
             <section
               className="space-y-2"
@@ -288,14 +299,10 @@ export function WebsiteAnalysisDialog(props: WebsiteAnalysisDialogProps) {
               <dl className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {[
                   [t("websiteAnalysisUx.added"), display(result.added)],
+                  [t("websiteAnalysisUx.merged"), display(result.merged)],
                   [t("websiteAnalysisUx.evolved"), display(result.evolved)],
                   [t("websiteAnalysisUx.conflicts"), display(result.conflicts)],
-                  [t("websiteAnalysisUx.sections"), display(result.sections)],
-                  [t("websiteAnalysisUx.intel"), present(result.intel)],
-                  [
-                    t("websiteAnalysisUx.opportunities"),
-                    present(result.opportunities),
-                  ],
+                  [t("websiteAnalysisUx.unchanged"), display(result.unchanged)],
                 ].map(([label, value]) => (
                   <div key={label} className="rounded-lg border p-3">
                     <dt className="text-xs text-muted-foreground">{label}</dt>
@@ -303,13 +310,21 @@ export function WebsiteAnalysisDialog(props: WebsiteAnalysisDialogProps) {
                   </div>
                 ))}
               </dl>
-              <p className="text-sm text-muted-foreground">
-                {t("websiteAnalysisUx.snapshotHelp")}
-              </p>
+            </section>
+            <section aria-label={t("websiteAnalysisUx.indexingTitle")} className="rounded-xl border p-4 space-y-2">
+              <h3 className="font-semibold">{t("websiteAnalysisUx.indexingTitle")}</h3>
+              <p role={result.indexing==='failed'?'alert':undefined}>{result.indexing==='returned'?t("websiteAnalysisUx.indexingReturned",{value:display(result.indexedSections)}):result.indexing==='failed'?t("websiteAnalysisUx.indexingFailed"):result.indexing==='not_attempted'?t("websiteAnalysisUx.indexingNotAttempted"):t("websiteAnalysisUx.indexingUnknown")}</p>
               <p className="text-sm text-muted-foreground">
                 {t("websiteAnalysisUx.indexHelp")}
               </p>
             </section>
+            <details className="group rounded-xl border p-4">
+              <summary className="cursor-pointer min-h-11 flex items-center justify-between gap-2 font-semibold"><span>{t("websiteAnalysisUx.snapshotTitle")}</span><ChevronDown aria-hidden="true" className="size-4 shrink-0 transition-transform group-open:rotate-180" /></summary>
+              <dl className="grid grid-cols-1 min-[400px]:grid-cols-2 sm:grid-cols-3 gap-2 mt-3">
+                {[[t("websiteAnalysisUx.sections"),display(result.sections)],[t("websiteAnalysisUx.intel"),present(result.intel)],[t("websiteAnalysisUx.opportunities"),present(result.opportunities)]].map(([label,value])=><div key={label} className="rounded-lg border p-3"><dt className="text-xs text-muted-foreground">{label}</dt><dd className="mt-1 font-semibold">{value}</dd></div>)}
+              </dl>
+              <p className="mt-3 text-sm text-muted-foreground">{t("websiteAnalysisUx.snapshotHelp")}</p>
+            </details>
           </div>
         )}
         {(result || props.issue) && (

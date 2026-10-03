@@ -31,7 +31,7 @@ import { saveKnowledgeReview } from './knowledge/intake-reviews';
 import { capturePlanBasis, planContext, buildKnowledgePlan } from './knowledge/intake-plan';
 import { knowledgeIntakeInput, knowledgeIngestInput, knowledgeReceiptInput, knowledgeRecoveryInput, knowledgeAnalysisSchema, prepareKnowledgeText } from '../shared/knowledge-intake';
 import { readWebsiteAnalysisAttempt, updateWebsiteAnalysisAttempt, cleanupWebsiteAnalysisStatus, ANALYSIS_RUNNING_TTL_MS, type WebsiteAnalysisStatus } from './knowledge/website-analysis-status';
-import { websiteAnalysisAttempt, websiteAnalysisScope } from '../shared/website-analysis-tracking';
+import { websiteAnalysisAttempt, websiteAnalysisScope, websiteIndexingOutcome, type WebsiteIndexingOutcome } from '../shared/website-analysis-tracking';
 import { persistCrawledKnowledge } from './knowledge/crawled-snapshot';
 /**
  * Sari Brain Management Router
@@ -285,6 +285,7 @@ async function runAnalysisInBackground(merchant: any, websiteUrl: string, jobId:
     // Knowledge Engine v4
     let evolveResult = null;
     let knowledgeError: string | null = null;
+    let indexingOutcome:WebsiteIndexingOutcome={status:'not_attempted',indexedSections:null};
     try {
       // PEN-SESSION-05: Clean raw scraped text before Knowledge Engine ingestion
       let scrapedText = cleanText((result._scrapedText || '') + '\n' + (result._enrichedText || ''));
@@ -323,13 +324,17 @@ async function runAnalysisInBackground(merchant: any, websiteUrl: string, jobId:
         );
         evolveResult = ingestionResult.evolveResult;
 
-        try { updateProgress('embedding', 85); const { embedAllSections } = await import('./ai/rag-engine'); await embedAllSections(merchant.id, true); } catch { /* non-blocking */ }
+        try {
+          updateProgress('embedding', 85); const { embedAllSections } = await import('./ai/rag-engine');
+          const indexedSections=await embedAllSections(merchant.id, true);
+          indexingOutcome=websiteIndexingOutcome.parse({status:'returned',indexedSections});
+        } catch { indexingOutcome={status:'failed',indexedSections:null}; }
         try { const knowledgeDb = await import('./db/knowledge'); await knowledgeDb.invalidateCache(merchant.id); } catch { /* non-blocking */ }
       } else {
         knowledgeError = 'الموقع لا يحتوي على محتوى نصي كافٍ';
       }
-    } catch (keErr: any) {
-      knowledgeError = keErr.message?.substring(0, 200);
+    } catch {
+      knowledgeError = 'knowledge_processing_incomplete';
     }
 
     // Build sales intel summary
@@ -347,7 +352,7 @@ async function runAnalysisInBackground(merchant: any, websiteUrl: string, jobId:
     updateProgress('completed', 100);
     updateWebsiteAnalysisAttempt(analysisStatusMap, merchant.id, jobId, {
       status: 'completed', startedAt: Date.now(), currentStep: 'completed', progress: 100,
-      result: { success: true, title: result.title, industry: result.industry, score: result.overallScore, knowledgeEvolution: evolveResult, salesIntelSummary, knowledgeError, crawlStats: (result as any)._crawlStats || null },
+      result: { success: true, title: result.title, industry: result.industry, score: result.overallScore, knowledgeEvolution: evolveResult, salesIntelSummary, knowledgeError, indexingOutcome, crawlStats: (result as any)._crawlStats || null },
     });
     console.log(`[SariBrain] ✅ Background analysis completed for merchant ${merchant.id}`);
   } catch (error: any) {

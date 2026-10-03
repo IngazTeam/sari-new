@@ -1,0 +1,105 @@
+[
+  {
+    "dialogBottom": 828,
+    "dialogClient": 226,
+    "dialogLeft": 46,
+    "dialogRight": 304,
+    "dialogScroll": 226,
+    "dialogTop": 16,
+    "height": 844,
+    "language": "en",
+    "width": 320
+  },
+  {
+    "dialogBottom": 828,
+    "dialogClient": 296,
+    "dialogLeft": 46,
+    "dialogRight": 374,
+    "dialogScroll": 296,
+    "dialogTop": 16,
+    "height": 844,
+    "language": "en",
+    "width": 390
+  },
+  {
+    "dialogBottom": 828,
+    "dialogClient": 640,
+    "dialogLeft": 63,
+    "dialogRight": 735,
+    "dialogScroll": 640,
+    "dialogTop": 16,
+    "height": 844,
+    "language": "en",
+    "width": 768
+  },
+  {
+    "dialogBottom": 828,
+    "dialogClient": 640,
+    "dialogLeft": 399,
+    "dialogRight": 1071,
+    "dialogScroll": 640,
+    "dialogTop": 16,
+    "height": 844,
+    "language": "en",
+    "width": 1440
+  },
+  {
+    "client": 226,
+    "language": "en-expanded",
+    "scroll": 226,
+    "width": 320
+  },
+  {
+    "bottom": 534,
+    "client": 226,
+    "height": 550,
+    "language": "en-short",
+    "scroll": 226,
+    "top": 16,
+    "width": 320
+  },
+  {
+    "bottom": 828,
+    "client": 226,
+    "height": 844,
+    "language": "ar",
+    "left": 46,
+    "right": 304,
+    "scroll": 226,
+    "top": 16,
+    "width": 320
+  },
+  {
+    "bottom": 828,
+    "client": 296,
+    "height": 844,
+    "language": "ar",
+    "left": 46,
+    "right": 374,
+    "scroll": 296,
+    "top": 16,
+    "width": 390
+  },
+  {
+    "bottom": 828,
+    "client": 640,
+    "height": 844,
+    "language": "ar",
+    "left": 63,
+    "right": 735,
+    "scroll": 640,
+    "top": 16,
+    "width": 768
+  },
+  {
+    "bottom": 828,
+    "client": 640,
+    "height": 844,
+    "language": "ar",
+    "left": 399,
+    "right": 1071,
+    "scroll": 640,
+    "top": 16,
+    "width": 1440
+  }
+]

@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-03T17:48:29.843Z",
+  "generatedAt": "2026-10-03T18:09:11.769Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -11,7 +11,7 @@
     "after": {
       "routes": 126,
       "files": 469,
-      "controls": 2663
+      "controls": 2664
     }
   },
   "addedFiles": [
@@ -1466,7 +1466,7 @@
     {
       "route": "/merchant/sari-brain",
       "controlsBefore": 275,
-      "controlsNow": 413,
+      "controlsNow": 414,
       "removedQueries": [
         "sariBrain.getFaqs",
         "sariBrain.getKnowledgeSections",

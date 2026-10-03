@@ -124,7 +124,7 @@ it("shows partial knowledge as incomplete, preserves zero, and separates site sc
 it("keeps all missing result metrics unknown instead of inventing zeros", async () => {
   props.result = {};
   await render();
-  expect(document.querySelectorAll("dd")).toHaveLength(11);
+  expect(document.querySelectorAll("dd")).toHaveLength(13);
   for (const cell of document.querySelectorAll("dd"))
     expect(cell.textContent).toBe("—");
   expect(text()).not.toContain("/ 100");
@@ -175,3 +175,11 @@ it("rejects malformed and negative metrics without coercion", () => {
   ] as const)
     expect(result[key]).toBeNull();
 });
+
+it.each([['returned',0,'indexingReturned'],['returned',4,'indexingReturned'],['failed',null,'indexingFailed'],['not_attempted',null,'indexingNotAttempted'],['invalid',5,'indexingUnknown'],['returned',-1,'indexingUnknown'],['returned','5','indexingUnknown']])('describes indexing %s/%s without claiming coverage',async(status,indexedSections,key)=>{
+ props.result={indexingOutcome:{status,indexedSections},knowledgeEvolution:{added:2,merged:3,evolved:1,conflicts:0,unchanged:4}};await render();
+ expect(text()).toContain((c as any)[key].replace('{{value}}',String(indexedSections)));expect(text()).toContain(c.merged);expect(text()).toContain(c.unchanged);expect(text()).toContain(c.indexHelp);
+ const details=document.querySelector('details');expect(details?.open).toBe(false);expect(details?.textContent).toContain(c.snapshotTitle);expect(details?.textContent).toContain(c.snapshotHelp);
+});
+it.each([{pagesDiscovered:1,pagesCrawled:2,pagesSuccess:1},{pagesDiscovered:3,pagesCrawled:1,pagesSuccess:2},{pagesDiscovered:1,pagesSuccess:2}])('hides contradictory page counts %j',async crawlStats=>{props.result={crawlStats};await render();expect(text()).toContain(c.inconsistentCrawl);const r=readWebsiteAnalysisResult(props.result);expect([r.discovered,r.attempted,r.read]).toEqual([null,null,null]);});
+it('does not label legacy reports as indexed and hides contradictory word counts',()=>{const r=readWebsiteAnalysisResult({crawlStats:{mainPageWords:10,totalWords:2}});expect(r).toMatchObject({indexing:'unknown',indexedSections:null,mainWords:null,totalWords:null,inconsistentCrawl:true});});

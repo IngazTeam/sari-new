@@ -16,7 +16,8 @@ const sample = {
     mainPageWords: 420,
     totalWords: 1930,
   },
-  knowledgeEvolution: { added: 2, evolved: 1, conflicts: 3 },
+  knowledgeEvolution: { added: 2, merged: 1, evolved: 1, conflicts: 3, unchanged: 2 },
+  indexingOutcome:{status:"returned",indexedSections:6},
   salesIntelSummary: {
     totalSections: 9,
     hasIntel: true,
@@ -40,6 +41,9 @@ function Preview() {
     ["missing", "حالة غير متاحة", "Unavailable status"],
     ["failed", "تعثر المعالجة", "Processing error"],
     ["partial", "نتيجة جزئية", "Partial outcome"],
+    ["indexingFailed", "تعثرت الفهرسة", "Indexing interrupted"],
+    ["notIndexed", "لم تبدأ الفهرسة", "Indexing not attempted"],
+    ["inconsistent", "أعداد قراءة متعارضة", "Inconsistent reading counts"],
     ["finished", "نتيجة مكتملة البيانات", "Outcome with metrics"],
     ["unknown", "مقاييس غير متاحة", "Unavailable metrics"],
   ];
@@ -49,7 +53,10 @@ function Preview() {
     : null;
   const result =
     mode === "partial"
-      ? { ...sample, knowledgeError: "Demonstration only" }
+      ? { ...sample, knowledgeError: "Demonstration only",indexingOutcome:{status:"not_attempted",indexedSections:null} }
+      : mode === "indexingFailed" ? {...sample,indexingOutcome:{status:"failed",indexedSections:null}}
+      : mode === "notIndexed" ? {...sample,indexingOutcome:{status:"not_attempted",indexedSections:null}}
+      : mode === "inconsistent" ? {...sample,crawlStats:{pagesDiscovered:2,pagesCrawled:8,pagesSuccess:6,mainPageWords:500,totalWords:100}}
       : mode === "finished"
         ? sample
         : mode === "unknown"

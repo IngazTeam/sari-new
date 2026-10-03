@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-03T17:48:29.843Z",
+  "generatedAt": "2026-10-03T18:09:11.769Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -11548,7 +11548,7 @@
     },
     {
       "file": "client/src/components/WebsiteAnalysisDialog.tsx",
-      "hash": "17112b0ea610",
+      "hash": "3c0dfe7ee35c",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
@@ -11556,32 +11556,42 @@
       "sections": [
         {
           "label": "",
-          "line": 130,
+          "line": 140,
           "tag": "DialogTitle"
         },
         {
           "label": "ما قرأه التحليل",
-          "line": 258,
+          "line": 268,
           "tag": "h3"
         },
         {
           "label": "أثر التحليل في المعرفة",
-          "line": 285,
+          "line": 296,
           "tag": "h3"
+        },
+        {
+          "label": "نتيجة فهرسة البحث",
+          "line": 315,
+          "tag": "h3"
+        },
+        {
+          "label": "المعرفة المحفوظة في المتجر",
+          "line": 322,
+          "tag": "summary"
         }
       ],
       "choices": [],
       "handlers": [
         {
           "name": "open",
-          "line": 118,
+          "line": 128,
           "calls": []
         }
       ],
       "queryStates": [],
       "conditions": [],
       "imports": [],
-      "controlCount": 9
+      "controlCount": 10
     },
     {
       "file": "client/src/lib/use-website-analysis.ts",
@@ -24662,15 +24672,16 @@
         "1e76f8e6e637",
         "2cbfa6b876e5",
         "a1ffa1da07ac",
-        "0f748193f78f",
-        "368c5c689674",
-        "8882c82efcf5",
-        "66b4ac93900e",
-        "7dfdb74b3333",
-        "595baff1694f",
-        "facdfcd048b2",
-        "08ac519e06b6",
-        "5c151ab533e7",
+        "7cbb28a6c504",
+        "799b8599aeae",
+        "de782d50754c",
+        "383a01e3951a",
+        "2fda2a88e534",
+        "569112cdc298",
+        "16fff17e0796",
+        "7d9f018c18e0",
+        "1990ff3f2df1",
+        "a73c1f7a135f",
         "60d6368c6d0f",
         "1990efe74955",
         "539b8b8851eb",
@@ -63007,9 +63018,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "0f748193f78f",
+      "id": "7cbb28a6c504",
       "file": "client/src/components/WebsiteAnalysisDialog.tsx",
-      "line": 124,
+      "line": 134,
       "tag": "DialogContent",
       "role": "",
       "kind": "dialog",
@@ -63028,9 +63039,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "368c5c689674",
+      "id": "799b8599aeae",
       "file": "client/src/components/WebsiteAnalysisDialog.tsx",
-      "line": 149,
+      "line": 159,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -63052,9 +63063,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "8882c82efcf5",
+      "id": "de782d50754c",
       "file": "client/src/components/WebsiteAnalysisDialog.tsx",
-      "line": 167,
+      "line": 177,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -63076,14 +63087,37 @@
       "review": "source-inventoried"
     },
     {
-      "id": "66b4ac93900e",
+      "id": "383a01e3951a",
       "file": "client/src/components/WebsiteAnalysisDialog.tsx",
-      "line": 317,
+      "line": 322,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "المعرفة المحفوظة في المتجر",
+      "section": "المعرفة المحفوظة في المتجر",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "result"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "2fda2a88e534",
+      "file": "client/src/components/WebsiteAnalysisDialog.tsx",
+      "line": 332,
       "tag": "Button",
       "role": "",
       "kind": "action",
       "label": "مراجعة صفحات الموقع",
-      "section": "أثر التحليل في المعرفة",
+      "section": "المعرفة المحفوظة في المتجر",
       "binding": "() => open(\"pages\")",
       "type": "text",
       "options": [],
@@ -63099,14 +63133,14 @@
       "review": "source-inventoried"
     },
     {
-      "id": "7dfdb74b3333",
+      "id": "569112cdc298",
       "file": "client/src/components/WebsiteAnalysisDialog.tsx",
-      "line": 320,
+      "line": 335,
       "tag": "Button",
       "role": "",
       "kind": "action",
       "label": "مراجعة المعرفة والثغرات",
-      "section": "أثر التحليل في المعرفة",
+      "section": "المعرفة المحفوظة في المتجر",
       "binding": "() => open(\"sections\")",
       "type": "text",
       "options": [],
@@ -63122,14 +63156,14 @@
       "review": "source-inventoried"
     },
     {
-      "id": "595baff1694f",
+      "id": "16fff17e0796",
       "file": "client/src/components/WebsiteAnalysisDialog.tsx",
-      "line": 323,
+      "line": 338,
       "tag": "Button",
       "role": "",
       "kind": "action",
       "label": "مراجعة التعارضات",
-      "section": "أثر التحليل في المعرفة",
+      "section": "المعرفة المحفوظة في المتجر",
       "binding": "() => open(\"conflicts\")",
       "type": "text",
       "options": [],
@@ -63145,14 +63179,14 @@
       "review": "source-inventoried"
     },
     {
-      "id": "facdfcd048b2",
+      "id": "7d9f018c18e0",
       "file": "client/src/components/WebsiteAnalysisDialog.tsx",
-      "line": 326,
+      "line": 341,
       "tag": "Button",
       "role": "",
       "kind": "action",
       "label": "اختبار الردود",
-      "section": "أثر التحليل في المعرفة",
+      "section": "المعرفة المحفوظة في المتجر",
       "binding": "() => open(\"testing\")",
       "type": "text",
       "options": [],
@@ -63168,14 +63202,14 @@
       "review": "source-inventoried"
     },
     {
-      "id": "08ac519e06b6",
+      "id": "1990ff3f2df1",
       "file": "client/src/components/WebsiteAnalysisDialog.tsx",
-      "line": 330,
+      "line": 345,
       "tag": "Button",
       "role": "",
       "kind": "action",
       "label": "إعدادات رابط الموقع",
-      "section": "أثر التحليل في المعرفة",
+      "section": "المعرفة المحفوظة في المتجر",
       "binding": "() => open(\"settings\")",
       "type": "text",
       "options": [],
@@ -63192,14 +63226,14 @@
       "review": "source-inventoried"
     },
     {
-      "id": "5c151ab533e7",
+      "id": "a73c1f7a135f",
       "file": "client/src/components/WebsiteAnalysisDialog.tsx",
-      "line": 337,
+      "line": 352,
       "tag": "Button",
       "role": "",
       "kind": "action",
       "label": "إغلاق متابعة العمل وإخفاء النافذة",
-      "section": "أثر التحليل في المعرفة",
+      "section": "المعرفة المحفوظة في المتجر",
       "binding": "() => props.onOpenChange(false)",
       "type": "text",
       "options": [],
