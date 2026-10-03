@@ -17,7 +17,7 @@ const sample = {
     totalWords: 1930,
   },
   knowledgeEvolution: { added: 2, merged: 1, evolved: 1, conflicts: 3, unchanged: 2 },
-  indexingOutcome:{status:"returned",indexedSections:6},
+  indexingOutcome:{status:"observed",evidence:{selectedSections:6,attemptedSections:6,storedSections:6,reusedSections:0,unconfirmedSections:0,currentSnapshot:{sections:6,matchingEmbeddings:6,changedSinceStart:false}}},
   salesIntelSummary: {
     totalSections: 9,
     hasIntel: true,
@@ -42,6 +42,11 @@ function Preview() {
     ["failed", "تعثر المعالجة", "Processing error"],
     ["partial", "نتيجة جزئية", "Partial outcome"],
     ["indexingFailed", "تعثرت الفهرسة", "Indexing interrupted"],
+    ["indexingPartial", "فهرسة جزئية", "Partial indexing"],
+    ["indexingChanged", "معرفة تغيرت أثناء الفهرسة", "Knowledge changed during indexing"],
+    ["indexingMissing", "تعذرت قراءة نتيجة الفهرسة", "Index snapshot unavailable"],
+    ["indexingEmpty", "لا أقسام مؤهلة للفهرسة", "No eligible sections"],
+    ["indexingLegacy", "عدد فهرسة قديم فقط", "Legacy indexing count only"],
     ["notIndexed", "لم تبدأ الفهرسة", "Indexing not attempted"],
     ["inconsistent", "أعداد قراءة متعارضة", "Inconsistent reading counts"],
     ["finished", "نتيجة مكتملة البيانات", "Outcome with metrics"],
@@ -55,6 +60,11 @@ function Preview() {
     mode === "partial"
       ? { ...sample, knowledgeError: "Demonstration only",indexingOutcome:{status:"not_attempted",indexedSections:null} }
       : mode === "indexingFailed" ? {...sample,indexingOutcome:{status:"failed",indexedSections:null}}
+      : mode === "indexingPartial" ? {...sample,indexingOutcome:{status:"observed",evidence:{...sample.indexingOutcome.evidence,storedSections:4,unconfirmedSections:2,currentSnapshot:{sections:6,matchingEmbeddings:4,changedSinceStart:false}}}}
+      : mode === "indexingChanged" ? {...sample,indexingOutcome:{status:"observed",evidence:{...sample.indexingOutcome.evidence,currentSnapshot:{sections:7,matchingEmbeddings:5,changedSinceStart:true}}}}
+      : mode === "indexingMissing" ? {...sample,indexingOutcome:{status:"observed",evidence:{...sample.indexingOutcome.evidence,currentSnapshot:null}}}
+      : mode === "indexingEmpty" ? {...sample,indexingOutcome:{status:"observed",evidence:{selectedSections:0,attemptedSections:0,storedSections:0,reusedSections:0,unconfirmedSections:0,currentSnapshot:{sections:0,matchingEmbeddings:0,changedSinceStart:false}}}}
+      : mode === "indexingLegacy" ? {...sample,indexingOutcome:{status:"returned",indexedSections:6}}
       : mode === "notIndexed" ? {...sample,indexingOutcome:{status:"not_attempted",indexedSections:null}}
       : mode === "inconsistent" ? {...sample,crawlStats:{pagesDiscovered:2,pagesCrawled:8,pagesSuccess:6,mainPageWords:500,totalWords:100}}
       : mode === "finished"

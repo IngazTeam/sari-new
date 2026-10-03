@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-03T18:09:11.769Z",
+  "generatedAt": "2026-10-03T18:41:24.106Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -11548,7 +11548,7 @@
     },
     {
       "file": "client/src/components/WebsiteAnalysisDialog.tsx",
-      "hash": "3c0dfe7ee35c",
+      "hash": "fbe9cfa50bc8",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
@@ -11556,27 +11556,32 @@
       "sections": [
         {
           "label": "",
-          "line": 140,
+          "line": 141,
           "tag": "DialogTitle"
         },
         {
-          "label": "ما قرأه التحليل",
-          "line": 268,
+          "label": "نتيجة فهرسة البحث",
+          "line": 247,
           "tag": "h3"
         },
         {
           "label": "أثر التحليل في المعرفة",
-          "line": 296,
+          "line": 265,
           "tag": "h3"
         },
         {
-          "label": "نتيجة فهرسة البحث",
-          "line": 315,
+          "label": "تفاصيل قراءة الموقع وتقييمه",
+          "line": 285,
+          "tag": "summary"
+        },
+        {
+          "label": "ما قرأه التحليل",
+          "line": 310,
           "tag": "h3"
         },
         {
           "label": "المعرفة المحفوظة في المتجر",
-          "line": 322,
+          "line": 336,
           "tag": "summary"
         }
       ],
@@ -11584,14 +11589,14 @@
       "handlers": [
         {
           "name": "open",
-          "line": 128,
+          "line": 129,
           "calls": []
         }
       ],
       "queryStates": [],
       "conditions": [],
       "imports": [],
-      "controlCount": 10
+      "controlCount": 11
     },
     {
       "file": "client/src/lib/use-website-analysis.ts",
@@ -24672,16 +24677,17 @@
         "1e76f8e6e637",
         "2cbfa6b876e5",
         "a1ffa1da07ac",
-        "7cbb28a6c504",
-        "799b8599aeae",
-        "de782d50754c",
-        "383a01e3951a",
-        "2fda2a88e534",
-        "569112cdc298",
-        "16fff17e0796",
-        "7d9f018c18e0",
-        "1990ff3f2df1",
-        "a73c1f7a135f",
+        "e9d8169347e7",
+        "d28b0909d419",
+        "e6e1462c1743",
+        "542c6faa4c90",
+        "9ac809ae0cf7",
+        "fa7ecd8326bc",
+        "e84937a1a46a",
+        "969484a3437e",
+        "ee5d28d29ed8",
+        "c17d3adbd297",
+        "63344cbe68b4",
         "60d6368c6d0f",
         "1990efe74955",
         "539b8b8851eb",
@@ -63018,9 +63024,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "7cbb28a6c504",
+      "id": "e9d8169347e7",
       "file": "client/src/components/WebsiteAnalysisDialog.tsx",
-      "line": 134,
+      "line": 135,
       "tag": "DialogContent",
       "role": "",
       "kind": "dialog",
@@ -63039,9 +63045,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "799b8599aeae",
+      "id": "d28b0909d419",
       "file": "client/src/components/WebsiteAnalysisDialog.tsx",
-      "line": 159,
+      "line": 160,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -63063,9 +63069,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "de782d50754c",
+      "id": "e6e1462c1743",
       "file": "client/src/components/WebsiteAnalysisDialog.tsx",
-      "line": 177,
+      "line": 178,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -63087,9 +63093,32 @@
       "review": "source-inventoried"
     },
     {
-      "id": "383a01e3951a",
+      "id": "542c6faa4c90",
       "file": "client/src/components/WebsiteAnalysisDialog.tsx",
-      "line": 322,
+      "line": 285,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "تفاصيل قراءة الموقع وتقييمه",
+      "section": "تفاصيل قراءة الموقع وتقييمه",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "result"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "9ac809ae0cf7",
+      "file": "client/src/components/WebsiteAnalysisDialog.tsx",
+      "line": 336,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -63110,32 +63139,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "2fda2a88e534",
+      "id": "fa7ecd8326bc",
       "file": "client/src/components/WebsiteAnalysisDialog.tsx",
-      "line": 332,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "مراجعة صفحات الموقع",
-      "section": "المعرفة المحفوظة في المتجر",
-      "binding": "() => open(\"pages\")",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [
-        "(result || props.issue)"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "569112cdc298",
-      "file": "client/src/components/WebsiteAnalysisDialog.tsx",
-      "line": 335,
+      "line": 346,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -63156,9 +63162,32 @@
       "review": "source-inventoried"
     },
     {
-      "id": "16fff17e0796",
+      "id": "e84937a1a46a",
       "file": "client/src/components/WebsiteAnalysisDialog.tsx",
-      "line": 338,
+      "line": 349,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "مراجعة صفحات الموقع",
+      "section": "المعرفة المحفوظة في المتجر",
+      "binding": "() => open(\"pages\")",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "(result || props.issue)"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "969484a3437e",
+      "file": "client/src/components/WebsiteAnalysisDialog.tsx",
+      "line": 352,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -63179,9 +63208,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "7d9f018c18e0",
+      "id": "ee5d28d29ed8",
       "file": "client/src/components/WebsiteAnalysisDialog.tsx",
-      "line": 341,
+      "line": 355,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -63202,9 +63231,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "1990ff3f2df1",
+      "id": "c17d3adbd297",
       "file": "client/src/components/WebsiteAnalysisDialog.tsx",
-      "line": 345,
+      "line": 359,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -63226,9 +63255,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "a73c1f7a135f",
+      "id": "63344cbe68b4",
       "file": "client/src/components/WebsiteAnalysisDialog.tsx",
-      "line": 352,
+      "line": 366,
       "tag": "Button",
       "role": "",
       "kind": "action",

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-03T18:09:11.769Z",
+  "generatedAt": "2026-10-03T18:41:24.106Z",
   "definition": "Every registered route is accounted for; source inventory and design completion are different statuses.",
   "routes": [
     {
@@ -46737,16 +46737,17 @@
         "1e76f8e6e637",
         "2cbfa6b876e5",
         "a1ffa1da07ac",
-        "7cbb28a6c504",
-        "799b8599aeae",
-        "de782d50754c",
-        "383a01e3951a",
-        "2fda2a88e534",
-        "569112cdc298",
-        "16fff17e0796",
-        "7d9f018c18e0",
-        "1990ff3f2df1",
-        "a73c1f7a135f",
+        "e9d8169347e7",
+        "d28b0909d419",
+        "e6e1462c1743",
+        "542c6faa4c90",
+        "9ac809ae0cf7",
+        "fa7ecd8326bc",
+        "e84937a1a46a",
+        "969484a3437e",
+        "ee5d28d29ed8",
+        "c17d3adbd297",
+        "63344cbe68b4",
         "60d6368c6d0f",
         "1990efe74955",
         "539b8b8851eb",
@@ -47282,13 +47283,13 @@
         "خطة تحليل التعلم والتقييم المستقل وشروط التأهيل ومراجعة المخرجات والإذن والانسحاب بأدلة وحدود واضحة",
         "مراجعة أثر حذف المصادر ثم الاسم والإقرار والإيصال واستعادته؛ سجل أنشطة مرقم ومرشح واحتفاظ90يومًا",
         "نتيجة الموقع ومراحلها ومراجع المحاولات وعزل الاستعادة، وسياسات البيع ومسوداتها المشتركة مع الإعدادات",
-        "نتيجة الفهرسة المبلغة أو المتعثرة أو غير المتاحة، وكل أعداد الإضافة والدمج والتطوير والتعارض وعدم التغيير؛ ملخص المتجر السابق مطوي ومستقل عن المحاولة، مع إخفاء أعداد القراءة المتعارضة",
+        "نتيجة فهرسة مفصلة تفصل الحفظ المؤكد وغير المؤكد وإعادة استخدام الفهرسة عن قراءة النسخ المطابقة وتغير المجموعة؛ تبدأ الشاشة بدليل المعرفة وتطوي الزحف وتقييم الموقع وملخص المتجر السابق، مع جميع أعداد الإضافة والدمج والتطوير والتعارض وعدم التغيير وإخفاء أعداد القراءة المتعارضة",
         "خمسة مكونات فعلية مضمّنة في الموك أب المركزي؛ أُزيلت البطاقات والنتائج ونوافذ المصادر اليدوية المتقاعدة"
       ],
       "acceptancePlan": "الدخول والإعداد والتنقل والبحث والحفظ والتحقق من الحالة.",
       "gaps": [
         "راجع tenant-central-brain-prototype-2026-10-01 وtenant-brain-embedded-previews-2026-10-01 وtenant-brain-legacy-retirement-2026-10-01 وtenant-source-groups-workspace-2026-10-01 وtenant-knowledge-history-workspace-2026-10-01 وtenant-sales-policy-drafts-2026-10-01. الموك أب محاكاة محلية ولا يثبت خادمًا أو مزودًا.",
-        "أُظهر تعثر الفهرسة وعددها المبلغ وأصلحت نافذة الإنجليزية320، مع فحص العربية والإنجليزية320/390/768/1440 وارتفاع550. راجع tenant-website-analysis-indexing-2026-10-03. تتبع تحليل الموقع ما زال داخل عملية الخادم؛ حفظ المهام واستعادتها عبر العمال وإثبات فهرسة كل نسخة ومصالحة المزود مفتوحة. راجع tenant-website-analysis-scope-2026-10-01.",
+        "وُصل دليل دفعة الفهرسة بقراءة النسخ الحالية والنتيجة والموك أب مع كشف الفشل الجزئي وتغير المعرفة وغياب القراءة. نجح فحص العربية والإنجليزية320/390/768/1440 وارتفاع550 وزر الإغلاق44×44 واتجاهيه. راجع tenant-knowledge-indexing-evidence-2026-10-03 وtenant-indexing-evidence-ui-2026-10-03. لا تثبت لقطة الفهرسة جودة الرد أو استدامة الحالة. تتبع تحليل الموقع ما زال داخل عملية الخادم؛ حفظ المهام واستعادتها عبر العمال ومنع الكتابات المتأخرة ومصالحة المزود مفتوحة. راجع tenant-website-analysis-scope-2026-10-01.",
         "قياس جودة الرد والمبيعات الحقيقي واستقلالية مراجعة العينة وتشغيل مزودي المواقع والتكاملات وSafari/iPhone الفعلي تتطلب تحققًا إضافيًا؛ لا نسبة احتراف مؤكدة."
       ],
       "controlDetails": [
@@ -48747,9 +48748,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "7cbb28a6c504",
+          "id": "e9d8169347e7",
           "file": "client/src/components/WebsiteAnalysisDialog.tsx",
-          "line": 134,
+          "line": 135,
           "tag": "DialogContent",
           "role": "",
           "kind": "dialog",
@@ -48768,9 +48769,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "799b8599aeae",
+          "id": "d28b0909d419",
           "file": "client/src/components/WebsiteAnalysisDialog.tsx",
-          "line": 159,
+          "line": 160,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -48792,9 +48793,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "de782d50754c",
+          "id": "e6e1462c1743",
           "file": "client/src/components/WebsiteAnalysisDialog.tsx",
-          "line": 177,
+          "line": 178,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -48816,9 +48817,32 @@
           "review": "source-inventoried"
         },
         {
-          "id": "383a01e3951a",
+          "id": "542c6faa4c90",
           "file": "client/src/components/WebsiteAnalysisDialog.tsx",
-          "line": 322,
+          "line": 285,
+          "tag": "summary",
+          "role": "",
+          "kind": "action",
+          "label": "تفاصيل قراءة الموقع وتقييمه",
+          "section": "تفاصيل قراءة الموقع وتقييمه",
+          "binding": "",
+          "type": "text",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": true,
+          "conditions": [
+            "result"
+          ],
+          "disabled": "",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "9ac809ae0cf7",
+          "file": "client/src/components/WebsiteAnalysisDialog.tsx",
+          "line": 336,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -48839,32 +48863,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "2fda2a88e534",
+          "id": "fa7ecd8326bc",
           "file": "client/src/components/WebsiteAnalysisDialog.tsx",
-          "line": 332,
-          "tag": "Button",
-          "role": "",
-          "kind": "action",
-          "label": "مراجعة صفحات الموقع",
-          "section": "المعرفة المحفوظة في المتجر",
-          "binding": "() => open(\"pages\")",
-          "type": "text",
-          "options": [],
-          "min": "",
-          "max": "",
-          "maxLength": "",
-          "required": false,
-          "conditional": true,
-          "conditions": [
-            "(result || props.issue)"
-          ],
-          "disabled": "",
-          "review": "source-inventoried"
-        },
-        {
-          "id": "569112cdc298",
-          "file": "client/src/components/WebsiteAnalysisDialog.tsx",
-          "line": 335,
+          "line": 346,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -48885,9 +48886,32 @@
           "review": "source-inventoried"
         },
         {
-          "id": "16fff17e0796",
+          "id": "e84937a1a46a",
           "file": "client/src/components/WebsiteAnalysisDialog.tsx",
-          "line": 338,
+          "line": 349,
+          "tag": "Button",
+          "role": "",
+          "kind": "action",
+          "label": "مراجعة صفحات الموقع",
+          "section": "المعرفة المحفوظة في المتجر",
+          "binding": "() => open(\"pages\")",
+          "type": "text",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": true,
+          "conditions": [
+            "(result || props.issue)"
+          ],
+          "disabled": "",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "969484a3437e",
+          "file": "client/src/components/WebsiteAnalysisDialog.tsx",
+          "line": 352,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -48908,9 +48932,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "7d9f018c18e0",
+          "id": "ee5d28d29ed8",
           "file": "client/src/components/WebsiteAnalysisDialog.tsx",
-          "line": 341,
+          "line": 355,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -48931,9 +48955,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "1990ff3f2df1",
+          "id": "c17d3adbd297",
           "file": "client/src/components/WebsiteAnalysisDialog.tsx",
-          "line": 345,
+          "line": 359,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -48955,9 +48979,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "a73c1f7a135f",
+          "id": "63344cbe68b4",
           "file": "client/src/components/WebsiteAnalysisDialog.tsx",
-          "line": 352,
+          "line": 366,
           "tag": "Button",
           "role": "",
           "kind": "action",

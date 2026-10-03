@@ -325,9 +325,9 @@ async function runAnalysisInBackground(merchant: any, websiteUrl: string, jobId:
         evolveResult = ingestionResult.evolveResult;
 
         try {
-          updateProgress('embedding', 85); const { embedAllSections } = await import('./ai/rag-engine');
-          const indexedSections=await embedAllSections(merchant.id, true);
-          indexingOutcome=websiteIndexingOutcome.parse({status:'returned',indexedSections});
+          updateProgress('embedding', 85); const { embedAllSectionsWithEvidence } = await import('./ai/rag-engine');
+          const evidence=await embedAllSectionsWithEvidence(merchant.id, true);
+          indexingOutcome=websiteIndexingOutcome.parse({status:'observed',evidence});
         } catch { indexingOutcome={status:'failed',indexedSections:null}; }
         try { const knowledgeDb = await import('./db/knowledge'); await knowledgeDb.invalidateCache(merchant.id); } catch { /* non-blocking */ }
       } else {

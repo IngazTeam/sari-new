@@ -1,0 +1,108 @@
+[
+  {
+    "language": "ar",
+    "bottom": 828,
+    "client": 226,
+    "closeHeight": 44,
+    "closeInlineEnd": "12px",
+    "closeWidth": 44,
+    "scroll": 226,
+    "top": 16,
+    "viewportWidth": 320
+  },
+  {
+    "language": "ar",
+    "bottom": 828,
+    "client": 296,
+    "closeHeight": 44,
+    "closeInlineEnd": "12px",
+    "closeWidth": 44,
+    "scroll": 296,
+    "top": 16,
+    "viewportWidth": 390
+  },
+  {
+    "language": "ar",
+    "bottom": 828,
+    "client": 640,
+    "closeHeight": 44,
+    "closeInlineEnd": "12px",
+    "closeWidth": 44,
+    "scroll": 640,
+    "top": 16,
+    "viewportWidth": 768
+  },
+  {
+    "language": "ar",
+    "bottom": 828,
+    "client": 640,
+    "closeHeight": 44,
+    "closeInlineEnd": "12px",
+    "closeWidth": 44,
+    "scroll": 640,
+    "top": 16,
+    "viewportWidth": 1440
+  },
+  {
+    "language": "en",
+    "bottom": 828,
+    "client": 226,
+    "closeHeight": 44,
+    "closeInlineEnd": "12px",
+    "closeWidth": 44,
+    "scroll": 226,
+    "top": 16,
+    "viewportWidth": 320
+  },
+  {
+    "language": "en",
+    "bottom": 828,
+    "client": 296,
+    "closeHeight": 44,
+    "closeInlineEnd": "12px",
+    "closeWidth": 44,
+    "scroll": 296,
+    "top": 16,
+    "viewportWidth": 390
+  },
+  {
+    "language": "en",
+    "bottom": 828,
+    "client": 640,
+    "closeHeight": 44,
+    "closeInlineEnd": "12px",
+    "closeWidth": 44,
+    "scroll": 640,
+    "top": 16,
+    "viewportWidth": 768
+  },
+  {
+    "language": "en",
+    "bottom": 828,
+    "client": 640,
+    "closeHeight": 44,
+    "closeInlineEnd": "12px",
+    "closeWidth": 44,
+    "scroll": 640,
+    "top": 16,
+    "viewportWidth": 1440
+  },
+  {
+    "language": "en-short",
+    "bottom": 534,
+    "client": 226,
+    "scroll": 226,
+    "top": 16,
+    "viewportHeight": 550,
+    "viewportWidth": 320
+  },
+  {
+    "language": "en-expanded-short",
+    "bottom": 534,
+    "client": 226,
+    "scroll": 226,
+    "top": 16,
+    "viewportHeight": 550,
+    "viewportWidth": 320
+  }
+]

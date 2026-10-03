@@ -48,7 +48,8 @@ for (const file of [
     .filter(f => f.endsWith(".tsx"))
     .map(f => "client/src/components/ui/" + f),
 ])
-  for (const token of readFileSync(file, "utf8").match(/[^\s"'`<>]+/g) || [])
+  // Preserve > inside Tailwind child-selector variants used by the real dialog.
+  for (const token of readFileSync(file, "utf8").match(/[^\s"'`]+/g) || [])
     candidates.add(token);
 writeFileSync(
   "prototypes/tenant-dashboard/site/website-analysis-preview.css",

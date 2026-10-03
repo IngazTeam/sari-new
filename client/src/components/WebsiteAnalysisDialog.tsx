@@ -58,7 +58,8 @@ export function readWebsiteAnalysisResult(value: unknown) {
     conflicts: count(evolution.conflicts),
     unchanged: count(evolution.unchanged),
     indexing:indexing.success?indexing.data.status:'unknown',
-    indexedSections:indexing.success?indexing.data.indexedSections:null,
+    indexedSections:indexing.success && 'indexedSections' in indexing.data?indexing.data.indexedSections:null,
+    indexingEvidence:indexing.success && indexing.data.status==='observed'?indexing.data.evidence:null,
     knowledgeIncomplete: !!data.knowledgeError,
   };
 }
@@ -134,9 +135,9 @@ export function WebsiteAnalysisDialog(props: WebsiteAnalysisDialogProps) {
       <DialogContent
         dir={dir}
         closeLabel={t("websiteAnalysisUx.close")}
-        className="sm:max-w-2xl max-h-[85vh] supports-[height:100dvh]:max-h-[85dvh] overflow-y-auto [overflow-wrap:anywhere] [&_button]:max-w-full [&_button]:whitespace-normal [&_button]:h-auto [&_button]:min-h-11 [&>[data-slot=dialog-close]]:right-auto [&>[data-slot=dialog-close]]:end-3"
+        className="sm:max-w-2xl max-h-[85vh] supports-[height:100dvh]:max-h-[85dvh] overflow-y-auto [overflow-wrap:anywhere] [&_button]:max-w-full [&_button]:whitespace-normal [&_button]:h-auto [&_button]:min-h-11 [&>[data-slot=dialog-close]]:start-auto [&>[data-slot=dialog-close]]:end-3 [&>[data-slot=dialog-close]]:top-3 [&>[data-slot=dialog-close]]:w-11 [&>[data-slot=dialog-close]]:grid [&>[data-slot=dialog-close]]:place-items-center"
       >
-        <DialogHeader className="text-start sm:text-start pe-7">
+        <DialogHeader className="text-start sm:text-start pe-12">
           <DialogTitle className="flex items-center gap-2">
             <FileSearch
               className="size-5 shrink-0 text-primary"
@@ -228,6 +229,61 @@ export function WebsiteAnalysisDialog(props: WebsiteAnalysisDialogProps) {
                 {result.title}
               </p>
             )}
+            {result.knowledgeIncomplete && (
+              <div
+                role="alert"
+                className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-950 dark:bg-amber-950/30 dark:text-amber-100"
+              >
+                <p className="flex items-center gap-2 font-medium">
+                  <CircleAlert className="size-4 shrink-0" aria-hidden="true" />
+                  {t("websiteAnalysisUx.knowledgeIncomplete")}
+                </p>
+                <p className="text-sm mt-2">
+                  {t("websiteAnalysisUx.partialHelp")}
+                </p>
+              </div>
+            )}
+            <section aria-label={t("websiteAnalysisUx.indexingTitle")} className="rounded-xl border p-4 space-y-2">
+              <h3 className="font-semibold">{t("websiteAnalysisUx.indexingTitle")}</h3>
+              {result.indexingEvidence ? <>
+                <p>{t("websiteAnalysisUx.indexingBatch", {saved:display(result.indexingEvidence.storedSections),attempted:display(result.indexingEvidence.attemptedSections)})}</p>
+                {result.indexingEvidence.unconfirmedSections > 0 && <p role="alert" className="text-amber-800 dark:text-amber-200">{t("websiteAnalysisUx.indexingUnconfirmed",{value:display(result.indexingEvidence.unconfirmedSections)})}</p>}
+                {result.indexingEvidence.reusedSections > 0 && <p>{t("websiteAnalysisUx.indexingReused",{value:display(result.indexingEvidence.reusedSections)})}</p>}
+                {result.indexingEvidence.currentSnapshot ? <>
+                  <p>{t("websiteAnalysisUx.indexingSnapshot",{matching:display(result.indexingEvidence.currentSnapshot.matchingEmbeddings),total:display(result.indexingEvidence.currentSnapshot.sections)})}</p>
+                  {result.indexingEvidence.currentSnapshot.sections===0 && <p>{t("websiteAnalysisUx.indexingEmpty")}</p>}
+                  {result.indexingEvidence.currentSnapshot.changedSinceStart && <p role="alert" className="text-amber-800 dark:text-amber-200">{t("websiteAnalysisUx.indexingChanged")}</p>}
+                </> : <p>{t("websiteAnalysisUx.indexingSnapshotMissing")}</p>}
+                <p className="text-sm text-muted-foreground">{t("websiteAnalysisUx.indexingScope")}</p>
+              </> : <p role={result.indexing==='failed'?'alert':undefined}>{result.indexing==='returned'?t("websiteAnalysisUx.indexingReturned",{value:display(result.indexedSections)}):result.indexing==='failed'?t("websiteAnalysisUx.indexingFailed"):result.indexing==='not_attempted'?t("websiteAnalysisUx.indexingNotAttempted"):t("websiteAnalysisUx.indexingUnknown")}</p>}
+              {!result.indexingEvidence && <p className="text-sm text-muted-foreground">{t("websiteAnalysisUx.indexHelp")}</p>}
+            </section>
+            <section
+              className="space-y-2"
+              aria-label={t("websiteAnalysisUx.knowledgeTitle")}
+            >
+              <h3 className="font-semibold">
+                {t("websiteAnalysisUx.knowledgeTitle")}
+              </h3>
+              <dl className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {[
+                  [t("websiteAnalysisUx.added"), display(result.added)],
+                  [t("websiteAnalysisUx.merged"), display(result.merged)],
+                  [t("websiteAnalysisUx.evolved"), display(result.evolved)],
+                  [t("websiteAnalysisUx.conflicts"), display(result.conflicts)],
+                  [t("websiteAnalysisUx.unchanged"), display(result.unchanged)],
+                ].map(([label, value]) => (
+                  <div key={label} className="rounded-lg border p-3">
+                    <dt className="text-xs text-muted-foreground">{label}</dt>
+                    <dd className="mt-1 font-semibold">{value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+              {result.inconsistentCrawl && <p role="alert" className="text-sm text-amber-800 dark:text-amber-200">{t("websiteAnalysisUx.inconsistentCrawl")}</p>}
+            <details className="group rounded-xl border p-4">
+              <summary className="cursor-pointer min-h-11 flex items-center justify-between gap-2 font-semibold"><span>{t("websiteAnalysisUx.siteDetails")}</span><ChevronDown aria-hidden="true" className="size-4 shrink-0 transition-transform group-open:rotate-180" /></summary>
+              <div className="mt-3 space-y-4">
             <div className="rounded-xl border bg-muted/30 p-4 space-y-2">
               <p className="text-sm text-muted-foreground">
                 {t("websiteAnalysisUx.siteScore")}
@@ -247,20 +303,6 @@ export function WebsiteAnalysisDialog(props: WebsiteAnalysisDialogProps) {
                 {t("websiteAnalysisUx.scoreHelp")}
               </p>
             </div>
-            {result.knowledgeIncomplete && (
-              <div
-                role="alert"
-                className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-950 dark:bg-amber-950/30 dark:text-amber-100"
-              >
-                <p className="flex items-center gap-2 font-medium">
-                  <CircleAlert className="size-4 shrink-0" aria-hidden="true" />
-                  {t("websiteAnalysisUx.knowledgeIncomplete")}
-                </p>
-                <p className="text-sm mt-2">
-                  {t("websiteAnalysisUx.partialHelp")}
-                </p>
-              </div>
-            )}
             <section
               className="space-y-2"
               aria-label={t("websiteAnalysisUx.crawlTitle")}
@@ -287,37 +329,9 @@ export function WebsiteAnalysisDialog(props: WebsiteAnalysisDialogProps) {
               <p className="text-sm text-muted-foreground">
                 {t("websiteAnalysisUx.crawlHelp")}
               </p>
-              {result.inconsistentCrawl && <p role="alert" className="text-sm text-amber-800 dark:text-amber-200">{t("websiteAnalysisUx.inconsistentCrawl")}</p>}
             </section>
-            <section
-              className="space-y-2"
-              aria-label={t("websiteAnalysisUx.knowledgeTitle")}
-            >
-              <h3 className="font-semibold">
-                {t("websiteAnalysisUx.knowledgeTitle")}
-              </h3>
-              <dl className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {[
-                  [t("websiteAnalysisUx.added"), display(result.added)],
-                  [t("websiteAnalysisUx.merged"), display(result.merged)],
-                  [t("websiteAnalysisUx.evolved"), display(result.evolved)],
-                  [t("websiteAnalysisUx.conflicts"), display(result.conflicts)],
-                  [t("websiteAnalysisUx.unchanged"), display(result.unchanged)],
-                ].map(([label, value]) => (
-                  <div key={label} className="rounded-lg border p-3">
-                    <dt className="text-xs text-muted-foreground">{label}</dt>
-                    <dd className="mt-1 font-semibold">{value}</dd>
-                  </div>
-                ))}
-              </dl>
-            </section>
-            <section aria-label={t("websiteAnalysisUx.indexingTitle")} className="rounded-xl border p-4 space-y-2">
-              <h3 className="font-semibold">{t("websiteAnalysisUx.indexingTitle")}</h3>
-              <p role={result.indexing==='failed'?'alert':undefined}>{result.indexing==='returned'?t("websiteAnalysisUx.indexingReturned",{value:display(result.indexedSections)}):result.indexing==='failed'?t("websiteAnalysisUx.indexingFailed"):result.indexing==='not_attempted'?t("websiteAnalysisUx.indexingNotAttempted"):t("websiteAnalysisUx.indexingUnknown")}</p>
-              <p className="text-sm text-muted-foreground">
-                {t("websiteAnalysisUx.indexHelp")}
-              </p>
-            </section>
+              </div>
+            </details>
             <details className="group rounded-xl border p-4">
               <summary className="cursor-pointer min-h-11 flex items-center justify-between gap-2 font-semibold"><span>{t("websiteAnalysisUx.snapshotTitle")}</span><ChevronDown aria-hidden="true" className="size-4 shrink-0 transition-transform group-open:rotate-180" /></summary>
               <dl className="grid grid-cols-1 min-[400px]:grid-cols-2 sm:grid-cols-3 gap-2 mt-3">
@@ -329,11 +343,11 @@ export function WebsiteAnalysisDialog(props: WebsiteAnalysisDialogProps) {
         )}
         {(result || props.issue) && (
           <div className="flex flex-wrap gap-2">
-            <Button onClick={() => open("pages")}>
-              {t("websiteAnalysisUx.openPages")}
-            </Button>
-            <Button variant="outline" onClick={() => open("sections")}>
+            <Button onClick={() => open("sections")}>
               {t("websiteAnalysisUx.openSections")}
+            </Button>
+            <Button variant="outline" onClick={() => open("pages")}>
+              {t("websiteAnalysisUx.openPages")}
             </Button>
             <Button variant="outline" onClick={() => open("conflicts")}>
               {t("websiteAnalysisUx.openConflicts")}
