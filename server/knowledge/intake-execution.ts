@@ -4,6 +4,7 @@ import { getPool } from '../db/connection';
 import { and, eq, sql } from 'drizzle-orm';
 import { knowledgeIntakeReceipts } from '../../drizzle/schema';
 import type { KnowledgeTransaction } from './transaction';
+import { currentWebsiteAnalysisExecution, assertActiveWebsiteAnalysisTransaction, assertWebsiteAnalysisCheckpoint, runWebsiteAnalysisKnowledgeWrite } from './website-analysis-execution';
 
 export type IntakeExecution = { merchantId: number; requestId: string; token: string };
 const activeExecution = new AsyncLocalStorage<IntakeExecution>();
@@ -16,6 +17,7 @@ const eligibility = `merchant_id = ? AND request_id = ? AND execution_token = ? 
 const identity = (scope: IntakeExecution) => [scope.merchantId, scope.requestId, scope.token];
 
 export async function assertIntakeTransaction(tx: KnowledgeTransaction, merchantId: number) {
+  await assertActiveWebsiteAnalysisTransaction(tx,merchantId);
   const scope = activeExecution.getStore(); if (!scope) return;
   if (scope.merchantId !== merchantId) throw new IntakeExecutionExpired();
   const table = knowledgeIntakeReceipts;
@@ -46,6 +48,10 @@ async function fencedConnection<T>(pool: Pool, scope: IntakeExecution, write: (c
 /** Legacy callers keep their existing behavior. An intake can only write to its own tenant. */
 export async function runKnowledgeWrite<T>(pool: Pool, merchantId: number, write: (connection: Pool | PoolConnection) => Promise<T>): Promise<T> {
   const scope = activeExecution.getStore();
+  if(currentWebsiteAnalysisExecution()) {
+    if(scope)throw new IntakeExecutionExpired();
+    return runWebsiteAnalysisKnowledgeWrite(pool,merchantId,write);
+  }
   if (!scope) return write(pool);
   if (scope.merchantId !== merchantId) throw new IntakeExecutionExpired();
   return fencedConnection(pool, scope, write);
@@ -53,6 +59,7 @@ export async function runKnowledgeWrite<T>(pool: Pool, merchantId: number, write
 
 /** Avoid starting another model call after expiry; the write fence remains the atomic authority. */
 export async function assertIntakeCheckpoint(merchantId?: number): Promise<void> {
+  await assertWebsiteAnalysisCheckpoint(merchantId);
   const scope = activeExecution.getStore();
   if (!scope) return;
   if (scope.merchantId !== merchantId) throw new IntakeExecutionExpired();

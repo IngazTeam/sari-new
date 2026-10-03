@@ -30,7 +30,11 @@ import { ingestReviewedKnowledge } from './knowledge/intake-receipts';
 import { saveKnowledgeReview } from './knowledge/intake-reviews';
 import { capturePlanBasis, planContext, buildKnowledgePlan } from './knowledge/intake-plan';
 import { knowledgeIntakeInput, knowledgeIngestInput, knowledgeReceiptInput, knowledgeRecoveryInput, knowledgeAnalysisSchema, prepareKnowledgeText } from '../shared/knowledge-intake';
-import { readWebsiteAnalysisAttempt, updateWebsiteAnalysisAttempt, cleanupWebsiteAnalysisStatus, ANALYSIS_RUNNING_TTL_MS, type WebsiteAnalysisStatus } from './knowledge/website-analysis-status';
+import { beginWebsiteAnalysisJob, readWebsiteAnalysisJob, advanceWebsiteAnalysisJob, finishWebsiteAnalysisJob, failWebsiteAnalysisJob, WebsiteJobError } from './knowledge/website-analysis-jobs';
+import { runWebsiteAnalysisExecution, startWebsiteAnalysisHeartbeat } from './knowledge/website-analysis-execution';
+import { withKnowledgeTransaction } from './knowledge/transaction';
+import { runKnowledgeWrite } from './knowledge/intake-execution';
+import { websiteJobResult, type WebsiteJobExecution } from '../shared/website-analysis-job';
 import { websiteAnalysisAttempt, websiteAnalysisScope, websiteIndexingOutcome, type WebsiteIndexingOutcome } from '../shared/website-analysis-tracking';
 import { persistCrawledKnowledge } from './knowledge/crawled-snapshot';
 /**
@@ -126,12 +130,6 @@ const testRateLimit: Record<number, number> = {};
 // Separate rate limiter for ingestion (so analyze → ingest flow doesn't clash)
 const ingestionRateLimit: Record<number, number> = {};
 
-// ─── Async Analysis Status Tracker ─────────────────────────────────────
-// Tracks in-progress website analyses to avoid 504 Nginx timeouts.
-// The mutation returns immediately; frontend polls getAnalysisStatus.
-const analysisStatusMap: Record<number, WebsiteAnalysisStatus> = {};
-const cleanupAnalysisStatusMap = () => cleanupWebsiteAnalysisStatus(analysisStatusMap);
-
 function checkRateLimit(map: Record<number, number>, merchantId: number, cooldownMs: number): void {
   const now = Date.now();
   const lastAction = map[merchantId];
@@ -175,10 +173,10 @@ export async function logBrainActivity(merchantId: number, actionType: string, d
     const safeDescription = sanitizeLogText(description);
     const safeActionType = actionType.replace(/[^a-z_]/g, '').substring(0, 100);
 
-    await (dbConn as any).execute(
+    await runKnowledgeWrite(dbConn, merchantId, connection => connection.execute(
       `INSERT INTO sari_activity_log (merchant_id, action_type, description, details) VALUES (?, ?, ?, ?)`,
       [merchantId, safeActionType, safeDescription, details ? JSON.stringify(details) : null]
-    );
+    ));
   } catch (error) {
     console.error('[SariBrain] Failed to log activity:', error);
   }
@@ -243,20 +241,21 @@ export function urlsMatch(sectionSourceUrl: string, pageUrl: string): boolean {
 
 /**
  * Background analysis runner — fire-and-forget.
- * Stores result in analysisStatusMap for frontend polling via getAnalysisStatus.
+ * Durable receipt and execution fences retain results across workers and reject late writes.
  */
-async function runAnalysisInBackground(merchant: any, websiteUrl: string, jobId: string) {
-  const updateProgress = (step: string, progress: number) => {
-    updateWebsiteAnalysisAttempt(analysisStatusMap, merchant.id, jobId, { currentStep: step, progress });
-  };
+async function runAnalysisInBackground(merchant: any, websiteUrl: string, execution: WebsiteJobExecution) {
+  return runWebsiteAnalysisExecution(execution, async () => {
+  const stopHeartbeat = startWebsiteAnalysisHeartbeat(execution);
+  const updateProgress = (step: string, progress: number) => advanceWebsiteAnalysisJob(execution, step, progress);
   try {
-    updateProgress('scraping', 10);
+    await updateProgress('scraping', 10);
     const { analyzeWebsite, cleanScrapedText: cleanText } = await import('./_core/websiteAnalyzer');
-    updateProgress('scraping', 20);
+    await updateProgress('scraping', 20);
     const result = await analyzeWebsite(websiteUrl, merchant.id);
-    updateProgress('processing', 40);
+    await updateProgress('processing', 40);
 
     // Preserve the previous usable analysis until the new result is stored.
+    await withKnowledgeTransaction(merchant.id, async transaction => {
     const analysisId = await createWebsiteAnalysis({
       merchantId: merchant.id, url: websiteUrl,
       title: result.title || '', description: result.description || '',
@@ -269,11 +268,12 @@ async function runAnalysisInBackground(merchant: any, websiteUrl: string, jobId:
       contentQuality: result.contentQuality || 0, wordCount: result.wordCount || 0,
       imageCount: result.imageCount || 0, videoCount: result.videoCount || 0,
       overallScore: result.overallScore || 0, status: 'completed',
-    });
+    }, transaction);
 
     // PEN-SESSION-02: Clean scraped content at write-time
     await updateWebsiteAnalysis(analysisId, {
       scrapedContent: cleanText((result._scrapedText || '') + '\n\n' + (result._enrichedText || '')),
+    }, transaction);
     });
 
     await persistCrawledKnowledge(merchant.id, websiteUrl, result);
@@ -284,7 +284,7 @@ async function runAnalysisInBackground(merchant: any, websiteUrl: string, jobId:
 
     // Knowledge Engine v4
     let evolveResult = null;
-    let knowledgeError: string | null = null;
+    let knowledgeError: 'knowledge_processing_incomplete' | 'insufficient_text' | null = null;
     let indexingOutcome:WebsiteIndexingOutcome={status:'not_attempted',indexedSections:null};
     try {
       // PEN-SESSION-05: Clean raw scraped text before Knowledge Engine ingestion
@@ -316,7 +316,7 @@ async function runAnalysisInBackground(merchant: any, websiteUrl: string, jobId:
       scrapedText = profileContext + scrapedText;
 
       if (scrapedText.trim().length > 30) {
-        updateProgress('knowledge', 60);
+        await updateProgress('knowledge', 60);
         const { ingestContent } = await import('./ai/knowledge-engine');
         const ingestionResult = await ingestContent(
           merchant.id, scrapedText, 'website',
@@ -325,13 +325,13 @@ async function runAnalysisInBackground(merchant: any, websiteUrl: string, jobId:
         evolveResult = ingestionResult.evolveResult;
 
         try {
-          updateProgress('embedding', 85); const { embedAllSectionsWithEvidence } = await import('./ai/rag-engine');
+          await updateProgress('embedding', 85); const { embedAllSectionsWithEvidence } = await import('./ai/rag-engine');
           const evidence=await embedAllSectionsWithEvidence(merchant.id, true);
           indexingOutcome=websiteIndexingOutcome.parse({status:'observed',evidence});
         } catch { indexingOutcome={status:'failed',indexedSections:null}; }
         try { const knowledgeDb = await import('./db/knowledge'); await knowledgeDb.invalidateCache(merchant.id); } catch { /* non-blocking */ }
       } else {
-        knowledgeError = 'الموقع لا يحتوي على محتوى نصي كافٍ';
+        knowledgeError = 'insufficient_text';
       }
     } catch {
       knowledgeError = 'knowledge_processing_incomplete';
@@ -349,21 +349,25 @@ async function runAnalysisInBackground(merchant: any, websiteUrl: string, jobId:
       };
     } catch { /* non-blocking */ }
 
-    updateProgress('completed', 100);
-    updateWebsiteAnalysisAttempt(analysisStatusMap, merchant.id, jobId, {
-      status: 'completed', startedAt: Date.now(), currentStep: 'completed', progress: 100,
-      result: { success: true, title: result.title, industry: result.industry, score: result.overallScore, knowledgeEvolution: evolveResult, salesIntelSummary, knowledgeError, indexingOutcome, crawlStats: (result as any)._crawlStats || null },
-    });
-    console.log(`[SariBrain] ✅ Background analysis completed for merchant ${merchant.id}`);
-  } catch (error: any) {
-    console.error('[SariBrain] ❌ Background analysis failed:', error.message);
-    let reason = error?.message?.substring(0, 150) || 'خطأ غير معروف';
-    const msg = error?.message?.toLowerCase() || '';
-    if (msg.includes('timeout')) reason = 'الموقع لم يستجب (timeout)';
-    else if (msg.includes('enotfound')) reason = 'الموقع غير موجود';
-    else if (msg.includes('cloudflare') || msg.includes('403')) reason = 'الموقع محمي بجدار حماية';
-    updateWebsiteAnalysisAttempt(analysisStatusMap, merchant.id, jobId, { status: 'error', startedAt: Date.now(), error: `فشل تحليل الموقع: ${reason}` });
-  }
+    const crawl = (result as any)._crawlStats;
+    const crawlStats = crawl && typeof crawl==='object' ? Object.fromEntries(
+      ['pagesDiscovered','pagesCrawled','pagesSuccess','mainPageWords','totalWords']
+        .filter(key=>Number.isSafeInteger(crawl[key]) && crawl[key]>=0).map(key=>[key,crawl[key]])
+    ) : null;
+    await finishWebsiteAnalysisJob(execution, websiteJobResult.parse({
+      success:true,title:result.title,industry:result.industry,score:result.overallScore ?? null,
+      knowledgeEvolution:evolveResult,salesIntelSummary,knowledgeError,indexingOutcome,crawlStats,
+    }));
+  } catch {
+    // In-flight work may already have stored partial knowledge. Never promise rollback or retry it.
+    try { await failWebsiteAnalysisJob(execution); } catch { /* Expired/unknown authority is resolved from the durable receipt. */ }
+  } finally { await stopHeartbeat(); }
+  });
+}
+
+function websiteJobRouteError(error: unknown): TRPCError {
+  const reason=error instanceof WebsiteJobError?error.reason:'unavailable';
+  return new TRPCError({code:reason==='forbidden'?'FORBIDDEN':reason==='website'?'BAD_REQUEST':reason==='cooldown'?'TOO_MANY_REQUESTS':'INTERNAL_SERVER_ERROR',message:`website_analysis:${reason}`});
 }
 
 function sourceRemovalError(error: unknown): TRPCError {
@@ -583,45 +587,21 @@ export const sariBrainRouter = router({
     try { return await readKnowledgeActivity(ctx.merchantId,input); }
     catch { throw new TRPCError({code:'INTERNAL_SERVER_ERROR',message:'Knowledge activity is temporarily unavailable'}); }
   }),
-  // Re-analyze merchant's website
+  // Admit one durable attempt; duplicate/recovered requests never launch another worker.
   reanalyzeWebsite: permissionProcedure('bot_settings.manage').input(websiteAnalysisAttempt).mutation(async ({ ctx, input }) => {
     if (input.merchantId !== ctx.merchantId) throw new TRPCError({code:'CONFLICT',message:'Merchant changed; refresh before continuing'});
-    const merchant = await getMerchantById(ctx.merchantId);
-    if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-
-    // Schema column is websiteUrl, not website
-    const websiteUrl = (merchant as any).websiteUrl || (merchant as any).website;
-    if (!websiteUrl) {
-      throw new TRPCError({ code: 'BAD_REQUEST', message: 'لا يوجد رابط موقع في إعدادات المتجر. أضف رابط الموقع أولاً من صفحة الإعدادات.' });
-    }
-
-    // Check if already running
-    cleanupAnalysisStatusMap();
-    const existing = analysisStatusMap[merchant.id];
-    if (existing?.jobId === input.jobId || (existing?.jobId && existing.status === 'running' && Date.now() - existing.startedAt < ANALYSIS_RUNNING_TTL_MS)) {
-      return { merchantId: merchant.id, jobId: existing.jobId!, started: true as const, alreadyRunning: existing.status === 'running' };
-    }
-
-    // A status recovery or duplicate attempt does not launch or consume another run.
-    checkTestRateLimit(merchant.id, 20_000);
-
-    // Mark as running and return immediately — heavy work runs in background
-    analysisStatusMap[merchant.id] = { jobId: input.jobId, status: 'running', startedAt: Date.now() };
-
-    // Fire-and-forget background task
-    void runAnalysisInBackground(merchant, websiteUrl, input.jobId);
-
-    return { merchantId: merchant.id, jobId: input.jobId, started: true as const, alreadyRunning: false };
+    try {
+      const admitted=await beginWebsiteAnalysisJob(ctx.user.id,ctx.merchantId,input.jobId);
+      if(admitted.created && admitted.execution && admitted.merchant && admitted.websiteUrl)
+        void runAnalysisInBackground(admitted.merchant,admitted.websiteUrl,admitted.execution).catch(()=>undefined);
+      return {merchantId:ctx.merchantId,jobId:admitted.jobId,started:true as const,alreadyRunning:admitted.alreadyRunning};
+    } catch(error) { throw websiteJobRouteError(error); }
   }),
 
-  // Poll for async website analysis status
-  getAnalysisStatus: merchantProcedure.input(websiteAnalysisAttempt).query(async ({ ctx, input }) => {
-    if (input.merchantId !== ctx.merchantId) throw new TRPCError({code:'CONFLICT',message:'Merchant changed; refresh before continuing'});
-    cleanupAnalysisStatusMap(); // PEN-SYNC-02: periodic bulk cleanup
-    const merchant = await getMerchantById(ctx.merchantId);
-    if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-
-    return readWebsiteAnalysisAttempt(analysisStatusMap, merchant.id, input.jobId);
+  getAnalysisStatus: merchantProcedure.input(websiteAnalysisAttempt).query(async ({ctx,input})=>{
+    if(input.merchantId!==ctx.merchantId)throw new TRPCError({code:'CONFLICT',message:'Merchant changed; refresh before continuing'});
+    try { return await readWebsiteAnalysisJob(ctx.user.id,ctx.merchantId,input.jobId); }
+    catch(error) { throw websiteJobRouteError(error); }
   }),
 
   // Get brain summary — used by AI prompt builder

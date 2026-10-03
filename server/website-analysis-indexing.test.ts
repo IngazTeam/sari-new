@@ -1,6 +1,6 @@
 import {randomUUID} from 'node:crypto';
 import {beforeEach,expect,it,vi} from 'vitest';
-const m=vi.hoisted(()=>({access:vi.fn(),merchant:vi.fn(),analyze:vi.fn(),create:vi.fn(),update:vi.fn(),persist:vi.fn(),ingest:vi.fn(),embed:vi.fn(),sections:vi.fn(),invalidate:vi.fn()}));
+const m=vi.hoisted(()=>({begin:vi.fn(),readJob:vi.fn(),advance:vi.fn(),finish:vi.fn(),fail:vi.fn(),access:vi.fn(),merchant:vi.fn(),analyze:vi.fn(),create:vi.fn(),update:vi.fn(),persist:vi.fn(),ingest:vi.fn(),embed:vi.fn(),sections:vi.fn(),invalidate:vi.fn()}));
 vi.mock('./accounts/merchant-access',()=>({resolveMerchantAccess:m.access}));
 vi.mock('./db',()=>({getMerchantById:m.merchant,createWebsiteAnalysis:m.create,updateWebsiteAnalysis:m.update,getPool:async()=>({execute:async()=>[{affectedRows:1}]})}));
 vi.mock('./db/schema-readiness',()=>({assertRuntimeSchema:async()=>undefined}));
@@ -9,6 +9,10 @@ vi.mock('./knowledge/crawled-snapshot',()=>({persistCrawledKnowledge:m.persist})
 vi.mock('./ai/knowledge-engine',()=>({ingestContent:m.ingest}));
 vi.mock('./ai/rag-engine',()=>({embedAllSectionsWithEvidence:m.embed}));
 vi.mock('./db/knowledge',()=>({getSectionsByMerchantId:m.sections,invalidateCache:m.invalidate}));
+import { websiteJobDouble } from './tests/helpers/website-job-double';
+vi.mock('./knowledge/website-analysis-jobs',async original=>({...await original<typeof import('./knowledge/website-analysis-jobs')>(),beginWebsiteAnalysisJob:m.begin,readWebsiteAnalysisJob:m.readJob,advanceWebsiteAnalysisJob:m.advance,finishWebsiteAnalysisJob:m.finish,failWebsiteAnalysisJob:m.fail}));
+vi.mock('./knowledge/website-analysis-execution',()=>({runWebsiteAnalysisExecution:(_scope:any,work:()=>Promise<any>)=>work(),startWebsiteAnalysisHeartbeat:()=>async()=>undefined,currentWebsiteAnalysisExecution:()=>undefined,assertActiveWebsiteAnalysisTransaction:async()=>undefined,assertWebsiteAnalysisCheckpoint:async()=>undefined}));
+vi.mock('./knowledge/transaction',()=>({withKnowledgeTransaction:(_id:number,work:(tx:any)=>Promise<any>)=>work({})}));
 import {sariBrainRouter} from './routers-sari-brain';
 import {websiteIndexingOutcome} from '../shared/website-analysis-tracking';
 let merchantId=600,jobId:string;
@@ -16,7 +20,9 @@ const evidence=(count:number)=>({selectedSections:count,attemptedSections:count,
 const caller=()=>sariBrainRouter.createCaller({user:{id:7,role:'user'},req:{headers:{'x-merchant-id':String(merchantId)}},res:{}} as any);
 const run=async()=>{const api=caller();await api.reanalyzeWebsite({merchantId,jobId});let result:any;await vi.waitFor(async()=>{result=await api.getAnalysisStatus({merchantId,jobId});expect(result.status).toBe('completed');});return result;};
 beforeEach(()=>{
- vi.resetAllMocks();merchantId++;jobId=randomUUID();m.access.mockResolvedValue({merchantId,role:'owner'});m.merchant.mockResolvedValue({id:merchantId,businessName:'Fixture',websiteUrl:'https://example.test'});m.analyze.mockResolvedValue({title:'Fixture',_scrapedText:'Local knowledge sample. '.repeat(20),overallScore:70});m.create.mockResolvedValue(10);m.ingest.mockResolvedValue({evolveResult:{added:1,merged:2,evolved:3,conflicts:4,unchanged:5}});m.embed.mockResolvedValue(evidence(2));m.sections.mockResolvedValue([{section_type:'identity'},{section_type:'sales_intel'}]);
+ vi.resetAllMocks();merchantId++;
+ const jobStore=websiteJobDouble(m.merchant);m.begin.mockImplementation(jobStore.begin);m.readJob.mockImplementation(jobStore.read);m.advance.mockImplementation(jobStore.advance);m.finish.mockImplementation(jobStore.finish);m.fail.mockImplementation(jobStore.fail);
+jobId=randomUUID();m.access.mockResolvedValue({merchantId,role:'owner'});m.merchant.mockResolvedValue({id:merchantId,businessName:'Fixture',websiteUrl:'https://example.test'});m.analyze.mockResolvedValue({title:'Fixture',_scrapedText:'Local knowledge sample. '.repeat(20),overallScore:70});m.create.mockResolvedValue(10);m.ingest.mockResolvedValue({evolveResult:{added:1,merged:2,evolved:3,conflicts:4,unchanged:5}});m.embed.mockResolvedValue(evidence(2));m.sections.mockResolvedValue([{section_type:'identity'},{section_type:'sales_intel'}]);
 });
 it.each([0,2])('returns an observed index count %s without claiming all sections are searchable',async count=>{m.embed.mockResolvedValue(evidence(count));const r=await run();expect(r.indexingOutcome).toEqual({status:'observed',evidence:evidence(count)});expect(r.knowledgeEvolution).toEqual({added:1,merged:2,evolved:3,conflicts:4,unchanged:5});expect(r.salesIntelSummary).toEqual({totalSections:1,hasIntel:true,hasOpportunities:false});expect(m.embed).toHaveBeenCalledExactlyOnceWith(merchantId,true);});
 it.each(['throw','invalid','negative'])('reports %s indexing as incomplete while retaining knowledge results',async failure=>{

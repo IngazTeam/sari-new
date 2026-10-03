@@ -6,6 +6,7 @@ import { pathToFileURL } from 'node:url';
 // not just table existence: old readers must never resume on store-scoped data.
 // Do not infer compatibility from its age, application name or current DB data.
 export const requiredReleaseCapabilities = Object.freeze([
+  'website-analysis-durable-jobs-0200',
   'zid-order-store-identity-0127',
   'zid-catalog-store-identity-0129',
   'staff-voice-acceptance-0132',

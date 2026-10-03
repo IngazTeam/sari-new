@@ -6872,11 +6872,11 @@ export async function createWebsiteAnalysis(data: {
   overallScore?: number;
   status?: 'pending' | 'analyzing' | 'completed' | 'failed';
   errorMessage?: string;
-}): Promise<number> {
-  const db = await getDb();
+}, database?: Pick<NonNullable<Awaited<ReturnType<typeof getDb>>>, 'insert'>): Promise<number> {
+  const db = database ?? await getDb();
   if (!db) throw new Error('Database connection failed');
 
-  const result = await db.insert(websiteAnalyses).values({
+  const [result] = await db.insert(websiteAnalyses).values({
     merchantId: data.merchantId,
     url: data.url,
     title: data.title,
@@ -6903,7 +6903,7 @@ export async function createWebsiteAnalysis(data: {
     analyzedAt: data.status === 'completed' ? new Date().toISOString().slice(0, 19).replace('T', ' ') : null,
   });
 
-  return (result as any).insertId;
+  return Number(result.insertId);
 }
 
 /**
@@ -6934,9 +6934,10 @@ export async function updateWebsiteAnalysis(
     status: 'pending' | 'analyzing' | 'completed' | 'failed';
     errorMessage: string;
     scrapedContent: string;
-  }>
+  }>,
+  database?: Pick<NonNullable<Awaited<ReturnType<typeof getDb>>>, 'update'>
 ): Promise<void> {
-  const db = await getDb();
+  const db = database ?? await getDb();
   if (!db) throw new Error('Database connection failed');
 
   const updateData: any = {};

@@ -1,4 +1,6 @@
 import { randomUUID } from "node:crypto";
+import { sql } from "drizzle-orm";
+import type { KnowledgeTransaction } from "./transaction";
 import type { PoolConnection } from "mysql2/promise";
 import { getPool } from "../db/connection";
 import { assertRuntimeSchema } from "../db/schema-readiness";
@@ -137,6 +139,16 @@ async function authorize(
     "SELECT role,is_active FROM merchant_members WHERE merchant_id=? AND user_id=? FOR SHARE",
     [merchant.id, actorId]
   );
+  validateAuthority(merchant, actorId, write, users, members);
+}
+
+function validateAuthority(
+  merchant: any,
+  actorId: number,
+  write: boolean,
+  users: any[],
+  members: any[]
+) {
   const role =
     members.length === 1 && members[0].is_active === 1
       ? members[0].role
@@ -154,6 +166,41 @@ async function authorize(
         !hasPermission(role as MerchantRole, "bot_settings.manage")))
   )
     throw new WebsiteJobError("forbidden");
+}
+
+/** Called inside the same Drizzle transaction as a knowledge write, after its merchant lock. */
+export async function assertWebsiteAnalysisTransaction(
+  tx: KnowledgeTransaction,
+  input: WebsiteJobExecution
+) {
+  const scope = websiteJobExecution.parse(input);
+  const read = async (query: ReturnType<typeof sql>) => {
+    const [value] = await tx.execute(query);
+    if (!Array.isArray(value)) throw new WebsiteJobError("unavailable");
+    return value as any[];
+  };
+  const [merchant] = await read(
+    sql`SELECT id,userId,status,website_url AS websiteUrl FROM merchants WHERE id=${scope.merchantId} FOR UPDATE`
+  );
+  const [job] =
+    await read(sql`SELECT *,lease_expires_at>UTC_TIMESTAMP(3) AND deadline_at>UTC_TIMESTAMP(3) AS lease_current
+    FROM website_analysis_jobs WHERE merchant_id=${scope.merchantId} AND job_id=${scope.jobId} AND execution_token=${scope.token} FOR UPDATE`);
+  if (
+    !merchant ||
+    !job ||
+    job.state !== "running" ||
+    !job.lease_current ||
+    job.owner_id !== merchant.userId ||
+    job.website_url !== merchant.websiteUrl
+  )
+    throw new WebsiteJobError("expired");
+  const users = await read(
+    sql`SELECT id,account_status FROM users WHERE id IN (${job.actor_id},${merchant.userId}) ORDER BY id FOR SHARE`
+  );
+  const members = await read(
+    sql`SELECT role,is_active FROM merchant_members WHERE merchant_id=${scope.merchantId} AND user_id=${job.actor_id} FOR SHARE`
+  );
+  validateAuthority(merchant, job.actor_id, true, users, members);
 }
 
 function view(merchantId: number, jobId: string, row: any) {
