@@ -82,6 +82,140 @@ const detail = (id = 32, productPage = 1, instance = model) =>
     instance.read("websiteAnalysis.competitorDetail", { id, productPage }).data
   );
 it.each(["ar", "en"])(
+  "compares selected saved reports with actual components in %s",
+  async language => {
+    state.language = language;
+    await render();
+    const cc = (language === "ar" ? ar : en).competitorComparisonUx;
+    await click(cc.title);
+    await act(async () => {
+      (
+        document.querySelector(
+          ".cmp-comparison-options input[type=radio]"
+        ) as HTMLInputElement
+      ).click();
+    });
+    expect(
+      document.querySelector(".cmp-comparison-options input[type=checkbox]")
+    ).toBeTruthy();
+    await act(async () => {
+      (
+        document.querySelector(
+          ".cmp-comparison-options input[type=checkbox]"
+        ) as HTMLInputElement
+      ).click();
+    });
+    await click(cc.show);
+    const result = document.querySelector(".cmp-comparison-result")!;
+    expect(result.textContent).toContain(cc.noSales);
+    expect(result.querySelectorAll(".cmp-comparison-metrics>div")).toHaveLength(
+      5
+    );
+    expect(result.textContent).toContain((-5).toLocaleString(language));
+    expect(document.activeElement?.textContent).toBe(cc.result);
+    expect(model.operations).toBe(0);
+  }
+);
+it("limits selection to five, keeps it across pages and allows explicit removal", async () => {
+  await render();
+  const cc = en.competitorComparisonUx;
+  await click(cc.title);
+  await act(async () => {
+    (
+      document.querySelector(
+        ".cmp-comparison-options input[type=radio]"
+      ) as HTMLInputElement
+    ).click();
+  });
+  for (let i = 0; i < 5; i++)
+    await act(async () => {
+      (
+        document.querySelectorAll(
+          ".cmp-comparison-options input[type=checkbox]"
+        )[i] as HTMLInputElement
+      ).click();
+    });
+  expect(
+    (
+      document.querySelectorAll(
+        ".cmp-comparison-options input[type=checkbox]"
+      )[5] as HTMLInputElement
+    ).disabled
+  ).toBe(true);
+  const nav = document.querySelector(".cmp-comparison nav")!;
+  await act(async () => {
+    (
+      Array.from(nav.querySelectorAll("button")).find(
+        b => b.textContent === en.competitorWorkspaceUx.next
+      ) as HTMLButtonElement
+    ).click();
+  });
+  expect(document.querySelectorAll(".cmp-selection-summary li")).toHaveLength(
+    5
+  );
+  expect(
+    document.querySelectorAll(".cmp-comparison-options input")
+  ).toHaveLength(3);
+  await act(async () => {
+    (
+      document.querySelector(
+        ".cmp-selection-summary button"
+      ) as HTMLButtonElement
+    ).click();
+  });
+  expect(document.querySelectorAll(".cmp-selection-summary li")).toHaveLength(
+    4
+  );
+  expect(
+    (
+      document.querySelector(
+        ".cmp-comparison-options input"
+      ) as HTMLInputElement
+    ).disabled
+  ).toBe(false);
+  expect(model.operations).toBe(0);
+});
+it.each(["actor", "merchant", "selection", "error"])(
+  "hides an invalid comparison result: %s",
+  async kind => {
+    const original = model.read.bind(model);
+    vi.spyOn(model, "read").mockImplementation((name, input) => {
+      const result = original(name, input);
+      if (name !== "websiteAnalysis.competitorComparison" || !result.data)
+        return result;
+      const data = structuredClone(result.data) as any;
+      if (kind === "actor") data.actorId++;
+      if (kind === "merchant") data.merchantId++;
+      if (kind === "selection") data.selection.analysisId++;
+      return {
+        ...result,
+        data,
+        error: kind === "error" ? new Error("PRIVATE_TRANSPORT") : result.error,
+      };
+    });
+    await render();
+    await click(en.competitorComparisonUx.title);
+    await act(async () => {
+      (
+        document.querySelector(
+          ".cmp-comparison-options input[type=radio]"
+        ) as HTMLInputElement
+      ).click();
+    });
+    await act(async () => {
+      (
+        document.querySelector(
+          ".cmp-comparison-options input[type=checkbox]"
+        ) as HTMLInputElement
+      ).click();
+    });
+    await click(en.competitorComparisonUx.show);
+    expect(document.querySelector(".cmp-comparison-result")).toBeNull();
+    expect(document.body.textContent).not.toContain("PRIVATE_TRANSPORT");
+    expect(model.operations).toBe(0);
+  }
+);
+it.each(["ar", "en"])(
   "renders the actual page, complete report and reviewed deletion in %s",
   async language => {
     state.language = language;
@@ -196,7 +330,7 @@ it("creates one pending example and reconciles an uncertain result without dupli
   model = new ServicePreviewModel(269, "uncertain-save");
   await expect(
     model.mutate("websiteAnalysis.addCompetitor", {
-      requestId:crypto.randomUUID(),
+      requestId: crypto.randomUUID(),
       name: "New synthetic",
       url: "https://example.test",
     })
@@ -219,19 +353,45 @@ it("keeps read-only authority after refreshing", async () => {
   ).toBe(false);
   await expect(
     model.mutate("websiteAnalysis.addCompetitor", {
-      requestId:crypto.randomUUID(),
+      requestId: crypto.randomUUID(),
       name: "No",
       url: "https://example.test",
     })
   ).rejects.toMatchObject({ data: { code: "FORBIDDEN" } });
 });
-it('recovers a lost accepted request by the same id without adding twice',async()=>{
-  model=new ServicePreviewModel(269,'uncertain-save');const requestId=crypto.randomUUID(),input={requestId,name:'Local',url:'https://example.test/'};
-  await expect(model.mutate('websiteAnalysis.addCompetitor',input)).rejects.toBeTruthy();const first=(await model.refetch('websiteAnalysis.competitorAnalysisAttempt',{requestId})).data;expect(first).toMatchObject({requestId,state:'running'});
-  expect(await model.mutate('websiteAnalysis.addCompetitor',input)).toMatchObject({created:false,requestId});expect(model.operations).toBe(1);
+it("recovers a lost accepted request by the same id without adding twice", async () => {
+  model = new ServicePreviewModel(269, "uncertain-save");
+  const requestId = crypto.randomUUID(),
+    input = { requestId, name: "Local", url: "https://example.test/" };
+  await expect(
+    model.mutate("websiteAnalysis.addCompetitor", input)
+  ).rejects.toBeTruthy();
+  const first = (
+    await model.refetch("websiteAnalysis.competitorAnalysisAttempt", {
+      requestId,
+    })
+  ).data;
+  expect(first).toMatchObject({ requestId, state: "running" });
+  expect(
+    await model.mutate("websiteAnalysis.addCompetitor", input)
+  ).toMatchObject({ created: false, requestId });
+  expect(model.operations).toBe(1);
 });
-it('closes a missing preview reference and rejects late admission',async()=>{
-  const requestId=crypto.randomUUID();expect(await model.mutate('websiteAnalysis.closeCompetitorAnalysisAttempt',{requestId})).toMatchObject({state:'closed'});await expect(model.mutate('websiteAnalysis.addCompetitor',{requestId,name:'Late',url:'https://example.test/'})).rejects.toMatchObject({data:{code:'CONFLICT'}});expect(list().stats.total).toBe(32);
+it("closes a missing preview reference and rejects late admission", async () => {
+  const requestId = crypto.randomUUID();
+  expect(
+    await model.mutate("websiteAnalysis.closeCompetitorAnalysisAttempt", {
+      requestId,
+    })
+  ).toMatchObject({ state: "closed" });
+  await expect(
+    model.mutate("websiteAnalysis.addCompetitor", {
+      requestId,
+      name: "Late",
+      url: "https://example.test/",
+    })
+  ).rejects.toMatchObject({ data: { code: "CONFLICT" } });
+  expect(list().stats.total).toBe(32);
 });
 it("keeps products expanded when paging and restores the selected report in the URL", async () => {
   await render();

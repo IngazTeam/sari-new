@@ -1,3 +1,5 @@
+import { CompetitorComparison } from "./CompetitorComparison";
+import { competitorComparisonLabels } from "@/lib/competitor-comparison-labels";
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useSearch } from "wouter";
 import { useTranslation } from "react-i18next";
@@ -40,6 +42,7 @@ export function CompetitorWorkspace({
 }) {
   const { t, i18n } = useTranslation(),
     c = competitorLabels(t),
+    cc = competitorComparisonLabels(t),
     locale = i18n.language.startsWith("ar") ? "ar" : "en";
   const [path, navigate] = useLocation(),
     search = useSearch(),
@@ -129,6 +132,7 @@ export function CompetitorWorkspace({
     remove = trpc.websiteAnalysis.deleteReviewedCompetitor.useMutation({
       retry: false,
     });
+  const [comparing, setComparing] = useState(false);
   const [adding, setAdding] = useState(false),
     [name, setName] = useState(""),
     [url, setUrl] = useState(""),
@@ -166,6 +170,7 @@ export function CompetitorWorkspace({
     setFailure("");
     setBlocked(false);
     setSearchDraft(null);
+    setComparing(false);
     setAdding(false);
   }, [search, locale]);
   useEffect(() => {
@@ -417,6 +422,18 @@ export function CompetitorWorkspace({
             <RefreshCw aria-hidden />
             {c.refresh}
           </Button>
+          {data && (
+            <Button
+              variant="outline"
+              disabled={busy || query.isFetching}
+              onClick={() => {
+                remember();
+                setComparing(true);
+              }}
+            >
+              {cc.title}
+            </Button>
+          )}
           {data?.canManage && (
             <Button
               disabled={
@@ -702,6 +719,19 @@ export function CompetitorWorkspace({
             )}
           </section>
         </>
+      )}
+      {comparing && data && (
+        <Dialog open onOpenChange={setComparing}>
+          <DialogContent {...dialogProps}>
+            <DialogHeader>
+              <DialogTitle ref={dialogHeading} tabIndex={-1}>
+                {cc.title}
+              </DialogTitle>
+              <DialogDescription>{cc.help}</DialogDescription>
+            </DialogHeader>
+            <CompetitorComparison actorId={actorId} merchantId={merchantId} />
+          </DialogContent>
+        </Dialog>
       )}
       <Dialog
         open={adding && !!data}

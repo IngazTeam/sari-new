@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-03T22:51:31.964Z",
+  "generatedAt": "2026-10-03T23:23:39.952Z",
   "definition": "Every registered route is accounted for; source inventory and design completion are different statuses.",
   "routes": [
     {
@@ -89683,7 +89683,9 @@
       "files": [
         "client/src/pages/CompetitorAnalysis.tsx",
         "client/src/components/merchant/CompetitorWorkspace.tsx",
+        "client/src/components/merchant/CompetitorComparison.tsx",
         "client/src/lib/competitor-workspace-labels.ts",
+        "client/src/lib/competitor-comparison-labels.ts",
         "client/src/lib/competitor-workspace.ts",
         "client/src/lib/service-catalog-navigation.ts",
         "client/src/lib/competitor-analysis-attempt.ts",
@@ -89693,46 +89695,61 @@
         "client/src/lib/test-workspace-draft.ts"
       ],
       "controls": [
-        "30f7eef6f491",
-        "78364c2fa247",
-        "e1ef11445fa0",
-        "22685afb4f62",
-        "fe96042e516a",
-        "3e594af4c94d",
-        "0f41a936000d",
-        "4bc176b2225b",
-        "608d5568c6e1",
-        "be4969581e36",
-        "8448cff51976",
-        "26a3ef3f08b2",
-        "0f7afafc8af7",
-        "8101dfc304da",
-        "f1ee4ab2aea3",
-        "c4f0f4ccb884",
-        "07ad5e0a99d0",
-        "af4b58da4f57",
-        "05477137a4ef",
-        "559860c8ac11",
-        "d48e622f598f",
-        "b44c75014570",
-        "cbc23cfc6566",
-        "a0991761c2f0",
-        "58d3b0bcbd4b",
-        "f22c6c023967",
-        "19d7d4b3837a",
-        "2e859659b1c2",
-        "64a1271d4339",
-        "3bdd6a8ef56e",
-        "f60e0d17b8e4",
-        "ddfd620fc189",
-        "42e73437e551"
+        "e6564be3f463",
+        "ef12ba669819",
+        "3f96aaba830c",
+        "587d3825a180",
+        "ff1affff47d6",
+        "9a22b4e86119",
+        "10b1af8415cc",
+        "fd6c393670f1",
+        "b15f1134eda7",
+        "a58115c06e72",
+        "4755913aaede",
+        "6bc31e4d296d",
+        "00535dbe8b57",
+        "08387ec2c050",
+        "d1462da2ac74",
+        "4e9172ebe196",
+        "7c07f36838a3",
+        "b99b5b6c2489",
+        "29ae629eb025",
+        "a760efd319d0",
+        "0af7c5d5bdce",
+        "01e99beeb895",
+        "06fee996e6a0",
+        "8286784b1481",
+        "1633b81b4513",
+        "8c38f598b5c3",
+        "f08612197d01",
+        "2b14612a82bc",
+        "0344d7cb58fc",
+        "7243fb6e2f1e",
+        "515a67f4da8f",
+        "4466f11011dc",
+        "298910eded62",
+        "2bd503ff988d",
+        "2a3efc2d380d",
+        "0e115760db85",
+        "87fc46a5ce30",
+        "deabcb809696",
+        "acf300512a3b",
+        "fd90a5a70e8b",
+        "9489f23c3fb6",
+        "7031f88e0603",
+        "34f5a74287df",
+        "154bfb488a06",
+        "b4a971422d64",
+        "2cc88f4396de"
       ],
       "queries": [
         "auth.me",
         "merchants.getCurrent",
         "websiteAnalysis.competitorWorkspace",
         "websiteAnalysis.competitorAnalysisAttempt",
-        "websiteAnalysis.competitorDetail"
+        "websiteAnalysis.competitorDetail",
+        "websiteAnalysis.competitorComparisonChoices",
+        "websiteAnalysis.competitorComparison"
       ],
       "mutations": [
         "websiteAnalysis.closeCompetitorAnalysisAttempt",
@@ -89750,14 +89767,14 @@
       ],
       "acceptancePlan": "الفترة والمرشحات؛ تعريف المؤشر ومصدره والعينة؛ الجدول والتفاصيل والتصدير؛ الصفر الحقيقي مقابل فشل تحميل البيانات.",
       "gaps": [
-        "راجع تقارير tenant-competitor للمراحل433–440. موك أب من مكونات التطبيق، ومحاولات تحليل فعلية دائمة مع استعادة المرجع وإغلاق غير المقبول وحجب النتائج المتأخرة؛ بيانات الموك أب في الذاكرة ولا تثبت مزودًا أو احتراف المبيعات.",
-        "أغلقت مداخل القائمة والتفصيل والمنتجات والحذف والمقارنة القديمة. وُصل تنفيذ المنافس بسجل0202 وإغلاق0203 وصلاحية حية ونتيجة ذرية؛ يبقى توليد مقارنة جديدة مفوضة ومراجعة تقارير الموقع المنفصلة. لا Safari أو iPhone فعلي أو نشر."
+        "راجع تقارير tenant-competitor للمراحل433–442. موك أب من مكونات التطبيق، ومحاولات تحليل فعلية دائمة مع استعادة المرجع وإغلاق غير المقبول وحجب النتائج المتأخرة؛ بيانات الموك أب في الذاكرة ولا تثبت مزودًا أو احتراف المبيعات.",
+        "أغلقت مداخل القائمة والتفصيل والمنتجات والحذف والمقارنة القديمة. وُصل تنفيذ المنافس بسجل0202 وإغلاق0203 وصلاحية حية ونتيجة ذرية؛ وُصل اختيار تقرير الموقع وخمسة منافسين بمقارنة التقديرات والأسعار المنفصلة حسب العملة في التطبيق والموك أب. يبقى توليد توصيات جديدة مفوضة ومراجعة تقارير الموقع المنفصلة. لا Safari أو iPhone فعلي أو نشر."
       ],
       "controlDetails": [
         {
-          "id": "30f7eef6f491",
+          "id": "e6564be3f463",
           "file": "client/src/components/merchant/CompetitorWorkspace.tsx",
-          "line": 412,
+          "line": 417,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -89776,15 +89793,38 @@
           "review": "source-inventoried"
         },
         {
-          "id": "78364c2fa247",
+          "id": "ef12ba669819",
           "file": "client/src/components/merchant/CompetitorWorkspace.tsx",
-          "line": 421,
+          "line": 426,
           "tag": "Button",
           "role": "",
           "kind": "action",
           "label": "",
           "section": "CompetitorWorkspace",
-          "binding": "() => {\r\n                remember();\r\n                setErrors({ name: false, url: false });\r\n                setAdding(true);\r\n              }",
+          "binding": "() => {\n                remember();\n                setComparing(true);\n              }",
+          "type": "text",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": false,
+          "conditions": [
+            "data"
+          ],
+          "disabled": "busy || query.isFetching",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "3f96aaba830c",
+          "file": "client/src/components/merchant/CompetitorWorkspace.tsx",
+          "line": 438,
+          "tag": "Button",
+          "role": "",
+          "kind": "action",
+          "label": "",
+          "section": "CompetitorWorkspace",
+          "binding": "() => {\n                remember();\n                setErrors({ name: false, url: false });\n                setAdding(true);\n              }",
           "type": "text",
           "options": [],
           "min": "",
@@ -89799,15 +89839,15 @@
           "review": "source-inventoried"
         },
         {
-          "id": "e1ef11445fa0",
+          "id": "587d3825a180",
           "file": "client/src/components/merchant/CompetitorWorkspace.tsx",
-          "line": 459,
+          "line": 476,
           "tag": "Button",
           "role": "",
           "kind": "action",
           "label": "",
           "section": "CompetitorWorkspace",
-          "binding": "() => {\r\n                if (attempt.storageError) {\r\n                  try {\r\n                    setAttempt({\r\n                      id: readCompetitorAttempt(attemptScope),\r\n                      storageError: false,\r\n                    });\r\n                  } catch {\r\n                    setFailure(c.attemptStorage);\r\n                  }\r\n                } else void attemptQuery.refetch();\r\n              }",
+          "binding": "() => {\n                if (attempt.storageError) {\n                  try {\n                    setAttempt({\n                      id: readCompetitorAttempt(attemptScope),\n                      storageError: false,\n                    });\n                  } catch {\n                    setFailure(c.attemptStorage);\n                  }\n                } else void attemptQuery.refetch();\n              }",
           "type": "text",
           "options": [],
           "min": "",
@@ -89822,15 +89862,15 @@
           "review": "source-inventoried"
         },
         {
-          "id": "22685afb4f62",
+          "id": "ff1affff47d6",
           "file": "client/src/components/merchant/CompetitorWorkspace.tsx",
-          "line": 478,
+          "line": 495,
           "tag": "Button",
           "role": "",
           "kind": "action",
           "label": "",
           "section": "CompetitorWorkspace",
-          "binding": "() =>\r\n                  change({ report: receipt.competitorId, products: null })",
+          "binding": "() =>\n                  change({ report: receipt.competitorId, products: null })",
           "type": "text",
           "options": [],
           "min": "",
@@ -89846,9 +89886,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "fe96042e516a",
+          "id": "9a22b4e86119",
           "file": "client/src/components/merchant/CompetitorWorkspace.tsx",
-          "line": 489,
+          "line": 506,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -89870,9 +89910,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "3e594af4c94d",
+          "id": "10b1af8415cc",
           "file": "client/src/components/merchant/CompetitorWorkspace.tsx",
-          "line": 501,
+          "line": 518,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -89887,16 +89927,16 @@
           "required": false,
           "conditional": false,
           "conditions": [
-            "data?.canManage &&\r\n              receipt &&\r\n              [\"completed\", \"failed\", \"interrupted\", \"closed\"].includes(\r\n                receipt.state\r\n              )",
+            "data?.canManage &&\n              receipt &&\n              [\"completed\", \"failed\", \"interrupted\", \"closed\"].includes(\n                receipt.state\n              )",
             "(attempt.id || attempt.storageError)"
           ],
           "disabled": "busy || attemptQuery.isFetching",
           "review": "source-inventoried"
         },
         {
-          "id": "0f41a936000d",
+          "id": "fd6c393670f1",
           "file": "client/src/components/merchant/CompetitorWorkspace.tsx",
-          "line": 555,
+          "line": 572,
           "tag": "input",
           "role": "",
           "kind": "field",
@@ -89918,9 +89958,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "4bc176b2225b",
+          "id": "b15f1134eda7",
           "file": "client/src/components/merchant/CompetitorWorkspace.tsx",
-          "line": 561,
+          "line": 578,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -89942,9 +89982,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "608d5568c6e1",
+          "id": "a58115c06e72",
           "file": "client/src/components/merchant/CompetitorWorkspace.tsx",
-          "line": 566,
+          "line": 583,
           "tag": "select",
           "role": "",
           "kind": "field",
@@ -89971,9 +90011,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "be4969581e36",
+          "id": "4755913aaede",
           "file": "client/src/components/merchant/CompetitorWorkspace.tsx",
-          "line": 594,
+          "line": 611,
           "tag": "select",
           "role": "",
           "kind": "field",
@@ -90004,15 +90044,15 @@
           "review": "source-inventoried"
         },
         {
-          "id": "8448cff51976",
+          "id": "6bc31e4d296d",
           "file": "client/src/components/merchant/CompetitorWorkspace.tsx",
-          "line": 612,
+          "line": 629,
           "tag": "Button",
           "role": "",
           "kind": "action",
           "label": "",
           "section": "CompetitorWorkspace",
-          "binding": "() =>\r\n                    change({\r\n                      q: null,\r\n                      state: null,\r\n                      sort: null,\r\n                      page: null,\r\n                      report: null,\r\n                      products: null,\r\n                    })",
+          "binding": "() =>\n                    change({\n                      q: null,\n                      state: null,\n                      sort: null,\n                      page: null,\n                      report: null,\n                      products: null,\n                    })",
           "type": "button",
           "options": [],
           "min": "",
@@ -90021,7 +90061,7 @@
           "required": false,
           "conditional": false,
           "conditions": [
-            "(selection.query ||\r\n                selection.state !== \"all\" ||\r\n                selection.sort !== \"newest\")",
+            "(selection.query ||\n                selection.state !== \"all\" ||\n                selection.sort !== \"newest\")",
             "!data",
             "query.error"
           ],
@@ -90029,15 +90069,15 @@
           "review": "source-inventoried"
         },
         {
-          "id": "26a3ef3f08b2",
+          "id": "00535dbe8b57",
           "file": "client/src/components/merchant/CompetitorWorkspace.tsx",
-          "line": 666,
+          "line": 683,
           "tag": "Button",
           "role": "",
           "kind": "action",
           "label": "·",
           "section": "CompetitorWorkspace",
-          "binding": "() => {\r\n                          remember();\r\n                          change({ report: r.id, products: null });\r\n                        }",
+          "binding": "() => {\n                          remember();\n                          change({ report: r.id, products: null });\n                        }",
           "type": "text",
           "options": [],
           "min": "",
@@ -90052,9 +90092,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "0f7afafc8af7",
+          "id": "08387ec2c050",
           "file": "client/src/components/merchant/CompetitorWorkspace.tsx",
-          "line": 683,
+          "line": 700,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -90077,9 +90117,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "8101dfc304da",
+          "id": "d1462da2ac74",
           "file": "client/src/components/merchant/CompetitorWorkspace.tsx",
-          "line": 694,
+          "line": 711,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -90102,9 +90142,32 @@
           "review": "source-inventoried"
         },
         {
-          "id": "f1ee4ab2aea3",
+          "id": "4e9172ebe196",
           "file": "client/src/components/merchant/CompetitorWorkspace.tsx",
-          "line": 712,
+          "line": 725,
+          "tag": "DialogContent",
+          "role": "",
+          "kind": "dialog",
+          "label": "",
+          "section": "CompetitorWorkspace",
+          "binding": "",
+          "type": "text",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": false,
+          "conditions": [
+            "comparing && data"
+          ],
+          "disabled": "",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "7c07f36838a3",
+          "file": "client/src/components/merchant/CompetitorWorkspace.tsx",
+          "line": 742,
           "tag": "DialogContent",
           "role": "",
           "kind": "dialog",
@@ -90123,9 +90186,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "c4f0f4ccb884",
+          "id": "b99b5b6c2489",
           "file": "client/src/components/merchant/CompetitorWorkspace.tsx",
-          "line": 728,
+          "line": 758,
           "tag": "input",
           "role": "",
           "kind": "field",
@@ -90144,9 +90207,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "07ad5e0a99d0",
+          "id": "29ae629eb025",
           "file": "client/src/components/merchant/CompetitorWorkspace.tsx",
-          "line": 746,
+          "line": 776,
           "tag": "input",
           "role": "",
           "kind": "field",
@@ -90165,15 +90228,15 @@
           "review": "source-inventoried"
         },
         {
-          "id": "af4b58da4f57",
+          "id": "a760efd319d0",
           "file": "client/src/components/merchant/CompetitorWorkspace.tsx",
-          "line": 767,
+          "line": 797,
           "tag": "Button",
           "role": "",
           "kind": "action",
           "label": "",
           "section": "CompetitorWorkspace",
-          "binding": "async () => {\r\n                  const result = await query.refetch();\r\n                  if (!result.error) {\r\n                    setBlocked(false);\r\n                    setFailure(\"\");\r\n                  }\r\n                }",
+          "binding": "async () => {\n                  const result = await query.refetch();\n                  if (!result.error) {\n                    setBlocked(false);\n                    setFailure(\"\");\n                  }\n                }",
           "type": "button",
           "options": [],
           "min": "",
@@ -90188,9 +90251,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "05477137a4ef",
+          "id": "0af7c5d5bdce",
           "file": "client/src/components/merchant/CompetitorWorkspace.tsx",
-          "line": 782,
+          "line": 812,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -90205,13 +90268,13 @@
           "required": false,
           "conditional": true,
           "conditions": [],
-          "disabled": "busy ||\r\n                blocked ||\r\n                !!attempt.id ||\r\n                attempt.storageError ||\r\n                !data?.canManage",
+          "disabled": "busy ||\n                blocked ||\n                !!attempt.id ||\n                attempt.storageError ||\n                !data?.canManage",
           "review": "source-inventoried"
         },
         {
-          "id": "559860c8ac11",
+          "id": "01e99beeb895",
           "file": "client/src/components/merchant/CompetitorWorkspace.tsx",
-          "line": 803,
+          "line": 833,
           "tag": "DialogContent",
           "role": "",
           "kind": "dialog",
@@ -90230,9 +90293,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "d48e622f598f",
+          "id": "06fee996e6a0",
           "file": "client/src/components/merchant/CompetitorWorkspace.tsx",
-          "line": 825,
+          "line": 855,
           "tag": "a",
           "role": "",
           "kind": "action",
@@ -90249,15 +90312,15 @@
           "conditions": [
             "detail.report.url",
             "!detail",
-            "detailQuery.error ||\r\n          (!detail && !detailQuery.isLoading && !detailQuery.isFetching)"
+            "detailQuery.error ||\n          (!detail && !detailQuery.isLoading && !detailQuery.isFetching)"
           ],
           "disabled": "",
           "review": "source-inventoried"
         },
         {
-          "id": "b44c75014570",
+          "id": "8286784b1481",
           "file": "client/src/components/merchant/CompetitorWorkspace.tsx",
-          "line": 873,
+          "line": 903,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -90273,15 +90336,15 @@
           "conditional": true,
           "conditions": [
             "!detail",
-            "detailQuery.error ||\r\n          (!detail && !detailQuery.isLoading && !detailQuery.isFetching)"
+            "detailQuery.error ||\n          (!detail && !detailQuery.isLoading && !detailQuery.isFetching)"
           ],
           "disabled": "",
           "review": "source-inventoried"
         },
         {
-          "id": "cbc23cfc6566",
+          "id": "1633b81b4513",
           "file": "client/src/components/merchant/CompetitorWorkspace.tsx",
-          "line": 906,
+          "line": 936,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -90297,15 +90360,15 @@
           "conditional": true,
           "conditions": [
             "!detail",
-            "detailQuery.error ||\r\n          (!detail && !detailQuery.isLoading && !detailQuery.isFetching)"
+            "detailQuery.error ||\n          (!detail && !detailQuery.isLoading && !detailQuery.isFetching)"
           ],
           "disabled": "",
           "review": "source-inventoried"
         },
         {
-          "id": "a0991761c2f0",
+          "id": "8c38f598b5c3",
           "file": "client/src/components/merchant/CompetitorWorkspace.tsx",
-          "line": 946,
+          "line": 976,
           "tag": "a",
           "role": "",
           "kind": "action",
@@ -90326,9 +90389,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "58d3b0bcbd4b",
+          "id": "f08612197d01",
           "file": "client/src/components/merchant/CompetitorWorkspace.tsx",
-          "line": 957,
+          "line": 987,
           "tag": "a",
           "role": "",
           "kind": "action",
@@ -90349,15 +90412,15 @@
           "review": "source-inventoried"
         },
         {
-          "id": "f22c6c023967",
+          "id": "2b14612a82bc",
           "file": "client/src/components/merchant/CompetitorWorkspace.tsx",
-          "line": 974,
+          "line": 1004,
           "tag": "Button",
           "role": "",
           "kind": "action",
           "label": "",
           "section": "·",
-          "binding": "() =>\r\n                        change({ products: detail.productPage - 1 })",
+          "binding": "() =>\n                        change({ products: detail.productPage - 1 })",
           "type": "text",
           "options": [],
           "min": "",
@@ -90368,21 +90431,21 @@
           "conditions": [
             "detail.productPages > 1",
             "!detail",
-            "detailQuery.error ||\r\n          (!detail && !detailQuery.isLoading && !detailQuery.isFetching)"
+            "detailQuery.error ||\n          (!detail && !detailQuery.isLoading && !detailQuery.isFetching)"
           ],
-          "disabled": "busy ||\r\n                        detailQuery.isFetching ||\r\n                        detail.productPage <= 1",
+          "disabled": "busy ||\n                        detailQuery.isFetching ||\n                        detail.productPage <= 1",
           "review": "source-inventoried"
         },
         {
-          "id": "19d7d4b3837a",
+          "id": "0344d7cb58fc",
           "file": "client/src/components/merchant/CompetitorWorkspace.tsx",
-          "line": 991,
+          "line": 1021,
           "tag": "Button",
           "role": "",
           "kind": "action",
           "label": "",
           "section": "·",
-          "binding": "() =>\r\n                        change({ products: detail.productPage + 1 })",
+          "binding": "() =>\n                        change({ products: detail.productPage + 1 })",
           "type": "text",
           "options": [],
           "min": "",
@@ -90393,15 +90456,15 @@
           "conditions": [
             "detail.productPages > 1",
             "!detail",
-            "detailQuery.error ||\r\n          (!detail && !detailQuery.isLoading && !detailQuery.isFetching)"
+            "detailQuery.error ||\n          (!detail && !detailQuery.isLoading && !detailQuery.isFetching)"
           ],
-          "disabled": "busy ||\r\n                        detailQuery.isFetching ||\r\n                        detail.productPage >= detail.productPages",
+          "disabled": "busy ||\n                        detailQuery.isFetching ||\n                        detail.productPage >= detail.productPages",
           "review": "source-inventoried"
         },
         {
-          "id": "2e859659b1c2",
+          "id": "7243fb6e2f1e",
           "file": "client/src/components/merchant/CompetitorWorkspace.tsx",
-          "line": 1010,
+          "line": 1040,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -90417,21 +90480,21 @@
           "conditional": true,
           "conditions": [
             "!detail",
-            "detailQuery.error ||\r\n          (!detail && !detailQuery.isLoading && !detailQuery.isFetching)"
+            "detailQuery.error ||\n          (!detail && !detailQuery.isLoading && !detailQuery.isFetching)"
           ],
           "disabled": "",
           "review": "source-inventoried"
         },
         {
-          "id": "64a1271d4339",
+          "id": "515a67f4da8f",
           "file": "client/src/components/merchant/CompetitorWorkspace.tsx",
-          "line": 1031,
+          "line": 1061,
           "tag": "Button",
           "role": "",
           "kind": "action",
           "label": "",
           "section": "·",
-          "binding": "async () => {\r\n                    setAck(false);\r\n                    const result = await detailQuery.refetch();\r\n                    if (!result.error) {\r\n                      setFailure(\"\");\r\n                      setBlocked(false);\r\n                    }\r\n                  }",
+          "binding": "async () => {\n                    setAck(false);\n                    const result = await detailQuery.refetch();\n                    if (!result.error) {\n                      setFailure(\"\");\n                      setBlocked(false);\n                    }\n                  }",
           "type": "text",
           "options": [],
           "min": "",
@@ -90441,15 +90504,15 @@
           "conditional": false,
           "conditions": [
             "!detail",
-            "detailQuery.error ||\r\n          (!detail && !detailQuery.isLoading && !detailQuery.isFetching)"
+            "detailQuery.error ||\n          (!detail && !detailQuery.isLoading && !detailQuery.isFetching)"
           ],
           "disabled": "busy || detailQuery.isFetching",
           "review": "source-inventoried"
         },
         {
-          "id": "3bdd6a8ef56e",
+          "id": "4466f11011dc",
           "file": "client/src/components/merchant/CompetitorWorkspace.tsx",
-          "line": 1046,
+          "line": 1076,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -90465,15 +90528,15 @@
           "conditional": false,
           "conditions": [
             "!detail",
-            "detailQuery.error ||\r\n          (!detail && !detailQuery.isLoading && !detailQuery.isFetching)"
+            "detailQuery.error ||\n          (!detail && !detailQuery.isLoading && !detailQuery.isFetching)"
           ],
           "disabled": "busy",
           "review": "source-inventoried"
         },
         {
-          "id": "f60e0d17b8e4",
+          "id": "298910eded62",
           "file": "client/src/components/merchant/CompetitorWorkspace.tsx",
-          "line": 1056,
+          "line": 1086,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -90490,15 +90553,15 @@
           "conditions": [
             "detail.canManage",
             "!detail",
-            "detailQuery.error ||\r\n          (!detail && !detailQuery.isLoading && !detailQuery.isFetching)"
+            "detailQuery.error ||\n          (!detail && !detailQuery.isLoading && !detailQuery.isFetching)"
           ],
           "disabled": "",
           "review": "source-inventoried"
         },
         {
-          "id": "ddfd620fc189",
+          "id": "2bd503ff988d",
           "file": "client/src/components/merchant/CompetitorWorkspace.tsx",
-          "line": 1064,
+          "line": 1094,
           "tag": "input",
           "role": "",
           "kind": "field",
@@ -90513,16 +90576,16 @@
           "required": false,
           "conditional": false,
           "conditions": [
-            "![\"completed\", \"failed\"].includes(detail.report.status) ||\r\n                  detail.report.excludedProducts > 0",
+            "![\"completed\", \"failed\"].includes(detail.report.status) ||\n                  detail.report.excludedProducts > 0",
             "detail.canManage"
           ],
           "disabled": "busy || blocked",
           "review": "source-inventoried"
         },
         {
-          "id": "42e73437e551",
+          "id": "2a3efc2d380d",
           "file": "client/src/components/merchant/CompetitorWorkspace.tsx",
-          "line": 1072,
+          "line": 1102,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -90537,10 +90600,260 @@
           "required": false,
           "conditional": true,
           "conditions": [
-            "![\"completed\", \"failed\"].includes(detail.report.status) ||\r\n                  detail.report.excludedProducts > 0",
+            "![\"completed\", \"failed\"].includes(detail.report.status) ||\n                  detail.report.excludedProducts > 0",
             "detail.canManage"
           ],
           "disabled": "busy || blocked || !ack || detailQuery.isFetching",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "0e115760db85",
+          "file": "client/src/components/merchant/CompetitorComparison.tsx",
+          "line": 112,
+          "tag": "Button",
+          "role": "",
+          "kind": "action",
+          "label": "`${cc.unselect} ${item.name}`",
+          "section": "CompetitorComparison",
+          "binding": "() => {\n                    setPicked(old => old.filter(r => r.id !== item.id));\n                    setRequested(null);\n                  }",
+          "type": "text",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": false,
+          "conditions": [
+            "!!picked.length"
+          ],
+          "disabled": "",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "87fc46a5ce30",
+          "file": "client/src/components/merchant/CompetitorComparison.tsx",
+          "line": 128,
+          "tag": "summary",
+          "role": "",
+          "kind": "action",
+          "label": "",
+          "section": "CompetitorComparison",
+          "binding": "",
+          "type": "text",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": true,
+          "conditions": [],
+          "disabled": "",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "deabcb809696",
+          "file": "client/src/components/merchant/CompetitorComparison.tsx",
+          "line": 135,
+          "tag": "Button",
+          "role": "",
+          "kind": "action",
+          "label": "website",
+          "section": "CompetitorComparison",
+          "binding": "() => {\n                setSource(value);\n                setQuery(\"\");\n                setDraft(\"\");\n                setPage(1);\n              }",
+          "type": "text",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": true,
+          "conditions": [],
+          "disabled": "",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "acf300512a3b",
+          "file": "client/src/components/merchant/CompetitorComparison.tsx",
+          "line": 159,
+          "tag": "input",
+          "role": "",
+          "kind": "field",
+          "label": "",
+          "section": "CompetitorComparison",
+          "binding": "draft",
+          "type": "text",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "200",
+          "required": false,
+          "conditional": false,
+          "conditions": [],
+          "disabled": "",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "fd90a5a70e8b",
+          "file": "client/src/components/merchant/CompetitorComparison.tsx",
+          "line": 165,
+          "tag": "Button",
+          "role": "",
+          "kind": "action",
+          "label": "",
+          "section": "CompetitorComparison",
+          "binding": "",
+          "type": "submit",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": false,
+          "conditions": [],
+          "disabled": "",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "9489f23c3fb6",
+          "file": "client/src/components/merchant/CompetitorComparison.tsx",
+          "line": 197,
+          "tag": "input",
+          "role": "",
+          "kind": "field",
+          "label": "",
+          "section": "CompetitorComparison",
+          "binding": "comparison-choice",
+          "type": "source === \"website\" ? \"radio\" : \"checkbox\"",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": true,
+          "conditions": [
+            "!choices.rows.length"
+          ],
+          "disabled": "source === \"competitor\" &&\n                          !checked &&\n                          picked.length >= 5",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "7031f88e0603",
+          "file": "client/src/components/merchant/CompetitorComparison.tsx",
+          "line": 224,
+          "tag": "Button",
+          "role": "",
+          "kind": "action",
+          "label": "",
+          "section": "CompetitorComparison",
+          "binding": "() => setPage(choices.currentPage - 1)",
+          "type": "text",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": false,
+          "conditions": [
+            "choices.pages > 1",
+            "!choices",
+            "options.isLoading"
+          ],
+          "disabled": "options.isFetching || choices.currentPage <= 1",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "34f5a74287df",
+          "file": "client/src/components/merchant/CompetitorComparison.tsx",
+          "line": 234,
+          "tag": "Button",
+          "role": "",
+          "kind": "action",
+          "label": "",
+          "section": "CompetitorComparison",
+          "binding": "() => setPage(choices.currentPage + 1)",
+          "type": "text",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": false,
+          "conditions": [
+            "choices.pages > 1",
+            "!choices",
+            "options.isLoading"
+          ],
+          "disabled": "options.isFetching || choices.currentPage >= choices.pages",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "154bfb488a06",
+          "file": "client/src/components/merchant/CompetitorComparison.tsx",
+          "line": 247,
+          "tag": "Button",
+          "role": "",
+          "kind": "action",
+          "label": "",
+          "section": "CompetitorComparison",
+          "binding": "() => {\n            if (baseline)\n              setRequested({\n                analysisId: baseline.id,\n                competitorIds: picked.map(r => r.id),\n              });\n          }",
+          "type": "text",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": true,
+          "conditions": [],
+          "disabled": "!baseline ||\n            !picked.length ||\n            options.isFetching ||\n            comparison.isFetching",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "b4a971422d64",
+          "file": "client/src/components/merchant/CompetitorComparison.tsx",
+          "line": 343,
+          "tag": "summary",
+          "role": "",
+          "kind": "action",
+          "label": "",
+          "section": "CompetitorComparison",
+          "binding": "",
+          "type": "text",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": true,
+          "conditions": [
+            "!view",
+            "comparison.isLoading"
+          ],
+          "disabled": "",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "2cc88f4396de",
+          "file": "client/src/components/merchant/CompetitorComparison.tsx",
+          "line": 392,
+          "tag": "Button",
+          "role": "",
+          "kind": "action",
+          "label": "",
+          "section": "CompetitorComparison",
+          "binding": "() => void comparison.refetch()",
+          "type": "text",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": true,
+          "conditions": [
+            "!view",
+            "comparison.isLoading",
+            "requested"
+          ],
+          "disabled": "comparison.isFetching",
           "review": "source-inventoried"
         }
       ]

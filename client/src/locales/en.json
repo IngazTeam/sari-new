@@ -12680,6 +12680,28 @@
     "retryStorage": "Retry reading reference",
     "reviewedReset": "I reviewed the audit history; start a new check"
   },
+  "competitorComparisonUx": {
+    "title": "Compare reports",
+    "help": "Choose your website report and up to five competitors. Compare saved evidence without starting another analysis.",
+    "baseline": "Your website report",
+    "selected": "Selected competitors",
+    "notSelected": "Not selected yet",
+    "unselect": "Unselect",
+    "choose": "Report selection",
+    "chooseBaseline": "1. Choose your website report",
+    "chooseCompetitors": "2. Choose competitors",
+    "search": "Search completed reports",
+    "noChoices": "No matching completed reports. Change the search or complete an analysis first.",
+    "show": "Show comparison",
+    "result": "Comparison result",
+    "resultHelp": "Difference = your website estimate minus the competitor estimate. Different analysis dates and website contents limit comparability.",
+    "noSales": "This is an arithmetic comparison of website estimates, not newly generated advice or a measure of sales proficiency or conversion.",
+    "yours": "Your website",
+    "theirs": "Competitor",
+    "difference": "Difference",
+    "prices": "Products and prices by currency",
+    "priceHelp": "Products are not matched item by item, so these figures do not identify a cheaper store. Extracted report prices may be outdated."
+},
   "competitorWorkspaceUx": {
     "attemptTitle": "Latest analysis request",
     "attemptStorage": "The browser could not save the request reference. Retry; analysis will not start without a recoverable reference.",

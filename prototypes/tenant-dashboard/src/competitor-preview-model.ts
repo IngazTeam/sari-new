@@ -1,4 +1,10 @@
 import {
+  competitorComparisonChoices,
+  competitorComparisonInput,
+  competitorComparisonOptions,
+  competitorComparisonView,
+} from "../../../shared/competitor-comparison";
+import {
   competitorAnalysisStart,
   competitorAnalysisAttempt,
   competitorAnalysisReceipt,
@@ -16,6 +22,8 @@ export const competitorPreviewQueries = [
   "websiteAnalysis.competitorWorkspace",
   "websiteAnalysis.competitorDetail",
   "websiteAnalysis.competitorAnalysisAttempt",
+  "websiteAnalysis.competitorComparisonChoices",
+  "websiteAnalysis.competitorComparison",
 ] as const;
 export const competitorPreviewMutations = [
   "websiteAnalysis.addCompetitor",
@@ -151,8 +159,102 @@ export class CompetitorPreviewStore {
       .map(n => n.toString(16).padStart(8, "0"))
       .join("");
   }
+  private baseline(id: number) {
+    const detail = this.rows.get(id - 1000);
+    if (!detail || id > 1032) return null;
+    return {
+      report: {
+        ...detail.report,
+        id,
+        name: `تقرير الموقع · Website ${id - 1000}`,
+        scores: {
+          ...detail.report.scores,
+          overall: detail.report.status === "completed" ? 70 : null,
+        },
+      },
+      pricing: detail.pricing,
+    };
+  }
   read(name: string, input: unknown) {
     const canManage = this.mode() !== "readonly";
+    if (name === "websiteAnalysis.competitorComparisonChoices") {
+      const selection = competitorComparisonChoices.parse(input);
+      let values =
+        selection.source === "website"
+          ? (Array.from(this.rows.keys())
+              .map(id => this.baseline(id + 1000)?.report)
+              .filter(Boolean) as CompetitorDetail["report"][])
+          : Array.from(this.rows.values()).map(r => r.report);
+      values = values
+        .filter(
+          r =>
+            r.status === "completed" &&
+            `${r.name} ${r.url} ${r.id}`
+              .toLowerCase()
+              .includes(selection.query.toLowerCase())
+        )
+        .sort((a, b) => b.id - a.id);
+      const pages = Math.ceil(values.length / 25),
+        currentPage = Math.min(selection.page, Math.max(1, pages));
+      return competitorComparisonOptions.parse({
+        actorId: this.actorId,
+        merchantId: this.merchantId,
+        selection,
+        rows: values.slice((currentPage - 1) * 25, currentPage * 25),
+        matched: values.length,
+        pages,
+        currentPage,
+      });
+    }
+    if (name === "websiteAnalysis.competitorComparison") {
+      const selection = competitorComparisonInput.parse(input),
+        baseline = this.baseline(selection.analysisId);
+      if (!baseline || baseline.report.status !== "completed")
+        throw fault("missing", "NOT_FOUND");
+      const competitors = selection.competitorIds.map(id => {
+        const d = this.rows.get(id);
+        if (!d || d.report.status !== "completed")
+          throw fault("missing", "NOT_FOUND");
+        return {
+          report: d.report,
+          pricing: d.pricing,
+          differences: (
+            ["overall", "seo", "performance", "ux", "content"] as const
+          ).map(metric => ({
+            metric,
+            baseline: baseline.report.scores[metric],
+            competitor: d.report.scores[metric],
+            difference:
+              baseline.report.scores[metric] === null ||
+              d.report.scores[metric] === null
+                ? null
+                : baseline.report.scores[metric]! - d.report.scores[metric]!,
+          })),
+          commonCurrencies: baseline.pricing.groups
+            .filter(g => d.pricing.groups.some(c => c.currency === g.currency))
+            .map(g => g.currency),
+        };
+      });
+      const parts = [
+        this.merchantId,
+        selection.analysisId,
+        ...selection.competitorIds,
+        this.writes,
+      ];
+      while (parts.length < 8) parts.push(0);
+      return competitorComparisonView.parse({
+        actorId: this.actorId,
+        merchantId: this.merchantId,
+        selection,
+        baseline,
+        competitors,
+        revision: parts.map(n => n.toString(16).padStart(8, "0")).join(""),
+        evidence: "stored_website_estimates",
+        priceComparability: "products_not_matched",
+        salesProficiency: null,
+      });
+    }
+
     if (name === "websiteAnalysis.competitorAnalysisAttempt") {
       const { requestId } = competitorAnalysisAttempt.parse(input),
         saved = this.attempts.get(requestId);

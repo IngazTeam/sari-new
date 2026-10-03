@@ -2,7 +2,7 @@
 
 هذا حصر مصدر قابل لإعادة التوليد، وليس ادعاءً بأن كل مسار عمل اختُبر أو أُعيد تصميمه. يشمل المكونات الفرعية المحلية، الحقول، الأزرار، النوافذ، التبويبات، واجهات القراءة والتعديل. العناصر الديناميكية تحتاج مراجعة إضافية.
 
-- 126 مسارًا مسجلًا، 474 ملف واجهة متصلًا، 2690 عنصر تحكم في المصدر.
+- 126 مسارًا مسجلًا، 476 ملف واجهة متصلًا، 2703 عنصر تحكم في المصدر.
 - 0 رابطًا حرفيًا غير مطابق، و0 ملف صفحة غير متصل بالمسارات المحصورة.
 
 | الصفحة | الملفات | عناصر التحكم | القراءة / التعديل | موك أب للصفحة |
@@ -122,7 +122,7 @@
 | /merchant/customers — العملاء | 8 | 12 | 4 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/website-analysis — مدخل لوحة التاجر | 0 | 0 | 0 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/smart-analysis — تحليل الموقع | 13 | 87 | 9 / 9 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/competitor-analysis — تحليل المنافسين | 10 | 33 | 5 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/competitor-analysis — تحليل المنافسين | 12 | 46 | 7 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/customers/:phone — ملف العميل | 10 | 23 | 5 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/ai-suggestions — الرؤى والاقتراحات وA/B | 9 | 31 | 5 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/keywords — مدخل لوحة التاجر | 0 | 0 | 0 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -3981,39 +3981,57 @@
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 412 | Button | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
-| 421 | Button | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
-| 459 | Button | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
-| 478 | Button | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
-| 489 | Button | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
-| 501 | Button | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
-| 555 | input | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
-| 561 | Button | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
-| 566 | select | all pending analyzing completed failed all | CompetitorWorkspace |
-| 594 | select | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
-| 612 | Button | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
-| 666 | Button | · | CompetitorWorkspace |
-| 683 | Button | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
-| 694 | Button | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
-| 712 | DialogContent | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
-| 728 | input | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
-| 746 | input | https://example.com | CompetitorWorkspace |
-| 767 | Button | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
-| 782 | Button | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
-| 803 | DialogContent | completed overall seo performance ux content / 100 · minimum maximum average : · : . : strengths weaknesses opportunities · completed failed | CompetitorWorkspace |
-| 825 | a | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
-| 873 | summary | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
-| 906 | summary | · | · |
-| 946 | a | تسمية ديناميكية / تحتاج مراجعة | · |
-| 957 | a | تسمية ديناميكية / تحتاج مراجعة | · |
-| 974 | Button | تسمية ديناميكية / تحتاج مراجعة | · |
-| 991 | Button | تسمية ديناميكية / تحتاج مراجعة | · |
-| 1010 | summary | · | · |
-| 1031 | Button | تسمية ديناميكية / تحتاج مراجعة | · |
-| 1046 | Button | تسمية ديناميكية / تحتاج مراجعة | · |
-| 1056 | summary | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
-| 1064 | input | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
-| 1072 | Button | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
+| 417 | Button | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
+| 426 | Button | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
+| 438 | Button | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
+| 476 | Button | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
+| 495 | Button | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
+| 506 | Button | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
+| 518 | Button | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
+| 572 | input | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
+| 578 | Button | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
+| 583 | select | all pending analyzing completed failed all | CompetitorWorkspace |
+| 611 | select | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
+| 629 | Button | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
+| 683 | Button | · | CompetitorWorkspace |
+| 700 | Button | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
+| 711 | Button | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
+| 725 | DialogContent | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
+| 742 | DialogContent | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
+| 758 | input | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
+| 776 | input | https://example.com | CompetitorWorkspace |
+| 797 | Button | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
+| 812 | Button | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
+| 833 | DialogContent | completed overall seo performance ux content / 100 · minimum maximum average : · : . : strengths weaknesses opportunities · completed failed | CompetitorWorkspace |
+| 855 | a | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
+| 903 | summary | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
+| 936 | summary | · | · |
+| 976 | a | تسمية ديناميكية / تحتاج مراجعة | · |
+| 987 | a | تسمية ديناميكية / تحتاج مراجعة | · |
+| 1004 | Button | تسمية ديناميكية / تحتاج مراجعة | · |
+| 1021 | Button | تسمية ديناميكية / تحتاج مراجعة | · |
+| 1040 | summary | · | · |
+| 1061 | Button | تسمية ديناميكية / تحتاج مراجعة | · |
+| 1076 | Button | تسمية ديناميكية / تحتاج مراجعة | · |
+| 1086 | summary | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
+| 1094 | input | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
+| 1102 | Button | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
+
+## client/src/components/merchant/CompetitorComparison.tsx
+
+| السطر | النوع | التسمية | القسم |
+|---:|---|---|---|
+| 112 | Button | `${cc.unselect} ${item.name}` | CompetitorComparison |
+| 128 | summary | تسمية ديناميكية / تحتاج مراجعة | CompetitorComparison |
+| 135 | Button | website | CompetitorComparison |
+| 159 | input | تسمية ديناميكية / تحتاج مراجعة | CompetitorComparison |
+| 165 | Button | تسمية ديناميكية / تحتاج مراجعة | CompetitorComparison |
+| 197 | input | تسمية ديناميكية / تحتاج مراجعة | CompetitorComparison |
+| 224 | Button | تسمية ديناميكية / تحتاج مراجعة | CompetitorComparison |
+| 234 | Button | تسمية ديناميكية / تحتاج مراجعة | CompetitorComparison |
+| 247 | Button | تسمية ديناميكية / تحتاج مراجعة | CompetitorComparison |
+| 343 | summary | تسمية ديناميكية / تحتاج مراجعة | CompetitorComparison |
+| 392 | Button | تسمية ديناميكية / تحتاج مراجعة | CompetitorComparison |
 
 ## client/src/components/merchant/CustomerDetailWorkspace.tsx
 

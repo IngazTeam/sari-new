@@ -1,0 +1,23 @@
+import type { TFunction } from "i18next";
+export const competitorComparisonLabels = (t: TFunction) => ({
+  title: t("competitorComparisonUx.title"),
+  help: t("competitorComparisonUx.help"),
+  baseline: t("competitorComparisonUx.baseline"),
+  selected: t("competitorComparisonUx.selected"),
+  notSelected: t("competitorComparisonUx.notSelected"),
+  unselect: t("competitorComparisonUx.unselect"),
+  choose: t("competitorComparisonUx.choose"),
+  chooseBaseline: t("competitorComparisonUx.chooseBaseline"),
+  chooseCompetitors: t("competitorComparisonUx.chooseCompetitors"),
+  search: t("competitorComparisonUx.search"),
+  noChoices: t("competitorComparisonUx.noChoices"),
+  show: t("competitorComparisonUx.show"),
+  result: t("competitorComparisonUx.result"),
+  resultHelp: t("competitorComparisonUx.resultHelp"),
+  noSales: t("competitorComparisonUx.noSales"),
+  yours: t("competitorComparisonUx.yours"),
+  theirs: t("competitorComparisonUx.theirs"),
+  difference: t("competitorComparisonUx.difference"),
+  prices: t("competitorComparisonUx.prices"),
+  priceHelp: t("competitorComparisonUx.priceHelp"),
+});

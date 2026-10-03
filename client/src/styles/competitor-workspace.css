@@ -10,6 +10,121 @@
   font-size: 0.88rem;
   line-height: 1.9;
 }
+.cmp-comparison,
+.cmp-comparison-result,
+.cmp-comparison-report {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.cmp-comparison > * {
+  min-width: 0;
+}
+.cmp-comparison h3,
+.cmp-comparison h4 {
+  font-weight: 650;
+}
+.cmp-comparison-report {
+  border-top: 1px solid var(--border);
+  padding-block: 1rem;
+}
+.cmp-selection-summary {
+  padding: 1rem;
+  background: var(--muted);
+  border-radius: 0.8rem;
+  overflow-wrap: anywhere;
+}
+.cmp-selection-summary ul {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+.cmp-selection-summary li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+.cmp-selection-summary li button {
+  flex-shrink: 0;
+}
+.cmp-comparison-search {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+.cmp-comparison-search label {
+  width: 100%;
+}
+.cmp-comparison-search input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  min-height: 44px;
+  padding: 0.6rem;
+  font-size: 16px;
+  background: var(--card);
+}
+.cmp-comparison-options {
+  display: grid;
+  gap: 0.4rem;
+  min-width: 0;
+  max-height: 20rem;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+}
+.cmp-comparison-options legend {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+.cmp-comparison-options label {
+  display: flex;
+  gap: 0.8rem;
+  align-items: start;
+  border: 1px solid var(--border);
+  border-radius: 0.7rem;
+  padding: 0.8rem;
+  cursor: pointer;
+}
+.cmp-comparison-options input {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  margin-top: 0.2rem;
+  accent-color: var(--primary);
+}
+.cmp-comparison-options span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.cmp-comparison-options small {
+  display: block;
+  color: var(--muted-foreground);
+  margin-top: 0.3rem;
+}
+.cmp-comparison-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
+  gap: 0.7rem;
+}
+.cmp-comparison-metrics > div {
+  background: var(--muted);
+  border-radius: 0.7rem;
+  padding: 0.9rem;
+  min-width: 0;
+}
+.cmp-comparison-metrics dt {
+  font-weight: 650;
+  margin-bottom: 0.5rem;
+}
+.cmp-comparison-metrics dd {
+  display: grid;
+  gap: 0.35rem;
+}
 .cmp-attempt-actions {
   display: flex;
   flex-wrap: wrap;
