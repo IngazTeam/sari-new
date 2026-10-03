@@ -1,0 +1,15 @@
+import {beforeEach,it,expect,vi} from 'vitest';
+const m=vi.hoisted(()=>({access:vi.fn(),review:vi.fn(),apply:vi.fn(),receipt:vi.fn()}));
+vi.mock('./accounts/merchant-access',()=>({resolveMerchantAccess:m.access}));
+vi.mock('./promotion-actions',async original=>({...await original<typeof import('./promotion-actions')>(),reviewPromotionAction:m.review,applyPromotionAction:m.apply,readPromotionActionReceipt:m.receipt}));
+import {promotionsRouter} from './routers-promotions';
+import {appRouter} from './routers';
+import {PromotionWriteError} from './promotion-writes';
+const target={action:'toggle' as const,id:9,enabled:true},value={target,reviewRevision:'a'.repeat(64),checkedAt:'2026-10-03T00:00:00Z',requestKey:'23e7d06e-a668-41ac-8327-f920a7d7c662'};
+beforeEach(()=>{vi.resetAllMocks();m.access.mockResolvedValue({merchantId:20,role:'manager'});});
+for(const mounted of [false,true]){
+ const caller=(user:any={id:7,role:'user'},selected='20')=>{const ctx={user,merchantId:999,merchantRole:'owner',req:{headers:{'x-merchant-id':selected}},res:{}} as any;return mounted?appRouter.createCaller(ctx).promotions:promotionsRouter.createCaller(ctx);};
+ it(`binds reviewed decisions and receipt lookup to fresh selection mounted=${mounted}`,async()=>{const c=caller();await c.reviewAction(target);await c.applyAction(value);await c.actionReceipt({requestKey:value.requestKey});expect(m.review).toHaveBeenCalledExactlyOnceWith(7,20,target);expect(m.apply).toHaveBeenCalledExactlyOnceWith(7,20,value);expect(m.receipt).toHaveBeenCalledExactlyOnceWith(7,20,{requestKey:value.requestKey});});
+ it(`rejects anonymous, forged scope, viewer and revoked access mounted=${mounted}`,async()=>{await expect(caller(null).applyAction(value)).rejects.toMatchObject({code:'UNAUTHORIZED'});await expect(caller(undefined,'20x').reviewAction(target)).rejects.toMatchObject({code:'BAD_REQUEST'});await expect(caller().applyAction({...value,merchantId:99} as any)).rejects.toMatchObject({code:'BAD_REQUEST'});for(const access of [{merchantId:20,role:'viewer'},null]){m.access.mockResolvedValue(access);const c=caller();await expect(c.reviewAction(target)).rejects.toMatchObject({code:'FORBIDDEN'});await expect(c.applyAction(value)).rejects.toMatchObject({code:'FORBIDDEN'});await expect(c.actionReceipt({requestKey:value.requestKey})).rejects.toMatchObject({code:'FORBIDDEN'});}expect(m.review).not.toHaveBeenCalled();expect(m.apply).not.toHaveBeenCalled();expect(m.receipt).not.toHaveBeenCalled();});
+ it(`maps stale, reused and uncertain results and hides SQL mounted=${mounted}`,async()=>{for(const reason of ['stale','reused'] as const){m.apply.mockRejectedValue(new PromotionWriteError(reason));await expect(caller().applyAction(value)).rejects.toMatchObject({code:'CONFLICT',message:`promotion_write:${reason}`});}m.apply.mockRejectedValue(new PromotionWriteError('unknown'));await expect(caller().applyAction(value)).rejects.toMatchObject({code:'INTERNAL_SERVER_ERROR',message:'promotion_write:unknown'});m.review.mockRejectedValue(Error('PRIVATE SQL'));await expect(caller().reviewAction(target)).rejects.toMatchObject({message:'promotion_write:unavailable'});});
+}
