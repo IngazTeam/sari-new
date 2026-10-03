@@ -1,9 +1,14 @@
 import { beforeEach, expect, it, vi } from "vitest";
 const m = vi.hoisted(() => ({
+  settle: vi.fn(),
   remove: vi.fn(),
   access: vi.fn(),
   read: vi.fn(),
   detail: vi.fn(),
+}));
+vi.mock("./competitor-analysis-jobs", async original => ({
+  ...(await original<typeof import("./competitor-analysis-jobs")>()),
+  settleCompetitorAnalysisJobs: m.settle,
 }));
 vi.mock("./accounts/merchant-access", () => ({
   resolveMerchantAccess: m.access,
@@ -39,6 +44,7 @@ it("forwards authenticated actor and server-selected merchant for reads", async 
     page: 1,
   });
   expect(m.detail).toHaveBeenCalledWith(7, 20, { id: 8, productPage: 1 });
+  expect(m.settle).toHaveBeenCalledWith(7, 20);
 });
 it("rejects client scope injection without reading", async () => {
   await expect(

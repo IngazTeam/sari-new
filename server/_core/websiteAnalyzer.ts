@@ -1178,7 +1178,7 @@ async function discoverZidStoreId(url: string): Promise<string | null> {
  * If early strategies return sparse data (no description/images),
  * we merge with AI enrichment.
  */
-export async function extractProducts(url: string, html: string, text: string, merchantId: number): Promise<ExtractedProduct[]> {
+export async function extractProducts(url: string, html: string, text: string, merchantId: number, options: { requireVerifiedOutcome?: boolean } = {}): Promise<ExtractedProduct[]> {
   try {
     console.log('[WebsiteAnalyzer] Extracting products');
     console.log(`[WebsiteAnalyzer] HTML length: ${html.length}, Text length: ${text.length}`);
@@ -1251,12 +1251,14 @@ export async function extractProducts(url: string, html: string, text: string, m
     // Strategy 5: Fall back to AI extraction if we have enough text
     if (text.length < 100) {
       console.warn('[WebsiteAnalyzer] Not enough text content for AI extraction');
+      if (options.requireVerifiedOutcome) throw Error('PRODUCT_EXTRACTION_UNAVAILABLE');
       return [];
     }
 
-    return await extractWithAI(text, url, merchantId);
+    return await extractWithAI(text, url, merchantId, options.requireVerifiedOutcome);
   } catch (error) {
     console.error('[WebsiteAnalyzer] Error extracting products');
+    if (options.requireVerifiedOutcome) throw Error('PRODUCT_EXTRACTION_UNAVAILABLE');
     return [];
   }
 }
@@ -1290,7 +1292,7 @@ function mergeProducts(primary: ExtractedProduct[], secondary: ExtractedProduct[
 /**
  * AI-based product extraction with image URL support
  */
-async function extractWithAI(text: string, url: string, merchantId: number): Promise<ExtractedProduct[]> {
+async function extractWithAI(text: string, url: string, merchantId: number, requireVerifiedOutcome = false): Promise<ExtractedProduct[]> {
   try {
     const response = await invokeLLM({
       merchantId,
@@ -1377,14 +1379,19 @@ ${text.substring(0, 25000)}
     });
 
     const content = response.choices[0].message.content;
-    if (!content) return [];
+    if (!content) {
+      if (requireVerifiedOutcome) throw Error('PRODUCT_EXTRACTION_UNAVAILABLE');
+      return [];
+    }
 
     const result = JSON.parse(content as string);
+    if (requireVerifiedOutcome && (!result || !Array.isArray(result.products))) throw Error('PRODUCT_EXTRACTION_UNAVAILABLE');
+    if (requireVerifiedOutcome && result.products.some((p:any) => !p || typeof p.name !== 'string' || !p.name.trim() || typeof p.description !== 'string' || typeof p.price !== 'number' || !Number.isFinite(p.price) || p.price < 0 || typeof p.currency !== 'string' || !/^[A-Z]{3}$/.test(p.currency))) throw Error('PRODUCT_EXTRACTION_UNAVAILABLE');
     const products: ExtractedProduct[] = (result.products || []).map((p: any) => ({
       name: p.name || '',
       description: p.description || '',
       price: p.price || 0,
-      currency: p.currency || 'SAR',
+      currency: p.currency || (requireVerifiedOutcome ? '' : 'SAR'),
       imageUrl: (p.imageUrl && p.imageUrl.startsWith('http')) ? p.imageUrl : undefined,
       category: p.category || undefined,
       tags: p.tags || [],
@@ -1396,6 +1403,7 @@ ${text.substring(0, 25000)}
     return products;
   } catch (error) {
     console.error('[WebsiteAnalyzer] AI extraction failed');
+    if (requireVerifiedOutcome) throw Error('PRODUCT_EXTRACTION_UNAVAILABLE');
     return [];
   }
 }

@@ -11,6 +11,15 @@ vi.mock("../ai/zahypi-client", async original => ({
 }));
 import { runWebsiteAnalysisExecution } from "./website-analysis-execution";
 import { invokeLLM } from "../_core/llm";
+import { runCompetitorAnalysisContext } from '../competitor-analysis-context';
+it('checks competitor authority before provider configuration',async()=>{
+  const check=vi.fn().mockRejectedValue(Error('expired'));
+  await expect(runCompetitorAnalysisContext(20,check,()=>invokeLLM({merchantId:20,messages:[]}))).rejects.toThrow('expired');
+  expect(check).toHaveBeenCalledOnce();expect(m.config).not.toHaveBeenCalled();
+});
+it('rejects a cross-tenant competitor model call',async()=>{
+  const check=vi.fn();await expect(runCompetitorAnalysisContext(20,check,()=>invokeLLM({merchantId:999,messages:[]}))).rejects.toThrow('competitor_job:forbidden');expect(check).not.toHaveBeenCalled();expect(m.config).not.toHaveBeenCalled();
+});
 const scope = { merchantId: 20, jobId: randomUUID(), token: randomUUID() };
 beforeEach(() => {
   vi.resetAllMocks();

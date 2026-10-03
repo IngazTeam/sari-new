@@ -1,195 +1,140 @@
-import { inspect } from "node:util";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { randomUUID } from "node:crypto";
+import { beforeEach, expect, it, vi } from "vitest";
 const m = vi.hoisted(() => ({
   access: vi.fn(),
-  merchant: vi.fn(),
-  create: vi.fn(),
-  update: vi.fn(),
-  product: vi.fn(),
-  list: vi.fn(),
+  begin: vi.fn(),
   read: vi.fn(),
-  remove: vi.fn(),
-  analyze: vi.fn(),
-  scrape: vi.fn(),
-  extract: vi.fn(),
-  close: vi.fn(),
-  rows: [] as any[],
-  writes: [] as any[],
+  worker: vi.fn(),
 }));
 vi.mock("./accounts/merchant-access", () => ({
   resolveMerchantAccess: m.access,
 }));
-vi.mock("./db", () => ({
-  getMerchantById: m.merchant,
-  createCompetitorAnalysis: m.create,
-  updateCompetitorAnalysis: m.update,
-  createCompetitorProduct: m.product,
-  getCompetitorAnalysesByMerchant: m.list,
-  getCompetitorAnalysisById: m.read,
-  deleteCompetitorAnalysis: m.remove,
+vi.mock("./competitor-analysis-jobs", async original => ({
+  ...(await original<typeof import("./competitor-analysis-jobs")>()),
+  beginCompetitorAnalysisJob: m.begin,
+  readCompetitorAnalysisJob: m.read,
 }));
-vi.mock("./_core/websiteAnalyzer", () => ({
-  analyzeWebsite: m.analyze,
-  scrapeWebsite: m.scrape,
-  extractProducts: m.extract,
-  isUrlSafe: (url: string) => url.startsWith("https://example.test"),
+vi.mock("./competitor-analysis-worker", () => ({
+  runCompetitorAnalysisWorker: m.worker,
 }));
 import { websiteAnalysisRouter } from "./routers-website-analysis";
-const secret = "PRIVATE_COMPETITOR_FAILURE_430";
-const input = { name: "Fixture", url: "https://example.test" };
+import { CompetitorJobError } from "./competitor-analysis-jobs";
+const input = {
+  requestId: randomUUID(),
+  name: "Fixture",
+  url: "https://example.test/",
+};
+const execution = {
+  merchantId: 20,
+  requestId: input.requestId,
+  token: randomUUID(),
+};
 const caller = () =>
   websiteAnalysisRouter.createCaller({
     user: { id: 7, role: "user" },
     req: { headers: {} },
     res: {},
   } as any);
-const flush = async () => {
-  for (let i = 0; i < 40; i++) await Promise.resolve();
-};
-let output: unknown[][];
 beforeEach(() => {
   vi.resetAllMocks();
-  output = [];
-  m.writes = [];
-  m.rows = [
-    {
-      id: 8,
-      merchantId: 20,
-      status: "failed",
-      errorMessage: secret,
-      name: "Fixture",
-    },
-  ];
-  for (const level of ["log", "warn", "error"] as const)
-    vi.spyOn(console, level).mockImplementation((...args) => {
-      output.push(args);
-    });
   m.access.mockResolvedValue({ merchantId: 20, role: "owner" });
-  m.merchant.mockResolvedValue({ id: 20 });
-  m.create.mockResolvedValue(8);
-  m.update.mockImplementation(async (_id, patch) => {
-    m.writes.push(patch);
+  m.begin.mockResolvedValue({
+    created: true,
+    competitorId: 8,
+    requestId: input.requestId,
+    execution,
+    url: input.url,
   });
-  m.analyze.mockResolvedValue({
-    overallScore: 75,
-    seoScore: 70,
-    performanceScore: 60,
-    uxScore: 50,
-    contentQuality: 80,
-  });
-  m.scrape.mockResolvedValue({
-    html: "<p>Fixture</p>",
-    text: "Fixture",
-    dom: { window: { close: m.close } },
-  });
-  m.extract.mockResolvedValue([]);
-  m.list.mockImplementation(async () => m.rows);
-  m.read.mockImplementation(async () => m.rows[0]);
+  m.worker.mockResolvedValue(undefined);
 });
-afterEach(() => vi.restoreAllMocks());
-it("stays analyzing until all product writes settle and closes the scraped DOM", async () => {
-  let complete!: () => void;
-  m.extract.mockResolvedValue([
-    { name: "Product", price: 15, currency: "SAR" },
-  ]);
-  m.product.mockImplementation(
-    () =>
-      new Promise<void>(resolve => {
-        complete = resolve;
-      })
-  );
+it("starts only the worker identity accepted for the server-selected tenant", async () => {
   expect(await caller().addCompetitor(input)).toEqual({
     competitorId: 8,
-    status: "analyzing",
+    requestId: input.requestId,
+    created: true,
   });
-  await flush();
-  expect(m.product).toHaveBeenCalled();
-  expect(m.writes.some(p => p.status === "completed")).toBe(false);
-  complete();
-  await flush();
-  expect(m.writes.at(-1)).toMatchObject({ status: "completed" });
-  expect(m.close).toHaveBeenCalledOnce();
+  expect(m.begin).toHaveBeenCalledWith(7, 20, input);
+  expect(m.worker).toHaveBeenCalledWith(execution, input.url);
 });
-it("completes an empty catalog only after extraction has settled", async () => {
-  let complete!: (products: unknown[]) => void;
-  m.extract.mockImplementation(
-    () =>
-      new Promise(resolve => {
-        complete = resolve;
-      })
-  );
-  await caller().addCompetitor(input);
-  await flush();
-  expect(m.writes.some(p => p.status === "completed")).toBe(false);
-  complete([]);
-  await flush();
-  expect(m.writes.at(-1)).toMatchObject({ status: "completed" });
+it("returns a replay without scheduling another provider call", async () => {
+  m.begin.mockResolvedValue({
+    created: false,
+    competitorId: 8,
+    requestId: input.requestId,
+    execution: null,
+    url: null,
+  });
+  expect(await caller().addCompetitor(input)).toMatchObject({ created: false });
+  expect(m.worker).not.toHaveBeenCalled();
 });
-it.each(["analyze", "extract", "product"] as const)(
-  "stores only a public failure code after %s failure without a prior completion",
-  async target => {
-    m.extract.mockResolvedValue([{ name: "Product", price: 15 }]);
-    m[target].mockRejectedValue(Error(secret));
-    await caller().addCompetitor(input);
-    await flush();
-    expect(m.writes.some(p => p.status === "completed")).toBe(false);
-    expect(m.writes.at(-1)).toMatchObject({
-      status: "failed",
-      errorMessage: "COMPETITOR_ANALYSIS_FAILED",
-    });
-    expect(inspect([...output, m.writes], { depth: null })).not.toContain(
-      secret
-    );
-    if (target !== "analyze") expect(m.close).toHaveBeenCalledOnce();
-  }
-);
-it("handles failure to store the terminal outcome without an unhandled background rejection", async () => {
-  m.analyze.mockRejectedValue(Error(secret));
-  m.update.mockRejectedValue(Error(secret));
-  await caller().addCompetitor(input);
-  await flush();
-  expect(inspect(output, { depth: null })).not.toContain(secret);
-  expect(inspect(output)).toContain("Failed to store terminal status");
+it("reads the durable receipt using authenticated identity", async () => {
+  m.read.mockResolvedValue({ state: "completed" });
+  expect(
+    await caller().competitorAnalysisAttempt({ requestId: input.requestId })
+  ).toEqual({ state: "completed" });
+  expect(m.read).toHaveBeenCalledWith(7, 20, { requestId: input.requestId });
 });
-it("does not return raw admission errors or replace intentional not-found responses", async () => {
-  m.create.mockRejectedValue(Error(secret));
+it.each([
+  ["forbidden", "FORBIDDEN"],
+  ["website", "BAD_REQUEST"],
+  ["stale", "CONFLICT"],
+  ["busy", "CONFLICT"],
+  ["cooldown", "TOO_MANY_REQUESTS"],
+  ["unknown", "INTERNAL_SERVER_ERROR"],
+] as const)("maps %s without leaking provider state", async (reason, code) => {
+  m.begin.mockRejectedValue(new CompetitorJobError(reason));
   await expect(caller().addCompetitor(input)).rejects.toMatchObject({
-    code: "INTERNAL_SERVER_ERROR",
-    message: "Competitor analysis unavailable",
+    code,
+    message: "competitor_job:" + reason,
   });
-  m.merchant.mockResolvedValue(null);
-  await expect(caller().addCompetitor(input)).rejects.toMatchObject({
-    code: "NOT_FOUND",
-  });
+  expect(m.worker).not.toHaveBeenCalled();
 });
-it.each(['list','detail','products','compare','delete'])('retires the old %s entry without accessing old storage or a provider',async method=>{
- const api=caller(); const call=method==='list'?api.listCompetitors():method==='detail'?api.getCompetitor({id:8}):method==='products'?api.getCompetitorProducts({competitorId:8}):method==='compare'?api.compareWithCompetitors({analysisId:8,competitorIds:[8]}):api.deleteCompetitor({id:8});
- await expect(call).rejects.toMatchObject({code:'PRECONDITION_FAILED',message:'competitor_workspace:upgrade_required'});
- for(const fn of [m.list,m.read,m.remove,m.analyze])expect(fn).not.toHaveBeenCalled();
+it("hides unexpected admission details", async () => {
+  m.begin.mockRejectedValue(Error("PRIVATE_SQL"));
+  await expect(caller().addCompetitor(input)).rejects.toMatchObject({
+    message: "competitor_job:unavailable",
+  });
 });
 it.each(["viewer", "sales_supervisor"])(
-  "blocks %s creation and deletion before side effects",
+  "blocks %s before admission",
   async role => {
     m.access.mockResolvedValue({ merchantId: 20, role });
     await expect(caller().addCompetitor(input)).rejects.toMatchObject({
       code: "FORBIDDEN",
     });
-    await expect(caller().deleteCompetitor({ id: 8 })).rejects.toMatchObject({
-      code: "FORBIDDEN",
-    });
-    expect(m.create).not.toHaveBeenCalled();
-    expect(m.analyze).not.toHaveBeenCalled();
-    expect(m.remove).not.toHaveBeenCalled();
+    expect(m.begin).not.toHaveBeenCalled();
   }
 );
 it.each([
-  { name: " " },
+  { merchantId: 30 },
+  { actorId: 8 },
+  { requestId: "bad" },
+  { name: "" },
   { name: "x".repeat(256) },
-  { url: "http://127.0.0.1/private" },
-  { url: "file:///tmp/file" },
-])("rejects invalid competitor input before saving: %j", async patch => {
+])("rejects malformed or forged command %j", async patch => {
   await expect(
-    caller().addCompetitor({ ...input, ...patch })
+    caller().addCompetitor({ ...input, ...patch } as any)
   ).rejects.toMatchObject({ code: "BAD_REQUEST" });
-  expect(m.create).not.toHaveBeenCalled();
+  expect(m.begin).not.toHaveBeenCalled();
 });
+it.each(["list", "detail", "products", "compare", "delete"])(
+  "keeps retired %s closed",
+  async method => {
+    const api = caller();
+    const call =
+      method === "list"
+        ? api.listCompetitors()
+        : method === "detail"
+          ? api.getCompetitor({ id: 8 })
+          : method === "products"
+            ? api.getCompetitorProducts({ competitorId: 8 })
+            : method === "compare"
+              ? api.compareWithCompetitors({
+                  analysisId: 8,
+                  competitorIds: [8],
+                })
+              : api.deleteCompetitor({ id: 8 });
+    await expect(call).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+    expect(m.worker).not.toHaveBeenCalled();
+  }
+);

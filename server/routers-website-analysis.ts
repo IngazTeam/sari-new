@@ -1,3 +1,7 @@
+import { randomUUID } from 'node:crypto';
+import { competitorAnalysisStart, competitorAnalysisAttempt } from '../shared/competitor-analysis-job';
+import { beginCompetitorAnalysisJob, readCompetitorAnalysisJob, CompetitorJobError } from './competitor-analysis-jobs';
+import { runCompetitorAnalysisWorker } from './competitor-analysis-worker';
 import { persistCrawledKnowledge } from './knowledge/crawled-snapshot';
 import { reportListInput, reportReadInput, reportDeleteInput } from '../shared/website-reports';
 import { listWebsiteReports, readWebsiteReport, deleteReviewedWebsiteReport } from './knowledge/website-reports';
@@ -13,8 +17,6 @@ import { router, merchantProcedure, permissionProcedure } from './_core/trpc';
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import {
-  createCompetitorAnalysis,
-  createCompetitorProduct,
   createExtractedProduct,
   createWebsiteAnalysis,
   createWebsiteInsight,
@@ -24,7 +26,6 @@ import {
   getPool,
   getWebsiteAnalysesByMerchant,
   getWebsiteAnalysisById,
-  updateCompetitorAnalysis,
   updateMerchant,
   updateWebsiteAnalysis,
 } from './db';
@@ -38,6 +39,11 @@ async function reportOperation<T>(operation: () => Promise<T>): Promise<T> {
     console.error('[WebsiteReports] Operation failed');
     throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Website report operation unavailable' });
   }
+}
+
+function competitorJobResponse(error:unknown) {
+  const reason=error instanceof CompetitorJobError?error.reason:'unavailable';
+  return new TRPCError({code:reason==='forbidden'?'FORBIDDEN':reason==='website'?'BAD_REQUEST':reason==='busy'||reason==='stale'?'CONFLICT':reason==='cooldown'?'TOO_MANY_REQUESTS':'INTERNAL_SERVER_ERROR',message:'competitor_job:'+reason});
 }
 
 export const websiteAnalysisRouter = router({
@@ -484,107 +490,21 @@ export const websiteAnalysisRouter = router({
    * إضافة منافس
    */
   addCompetitor: permissionProcedure('bot_settings.manage')
-    .input(z.object({
-      name: z.string().trim().min(1).max(255),
-      url: z.string().url().max(500),
-    }))
-    .mutation(async ({ ctx, input }) => {
+    .input(competitorAnalysisStart.extend({requestId: z.string().uuid().optional()}))
+    .mutation(async ({ctx,input}) => {
       try {
-        if (!analyzer.isUrlSafe(input.url)) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Website URL is not allowed' });
+        const accepted = await beginCompetitorAnalysisJob(ctx.user.id,ctx.merchantId,{...input,requestId:input.requestId ?? randomUUID()});
+        if (accepted.created && accepted.execution && accepted.url) {
+          void runCompetitorAnalysisWorker(accepted.execution,accepted.url).catch(()=>console.error('[CompetitorAnalysis] Worker unavailable'));
         }
-        const merchant = await getMerchantById(ctx.merchantId);
-        if (!merchant) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        }
-
-        // Create competitor record
-        const competitorId = await createCompetitorAnalysis({
-          merchantId: merchant.id,
-          name: input.name,
-          url: input.url,
-          status: 'analyzing',
-        });
-
-        // Start analysis in background
-        void (async () => {
-          try {
-            // Analyze competitor website
-            const result = await analyzer.analyzeWebsite(input.url, merchant.id);
-
-            // Update competitor with results
-            await updateCompetitorAnalysis(competitorId, {
-              overallScore: result.overallScore,
-              seoScore: result.seoScore,
-              performanceScore: result.performanceScore,
-              uxScore: result.uxScore,
-              contentScore: result.contentQuality,
-            });
-
-            // Extract competitor products
-            const scraped = await analyzer.scrapeWebsite(input.url);
-            let products: analyzer.ExtractedProduct[];
-            try {
-              products = await analyzer.extractProducts(input.url, scraped.html, scraped.text, merchant.id);
-            } finally { scraped.dom.window.close(); }
-
-            let totalPrice = 0;
-            let minPrice = Infinity;
-            let maxPrice = 0;
-            let productCount = 0;
-
-            for (const product of products) {
-              if (product.price) {
-                totalPrice += product.price;
-                minPrice = Math.min(minPrice, product.price);
-                maxPrice = Math.max(maxPrice, product.price);
-                productCount++;
-              }
-
-              await createCompetitorProduct({
-                competitorId,
-                merchantId: merchant.id,
-                name: product.name,
-                description: product.description,
-                price: product.price,
-                currency: product.currency,
-                imageUrl: product.imageUrl,
-                productUrl: product.productUrl,
-                category: product.category,
-              });
-            }
-
-            // Update pricing stats
-            if (productCount > 0) {
-              await updateCompetitorAnalysis(competitorId, {
-                avgPrice: totalPrice / productCount,
-                minPrice: minPrice === Infinity ? 0 : minPrice,
-                maxPrice,
-                productCount,
-              });
-            }
-
-            // Product writes must settle before a terminal report can be read or deleted.
-            await updateCompetitorAnalysis(competitorId, { status: 'completed' });
-            console.log('[CompetitorAnalysis] Analysis completed:', competitorId);
-          } catch {
-            console.error('[CompetitorAnalysis] Analysis failed');
-            await updateCompetitorAnalysis(competitorId, {
-              status: 'failed',
-              errorMessage: 'COMPETITOR_ANALYSIS_FAILED',
-            });
-          }
-        })().catch(() => { console.error('[CompetitorAnalysis] Failed to store terminal status'); });
-
-        return { competitorId, status: 'analyzing' };
-      } catch (error) {
-        console.error('[CompetitorAnalysis] Error starting analysis');
-        if (error instanceof TRPCError) throw error;
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Competitor analysis unavailable',
-        });
-      }
+        return {competitorId:accepted.competitorId,requestId:accepted.requestId,created:accepted.created};
+      } catch(error) { throw competitorJobResponse(error); }
+    }),
+  competitorAnalysisAttempt: permissionProcedure('analytics.read')
+    .input(competitorAnalysisAttempt)
+    .query(async({ctx,input})=>{
+      try{return await readCompetitorAnalysisJob(ctx.user.id,ctx.merchantId,input);}
+      catch(error){throw competitorJobResponse(error);}
     }),
 
   // Retired unbounded reads, unfenced deletion and side-effecting comparison query.

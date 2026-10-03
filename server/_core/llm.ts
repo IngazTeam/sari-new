@@ -1,4 +1,5 @@
 import { currentWebsiteAnalysisExecution, assertWebsiteAnalysisCheckpoint } from '../knowledge/website-analysis-execution';
+import { assertActiveCompetitorAnalysis } from '../competitor-analysis-context';
 import { ENV } from "./env";
 import { withAiBudget, promptBudgetShape } from "../ai/budget-ledger";
 import {
@@ -302,6 +303,7 @@ const normalizeResponseFormat = ({
 export async function invokeLLM(
   params: InvokeParams & { merchantId?: number; taskType?: string },
 ): Promise<InvokeResult> {
+  await assertActiveCompetitorAnalysis(params.merchantId);
   const websiteExecution = currentWebsiteAnalysisExecution();
   if (websiteExecution) await assertWebsiteAnalysisCheckpoint(params.merchantId ?? websiteExecution.merchantId);
   const zahyPiConfig = await resolveZahyPiRuntimeConfig();

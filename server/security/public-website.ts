@@ -1,4 +1,5 @@
 import axios from "axios";
+import { assertActiveCompetitorAnalysis } from '../competitor-analysis-context';
 import dns from "node:dns/promises";
 import https from "node:https";
 import { isIP, type LookupFunction } from "node:net";
@@ -81,6 +82,7 @@ export async function requestPublicWebsite(
   }
   try {
     for (let hop = 0; hop <= 3; hop++) {
+      await assertActiveCompetitorAnalysis();
       const remaining = () => {
         const ms = deadline - Date.now();
         if (ms <= 0) throw Error("deadline");
@@ -119,6 +121,7 @@ export async function requestPublicWebsite(
           "x-requested-with",
         ])
           delete headers[name];
+      await assertActiveCompetitorAnalysis();
       const response = await axios.get<ArrayBuffer>(url.href, {
         headers,
         httpsAgent: agent,

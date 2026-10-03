@@ -1,3 +1,7 @@
+import {
+  settleCompetitorAnalysisJobs,
+  CompetitorJobError,
+} from "./competitor-analysis-jobs";
 import { TRPCError } from "@trpc/server";
 import { permissionProcedure } from "./_core/trpc";
 import {
@@ -14,7 +18,9 @@ import {
 function mapped(error: unknown): never {
   throw new TRPCError({
     code:
-      error instanceof CompetitorWorkspaceError && error.reason === "forbidden"
+      (error instanceof CompetitorWorkspaceError ||
+        error instanceof CompetitorJobError) &&
+      error.reason === "forbidden"
         ? "FORBIDDEN"
         : error instanceof CompetitorWorkspaceError &&
             error.reason === "missing"
@@ -58,6 +64,7 @@ export const competitorReadProcedures = {
     .input(competitorSelection)
     .query(async ({ ctx, input }) => {
       try {
+        await settleCompetitorAnalysisJobs(ctx.user.id, ctx.merchantId);
         return await readCompetitorWorkspace(
           ctx.user.id,
           ctx.merchantId,
@@ -71,6 +78,7 @@ export const competitorReadProcedures = {
     .input(competitorDetailSelection)
     .query(async ({ ctx, input }) => {
       try {
+        await settleCompetitorAnalysisJobs(ctx.user.id, ctx.merchantId);
         return await readCompetitorDetail(ctx.user.id, ctx.merchantId, input);
       } catch (error) {
         return mapped(error);

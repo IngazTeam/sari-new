@@ -7,6 +7,17 @@ import {
   requestPublicWebsite,
   samePublicWebsiteOrigin,
 } from "./public-website";
+import { runCompetitorAnalysisContext } from '../competitor-analysis-context';
+it('fences competitor transport before DNS or socket creation when authority expires',async()=>{
+  const check=vi.fn().mockRejectedValue(Error('expired'));
+  await expect(runCompetitorAnalysisContext(20,check,()=>requestPublicWebsite('https://example.test/'))).rejects.toThrow('WEBSITE_FETCH_FAILED');
+  expect(m.dns).not.toHaveBeenCalled();expect(m.get).not.toHaveBeenCalled();
+});
+it('checks competitor authority again after DNS before sending the request',async()=>{
+  const check=vi.fn().mockResolvedValueOnce(undefined).mockRejectedValue(Error('expired'));
+  await expect(runCompetitorAnalysisContext(20,check,()=>requestPublicWebsite('https://example.test/'))).rejects.toThrow('WEBSITE_FETCH_FAILED');
+  expect(m.dns).toHaveBeenCalledOnce();expect(m.get).not.toHaveBeenCalled();
+});
 beforeEach(() => {
   vi.clearAllMocks();
   m.dns.mockResolvedValue([{ address: "8.8.8.8", family: 4 }]);
