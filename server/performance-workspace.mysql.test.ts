@@ -167,6 +167,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
       const r = await read();
       expect(r.current.reviews).toEqual({
         total: 3,
+        unlinked: 1,
         valid: 2,
         invalid: 1,
         positive: 1,

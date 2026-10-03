@@ -49,6 +49,7 @@ export function snapshot() {
   d.reviews.total *= k;
   d.reviews.valid *= k;
   d.reviews.invalid *= k;
+  d.reviews.unlinked *= k;
   d.reviews.distribution.forEach(r => (r.count *= k));
   for (const key of [
     "total",
@@ -80,7 +81,7 @@ export function snapshot() {
         excludedAmounts: 0,
       })
     );
-    Object.assign(d.reviews, { total: 0, valid: 0, invalid: 0, average: null });
+    Object.assign(d.reviews, { total: 0, valid: 0, invalid: 0, unlinked: 0, average: null });
     d.reviews.distribution.forEach(r =>
       Object.assign(r, { count: 0, share: null })
     );

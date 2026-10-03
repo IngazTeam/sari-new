@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-03T15:14:11.400Z",
+  "generatedAt": "2026-10-03T15:34:09.704Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -8838,7 +8838,7 @@
     },
     {
       "file": "client/src/lib/overview-labels.ts",
-      "hash": "bd83b396a278",
+      "hash": "2db927fb04d4",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
@@ -8853,7 +8853,7 @@
     },
     {
       "file": "client/src/lib/overview-export.ts",
-      "hash": "026d193e510a",
+      "hash": "5ab60ed23a43",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
@@ -8870,7 +8870,7 @@
     },
     {
       "file": "client/src/components/merchant/OverviewReport.tsx",
-      "hash": "8e6634628aa7",
+      "hash": "1acaa3415959",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
@@ -14403,7 +14403,7 @@
     },
     {
       "file": "client/src/lib/performance-labels.ts",
-      "hash": "f91ee1a1a6d3",
+      "hash": "68e905ffb631",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
@@ -14418,7 +14418,7 @@
     },
     {
       "file": "client/src/lib/performance-report.ts",
-      "hash": "0e112753bba1",
+      "hash": "76d1190c8bdd",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
@@ -14427,7 +14427,7 @@
       "choices": [
         {
           "name": "rows",
-          "line": 98,
+          "line": 99,
           "values": [
             [
               "l.title"
@@ -23744,8 +23744,8 @@
         "669f66b3b6e5",
         "de0065e969c0",
         "6290f8a2adbb",
-        "75d9a6d2c87e",
-        "98d7d4b7aef4"
+        "18459c473870",
+        "9f653204ceb2"
       ],
       "queries": [
         "auth.me",
@@ -55443,9 +55443,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "75d9a6d2c87e",
+      "id": "18459c473870",
       "file": "client/src/components/merchant/OverviewReport.tsx",
-      "line": 201,
+      "line": 202,
       "tag": "a",
       "role": "",
       "kind": "action",
@@ -55464,9 +55464,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "98d7d4b7aef4",
+      "id": "9f653204ceb2",
       "file": "client/src/components/merchant/OverviewReport.tsx",
-      "line": 210,
+      "line": 211,
       "tag": "a",
       "role": "",
       "kind": "action",

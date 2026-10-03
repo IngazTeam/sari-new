@@ -40,6 +40,7 @@ export function overviewWorkspaceFixture(): OverviewSnapshot {
       total: 4,
       valid: 3,
       invalid: 1,
+      unlinked: 2,
       average: 4,
       distribution: [5, 4, 3, 2, 1].map(stars => ({
         stars,

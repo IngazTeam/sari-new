@@ -44,7 +44,7 @@ function adjust(p: PerformancePeriod, factor: number, empty = false) {
     p.orders[key] *= factor;
   for (const key of ["known", "repeated", "unknownPhoneOrders"] as const)
     p.orderPhones[key] *= factor;
-  for (const key of ["total", "valid", "invalid", "positive"] as const)
+  for (const key of ["total", "valid", "invalid", "unlinked", "positive"] as const)
     p.reviews[key] *= factor;
   for (const v of p.orders.values)
     for (const key of [

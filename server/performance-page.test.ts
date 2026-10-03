@@ -121,7 +121,9 @@ describe("performance evidence workspace", () => {
       { startDate: "2026-09-01", endDate: "2026-09-30" },
       { staleTime: 0, refetchOnMount: "always" }
     );
-    expect(container.querySelectorAll("[data-performance]")).toHaveLength(20);
+    expect(container.querySelectorAll("[data-performance]")).toHaveLength(21);
+    expect(container.textContent).toContain(l.unlinkedReviews);
+    expect(performanceRows(m.data, t).some(row => row.includes(l.unlinkedReviews))).toBe(true);
     expect(container.querySelectorAll("#pf-limits + p")).toHaveLength(1);
     expect(
       container

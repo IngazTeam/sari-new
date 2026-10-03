@@ -51,6 +51,7 @@ export function overviewLabels(t: (key: string) => string) {
     stars: t("overviewWorkspace.stars"),
     share: t("overviewWorkspace.share"),
     invalidRatings: t("overviewWorkspace.invalidRatings"),
+    unlinkedReviews: t("overviewWorkspace.unlinkedReviews"),
     carts: t("overviewWorkspace.carts"),
     cartTotal: t("overviewWorkspace.cartTotal"),
     recovered: t("overviewWorkspace.recovered"),

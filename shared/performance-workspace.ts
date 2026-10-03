@@ -81,6 +81,7 @@ export type PerformancePeriod = {
     total: number;
     valid: number;
     invalid: number;
+    unlinked: number;
     positive: number;
     average: number | null;
     positiveShare: number | null;

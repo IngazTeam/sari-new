@@ -40,6 +40,7 @@ export function overviewReportRows(
     [l.averageRating, d.reviews.average ?? missing],
     [l.ratingSample, d.reviews.valid, d.reviews.total],
     [l.invalidRatings, d.reviews.invalid],
+    [l.unlinkedReviews, d.reviews.unlinked],
     [l.stars, l.count, l.share],
     ...d.reviews.distribution.map(r => [r.stars, r.count, ratio(r.share)]),
     [],

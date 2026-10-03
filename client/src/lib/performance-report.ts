@@ -75,9 +75,10 @@ export function performanceSections(t: (key: string) => string) {
       title: l.reviews,
       note: l.reviewsNote,
       rows: [
-        row("reviews", l.reviews, p => p.reviews.total),
+        row("reviews", l.linkedReviews, p => p.reviews.total),
         row("validReviews", l.validReviews, p => p.reviews.valid),
         row("invalidReviews", l.invalidReviews, p => p.reviews.invalid),
+        row("unlinkedReviews", l.unlinkedReviews, p => p.reviews.unlinked),
         row("positiveReviews", l.positiveReviews, p => p.reviews.positive),
         row("average", l.average, p => p.reviews.average, "stars"),
         row(

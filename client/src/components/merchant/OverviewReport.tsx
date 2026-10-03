@@ -135,6 +135,7 @@ export function OverviewReport({
               `${n(d.reviews.valid)} / ${n(d.reviews.total)}`
             )}
             {pair(l.invalidRatings, n(d.reviews.invalid))}
+            {pair(l.unlinkedReviews, n(d.reviews.unlinked))}
           </dl>
           <table>
             <caption>{l.distribution}</caption>

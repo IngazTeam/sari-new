@@ -141,6 +141,7 @@ describe.skipIf(!process.env.DATABASE_URL)("overview snapshot in MySQL", () => {
     expect(r.orders.total).toBe(0);
     expect(r.reviews).toMatchObject({
       total: 3,
+      unlinked: 1,
       valid: 2,
       invalid: 1,
       average: 3,

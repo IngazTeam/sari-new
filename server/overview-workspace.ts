@@ -1,7 +1,7 @@
+import { reviewAggregateQuery, summarizeReviewGroups } from './review-aggregates';
 import { and, count, eq, gte, lte, sql } from "drizzle-orm";
 import {
   abandonedCarts,
-  customerReviews,
   orders,
   referralCodes,
   referrals,
@@ -80,32 +80,8 @@ export async function readOverviewWorkspace(
           ),
         };
       });
-      const reviewRows = await tx
-        .select({ rating: customerReviews.rating, count: count() })
-        .from(customerReviews)
-        .innerJoin(
-          orders,
-          and(
-            eq(orders.id, customerReviews.orderId),
-            eq(orders.merchantId, customerReviews.merchantId)
-          )
-        )
-        .where(
-          and(
-            eq(customerReviews.merchantId, merchantId),
-            gte(customerReviews.createdAt, window.sqlFrom),
-            lte(customerReviews.createdAt, window.sqlThrough)
-          )
-        )
-        .groupBy(customerReviews.rating);
-      const reviewTotal = reviewRows.reduce(
-          (n, r) => n + safeCount(r.count),
-          0
-        ),
-        valid = reviewRows.filter(
-          r => Number.isInteger(r.rating) && r.rating >= 1 && r.rating <= 5
-        ),
-        validTotal = valid.reduce((n, r) => n + safeCount(r.count), 0);
+      const reviewGroups = (await tx.execute(reviewAggregateQuery(merchantId, window.sqlFrom, window.sqlThrough)))[0];
+      const reviews = summarizeReviewGroups(reviewGroups);
       const cartRows = await tx
         .select({ flag: abandonedCarts.recovered, count: count() })
         .from(abandonedCarts)
@@ -176,23 +152,10 @@ export async function readOverviewWorkspace(
           valueMeaning: "stored_minor_non_cancelled_not_settlement",
         },
         reviews: {
-          total: reviewTotal,
-          valid: validTotal,
-          invalid: reviewTotal - validTotal,
-          average: validTotal
-            ? valid.reduce((n, r) => n + r.rating * safeCount(r.count), 0) /
-              validTotal
-            : null,
-          distribution: [5, 4, 3, 2, 1].map(stars => {
-            const count = safeCount(
-              valid.find(r => r.rating === stars)?.count ?? 0
-            );
-            return {
-              stars,
-              count,
-              share: observationArm(validTotal, count).ratio,
-            };
-          }),
+          total: reviews.linked, valid: reviews.rated, invalid: reviews.invalidRatings,
+          unlinked: reviews.unlinked, average: reviews.average,
+          distribution: [5, 4, 3, 2, 1].map(stars => ({ stars, count: reviews.distribution[stars],
+            share: observationArm(reviews.rated, reviews.distribution[stars]).ratio })),
           meaning: "stored_review_records_not_unique_customers",
         },
         carts: {

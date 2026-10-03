@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-03T15:14:11.400Z",
+  "generatedAt": "2026-10-03T15:34:09.704Z",
   "definition": "Every registered route is accounted for; source inventory and design completion are different statuses.",
   "routes": [
     {
@@ -38788,8 +38788,8 @@
         "669f66b3b6e5",
         "de0065e969c0",
         "6290f8a2adbb",
-        "75d9a6d2c87e",
-        "98d7d4b7aef4"
+        "18459c473870",
+        "9f653204ceb2"
       ],
       "queries": [
         "auth.me",
@@ -38932,9 +38932,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "75d9a6d2c87e",
+          "id": "18459c473870",
           "file": "client/src/components/merchant/OverviewReport.tsx",
-          "line": 201,
+          "line": 202,
           "tag": "a",
           "role": "",
           "kind": "action",
@@ -38953,9 +38953,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "98d7d4b7aef4",
+          "id": "9f653204ceb2",
           "file": "client/src/components/merchant/OverviewReport.tsx",
-          "line": 210,
+          "line": 211,
           "tag": "a",
           "role": "",
           "kind": "action",

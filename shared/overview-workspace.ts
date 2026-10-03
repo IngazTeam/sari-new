@@ -44,6 +44,7 @@ export type OverviewSnapshot = {
     total: number;
     valid: number;
     invalid: number;
+    unlinked: number;
     average: number | null;
     distribution: { stars: number; count: number; share: number | null }[];
     meaning: "stored_review_records_not_unique_customers";

@@ -1,3 +1,4 @@
+import { reviewAggregateQuery, summarizeReviewGroups } from './review-aggregates';
 import { sql } from "drizzle-orm";
 import { getDb } from "./db/connection";
 import {
@@ -50,24 +51,10 @@ export async function readPerformanceWorkspace(
         FROM (SELECT BINARY NULLIF(TRIM(customerPhone),'') phone,COUNT(*) total FROM orders
         WHERE merchantId=${merchantId} AND status!='cancelled' AND createdAt>=${w.sqlFrom} AND createdAt<=${w.sqlThrough}
         GROUP BY BINARY NULLIF(TRIM(customerPhone),'')) groupedPhones`);
-        const reviews =
-          await rows(sql`SELECT r.rating,COUNT(*) total FROM customer_reviews r
-        JOIN orders o ON o.id=r.orderId AND o.merchantId=r.merchantId
-        WHERE r.merchantId=${merchantId} AND r.createdAt>=${w.sqlFrom} AND r.createdAt<=${w.sqlThrough} GROUP BY r.rating`);
+        const reviews = summarizeReviewGroups(await rows(reviewAggregateQuery(merchantId, w.sqlFrom, w.sqlThrough)));
         const total = orders.reduce((s, r) => s + n(r.total), 0),
           delivered = orders
             .filter(r => r.status === "delivered")
-            .reduce((s, r) => s + n(r.total), 0);
-        const validReviews = reviews.filter(
-          r =>
-            Number.isInteger(Number(r.rating)) &&
-            Number(r.rating) >= 1 &&
-            Number(r.rating) <= 5
-        );
-        const reviewTotal = reviews.reduce((s, r) => s + n(r.total), 0),
-          valid = validReviews.reduce((s, r) => s + n(r.total), 0),
-          positive = validReviews
-            .filter(r => Number(r.rating) >= 4)
             .reduce((s, r) => s + n(r.total), 0);
         return {
           from: w.from,
@@ -116,17 +103,9 @@ export async function readPerformanceWorkspace(
             repeatShare: performanceShare(n(phones.repeated), n(phones.known)),
           },
           reviews: {
-            total: reviewTotal,
-            valid,
-            invalid: reviewTotal - valid,
-            positive,
-            average: valid
-              ? validReviews.reduce(
-                  (s, r) => s + Number(r.rating) * n(r.total),
-                  0
-                ) / valid
-              : null,
-            positiveShare: performanceShare(positive, valid),
+            total: reviews.linked, valid: reviews.rated, invalid: reviews.invalidRatings,
+            unlinked: reviews.unlinked, positive: reviews.positive, average: reviews.average,
+            positiveShare: performanceShare(reviews.positive, reviews.rated),
           },
         };
       };

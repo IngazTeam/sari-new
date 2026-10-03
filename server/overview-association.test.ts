@@ -95,6 +95,8 @@ describe("overview evidence and recovery", () => {
       { staleTime: 0, refetchOnMount: "always" }
     );
     expect(container.querySelectorAll(".ov-panel")).toHaveLength(7);
+    expect(container.textContent).toContain(l.unlinkedReviews);
+    expect(overviewReportRows(m.data, t)).toContainEqual([l.unlinkedReviews, 2]);
     expect(
       [...container.querySelectorAll("tbody")].map(el => el.children.length)
     ).toEqual([6, 3, 5]);

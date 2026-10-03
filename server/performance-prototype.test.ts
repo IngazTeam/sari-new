@@ -89,7 +89,8 @@ afterEach(() => {
 });
 describe("performance prototype parity", () => {
   it("renders all actual observations, currencies and evidence limits", () => {
-    expect(w.document.querySelectorAll("[data-performance]")).toHaveLength(20);
+    expect(w.document.querySelectorAll("[data-performance]")).toHaveLength(21);
+    expect(w.document.querySelector('.pf-report').textContent).toContain(ar.performanceWorkspace.unlinkedReviews);
     expect(w.document.querySelectorAll(".pf-report table")).toHaveLength(6);
     expect(w.document.querySelectorAll(".pf-report .ov-pair")).toHaveLength(7);
     expect(w.document.querySelector(".page-local-note").textContent).toContain(
