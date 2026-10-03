@@ -80,8 +80,10 @@ describe("knowledge operational logs exclude tenant content", () => {
     dependencies.callGPT4.mockResolvedValue(
       JSON.stringify([{ ...sections[0], sectionType: secret.error }])
     );
-    expect(await classifyContent(42, secret.raw, context)).toEqual([]);
-    expect(assertPrivateLogs()).toContain("0 sections passed validation");
+    await expect(
+      classifyContent(42, secret.raw, context)
+    ).rejects.toMatchObject({ name: "KnowledgeAnalysisError" });
+    expect(assertPrivateLogs()).toContain("classifyContent failed");
   });
   it.each(["classification", "sales"] as const)(
     "does not log provider messages or stacks after %s failure",
@@ -91,13 +93,11 @@ describe("knowledge operational logs exclude tenant content", () => {
       dependencies.callGPT4.mockRejectedValue(error);
       const result =
         task === "classification"
-          ? await classifyContent(42, secret.raw, context)
-          : await analyzeSalesIntelligence(42, sections, context);
-      expect(result).toEqual(
-        task === "classification"
-          ? []
-          : { usps: [], sellingTips: [], opportunities: [] }
-      );
+          ? classifyContent(42, secret.raw, context)
+          : analyzeSalesIntelligence(42, sections, context);
+      await expect(result).rejects.toMatchObject({
+        name: "KnowledgeAnalysisError",
+      });
       expect(assertPrivateLogs()).toMatch(/failed/i);
     }
   );
@@ -106,13 +106,13 @@ describe("knowledge operational logs exclude tenant content", () => {
     async task => {
       dependencies.callGPT4.mockResolvedValue(secret.error);
       if (task === "classification")
-        expect(await classifyContent(42, secret.raw, context)).toEqual([]);
+        await expect(
+          classifyContent(42, secret.raw, context)
+        ).rejects.toMatchObject({ name: "KnowledgeAnalysisError" });
       else
-        expect(await analyzeSalesIntelligence(42, sections, context)).toEqual({
-          usps: [],
-          sellingTips: [],
-          opportunities: [],
-        });
+        await expect(
+          analyzeSalesIntelligence(42, sections, context)
+        ).rejects.toMatchObject({ name: "KnowledgeAnalysisError" });
       expect(assertPrivateLogs()).toMatch(/failed/i);
     }
   );
@@ -166,11 +166,67 @@ describe("knowledge operational logs exclude tenant content", () => {
   });
   it("keeps a numeric empty-outcome diagnostic without leaking the uploaded file", async () => {
     dependencies.callGPT4.mockResolvedValue("[]");
-    expect(
-      (await ingestContent(42, secret.raw, "document", context)).evolveResult
-        .added
-    ).toBe(0);
+    await expect(
+      ingestContent(42, secret.raw, "document", context)
+    ).rejects.toMatchObject({
+      name: "KnowledgeAnalysisError",
+      stage: "empty_classification",
+    });
     expect(dependencies.createSection).not.toHaveBeenCalled();
     expect(assertPrivateLogs()).toContain("ZERO SECTIONS");
   });
+});
+
+it.each(["classification", "sales"] as const)(
+  "does not write knowledge for a malformed %s provider result",
+  async stage => {
+    dependencies.callGPT4.mockResolvedValueOnce(
+      stage === "classification"
+        ? JSON.stringify([sections[0], { ...sections[0], title: 4 }])
+        : JSON.stringify(sections)
+    );
+    if (stage === "sales")
+      dependencies.callGPT4.mockResolvedValueOnce(
+        JSON.stringify({ ...sales, sellingTips: [{}] })
+      );
+    await expect(
+      ingestContent(42, secret.raw, "document", context)
+    ).rejects.toMatchObject({ name: "KnowledgeAnalysisError", stage });
+    expect(dependencies.createSection).not.toHaveBeenCalled();
+    expect(dependencies.updateSection).not.toHaveBeenCalled();
+    expect(dependencies.logChange).not.toHaveBeenCalled();
+    assertPrivateLogs();
+  }
+);
+it("does not classify a late response or request sales analysis after the execution closes", async () => {
+  dependencies.callGPT4.mockResolvedValue(JSON.stringify(sections));
+  const expired = Object.assign(new Error("Execution closed"), {
+    name: "IntakeExecutionExpired",
+  });
+  dependencies.checkpoint
+    .mockResolvedValueOnce(undefined)
+    .mockRejectedValueOnce(expired);
+  await expect(ingestContent(42, secret.raw, "document", context)).rejects.toBe(
+    expired
+  );
+  expect(dependencies.callGPT4).toHaveBeenCalledTimes(1);
+  expect(dependencies.createSection).not.toHaveBeenCalled();
+});
+it("does not write a late sales result after the execution closes", async () => {
+  dependencies.callGPT4
+    .mockResolvedValueOnce(JSON.stringify(sections))
+    .mockResolvedValueOnce(JSON.stringify(sales));
+  const expired = Object.assign(new Error("Execution closed"), {
+    name: "IntakeExecutionExpired",
+  });
+  dependencies.checkpoint
+    .mockResolvedValueOnce(undefined)
+    .mockResolvedValueOnce(undefined)
+    .mockResolvedValueOnce(undefined)
+    .mockRejectedValueOnce(expired);
+  await expect(ingestContent(42, secret.raw, "document", context)).rejects.toBe(
+    expired
+  );
+  expect(dependencies.callGPT4).toHaveBeenCalledTimes(2);
+  expect(dependencies.createSection).not.toHaveBeenCalled();
 });

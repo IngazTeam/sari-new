@@ -19,12 +19,29 @@ describe.skipIf(!process.env.DATABASE_URL)('interrupted knowledge intake recover
   const expire = () => (getPool().then(pool => pool!.execute('UPDATE knowledge_intake_receipts SET lease_expires_at = DATE_SUB(UTC_TIMESTAMP(), INTERVAL 1 SECOND) WHERE merchant_id = ? AND request_id = ?', [owner.merchantId, requestId])));
   beforeAll(ensureKnowledgeIntakeTestSchema);
   beforeEach(async () => {
-    vi.clearAllMocks(); owner = await createDisposableMerchant('intake-recovery'); other = await createDisposableMerchant('recovery-other');
+    vi.resetAllMocks(); owner = await createDisposableMerchant('intake-recovery'); other = await createDisposableMerchant('recovery-other');
     const reserved = await reserve(); execution = reserved.execution!; requestId = execution.requestId;
   });
   afterEach(async () => { await cleanupDisposableMerchants([owner.userId, other.userId]); });
   afterAll(closeDb);
   const create = () => createSection({ merchantId: owner.merchantId, title: 'Saved before interruption', content: 'Partial saved knowledge', sectionType: 'custom', source: 'document' });
+  it.each(['classification','sales'])('does not persist any section after invalid %s evidence', async stage => {
+    const valid={sectionType:'identity',title:'Local source',content:'Local source content',summary:'Local summary',confidence:0.9};
+    model.call.mockResolvedValueOnce(stage==='classification'?JSON.stringify([valid,{...valid,content:8}]):JSON.stringify([valid]));
+    if(stage==='sales')model.call.mockResolvedValueOnce(JSON.stringify({usps:[{}],sellingTips:[],opportunities:[]}));
+    await expect(runIntakeExecution(execution,()=>ingestContent(owner.merchantId,'Local knowledge input','document',{}))).rejects.toMatchObject({name:'KnowledgeAnalysisError',stage});
+    const [rows]=await (await getPool())!.execute<any[]>('SELECT COUNT(*) AS n FROM knowledge_sections WHERE merchant_id=?',[owner.merchantId]);expect(Number(rows[0].n)).toBe(0);
+  });
+  it('persists valid source and sales guidance while keeping opportunities merchant-only',async()=>{
+    model.call.mockResolvedValueOnce(JSON.stringify([{sectionType:'identity',title:'Local source',content:'Local source content',summary:'Local summary',confidence:0.9}]))
+      .mockResolvedValueOnce(JSON.stringify({usps:['Local strength'],sellingTips:['Ask about the need'],opportunities:['Review missing delivery policy']}));
+    const result=await runIntakeExecution(execution,()=>ingestContent(owner.merchantId,'Local knowledge input','document',{}));
+    expect(result.evolveResult.added).toBe(1);
+    const [rows]=await (await getPool())!.execute<any[]>('SELECT section_type,inject_as,use_in_bot,content FROM knowledge_sections WHERE merchant_id=? ORDER BY id',[owner.merchantId]);
+    expect(rows).toHaveLength(3);expect(rows.find(r=>r.section_type==='identity').content).toBe('Local source content');
+    expect(rows.find(r=>r.section_type==='sales_intel')).toMatchObject({inject_as:'behavior'});
+    expect(rows.find(r=>r.section_type==='opportunities')).toMatchObject({inject_as:'none',use_in_bot:0});
+  });
   it('keeps live work protected and exposes recovery without leaking its execution token', async () => {
     const receipt = await getIntakeReceipt(owner.merchantId, requestId); expect(receipt).toMatchObject({ recovery: 'waiting', recoveredAt: null });
     expect(receipt).not.toHaveProperty('executionToken'); expect(JSON.stringify(receipt)).not.toContain(execution.token);

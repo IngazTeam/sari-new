@@ -10,6 +10,7 @@
  */
 
 import { callGPT4 } from './openai';
+import { KnowledgeAnalysisError, parseKnowledgeSections, parseSalesIntelligence } from './knowledge-output';
 import { assertIntakeCheckpoint } from '../knowledge/intake-execution';
 import type { ChatMessage } from './openai';
 import {
@@ -75,7 +76,7 @@ export async function classifyContent(
 - content: المحتوى الكامل
 - summary: ملخص في جملة واحدة
 - confidence: نسبة الثقة (0.50-1.00)
-- children: أقسام فرعية إن وُجدت
+- children: أقسام فرعية مباشرة إن وُجدت، دون تداخل إضافي
 
 قواعد مهمة:
 1. لا تخترع معلومات — استخرج فقط ما هو موجود في النص
@@ -110,47 +111,25 @@ ${content}
     { role: 'user', content: userPrompt },
   ];
 
+  let response: string;
   try {
     console.log(`[KnowledgeEngine] classifyContent: sending ${content.length} chars to GPT-4o...`);
-    const response = await callGPT4(messages, {
-      merchantId,
-      taskType: 'sari.knowledge.classify',
-      model: 'gpt-4o',
-      temperature: 0.3,  // Low temp for consistency
-      maxTokens: 4000,
+    response = await callGPT4(messages, {
+      merchantId, taskType: 'sari.knowledge.classify', model: 'gpt-4o', temperature: 0.3, maxTokens: 4000,
     });
-
-    // Operational logs must not duplicate tenant documents or model output.
-    console.log(`[KnowledgeEngine] classifyContent: GPT response length=${response.length}`);
-
-    // Parse JSON from response (handle potential markdown wrapping)
-    let jsonStr = response
-      .replace(/```json\s*/g, '')
-      .replace(/```\s*/g, '')
-      .trim();
-
-    // Handle case where GPT wraps in extra text
-    const jsonStart = jsonStr.indexOf('[');
-    const jsonEnd = jsonStr.lastIndexOf(']');
-    if (jsonStart !== -1 && jsonEnd !== -1 && jsonStart < jsonEnd) {
-      jsonStr = jsonStr.substring(jsonStart, jsonEnd + 1);
-    }
-
-    const sections: ClassifiedSection[] = JSON.parse(jsonStr);
-    console.log(`[KnowledgeEngine] classifyContent: parsed ${sections.length} sections`);
-
-    // Validate section types
-    const validTypes: SectionType[] = [
-      'identity', 'services', 'policies', 'faq', 'contact',
-      'team', 'achievements', 'sales_intel', 'opportunities', 'custom',
-    ];
-
-    const filtered = sections.filter(s => validTypes.includes(s.sectionType));
-    console.log(`[KnowledgeEngine] classifyContent: ${filtered.length} sections passed validation (of ${sections.length})`);
-    return filtered;
   } catch {
     console.error('[KnowledgeEngine] classifyContent failed');
-    return [];
+    throw new KnowledgeAnalysisError('classification');
+  }
+  // A late answer cannot continue into another provider call or a write.
+  await assertIntakeCheckpoint(merchantId);
+  try {
+    const sections = parseKnowledgeSections(response);
+    console.log(`[KnowledgeEngine] classifyContent: ${sections.length} sections passed validation`);
+    return sections;
+  } catch {
+    console.error('[KnowledgeEngine] classifyContent failed');
+    throw new KnowledgeAnalysisError('classification');
   }
 }
 
@@ -204,24 +183,20 @@ ${sectionsText}
     { role: 'user', content: userPrompt },
   ];
 
+  let response: string;
   try {
-    const response = await callGPT4(messages, {
-      merchantId,
-      taskType: 'sari.knowledge.sales_intelligence',
-      model: 'gpt-4o',
-      temperature: 0.4,
-      maxTokens: 1500,
+    response = await callGPT4(messages, {
+      merchantId, taskType: 'sari.knowledge.sales_intelligence', model: 'gpt-4o', temperature: 0.4, maxTokens: 1500,
     });
-
-    const jsonStr = response
-      .replace(/```json\s*/g, '')
-      .replace(/```\s*/g, '')
-      .trim();
-
-    return JSON.parse(jsonStr);
   } catch {
     console.error('[KnowledgeEngine] analyzeSalesIntelligence failed');
-    return { usps: [], sellingTips: [], opportunities: [] };
+    throw new KnowledgeAnalysisError('sales');
+  }
+  await assertIntakeCheckpoint(merchantId);
+  try { return parseSalesIntelligence(response); }
+  catch {
+    console.error('[KnowledgeEngine] analyzeSalesIntelligence failed');
+    throw new KnowledgeAnalysisError('sales');
   }
 }
 
@@ -516,14 +491,8 @@ export async function ingestContent(
   const classifiedSections = await classifyContent(merchantId, rawContent, merchantContext);
   console.log(`[KnowledgeEngine] Classified ${classifiedSections.length} sections`);
   if (classifiedSections.length === 0) {
-    console.error(`[KnowledgeEngine] ⚠️ ZERO SECTIONS — GPT may have failed to parse or classify the content. Content length was ${rawContent.length} chars.`);
-  }
-
-  if (classifiedSections.length === 0) {
-    return {
-      evolveResult: { added: 0, merged: 0, evolved: 0, conflicts: 0, unchanged: 0 },
-      salesIntel: { usps: [], sellingTips: [], opportunities: [] },
-    };
+    console.error('[KnowledgeEngine] ZERO SECTIONS');
+    throw new KnowledgeAnalysisError('empty_classification');
   }
 
   // Step 2: Analyze sales intelligence
