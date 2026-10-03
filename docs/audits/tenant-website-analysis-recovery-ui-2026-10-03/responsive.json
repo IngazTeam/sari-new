@@ -1,0 +1,133 @@
+[
+  {
+    "language": "en",
+    "mode": "storageUnavailable",
+    "clientWidth": 226,
+    "close": {
+      "height": 44,
+      "width": 44
+    },
+    "dialogHeight": 812,
+    "dialogWidth": 258,
+    "documentWidth": 290,
+    "height": 844,
+    "scrollWidth": 226,
+    "width": 320
+  },
+  {
+    "language": "en",
+    "mode": "storageUnavailable",
+    "clientWidth": 326,
+    "close": {
+      "height": 44,
+      "width": 44
+    },
+    "dialogHeight": 760,
+    "dialogWidth": 328,
+    "documentWidth": 360,
+    "height": 844,
+    "scrollWidth": 326,
+    "width": 390
+  },
+  {
+    "language": "en",
+    "mode": "storageUnavailable",
+    "clientWidth": 670,
+    "close": {
+      "height": 44,
+      "width": 44
+    },
+    "dialogHeight": 464,
+    "dialogWidth": 672,
+    "documentWidth": 738,
+    "height": 844,
+    "scrollWidth": 670,
+    "width": 768
+  },
+  {
+    "language": "en",
+    "mode": "storageUnavailable",
+    "clientWidth": 670,
+    "close": {
+      "height": 44,
+      "width": 44
+    },
+    "dialogHeight": 464,
+    "dialogWidth": 672,
+    "documentWidth": 1410,
+    "height": 844,
+    "scrollWidth": 670,
+    "width": 1440
+  },
+  {
+    "language": "ar",
+    "mode": "storageUnavailable",
+    "clientWidth": 256,
+    "close": {
+      "height": 44,
+      "width": 44
+    },
+    "dialogHeight": 784,
+    "dialogWidth": 258,
+    "documentWidth": 290,
+    "height": 844,
+    "scrollWidth": 256,
+    "width": 320
+  },
+  {
+    "language": "ar",
+    "mode": "storageUnavailable",
+    "clientWidth": 326,
+    "close": {
+      "height": 44,
+      "width": 44
+    },
+    "dialogHeight": 632,
+    "dialogWidth": 328,
+    "documentWidth": 360,
+    "height": 844,
+    "scrollWidth": 326,
+    "width": 390
+  },
+  {
+    "language": "ar",
+    "mode": "storageUnavailable",
+    "clientWidth": 670,
+    "close": {
+      "height": 44,
+      "width": 44
+    },
+    "dialogHeight": 444,
+    "dialogWidth": 672,
+    "documentWidth": 738,
+    "height": 844,
+    "scrollWidth": 670,
+    "width": 768
+  },
+  {
+    "language": "ar",
+    "mode": "storageUnavailable",
+    "clientWidth": 670,
+    "close": {
+      "height": 44,
+      "width": 44
+    },
+    "dialogHeight": 444,
+    "dialogWidth": 672,
+    "documentWidth": 1410,
+    "height": 844,
+    "scrollWidth": 670,
+    "width": 1440
+  },
+  {
+    "language": "en",
+    "mode": "storageUnavailable",
+    "clientHeight": 516,
+    "clientWidth": 226,
+    "dialogHeight": 518,
+    "height": 550,
+    "scrollHeight": 1116,
+    "scrollWidth": 226,
+    "width": 320
+  }
+]

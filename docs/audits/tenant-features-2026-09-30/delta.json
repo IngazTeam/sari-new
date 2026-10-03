@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-03T18:41:24.106Z",
+  "generatedAt": "2026-10-03T19:44:53.147Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,7 +10,7 @@
     },
     "after": {
       "routes": 126,
-      "files": 469,
+      "files": 470,
       "controls": 2665
     }
   },
@@ -198,6 +198,7 @@
     "client/src/components/ReplyQualityReadout.tsx",
     "client/src/components/WebsiteAnalysisDialog.tsx",
     "client/src/lib/use-website-analysis.ts",
+    "client/src/lib/website-analysis-attempt.ts",
     "client/src/components/KnowledgeWebsiteIntake.tsx",
     "client/src/hooks/useKnowledgePageIntakeCopy.ts",
     "client/src/components/KnowledgeWebsiteWorkspace.tsx",

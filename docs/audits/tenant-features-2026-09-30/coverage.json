@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-03T18:41:24.106Z",
+  "generatedAt": "2026-10-03T19:44:53.147Z",
   "definition": "Every registered route is accounted for; source inventory and design completion are different statuses.",
   "routes": [
     {
@@ -46621,6 +46621,7 @@
         "client/src/components/ReplyQualityReadout.tsx",
         "client/src/components/WebsiteAnalysisDialog.tsx",
         "client/src/lib/use-website-analysis.ts",
+        "client/src/lib/website-analysis-attempt.ts",
         "client/src/components/KnowledgeWebsiteIntake.tsx",
         "client/src/hooks/useKnowledgePageIntakeCopy.ts",
         "client/src/components/KnowledgeWebsiteWorkspace.tsx",
@@ -46676,7 +46677,6 @@
       "controls": [
         "3c9d49391f59",
         "d9548a3490e7",
-        "4048a10d704d",
         "013056acf51d",
         "88f17e8654f7",
         "c830f05be965",
@@ -46737,17 +46737,18 @@
         "1e76f8e6e637",
         "2cbfa6b876e5",
         "a1ffa1da07ac",
-        "e9d8169347e7",
-        "d28b0909d419",
-        "e6e1462c1743",
-        "542c6faa4c90",
-        "9ac809ae0cf7",
-        "fa7ecd8326bc",
-        "e84937a1a46a",
-        "969484a3437e",
-        "ee5d28d29ed8",
-        "c17d3adbd297",
-        "63344cbe68b4",
+        "af6c7c1f51b1",
+        "00c0cc6264d4",
+        "c5588182040b",
+        "f82940aad72c",
+        "227a0f507d84",
+        "8518ca28dad4",
+        "6ee287b2b8c7",
+        "744ac4e6d879",
+        "0476065937a8",
+        "b30a12eccfe4",
+        "6a3fbdf042a7",
+        "48a170cd609b",
         "60d6368c6d0f",
         "1990efe74955",
         "539b8b8851eb",
@@ -47289,7 +47290,7 @@
       "acceptancePlan": "الدخول والإعداد والتنقل والبحث والحفظ والتحقق من الحالة.",
       "gaps": [
         "راجع tenant-central-brain-prototype-2026-10-01 وtenant-brain-embedded-previews-2026-10-01 وtenant-brain-legacy-retirement-2026-10-01 وtenant-source-groups-workspace-2026-10-01 وtenant-knowledge-history-workspace-2026-10-01 وtenant-sales-policy-drafts-2026-10-01. الموك أب محاكاة محلية ولا يثبت خادمًا أو مزودًا.",
-        "وُصل دليل دفعة الفهرسة بقراءة النسخ الحالية والنتيجة والموك أب مع كشف الفشل الجزئي وتغير المعرفة وغياب القراءة. نجح فحص العربية والإنجليزية320/390/768/1440 وارتفاع550 وزر الإغلاق44×44 واتجاهيه. راجع tenant-knowledge-indexing-evidence-2026-10-03 وtenant-indexing-evidence-ui-2026-10-03. لا تثبت لقطة الفهرسة جودة الرد أو استدامة الحالة. تتبع تحليل الموقع ما زال داخل عملية الخادم؛ حفظ المهام واستعادتها عبر العمال ومنع الكتابات المتأخرة ومصالحة المزود مفتوحة. راجع tenant-website-analysis-scope-2026-10-01.",
+        "وُصل دليل دفعة الفهرسة بقراءة النسخ الحالية والنتيجة والموك أب مع كشف الفشل الجزئي وتغير المعرفة وغياب القراءة. نجح فحص العربية والإنجليزية320/390/768/1440 وارتفاع550 وزر الإغلاق44×44 واتجاهيه. راجع tenant-knowledge-indexing-evidence-2026-10-03 وtenant-indexing-evidence-ui-2026-10-03. لا تثبت لقطة الفهرسة جودة الرد. تحليل عقل ساري محفوظ الآن بجدول0200 مع إذن حي للكتابات ومرجع معزول يستعاد بعد التنقل وتحديث التبويب دون بدء تلقائي؛ راجع tenant-website-analysis-execution-2026-10-03 وtenant-website-analysis-recovery-ui-2026-10-03. تبقى مراجعة مسار التقارير الكامل المنفصل ومصالحة المزود وأمان الزحف، وسجل استعادة عبر الأجهزة بدل التبويب الحالي.",
         "قياس جودة الرد والمبيعات الحقيقي واستقلالية مراجعة العينة وتشغيل مزودي المواقع والتكاملات وSafari/iPhone الفعلي تتطلب تحققًا إضافيًا؛ لا نسبة احتراف مؤكدة."
       ],
       "controlDetails": [
@@ -47332,29 +47333,6 @@
           "required": false,
           "conditional": false,
           "conditions": [],
-          "disabled": "",
-          "review": "source-inventoried"
-        },
-        {
-          "id": "4048a10d704d",
-          "file": "client/src/pages/merchant/SariBrain.tsx",
-          "line": 107,
-          "tag": "Button",
-          "role": "",
-          "kind": "action",
-          "label": "عرض تقدم التحليل",
-          "section": "عقل ساري",
-          "binding": "()=>analysis.setDialogOpen(true)",
-          "type": "text",
-          "options": [],
-          "min": "",
-          "max": "",
-          "maxLength": "",
-          "required": false,
-          "conditional": true,
-          "conditions": [
-            "analysis.hasAttempt && !analysis.dialogOpen"
-          ],
           "disabled": "",
           "review": "source-inventoried"
         },
@@ -48748,13 +48726,34 @@
           "review": "source-inventoried"
         },
         {
-          "id": "e9d8169347e7",
+          "id": "af6c7c1f51b1",
           "file": "client/src/components/WebsiteAnalysisDialog.tsx",
-          "line": 135,
+          "line": 125,
+          "tag": "Button",
+          "role": "",
+          "kind": "action",
+          "label": "متابعة تحليل الموقع",
+          "section": "WebsiteAnalysisDialog",
+          "binding": "onOpen",
+          "type": "text",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": true,
+          "conditions": [],
+          "disabled": "",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "00c0cc6264d4",
+          "file": "client/src/components/WebsiteAnalysisDialog.tsx",
+          "line": 177,
           "tag": "DialogContent",
           "role": "",
           "kind": "dialog",
-          "label": "قراءة الموقع وتحديث المعرفة عمليتان منفصلتان. راجع الصفحات والأقسام ثم اختبر الردود قبل الاعتماد عليها. راجع الصفحات والمعرفة قبل بدء تحليل آخر لتجنب تكرار عملية ما زالت جارية. startUnconfirmed unverified التحقق من الحال",
+          "label": "قراءة الموقع وتحديث المعرفة عمليتان منفصلتان. راجع الصفحات والأقسام ثم اختبر الردود قبل الاعتماد عليها. storageUnavailable لن نرسل طلبًا جديدًا دون حفظ مرجعه. أعد المحاولة بعد إتاحة تخزين الجلسة في المتصفح. interrupted f",
           "section": "WebsiteAnalysisDialog",
           "binding": "",
           "type": "text",
@@ -48769,13 +48768,13 @@
           "review": "source-inventoried"
         },
         {
-          "id": "d28b0909d419",
+          "id": "c5588182040b",
           "file": "client/src/components/WebsiteAnalysisDialog.tsx",
-          "line": 160,
+          "line": 212,
           "tag": "Button",
           "role": "",
           "kind": "action",
-          "label": "التحقق من الحالة",
+          "label": "storageUnavailable إعادة فحص التخزين التحقق من الحالة",
           "section": "WebsiteAnalysisDialog",
           "binding": "props.onReadStatus",
           "type": "text",
@@ -48784,18 +48783,18 @@
           "max": "",
           "maxLength": "",
           "required": false,
-          "conditional": false,
+          "conditional": true,
           "conditions": [
-            "(props.issue === \"startUnconfirmed\" || props.issue === \"unverified\")",
+            "[\n              \"startUnconfirmed\",\n              \"unverified\",\n              \"missing\",\n              \"storageUnavailable\",\n              \"resultUnavailable\",\n            ].includes(props.issue)",
             "props.issue"
           ],
           "disabled": "props.statusFetching",
           "review": "source-inventoried"
         },
         {
-          "id": "e6e1462c1743",
+          "id": "f82940aad72c",
           "file": "client/src/components/WebsiteAnalysisDialog.tsx",
-          "line": 178,
+          "line": 232,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -48817,9 +48816,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "542c6faa4c90",
+          "id": "227a0f507d84",
           "file": "client/src/components/WebsiteAnalysisDialog.tsx",
-          "line": 285,
+          "line": 418,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -48840,9 +48839,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "9ac809ae0cf7",
+          "id": "8518ca28dad4",
           "file": "client/src/components/WebsiteAnalysisDialog.tsx",
-          "line": 336,
+          "line": 480,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -48863,9 +48862,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "fa7ecd8326bc",
+          "id": "6ee287b2b8c7",
           "file": "client/src/components/WebsiteAnalysisDialog.tsx",
-          "line": 346,
+          "line": 510,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -48886,9 +48885,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "e84937a1a46a",
+          "id": "744ac4e6d879",
           "file": "client/src/components/WebsiteAnalysisDialog.tsx",
-          "line": 349,
+          "line": 513,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -48909,9 +48908,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "969484a3437e",
+          "id": "0476065937a8",
           "file": "client/src/components/WebsiteAnalysisDialog.tsx",
-          "line": 352,
+          "line": 516,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -48932,9 +48931,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "ee5d28d29ed8",
+          "id": "b30a12eccfe4",
           "file": "client/src/components/WebsiteAnalysisDialog.tsx",
-          "line": 355,
+          "line": 519,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -48955,9 +48954,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "c17d3adbd297",
+          "id": "6a3fbdf042a7",
           "file": "client/src/components/WebsiteAnalysisDialog.tsx",
-          "line": 359,
+          "line": 523,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -48979,9 +48978,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "63344cbe68b4",
+          "id": "48a170cd609b",
           "file": "client/src/components/WebsiteAnalysisDialog.tsx",
-          "line": 366,
+          "line": 530,
           "tag": "Button",
           "role": "",
           "kind": "action",

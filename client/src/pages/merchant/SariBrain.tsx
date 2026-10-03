@@ -6,7 +6,7 @@ import type { KnowledgeRemovalTarget } from '@shared/knowledge-source-removal';
 import { SalesKnowledgeReadout } from "@/components/SalesKnowledgeReadout";
 import { BrainQuickPreview } from "@/components/BrainQuickPreview";
 import { ReplyQualityReadout } from '@/components/ReplyQualityReadout';
-import { WebsiteAnalysisDialog } from '@/components/WebsiteAnalysisDialog';
+import { WebsiteAnalysisDialog, WebsiteAnalysisAttemptNotice } from '@/components/WebsiteAnalysisDialog';
 import { KnowledgeWorkspaceScope } from '@/components/KnowledgeWorkspaceScope';
 import { useWebsiteAnalysis } from '@/lib/use-website-analysis';
 import { KnowledgeWebsiteIntake } from '@/components/KnowledgeWebsiteIntake';
@@ -104,7 +104,7 @@ function SariBrainWorkspace({scopeKey}: {scopeKey: string}) {
       <KnowledgeRemovalWorkspace target={removalTarget} onClose={()=>setRemovalTarget(null)}/>
 
       {/* Stats Cards */}
-      {analysis.hasAttempt && !analysis.dialogOpen && <Button variant="outline" onClick={()=>analysis.setDialogOpen(true)}>{t('brainWorkspaceUx.showProgress')}</Button>}
+      {(analysis.hasAttempt || analysis.issue) && !analysis.dialogOpen && <WebsiteAnalysisAttemptNotice restored={analysis.restored} onOpen={()=>analysis.setDialogOpen(true)}/>}
       <nav className="mw-feature-nav" aria-label={t('brainWorkspaceUx.navigation')}>
         {brainViews.map(view=><Button key={view.id} type="button" variant={brainView===view.id?'secondary':'ghost'} aria-pressed={brainView===view.id} onClick={()=>changeBrainView(view.id)}>{view.label}</Button>)}
       </nav>

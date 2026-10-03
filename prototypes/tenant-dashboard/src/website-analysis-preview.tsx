@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   WebsiteAnalysisDialog,
+  WebsiteAnalysisAttemptNotice,
   type WebsiteAnalysisIssue,
 } from "../../../client/src/components/WebsiteAnalysisDialog";
 import { AnalysisLanguage } from "./website-analysis-preview-i18n";
@@ -16,8 +17,28 @@ const sample = {
     mainPageWords: 420,
     totalWords: 1930,
   },
-  knowledgeEvolution: { added: 2, merged: 1, evolved: 1, conflicts: 3, unchanged: 2 },
-  indexingOutcome:{status:"observed",evidence:{selectedSections:6,attemptedSections:6,storedSections:6,reusedSections:0,unconfirmedSections:0,currentSnapshot:{sections:6,matchingEmbeddings:6,changedSinceStart:false}}},
+  knowledgeEvolution: {
+    added: 2,
+    merged: 1,
+    evolved: 1,
+    conflicts: 3,
+    unchanged: 2,
+  },
+  indexingOutcome: {
+    status: "observed",
+    evidence: {
+      selectedSections: 6,
+      attemptedSections: 6,
+      storedSections: 6,
+      reusedSections: 0,
+      unconfirmedSections: 0,
+      currentSnapshot: {
+        sections: 6,
+        matchingEmbeddings: 6,
+        changedSinceStart: false,
+      },
+    },
+  },
   salesIntelSummary: {
     totalSections: 9,
     hasIntel: true,
@@ -40,11 +61,35 @@ function Preview() {
     ["unverified", "نتيجة لا تطابق المحاولة", "Unverified attempt result"],
     ["missing", "حالة غير متاحة", "Unavailable status"],
     ["failed", "تعثر المعالجة", "Processing error"],
+    ["interrupted", "تحليل متوقف بعد انقطاع العامل", "Interrupted worker"],
+    [
+      "resultUnavailable",
+      "النتيجة المحفوظة غير مقروءة",
+      "Saved result unavailable",
+    ],
+    [
+      "storageUnavailable",
+      "تعذر حفظ مرجع الطلب",
+      "Request storage unavailable",
+    ],
+    [
+      "restored",
+      "استعادة تحليل بعد تحديث الصفحة",
+      "Analysis restored after reload",
+    ],
     ["partial", "نتيجة جزئية", "Partial outcome"],
     ["indexingFailed", "تعثرت الفهرسة", "Indexing interrupted"],
     ["indexingPartial", "فهرسة جزئية", "Partial indexing"],
-    ["indexingChanged", "معرفة تغيرت أثناء الفهرسة", "Knowledge changed during indexing"],
-    ["indexingMissing", "تعذرت قراءة نتيجة الفهرسة", "Index snapshot unavailable"],
+    [
+      "indexingChanged",
+      "معرفة تغيرت أثناء الفهرسة",
+      "Knowledge changed during indexing",
+    ],
+    [
+      "indexingMissing",
+      "تعذرت قراءة نتيجة الفهرسة",
+      "Index snapshot unavailable",
+    ],
     ["indexingEmpty", "لا أقسام مؤهلة للفهرسة", "No eligible sections"],
     ["indexingLegacy", "عدد فهرسة قديم فقط", "Legacy indexing count only"],
     ["notIndexed", "لم تبدأ الفهرسة", "Indexing not attempted"],
@@ -53,25 +98,123 @@ function Preview() {
     ["unknown", "مقاييس غير متاحة", "Unavailable metrics"],
   ];
   const ar = language === "ar";
-  const issue = ["startUnconfirmed", "unverified", "missing", "failed"].includes(mode)
+  const issue = [
+    "startUnconfirmed",
+    "unverified",
+    "missing",
+    "failed",
+    "interrupted",
+    "resultUnavailable",
+    "storageUnavailable",
+  ].includes(mode)
     ? (mode as WebsiteAnalysisIssue)
     : null;
   const result =
     mode === "partial"
-      ? { ...sample, knowledgeError: "Demonstration only",indexingOutcome:{status:"not_attempted",indexedSections:null} }
-      : mode === "indexingFailed" ? {...sample,indexingOutcome:{status:"failed",indexedSections:null}}
-      : mode === "indexingPartial" ? {...sample,indexingOutcome:{status:"observed",evidence:{...sample.indexingOutcome.evidence,storedSections:4,unconfirmedSections:2,currentSnapshot:{sections:6,matchingEmbeddings:4,changedSinceStart:false}}}}
-      : mode === "indexingChanged" ? {...sample,indexingOutcome:{status:"observed",evidence:{...sample.indexingOutcome.evidence,currentSnapshot:{sections:7,matchingEmbeddings:5,changedSinceStart:true}}}}
-      : mode === "indexingMissing" ? {...sample,indexingOutcome:{status:"observed",evidence:{...sample.indexingOutcome.evidence,currentSnapshot:null}}}
-      : mode === "indexingEmpty" ? {...sample,indexingOutcome:{status:"observed",evidence:{selectedSections:0,attemptedSections:0,storedSections:0,reusedSections:0,unconfirmedSections:0,currentSnapshot:{sections:0,matchingEmbeddings:0,changedSinceStart:false}}}}
-      : mode === "indexingLegacy" ? {...sample,indexingOutcome:{status:"returned",indexedSections:6}}
-      : mode === "notIndexed" ? {...sample,indexingOutcome:{status:"not_attempted",indexedSections:null}}
-      : mode === "inconsistent" ? {...sample,crawlStats:{pagesDiscovered:2,pagesCrawled:8,pagesSuccess:6,mainPageWords:500,totalWords:100}}
-      : mode === "finished"
-        ? sample
-        : mode === "unknown"
-          ? {}
-          : null;
+      ? {
+          ...sample,
+          knowledgeError: "Demonstration only",
+          indexingOutcome: { status: "not_attempted", indexedSections: null },
+        }
+      : mode === "indexingFailed"
+        ? {
+            ...sample,
+            indexingOutcome: { status: "failed", indexedSections: null },
+          }
+        : mode === "indexingPartial"
+          ? {
+              ...sample,
+              indexingOutcome: {
+                status: "observed",
+                evidence: {
+                  ...sample.indexingOutcome.evidence,
+                  storedSections: 4,
+                  unconfirmedSections: 2,
+                  currentSnapshot: {
+                    sections: 6,
+                    matchingEmbeddings: 4,
+                    changedSinceStart: false,
+                  },
+                },
+              },
+            }
+          : mode === "indexingChanged"
+            ? {
+                ...sample,
+                indexingOutcome: {
+                  status: "observed",
+                  evidence: {
+                    ...sample.indexingOutcome.evidence,
+                    currentSnapshot: {
+                      sections: 7,
+                      matchingEmbeddings: 5,
+                      changedSinceStart: true,
+                    },
+                  },
+                },
+              }
+            : mode === "indexingMissing"
+              ? {
+                  ...sample,
+                  indexingOutcome: {
+                    status: "observed",
+                    evidence: {
+                      ...sample.indexingOutcome.evidence,
+                      currentSnapshot: null,
+                    },
+                  },
+                }
+              : mode === "indexingEmpty"
+                ? {
+                    ...sample,
+                    indexingOutcome: {
+                      status: "observed",
+                      evidence: {
+                        selectedSections: 0,
+                        attemptedSections: 0,
+                        storedSections: 0,
+                        reusedSections: 0,
+                        unconfirmedSections: 0,
+                        currentSnapshot: {
+                          sections: 0,
+                          matchingEmbeddings: 0,
+                          changedSinceStart: false,
+                        },
+                      },
+                    },
+                  }
+                : mode === "indexingLegacy"
+                  ? {
+                      ...sample,
+                      indexingOutcome: {
+                        status: "returned",
+                        indexedSections: 6,
+                      },
+                    }
+                  : mode === "notIndexed"
+                    ? {
+                        ...sample,
+                        indexingOutcome: {
+                          status: "not_attempted",
+                          indexedSections: null,
+                        },
+                      }
+                    : mode === "inconsistent"
+                      ? {
+                          ...sample,
+                          crawlStats: {
+                            pagesDiscovered: 2,
+                            pagesCrawled: 8,
+                            pagesSuccess: 6,
+                            mainPageWords: 500,
+                            totalWords: 100,
+                          },
+                        }
+                      : mode === "finished"
+                        ? sample
+                        : mode === "unknown"
+                          ? {}
+                          : null;
   return (
     <AnalysisLanguage.Provider value={language}>
       <main
@@ -138,17 +281,20 @@ function Preview() {
             </p>
           )}
         </div>
+        {mode === "restored" && !open && (
+          <WebsiteAnalysisAttemptNotice restored onOpen={() => setOpen(true)} />
+        )}
         <WebsiteAnalysisDialog
           open={open}
           onOpenChange={setOpen}
           result={result}
           issue={issue}
           pending={mode === "request"}
-          currentStep={mode}
+          currentStep={mode === "restored" ? "knowledge" : mode}
           progress={
             mode === "scraping"
               ? 20
-              : mode === "knowledge"
+              : mode === "knowledge" || mode === "restored"
                 ? 60
                 : mode === "embedding"
                   ? 85
@@ -156,7 +302,10 @@ function Preview() {
           }
           statusError={mode === "readError"}
           statusFetching={false}
-          onReadStatus={() => setMode("scraping")}
+          onReadStatus={() => {
+            if (mode === 'storageUnavailable') {setMode('restored');setOpen(false);}
+            else setMode("scraping");
+          }}
           onOpenDestination={setTarget}
         />
       </main>

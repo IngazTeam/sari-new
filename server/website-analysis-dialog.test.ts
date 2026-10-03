@@ -5,6 +5,7 @@ import { beforeEach, afterEach, it, expect, vi } from "vitest";
 import en from "../client/src/locales/en.json";
 import {
   WebsiteAnalysisDialog,
+  WebsiteAnalysisAttemptNotice,
   readWebsiteAnalysisResult,
   type WebsiteAnalysisDialogProps,
 } from "../client/src/components/WebsiteAnalysisDialog";
@@ -50,6 +51,39 @@ const render = () =>
     root.render(React.createElement(WebsiteAnalysisDialog, props))
   );
 const c = en.websiteAnalysisUx;
+it.each(["interrupted", "resultUnavailable", "storageUnavailable"] as const)(
+  "describes %s without claiming rollback or starting a request",
+  async issue => {
+    props.issue = issue;
+    await render();
+    expect(text()).toContain(c[issue]);
+    expect(text()).not.toContain(c.finished);
+    if (issue === "storageUnavailable") {
+      expect(text()).toContain(c.storageHelp);
+      await click(c.retryStorage);
+      expect(props.onReadStatus).toHaveBeenCalledOnce();
+    }
+    if (issue === "resultUnavailable") {
+      await click(c.checkStatus);
+      expect(props.onReadStatus).toHaveBeenCalledOnce();
+    }
+  }
+);
+it("offers the restored reference without opening the result automatically", async () => {
+  const open = vi.fn();
+  await act(async () =>
+    root.render(
+      React.createElement(WebsiteAnalysisAttemptNotice, {
+        restored: true,
+        onOpen: open,
+      })
+    )
+  );
+  expect(container.textContent).toContain(c.restored);
+  expect(document.querySelector('[role="dialog"]')).toBeNull();
+  await click(c.showAttempt);
+  expect(open).toHaveBeenCalledOnce();
+});
 const text = () => document.querySelector('[role="dialog"]')!.textContent!;
 const click = async (label: string) =>
   act(async () => {
@@ -86,7 +120,7 @@ it.each(["startUnconfirmed", "unverified", "failed", "missing"] as const)(
     props.issue = issue;
     await render();
     expect(text()).toContain(c[issue]);
-    expect(text()).toContain(c.reviewBeforeRetry);
+    expect(text()).toContain(issue === 'failed' ? c.reviewSaved : c.reviewBeforeRetry);
     expect(document.querySelector('[role="progressbar"]')).toBeNull();
   }
 );
@@ -176,42 +210,189 @@ it("rejects malformed and negative metrics without coercion", () => {
     expect(result[key]).toBeNull();
 });
 
-it.each([['returned',0,'indexingReturned'],['returned',4,'indexingReturned'],['failed',null,'indexingFailed'],['not_attempted',null,'indexingNotAttempted'],['invalid',5,'indexingUnknown'],['returned',-1,'indexingUnknown'],['returned','5','indexingUnknown']])('describes indexing %s/%s without claiming coverage',async(status,indexedSections,key)=>{
- props.result={indexingOutcome:{status,indexedSections},knowledgeEvolution:{added:2,merged:3,evolved:1,conflicts:0,unchanged:4}};await render();
- expect(text()).toContain((c as any)[key].replace('{{value}}',String(indexedSections)));expect(text()).toContain(c.merged);expect(text()).toContain(c.unchanged);expect(text()).toContain(c.indexHelp);
- const details=[...document.querySelectorAll('details')].find(el=>el.textContent?.includes(c.snapshotTitle));expect(details?.open).toBe(false);expect(details?.textContent).toContain(c.snapshotTitle);expect(details?.textContent).toContain(c.snapshotHelp);
+it.each([
+  ["returned", 0, "indexingReturned"],
+  ["returned", 4, "indexingReturned"],
+  ["failed", null, "indexingFailed"],
+  ["not_attempted", null, "indexingNotAttempted"],
+  ["invalid", 5, "indexingUnknown"],
+  ["returned", -1, "indexingUnknown"],
+  ["returned", "5", "indexingUnknown"],
+])(
+  "describes indexing %s/%s without claiming coverage",
+  async (status, indexedSections, key) => {
+    props.result = {
+      indexingOutcome: { status, indexedSections },
+      knowledgeEvolution: {
+        added: 2,
+        merged: 3,
+        evolved: 1,
+        conflicts: 0,
+        unchanged: 4,
+      },
+    };
+    await render();
+    expect(text()).toContain(
+      (c as any)[key].replace("{{value}}", String(indexedSections))
+    );
+    expect(text()).toContain(c.merged);
+    expect(text()).toContain(c.unchanged);
+    expect(text()).toContain(c.indexHelp);
+    const details = [...document.querySelectorAll("details")].find(el =>
+      el.textContent?.includes(c.snapshotTitle)
+    );
+    expect(details?.open).toBe(false);
+    expect(details?.textContent).toContain(c.snapshotTitle);
+    expect(details?.textContent).toContain(c.snapshotHelp);
+  }
+);
+it.each([
+  { pagesDiscovered: 1, pagesCrawled: 2, pagesSuccess: 1 },
+  { pagesDiscovered: 3, pagesCrawled: 1, pagesSuccess: 2 },
+  { pagesDiscovered: 1, pagesSuccess: 2 },
+])("hides contradictory page counts %j", async crawlStats => {
+  props.result = { crawlStats };
+  await render();
+  expect(text()).toContain(c.inconsistentCrawl);
+  const r = readWebsiteAnalysisResult(props.result);
+  expect([r.discovered, r.attempted, r.read]).toEqual([null, null, null]);
 });
-it.each([{pagesDiscovered:1,pagesCrawled:2,pagesSuccess:1},{pagesDiscovered:3,pagesCrawled:1,pagesSuccess:2},{pagesDiscovered:1,pagesSuccess:2}])('hides contradictory page counts %j',async crawlStats=>{props.result={crawlStats};await render();expect(text()).toContain(c.inconsistentCrawl);const r=readWebsiteAnalysisResult(props.result);expect([r.discovered,r.attempted,r.read]).toEqual([null,null,null]);});
-it('does not label legacy reports as indexed and hides contradictory word counts',()=>{const r=readWebsiteAnalysisResult({crawlStats:{mainPageWords:10,totalWords:2}});expect(r).toMatchObject({indexing:'unknown',indexedSections:null,mainWords:null,totalWords:null,inconsistentCrawl:true});});
+it("does not label legacy reports as indexed and hides contradictory word counts", () => {
+  const r = readWebsiteAnalysisResult({
+    crawlStats: { mainPageWords: 10, totalWords: 2 },
+  });
+  expect(r).toMatchObject({
+    indexing: "unknown",
+    indexedSections: null,
+    mainWords: null,
+    totalWords: null,
+    inconsistentCrawl: true,
+  });
+});
 
-const indexingEvidence={selectedSections:6,attemptedSections:6,storedSections:4,reusedSections:0,unconfirmedSections:2,currentSnapshot:{sections:7,matchingEmbeddings:4,changedSinceStart:true}};
-it('puts indexing evidence before optional website metrics and makes knowledge review the main action',async()=>{
- props.result={indexingOutcome:{status:'observed',evidence:indexingEvidence}};await render();
- const content=text();expect(content.indexOf(c.indexingTitle)).toBeLessThan(content.indexOf(c.knowledgeTitle));expect(content.indexOf(c.knowledgeTitle)).toBeLessThan(content.indexOf(c.siteDetails));
- const details=[...document.querySelectorAll('details')];expect(details).toHaveLength(2);expect(details.every(el=>!el.open)).toBe(true);
- expect([...document.querySelectorAll('[role="dialog"] button')][0]?.textContent).toBe(c.openSections);
+const indexingEvidence = {
+  selectedSections: 6,
+  attemptedSections: 6,
+  storedSections: 4,
+  reusedSections: 0,
+  unconfirmedSections: 2,
+  currentSnapshot: {
+    sections: 7,
+    matchingEmbeddings: 4,
+    changedSinceStart: true,
+  },
+};
+it("puts indexing evidence before optional website metrics and makes knowledge review the main action", async () => {
+  props.result = {
+    indexingOutcome: { status: "observed", evidence: indexingEvidence },
+  };
+  await render();
+  const content = text();
+  expect(content.indexOf(c.indexingTitle)).toBeLessThan(
+    content.indexOf(c.knowledgeTitle)
+  );
+  expect(content.indexOf(c.knowledgeTitle)).toBeLessThan(
+    content.indexOf(c.siteDetails)
+  );
+  const details = [...document.querySelectorAll("details")];
+  expect(details).toHaveLength(2);
+  expect(details.every(el => !el.open)).toBe(true);
+  expect(
+    [...document.querySelectorAll('[role="dialog"] button')][0]?.textContent
+  ).toBe(c.openSections);
 });
-it('separates partial writes from a changed current snapshot without a readiness percentage',async()=>{
- props.result={indexingOutcome:{status:'observed',evidence:indexingEvidence}};await render();
- expect(text()).toContain(c.indexingBatch.replace('{{saved}}','4').replace('{{attempted}}','6'));
- expect(text()).toContain(c.indexingUnconfirmed.replace('{{value}}','2'));
- expect(text()).toContain(c.indexingSnapshot.replace('{{matching}}','4').replace('{{total}}','7'));
- expect(text()).toContain(c.indexingChanged);expect(text()).toContain(c.indexingScope);expect(text()).not.toContain('100%');
- expect(document.querySelectorAll('[role="alert"]')).toHaveLength(2);
+it("separates partial writes from a changed current snapshot without a readiness percentage", async () => {
+  props.result = {
+    indexingOutcome: { status: "observed", evidence: indexingEvidence },
+  };
+  await render();
+  expect(text()).toContain(
+    c.indexingBatch.replace("{{saved}}", "4").replace("{{attempted}}", "6")
+  );
+  expect(text()).toContain(c.indexingUnconfirmed.replace("{{value}}", "2"));
+  expect(text()).toContain(
+    c.indexingSnapshot.replace("{{matching}}", "4").replace("{{total}}", "7")
+  );
+  expect(text()).toContain(c.indexingChanged);
+  expect(text()).toContain(c.indexingScope);
+  expect(text()).not.toContain("100%");
+  expect(document.querySelectorAll('[role="alert"]')).toHaveLength(2);
 });
-it('shows missing snapshot evidence without substituting an empty snapshot',async()=>{
- props.result={indexingOutcome:{status:'observed',evidence:{...indexingEvidence,currentSnapshot:null}}};await render();
- expect(text()).toContain(c.indexingSnapshotMissing);expect(text()).not.toContain(c.indexingEmpty);
+it("shows missing snapshot evidence without substituting an empty snapshot", async () => {
+  props.result = {
+    indexingOutcome: {
+      status: "observed",
+      evidence: { ...indexingEvidence, currentSnapshot: null },
+    },
+  };
+  await render();
+  expect(text()).toContain(c.indexingSnapshotMissing);
+  expect(text()).not.toContain(c.indexingEmpty);
 });
-it('shows actual empty eligible knowledge without claiming successful indexing',async()=>{
- props.result={indexingOutcome:{status:'observed',evidence:{selectedSections:0,attemptedSections:0,storedSections:0,reusedSections:0,unconfirmedSections:0,currentSnapshot:{sections:0,matchingEmbeddings:0,changedSinceStart:false}}}};await render();
- expect(text()).toContain(c.indexingEmpty);expect(text()).not.toContain(c.indexingChanged);expect(document.querySelector('[role="alert"]')).toBeNull();
+it("shows actual empty eligible knowledge without claiming successful indexing", async () => {
+  props.result = {
+    indexingOutcome: {
+      status: "observed",
+      evidence: {
+        selectedSections: 0,
+        attemptedSections: 0,
+        storedSections: 0,
+        reusedSections: 0,
+        unconfirmedSections: 0,
+        currentSnapshot: {
+          sections: 0,
+          matchingEmbeddings: 0,
+          changedSinceStart: false,
+        },
+      },
+    },
+  };
+  await render();
+  expect(text()).toContain(c.indexingEmpty);
+  expect(text()).not.toContain(c.indexingChanged);
+  expect(document.querySelector('[role="alert"]')).toBeNull();
 });
-it('separates reused matching embeddings from newly stored ones',async()=>{
- props.result={indexingOutcome:{status:'observed',evidence:{selectedSections:6,attemptedSections:0,storedSections:0,reusedSections:6,unconfirmedSections:0,currentSnapshot:{sections:6,matchingEmbeddings:6,changedSinceStart:false}}}};await render();
- expect(text()).toContain(c.indexingReused.replace('{{value}}','6'));
+it("separates reused matching embeddings from newly stored ones", async () => {
+  props.result = {
+    indexingOutcome: {
+      status: "observed",
+      evidence: {
+        selectedSections: 6,
+        attemptedSections: 0,
+        storedSections: 0,
+        reusedSections: 6,
+        unconfirmedSections: 0,
+        currentSnapshot: {
+          sections: 6,
+          matchingEmbeddings: 6,
+          changedSinceStart: false,
+        },
+      },
+    },
+  };
+  await render();
+  expect(text()).toContain(c.indexingReused.replace("{{value}}", "6"));
 });
-it.each([{storedSections:8},{selectedSections:'6'},{currentSnapshot:{sections:1,matchingEmbeddings:2,changedSinceStart:false}},{secret:'private'}])('rejects corrupt batch evidence %j',async patch=>{
- props.result={indexingOutcome:{status:'observed',evidence:{...indexingEvidence,...patch}}};await render();
- expect(text()).toContain(c.indexingUnknown);expect(text()).not.toContain('private');expect(readWebsiteAnalysisResult(props.result).indexingEvidence).toBeNull();
+it.each([
+  { storedSections: 8 },
+  { selectedSections: "6" },
+  {
+    currentSnapshot: {
+      sections: 1,
+      matchingEmbeddings: 2,
+      changedSinceStart: false,
+    },
+  },
+  { secret: "private" },
+])("rejects corrupt batch evidence %j", async patch => {
+  props.result = {
+    indexingOutcome: {
+      status: "observed",
+      evidence: { ...indexingEvidence, ...patch },
+    },
+  };
+  await render();
+  expect(text()).toContain(c.indexingUnknown);
+  expect(text()).not.toContain("private");
+  expect(readWebsiteAnalysisResult(props.result).indexingEvidence).toBeNull();
 });

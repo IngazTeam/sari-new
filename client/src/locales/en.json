@@ -47,6 +47,7 @@
     "coverage": "Records may include assistant tests. Recording happens after generation and can fail, with a daily limit of 2000 records per merchant, so this is not necessarily every reply or conversation."
   },
   "websiteAnalysisUx": {
+    "reviewSaved": "Review saved pages and sections to identify what is missing before starting a new analysis.",
     "merged": "Sections merged",
     "unchanged": "Sections unchanged",
     "snapshotTitle": "Saved store knowledge",
@@ -65,7 +66,7 @@
     "indexingNotAttempted": "This run did not reach the indexing step.",
     "indexingUnknown": "This report has no verified indexing outcome.",
     "inconsistentCrawl": "Some reading counts contradict each other and have been hidden. Review the saved pages.",
-  "unverified": "The status could not be verified for this analysis attempt. Check the status again before starting another analysis.",
+    "unverified": "The status could not be verified for this analysis attempt. Check the status again before starting another analysis.",
     "confirmHelp": "There are currently {{count}} saved pages. Analysis reads the website URL in settings and merges new pages and questions while preserving previously reviewed or disabled records.",
     "confirmReview": "Knowledge sections may change and conflicts may appear. Review the results afterwards. Analysis does not guarantee full website coverage or sales readiness.",
     "start": "Start website analysis",
@@ -82,7 +83,7 @@
     "embedding": "Attempting to refresh the search index",
     "startUnconfirmed": "The analysis request could not be confirmed. It may have reached the server.",
     "failed": "The analysis task encountered an error. Some data may already have been saved.",
-    "missing": "The task status is unavailable. This does not confirm success or failure.",
+    "missing": "No record exists for this reference yet. The request may be delayed; starting again uses the same reference to avoid duplication.",
     "reviewBeforeRetry": "Review pages and knowledge before starting another analysis to avoid repeating a task that may still be running.",
     "checkStatus": "Check status",
     "statusError": "The task status could not be read. Previous progress is not shown as a current status.",
@@ -90,7 +91,7 @@
     "waiting": "Waiting for a confirmed server status",
     "progress": "Server-reported progress",
     "reported": "Reported progress: {{value}}% — not knowledge coverage",
-    "backgroundHelp": "You can close this window and continue working here. Closing it does not cancel analysis. Task status is temporary and may be unavailable after leaving the page or a server restart.",
+    "backgroundHelp": "Close this window and return after navigation or a page reload in this tab. Closing does not cancel analysis. A server restart may interrupt the worker; the request will not restart automatically.",
     "siteScore": "Overall website score",
     "scoreHelp": "This score combines SEO, performance, website experience and content signals. It does not measure Sari’s answer accuracy or sales proficiency.",
     "knowledgeIncomplete": "Knowledge classification did not finish",
@@ -117,7 +118,15 @@
     "openTesting": "Test replies",
     "openSettings": "Website URL settings",
     "background": "Continue working and hide",
-    "upload": "Upload knowledge file"
+    "upload": "Upload knowledge file",
+    "interrupted": "This analysis stopped before completion. Some pages and knowledge may already have been saved.",
+    "resultUnavailable": "The saved result cannot be read right now. Review knowledge before starting a new analysis.",
+    "storageUnavailable": "This browser could not save or restore the analysis reference.",
+    "storageHelp": "We will not send a new request without saving its reference. Try again after session storage becomes available.",
+    "retryStorage": "Recheck browser storage",
+    "restored": "The last analysis reference in this tab was restored. Its status is being checked without starting a new analysis.",
+    "attemptHelp": "Follow your website analysis request and review its result here.",
+    "showAttempt": "View website analysis"
   },
   "setupHoursUx": {
     "businessScope": "These hours are saved in the business profile and do not schedule Sary’s replies. Configure reply scheduling in Assistant Settings after setup.",
