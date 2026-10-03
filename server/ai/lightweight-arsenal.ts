@@ -1,9 +1,8 @@
-import {selectSalesPromotions} from './promotion-evidence';
+import {loadSalesPromotionEvidence} from './promotion-evidence-source';
 import {selectSalesCart} from './cart-sales-evidence';
 /** Fast-path sales context: fresh offers, cart and loyalty scoped to the current customer. */
 
 import {
-  getActivePromotionsByMerchant,
   getAbandonedCartsByMerchantId,
   getDiscountCodesByMerchantId,
 } from '../db';
@@ -31,7 +30,7 @@ export async function loadLightweightArsenal(
   };
 
   try {
-    arsenal.activePromotions = selectSalesPromotions(await getActivePromotionsByMerchant(merchantId), {merchantId});
+    arsenal.activePromotions = await loadSalesPromotionEvidence(merchantId);
   } catch { /* An unavailable source is not evidence of an offer. */ }
 
   try {

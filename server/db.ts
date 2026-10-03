@@ -10952,28 +10952,3 @@ export async function getPromotionById(id: number, merchantId: number): Promise<
   const result = await requireDb().select().from(promotions).where(and(eq(promotions.id, id), eq(promotions.merchantId, merchantId))).limit(1);
   return result.length > 0 ? result[0] : undefined;
 }
-
-export async function getActivePromotionsByMerchant(merchantId: number): Promise<Promotion[]> {
-  const db = await getDb();
-  if (!db) return [];
-
-  const now = formatDateForDB(new Date());
-  // PEN-PROMO-08 FIX: Use isNull() instead of eq(col, null as any)
-  // eq(col, NULL) generates `col = NULL` which is ALWAYS FALSE in SQL.
-  // isNull(col) generates the correct `col IS NULL`.
-  return db.select().from(promotions)
-    .where(and(
-      eq(promotions.merchantId, merchantId),
-      eq(promotions.isActive, 1),
-      or(
-        isNull(promotions.startsAt),
-        lte(promotions.startsAt, now)
-      ),
-      or(
-        isNull(promotions.expiresAt),
-        gte(promotions.expiresAt, now)
-      ),
-    ))
-    .orderBy(desc(promotions.createdAt))
-    .limit(5); // Max 5 active promotions for AI context
-}

@@ -1,3 +1,4 @@
+import {loadSalesPromotionEvidence} from './ai/promotion-evidence-source';
 import {selectSalesPromotions,salesPromotionsPrompt,promotionBannerCaption} from './ai/promotion-evidence';
 import { formatProductPrice, formatMinorMoney, majorToMinor } from '../shared/product-money';
 import { invokeLLM } from "./_core/llm";
@@ -18,7 +19,6 @@ import {
   getWebsiteAnalysesByMerchant,
   getZidProducts,
   searchWooCommerceProducts as searchWooCommerceCatalog,
-  getActivePromotionsByMerchant,
   getPromotionById,
 } from './db';
 import { selectSalesDiscounts, salesDiscountPrompt } from './ai/sales-offer-evidence';
@@ -371,7 +371,7 @@ export async function generateAIResponse(
     // Current definitions are reference facts, never verified views, clicks or sales.
     let promotionsContext = '';
     try {
-      promotionsContext = salesPromotionsPrompt(selectSalesPromotions(await getActivePromotionsByMerchant(merchantId), {merchantId}));
+      promotionsContext = salesPromotionsPrompt(await loadSalesPromotionEvidence(merchantId));
     } catch { console.warn('[AI] Promotion context unavailable'); }
 
     // بناء سياق المحادثة

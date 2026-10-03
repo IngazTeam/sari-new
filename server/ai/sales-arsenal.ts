@@ -1,9 +1,9 @@
-import {selectSalesPromotions,type SalesPromotionEvidence} from './promotion-evidence';
+import type {SalesPromotionEvidence} from './promotion-evidence';
+import {loadSalesPromotionEvidence} from './promotion-evidence-source';
 import {selectSalesCart,salesCartPrompt,type SalesCartEvidence} from './cart-sales-evidence';
 /** Fresh factual sales context and tactics subordinate to the current customer decision. */
 
 import {
-  getActivePromotionsByMerchant,
   getAbandonedCartsByMerchantId,
   getBookingsByCustomer,
   getDiscountCodesByMerchantId,
@@ -103,7 +103,7 @@ export async function loadArsenal(
   };
 
   try {
-    arsenal.activePromotions = selectSalesPromotions(await getActivePromotionsByMerchant(merchantId), {merchantId});
+    arsenal.activePromotions = await loadSalesPromotionEvidence(merchantId);
   } catch { /* An unavailable source is not evidence of an offer. */ }
 
   try {
