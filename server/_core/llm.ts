@@ -426,7 +426,7 @@ export async function invokeLLM(
       const usageMerchantId = merchantId
         ?? (typeof inheritedMerchantId === "number" ? inheritedMerchantId : null);
       const usageModel = result.model || activeModel;
-      logAiUsage({
+      void Promise.resolve(logAiUsage({
         merchantId: usageMerchantId,
         requestType: "chat",
         model: usageModel,
@@ -437,11 +437,11 @@ export async function invokeLLM(
           ? "0"
           : String(estimateCost(usageModel, usage.prompt_tokens, usage.completion_tokens)),
         durationMs: Date.now() - startTime,
-      });
+      })).catch(() => { console.warn('[LLM] Usage logging failed'); });
     }
-  } catch (e) {
+  } catch {
     // Don't let logging failures break the response
-    console.warn("[LLM] Usage logging failed:", e);
+    console.warn('[LLM] Usage logging failed');
   }
 
   return result;

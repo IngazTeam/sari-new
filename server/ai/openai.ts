@@ -211,7 +211,7 @@ export async function callGPT4(
         // until the gateway exposes an authoritative billed-cost field.
         estimatedCost: '0',
         durationMs: Date.now() - startedAt,
-      })).catch(() => {});
+      })).catch(() => { console.warn('[OpenAI] Usage logging failed'); });
     }
     return result.content;
   }
@@ -235,7 +235,7 @@ export async function callGPT4(
     return result;
   } catch (err1: any) {
     if (err1 instanceof AiBudgetError) throw err1;
-    console.warn(`[OpenAI] Attempt 1 failed (${primaryModel}):`, err1.message);
+    console.warn('[OpenAI] Attempt 1 failed');
 
     // Don't retry on auth errors — they'll fail again
     if (err1.message?.includes('401') || err1.message?.includes('API key')) {
@@ -258,7 +258,7 @@ export async function callGPT4(
       return result;
     } catch (err2: any) {
       if (err2 instanceof AiBudgetError) throw err2;
-      console.warn(`[OpenAI] Attempt 2 failed (${primaryModel}):`, err2.message);
+      console.warn('[OpenAI] Attempt 2 failed');
 
       // A contextual sales turn is bound to the model selected centrally.
       // Exhaust its same-model retry without silently switching to a mini model.
@@ -276,7 +276,7 @@ export async function callGPT4(
           console.log('[OpenAI] ✅ Attempt 3 succeeded (gpt-4o-mini fallback)');
           return result;
         } catch (err3: any) {
-          console.error(`[OpenAI] Attempt 3 failed (gpt-4o-mini):`, err3.message);
+          console.error('[OpenAI] Attempt 3 failed (gpt-4o-mini)');
           circuitBreaker.recordFailure();
           throw err3;
         }
@@ -343,7 +343,7 @@ async function fetchWithTimeout(
     // Log usage stats (fire-and-forget — non-blocking)
     if (data.usage) {
       import('../db_ai_settings').then(({ logAiUsage, estimateCost }) => {
-        logAiUsage({
+        return logAiUsage({
           merchantId: typeof merchantId === 'number' ? merchantId : null,
           requestType: 'chat',
           model,
@@ -353,7 +353,7 @@ async function fetchWithTimeout(
           estimatedCost: String(estimateCost(model, data.usage.prompt_tokens, data.usage.completion_tokens)),
           durationMs: Date.now() - startTime,
         });
-      }).catch(() => {}); // Never let logging break the response
+      }).catch(() => { console.warn('[OpenAI] Usage logging failed'); }); // Never let logging break the response
 
     }
 
@@ -458,8 +458,8 @@ export async function testOpenAIConnection(apiKeyOverride?: string): Promise<boo
       redirect: 'error',
     });
     return response.ok;
-  } catch (error) {
-    console.error('OpenAI connection test failed:', error);
+  } catch {
+    console.error('OpenAI connection test failed');
     return false;
   } finally {
     clearTimeout(timeoutId);
