@@ -1,3 +1,4 @@
+import { inspect } from 'node:util';
 import { beforeEach, expect, it, vi } from "vitest";
 const m = vi.hoisted(() => ({
   access: vi.fn(),
@@ -100,6 +101,10 @@ it("bounds search and pagination", () => {
   expect(reportListInput.parse(undefined).page).toBe(1);
 });
 it("does not expose database error details to report clients", async () => {
+  const log = vi.spyOn(console, 'error').mockImplementation(() => {});
   m.read.mockRejectedValue(Error("SELECT private_database_details"));
-  await expect(caller().report({id:4})).rejects.toMatchObject({code:"INTERNAL_SERVER_ERROR",message:"Website report operation unavailable"});
+  try {
+    await expect(caller().report({id:4})).rejects.toMatchObject({code:"INTERNAL_SERVER_ERROR",message:"Website report operation unavailable"});
+    expect(inspect(log.mock.calls, { depth: null })).not.toContain('private_database_details');
+  } finally { log.mockRestore(); }
 });

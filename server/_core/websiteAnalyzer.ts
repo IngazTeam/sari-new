@@ -734,7 +734,7 @@ async function crawlAndExtract(pages: DiscoveredPage[], existingContactInfo: Con
   for (const page of sorted.slice(0, 50)) {
     let dom: JSDOM | undefined;
     try {
-      console.log(`[WebsiteAnalyzer] Crawling sub-page: ${page.pageType} — ${page.url}`);
+      console.log(`[WebsiteAnalyzer] Crawling sub-page: ${page.pageType}`);
 
       // Every page uses the same bounded, pinned public transport.
       const scraped = await scrapeWebsite(page.url);
@@ -744,7 +744,7 @@ async function crawlAndExtract(pages: DiscoveredPage[], existingContactInfo: Con
       // Duplicate detection: hash first 500 chars of content (ignores minor layout diffs)
       const contentHash = text.substring(0, 500).replace(/\s+/g, '');
       if (contentHashes.size > 0 && contentHashes.has(contentHash)) {
-        console.warn(`[WebsiteAnalyzer] ⚠️ DUPLICATE content detected for ${page.url} — SPA shell repeat`);
+        console.warn('[WebsiteAnalyzer] Duplicate content detected — SPA shell repeat');
         // Skip this duplicate — don't add same content twice
         crawledPages.push({
           url: page.url,
@@ -827,7 +827,7 @@ async function crawlAndExtract(pages: DiscoveredPage[], existingContactInfo: Con
         crawledAt: new Date().toISOString(),
         success: false,
       });
-      console.warn(`[WebsiteAnalyzer] Failed to crawl ${page.url}:`, err instanceof Error ? err.message : 'unknown');
+      console.warn('[WebsiteAnalyzer] Failed to crawl sub-page');
     } finally {
       dom?.window.close();
     }
@@ -842,7 +842,7 @@ async function crawlAndExtract(pages: DiscoveredPage[], existingContactInfo: Con
 export async function analyzeWebsite(url: string, merchantId: number): Promise<WebsiteAnalysisResult & { _scrapedHtml: string; _scrapedText: string; _enrichedText: string; _crawledPages: CrawledPageData[] }> {
   let mainDom: JSDOM | undefined;
   try {
-    console.log('[WebsiteAnalyzer] Analyzing website:', url);
+    console.log('[WebsiteAnalyzer] Analyzing website');
 
     // Scrape website
     const { html, dom, text } = await scrapeWebsite(url);
@@ -896,7 +896,7 @@ export async function analyzeWebsite(url: string, merchantId: number): Promise<W
 
             if (isSitemapIndex) {
               // Fetch each child sitemap to get the actual page URLs
-              console.log(`[WebsiteAnalyzer] Sitemap INDEX found at ${sitemapUrl} with ${childLocs.length} child sitemaps`);
+              console.log(`[WebsiteAnalyzer] Sitemap INDEX found with ${childLocs.length} child sitemaps`);
               for (const childUrl of childLocs.slice(0, 10)) { // Max 10 child sitemaps
                 if (!childUrl.endsWith('.xml') || !samePublicWebsiteOrigin(childUrl, baseOrigin)) continue;
                 try {
@@ -904,7 +904,7 @@ export async function analyzeWebsite(url: string, merchantId: number): Promise<W
                   if (childResult.ok && childResult.body.includes('<loc>')) {
                     const pages = extractLocs(childResult.body).filter(u => !u.endsWith('.xml'));
                     allPageUrls.push(...pages);
-                    console.log(`[WebsiteAnalyzer] Child sitemap ${childUrl} → ${pages.length} pages`);
+                    console.log(`[WebsiteAnalyzer] Child sitemap: ${pages.length} pages`);
                   }
                 } catch { /* child sitemap fetch failed */ }
               }
@@ -931,7 +931,7 @@ export async function analyzeWebsite(url: string, merchantId: number): Promise<W
                 });
               }
             }
-            console.log(`[WebsiteAnalyzer] Sitemap processing done: ${sitemapUrl} — total pages now: ${discoveredPages.length}`);
+            console.log(`[WebsiteAnalyzer] Sitemap processing done — total pages now: ${discoveredPages.length}`);
             break; // Found sitemap, no need to try alternatives
           }
         } catch { /* sitemap not found — ok */ }
@@ -957,7 +957,7 @@ export async function analyzeWebsite(url: string, merchantId: number): Promise<W
         totalWordCount += extraWords;
         console.log(`[WebsiteAnalyzer] Crawling complete: ${allCrawledPages.length} pages (${allCrawledPages.filter(p => p.success).length} success), ${faqs.length} FAQs, +${extraWords} words`);
       } catch (crawlErr) {
-        console.warn('[WebsiteAnalyzer] Multi-page crawling failed:', crawlErr instanceof Error ? crawlErr.message : 'unknown');
+        console.warn('[WebsiteAnalyzer] Multi-page crawling failed');
       }
     }
 
@@ -995,7 +995,7 @@ export async function analyzeWebsite(url: string, merchantId: number): Promise<W
       const timeoutPromise = new Promise<string>((_, reject) => setTimeout(() => reject(new Error('Industry detection timeout')), 10000));
       industry = await Promise.race([industryPromise, timeoutPromise]);
     } catch (err) {
-      console.warn('[WebsiteAnalyzer] Industry detection failed/timed out, continuing with default:', err instanceof Error ? err.message : err);
+      console.warn('[WebsiteAnalyzer] Industry detection failed/timed out, continuing with default');
     }
 
     // Build crawl stats for frontend
@@ -1043,7 +1043,7 @@ export async function analyzeWebsite(url: string, merchantId: number): Promise<W
       },
     };
   } catch (error) {
-    console.error('[WebsiteAnalyzer] Error analyzing website:', error);
+    console.error('[WebsiteAnalyzer] Error analyzing website');
     throw error;
   } finally {
     mainDom?.window.close();
@@ -1066,7 +1066,7 @@ function extractZidStoreId(html: string): string | null {
   for (const pattern of storeIdPatterns) {
     const match = html.match(pattern);
     if (match) {
-      console.log(`[WebsiteAnalyzer] Found Zid store-id: ${match[1]}`);
+      console.log('[WebsiteAnalyzer] Found Zid store-id');
       return match[1];
     }
   }
@@ -1124,7 +1124,7 @@ async function discoverZidStoreId(url: string): Promise<string | null> {
   if (publicPage.ok && publicPage.body) {
     const storeId = extractZidStoreId(publicPage.body);
     if (storeId) {
-      console.log(`[WebsiteAnalyzer] Discovered Zid store-id from public page: ${storeId}`);
+      console.log('[WebsiteAnalyzer] Discovered Zid store-id from public page');
       return storeId;
     }
   }
@@ -1141,7 +1141,7 @@ async function discoverZidStoreId(url: string): Promise<string | null> {
       // Extract store-id UUID from media.zid.store image URLs
       const imageUrl = JSON.stringify(data).match(/media\.zid\.store\/thumbs\/([a-f0-9-]{36})\//);
       if (imageUrl?.[1]) {
-        console.log(`[WebsiteAnalyzer] Discovered Zid store-id from API image URLs: ${imageUrl[1]}`);
+        console.log('[WebsiteAnalyzer] Discovered Zid store-id from API image URLs');
         return imageUrl[1];
       }
     } catch { /* skip */ }
@@ -1158,7 +1158,7 @@ async function discoverZidStoreId(url: string): Promise<string | null> {
       const text = await response.text();
       const storeId = extractZidStoreId(text);
       if (storeId) {
-        console.log(`[WebsiteAnalyzer] Discovered Zid store-id from fetch: ${storeId}`);
+        console.log('[WebsiteAnalyzer] Discovered Zid store-id from fetch');
         return storeId;
       }
     }
@@ -1180,7 +1180,7 @@ async function discoverZidStoreId(url: string): Promise<string | null> {
  */
 export async function extractProducts(url: string, html: string, text: string, merchantId: number): Promise<ExtractedProduct[]> {
   try {
-    console.log('[WebsiteAnalyzer] Extracting products from:', url);
+    console.log('[WebsiteAnalyzer] Extracting products');
     console.log(`[WebsiteAnalyzer] HTML length: ${html.length}, Text length: ${text.length}`);
 
     // Detect platform and extract store metadata
@@ -1188,7 +1188,7 @@ export async function extractProducts(url: string, html: string, text: string, m
     const platform = detectPlatform(url, html);
     const htmlEmpty = html.length < 500; // Scraping likely failed (Cloudflare)
 
-    console.log(`[WebsiteAnalyzer] Detected platform: ${platform}${zidStoreId ? ` (Zid store-id: ${zidStoreId})` : ''}`);
+    console.log(`[WebsiteAnalyzer] Detected platform: ${platform}`);
     if (htmlEmpty) console.log('[WebsiteAnalyzer] HTML is empty/minimal — scraping likely blocked, trying API-only extraction');
 
     // Strategy 1: For known e-commerce platforms OR when scraping failed, try API first
@@ -1256,7 +1256,7 @@ export async function extractProducts(url: string, html: string, text: string, m
 
     return await extractWithAI(text, url, merchantId);
   } catch (error) {
-    console.error('[WebsiteAnalyzer] Error extracting products:', error);
+    console.error('[WebsiteAnalyzer] Error extracting products');
     return [];
   }
 }
@@ -1395,7 +1395,7 @@ ${text.substring(0, 25000)}
     console.log(`[WebsiteAnalyzer] AI extracted ${products.length} products`);
     return products;
   } catch (error) {
-    console.error('[WebsiteAnalyzer] AI extraction failed:', error);
+    console.error('[WebsiteAnalyzer] AI extraction failed');
     return [];
   }
 }
@@ -1449,7 +1449,7 @@ function extractFromJsonLD(html: string, baseUrl: string): ExtractedProduct[] {
       }
     }
   } catch (error) {
-    console.warn('[WebsiteAnalyzer] Error parsing JSON-LD:', error);
+    console.warn('[WebsiteAnalyzer] Error parsing JSON-LD');
   }
 
   return products;
@@ -1638,7 +1638,7 @@ function extractFromHTMLPatterns(html: string, baseUrl: string): ExtractedProduc
       if (products.length > 0) break; // Use first matching selector
     }
   } catch (error) {
-    console.warn('[WebsiteAnalyzer] Error parsing HTML patterns:', error);
+    console.warn('[WebsiteAnalyzer] Error parsing HTML patterns');
   }
 
   return products;
@@ -1713,7 +1713,7 @@ async function tryProductsAPI(url: string, zidStoreId?: string | null): Promise<
 
     for (const endpoint of sallaStorefrontEndpoints) {
       try {
-        console.log(`[WebsiteAnalyzer] Trying Salla API (${endpoint.label}): ${endpoint.url}`);
+        console.log(`[WebsiteAnalyzer] Trying Salla API (${endpoint.label})`);
         const headers = {
           'Accept': 'application/json',
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
@@ -1754,11 +1754,11 @@ async function tryProductsAPI(url: string, zidStoreId?: string | null): Promise<
           .filter((p): p is ExtractedProduct => p !== null);
 
         if (products.length > 0) {
-          console.log(`[WebsiteAnalyzer] ✅ Salla API: Got ${products.length} products from ${endpoint.url}`);
+          console.log(`[WebsiteAnalyzer] Salla API: Got ${products.length} products`);
           return products;
         }
       } catch (err) {
-        console.log(`[WebsiteAnalyzer] Salla API ${endpoint.url} failed:`, err instanceof Error ? err.message : 'unknown');
+        console.log('[WebsiteAnalyzer] Salla API request failed');
       }
     }
     return [];
@@ -1767,7 +1767,7 @@ async function tryProductsAPI(url: string, zidStoreId?: string | null): Promise<
   // --- Shopify ---
   const tryShopifyAPI = async (): Promise<ExtractedProduct[]> => {
     const endpoint = `${baseUrl}/products.json?limit=50`;
-    console.log(`[WebsiteAnalyzer] Trying Shopify API: ${endpoint}`);
+    console.log('[WebsiteAnalyzer] Trying Shopify API');
 
     const headers = {
       'Accept': 'application/json',
@@ -1853,7 +1853,7 @@ async function tryProductsAPI(url: string, zidStoreId?: string | null): Promise<
       }
       return products;
     } catch (err) {
-      console.log(`[WebsiteAnalyzer] Shopify API parsing failed:`, err instanceof Error ? err.message : 'unknown');
+      console.log('[WebsiteAnalyzer] Shopify API parsing failed');
       return [];
     }
   };
@@ -1869,7 +1869,7 @@ async function tryProductsAPI(url: string, zidStoreId?: string | null): Promise<
 
     for (const endpoint of wcEndpoints) {
       try {
-        console.log(`[WebsiteAnalyzer] Trying WooCommerce API: ${endpoint}`);
+        console.log('[WebsiteAnalyzer] Trying WooCommerce API');
         const headers = {
           'Accept': 'application/json',
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
@@ -1940,11 +1940,11 @@ async function tryProductsAPI(url: string, zidStoreId?: string | null): Promise<
         }
 
         if (products.length > 0) {
-          console.log(`[WebsiteAnalyzer] ✅ WooCommerce API: Got ${products.length} products from ${endpoint}`);
+          console.log(`[WebsiteAnalyzer] WooCommerce API: Got ${products.length} products`);
           return products;
         }
       } catch (err) {
-        console.log(`[WebsiteAnalyzer] WooCommerce API ${endpoint} failed:`, err instanceof Error ? err.message : 'unknown');
+        console.log('[WebsiteAnalyzer] WooCommerce API request failed');
       }
     }
     return [];
@@ -1976,7 +1976,7 @@ async function tryProductsAPI(url: string, zidStoreId?: string | null): Promise<
 
     for (const endpoint of zidEndpoints) {
       try {
-        console.log(`[WebsiteAnalyzer] Trying Zid API: ${endpoint.url}${endpoint.headers ? ' [with store-id]' : ''}`);
+        console.log(`[WebsiteAnalyzer] Trying Zid API${endpoint.headers ? ' [with store-id]' : ''}`);
         const headers: Record<string, string> = {
           'Accept': 'application/json',
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
@@ -2104,11 +2104,11 @@ async function tryProductsAPI(url: string, zidStoreId?: string | null): Promise<
         }
 
         if (products.length > 0) {
-          console.log(`[WebsiteAnalyzer] ✅ Zid API: Got ${products.length} products from ${endpoint.url}`);
+          console.log(`[WebsiteAnalyzer] Zid API: Got ${products.length} products`);
           return products;
         }
       } catch (err) {
-        console.log(`[WebsiteAnalyzer] Zid API ${endpoint.url} failed:`, err instanceof Error ? err.message : 'unknown');
+        console.log('[WebsiteAnalyzer] Zid API request failed');
       }
     }
     return products;
@@ -2267,7 +2267,7 @@ export async function generateInsights(analysis: WebsiteAnalysisResult, merchant
     const result = JSON.parse(content as string);
     return result.insights || [];
   } catch (error) {
-    console.error('[WebsiteAnalyzer] Error generating insights:', error);
+    console.error('[WebsiteAnalyzer] Error generating insights');
     return [];
   }
 }
@@ -2300,7 +2300,7 @@ async function detectIndustry(title: string, description: string, text: string, 
 
     return (response.choices[0].message.content as string)?.trim() || 'غير محدد';
   } catch (error) {
-    console.error('[WebsiteAnalyzer] Error detecting industry:', error);
+    console.error('[WebsiteAnalyzer] Error detecting industry');
     return 'غير محدد';
   }
 }
@@ -2392,7 +2392,7 @@ ${i + 1}. ${c.title}
 
     return JSON.parse(content as string);
   } catch (error) {
-    console.error('[WebsiteAnalyzer] Error comparing with competitors:', error);
+    console.error('[WebsiteAnalyzer] Error comparing with competitors');
     return { strengths: [], weaknesses: [], opportunities: [] };
   }
 }
@@ -2465,7 +2465,7 @@ export async function smartCrawl(baseUrl: string, homeDom: JSDOM, maxPages: numb
       break;
     }
     try {
-      console.log(`[SmartCrawl] Crawling [${page.pageType}] ${page.url}`);
+      console.log(`[SmartCrawl] Crawling [${page.pageType}]`);
       const { text, dom } = await scrapeWebsite(page.url);
       dom.window.close();
       if (text.length > 50) { // Skip empty/blocked pages
@@ -2473,7 +2473,7 @@ export async function smartCrawl(baseUrl: string, homeDom: JSDOM, maxPages: numb
         allText += `\n\n--- ${page.title} (${page.pageType}) ---\n${text}`;
       }
     } catch (err) {
-      console.warn(`[SmartCrawl] Failed to crawl ${page.url}:`, err instanceof Error ? err.message : 'unknown');
+      console.warn('[SmartCrawl] Failed to crawl sub-page');
     }
   }
 
@@ -2607,7 +2607,7 @@ ${allText.substring(0, 30000)}
     }
 
     const parsed = JSON.parse(content as string);
-    console.log(`[SmartCrawl] AI extracted: ${parsed.products?.length || 0} items, ${parsed.faqs?.length || 0} FAQs, company: ${parsed.companyInfo?.name || 'unknown'}`);
+    console.log(`[SmartCrawl] AI extracted: ${parsed.products?.length || 0} items, ${parsed.faqs?.length || 0} FAQs`);
 
     return {
       products: (parsed.products || []).map((p: any) => ({
@@ -2624,7 +2624,7 @@ ${allText.substring(0, 30000)}
       companyInfo: parsed.companyInfo || { name: '', description: '', industry: '' },
     };
   } catch (error) {
-    console.error('[SmartCrawl] AI extraction failed:', error);
+    console.error('[SmartCrawl] AI extraction failed');
     return { products: [], faqs: [], companyInfo: { name: '', description: '', industry: '' } };
   }
 }

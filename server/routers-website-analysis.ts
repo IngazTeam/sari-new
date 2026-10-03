@@ -38,7 +38,7 @@ async function reportOperation<T>(operation: () => Promise<T>): Promise<T> {
   try { return await operation(); }
   catch (error) {
     if (error instanceof TRPCError) throw error;
-    console.error('[WebsiteReports] Operation failed:', error);
+    console.error('[WebsiteReports] Operation failed');
     throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Website report operation unavailable' });
   }
 }
@@ -93,7 +93,7 @@ export const websiteAnalysisRouter = router({
           title: hostname,
           status: 'analyzing',
         });
-        console.log(`[WebsiteAnalysis] ▶ Pipeline START: id=${analysisId}, url=${input.url}`);
+        console.log(`[WebsiteAnalysis] Pipeline START: id=${analysisId}`);
 
         // Remote phases have deadlines; the report stays running until its database writes settle.
         const runPipeline = async () => {
@@ -105,14 +105,14 @@ export const websiteAnalysisRouter = router({
           const warnings: string[] = [];
 
           // Phase 1: Analyze website (120s timeout — increased for up to 30-page crawl)
-          console.log(`[WebsiteAnalysis] Phase 1 START: scrape + analyze ${input.url}`);
+          console.log('[WebsiteAnalysis] Phase 1 START: scrape + analyze');
           try {
             const analyzePromise = analyzer.analyzeWebsite(input.url, merchant.id);
             const analyzeTimeout = new Promise<never>((_, reject) =>
               setTimeout(() => reject(new Error('Analysis phase timeout (120s)')), 120000)
             );
             const result = await Promise.race([analyzePromise, analyzeTimeout]);
-            console.log(`[WebsiteAnalysis] Phase 1 COMPLETE: score=${result.overallScore}, title="${result.title}"`);
+            console.log(`[WebsiteAnalysis] Phase 1 COMPLETE: score=${result.overallScore}`);
 
             // Update analysis with results
             await updateWebsiteAnalysis(analysisId, {
@@ -162,10 +162,10 @@ export const websiteAnalysisRouter = router({
               if (Object.keys(updateData).length > 0) {
                 try {
                   await updateMerchant(merchant.id, updateData);
-                  console.log('[WebsiteAnalysis] Updated merchant contact info:', updateData);
+                  console.log('[WebsiteAnalysis] Updated merchant contact info');
                 } catch (contactErr: any) {
                   warnings.push('contact');
-                  console.warn('[WebsiteAnalysis] Failed to update merchant contact:', contactErr.message);
+                  console.warn('[WebsiteAnalysis] Failed to update merchant contact');
                 }
               }
             }
@@ -174,7 +174,7 @@ export const websiteAnalysisRouter = router({
 
           } catch (analysisError) {
             warnings.push('analysis_or_knowledge');
-            console.error('[WebsiteAnalysis] Phase 1 FAILED:', analysisError instanceof Error ? analysisError.message : analysisError);
+            console.error('[WebsiteAnalysis] Phase 1 FAILED');
             // Save partial info — title was already saved at creation, just add description
             try {
               if (!analysisSucceeded) await updateWebsiteAnalysis(analysisId, {
@@ -182,7 +182,7 @@ export const websiteAnalysisRouter = router({
                 overallScore: 0,
               });
             } catch (dbErr) {
-              console.error('[WebsiteAnalysis] Failed to save partial Phase 1 data:', dbErr);
+              console.error('[WebsiteAnalysis] Failed to save partial Phase 1 data');
             }
           }
 
@@ -201,7 +201,7 @@ export const websiteAnalysisRouter = router({
                 scrapedHtml = scraped.html;
                 scrapedText = scraped.text;
               } catch (scrapeError) {
-                console.warn('[WebsiteAnalysis] Phase 2 scrape failed:', scrapeError instanceof Error ? scrapeError.message : 'unknown');
+                console.warn('[WebsiteAnalysis] Phase 2 scrape failed');
               }
             }
 
@@ -255,7 +255,7 @@ export const websiteAnalysisRouter = router({
                 savedCount++;
               } catch (saveError) {
                 warnings.push('product_record');
-                console.error(`[WebsiteAnalysis] Failed to save product "${product.name}":`, saveError instanceof Error ? saveError.message : saveError);
+                console.error('[WebsiteAnalysis] Failed to save product');
               }
             }
 
@@ -268,12 +268,12 @@ export const websiteAnalysisRouter = router({
                 console.log(`[WebsiteAnalysis] ✅ Saved ${mainSavedCount} products to MAIN products table for merchant ${merchant.id}`);
               } catch (mainErr: any) {
                 warnings.push('catalog');
-                console.error('[WebsiteAnalysis] Failed to save to main products table:', mainErr.message);
+                console.error('[WebsiteAnalysis] Failed to save to main products table');
               }
             }
           } catch (productError) {
             warnings.push('products');
-            console.error('[WebsiteAnalysis] Phase 2 FAILED:', productError instanceof Error ? productError.message : productError);
+            console.error('[WebsiteAnalysis] Phase 2 FAILED');
           }
 
           // Phase 3: Generate insights (10s timeout — only if we have analysis data)
@@ -326,7 +326,7 @@ export const websiteAnalysisRouter = router({
             }
           } catch (insightsError) {
             warnings.push('insights');
-            console.error('[WebsiteAnalysis] Phase 3 FAILED:', insightsError instanceof Error ? insightsError.message : insightsError);
+            console.error('[WebsiteAnalysis] Phase 3 FAILED');
           }
 
           // Phase 4: Feed into Knowledge Engine (RAG) — bridges the gap with sariBrain.reanalyzeWebsite
@@ -361,7 +361,7 @@ export const websiteAnalysisRouter = router({
             }
           } catch (knowledgeError) {
             warnings.push('knowledge');
-            console.error('[WebsiteAnalysis] Phase 4 FAILED (non-blocking):', knowledgeError instanceof Error ? knowledgeError.message : knowledgeError);
+            console.error('[WebsiteAnalysis] Phase 4 FAILED (non-blocking)');
           }
 
           // Final: Mark analysis as completed after all phases finish
@@ -369,21 +369,21 @@ export const websiteAnalysisRouter = router({
             await updateWebsiteAnalysis(analysisId, { status: analysisSucceeded ? 'completed' : 'failed', errorMessage: warnings.length ? `Incomplete stages: ${Array.from(new Set(warnings)).join(', ')}` : undefined });
             console.log(`[WebsiteAnalysis] Pipeline settled: id=${analysisId}, status=${analysisSucceeded ? "completed" : "failed"}`);
           } catch (finalUpdateErr) {
-            console.error('[WebsiteAnalysis] CRITICAL: Failed to mark as completed:', finalUpdateErr);
+            console.error('[WebsiteAnalysis] CRITICAL: Failed to mark as completed');
           }
         };
 
         // Per-stage deadlines bound remote work. Never mark the report terminal while
         // this pipeline can still write children or knowledge; deletion relies on that state.
         void runPipeline().catch(async error => {
-          console.error('[WebsiteAnalysis] Background pipeline failed:', error);
+          console.error('[WebsiteAnalysis] Background pipeline failed');
           try { await updateWebsiteAnalysis(analysisId, { status: 'failed', errorMessage: 'Pipeline failed; partial results may exist.' }); }
-          catch (saveError) { console.error('[WebsiteAnalysis] Failed to store terminal status:', saveError); }
+          catch (saveError) { console.error('[WebsiteAnalysis] Failed to store terminal status'); }
         });
 
         return { analysisId, status: 'analyzing' };
       } catch (error) {
-        console.error('[WebsiteAnalysis] Error starting analysis:', error);
+        console.error('[WebsiteAnalysis] Error starting analysis');
         if (error instanceof TRPCError) throw error;
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
@@ -563,7 +563,7 @@ export const websiteAnalysisRouter = router({
 
             console.log('[CompetitorAnalysis] Analysis completed:', competitorId);
           } catch (error) {
-            console.error('[CompetitorAnalysis] Analysis failed:', error);
+            console.error('[CompetitorAnalysis] Analysis failed');
             await updateCompetitorAnalysis(competitorId, {
               status: 'failed',
               errorMessage: error instanceof Error ? error.message : 'Unknown error',
@@ -573,7 +573,7 @@ export const websiteAnalysisRouter = router({
 
         return { competitorId, status: 'analyzing' };
       } catch (error) {
-        console.error('[CompetitorAnalysis] Error starting analysis:', error);
+        console.error('[CompetitorAnalysis] Error starting analysis');
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message: error instanceof Error ? error.message : 'Failed to start analysis',

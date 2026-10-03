@@ -1,3 +1,4 @@
+import { inspect } from 'node:util';
 import { beforeEach, afterEach, expect, it, vi } from "vitest";
 const m = vi.hoisted(() => ({
   access: vi.fn(),
@@ -80,7 +81,7 @@ beforeEach(() => {
   m.insights.mockResolvedValue([]);
   m.persist.mockResolvedValue({});
 });
-afterEach(() => vi.useRealTimers());
+afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); });
 it("starts only with explicit acknowledgement and stores completed results after the pipeline settles", async () => {
   await expect(
     caller().analyze({ url: "https://example.test" } as any)
@@ -133,4 +134,24 @@ it("preserves stored website estimates if the following knowledge write fails", 
   expect(m.row.status).toBe("completed");
   expect(m.row.overallScore).toBe(75);
   expect(m.row.errorMessage).toContain("analysis_or_knowledge");
+});
+
+it.each([false, true])('does not copy report URLs, contact details, titles or storage errors to logs (failed=%s)', async failed => {
+  const secret = 'PRIVATE_REPORT_DATA_428';
+  const output: unknown[][] = [];
+  for (const level of ['log', 'warn', 'error'] as const)
+    vi.spyOn(console, level).mockImplementation((...args) => { output.push(args); });
+  m.analyze.mockResolvedValue({ title: secret, overallScore: 75, seoIssues: [], metaTags: {}, _scrapedHtml: '<p>Fixture</p>', _scrapedText: 'Short', _enrichedText: '', contactInfo: { phones: [secret], whatsappNumber: secret } });
+  if (failed) {
+    m.persist.mockRejectedValue(Error(secret));
+    m.extract.mockResolvedValue([{ name: secret, price: 5, tags: [] }]);
+    m.product.mockRejectedValue(Error(secret));
+    m.insights.mockRejectedValue(Error(secret));
+  }
+  await caller().analyze({ url: `https://example.test/?token=${secret}`, acknowledged: true });
+  await flush();
+  expect(m.row.status).toBe('completed');
+  expect(m.row.title).toBe(secret);
+  expect(inspect(output, { depth: null })).not.toContain(secret);
+  expect(inspect(output, { depth: null })).toContain('Pipeline settled');
 });
