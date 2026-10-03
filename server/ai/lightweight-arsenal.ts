@@ -1,7 +1,9 @@
+import {selectSalesPromotions} from './promotion-evidence';
 import {selectSalesCart} from './cart-sales-evidence';
 /** Fast-path sales context: fresh offers, cart and loyalty scoped to the current customer. */
 
 import {
+  getActivePromotionsByMerchant,
   getAbandonedCartsByMerchantId,
   getDiscountCodesByMerchantId,
 } from '../db';
@@ -15,6 +17,7 @@ export async function loadLightweightArsenal(
 ): Promise<SalesArsenal> {
   // Build lightweight arsenal from DB
   const arsenal: SalesArsenal = {
+    activePromotions: [],
     activeDiscounts: [],
     loyaltyPoints: 0,
     loyaltyTier: null,
@@ -26,6 +29,10 @@ export async function loadLightweightArsenal(
     upcomingBookings: [],
     availableServices: [],
   };
+
+  try {
+    arsenal.activePromotions = selectSalesPromotions(await getActivePromotionsByMerchant(merchantId), {merchantId});
+  } catch { /* An unavailable source is not evidence of an offer. */ }
 
   try {
     // 1. Active discount codes (most critical for sales)

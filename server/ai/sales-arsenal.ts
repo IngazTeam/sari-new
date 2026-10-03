@@ -1,7 +1,9 @@
+import {selectSalesPromotions,type SalesPromotionEvidence} from './promotion-evidence';
 import {selectSalesCart,salesCartPrompt,type SalesCartEvidence} from './cart-sales-evidence';
 /** Fresh factual sales context and tactics subordinate to the current customer decision. */
 
 import {
+  getActivePromotionsByMerchant,
   getAbandonedCartsByMerchantId,
   getBookingsByCustomer,
   getDiscountCodesByMerchantId,
@@ -42,6 +44,7 @@ function sanitizeForArsenalPrompt(text: string): string {
 // ═══════════════════════════════════════════════════════════════
 
 export interface SalesArsenal {
+  activePromotions?: SalesPromotionEvidence[];
   activeDiscounts: SalesDiscountEvidence[];
   loyaltyPoints: number;
   loyaltyTier: { name: string; icon: string; discount: number } | null;
@@ -86,6 +89,7 @@ export async function loadArsenal(
   customerPhone: string
 ): Promise<SalesArsenal> {
   const arsenal: SalesArsenal = {
+    activePromotions: [],
     activeDiscounts: [],
     loyaltyPoints: 0,
     loyaltyTier: null,
@@ -97,6 +101,10 @@ export async function loadArsenal(
     upcomingBookings: [],
     availableServices: [],
   };
+
+  try {
+    arsenal.activePromotions = selectSalesPromotions(await getActivePromotionsByMerchant(merchantId), {merchantId});
+  } catch { /* An unavailable source is not evidence of an offer. */ }
 
   try {
     // 1. Active discount codes

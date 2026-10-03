@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 const m = vi.hoisted(() => ({
+  offers: [] as any[],
   call: vi.fn(),
   history: vi.fn(),
   session: vi.fn(),
@@ -117,10 +118,10 @@ vi.mock("./proactive-followup", () => ({
   scheduleAutomaticFollowup: m.automatic,
 }));
 vi.mock("./lightweight-arsenal", () => ({
-  loadLightweightArsenal: async () => ({ bestSellers: [] }),
+  loadLightweightArsenal: async () => ({ bestSellers: [],activePromotions:m.offers }),
 }));
 vi.mock("./sales-arsenal", () => ({
-  loadArsenal: async () => ({}),
+  loadArsenal: async () => ({activePromotions:m.offers}),
   selectPersuasion: () => ({ strategy: "none", prompt: "" }),
 }));
 vi.mock("../automation/onboarding-interview", () => ({
@@ -173,6 +174,7 @@ const state = {
 };
 beforeEach(() => {
   vi.resetAllMocks();
+  m.offers=[];
   m.agent.mockResolvedValue(null);
   m.byaan.mockResolvedValue(null);
   m.memory.mockResolvedValue(1);
@@ -223,6 +225,12 @@ describe.each(["fast", "full"])(
   path => {
     beforeEach(() => {
       if (path === "fast") m.session.mockResolvedValue({ ...state });
+    });
+    it.each([true,false])('uses only fresh promotion evidence in this turn, present=%s',async present=>{
+      if(present)m.offers=[{id:81,merchantId:71,title:'CURRENT_PROMOTION_EVIDENCE',description:'Current terms',type:'percentage',value:17,scope:'products',productIds:[7],categoryIds:[],minOrderAmount:0,minQuantity:1,startsAt:null,expiresAt:null,checkedAt:new Date().toISOString(),currency:null,amountUnit:'source_unspecified',customerEligibility:'not_verified',salesAttribution:'not_verified',bannerImageUrl:null}];
+      m.call.mockImplementation(async messages=>{const prompt=messages.filter((r:any)=>r.role==='system').map((r:any)=>r.content).join('');expect(prompt.includes('CURRENT_PROMOTION_EVIDENCE')).toBe(present);if(present){expect(prompt).toContain('"scope":"products"');expect(prompt).toContain('"currency":null');expect(prompt).toContain('"customerEligibility":"not_verified"');}return 'هذه تفاصيل موثقة.';});
+      await chatWithSari(input);expect(m.call).toHaveBeenCalledOnce();
+      for(const [value] of m.create.mock.calls)expect(value.contextPrompt).not.toContain('CURRENT_PROMOTION_EVIDENCE');
     });
     it.each([false,true])('persists interpreted memory before early checkout replies, storage failure=%s',async fail=>{
       const previous=m.understanding.getMockImplementation()!;

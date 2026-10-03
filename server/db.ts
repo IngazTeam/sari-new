@@ -10977,4 +10977,3 @@ export async function getActivePromotionsByMerchant(merchantId: number): Promise
     .orderBy(desc(promotions.createdAt))
     .limit(5); // Max 5 active promotions for AI context
 }
-

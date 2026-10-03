@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { salesPromotionsPrompt } from './promotion-evidence';
 import { updateDealStage } from './deal-stage';
 export { STAGE_ORDER } from './deal-stage';
 import { understandConversation, understandPreview, UNDERSTANDING_UNAVAILABLE } from './conversation-understanding';
@@ -2075,6 +2076,7 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
       if (persuasion.prompt) {
         systemPrompt += persuasion.prompt;
       }
+      systemPrompt += salesPromotionsPrompt(fastArsenal?.activePromotions ?? []);
 
       // FIX-SENTIMENT: Inject sentiment-aware directives into FAST PATH
       // Previously sentiment was computed but never injected — GPT didn't know the customer's emotional state
@@ -2348,7 +2350,7 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
         [],
         { customerMessage: params.message, lastAssistantMessage: lastAssistantContent }
       );
-      arsenalPrompt = persuasion.prompt;
+      arsenalPrompt = persuasion.prompt + salesPromotionsPrompt(arsenal.activePromotions ?? []);
 
       // v6: Record strategy use
       if (persuasion.strategy !== 'none') {
