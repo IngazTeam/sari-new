@@ -30,6 +30,12 @@ function submit(type: string) { w.document.querySelector(`[data-page-form="${typ
 const text = () => w.document.getElementById('main').textContent;
 
 describe('complete tenant page prototype', () => {
+  it('opens actual order notifications with all filters and without the retired settings form', () => {
+    route('/merchant/order-notifications?view=history&state=manual_review&evidence=accepted&integrity=linked&sort=oldest&page=2&tenant=270&lang=en');
+    const frame=w.document.querySelector('#main iframe[data-brain-preview]'),url=new URL(frame.getAttribute('src'),w.location.href);
+    expect(url.pathname).toBe('/service-workspace.html');expect(Object.fromEntries(url.searchParams)).toEqual({view:'history',state:'manual_review',evidence:'accepted',integrity:'linked',sort:'oldest',page:'2',tenant:'270',lang:'en',embed:'brain',path:'/merchant/order-notifications'});
+    expect(w.document.querySelector('[data-page-form="settings"]')).toBeNull();expect(errors).toEqual([]);
+  });
   it.each(['#/inbox','#/inbox?lang=en&conversationId=51','#/inbox/old?phone=ux-customer-051'])('retires the manual inbox at %s without losing its query',hash=>{
     w.history.replaceState(null,'','/'+hash);w.dispatchEvent(new w.HashChangeEvent('hashchange'));
     expect(w.location.hash).toBe('#/page/merchant/conversations'+(hash.includes('?')?hash.slice(hash.indexOf('?')):''));
@@ -74,7 +80,7 @@ describe('complete tenant page prototype', () => {
       ]);
       const destination = page.redirect || page.route;
       if (/^\/merchant\/campaigns(?:\/|$)/.test(destination)) embeddedPages.set(destination, 'campaign-workspace.html?embed=brain&path=' + encodeURIComponent(destination));
-      if (/^\/merchant\/(?:services(?:\/|$)|discounts$|referrals$|abandoned-carts$|occasion-campaigns$|service-categories$|service-packages$|staff$|bookings$|integrations\/(?:byaan|zid|calendly)$|zid\/(?:settings|products|sync-logs|callback)$|woocommerce\/(?:settings|products|orders|analytics)$|byaan-dashboard$|salla$|platform-integrations$|calendar(?:\/settings)?$)/.test(destination)) embeddedPages.set(destination, 'service-workspace.html?embed=brain&path=' + encodeURIComponent(destination));
+      if (/^\/merchant\/(?:services(?:\/|$)|order-notifications$|reviews$|booking-reviews$|scheduled-messages$|media-library$|promotions$|discounts$|referrals$|abandoned-carts$|occasion-campaigns$|service-categories$|service-packages$|staff$|bookings$|integrations\/(?:byaan|zid|calendly)$|zid\/(?:settings|products|sync-logs|callback)$|woocommerce\/(?:settings|products|orders|analytics)$|byaan-dashboard$|salla$|platform-integrations$|calendar(?:\/settings)?$)/.test(destination)) embeddedPages.set(destination, 'service-workspace.html?embed=brain&path=' + encodeURIComponent(destination));
       if (embeddedPages.has(destination)) {
         await vi.waitFor(() =>
           expect(

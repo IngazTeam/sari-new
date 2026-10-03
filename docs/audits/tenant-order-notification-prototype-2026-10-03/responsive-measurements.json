@@ -1,0 +1,141 @@
+[
+  {
+    "body": 290,
+    "scroll": 290,
+    "view": "templates-ar",
+    "width": 290
+  },
+  {
+    "body": 360,
+    "scroll": 360,
+    "view": "templates-ar",
+    "width": 360
+  },
+  {
+    "body": 738,
+    "scroll": 738,
+    "view": "templates-ar",
+    "width": 738
+  },
+  {
+    "body": 1410,
+    "scroll": 1410,
+    "view": "templates-ar",
+    "width": 1410
+  },
+  {
+    "dialogHeight": 810,
+    "dialogScroll": 226,
+    "dialogWidth": 226,
+    "scroll": 290,
+    "scrollHeight": 1263,
+    "view": "template-dialog-ar",
+    "viewport": 320,
+    "width": 290
+  },
+  {
+    "dialogHeight": 810,
+    "dialogScroll": 296,
+    "dialogWidth": 296,
+    "scroll": 360,
+    "scrollHeight": 1070,
+    "view": "template-dialog-ar",
+    "viewport": 390,
+    "width": 360
+  },
+  {
+    "dialogHeight": 810,
+    "dialogScroll": 480,
+    "dialogWidth": 480,
+    "scroll": 738,
+    "scrollHeight": 936,
+    "view": "template-dialog-ar",
+    "viewport": 768,
+    "width": 738
+  },
+  {
+    "dialogHeight": 810,
+    "dialogScroll": 480,
+    "dialogWidth": 480,
+    "scroll": 1410,
+    "scrollHeight": 936,
+    "view": "template-dialog-ar",
+    "viewport": 1440,
+    "width": 1410
+  },
+  {
+    "dialogHeight": 516,
+    "height": 550,
+    "scrollHeight": 1070,
+    "view": "template-short",
+    "viewport": 390
+  },
+  {
+    "body": 290,
+    "scroll": 290,
+    "view": "history-en",
+    "viewport": 320,
+    "width": 290
+  },
+  {
+    "body": 360,
+    "scroll": 360,
+    "view": "history-en",
+    "viewport": 390,
+    "width": 360
+  },
+  {
+    "body": 738,
+    "scroll": 738,
+    "view": "history-en",
+    "viewport": 768,
+    "width": 738
+  },
+  {
+    "body": 1410,
+    "scroll": 1410,
+    "view": "history-en",
+    "viewport": 1440,
+    "width": 1410
+  },
+  {
+    "dialogHeight": 810,
+    "dialogScroll": 226,
+    "dialogWidth": 226,
+    "scroll": 290,
+    "scrollHeight": 1070,
+    "view": "detail-en",
+    "viewport": 320,
+    "width": 290
+  },
+  {
+    "dialogHeight": 810,
+    "dialogScroll": 296,
+    "dialogWidth": 296,
+    "scroll": 360,
+    "scrollHeight": 895,
+    "view": "detail-en",
+    "viewport": 390,
+    "width": 360
+  },
+  {
+    "dialogHeight": 695,
+    "dialogScroll": 480,
+    "dialogWidth": 480,
+    "scroll": 738,
+    "scrollHeight": 695,
+    "view": "detail-en",
+    "viewport": 768,
+    "width": 738
+  },
+  {
+    "dialogHeight": 695,
+    "dialogScroll": 480,
+    "dialogWidth": 480,
+    "scroll": 1410,
+    "scrollHeight": 695,
+    "view": "detail-en",
+    "viewport": 1440,
+    "width": 1410
+  }
+]

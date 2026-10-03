@@ -13,6 +13,14 @@ beforeEach(()=>{
 });
 afterEach(()=>dom.window.close());
 const send=(data:any,origin='http://127.0.0.1:4329',source=frame.contentWindow)=>w.dispatchEvent(new w.MessageEvent('message',{origin,source,data}));
+it('preserves all order notification filters only from its owned frame',()=>{
+ const path='/merchant/order-notifications';frame.setAttribute('src','./service-workspace.html?embed=brain&path='+path);w.history.replaceState(null,'','#/page'+path);w.syncServicePreviewContext=vi.fn();
+ const message={type:'sary-brain-preview',action:'serviceState',search:`path=${path}&view=history&status=shipped&state=manual_review&evidence=accepted&integrity=linked&sort=oldest&q=sample&page=2&tenant=270&lang=en`};
+ for(const suffix of ['&merchantId=999','&page=3','&token=secret'])send({...message,search:message.search+suffix});
+ for(const invalid of ['view=month','evidence=success','status=completed','state=enabled','integrity=unsafe','sort=largest','q='+'x'.repeat(101)])send({...message,search:`path=${path}&${invalid}`});
+ send(message,'https://evil.test');send(message,undefined,w);expect(w.location.hash).toBe('#/page'+path);
+ send(message);expect(w.location.hash).toBe('#/page'+path+'?view=history&status=shipped&state=manual_review&evidence=accepted&integrity=linked&sort=oldest&q=sample&page=2&tenant=270&lang=en');expect(w.syncServicePreviewContext).toHaveBeenCalledOnce();expect(frame.isConnected).toBe(true);
+});
 it.each([
  ['/merchant/scheduled-messages','state=disabled&day=0&sort=oldest&page=2'],
  ['/merchant/media-library','category=general&kind=pdf&sort=largest&view=list&requestPage=2&page=2'],
