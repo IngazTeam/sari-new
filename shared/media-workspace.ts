@@ -10,6 +10,7 @@ export const mediaWorkspaceInput = z.object({
   kind: z.enum(['all', 'image', 'pdf', 'other']).default('all'),
   sort: z.enum(['newest', 'oldest', 'name', 'largest']).default('newest'),
   page: z.number().int().min(1).max(1000000).default(1),
+  requestPage: z.number().int().min(1).max(1000000).default(1),
 }).strict();
 export type MediaSelection = z.infer<typeof mediaWorkspaceInput>;
 export const mediaWorkspaceRow = z.object({
@@ -26,6 +27,9 @@ export const mediaWorkspaceSchema = z.object({
   actorId: mediaId, merchantId: mediaId, checkedAt: z.string().datetime(), selection: mediaWorkspaceInput,
   currentPage: count, pageSize: z.literal(24), pages: count, total: count, matched: count,
   totalSizeBytes: count.nullable(), invalidSizeCount: count,
+  pendingUploadCount: count, pendingUploadBytes: count.nullable(), pendingPages: count, currentRequestPage: count,
+  pendingUploads: z.array(z.object({ requestKey: z.string().uuid(), actorId: mediaId, originalName: z.string().max(255),
+    category: z.enum(mediaCategories), fileSize: count, createdAt: z.string().datetime(), canClose: z.boolean() }).strict()).max(10),
   maxFileBytes: z.literal(5242880), maxStorageBytes: z.literal(52428800),
   storageEvidence: z.literal('registered_metadata'), referenceEvidence: z.literal('not_scanned'),
   allowedUploadCategories: z.array(z.enum(mediaCategories)).max(4),

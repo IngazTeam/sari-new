@@ -1380,6 +1380,13 @@
       "when": 1795392000058,
       "tag": "0196_promotion_action_receipts",
       "breakpoints": true
+    },
+    {
+      "idx": 197,
+      "version": "5",
+      "when": 1795392000059,
+      "tag": "0197_media_action_receipts",
+      "breakpoints": true
     }
   ]
 }

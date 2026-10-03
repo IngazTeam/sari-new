@@ -1,4 +1,6 @@
-const STRICT_BASE64 = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
+// Avoid repeated capture/alternation per quartet: multi-megabyte valid uploads can exhaust V8's regex stack.
+// Length and a byte-for-byte re-encoding below enforce quartet boundaries and canonical padding bits.
+const STRICT_BASE64 = /^[A-Za-z0-9+/]*={0,2}$/;
 const ZIP_LOCAL_FILE = 0x04034b50;
 const ZIP_CENTRAL_FILE = 0x02014b50;
 const ZIP_END = 0x06054b50;

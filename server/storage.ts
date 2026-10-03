@@ -70,7 +70,8 @@ function buildAuthHeaders(apiKey: string): HeadersInit {
 export async function storagePut(
   relKey: string,
   data: Buffer | Uint8Array | string,
-  contentType = "application/octet-stream"
+  contentType = "application/octet-stream",
+  options?: { signal?: AbortSignal }
 ): Promise<{ key: string; url: string }> {
   const { baseUrl, apiKey } = getStorageConfig();
   const key = normalizeKey(relKey);
@@ -80,6 +81,7 @@ export async function storagePut(
     method: "POST",
     headers: buildAuthHeaders(apiKey),
     body: formData,
+    signal: options?.signal,
   });
 
   if (!response.ok) {

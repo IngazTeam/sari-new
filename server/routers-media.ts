@@ -19,6 +19,8 @@ import { getMerchantByUserId } from './db';
 import { reserveApiRateLimit } from './api/distributed-rate-limit';
 import { mediaWorkspaceInput } from '../shared/media-workspace';
 import { readMediaWorkspace, MediaWorkspaceError } from './media-workspace';
+import { mediaUploadInput, mediaRemoveInput, mediaReceiptInput } from '../shared/media-actions';
+import { uploadMediaReviewed, removeMediaReviewed, readMediaReceipt, closeMediaRequest } from './media-actions';
 import {
   UploadValidationError,
   assertMediaSignature,
@@ -93,7 +95,23 @@ async function getMerchantId(ctx: any): Promise<number> {
 // Router
 // ═══════════════════════════════════════════════════════════════
 
+const mediaActionError = (error: unknown) => new TRPCError({ code: error instanceof MediaWorkspaceError
+  ? error.reason === 'forbidden' ? 'FORBIDDEN' : error.reason === 'invalid' ? 'BAD_REQUEST' : error.reason === 'missing' ? 'NOT_FOUND'
+    : ['stale', 'reused'].includes(error.reason) ? 'CONFLICT' : error.reason === 'limit' ? 'PRECONDITION_FAILED' : 'INTERNAL_SERVER_ERROR'
+  : 'INTERNAL_SERVER_ERROR', message: error instanceof MediaWorkspaceError ? error.message : 'media_workspace:unavailable' });
 export const mediaRouter = router({
+  uploadReviewed: permissionProcedure('analytics.read').input(mediaUploadInput).mutation(async ({ctx,input}) => {
+    try { return await uploadMediaReviewed(ctx.user.id,ctx.merchantId,input); } catch (error) { throw mediaActionError(error); }
+  }),
+  removeReviewed: permissionProcedure('analytics.read').input(mediaRemoveInput).mutation(async ({ctx,input}) => {
+    try { return await removeMediaReviewed(ctx.user.id,ctx.merchantId,input); } catch (error) { throw mediaActionError(error); }
+  }),
+  requestReceipt: permissionProcedure('analytics.read').input(mediaReceiptInput).query(async ({ctx,input}) => {
+    try { return await readMediaReceipt(ctx.user.id,ctx.merchantId,input); } catch (error) { throw mediaActionError(error); }
+  }),
+  closeRequest: permissionProcedure('analytics.read').input(mediaReceiptInput).mutation(async ({ctx,input}) => {
+    try { return await closeMediaRequest(ctx.user.id,ctx.merchantId,input); } catch (error) { throw mediaActionError(error); }
+  }),
   workspace: permissionProcedure('analytics.read').input(mediaWorkspaceInput).query(async ({ctx, input}) => {
     try { return await readMediaWorkspace(ctx.user.id, ctx.merchantId, input); }
     catch (error) { throw new TRPCError({ code: error instanceof MediaWorkspaceError && error.reason === 'forbidden' ? 'FORBIDDEN' : 'INTERNAL_SERVER_ERROR', message: 'media_workspace:unavailable' }); }

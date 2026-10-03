@@ -7,7 +7,7 @@ import { mediaCategories, mediaMimes, mediaId, mediaWorkspaceInput, mediaWorkspa
   mediaLibraryUrl, type MediaSelection } from '../shared/media-workspace';
 
 export class MediaWorkspaceError extends Error {
-  constructor(readonly reason: 'forbidden' | 'unavailable') { super(`media_workspace:${reason}`); }
+  constructor(readonly reason: 'forbidden' | 'unavailable' | 'invalid' | 'limit' | 'stale' | 'missing' | 'reused' | 'unknown') { super(`media_workspace:${reason}`); }
 }
 export const mediaRows = async (tx: PoolConnection, sql: string, args: any[] = []) => {
   const [result] = await tx.execute(sql, args);
@@ -18,13 +18,13 @@ const categoryPermission: Record<typeof mediaCategories[number], Permission> = {
   product: 'products.manage', promotion: 'campaigns.manage', template: 'bot_settings.manage', general: 'products.manage',
 };
 export type MediaAuthority = { role: MerchantRole; active: boolean; allowedUploadCategories: typeof mediaCategories[number][] };
-export async function withMediaRead<T>(actorId: number, merchantId: number, read: (tx: PoolConnection, authority: MediaAuthority) => Promise<T>) {
+export async function withMediaAuthority<T>(actorId: number, merchantId: number, read: (tx: PoolConnection, authority: MediaAuthority) => Promise<T>, mode: 'read' | 'write' = 'read') {
   let tx: PoolConnection | undefined, committing = false, reusable = true;
   try {
     if (!mediaId.safeParse(actorId).success || !mediaId.safeParse(merchantId).success) throw new MediaWorkspaceError('forbidden');
     const pool = await getPool(); if (!pool) throw new MediaWorkspaceError('unavailable');
     tx = await pool.getConnection(); await tx.query('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ'); await tx.beginTransaction();
-    const [merchant] = await mediaRows(tx, 'SELECT userId,status FROM merchants WHERE id=? FOR SHARE', [merchantId]);
+    const [merchant] = await mediaRows(tx, `SELECT userId,status FROM merchants WHERE id=? FOR ${mode === 'write' ? 'UPDATE' : 'SHARE'}`, [merchantId]);
     const [user] = await mediaRows(tx, 'SELECT account_status FROM users WHERE id=? FOR SHARE', [actorId]);
     const members = await mediaRows(tx, 'SELECT role,is_active FROM merchant_members WHERE merchant_id=? AND user_id=? FOR SHARE', [merchantId, actorId]);
     const role = members.length === 1 && members[0].is_active === 1 ? members[0].role : !members.length && merchant?.userId === actorId ? 'owner' : null;
@@ -39,6 +39,7 @@ export async function withMediaRead<T>(actorId: number, merchantId: number, read
     throw new MediaWorkspaceError('unavailable');
   } finally { if (tx) { if (reusable) tx.release(); else tx.destroy(); } }
 }
+export const withMediaRead = <T>(actorId: number, merchantId: number, read: (tx: PoolConnection, authority: MediaAuthority) => Promise<T>) => withMediaAuthority(actorId, merchantId, read);
 
 export function projectMediaRow(raw: any, authority: MediaAuthority) {
   const issues: any[] = [];
@@ -63,12 +64,23 @@ export function projectMediaRow(raw: any, authority: MediaAuthority) {
     previewUrl, createdAt, canDelete, issues: Array.from(new Set(issues)) });
 }
 
-export function readMediaWorkspace(actorId: number, merchantId: number, input: MediaSelection) {
+export async function readMediaWorkspace(actorId: number, merchantId: number, input: MediaSelection) {
   const selection = mediaWorkspaceInput.parse(input);
+  // Schema readiness uses the pool: inspect before checkout, so concurrent pages cannot exhaust it while holding transactions.
+  const { ensureMediaActionSchema } = await import('./media-actions'); await ensureMediaActionSchema();
   return withMediaRead(actorId, merchantId, async (tx, authority) => {
     const [stats] = await mediaRows(tx, `SELECT COUNT(*) AS total, COALESCE(SUM(CASE WHEN file_size>=0 THEN file_size ELSE 0 END),0) AS bytes,
       COALESCE(SUM(file_size<0),0) AS invalid FROM media_library WHERE merchant_id=?`, [merchantId]);
     const grouped = await mediaRows(tx, 'SELECT category,COUNT(*) AS total FROM media_library WHERE merchant_id=? GROUP BY category', [merchantId]);
+    const [pending] = await mediaRows(tx, "SELECT COUNT(*) AS total,COALESCE(SUM(reserved_bytes),0) AS bytes,COALESCE(SUM(reserved_bytes<0),0) AS invalid FROM media_action_receipts WHERE merchant_id=? AND state='uploading'", [merchantId]);
+    const pendingUploadCount = Number(pending.total), pendingPages = Math.ceil(pendingUploadCount / 10), currentRequestPage = Math.min(selection.requestPage, Math.max(1, pendingPages));
+    const pendingRows = await mediaRows(tx, `SELECT * FROM media_action_receipts WHERE merchant_id=? AND state='uploading' ORDER BY created_at DESC,id DESC LIMIT 10 OFFSET ${(currentRequestPage - 1) * 10}`, [merchantId]);
+    const pendingUploads = pendingRows.map(row => {
+      const metadata = typeof row.metadata_json === 'string' ? JSON.parse(row.metadata_json) : row.metadata_json;
+      return { requestKey: row.request_key, actorId: row.actor_id, originalName: metadata.originalName, category: metadata.category,
+        fileSize: row.reserved_bytes, createdAt: new Date(databaseTimeEpoch(row.created_at)).toISOString(),
+        canClose: authority.active && authority.allowedUploadCategories.length > 0 && (row.actor_id === actorId || hasPermission(authority.role, 'settings.manage')) };
+    });
     const counts = { product: 0, promotion: 0, template: 0, general: 0, other: 0 };
     for (const group of grouped) counts[mediaCategories.includes(group.category) ? group.category as typeof mediaCategories[number] : 'other'] += Number(group.total);
     const predicates = ['merchant_id=?'], args: Array<string | number> = [merchantId];
@@ -86,6 +98,7 @@ export function readMediaWorkspace(actorId: number, merchantId: number, input: M
     return mediaWorkspaceSchema.parse({ actorId, merchantId, checkedAt: new Date().toISOString(), selection, currentPage,
       pageSize: 24, total: Number(stats.total), matched, pages, counts, totalSizeBytes: invalidSizeCount || !Number.isSafeInteger(bytes) ? null : bytes,
       invalidSizeCount, maxFileBytes: 5242880, maxStorageBytes: 52428800, storageEvidence: 'registered_metadata', referenceEvidence: 'not_scanned',
+      pendingUploadCount, pendingUploadBytes: Number(pending.invalid) || !Number.isSafeInteger(Number(pending.bytes)) ? null : Number(pending.bytes), pendingPages, currentRequestPage, pendingUploads,
       allowedUploadCategories: authority.allowedUploadCategories, rows: records.map(row => projectMediaRow(row, authority)) });
   });
 }
