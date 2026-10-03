@@ -75,6 +75,7 @@ import type { SalesExperimentReviewCopy } from './sales-experiment-review';
 import type { SalesExperimentLaunchCopy } from './sales-experiment-launch';
 export type MerchantUxCopy = {
   calendlyAccess: Record<'linkUnavailable'|'unavailable'|'retry'|'loading'|'actionFailed'|'forbidden',string>;
+  reviewWorkspace:typeof import('./review-workspace').reviewWorkspaceEn;
   scheduledWorkspace:typeof scheduledWorkspaceEn;
   mediaWorkspace:typeof mediaWorkspaceEn;
   promotionWorkspace:typeof promotionWorkspaceEn;

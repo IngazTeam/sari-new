@@ -1,138 +1,16 @@
-/**
- * Booking Reviews Router Module
- * Handles customer reviews for booking services
- * 
- * This is a standalone module following the "Parallel Coexistence" pattern.
- */
-
-import { z } from "zod";
-import { TRPCError } from "@trpc/server";
-import { protectedProcedure, router } from "./_core/trpc";
+import { z } from 'zod';
+import { TRPCError } from '@trpc/server';
+import { permissionProcedure, router } from './_core/trpc';
 import { reviewReadProcedures } from './routers-review-workspace';
-import {
-  createBookingReview,
-  getBookingReviewById,
-  getBookingReviews,
-  getMerchantByUserId,
-  getReviewsByService,
-  getServiceById,
-  getServiceRatingStats,
-  replyToReview,
-} from './db';
-
+const id = z.number().int().positive().max(2147483647);
+const reload = (): never => { throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'review_workspace:reload' }); };
 export const bookingReviewsRouter = router({
-    ...reviewReadProcedures('booking'),
-    // Create a review
-    create: protectedProcedure
-        .input(z.object({
-            bookingId: z.number(),
-            serviceId: z.number(),
-            staffId: z.number().optional(),
-            customerPhone: z.string(),
-            customerName: z.string().optional(),
-            overallRating: z.number().min(1).max(5),
-            serviceQuality: z.number().min(1).max(5).optional(),
-            professionalism: z.number().min(1).max(5).optional(),
-            valueForMoney: z.number().min(1).max(5).optional(),
-            comment: z.string().optional(),
-            isPublic: z.boolean().optional(),
-        }))
-        .mutation(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
-            if (!merchant) {
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-            }
-
-            const reviewId = await createBookingReview({
-                merchantId: merchant.id,
-                ...input,
-                isPublic: input.isPublic ? 1 : 0,
-            });
-
-            return { success: true, reviewId };
-        }),
-
-    // List reviews
-    list: protectedProcedure
-        .input(z.object({
-            serviceId: z.number().optional(),
-            staffId: z.number().optional(),
-            minRating: z.number().optional(),
-            isPublic: z.boolean().optional(),
-            limit: z.number().optional(),
-        }))
-        .query(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
-            if (!merchant) {
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-            }
-
-            const reviews = await getBookingReviews(merchant.id, {
-                ...input,
-                isPublic: input.isPublic !== undefined ? (input.isPublic ? 1 : 0) : undefined,
-            });
-            return { reviews };
-        }),
-
-    // Get reviews by service
-    getByService: protectedProcedure
-        .input(z.object({ serviceId: z.number() }))
-        .query(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
-            if (!merchant) {
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-            }
-
-            // SECURITY: Verify service belongs to this merchant
-            const service = await getServiceById(input.serviceId);
-            if (!service || service.merchantId !== merchant.id) {
-                throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
-            }
-
-            const reviews = await getReviewsByService(input.serviceId);
-            return { reviews };
-        }),
-
-    // Reply to review
-    reply: protectedProcedure
-        .input(z.object({
-            reviewId: z.number(),
-            reply: z.string(),
-        }))
-        .mutation(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
-            if (!merchant) {
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-            }
-
-            // SECURITY: Verify the review belongs to this merchant
-            const review = await getBookingReviewById(input.reviewId);
-            if (!review || review.merchantId !== merchant.id) {
-                throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
-            }
-
-            await replyToReview(input.reviewId, input.reply);
-            return { success: true };
-        }),
-
-    // Get rating statistics
-    getStats: protectedProcedure
-        .input(z.object({ serviceId: z.number() }))
-        .query(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
-            if (!merchant) {
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-            }
-
-            // SECURITY: Verify service belongs to this merchant
-            const service = await getServiceById(input.serviceId);
-            if (!service || service.merchantId !== merchant.id) {
-                throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
-            }
-
-            const stats = await getServiceRatingStats(input.serviceId, merchant.id);
-            return { stats };
-        }),
+  ...reviewReadProcedures('booking'),
+  // Customer reviews are not manufactured by a merchant-side create operation.
+  create: permissionProcedure('conversations.reply').input(z.unknown()).mutation(reload),
+  list: permissionProcedure('analytics.read').input(z.unknown()).query(reload),
+  getByService: permissionProcedure('analytics.read').input(z.object({ serviceId: id }).strict()).query(reload),
+  getStats: permissionProcedure('analytics.read').input(z.object({ serviceId: id }).strict()).query(reload),
+  reply: permissionProcedure('conversations.reply').input(z.object({ reviewId: id, reply: z.string().trim().min(1).max(1000) }).strict()).mutation(reload),
 });
-
 export type BookingReviewsRouter = typeof bookingReviewsRouter;

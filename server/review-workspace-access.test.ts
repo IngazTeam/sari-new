@@ -38,4 +38,19 @@ for (const kind of ['order', 'booking'] as const) for (const mounted of [false, 
     for (const extra of [{ merchantId: 999 }, { reply: ' ' }, { reply: 'x'.repeat(1001) }, { revision: 'bad' }])
       await expect(caller().saveReply({ ...input, ...extra } as any)).rejects.toMatchObject({ code: 'BAD_REQUEST' });
   });
+  it(`retires legacy ${kind} reads and writes mounted=${mounted}`, async () => {
+    mocks.access.mockResolvedValue({ merchantId: 20, role: 'owner' });
+    const c = caller() as any;
+    const operations = kind === 'order' ? [() => c.list({ merchantId: 20 }), () => c.getById({ id: 3 }), () => c.reply({ reviewId: 3, reply: 'Old reply' })]
+      : [() => c.create({ bookingId: 1, serviceId: 2, customerPhone: 'fake', overallRating: 5 }), () => c.list({}), () => c.getByService({ serviceId: 1 }), () => c.getStats({ serviceId: 1 }), () => c.reply({ reviewId: 3, reply: 'Old reply' })];
+    for (const run of operations) await expect(run()).rejects.toMatchObject({ code: 'PRECONDITION_FAILED', message: 'review_workspace:reload' });
+    expect(mocks.save).not.toHaveBeenCalled(); expect(mocks.read).not.toHaveBeenCalled();
+  });
+  if (kind === 'order') it(`keeps dashboard statistics on the selected scoped source mounted=${mounted}`, async () => {
+    mocks.read.mockResolvedValue({ stats: { rated: 5, average: 4.2, distribution: { 1: 0, 2: 0, 3: 1, 4: 2, 5: 2 } } });
+    expect(await (caller() as any).getStats({ merchantId: 20 })).toMatchObject({ totalReviews: 5, averageRating: 4.2 });
+    expect(mocks.read).toHaveBeenCalledWith(7, 20, 'order', {});
+    await expect((caller() as any).getStats({ merchantId: 999 })).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    mocks.read.mockRejectedValue(new Error('DB failure')); await expect((caller() as any).getStats({ merchantId: 20 })).rejects.toMatchObject({ code: 'INTERNAL_SERVER_ERROR' });
+  });
 }

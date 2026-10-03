@@ -1,5 +1,5 @@
 import {scheduledMessagesRouter} from './routers-scheduled-messages';
-import { reviewReadProcedures } from './routers-review-workspace';
+import { reviewsRouter } from './routers-reviews';
 import {abandonedCartsRouter} from './routers-abandoned-carts';
 import { referralsRouter } from './routers-referrals';
 import { discountsRouter } from './routers-discounts';
@@ -134,7 +134,6 @@ import {
   claimReward,
   completeWhatsAppRequest,
   createBooking,
-  createBookingReview,
   createDiscountCode,
   createDiscountCoupon,
   createGoogleIntegration,
@@ -178,8 +177,6 @@ import {
   getAppointmentsByMerchant,
   getAvailableTimeSlots,
   getBookingById,
-  getBookingReviews,
-  getBookingReviewById,
   getBookingStats,
   getBookingsByCustomer,
   getBookingsByMerchant,
@@ -189,8 +186,6 @@ import {
   getConversationCountByMerchantId,
   getConversationsByMerchantId,
   getCouponUsageCountByMerchant,
-  getCustomerReviewById,
-  getCustomerReviewsByMerchantId,
   getDb,
   getDiscountCodeById,
   getDiscountCodesByMerchantId,
@@ -216,7 +211,6 @@ import {
   getReferralCodeByMerchantId,
   getReferralStats,
   getReferralsWithDetails,
-  getReviewsByService,
   getRewardById,
   getRewardsByMerchantId,
   getServiceById,
@@ -224,7 +218,6 @@ import {
   getServiceCategoryById,
   getServicePackageById,
   getServicePackagesByMerchant,
-  getServiceRatingStats,
   getServicesByCategory,
   getServicesByMerchant,
   getStaffMemberById,
@@ -251,13 +244,11 @@ import {
   markSignupPromptShown,
   rejectWhatsAppConnectionRequest,
   rejectWhatsAppRequest,
-  replyToReview,
   setWhatsAppInstanceAsPrimary,
   shouldBotRespond,
   updateBooking,
   updateBotSettings,
   updateConversation,
-  updateCustomerReview,
   updateDiscountCode,
   updateDiscountCoupon,
   updateGoogleIntegration,
@@ -2587,96 +2578,7 @@ export const appRouter = router({
   // Inline router removed to fix duplicate key warning
 
   // Reviews Management
-  reviews: router({
-    ...reviewReadProcedures('order'),
-    // List all reviews for merchant
-    list: protectedProcedure
-      .input(z.object({ merchantId: z.number() }))
-      .query(async ({ input, ctx }) => {
-        const merchant = await getMerchantById(input.merchantId);
-        if (!merchant || merchant.userId !== ctx.user.id) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
-        }
-
-        return await getCustomerReviewsByMerchantId(input.merchantId);
-      }),
-
-    // Get review statistics
-    getStats: protectedProcedure
-      .input(z.object({ merchantId: z.number() }))
-      .query(async ({ input, ctx }) => {
-        const merchant = await getMerchantById(input.merchantId);
-        if (!merchant || merchant.userId !== ctx.user.id) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
-        }
-
-        const { getMerchantReviewStats } = await import('./automation/review-request');
-        return await getMerchantReviewStats(input.merchantId);
-      }),
-
-    // Get review by ID
-    getById: protectedProcedure
-      .input(z.object({ id: z.number() }))
-      .query(async ({ input, ctx }) => {
-        const review = await getCustomerReviewById(input.id);
-        if (!review) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Review not found' });
-        }
-
-        const order = await getOrderById(review.orderId);
-        if (!order) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Order not found' });
-        }
-
-        const merchant = await getMerchantById(order.merchantId);
-        if (!merchant || merchant.userId !== ctx.user.id) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
-        }
-
-        return review;
-      }),
-
-    // Reply to a review
-    reply: protectedProcedure
-      .input(z.object({
-        reviewId: z.number(),
-        reply: z.string().min(1),
-      }))
-      .mutation(async ({ input, ctx }) => {
-        const review = await getCustomerReviewById(input.reviewId);
-        if (!review) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Review not found' });
-        }
-
-        const order = await getOrderById(review.orderId);
-        if (!order) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Order not found' });
-        }
-
-        const merchant = await getMerchantById(order.merchantId);
-        if (!merchant || merchant.userId !== ctx.user.id) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
-        }
-
-        // Update review with merchant reply
-        await updateCustomerReview(input.reviewId, {
-          merchantReply: input.reply,
-          repliedAt: new Date().toISOString().slice(0, 19).replace("T", " "),
-        });
-
-        // Send reply via WhatsApp
-        try {
-          const { sendTextMessage } = await import('./whatsapp');
-          const message = `شكراً لتقييمك! \n\nردنا:\n${input.reply}`;
-          await sendTextMessage(review.customerPhone, message);
-        } catch (error) {
-          console.error('Failed to send WhatsApp reply:', error);
-          // Don't fail the whole operation if WhatsApp fails
-        }
-
-        return { success: true };
-      }),
-  }),
+  reviews: reviewsRouter,
 
   // AI & Sari Assistant
   ai: router({
@@ -3277,124 +3179,7 @@ export const appRouter = router({
   // ============================================
   // Booking Reviews
   // ============================================
-  bookingReviews: router({
-    ...reviewReadProcedures('booking'),
-    // Create a review
-    create: protectedProcedure
-      .input(z.object({
-        bookingId: z.number(),
-        serviceId: z.number(),
-        staffId: z.number().optional(),
-        customerPhone: z.string(),
-        customerName: z.string().optional(),
-        overallRating: z.number().min(1).max(5),
-        serviceQuality: z.number().min(1).max(5).optional(),
-        professionalism: z.number().min(1).max(5).optional(),
-        valueForMoney: z.number().min(1).max(5).optional(),
-        comment: z.string().optional(),
-        isPublic: z.boolean().optional(),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        }
-
-        // PEN-BK-11: Verify booking belongs to this merchant
-        const booking = await getBookingById(input.bookingId);
-        if (!booking || booking.merchantId !== merchant.id) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Booking not found' });
-        }
-
-        const reviewId = await createBookingReview({
-          merchantId: merchant.id,
-          ...input,
-          isPublic: input.isPublic ? 1 : 0,
-        });
-
-        return { success: true, reviewId };
-      }),
-
-    // List reviews
-    list: protectedProcedure
-      .input(z.object({
-        serviceId: z.number().optional(),
-        staffId: z.number().optional(),
-        minRating: z.number().optional(),
-        isPublic: z.boolean().optional(),
-        limit: z.number().optional(),
-      }))
-      .query(async ({ ctx, input }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        }
-
-        const reviews = await getBookingReviews(merchant.id, {
-          ...input,
-          isPublic: input.isPublic !== undefined ? (input.isPublic ? 1 : 0) : undefined,
-        });
-        return { reviews };
-      }),
-
-    // Get reviews by service
-    getByService: protectedProcedure
-      .input(z.object({ serviceId: z.number() }))
-      .query(async ({ ctx, input }) => {
-        // PEN-BK-05: Verify service belongs to this merchant
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        }
-        const service = await getServiceById(input.serviceId);
-        if (!service || service.merchantId !== merchant.id) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Service not found' });
-        }
-
-        const reviews = await getReviewsByService(input.serviceId);
-        return { reviews };
-      }),
-
-    // Reply to review
-    reply: protectedProcedure
-      .input(z.object({
-        reviewId: z.number(),
-        reply: z.string(),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        }
-
-        // PEN-BK-06: Verify review belongs to this merchant
-        const review = await getBookingReviewById(input.reviewId);
-        if (!review || review.merchantId !== merchant.id) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Review not found' });
-        }
-
-        await replyToReview(input.reviewId, input.reply);
-        return { success: true };
-      }),
-
-    // Get rating statistics
-    getStats: protectedProcedure
-      .input(z.object({ serviceId: z.number() }))
-      .query(async ({ ctx, input }) => {
-        // PEN-BK-07: Verify service belongs to this merchant
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        }
-        const service = await getServiceById(input.serviceId);
-        if (!service || service.merchantId !== merchant.id) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Service not found' });
-        }
-
-        const stats = await getServiceRatingStats(input.serviceId, merchant.id);
-        return { stats };
-      }),
-  }),
+  bookingReviews: bookingReviewsRouter,
 
   // ============================================
   // Payment System - Tap Payments Integration

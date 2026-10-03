@@ -1,0 +1,312 @@
+[
+  {
+    "label": "order-320-validation",
+    "client": 290,
+    "dialog": {
+      "bottom": 828,
+      "client": 226,
+      "height": 812,
+      "scroll": 226,
+      "width": 258,
+      "x": 46,
+      "y": 16
+    },
+    "focus": "rw-reply",
+    "height": 844,
+    "rawKeys": false,
+    "scroll": 290,
+    "width": 320
+  },
+  {
+    "label": "order-320-550-saved",
+    "client": 290,
+    "dialog": {
+      "bottom": 534,
+      "client": 226,
+      "height": 518,
+      "scroll": 226,
+      "width": 258,
+      "x": 46,
+      "y": 16
+    },
+    "focus": "\nانتقل إلى المحتوىساريشريك يومكمساحة العملنظرة عامةالمحادثاتالمبيعاتالكتالوجالعم",
+    "height": 550,
+    "rawKeys": false,
+    "scroll": 290,
+    "width": 320
+  },
+  {
+    "label": "order-320-550-saved-focus",
+    "client": 290,
+    "dialog": {
+      "bottom": 534,
+      "client": 226,
+      "height": 518,
+      "scroll": 226,
+      "width": 258,
+      "x": 46,
+      "y": 16
+    },
+    "focus": "تم حفظ الرد هنا. لم تُرسل رسالة واتساب.",
+    "height": 550,
+    "rawKeys": false,
+    "scroll": 290,
+    "width": 320
+  },
+  {
+    "label": "order-dialog-390",
+    "client": 360,
+    "dialog": {
+      "bottom": 654.4140625,
+      "client": 296,
+      "height": 638.421875,
+      "scroll": 296,
+      "width": 328,
+      "x": 46,
+      "y": 15.9921875
+    },
+    "focus": "تم حفظ الرد هنا. لم تُرسل رسالة واتساب.",
+    "height": 844,
+    "rawKeys": false,
+    "scroll": 360,
+    "width": 390
+  },
+  {
+    "label": "order-dialog-768",
+    "client": 738,
+    "dialog": {
+      "bottom": 790.7265625,
+      "client": 674,
+      "height": 774.734375,
+      "scroll": 674,
+      "width": 706,
+      "x": 46,
+      "y": 15.9921875
+    },
+    "focus": "تم حفظ الرد هنا. لم تُرسل رسالة واتساب.",
+    "height": 844,
+    "rawKeys": false,
+    "scroll": 738,
+    "width": 768
+  },
+  {
+    "label": "order-dialog-1440",
+    "client": 1410,
+    "dialog": {
+      "bottom": 821.3125,
+      "client": 688,
+      "height": 811.71875,
+      "scroll": 688,
+      "width": 720,
+      "x": 375,
+      "y": 9.59375
+    },
+    "focus": "تم حفظ الرد هنا. لم تُرسل رسالة واتساب.",
+    "height": 844,
+    "rawKeys": false,
+    "scroll": 1410,
+    "width": 1440
+  },
+  {
+    "label": "booking-dialog-1440",
+    "client": 1410,
+    "dialog": {
+      "bottom": 828,
+      "client": 688,
+      "height": 812,
+      "scroll": 688,
+      "width": 720,
+      "x": 375,
+      "y": 16
+    },
+    "focus": "تم حفظ الرد هنا. لم تُرسل رسالة واتساب.",
+    "height": 844,
+    "rawKeys": false,
+    "scroll": 1410,
+    "width": 1440
+  },
+  {
+    "label": "booking-dialog-768",
+    "client": 738,
+    "dialog": {
+      "bottom": 828,
+      "client": 682,
+      "height": 812,
+      "scroll": 682,
+      "width": 713.796875,
+      "x": 42.1015625,
+      "y": 16
+    },
+    "focus": "تم حفظ الرد هنا. لم تُرسل رسالة واتساب.",
+    "height": 844,
+    "rawKeys": false,
+    "scroll": 738,
+    "width": 768
+  },
+  {
+    "label": "booking-dialog-390",
+    "client": 360,
+    "dialog": {
+      "bottom": 828,
+      "client": 299,
+      "height": 812,
+      "scroll": 299,
+      "width": 330.828125,
+      "x": 44.5859375,
+      "y": 16
+    },
+    "focus": "تم حفظ الرد هنا. لم تُرسل رسالة واتساب.",
+    "height": 844,
+    "rawKeys": false,
+    "scroll": 360,
+    "width": 390
+  },
+  {
+    "label": "booking-dialog-320",
+    "client": 290,
+    "dialog": {
+      "bottom": 828,
+      "client": 227,
+      "height": 812,
+      "scroll": 227,
+      "width": 258.59375,
+      "x": 45.703125,
+      "y": 16
+    },
+    "focus": "تم حفظ الرد هنا. لم تُرسل رسالة واتساب.",
+    "height": 844,
+    "rawKeys": false,
+    "scroll": 290,
+    "width": 320
+  },
+  {
+    "label": "booking-320-550-transition",
+    "client": 290,
+    "dialog": {
+      "bottom": 761,
+      "client": 226,
+      "height": 746.90625,
+      "scroll": 226,
+      "width": 258,
+      "x": 46,
+      "y": 14.09375
+    },
+    "focus": "تم حفظ الرد هنا. لم تُرسل رسالة واتساب.",
+    "height": 550,
+    "rawKeys": false,
+    "scroll": 290,
+    "width": 320
+  },
+  {
+    "label": "booking-320-550-settled",
+    "client": 290,
+    "dialog": {
+      "bottom": 534,
+      "client": 226,
+      "height": 518,
+      "scroll": 226,
+      "width": 258,
+      "x": 46,
+      "y": 16
+    },
+    "focus": "تم حفظ الرد هنا. لم تُرسل رسالة واتساب.",
+    "height": 550,
+    "rawKeys": false,
+    "scroll": 290,
+    "width": 320
+  },
+  {
+    "label": "booking-height-expanded-fixed",
+    "client": 290,
+    "dialog": {
+      "bottom": 828,
+      "client": 226,
+      "height": 812,
+      "scroll": 226,
+      "width": 258,
+      "x": 46,
+      "y": 16
+    },
+    "focus": "radix-_r_10_",
+    "height": 844,
+    "rawKeys": false,
+    "scroll": 290,
+    "width": 320
+  },
+  {
+    "label": "booking-height-shrunk-fixed",
+    "client": 290,
+    "dialog": {
+      "bottom": 534,
+      "client": 226,
+      "height": 518,
+      "scroll": 226,
+      "width": 258,
+      "x": 46,
+      "y": 16
+    },
+    "focus": "radix-_r_10_",
+    "height": 550,
+    "rawKeys": false,
+    "scroll": 290,
+    "width": 320
+  },
+  {
+    "label": "booking-desktop-fixed",
+    "client": 1410,
+    "dialog": {
+      "bottom": 828,
+      "client": 688,
+      "height": 812,
+      "scroll": 688,
+      "width": 720,
+      "x": 375,
+      "y": 16
+    },
+    "focus": "radix-_r_10_",
+    "height": 844,
+    "rawKeys": false,
+    "scroll": 1410,
+    "width": 1440
+  },
+  {
+    "label": "booking-list-1440",
+    "client": 1410,
+    "dialog": null,
+    "focus": "عرض التقييم #342",
+    "height": 844,
+    "rawKeys": false,
+    "scroll": 1410,
+    "width": 1440
+  },
+  {
+    "label": "booking-list-768",
+    "client": 738,
+    "dialog": null,
+    "focus": "عرض التقييم #342",
+    "height": 844,
+    "rawKeys": false,
+    "scroll": 738,
+    "width": 768
+  },
+  {
+    "label": "booking-list-390",
+    "client": 360,
+    "dialog": null,
+    "focus": "عرض التقييم #342",
+    "height": 844,
+    "rawKeys": false,
+    "scroll": 360,
+    "width": 390
+  },
+  {
+    "label": "booking-list-320",
+    "client": 290,
+    "dialog": null,
+    "focus": "عرض التقييم #342",
+    "height": 844,
+    "rawKeys": false,
+    "scroll": 290,
+    "width": 320
+  }
+]
