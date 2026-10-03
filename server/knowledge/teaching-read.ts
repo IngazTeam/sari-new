@@ -51,7 +51,7 @@ export async function readVerifiedBotSections(
 ): Promise<KnowledgeSection[]> {
   if (!positive(merchantId)) throw Error("Invalid knowledge merchant");
   const db = await getDb();
-  if (!db) return [];
+  if (!db) throw Error("Knowledge source unavailable");
   return db.transaction(
     tx => readVerifiedBotSectionsInTransaction(tx, merchantId, embeddings),
     { isolationLevel: "repeatable read", accessMode: "read only" }

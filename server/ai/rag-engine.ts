@@ -1,6 +1,7 @@
 import { catalogVisibleSql } from '../integrations/catalog-scope';
 import { assertIntakeCheckpoint } from '../knowledge/intake-execution';
 import { lexicalRelevance, relevantPassages, sectionContentHash } from '../knowledge/retrieval';
+import { knowledgeIndexingEvidence, type KnowledgeIndexingEvidence } from '../../shared/knowledge-indexing-evidence';
 import { formatProductPrice } from '../../shared/product-money';
 /**
  * RAG Engine — Retrieval-Augmented Generation
@@ -89,7 +90,9 @@ export async function generateEmbedding(text: string, merchantId?: number): Prom
       return null;
     }
 
-    return new Float32Array(vector);
+    const embedding = new Float32Array(vector);
+    // Finite JSON numbers can still overflow the Float32 storage representation.
+    return Array.from(embedding).every(Number.isFinite) ? embedding : null;
   } catch (e: any) {
     console.error('[RAG] generateEmbedding failed');
     return null;
@@ -142,30 +145,65 @@ export async function embedSection(section: KnowledgeSection, merchantId: number
  */
 export async function hasCurrentKnowledgeEmbeddings(merchantId: number): Promise<boolean> {
   const sections = await getBotSectionsWithEmbedding(merchantId);
-  return sections.length > 0 && sections.every(section => {
-    const raw = section as any;
-    if (!raw.embedding || (raw.embeddingContentHash ?? raw.embedding_content_hash) !== sectionContentHash(section)) return false;
-    const vector = bufferToEmbedding(Buffer.from(raw.embedding));
-    return vector.length === EMBEDDING_DIMENSIONS && Array.from(vector).every(Number.isFinite);
-  });
+  return sections.length > 0 && sections.every(hasMatchingSectionEmbedding);
 }
 
-export async function embedAllSections(merchantId: number, forceAll: boolean = false): Promise<number> {
-  const sections = await getBotSectionsWithEmbedding(merchantId);
-  let embedded = 0;
+function hasMatchingSectionEmbedding(section: KnowledgeSection): boolean {
+  const raw = section as any;
+  if (!raw.embedding || (raw.embeddingContentHash ?? raw.embedding_content_hash) !== sectionContentHash(section)) return false;
+  const vector = bufferToEmbedding(Buffer.from(raw.embedding));
+  return vector.length === EMBEDDING_DIMENSIONS && Array.from(vector).every(Number.isFinite);
+}
+
+async function indexSectionBatch(merchantId: number, sections: KnowledgeSection[], forceAll: boolean) {
+  let attemptedSections = 0, storedSections = 0;
 
   for (const section of sections) {
-    const hasEmbedding = section.embedding || (section as any).embedding;
-    if (!hasEmbedding || forceAll || (section as any).embedding_content_hash !== sectionContentHash(section)) {
+    const hasEmbedding = hasMatchingSectionEmbedding(section);
+    if (!hasEmbedding || forceAll) {
+      attemptedSections++;
       const success = await embedSection(section, merchantId);
-      if (success) embedded++;
+      if (success) storedSections++;
       // Small delay to avoid rate limiting
       await new Promise(r => setTimeout(r, 100));
     }
   }
 
-  console.log(`[RAG] Embedded ${embedded}/${sections.length} sections for merchant ${merchantId} (forceAll=${forceAll})`);
-  return embedded;
+  console.log(`[RAG] Embedded ${storedSections}/${sections.length} sections for merchant ${merchantId} (forceAll=${forceAll})`);
+  return {
+    selectedSections: sections.length,
+    attemptedSections,
+    storedSections,
+    reusedSections: sections.length - attemptedSections,
+    unconfirmedSections: attemptedSections - storedSections,
+  };
+}
+
+/** Compatibility count for existing callers; this number alone is not a success ratio. */
+export async function embedAllSections(merchantId: number, forceAll: boolean = false): Promise<number> {
+  const sections = await getBotSectionsWithEmbedding(merchantId);
+  return (await indexSectionBatch(merchantId, sections, forceAll)).storedSections;
+}
+
+const snapshotVersions = (sections: KnowledgeSection[]) => JSON.stringify(
+  sections.map(section => `${section.id}:${sectionContentHash(section)}`).sort(),
+);
+
+/** Read persisted versions after the batch; never derive current coverage from write counts. */
+export async function embedAllSectionsWithEvidence(merchantId: number, forceAll = false): Promise<KnowledgeIndexingEvidence> {
+  const sections = await getBotSectionsWithEmbedding(merchantId);
+  const versions = snapshotVersions(sections);
+  const batch = await indexSectionBatch(merchantId, sections, forceAll);
+  let currentSnapshot: KnowledgeIndexingEvidence['currentSnapshot'] = null;
+  try {
+    const current = await getBotSectionsWithEmbedding(merchantId);
+    currentSnapshot = {
+      sections: current.length,
+      matchingEmbeddings: current.filter(hasMatchingSectionEmbedding).length,
+      changedSinceStart: snapshotVersions(current) !== versions,
+    };
+  } catch { /* A missing read is unknown, never an empty or fully indexed store. */ }
+  return knowledgeIndexingEvidence.parse({ ...batch, currentSnapshot });
 }
 
 // ═══════════════════════════════════════════════════════════════
