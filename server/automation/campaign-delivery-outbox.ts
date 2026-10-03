@@ -1,3 +1,5 @@
+import {lockCampaignOccasionAuthority,validOccasionAuthorityWindow,OccasionAuthorizationDenied} from '../occasion-worker-authority';
+import {OCCASION_AUTHORIZATION_REQUIREMENTS} from '../occasion-authorization';
 import { campaignDeliveryEvidence } from '../campaign-delivery-evidence';
 import crypto from 'node:crypto';
 import type { PoolConnection, RowDataPacket } from 'mysql2/promise';
@@ -130,6 +132,7 @@ class CampaignPostDispatchStateError extends Error {
 
 async function ensureCampaignOutboxSchema(): Promise<void> {
   await assertRuntimeSchema('campaign delivery outbox', [
+    ...OCCASION_AUTHORIZATION_REQUIREMENTS,
     {
       table: 'campaign_delivery_outbox',
       columns: [
@@ -143,14 +146,7 @@ async function ensureCampaignOutboxSchema(): Promise<void> {
   ]);
 }
 
-async function occasionAllowsAdmission(connection: PoolConnection, campaignId: number, merchantId: number): Promise<boolean> {
-  const [rows] = await connection.execute<RowDataPacket[]>(
-    'SELECT merchantId, enabled, status FROM occasion_campaigns WHERE campaign_id = ? FOR UPDATE', [campaignId],
-  );
-  // This shares the campaign -> occasion lock order with state reconciliation.
-  return rows.length === 0 || (rows.length === 1 && Number(rows[0].merchantId) === merchantId
-    && Number(rows[0].enabled) === 1 && rows[0].status === 'pending');
-}
+export class CampaignAdmissionStateUnknownError extends Error{constructor(){super('campaign_admission_state_unknown');}}
 
 function normalizeRecipients(recipients: Array<{ customerId?: number | null; phone: string }>) {
   const normalized = new Map<string, number | null>();
@@ -180,10 +176,14 @@ export async function enqueueCampaignDeliveries(input: {
   const pool = await getPool();
   if (!pool) throw new Error('Database unavailable');
   const connection = await pool.getConnection();
+  let committing=false,reusable=true;
   try {
     await connection.beginTransaction();
+    const [merchants]=await connection.execute<RowDataPacket[]>('SELECT id,userId,status,businessName FROM merchants WHERE id=? FOR UPDATE',[input.merchantId]);
+    if(merchants.length!==1||merchants[0].status!=='active')throw new CampaignDispatchConflictError();
+    const merchant=merchants[0];
     const [campaignRows] = await connection.execute<(RowDataPacket & CampaignDefinition)[]>(
-      `SELECT id, name, message, imageUrl, targetAudience, scheduledAt, status FROM campaigns
+      `SELECT id, merchantId, name, message, imageUrl, targetAudience, scheduledAt, status FROM campaigns
         WHERE id = ? AND merchantId = ? LIMIT 1 FOR UPDATE`,
       [input.campaignId, input.merchantId],
     );
@@ -193,7 +193,7 @@ export async function enqueueCampaignDeliveries(input: {
       throw new CampaignDispatchConflictError();
     }
     assertCampaignContent(campaign.message, campaign.imageUrl);
-    if (!await occasionAllowsAdmission(connection, input.campaignId, input.merchantId)) throw new CampaignDispatchConflictError();
+    const authority=await lockCampaignOccasionAuthority(connection,merchant,campaign,'admission');
     for (const recipient of recipients) {
       await connection.execute(
         `INSERT INTO campaign_delivery_outbox
@@ -217,13 +217,16 @@ export async function enqueueCampaignDeliveries(input: {
         WHERE campaign_id = ? AND merchantId = ? AND status = 'pending'`,
       [input.campaignId, input.merchantId],
     );
-    await connection.commit();
+    if(authority&&!validOccasionAuthorityWindow(authority.contract,new Date()))throw new OccasionAuthorizationDenied();
+    committing=true;await connection.commit();
     return { queued: recipients.length };
   } catch (error) {
-    try { await connection.rollback(); } catch { /* preserve the original failure */ }
+    if(committing)reusable=false;else try{await connection.rollback();}catch{reusable=false;}
+    if(committing)throw new CampaignAdmissionStateUnknownError();
+    if(error instanceof OccasionAuthorizationDenied)throw new CampaignDispatchConflictError();
     throw error;
   } finally {
-    connection.release();
+    if(reusable)connection.release();else connection.destroy();
   }
 }
 
@@ -234,18 +237,22 @@ export async function completeCampaignWithoutRecipients(campaignId: number, merc
   const pool = await getPool();
   if (!pool) throw new Error('Database unavailable');
   const connection = await pool.getConnection();
+  let committing=false,reusable=true;
   try {
     await connection.beginTransaction();
+    const [merchants]=await connection.execute<RowDataPacket[]>('SELECT id,userId,status,businessName FROM merchants WHERE id=? FOR UPDATE',[merchantId]);
+    if(merchants.length!==1||merchants[0].status!=='active')throw new CampaignDispatchConflictError();
+    const merchant=merchants[0];
     const [campaignRows] = await connection.execute<(RowDataPacket & CampaignDefinition)[]>(
-      `SELECT id, name, message, imageUrl, targetAudience, scheduledAt, status FROM campaigns
+      `SELECT id, merchantId, name, message, imageUrl, targetAudience, scheduledAt, status FROM campaigns
         WHERE id = ? AND merchantId = ? LIMIT 1 FOR UPDATE`, [campaignId, merchantId],
     );
     const campaign = campaignRows[0];
-    if (!campaign || !['draft', 'scheduled'].includes(campaign.status) || campaignDefinitionKey(campaign) !== expectedDefinition
-      || !await occasionAllowsAdmission(connection, campaignId, merchantId)) {
+    if (!campaign || !['draft', 'scheduled'].includes(campaign.status) || campaignDefinitionKey(campaign) !== expectedDefinition) {
       await connection.rollback();
       return false;
     }
+    const authority=await lockCampaignOccasionAuthority(connection,merchant,campaign,'admission');
     const [result] = await connection.execute(
       `UPDATE campaigns
           SET status = 'completed', totalRecipients = 0, sentCount = 0, updatedAt = NOW()
@@ -261,15 +268,19 @@ export async function completeCampaignWithoutRecipients(campaignId: number, merc
         [campaignId, merchantId],
       );
     }
-    await connection.commit();
+    if(authority&&!validOccasionAuthorityWindow(authority.contract,new Date()))throw new OccasionAuthorizationDenied();
+    committing=true;await connection.commit();
     return completed;
   } catch (error) {
-    try { await connection.rollback(); } catch { /* preserve original */ }
+    if(committing)reusable=false;else try{await connection.rollback();}catch{reusable=false;}
+    if(committing)throw new CampaignAdmissionStateUnknownError();
+    if(error instanceof OccasionAuthorizationDenied)return false;
     throw error;
   } finally {
-    connection.release();
+    if(reusable)connection.release();else connection.destroy();
   }
 }
+
 
 function deliveryIdempotencyKey(row: Pick<CampaignDeliveryRow, 'campaign_id' | 'id'>): string {
   return `campaign:${row.campaign_id}:${row.id}`;

@@ -59,3 +59,10 @@ export async function bindOccasionPreparedEnvelope(tx:PoolConnection,authority:L
  if(saved.affectedRows!==1)return reject();
 }
 export {ensureOccasionAuthorizationSchema};
+
+/** Both generic campaign admission and transport must honor a linked occasion. */
+export async function lockCampaignOccasionAuthority(tx:PoolConnection,merchant:any,campaign:any,phase:'admission'|'dispatch',now:()=>Date=()=>new Date()):Promise<LockedOccasionAuthority|null>{
+ const found=await rows(tx,'SELECT id,merchantId,campaign_id AS campaignId,occasionType,year,enabled,discountPercentage,status,discountCode,messageTemplate,recipientCount,sentAt FROM occasion_campaigns WHERE campaign_id=? FOR UPDATE',[campaign.id]);
+ if(found.length===0)return null;if(found.length!==1)return reject();
+ return lockOccasionWorkerAuthority(tx,{merchant,occasion:found[0],campaign,now,phase});
+}

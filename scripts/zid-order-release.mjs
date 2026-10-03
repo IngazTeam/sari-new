@@ -33,6 +33,7 @@ export const requiredReleaseCapabilities = Object.freeze([
   'occasion-reviewed-writes-only-v1',
   'occasion-activation-grants-0195',
   'occasion-preparation-authority-0195',
+  'occasion-dispatch-authority-0195',
 ]);
 
 export function assertZidOrderReleaseCompatible(directory) {

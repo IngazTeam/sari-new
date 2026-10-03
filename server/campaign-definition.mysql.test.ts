@@ -12,13 +12,21 @@ describe.skipIf(!process.env.DATABASE_URL)('campaign definition admission race i
   const pause=async(id:number,merchantId=owner.merchantId)=>{const target={action:'toggle' as const,id,enabled:false},review=await reviewOccasionAction(owner.userId,merchantId,target);return applyOccasionAction(owner.userId,merchantId,{target,reviewRevision:review.reviewRevision,acknowledged:true});};
   const queued = () => q('SELECT * FROM campaign_delivery_outbox WHERE campaign_id=?', [id]);
   const enqueue = (merchantId = owner.merchantId, definition = expectedDefinition) => enqueueCampaignDeliveries({ campaignId: id, merchantId, expectedDefinition: definition, recipients: [{ phone: '99900000001' }] });
-  const occasion = async (enabled = 1, merchantId = owner.merchantId) => Number((await q("INSERT INTO occasion_campaigns (merchantId,campaign_id,occasionType,year,enabled,discountPercentage,status) VALUES (?,?,'national_day',2026,?,23,'pending')", [merchantId,id,enabled])).insertId);
+  const occasion = async (enabled = 1, merchantId = owner.merchantId) => {
+    const code=`REVIEW-${id}`;
+    const oc=Number((await q("INSERT INTO occasion_campaigns (merchantId,campaign_id,occasionType,year,enabled,discountPercentage,status,discountCode) VALUES (?,?,'new_year',2027,0,23,'pending',?)", [merchantId,id,code])).insertId);
+    await q("INSERT INTO discount_codes (merchantId,code,type,value,minOrderAmount,maxUses,usedCount,isActive,expiresAt) VALUES (?,?,'percentage',23,0,2000,0,1,'2027-01-01 20:59:59')",[merchantId,code]);
+    if(enabled&&merchantId===owner.merchantId){const target={action:'toggle' as const,id:oc,enabled:true},review=await reviewOccasionAction(owner.userId,merchantId,target);await applyOccasionAction(owner.userId,merchantId,{target,reviewRevision:review.reviewRevision,acknowledged:true});}
+    else if(enabled)await q('UPDATE occasion_campaigns SET enabled=1 WHERE id=?',[oc]);
+    return oc;
+  };
   beforeEach(async () => {
+    vi.useFakeTimers({toFake:['Date']});vi.setSystemTime(new Date('2027-01-01T09:00:00Z'));
     owner = await createDisposableMerchant('campaign-definition'); other = await createDisposableMerchant('campaign-definition-other');
     id = Number((await q("INSERT INTO campaigns (merchantId,name,message,imageUrl,targetAudience,scheduledAt,status) VALUES (?,'Original name','Original message',NULL,'{}','2027-01-01 12:00:00','scheduled')", [owner.merchantId])).insertId);
     expectedDefinition = campaignDefinitionKey((await getCampaignById(id))!);
   });
-  afterEach(async () => { vi.restoreAllMocks(); await cleanupDisposableMerchants([owner.userId, other.userId]); });
+  afterEach(async () => { vi.useRealTimers();vi.restoreAllMocks(); await cleanupDisposableMerchants([owner.userId, other.userId]); });
   afterAll(closeDb);
 
   it('admits exactly the unchanged definition and makes it uneditable', async () => {

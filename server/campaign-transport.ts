@@ -1,3 +1,5 @@
+import {lockCampaignOccasionAuthority,validOccasionAuthorityWindow,OccasionAuthorizationDenied} from './occasion-worker-authority';
+import {OCCASION_AUTHORIZATION_REQUIREMENTS} from './occasion-authorization';
 import type { PoolConnection, RowDataPacket } from 'mysql2/promise';
 import { getPool } from './db/connection';
 import { assertRuntimeSchema } from './db/schema-readiness';
@@ -33,22 +35,25 @@ export async function withCampaignTransportAuthority<T>(input:SendMerchantWhatsA
   instanceId:number, dispatch:(connection:PoolConnection)=>Promise<T>):Promise<{allowed:false}|{allowed:true;result:T}> {
   if(!validCampaignTransportInput(input))return {allowed:false};
   await assertRuntimeSchema('campaign transport authority',[
+    ...OCCASION_AUTHORIZATION_REQUIREMENTS,
     {table:'campaign_delivery_outbox',columns:['processing_token','claimed_at','quota_reserved','quota_subscription_id','quota_period_start']},
     {table:'whatsapp_message_deliveries',columns:['request_json','provider_message_id']},
   ]);
   const pool=await getPool();if(!pool)throw new Error('Campaign transport authority unavailable');
   const c=await pool.getConnection(),guard=input.campaignGuard!;
-  const denied=async()=>{await c.rollback();return {allowed:false} as const;};
+  let committing=false,reusable=true;
+  const denied=async()=>{try{await c.rollback();}catch{reusable=false;}return {allowed:false} as const;};
   try {
     await c.beginTransaction();
-    const [merchants]=await c.execute<RowDataPacket[]>('SELECT status,current_subscription_id,timezone FROM merchants WHERE id=? FOR UPDATE',[input.merchantId]);
+    const [merchants]=await c.execute<RowDataPacket[]>('SELECT id,userId,status,businessName,current_subscription_id,timezone FROM merchants WHERE id=? FOR UPDATE',[input.merchantId]);
     const merchant=merchants[0];if(!merchant || merchant.status!=='active')return await denied();
     // Campaign precedes its recipients, matching admission and deletion.
-    const [campaigns]=await c.execute<RowDataPacket[]>('SELECT status,message,imageUrl FROM campaigns WHERE id=? AND merchantId=? FOR SHARE',[guard.campaignId,input.merchantId]);
+    const [campaigns]=await c.execute<RowDataPacket[]>('SELECT id,merchantId,name,status,message,imageUrl,targetAudience,scheduledAt FROM campaigns WHERE id=? AND merchantId=? FOR SHARE',[guard.campaignId,input.merchantId]);
     const campaign=campaigns[0];
     if(!campaign || campaign.status!=='sending' || input.text!==withCampaignOptOutNotice(campaign.message)
       || input.kind!==(campaign.imageUrl?'image':'text') || (input.mediaUrl??null)!==(campaign.imageUrl||null)
       || (input.fileName??null)!==(campaign.imageUrl?'campaign.jpg':null))return await denied();
+    const occasionAuthority=await lockCampaignOccasionAuthority(c,merchant,campaign,'dispatch');
     const [leases]=await c.execute<RowDataPacket[]>(`SELECT status,processing_token,customer_phone,quota_reserved,quota_subscription_id,quota_period_start
       FROM campaign_delivery_outbox WHERE id=? AND campaign_id=? AND merchant_id=? FOR UPDATE`,[guard.deliveryId,guard.campaignId,input.merchantId]);
     const lease=leases[0];
@@ -77,7 +82,8 @@ export async function withCampaignTransportAuthority<T>(input:SendMerchantWhatsA
     const [fresh]=await c.execute<RowDataPacket[]>(`SELECT id FROM campaign_delivery_outbox WHERE id=? AND processing_token=?
       AND claimed_at BETWEEN DATE_SUB(UTC_TIMESTAMP(3),INTERVAL 5 MINUTE) AND UTC_TIMESTAMP(3)`,[guard.deliveryId,guard.token]);
     if(fresh.length!==1)return await denied();
+    if(occasionAuthority&&!validOccasionAuthorityWindow(occasionAuthority.contract,new Date()))return await denied();
     const result=await dispatch(c);
-    await c.commit();return {allowed:true,result};
-  }catch(error){try{await c.rollback();}catch{}throw error;}finally{c.release();}
+    committing=true;await c.commit();return {allowed:true,result};
+  }catch(error){if(committing)reusable=false;else try{await c.rollback();}catch{reusable=false;}if(error instanceof OccasionAuthorizationDenied)return {allowed:false};throw error;}finally{if(reusable)c.release();else c.destroy();}
 }
