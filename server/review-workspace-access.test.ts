@@ -1,7 +1,8 @@
 import { beforeEach, it, expect, vi } from 'vitest';
-const mocks = vi.hoisted(() => ({ access: vi.fn(), read: vi.fn(), detail: vi.fn() }));
+const mocks = vi.hoisted(() => ({ access: vi.fn(), read: vi.fn(), detail: vi.fn(), save: vi.fn() }));
 vi.mock('./accounts/merchant-access', () => ({ resolveMerchantAccess: mocks.access }));
 vi.mock('./review-workspace', async original => ({ ...await original<typeof import('./review-workspace')>(), readReviewWorkspace: mocks.read, readReviewDetail: mocks.detail }));
+vi.mock('./review-reply', async original => ({ ...await original<typeof import('./review-reply')>(), saveReviewReply: mocks.save }));
 import { reviewsRouter } from './routers-reviews';
 import { bookingReviewsRouter } from './routers-booking-reviews';
 import { appRouter } from './routers';
@@ -28,5 +29,13 @@ for (const kind of ['order', 'booking'] as const) for (const mounted of [false, 
     mocks.detail.mockRejectedValue(new ReviewWorkspaceError('missing')); await expect(caller().detail({ id: 1 })).rejects.toMatchObject({ code: 'NOT_FOUND', message: 'review_workspace:unavailable' });
     mocks.read.mockRejectedValue(new Error('database password private')); await expect(caller().workspace({})).rejects.toMatchObject({ code: 'INTERNAL_SERVER_ERROR', message: 'review_workspace:unavailable' });
     mocks.read.mockRejectedValue(new ReviewWorkspaceError('forbidden')); await expect(caller().workspace({})).rejects.toMatchObject({ code: 'FORBIDDEN' });
+  });
+  it(`requires current reply permission for ${kind} and scopes the save mounted=${mounted}`, async () => {
+    const input = { id: 3, revision: 'a'.repeat(64), reply: 'Saved reply' };
+    await expect(caller().saveReply(input)).rejects.toMatchObject({ code: 'FORBIDDEN' }); expect(mocks.save).not.toHaveBeenCalled();
+    mocks.access.mockResolvedValue({ merchantId: 20, role: 'sales_supervisor' }); await caller().saveReply(input);
+    expect(mocks.save).toHaveBeenCalledWith(7, 20, kind, input);
+    for (const extra of [{ merchantId: 999 }, { reply: ' ' }, { reply: 'x'.repeat(1001) }, { revision: 'bad' }])
+      await expect(caller().saveReply({ ...input, ...extra } as any)).rejects.toMatchObject({ code: 'BAD_REQUEST' });
   });
 }
