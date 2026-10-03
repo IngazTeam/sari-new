@@ -5198,8 +5198,8 @@ export async function getServicePackagesByMerchant(merchantId: number) {
 export async function createServiceReview(review: InsertServiceReview) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(serviceReviews).values(review);
-  return (result as any).insertId;
+  const [result] = await db.insert(serviceReviews).values(review);
+  return Number(result.insertId);
 }
 
 export async function getServiceReviewsByMerchant(merchantId: number) {
@@ -5275,8 +5275,8 @@ export async function getSetupWizardProgress(merchantId: number) {
 export async function createGoogleIntegration(integration: InsertGoogleIntegration) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(googleIntegrations).values(integration);
-  return (result as any).insertId;
+  const [result] = await db.insert(googleIntegrations).values(integration);
+  return Number(result.insertId);
 }
 
 export async function getGoogleIntegrationsByMerchant(merchantId: number) {
@@ -5823,7 +5823,7 @@ export async function createTimeSlot(data: {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const result = await db.insert(bookingTimeSlots).values({
+  const [result] = await db.insert(bookingTimeSlots).values({
     merchantId: data.merchantId,
     serviceId: data.serviceId,
     staffId: data.staffId,
@@ -5836,7 +5836,7 @@ export async function createTimeSlot(data: {
     currentBookings: 0,
   });
 
-  return (result as any).insertId;
+  return Number(result.insertId);
 }
 
 export async function getAvailableTimeSlots(
@@ -7050,7 +7050,7 @@ export async function createWebsiteInsight(data: {
   const db = await getDb();
   if (!db) throw new Error('Database connection failed');
 
-  const result = await db.insert(websiteInsights).values({
+  const [result] = await db.insert(websiteInsights).values({
     analysisId: data.analysisId,
     merchantId: data.merchantId,
     category: data.category,
@@ -7064,7 +7064,7 @@ export async function createWebsiteInsight(data: {
     confidence: data.confidence,
   });
 
-  return (result as any).insertId;
+  return Number(result.insertId);
 }
 
 /**
@@ -7120,7 +7120,7 @@ export async function createExtractedProduct(data: {
   const db = await getDb();
   if (!db) throw new Error('Database connection failed');
 
-  const result = await db.insert(extractedProducts).values({
+  const [result] = await db.insert(extractedProducts).values({
     analysisId: data.analysisId,
     merchantId: data.merchantId,
     name: data.name,
@@ -7137,7 +7137,7 @@ export async function createExtractedProduct(data: {
     confidence: data.confidence,
   });
 
-  return (result as any).insertId;
+  return Number(result.insertId);
 }
 
 /**
@@ -7192,7 +7192,7 @@ export async function createCompetitorAnalysis(data: {
   const db = await getDb();
   if (!db) throw new Error('Database connection failed');
 
-  const result = await db.insert(competitorAnalyses).values({
+  const [result] = await db.insert(competitorAnalyses).values({
     merchantId: data.merchantId,
     name: data.name,
     url: data.url,
@@ -7215,7 +7215,7 @@ export async function createCompetitorAnalysis(data: {
     analyzedAt: data.status === 'completed' ? new Date().toISOString().slice(0, 19).replace('T', ' ') : null,
   });
 
-  return (result as any).insertId;
+  return Number(result.insertId);
 }
 
 /**
@@ -7348,7 +7348,7 @@ export async function createCompetitorProduct(data: {
   const db = await getDb();
   if (!db) throw new Error('Database connection failed');
 
-  const result = await db.insert(competitorProducts).values({
+  const [result] = await db.insert(competitorProducts).values({
     competitorId: data.competitorId,
     merchantId: data.merchantId,
     name: data.name,
@@ -7362,7 +7362,7 @@ export async function createCompetitorProduct(data: {
     priceDifference: data.priceDifference?.toString(),
   });
 
-  return (result as any).insertId;
+  return Number(result.insertId);
 }
 
 /**
@@ -9605,14 +9605,14 @@ export async function createNotificationRecord(data: {
   message: string;
   sentAt: Date;
 }) {
-  const result = await requireDb().insert(schema.notificationRecords as any).values({
+  const [result] = await requireDb().insert(schema.notificationRecords).values({
     merchantId: data.merchantId,
     notificationKey: data.notificationKey,
     type: data.type,
     message: data.message,
-    sentAt: formatDateForDB(data.sentAt),
+    sentAt: data.sentAt,
   });
-  return (result as any).insertId;
+  return Number(result.insertId);
 }
 
 /**
