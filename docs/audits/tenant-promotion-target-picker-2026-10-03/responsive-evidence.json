@@ -1,0 +1,53 @@
+[
+  {
+    "label": "ar-picker-390",
+    "dialog": {
+      "bottom": 828,
+      "client": 296,
+      "height": 812,
+      "right": 374,
+      "scroll": 296,
+      "width": 328,
+      "x": 46,
+      "y": 16
+    },
+    "height": 844,
+    "rootClient": 360,
+    "rootScroll": 360,
+    "width": 390
+  },
+  {
+    "label": "ar-category-picker-320",
+    "dialog": {
+      "bottom": 828,
+      "client": 226,
+      "height": 812,
+      "right": 304,
+      "scroll": 226,
+      "width": 258,
+      "x": 46,
+      "y": 16
+    },
+    "height": 844,
+    "rootClient": 290,
+    "rootScroll": 290,
+    "width": 320
+  },
+  {
+    "label": "ar-product-picker-390",
+    "dialog": {
+      "bottom": 828,
+      "client": 296,
+      "height": 812,
+      "right": 374,
+      "scroll": 296,
+      "width": 328,
+      "x": 46,
+      "y": 16
+    },
+    "height": 844,
+    "rootClient": 360,
+    "rootScroll": 360,
+    "width": 390
+  }
+]

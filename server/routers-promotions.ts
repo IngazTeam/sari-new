@@ -9,8 +9,11 @@ import {getPromotionById,getPromotionsByMerchant,countActivePromotions} from './
 import {databaseTimeEpoch} from './db/time';
 import {promotionActionTarget,promotionActionApply,promotionReceiptInput} from '../shared/promotion-actions';
 import {reviewPromotionAction,applyPromotionAction,readPromotionActionReceipt,resolvePromotionActionReceipt} from './promotion-actions';
+import {promotionTargetSelection} from '../shared/promotion-targets';
+import {readPromotionTargets} from './promotion-targets';
 const error=(e:unknown)=>new TRPCError({code:e instanceof PromotionWriteError?e.reason==='forbidden'?'FORBIDDEN':e.reason==='missing'?'NOT_FOUND':e.reason==='stale'||e.reason==='reused'||e.reason==='cancelled'?'CONFLICT':e.reason==='invalid'||e.reason.startsWith('code_')?'BAD_REQUEST':e.reason==='limit'?'PRECONDITION_FAILED':'INTERNAL_SERVER_ERROR':'INTERNAL_SERVER_ERROR',message:e instanceof PromotionWriteError?e.message:'promotion_write:unavailable'});
 export const promotionsRouter=router({
+ targetChoices:permissionProcedure('campaigns.manage').input(promotionTargetSelection).query(async({ctx,input})=>{try{return await readPromotionTargets(ctx.user.id,ctx.merchantId,input);}catch(e){throw error(e);}}),
  resolveActionReceipt:permissionProcedure('campaigns.manage').input(promotionReceiptInput).mutation(async({ctx,input})=>{try{return await resolvePromotionActionReceipt(ctx.user.id,ctx.merchantId,input);}catch(e){throw error(e);}}),
  reviewAction:permissionProcedure('campaigns.manage').input(promotionActionTarget).mutation(async({ctx,input})=>{try{return await reviewPromotionAction(ctx.user.id,ctx.merchantId,input);}catch(e){throw error(e);}}),
  applyAction:permissionProcedure('campaigns.manage').input(promotionActionApply).mutation(async({ctx,input})=>{try{return await applyPromotionAction(ctx.user.id,ctx.merchantId,input);}catch(e){throw error(e);}}),

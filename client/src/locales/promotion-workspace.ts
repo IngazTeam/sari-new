@@ -1,4 +1,6 @@
 export const promotionWorkspaceEn={
+"targetMatches":"Matching items","noTargets":"No products or categories match this search.",
+"chooseSearch":"Find a product or category by name or ID","choicesFailed":"Could not load choices. Existing selection is unchanged.","choicesLoading":"Loading store choices…","selectedTargets":"Selected items","missingTargets":"These saved IDs are unavailable in this store. Remove or correct them before activation.","removeTarget":"Remove","choosePages":"Choice pages","manualTargets":"Advanced: edit saved identifiers",
 "resolveRequest":"Resolve this request", "resolveHelp":"Recover an existing save, or close an unsaved request so it cannot arrive later. This does not undo a saved offer.", "cancelledRequest":"The unsaved request is closed. You can review a new change.",
   "title": "Promotions",
   "eyebrow": "Marketing · Offers",
@@ -116,6 +118,8 @@ export const promotionWorkspaceEn={
   "noChanges": "No changes to save."
 };
 export const promotionWorkspaceAr:typeof promotionWorkspaceEn={
+"targetMatches":"العناصر المطابقة","noTargets":"لا توجد منتجات أو فئات تطابق البحث.",
+"chooseSearch":"ابحث عن المنتج أو الفئة بالاسم أو الرقم","choicesFailed":"تعذر تحميل الاختيارات. لم يتغير التحديد الحالي.","choicesLoading":"جارٍ تحميل اختيارات المتجر…","selectedTargets":"العناصر المحددة","missingTargets":"هذه الأرقام المحفوظة غير متاحة في هذا المتجر. أزلها أو صححها قبل التفعيل.","removeTarget":"إزالة","choosePages":"صفحات الاختيارات","manualTargets":"متقدم: تعديل الأرقام المحفوظة",
 "resolveRequest":"حسم هذا الطلب", "resolveHelp":"استعد الحفظ إن تم، أو أغلق الطلب غير المحفوظ لمنع وصوله لاحقًا. هذا لا يلغي عرضًا محفوظًا.", "cancelledRequest":"أُغلق الطلب غير المحفوظ. يمكنك مراجعة تغيير جديد.",
   "title": "العروض الترويجية",
   "eyebrow": "التسويق · العروض",
