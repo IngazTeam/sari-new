@@ -68,4 +68,5 @@ export type SendMerchantWhatsAppInput = WhatsAppSendRequest & {
   calendlyGuard?: import('../../integrations/calendly-notification').CalendlyNotificationGuard;
   cartReminderGuard?: import('../../abandoned-cart-reminder-transport').CartReminderGuard;
   wooOrderGuard?: import('../../integrations/woocommerce-order-notification').WooOrderNotificationGuard;
+  orderNoticeGuard?: import('../../order-notification-dispatch').OrderNoticeTransportGuard;
 };

@@ -95,6 +95,8 @@ async function dispatchMerchantWhatsApp(input: SendMerchantWhatsAppInput): Promi
   // Old clients must restore history and create a reviewed document, never bypass it.
   if (input.idempotencyKey.startsWith('quotation:'))
     return {accepted:false,duplicate:false,status:'failed',errorCode:'quotation_legacy_retired'};
+  const orderNoticeTransport=input.idempotencyKey.startsWith('order-status:')||!!input.orderNoticeGuard;
+  if(orderNoticeTransport){const {validOrderNoticeTransport}=await import('../../order-notification-dispatch');if(!validOrderNoticeTransport(input))return {accepted:false,duplicate:false,status:'failed',errorCode:'order_notice_authority_suppressed'};}
   const promotionTransport=input.idempotencyKey.startsWith('promotion:v1:')||!!input.promotionGuard;
   if(promotionTransport){const {validPromotionBannerTransport}=await import('../../promotion-banner-transport');if(!validPromotionBannerTransport(input))return {accepted:false,duplicate:false,status:'failed',errorCode:'promotion_banner_suppressed'};}
   const cartReminderTransport=input.idempotencyKey.startsWith('cart-reminder:')||!!input.cartReminderGuard;
@@ -128,7 +130,11 @@ async function dispatchMerchantWhatsApp(input: SendMerchantWhatsAppInput): Promi
   const requestJson=JSON.stringify({ to: input.to, kind: input.kind, text: input.text, mediaUrl: input.mediaUrl,
     fileName:input.fileName,template:input.template,campaignGuard:input.campaignGuard });
   let reserved = false;
-  try {
+  if(orderNoticeTransport){
+    const {reserveOrderNoticeDelivery}=await import('../../order-notification-dispatch');
+    try{const outcome=await reserveOrderNoticeDelivery(input);if(!outcome.reserved)return outcome.result;reserved=true;}
+    catch{return {accepted:false,duplicate:false,status:'failed',errorCode:'order_notice_authority_suppressed'};}
+  }else try {
     // Lock the parent before FK validation takes an instance lock. Reply authority uses
     // merchant -> instance; a VALUES insert can take instance -> merchant and deadlock it.
     const [inserted] = await pool.execute<any>(
@@ -137,7 +143,7 @@ async function dispatchMerchantWhatsApp(input: SendMerchantWhatsAppInput): Promi
        SELECT ?, ?, ?, ?, ?, 'outgoing', 'queued', ? FROM merchants WHERE id=? FOR SHARE`,
       [input.merchantId, input.messageId || null, instance.id, config.provider, input.idempotencyKey,
         JSON.stringify({ to: input.to, kind: input.kind, text: input.text, mediaUrl: input.mediaUrl,
-          fileName: input.fileName, template: input.template, campaignGuard:input.campaignGuard, inboundJobId: execution?.id, escalationGuard: input.escalationGuard, sallaOrderGuard: input.sallaOrderGuard, wooOrderGuard:input.wooOrderGuard, calendlyGuard:input.calendlyGuard,cartReminderGuard:input.cartReminderGuard,
+          fileName: input.fileName, template: input.template, campaignGuard:input.campaignGuard, inboundJobId: execution?.id, escalationGuard: input.escalationGuard, sallaOrderGuard: input.sallaOrderGuard, wooOrderGuard:input.wooOrderGuard, calendlyGuard:input.calendlyGuard,cartReminderGuard:input.cartReminderGuard,orderNoticeGuard:input.orderNoticeGuard,
           replyGuard: input.replyGuard, promotionGuard:input.promotionGuard, salesOfferGuard: input.salesOfferGuard, salesReplyGuard: input.salesReplyGuard, quotationGuard: input.quotationGuard, coachingGuard: input.coachingGuard, onboardingGuard: input.onboardingGuard, staffReplyGuard:input.staffReplyGuard, staffVoiceGuard:input.staffVoiceGuard, staffCompatibilityGuard:input.staffCompatibilityGuard, staffCompatibilityVoiceGuard:input.staffCompatibilityVoiceGuard, bookingNoticeGuard: input.bookingNoticeGuard, appointmentReminderGuard: input.appointmentReminderGuard }), input.merchantId]
     );
     if (Number(inserted.affectedRows) !== 1) throw new Error('WhatsApp delivery reservation unavailable');
@@ -156,7 +162,7 @@ async function dispatchMerchantWhatsApp(input: SendMerchantWhatsAppInput): Promi
     if(cartReminderTransport){const {sameCartReminderRequest}=await import('../../abandoned-cart-reminder-transport');if(!sameCartReminderRequest(input,priorRequest))return {accepted:false,duplicate:true,status:'failed',errorCode:'cart_reminder_authority_suppressed'};}
     if(calendlyTransport){const {sameCalendlyNotificationRequest}=await import('../../integrations/calendly-notification');if(!sameCalendlyNotificationRequest(input,priorRequest))return {accepted:false,duplicate:true,status:'failed',errorCode:'calendly_authority_suppressed'};}
     // Removing the guard from a retry request cannot strip the durable reply's authority.
-    if (existing.status === 'failed' && !existing.provider_message_id && input.retryFailed && !input.replyGuard && !priorRequest?.replyGuard
+    if (!orderNoticeTransport && !priorRequest?.orderNoticeGuard && existing.status === 'failed' && !existing.provider_message_id && input.retryFailed && !input.replyGuard && !priorRequest?.replyGuard
         && !wooOrderTransport && !priorRequest?.wooOrderGuard && !calendlyTransport && !priorRequest?.calendlyGuard
         && !cartReminderTransport && !priorRequest?.cartReminderGuard && !promotionTransport && !priorRequest?.promotionGuard
         && (!priorRequest?.sallaOrderGuard || !!input.sallaOrderGuard)
@@ -390,6 +396,11 @@ async function dispatchMerchantWhatsApp(input: SendMerchantWhatsAppInput): Promi
       errorCode,
     };
   };
+  if(orderNoticeTransport){
+    let enteredProvider=false;
+    try{const {withOrderNoticeTransportAuthority}=await import('../../order-notification-dispatch');return await withOrderNoticeTransportAuthority(input,config,instance.id,async tx=>{enteredProvider=true;return sendReserved(tx);});}
+    catch{if(enteredProvider)throw new WhatsAppDeliveryStateError();await pool.execute("UPDATE whatsapp_message_deliveries SET status='failed',error_code='order_notice_authority_suppressed',status_updated_at=UTC_TIMESTAMP() WHERE merchant_id=? AND idempotency_key=? AND status='queued' AND provider_message_id IS NULL AND JSON_UNQUOTE(JSON_EXTRACT(request_json,'$.orderNoticeGuard.claimToken'))=?",[input.merchantId,input.idempotencyKey,input.orderNoticeGuard!.claimToken]);return {accepted:false,duplicate:false,status:'failed',errorCode:'order_notice_authority_suppressed'};}
+  }
   if(promotionTransport){
     let enteredProvider=false;
     try{const {withPromotionBannerAuthority}=await import('../../promotion-banner-transport');return await withPromotionBannerAuthority(input,config,instance.id,async tx=>{enteredProvider=true;return sendReserved(tx);});}
