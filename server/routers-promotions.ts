@@ -1,5 +1,7 @@
 import { z } from 'zod';
-import { router, protectedProcedure } from './_core/trpc';
+import { router, protectedProcedure,permissionProcedure } from './_core/trpc';
+import {promotionWorkspaceInput} from '../shared/promotion-workspace';
+import {readPromotionWorkspace,PromotionWorkspaceError} from './promotion-workspace-store';
 import { TRPCError } from '@trpc/server';
 import {
   createPromotion,
@@ -28,6 +30,9 @@ async function getMerchantId(ctx: any): Promise<number> {
 }
 
 export const promotionsRouter = router({
+  workspace:permissionProcedure('analytics.read').input(promotionWorkspaceInput).query(async({ctx,input})=>{
+    try{return await readPromotionWorkspace(ctx.user.id,ctx.merchantId,input);}catch(error){throw new TRPCError({code:error instanceof PromotionWorkspaceError&&error.reason==='forbidden'?'FORBIDDEN':'INTERNAL_SERVER_ERROR',message:'promotion_workspace:unavailable'});}
+  }),
   // List all promotions for the merchant
   list: protectedProcedure
     .input(z.object({
