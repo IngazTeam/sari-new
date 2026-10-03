@@ -1,11 +1,14 @@
 import {beforeEach,afterEach,afterAll,describe,it,expect,vi} from 'vitest';
 import {getPool,closeDb} from './db/connection';
 import {createDisposableMerchant,cleanupDisposableMerchants} from './tests/helpers/disposable-merchant';
-import {writePromotion} from './promotion-writes';
+import {withPromotionWriteTransaction,applyPromotionMutation,lockedPromotionSource} from './promotion-writes';
+import {promotionMutationInput,type PromotionMutation} from '../shared/promotion-write';
+// Exercise transaction primitives directly in isolated tests; no production compatibility writer.
+const testWrite=(actorId:number,merchantId:number,raw:PromotionMutation)=>{const input=promotionMutationInput.parse(raw);return withPromotionWriteTransaction(actorId,merchantId,async tx=>applyPromotionMutation(tx,merchantId,input,await lockedPromotionSource(tx,merchantId)));};
 describe.skipIf(!process.env.DATABASE_URL)('atomic scoped promotion writes on disposable MySQL tenants',()=>{
  let owner:Awaited<ReturnType<typeof createDisposableMerchant>>,other:typeof owner;
  const q=async(sql:string,args:any[]=[]) => (await (await getPool())!.execute<any>(sql,args))[0];
- const create=(patch:any={},actor=owner.userId,merchant=owner.merchantId)=>writePromotion(actor,merchant,{action:'create',data:{title:'Local offer',type:'percentage',value:15,...patch}});
+ const create=(patch:any={},actor=owner.userId,merchant=owner.merchantId)=>testWrite(actor,merchant,{action:'create',data:{title:'Local offer',type:'percentage',value:15,...patch}});
  const counts=async()=>({promotions:(await q('SELECT COUNT(*) n FROM promotions WHERE merchant_id=?',[owner.merchantId]))[0].n,discounts:(await q('SELECT COUNT(*) n FROM discount_codes WHERE merchantId=?',[owner.merchantId]))[0].n});
  beforeEach(async()=>{owner=await createDisposableMerchant('promotion-write');other=await createDisposableMerchant('promotion-other');});
  afterEach(async()=>{vi.restoreAllMocks();await cleanupDisposableMerchants([owner.userId,other.userId]);});afterAll(closeDb);
@@ -19,7 +22,7 @@ describe.skipIf(!process.env.DATABASE_URL)('atomic scoped promotion writes on di
  });
  it('updates actual timestamp rows without shifting stored UTC and clears explicit null fields',async()=>{
   const before=await create({startsAt:'2027-01-01',expiresAt:'2027-01-02',minOrderAmount:100,description:'Old'});
-  expect(await writePromotion(owner.userId,owner.merchantId,{action:'update',data:{id:before.id,title:'New',description:null,minOrderAmount:0}})).toMatchObject({title:'New',description:null,minOrderAmount:0,startsAt:before.startsAt,expiresAt:before.expiresAt});
+  expect(await testWrite(owner.userId,owner.merchantId,{action:'update',data:{id:before.id,title:'New',description:null,minOrderAmount:0}})).toMatchObject({title:'New',description:null,minOrderAmount:0,startsAt:before.startsAt,expiresAt:before.expiresAt});
  });
  it.each([{startsAt:'2027-01-01',reason:'code_start'},{minQuantity:2,reason:'code_quantity'},{expiresAt:'2026-01-01',reason:'code_expired'}])('does not persist an automatic coupon that cannot enforce $reason',async({reason,...patch})=>{await expect(create({...patch,autoGenerateCode:true,autoCodeValue:15})).rejects.toMatchObject({reason});expect(await counts()).toEqual({promotions:0,discounts:0});expect((await create(patch)).id).toBeGreaterThan(0);});
  it('admits only one concurrent fifth active offer without orphan discounts',async()=>{
@@ -30,10 +33,10 @@ describe.skipIf(!process.env.DATABASE_URL)('atomic scoped promotion writes on di
  });
  it.each(['own','foreign'])('deletes only the requested promotion and retains its %s linked discount',async kind=>{
   const row=await create(),merchant=kind==='own'?owner.merchantId:other.merchantId,discount=Number((await q("INSERT INTO discount_codes (merchantId,code,type,value,isActive) VALUES (?,'KEEP-PROMO','percentage',15,1)",[merchant])).insertId);
-  await q('UPDATE promotions SET auto_discount_code_id=? WHERE id=?',[discount,row.id]);expect(await writePromotion(owner.userId,owner.merchantId,{action:'delete',id:row.id})).toMatchObject({success:true,retainedDiscount:true});expect(await q('SELECT id FROM promotions WHERE id=?',[row.id])).toEqual([]);expect(await q('SELECT id FROM discount_codes WHERE id=?',[discount])).toHaveLength(1);
+  await q('UPDATE promotions SET auto_discount_code_id=? WHERE id=?',[discount,row.id]);expect(await testWrite(owner.userId,owner.merchantId,{action:'delete',id:row.id})).toMatchObject({success:true,retainedDiscount:true});expect(await q('SELECT id FROM promotions WHERE id=?',[row.id])).toEqual([]);expect(await q('SELECT id FROM discount_codes WHERE id=?',[discount])).toHaveLength(1);
  });
  it('rejects foreign row updates, deletion and toggles',async()=>{
-  const row=await create({},other.userId,other.merchantId);for(const input of [{action:'update',data:{id:row.id,title:'Changed'}},{action:'delete',id:row.id},{action:'toggle',id:row.id}] as const)await expect(writePromotion(owner.userId,owner.merchantId,input)).rejects.toMatchObject({reason:'missing'});expect((await q('SELECT title FROM promotions WHERE id=?',[row.id]))[0].title).toBe('Local offer');
+  const row=await create({},other.userId,other.merchantId);for(const input of [{action:'update',data:{id:row.id,title:'Changed'}},{action:'delete',id:row.id},{action:'toggle',id:row.id}] as const)await expect(testWrite(owner.userId,owner.merchantId,input)).rejects.toMatchObject({reason:'missing'});expect((await q('SELECT title FROM promotions WHERE id=?',[row.id]))[0].title).toBe('Local offer');
  });
  it('allows the selected manager while rejecting viewers, revoked members and inactive accounts',async()=>{
   await q("INSERT INTO merchant_members (merchant_id,user_id,role,is_active) VALUES (?,?,'manager',1)",[other.merchantId,owner.userId]);expect((await create({},owner.userId,other.merchantId)).merchantId).toBe(other.merchantId);
@@ -48,7 +51,7 @@ describe.skipIf(!process.env.DATABASE_URL)('atomic scoped promotion writes on di
   await expect(create({scope:'products',productIds:JSON.stringify([own]),autoGenerateCode:true,autoCodeValue:15})).rejects.toMatchObject({reason:'code_scope'});expect(await counts()).toEqual({promotions:1,discounts:0});
  });
  it('can pause a malformed legacy record without broadening or rewriting its targeting',async()=>{
-  const row=await create();await q("UPDATE promotions SET scope='products',product_ids='bad' WHERE id=?",[row.id]);expect(await writePromotion(owner.userId,owner.merchantId,{action:'toggle',id:row.id})).toMatchObject({isActive:0,productIds:'bad'});await expect(writePromotion(owner.userId,owner.merchantId,{action:'toggle',id:row.id})).rejects.toMatchObject({reason:'invalid'});
+  const row=await create();await q("UPDATE promotions SET scope='products',product_ids='bad' WHERE id=?",[row.id]);expect(await testWrite(owner.userId,owner.merchantId,{action:'toggle',id:row.id})).toMatchObject({isActive:0,productIds:'bad'});await expect(testWrite(owner.userId,owner.merchantId,{action:'toggle',id:row.id})).rejects.toMatchObject({reason:'invalid'});
  });
  it('preserves committed records after lost acknowledgement and destroys the uncertain connection',async()=>{
   const pool=(await getPool())!,tx=await pool.getConnection(),commit=tx.commit.bind(tx);vi.spyOn(pool,'getConnection').mockResolvedValueOnce(tx);const destroyed=vi.spyOn(tx,'destroy');vi.spyOn(tx,'commit').mockImplementation(async()=>{await commit();throw Error('Lost acknowledgement');});

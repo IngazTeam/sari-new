@@ -37,7 +37,7 @@ export const requiredReleaseCapabilities = Object.freeze([
   'promotion-atomic-writes-v1',
   'promotion-code-boundaries-v1',
   'promotion-reviewed-receipts-0196',
-  'promotion-request-resolution-v1',
+  'promotion-request-resolution-v1', 'promotion-reviewed-writes-only-v1',
 ]);
 
 export function assertZidOrderReleaseCompatible(directory) {

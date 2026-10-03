@@ -2,7 +2,7 @@ import {randomBytes} from 'node:crypto';
 import type {PoolConnection} from 'mysql2/promise';
 import {getPool} from './db/connection';
 import {ALL_ROLES,hasPermission,type MerchantRole} from './_core/permissions';
-import {promotionMutationInput,promotionWriteFields,type PromotionMutation} from '../shared/promotion-write';
+import {promotionWriteFields,type PromotionMutation} from '../shared/promotion-write';
 import {PROMOTION_SELECT,PROMOTION_FIELDS} from './promotion-workspace-source';
 import {databaseTimeEpoch} from './db/time';
 export class PromotionWriteError extends Error{constructor(readonly reason:'forbidden'|'missing'|'invalid'|'limit'|'unavailable'|'unknown'|'code_scope'|'code_start'|'code_quantity'|'code_expired'|'stale'|'reused'|'cancelled'){super(`promotion_write:${reason}`);}}
@@ -48,7 +48,7 @@ export function assertPromotionCodeTerms(value:any,now=Date.now()){
  if(value.minQuantity!==null&&value.minQuantity>1)throw new PromotionWriteError('code_quantity');
  if(value.expiresAt!==null&&databaseTimeEpoch(value.expiresAt)<=now)throw new PromotionWriteError('code_expired');
 }
-/** Parent-first authority is shared by compatibility and reviewed writes. */
+/** Parent-first authority for reviewed writes and scoped choices. */
 export async function withPromotionWriteTransaction<T>(actorId:number,merchantId:number,operation:(tx:PoolConnection)=>Promise<T>){
  let tx:PoolConnection|undefined,committing=false,reusable=true;
  try{
@@ -105,7 +105,4 @@ export async function applyPromotionMutation(tx:PoolConnection,merchantId:number
   const result=(await promotionWriteRows(tx,`SELECT ${PROMOTION_SELECT} FROM promotions p WHERE p.id=? AND p.merchant_id=?`,[id,merchantId]))[0];if(!result)throw new PromotionWriteError('unavailable');
   const saved=serializePromotion(result);return saved;
 
-}
-export function writePromotion(actorId:number,merchantId:number,raw:PromotionMutation){
- const input=promotionMutationInput.parse(raw);return withPromotionWriteTransaction(actorId,merchantId,async tx=>applyPromotionMutation(tx,merchantId,input,await lockedPromotionSource(tx,merchantId)));
 }

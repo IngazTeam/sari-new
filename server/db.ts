@@ -10953,15 +10953,6 @@ export async function getPromotionById(id: number): Promise<Promotion | undefine
   return result.length > 0 ? result[0] : undefined;
 }
 
-export async function getPromotionsByMerchant(merchantId: number): Promise<Promotion[]> {
-  const db = await getDb();
-  if (!db) return [];
-
-  return db.select().from(promotions)
-    .where(eq(promotions.merchantId, merchantId))
-    .orderBy(desc(promotions.createdAt));
-}
-
 export async function getActivePromotionsByMerchant(merchantId: number): Promise<Promotion[]> {
   const db = await getDb();
   if (!db) return [];
@@ -10985,19 +10976,6 @@ export async function getActivePromotionsByMerchant(merchantId: number): Promise
     ))
     .orderBy(desc(promotions.createdAt))
     .limit(5); // Max 5 active promotions for AI context
-}
-
-export async function countActivePromotions(merchantId: number): Promise<number> {
-  const db = await getDb();
-  if (!db) return 0;
-
-  const result = await requireDb().select({ count: sql<number>`COUNT(*)` })
-    .from(promotions)
-    .where(and(
-      eq(promotions.merchantId, merchantId),
-      eq(promotions.isActive, 1),
-    ));
-  return result[0]?.count || 0;
 }
 
 export async function incrementPromotionViewCount(id: number): Promise<void> {

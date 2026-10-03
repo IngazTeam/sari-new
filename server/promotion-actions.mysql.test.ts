@@ -2,7 +2,6 @@ import {randomUUID} from 'node:crypto';
 import {beforeEach,afterEach,afterAll,describe,it,expect,vi} from 'vitest';
 import {getPool,closeDb} from './db/connection';
 import {createDisposableMerchant,cleanupDisposableMerchants} from './tests/helpers/disposable-merchant';
-import {writePromotion} from './promotion-writes';
 import {reviewPromotionAction,applyPromotionAction,readPromotionActionReceipt} from './promotion-actions';
 describe.skipIf(!process.env.DATABASE_URL)('reviewed promotion decisions and durable receipts',()=>{
  let owner:Awaited<ReturnType<typeof createDisposableMerchant>>,other:typeof owner;
@@ -27,7 +26,7 @@ describe.skipIf(!process.env.DATABASE_URL)('reviewed promotion decisions and dur
   await q('UPDATE promotions SET view_count=view_count+1,updated_at=DATE_ADD(updated_at,INTERVAL 1 SECOND) WHERE id=?',[row.id]);await save(input);
   const stale=apply(await review({action:'update',data:{id:row.id,title:'Other'}}));await q("UPDATE promotions SET description='Concurrent change' WHERE id=?",[row.id]);await expect(save(stale)).rejects.toMatchObject({reason:'stale'});expect((await q('SELECT title FROM promotions WHERE id=?',[row.id]))[0].title).toBe('New');
  });
- it('requires a new review after slot conditions change',async()=>{const input=apply(await review());await writePromotion(owner.userId,owner.merchantId,target() as any);await expect(save(input)).rejects.toMatchObject({reason:'stale'});expect(await counts()).toEqual({offers:1,codes:0,receipts:0});});
+ it('requires a new review after slot conditions change',async()=>{const input=apply(await review());await save(apply(await review()));await expect(save(input)).rejects.toMatchObject({reason:'stale'});expect(await counts()).toEqual({offers:1,codes:0,receipts:1});});
  it('uses an absolute active state and replays pause without toggling back',async()=>{const row=await save(apply(await review())),input=apply(await review({action:'toggle',id:row.id,enabled:false}));const result=await save(input);expect(await save(input)).toEqual(result);expect((await q('SELECT is_active FROM promotions WHERE id=?',[row.id]))[0].is_active).toBe(0);await expect(review({action:'toggle',id:row.id,enabled:false})).rejects.toMatchObject({reason:'stale'});});
  it('retains linked discounts on update and deletion, and replays deletion after the row is gone',async()=>{
   const row=await save(apply(await review(target({autoGenerateCode:true,autoCodeValue:15}))));
