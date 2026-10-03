@@ -5300,3 +5300,13 @@ export const merchantTeachingTurns = mysqlTable('merchant_teaching_turns', {
   contextJson:json('context_json').notNull(),decisionJson:json('decision_json').notNull(),resultJson:json('result_json').notNull(),
   createdAt:timestamp('created_at',{mode:'string',fsp:3}).defaultNow().notNull(),
 },table=>[uniqueIndex('uq_teaching_turn_event').on(table.merchantId,table.eventKey),index('idx_teaching_turn_window').on(table.merchantId,table.createdAt)]);
+
+export const websiteAnalysisJobs = mysqlTable('website_analysis_jobs', {
+  id:int().autoincrement().primaryKey(),merchantId:int('merchant_id').notNull().references(()=>merchants.id,{onDelete:'cascade'}),
+  jobId:char('job_id',{length:36}).notNull(),actorId:int('actor_id').notNull(),ownerId:int('owner_id').notNull(),websiteUrl:varchar('website_url',{length:2048}).notNull(),
+  state:mysqlEnum('state',['running','completed','error','uncertain']).notNull().default('running'),activeSlot:tinyint('active_slot').default(1),
+  executionToken:char('execution_token',{length:36}).notNull(),currentStep:varchar('current_step',{length:32}).notNull().default('scraping'),progress:tinyint({unsigned:true}).notNull().default(0),
+  resultJson:json('result_json'),issue:varchar({length:32}),
+  startedAt:datetime('started_at',{mode:'string',fsp:3}).notNull().default(sql`CURRENT_TIMESTAMP(3)`),updatedAt:datetime('updated_at',{mode:'string',fsp:3}).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+  leaseExpiresAt:datetime('lease_expires_at',{mode:'string',fsp:3}),deadlineAt:datetime('deadline_at',{mode:'string',fsp:3}).notNull(),
+},table=>[uniqueIndex('uq_website_job_request').on(table.merchantId,table.jobId),uniqueIndex('uq_website_job_active').on(table.merchantId,table.activeSlot),index('idx_website_job_history').on(table.merchantId,table.id),check('ck_website_job_active',sql`(${table.state} = 'running' AND ${table.activeSlot} IS NOT NULL AND ${table.activeSlot} = 1) OR (${table.state} <> 'running' AND ${table.activeSlot} IS NULL)`)]);
