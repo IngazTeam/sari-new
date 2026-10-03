@@ -16,7 +16,6 @@ import webhookRoutes from "../webhooks/routes";
 import authRoutes from "../auth-routes";
 import { initializeSallaCronJobs } from "../jobs/salla-sync";
 import { startOrderTrackingJob } from "../jobs/order-tracking";
-import { startAbandonedCartJob } from "../jobs/abandoned-cart";
 import { startOccasionCampaignsJob } from "../jobs/occasion-campaigns";
 import { startReviewRequestJob } from "../jobs/review-request";
 import { startScheduledCampaignsJob } from "../jobs/scheduled-campaigns";
@@ -452,9 +451,6 @@ async function startServer() {
 
       // Initialize Order Tracking cron job
       startOrderTrackingJob();
-
-      // Initialize Abandoned Cart Recovery cron job
-      startAbandonedCartJob();
 
       // Initialize Review Request cron job (runs daily at 10:00 AM)
       startReviewRequestJob();

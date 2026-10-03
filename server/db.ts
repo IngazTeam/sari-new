@@ -2465,44 +2465,6 @@ export async function getAbandonedCartsByMerchantId(merchantId: number): Promise
   return db.select().from(abandonedCarts).where(eq(abandonedCarts.merchantId, merchantId)).orderBy(desc(abandonedCarts.createdAt));
 }
 
-export async function getPendingAbandonedCarts(): Promise<AbandonedCart[]> {
-  const db = await getDb();
-  if (!db) return [];
-
-  // Get carts created more than 24 hours ago that haven't received reminder
-  const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-
-  return db.select().from(abandonedCarts).where(
-    and(
-      eq(abandonedCarts.reminderSent, 0),
-      eq(abandonedCarts.recovered, 0),
-      lt(abandonedCarts.createdAt, formatDateForDB(twentyFourHoursAgo))
-    )
-  ).limit(50);
-}
-
-export async function markAbandonedCartReminderSent(id: number): Promise<void> {
-  const db = await getDb();
-  if (!db) return;
-
-  await db.update(abandonedCarts).set({
-    reminderSent: 1,
-    reminderSentAt: formatDateForDB(new Date()),
-    updatedAt: formatDateForDB(new Date())
-  }).where(eq(abandonedCarts.id, id));
-}
-
-export async function markAbandonedCartRecovered(id: number): Promise<void> {
-  const db = await getDb();
-  if (!db) return;
-
-  await db.update(abandonedCarts).set({
-    recovered: 1,
-    recoveredAt: formatDateForDB(new Date()),
-    updatedAt: formatDateForDB(new Date())
-  }).where(eq(abandonedCarts.id, id));
-}
-
 // ============================================
 // Automation Rules Functions
 // ============================================

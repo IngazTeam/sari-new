@@ -2014,9 +2014,10 @@
         "abandonedCarts.reminderHistory",
         "discounts.workspace"
       ],
-      "note": "Full selected-tenant source, versioned record-only recovery, reviewed tenant-channel reminder with optional existing discount, durable quota receipt and complete history replace legacy direct actions. Legacy endpoints are still registered pending retirement; automatic legacy discount/send is not claimed repaired by this interface phase.",
+      "note": "Full selected-tenant workspace, reviewed record-only recovery, tenant-channel reminders and paged durable receipts replace all four legacy endpoints. Legacy endpoints now fail closed and the global sender, automatic discount and cron are retired. Automatic policy and provider-evidence reconciliation remain open.",
       "evidence": [
-        "docs/audits/tenant-abandoned-cart-workspace-2026-10-03/REPORT.md"
+        "docs/audits/tenant-abandoned-cart-workspace-2026-10-03/REPORT.md",
+        "docs/audits/tenant-abandoned-cart-legacy-retirement-2026-10-03/REPORT.md"
       ],
       "checks": [
         {

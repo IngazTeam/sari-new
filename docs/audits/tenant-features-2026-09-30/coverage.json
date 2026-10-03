@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-03T01:13:48.214Z",
+  "generatedAt": "2026-10-03T01:27:47.515Z",
   "definition": "Every registered route is accounted for; source inventory and design completion are different statuses.",
   "routes": [
     {
@@ -35212,7 +35212,7 @@
       "acceptancePlan": "الدخول والإعداد والتنقل والبحث والحفظ والتحقق من الحالة.",
       "gaps": [
         "راجع tenant-abandoned-cart-workspace-2026-10-03 وتقارير358–361. الموك أب يستخدم المكوّن الفعلي بتيننتين ولغتين وسجل إيصالات كامل وحالات القبول والرفض والمجهول؛ راجع tenant-abandoned-cart-prototype-2026-10-03.",
-        "الإرسال والعامل القديمان ينتظران الإغلاق. النتيجة المجهولة تحتاج مصالحة بدليل؛ لا Safari/iPhone فعلي أو نشر."
+        "أُغلق الإرسال والعامل القديمان وحُذفت كتابة الأعلام غير المقيدة مع حارس إصدار؛ راجع tenant-abandoned-cart-legacy-retirement-2026-10-03. سياسة إرسال تلقائي مفوضة ومصالحة المجهول بدليل ما زالتا مفتوحتين، وتتبع إنشاء السلات الداخلي غير موصول بحدث إنتاج مثبت؛ لا Safari/iPhone فعلي أو نشر."
       ],
       "controlDetails": [
         {

@@ -29,6 +29,7 @@ export const requiredReleaseCapabilities = Object.freeze([
   'merchant-referral-program-0193',
   'abandoned-cart-reminder-admission-0194',
   'abandoned-cart-reminder-transport-0194',
+  'abandoned-cart-reviewed-writes-only-0194',
 ]);
 
 export function assertZidOrderReleaseCompatible(directory) {
