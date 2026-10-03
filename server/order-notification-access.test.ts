@@ -1,11 +1,14 @@
 import { beforeEach, expect, it, vi } from 'vitest';
-const m = vi.hoisted(() => Object.fromEntries(['access', 'templates', 'save', 'health', 'ack', 'history', 'byOrder', 'order'].map(k => [k, vi.fn()])));
+const m = vi.hoisted(() => Object.fromEntries(['access', 'templates', 'save', 'health', 'ack', 'history', 'byOrder', 'order', 'workspace', 'detail'].map(k => [k, vi.fn()])));
+vi.mock('./order-notification-workspace', () => ({ readOrderNoticeWorkspace: m.workspace, readOrderNoticeDetail: m.detail,
+  OrderNoticeError: class extends Error { constructor(readonly reason: string) { super('order_notice:' + reason); } } }));
 vi.mock('./accounts/merchant-access', () => ({ resolveMerchantAccess: m.access }));
 vi.mock('./db', () => ({ getOrderNotificationsByMerchantId: m.history, getOrderNotificationsByOrderId: m.byOrder }));
 vi.mock('./notifications/order-notifications', () => ({ ORDER_NOTIFICATION_STATUSES: ['pending','paid','processing','shipped','delivered','cancelled'], getOrderNotificationTemplateSettings: m.templates, saveOrderNotificationTemplate: m.save }));
 vi.mock('./orders/merchant-order-lifecycle', () => ({ getMerchantOrder: m.order }));
 vi.mock('./orders/order-status-notification-outbox', () => ({ getOrderStatusNotificationHealth: m.health, acknowledgeOrderStatusNotificationIncidents: m.ack }));
 import { orderNotificationsRouter } from './routers-order-notifications';
+import { OrderNoticeError } from './order-notification-workspace';
 const caller = (user: any = { id: 7, role: 'user' }, selected = '20') => orderNotificationsRouter.createCaller({ user, req: { headers: { 'x-merchant-id': selected } }, res: {}, merchantId: 999 } as any);
 const input = { status: 'paid' as const, template: 'Order {{orderNumber}}', enabled: true };
 beforeEach(() => { vi.resetAllMocks(); m.access.mockResolvedValue({ merchantId: 20, role: 'owner', memberId: 3 }); m.order.mockResolvedValue({ id: 4 }); });
@@ -37,4 +40,12 @@ it.each([{ limit: 101 }, { limit: 0 }, { merchantId: 30 }])('rejects invalid his
 it('does not turn storage or membership failures into successful empty results', async () => {
   m.history.mockRejectedValue(new Error('unavailable')); await expect(caller().getHistory({})).rejects.toThrow('unavailable');
   m.access.mockRejectedValue(new Error('private database error')); await expect(caller().getTemplates()).rejects.toMatchObject({ code: 'INTERNAL_SERVER_ERROR' });
+});
+it('passes actor and selected tenant to the new read model, never forged context or body identity', async () => {
+  await caller().workspace({query:'literal_%'}); await caller().detail({id:8});
+  expect(m.workspace).toHaveBeenCalledWith(7,20,expect.objectContaining({query:'literal_%',page:1}));expect(m.detail).toHaveBeenCalledWith(7,20,{id:8});
+  await expect(caller().workspace({merchantId:999} as any)).rejects.toMatchObject({code:'BAD_REQUEST'});
+});
+it.each([['forbidden','FORBIDDEN'],['missing','NOT_FOUND'],['unavailable','INTERNAL_SERVER_ERROR']])('maps %s without leaking source data',async(reason,code)=>{
+  m.detail.mockRejectedValue(new OrderNoticeError(reason as any));await expect(caller().detail({id:8})).rejects.toMatchObject({code,message:'order_notice:unavailable'});
 });
