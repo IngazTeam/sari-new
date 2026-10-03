@@ -5,6 +5,12 @@ const read=(p:string)=>readFileSync(p,'utf8');
 const coverage=JSON.parse(read('docs/audits/tenant-features-2026-09-30/coverage.json'));
 const ledger=read('docs/audits/tenant-testing-workspace-2026-09-28/REMAINING.md');
 describe('tenant continuation ledger remains aligned without losing work history',()=>{
+  it('reflects reviewed notification transport without treating messages as financial transactions',()=>{
+    const row=coverage.routes.find((r:any)=>r.route==='/merchant/order-notifications');
+    expect(row.design).toBe('تفصيلي جزئي');expect(row.acceptancePlan).toContain('رمز الحجز');expect(row.acceptancePlan).not.toContain('الضريبة');
+    expect(row.mutations.sort()).toEqual(['orderNotifications.acknowledgeReviewed','orderNotifications.saveTemplate']);
+    expect(row.queries).toContain('orderNotifications.workspace');expect(row.gaps.join(' ')).toContain('Safari/iPhone');
+  });
   it('accounts for every current route once and stays idempotent',()=>{
     expect(refreshTenantLedger(ledger,coverage)).toBe(ledger);
     const routes=[...ledger.matchAll(/^\|[^\n]*<code>([^<]+)<\/code>/gm)].map(m=>m[1]);
