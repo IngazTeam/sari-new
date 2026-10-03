@@ -1,0 +1,15 @@
+import {beforeEach,expect,it,vi} from 'vitest';
+const m=vi.hoisted(()=>({pool:vi.fn(),getConnection:vi.fn(),query:vi.fn(),execute:vi.fn(),beginTransaction:vi.fn(),commit:vi.fn(),rollback:vi.fn(),release:vi.fn(),destroy:vi.fn()}));
+vi.mock('./db/connection',()=>({getPool:m.pool}));
+vi.mock('./automation/occasion-campaigns',()=>({getUpcomingOccasions:()=>[]}));
+import {readOccasionWorkspace} from './occasion-workspace-store';
+import {occasionWorkspaceInput} from '../shared/occasion-workspace';
+let role:any,active:number,status:string,account:string;
+beforeEach(()=>{vi.resetAllMocks();role='manager';active=1;status='active';account='active';m.pool.mockResolvedValue(m);m.getConnection.mockResolvedValue(m);m.execute.mockImplementation(async(sql:string)=>sql.includes('FROM users')?[[{account_status:account}]]:sql.includes('FROM merchants')?[[{userId:7,status}]]:sql.includes('FROM merchant_members')?[[{role,is_active:active}]]:[[]]);});
+const read=()=>readOccasionWorkspace(7,20,occasionWorkspaceInput.parse({}));
+it('uses one authorized repeatable snapshot with no activation, discount or send',async()=>{expect(await read()).toMatchObject({total:0,canManage:true});expect(m.query).toHaveBeenCalledWith('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');expect(m.execute.mock.calls.every(([sql])=>sql.startsWith('SELECT'))).toBe(true);expect(m.execute.mock.calls.filter(([sql])=>sql.includes('FOR SHARE'))).toHaveLength(3);const queries=m.execute.mock.calls.filter(([sql])=>sql.includes('occasion_campaigns'));expect(queries).toHaveLength(2);for(const [sql,args] of queries){expect(sql).toContain('oc.merchantId=?');expect(args).toEqual([20]);}expect(m.commit).toHaveBeenCalledOnce();});
+it.each(['viewer','sales_supervisor'])('allows %s to read without management',async value=>{role=value;expect((await read()).canManage).toBe(false);});
+it.each(['revoked','suspended','blocked','unknown'])('rejects %s before reading records',async state=>{if(state==='revoked')active=0;if(state==='suspended')status='suspended';if(state==='blocked')account='deletion_pending';if(state==='unknown')role='unknown';await expect(read()).rejects.toMatchObject({reason:'forbidden'});expect(m.execute.mock.calls.some(([sql])=>sql.includes('occasion_campaigns'))).toBe(false);});
+it('does not substitute zeros on storage failure',async()=>{m.pool.mockResolvedValue(null);await expect(read()).rejects.toMatchObject({reason:'unavailable'});});
+it('destroys a connection with an uncertain transaction result',async()=>{m.commit.mockRejectedValue(Error());await expect(read()).rejects.toMatchObject({reason:'unavailable'});expect(m.destroy).toHaveBeenCalledOnce();expect(m.release).not.toHaveBeenCalled();expect(m.rollback).not.toHaveBeenCalled();});
+it('destroys the connection when rollback fails',async()=>{m.execute.mockRejectedValue(Error());m.rollback.mockRejectedValue(Error());await expect(read()).rejects.toMatchObject({reason:'unavailable'});expect(m.destroy).toHaveBeenCalledOnce();});

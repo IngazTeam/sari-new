@@ -1,3 +1,5 @@
+import {occasionWorkspaceInput} from '../shared/occasion-workspace';
+import {readOccasionWorkspace,OccasionWorkspaceError} from './occasion-workspace-store';
 /** Occasion marketing with session-derived tenant scope and explicit opt-in. */
 
 import { TRPCError } from '@trpc/server';
@@ -32,6 +34,7 @@ function isDuplicateDefinition(error: unknown): boolean {
 }
 
 export const occasionCampaignsRouter = router({
+  workspace:permissionProcedure('analytics.read').input(occasionWorkspaceInput).query(async({ctx,input})=>{try{return await readOccasionWorkspace(ctx.user.id,ctx.merchantId,input);}catch(error){throw new TRPCError({code:error instanceof OccasionWorkspaceError&&error.reason==='forbidden'?'FORBIDDEN':'INTERNAL_SERVER_ERROR',message:'تعذر قراءة حملات المناسبات لهذا المتجر. حدّث الصفحة وحاول مجددًا.'});}}),
   list: permissionProcedure('analytics.read').query(async ({ ctx }) => {
     const merchant = await getMerchantById(ctx.merchantId);
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
