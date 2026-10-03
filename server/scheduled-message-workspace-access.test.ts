@@ -1,7 +1,7 @@
 import { beforeEach, it, expect, vi } from 'vitest';
-const mocks = vi.hoisted(() => ({ access: vi.fn(), read: vi.fn() }));
+const mocks = vi.hoisted(() => ({ access: vi.fn(), read: vi.fn(), history: vi.fn() }));
 vi.mock('./accounts/merchant-access', () => ({ resolveMerchantAccess: mocks.access }));
-vi.mock('./scheduled-message-workspace', async original => ({ ...await original<typeof import('./scheduled-message-workspace')>(), readScheduledMessageWorkspace: mocks.read }));
+vi.mock('./scheduled-message-workspace', async original => ({ ...await original<typeof import('./scheduled-message-workspace')>(), readScheduledMessageWorkspace: mocks.read, readScheduledMessageHistory: mocks.history }));
 import { scheduledMessagesRouter } from './routers-scheduled-messages';
 import { appRouter } from './routers';
 beforeEach(() => { vi.resetAllMocks(); mocks.access.mockResolvedValue({ merchantId: 20, role: 'viewer' }); });
@@ -15,5 +15,10 @@ for (const mounted of [false, true]) {
   it(`requires a live session and membership mounted=${mounted}`, async () => {
     await expect(caller(null).workspace({})).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
     mocks.access.mockResolvedValue(null); await expect(caller().workspace({})).rejects.toMatchObject({ code: 'FORBIDDEN' }); expect(mocks.read).not.toHaveBeenCalled();
+  });
+  it(`scopes paged history and rejects overposting mounted=${mounted}`, async () => {
+    await caller().history({ id: 9, page: 2 }); expect(mocks.history).toHaveBeenCalledWith(7, 20, { id: 9, page: 2 });
+    await expect(caller().history({ id: 9, merchantId: 999 } as any)).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+    mocks.access.mockResolvedValue(null); await expect(caller().history({ id: 9 })).rejects.toMatchObject({ code: 'FORBIDDEN' });
   });
 }

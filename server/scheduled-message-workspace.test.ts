@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 const db = vi.hoisted(() => ({ getPool: vi.fn() }));
 vi.mock('./db/connection', () => db);
+vi.mock('./scheduled-message-authorization', async original => ({ ...await original<typeof import('./scheduled-message-authorization')>(), ensureScheduledAuthoritySchema: vi.fn() }));
 import { scheduledMessageSelection } from '../shared/scheduled-message-workspace';
 import { projectScheduledMessage, readScheduledMessageWorkspace } from './scheduled-message-workspace';
 const record = () => ({ id: 1, merchant_id: 2, title: 'عرض الأسبوع', message: 'Welcome', day_of_week: 0, time: '00:00', is_active: 1,

@@ -1,5 +1,5 @@
 import {scheduledActionProcedures} from './routers-scheduled-message-actions';
-import {scheduledMessageWorkspaceProcedure} from './routers-scheduled-message-workspace';
+import {scheduledMessageWorkspaceProcedure,scheduledMessageHistoryProcedure} from './routers-scheduled-message-workspace';
 /**
  * Scheduled Messages Router Module
  * Handles scheduled message management
@@ -21,6 +21,7 @@ import {
 
 export const scheduledMessagesRouter = router({
     workspace: scheduledMessageWorkspaceProcedure,
+    history: scheduledMessageHistoryProcedure,
     ...scheduledActionProcedures,
     // List all scheduled messages
     list: protectedProcedure.query(async ({ ctx }) => {

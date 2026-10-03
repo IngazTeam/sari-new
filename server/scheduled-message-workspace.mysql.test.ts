@@ -26,7 +26,8 @@ describe.skipIf(!process.env.DATABASE_URL)('scheduled definitions selected-tenan
   });
   it('keeps malformed schedules visible and refuses to turn a timestamp into a sent count', async () => {
     const id = await create('Malformed', owner.merchantId, 2, 9, '99:99'); await q('UPDATE scheduled_messages SET last_sent_at=UTC_TIMESTAMP() WHERE id=?', [id]);
-    const data = await read({ state: 'unknown' }); expect(data).toMatchObject({ matched: 1, definitionsWithRecordedTimestamp: 1, timeBasis: 'legacy_server_local', timezone: null, deliveryEvidence: 'legacy_timestamp_only', salesAttribution: 'not_verified' });
+    const data = await read({ state: 'unknown' }); expect(data).toMatchObject({ matched: 1, definitionsWithRecordedTimestamp: 1, timeBasis: 'explicit_activation_review', deliveryEvidence: 'scoped_provider_receipts', salesAttribution: 'not_verified' });
+    expect(data.rows[0].authorization.state).toBe('missing'); expect(data.rows[0].latestOccurrence).toBeNull();
     expect(data.rows[0]).toMatchObject({ state: 'unknown', enabled: null, time: null, dayOfWeek: null }); expect(data.rows[0].issues).toEqual(['day', 'time', 'active']);
   });
   it('uses selected membership and separates viewing from campaign management', async () => {

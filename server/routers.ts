@@ -1,5 +1,5 @@
 import {scheduledActionProcedures} from './routers-scheduled-message-actions';
-import {scheduledMessageWorkspaceProcedure} from './routers-scheduled-message-workspace';
+import {scheduledMessageWorkspaceProcedure,scheduledMessageHistoryProcedure} from './routers-scheduled-message-workspace';
 import {abandonedCartsRouter} from './routers-abandoned-carts';
 import { referralsRouter } from './routers-referrals';
 import { discountsRouter } from './routers-discounts';
@@ -2906,6 +2906,7 @@ export const appRouter = router({
   // Scheduled Messages
   scheduledMessages: router({
     workspace: scheduledMessageWorkspaceProcedure,
+    history: scheduledMessageHistoryProcedure,
     ...scheduledActionProcedures,
     // List all scheduled messages
     list: protectedProcedure.query(async ({ ctx }) => {

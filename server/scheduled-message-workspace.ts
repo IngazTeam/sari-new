@@ -3,10 +3,14 @@ import type { PoolConnection } from 'mysql2/promise';
 import { getPool } from './db/connection';
 import { databaseTimeEpoch } from './db/time';
 import { ALL_ROLES, hasPermission, type MerchantRole } from './_core/permissions';
-import { scheduledMessageSelection, scheduledMessageRow, scheduledMessageWorkspace, type ScheduledMessageSelection } from '../shared/scheduled-message-workspace';
+import { scheduledMessageSelection, scheduledMessageRow, type ScheduledMessageSelection } from '../shared/scheduled-message-workspace';
+import { scheduledMessageWorkspace, scheduledHistoryInput, scheduledHistory } from '../shared/scheduled-message-evidence';
+import { scheduledTimezone } from '../shared/scheduled-message-policy';
+import { ensureScheduledAuthoritySchema } from './scheduled-message-authorization';
+import { enrichScheduledRows, projectScheduledOccurrences, SCHEDULED_OCCURRENCE_SELECT } from './scheduled-message-evidence-store';
 
 export class ScheduledMessageWorkspaceError extends Error {
-  constructor(readonly reason: 'forbidden' | 'unavailable') { super('scheduled_workspace:' + reason); }
+  constructor(readonly reason: 'forbidden' | 'missing' | 'unavailable') { super('scheduled_workspace:' + reason); }
 }
 const rows = async (tx: PoolConnection, sql: string, args: any[] = []) => {
   const [result] = await tx.execute(sql, args); if (!Array.isArray(result)) throw new ScheduledMessageWorkspaceError('unavailable'); return result as any[];
@@ -33,19 +37,30 @@ export function projectScheduledMessage(raw: any) {
     state: enabled === true ? 'enabled' : enabled === false ? 'disabled' : 'unknown', legacyLastSentAt, createdAt, updatedAt, issues });
 }
 
-/** A selected-tenant snapshot. Legacy timestamps are not delivery receipts or sales evidence. */
-export async function readScheduledMessageWorkspace(actorId: number, merchantId: number, input: ScheduledMessageSelection) {
-  const selection = scheduledMessageSelection.parse(input); let tx: PoolConnection | undefined, committing = false, reusable = true;
+async function withScheduledRead<T>(actorId: number, merchantId: number, operation: (tx: PoolConnection, merchant: any, canManage: boolean) => Promise<T>): Promise<T> {
+  let tx: PoolConnection | undefined, committing = false, reusable = true;
   try {
     if (![actorId, merchantId].every(n => Number.isInteger(n) && n > 0 && n <= 2147483647)) throw new ScheduledMessageWorkspaceError('forbidden');
+    await ensureScheduledAuthoritySchema();
     const pool = await getPool(); if (!pool) throw new ScheduledMessageWorkspaceError('unavailable');
     tx = await pool.getConnection(); await tx.query('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ'); await tx.beginTransaction();
-    const [merchant] = await rows(tx, 'SELECT userId,status FROM merchants WHERE id=? FOR SHARE', [merchantId]);
+    const [merchant] = await rows(tx, 'SELECT id,userId,status,timezone FROM merchants WHERE id=? FOR SHARE', [merchantId]);
     const [user] = await rows(tx, 'SELECT account_status FROM users WHERE id=? FOR SHARE', [actorId]);
     const members = await rows(tx, 'SELECT role,is_active FROM merchant_members WHERE merchant_id=? AND user_id=? FOR SHARE', [merchantId, actorId]);
     const role = members.length === 1 && members[0].is_active === 1 ? members[0].role : !members.length && merchant?.userId === actorId ? 'owner' : null;
     if (!merchant || merchant.status === 'suspended' || user?.account_status !== 'active' || !ALL_ROLES.includes(role)
       || !hasPermission(role as MerchantRole, 'analytics.read')) throw new ScheduledMessageWorkspaceError('forbidden');
+    const result = await operation(tx, merchant, merchant.status === 'active' && hasPermission(role as MerchantRole, 'campaigns.manage'));
+    committing = true; await tx.commit(); return result;
+  } catch (error) {
+    if (committing) reusable = false; else if (tx) try { await tx.rollback(); } catch { reusable = false; }
+    if (error instanceof ScheduledMessageWorkspaceError) throw error; throw new ScheduledMessageWorkspaceError('unavailable');
+  } finally { if (tx) { if (reusable) tx.release(); else tx.destroy(); } }
+}
+/** One selected-tenant snapshot. Legacy timestamps never become receipt or sales evidence. */
+export async function readScheduledMessageWorkspace(actorId: number, merchantId: number, input: ScheduledMessageSelection) {
+  const selection = scheduledMessageSelection.parse(input);
+  return withScheduledRead(actorId, merchantId, async (tx, merchant, canManage) => {
     const [stats] = await rows(tx, `SELECT COUNT(*) AS total,COALESCE(SUM(is_active=1),0) AS enabled,
       COALESCE(SUM(is_active=0),0) AS disabled,COALESCE(SUM(is_active NOT IN (0,1)),0) AS unknown,
       COALESCE(SUM(last_sent_at IS NOT NULL),0) AS stamped FROM scheduled_messages WHERE merchant_id=?`, [merchantId]);
@@ -57,13 +72,23 @@ export async function readScheduledMessageWorkspace(actorId: number, merchantId:
     const total = Number(stats.total), matched = Number(matching.total), pages = Math.ceil(matched / 25), currentPage = Math.min(selection.page, Math.max(1, pages));
     const order = { newest: 'created_at DESC,id DESC', oldest: 'created_at ASC,id ASC', title: 'title ASC,id ASC', schedule: 'day_of_week ASC,time ASC,id ASC' }[selection.sort];
     const source = await rows(tx, `SELECT * FROM scheduled_messages WHERE ${where} ORDER BY ${order} LIMIT 25 OFFSET ${(currentPage - 1) * 25}`, args);
-    const result = scheduledMessageWorkspace.parse({ actorId, merchantId, checkedAt: new Date().toISOString(), canManage: merchant.status === 'active' && hasPermission(role as MerchantRole, 'campaigns.manage'),
+    const now = new Date(), timezone = scheduledTimezone.safeParse(merchant.timezone);
+    const result = scheduledMessageWorkspace.parse({ actorId, merchantId, checkedAt: now.toISOString(), canManage,
       selection, pageSize: 25, currentPage, pages, total, matched, counts: { enabled: Number(stats.enabled), disabled: Number(stats.disabled), unknown: Number(stats.unknown) },
-      definitionsWithRecordedTimestamp: Number(stats.stamped), timeBasis: 'legacy_server_local', timezone: null, deliveryEvidence: 'legacy_timestamp_only',
-      audienceEvidence: 'not_recorded', channelEvidence: 'not_recorded', salesAttribution: 'not_verified', rows: source.map(projectScheduledMessage) });
-    committing = true; await tx.commit(); return result;
-  } catch (error) {
-    if (committing) reusable = false; else if (tx) try { await tx.rollback(); } catch { reusable = false; }
-    if (error instanceof ScheduledMessageWorkspaceError) throw error; throw new ScheduledMessageWorkspaceError('unavailable');
-  } finally { if (tx) { if (reusable) tx.release(); else tx.destroy(); } }
+      definitionsWithRecordedTimestamp: Number(stats.stamped), timeBasis: 'explicit_activation_review', timezone: timezone.success ? timezone.data : null, deliveryEvidence: 'scoped_provider_receipts',
+      audienceEvidence: 'rechecked_at_dispatch', channelEvidence: 'reviewed_primary', salesAttribution: 'not_verified', rows: await enrichScheduledRows(tx, merchant, source, source.map(projectScheduledMessage), now) });
+    return result;
+  });
+}
+export async function readScheduledMessageHistory(actorId: number, merchantId: number, input: unknown) {
+  const selection = scheduledHistoryInput.parse(input);
+  return withScheduledRead(actorId, merchantId, async tx => {
+    const [stats] = await rows(tx, 'SELECT COUNT(*) AS total FROM scheduled_message_occurrences WHERE merchant_id=? AND scheduled_message_id=?', [merchantId, selection.id]);
+    const total = Number(stats.total), pages = Math.ceil(total / 25), currentPage = Math.min(selection.page, Math.max(1, pages));
+    if (!total && !(await rows(tx, 'SELECT id FROM scheduled_messages WHERE id=? AND merchant_id=?', [selection.id, merchantId])).length) throw new ScheduledMessageWorkspaceError('missing');
+    const source = await rows(tx, `SELECT ${SCHEDULED_OCCURRENCE_SELECT} FROM scheduled_message_occurrences o
+      LEFT JOIN campaigns c ON c.id=o.campaign_id AND c.merchantId=o.merchant_id
+      WHERE o.merchant_id=? AND o.scheduled_message_id=? ORDER BY o.due_at DESC,o.id DESC LIMIT 25 OFFSET ${(currentPage - 1) * 25}`, [merchantId, selection.id]);
+    return scheduledHistory.parse({ actorId, merchantId, selection, checkedAt: new Date().toISOString(), total, pages, currentPage, pageSize: 25, rows: await projectScheduledOccurrences(tx, merchantId, source) });
+  });
 }

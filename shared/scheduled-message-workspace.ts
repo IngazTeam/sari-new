@@ -1,5 +1,5 @@
 import { z } from 'zod';
-const id = z.number().int().positive().max(2147483647), count = z.number().int().nonnegative().safe();
+const id = z.number().int().positive().max(2147483647);
 export const scheduledMessageSelection = z.object({
   query: z.string().trim().max(100).default(''), state: z.enum(['all', 'enabled', 'disabled', 'unknown']).default('all'),
   day: z.number().int().min(0).max(6).nullable().default(null),
@@ -15,12 +15,3 @@ export const scheduledMessageRow = z.object({
   issues: z.array(z.enum(['title', 'message', 'day', 'time', 'active', 'last_sent_at', 'created_at', 'updated_at'])),
 }).strict();
 export type ScheduledMessageRow = z.infer<typeof scheduledMessageRow>;
-export const scheduledMessageWorkspace = z.object({
-  actorId: id, merchantId: id, checkedAt: z.string().datetime(), canManage: z.boolean(), selection: scheduledMessageSelection,
-  pageSize: z.literal(25), currentPage: count, pages: count, total: count, matched: count,
-  counts: z.object({ enabled: count, disabled: count, unknown: count }).strict(),
-  definitionsWithRecordedTimestamp: count,
-  timeBasis: z.literal('legacy_server_local'), timezone: z.null(), deliveryEvidence: z.literal('legacy_timestamp_only'),
-  audienceEvidence: z.literal('not_recorded'), channelEvidence: z.literal('not_recorded'), salesAttribution: z.literal('not_verified'),
-  rows: z.array(scheduledMessageRow).max(25),
-}).strict();
