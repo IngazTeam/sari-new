@@ -8,6 +8,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "./_core/trpc";
+import { reviewReadProcedures } from './routers-review-workspace';
 import {
   createBookingReview,
   getBookingReviewById,
@@ -20,6 +21,7 @@ import {
 } from './db';
 
 export const bookingReviewsRouter = router({
+    ...reviewReadProcedures('booking'),
     // Create a review
     create: protectedProcedure
         .input(z.object({

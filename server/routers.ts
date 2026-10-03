@@ -1,4 +1,5 @@
 import {scheduledMessagesRouter} from './routers-scheduled-messages';
+import { reviewReadProcedures } from './routers-review-workspace';
 import {abandonedCartsRouter} from './routers-abandoned-carts';
 import { referralsRouter } from './routers-referrals';
 import { discountsRouter } from './routers-discounts';
@@ -2587,6 +2588,7 @@ export const appRouter = router({
 
   // Reviews Management
   reviews: router({
+    ...reviewReadProcedures('order'),
     // List all reviews for merchant
     list: protectedProcedure
       .input(z.object({ merchantId: z.number() }))
@@ -3276,6 +3278,7 @@ export const appRouter = router({
   // Booking Reviews
   // ============================================
   bookingReviews: router({
+    ...reviewReadProcedures('booking'),
     // Create a review
     create: protectedProcedure
       .input(z.object({

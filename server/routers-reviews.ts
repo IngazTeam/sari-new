@@ -8,6 +8,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "./_core/trpc";
+import { reviewReadProcedures } from './routers-review-workspace';
 import {
   getCustomerReviewById,
   getCustomerReviewsByMerchantId,
@@ -17,6 +18,7 @@ import {
 } from './db';
 
 export const reviewsRouter = router({
+    ...reviewReadProcedures('order'),
     // List all reviews for merchant
     list: protectedProcedure
         .input(z.object({ merchantId: z.number() }))
