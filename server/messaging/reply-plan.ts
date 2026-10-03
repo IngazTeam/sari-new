@@ -19,12 +19,12 @@ export function buildReplyPlan(input: {
   merchantId: number; instanceId: number; providerAccount: string; eventId: string;
   conversationId: number; incomingMessageId?: number; to: string; text: string; welcome?: string;
   ownershipVersion?: number;
-  media?: Array<{ type: 'image' | 'document'; url: string; caption?: string; fileName?: string }>;
+  media?: Array<{ promotionGuard?: SendMerchantWhatsAppInput['promotionGuard']; type: 'image' | 'document'; url: string; caption?: string; fileName?: string }>;
 }): ReplyPlan {
   const effects: SendMerchantWhatsAppInput[] = [];
-  const add = (name: string, request: Pick<SendMerchantWhatsAppInput, 'kind' | 'text' | 'mediaUrl' | 'fileName'>) => {
+  const add = (name: string, request: Pick<SendMerchantWhatsAppInput, 'kind' | 'text' | 'mediaUrl' | 'fileName' | 'promotionGuard'>) => {
     effects.push({ ...request, to: input.to, merchantId: input.merchantId, instanceRecordId: input.instanceId,
-      idempotencyKey: whatsAppEventEffectKey(input.merchantId, input.providerAccount, input.eventId, name) });
+      idempotencyKey: request.promotionGuard?whatsAppEventEffectKey(input.merchantId, input.providerAccount, input.eventId, name).replace('event:v1:','promotion:v1:'):whatsAppEventEffectKey(input.merchantId, input.providerAccount, input.eventId, name) });
   };
   const addText = (name: string, text: string) => {
     if (!text.trim()) return;
@@ -42,7 +42,7 @@ export function buildReplyPlan(input: {
   addText('reply', input.text);
   for (const [index, media] of Array.from((input.media || []).entries())) {
     add(`media_${index}`, { kind: media.type === 'image' ? 'image' : 'document',
-      mediaUrl: media.url, text: media.caption, fileName: media.fileName });
+      mediaUrl: media.url, text: media.caption, fileName: media.fileName,...media.promotionGuard?{promotionGuard:media.promotionGuard}:{} });
   }
   if (!effects.length) throw new Error('Empty reply plan');
   return { version: 1, conversationId: input.conversationId, incomingMessageId: input.incomingMessageId, ownershipVersion: input.ownershipVersion ?? 0, effects };

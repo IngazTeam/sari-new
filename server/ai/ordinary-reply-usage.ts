@@ -33,7 +33,7 @@ function verify(row: any) {
   return p;
 }
 const requestBody = (effect: SendMerchantWhatsAppInput) => ({ to: effect.to, kind: effect.kind, text: effect.text,
-  mediaUrl: effect.mediaUrl, fileName: effect.fileName, template: effect.template });
+  mediaUrl: effect.mediaUrl, fileName: effect.fileName, template: effect.template,...effect.promotionGuard?{promotionGuard:effect.promotionGuard}:{} });
 
 /** Nonlocking channel reads avoid the outbox INSERT -> merchant FK lock inversion. */
 async function receipt(c: PoolConnection, row: any, effect: SendMerchantWhatsAppInput) {
@@ -56,7 +56,7 @@ function rejected(r: any) {
   // Only definitive provider rejections free capacity. A crash or transport ambiguity keeps it held.
   return r.status === 'failed' && !r.provider_message_id && (/^http_4\d\d$/.test(r.error_code || '') && r.error_code !== 'http_408'
     || ['conversation_superseded','byaan_enrollment_superseded','sales_reply_suppressed','followup_suppressed','escalation_suppressed',
-      'appointment_reminder_suppressed','booking_notice_suppressed','sales_offer_suppressed',
+      'appointment_reminder_suppressed','booking_notice_suppressed','sales_offer_suppressed','promotion_banner_suppressed',
       'invalid_request','configuration_missing','unsupported_template','mock_disabled'].includes(r.error_code));
 }
 

@@ -94,6 +94,8 @@ async function dispatchMerchantWhatsApp(input: SendMerchantWhatsAppInput): Promi
   // Old clients must restore history and create a reviewed document, never bypass it.
   if (input.idempotencyKey.startsWith('quotation:'))
     return {accepted:false,duplicate:false,status:'failed',errorCode:'quotation_legacy_retired'};
+  const promotionTransport=input.idempotencyKey.startsWith('promotion:v1:')||!!input.promotionGuard;
+  if(promotionTransport){const {validPromotionBannerTransport}=await import('../../promotion-banner-transport');if(!validPromotionBannerTransport(input))return {accepted:false,duplicate:false,status:'failed',errorCode:'promotion_banner_suppressed'};}
   const cartReminderTransport=input.idempotencyKey.startsWith('cart-reminder:')||!!input.cartReminderGuard;
   if(cartReminderTransport){const {validCartReminderTransport}=await import('../../abandoned-cart-reminder-transport');if(!validCartReminderTransport(input))return {accepted:false,duplicate:false,status:'failed',errorCode:'cart_reminder_authority_suppressed'};}
   const calendlyTransport=input.idempotencyKey.startsWith('calendly:')||!!input.calendlyGuard;
@@ -135,7 +137,7 @@ async function dispatchMerchantWhatsApp(input: SendMerchantWhatsAppInput): Promi
       [input.merchantId, input.messageId || null, instance.id, config.provider, input.idempotencyKey,
         JSON.stringify({ to: input.to, kind: input.kind, text: input.text, mediaUrl: input.mediaUrl,
           fileName: input.fileName, template: input.template, campaignGuard:input.campaignGuard, inboundJobId: execution?.id, escalationGuard: input.escalationGuard, sallaOrderGuard: input.sallaOrderGuard, wooOrderGuard:input.wooOrderGuard, calendlyGuard:input.calendlyGuard,cartReminderGuard:input.cartReminderGuard,
-          replyGuard: input.replyGuard, salesOfferGuard: input.salesOfferGuard, salesReplyGuard: input.salesReplyGuard, quotationGuard: input.quotationGuard, coachingGuard: input.coachingGuard, onboardingGuard: input.onboardingGuard, staffReplyGuard:input.staffReplyGuard, staffVoiceGuard:input.staffVoiceGuard, staffCompatibilityGuard:input.staffCompatibilityGuard, staffCompatibilityVoiceGuard:input.staffCompatibilityVoiceGuard, bookingNoticeGuard: input.bookingNoticeGuard, appointmentReminderGuard: input.appointmentReminderGuard }), input.merchantId]
+          replyGuard: input.replyGuard, promotionGuard:input.promotionGuard, salesOfferGuard: input.salesOfferGuard, salesReplyGuard: input.salesReplyGuard, quotationGuard: input.quotationGuard, coachingGuard: input.coachingGuard, onboardingGuard: input.onboardingGuard, staffReplyGuard:input.staffReplyGuard, staffVoiceGuard:input.staffVoiceGuard, staffCompatibilityGuard:input.staffCompatibilityGuard, staffCompatibilityVoiceGuard:input.staffCompatibilityVoiceGuard, bookingNoticeGuard: input.bookingNoticeGuard, appointmentReminderGuard: input.appointmentReminderGuard }), input.merchantId]
     );
     if (Number(inserted.affectedRows) !== 1) throw new Error('WhatsApp delivery reservation unavailable');
     reserved = true;
@@ -149,12 +151,13 @@ async function dispatchMerchantWhatsApp(input: SendMerchantWhatsAppInput): Promi
     const existing = (rows as any[])?.[0];
     if (!existing) throw error;
     const priorRequest = typeof existing.request_json === 'string' ? JSON.parse(existing.request_json) : existing.request_json;
+    if(promotionTransport||priorRequest?.promotionGuard){const {samePromotionBannerRequest}=await import('../../promotion-banner-transport');if(!samePromotionBannerRequest(input,priorRequest))return {accepted:false,duplicate:true,status:'failed',errorCode:'promotion_banner_suppressed'};}
     if(cartReminderTransport){const {sameCartReminderRequest}=await import('../../abandoned-cart-reminder-transport');if(!sameCartReminderRequest(input,priorRequest))return {accepted:false,duplicate:true,status:'failed',errorCode:'cart_reminder_authority_suppressed'};}
     if(calendlyTransport){const {sameCalendlyNotificationRequest}=await import('../../integrations/calendly-notification');if(!sameCalendlyNotificationRequest(input,priorRequest))return {accepted:false,duplicate:true,status:'failed',errorCode:'calendly_authority_suppressed'};}
     // Removing the guard from a retry request cannot strip the durable reply's authority.
     if (existing.status === 'failed' && !existing.provider_message_id && input.retryFailed && !input.replyGuard && !priorRequest?.replyGuard
         && !wooOrderTransport && !priorRequest?.wooOrderGuard && !calendlyTransport && !priorRequest?.calendlyGuard
-        && !cartReminderTransport && !priorRequest?.cartReminderGuard
+        && !cartReminderTransport && !priorRequest?.cartReminderGuard && !promotionTransport && !priorRequest?.promotionGuard
         && (!priorRequest?.sallaOrderGuard || !!input.sallaOrderGuard)
         && !input.idempotencyKey.startsWith('sales_reply:') && !input.salesReplyGuard
         && !input.idempotencyKey.startsWith('quotation_review:') && !input.quotationGuard && !priorRequest?.quotationGuard
@@ -378,6 +381,11 @@ async function dispatchMerchantWhatsApp(input: SendMerchantWhatsAppInput): Promi
       errorCode,
     };
   };
+  if(promotionTransport){
+    let enteredProvider=false;
+    try{const {withPromotionBannerAuthority}=await import('../../promotion-banner-transport');return await withPromotionBannerAuthority(input,config,instance.id,async tx=>{enteredProvider=true;return sendReserved(tx);});}
+    catch{if(enteredProvider)throw new WhatsAppDeliveryStateError();await pool.execute("UPDATE whatsapp_message_deliveries SET status='failed',error_code='promotion_banner_suppressed',status_updated_at=NOW() WHERE merchant_id=? AND idempotency_key=? AND status='queued'",[input.merchantId,input.idempotencyKey]);return {accepted:false,duplicate:false,status:'failed',errorCode:'promotion_banner_suppressed'};}
+  }
   if(cartReminderTransport){
     let enteredProvider=false;
     try{const {withCartReminderAuthority}=await import('../../abandoned-cart-reminder-transport');return await withCartReminderAuthority(input,config,instance.id,async tx=>{enteredProvider=true;return sendReserved(tx);});}

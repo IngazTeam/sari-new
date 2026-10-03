@@ -1,3 +1,4 @@
+import {promotionBannerGuard,type PromotionBannerGuard} from './promotion-banner-transport';
 import {loadSalesPromotionEvidence} from './ai/promotion-evidence-source';
 import {selectSalesPromotions,salesPromotionsPrompt,promotionBannerCaption} from './ai/promotion-evidence';
 import { formatProductPrice, formatMinorMoney, majorToMinor } from '../shared/product-money';
@@ -80,6 +81,7 @@ interface ProductInfo {
  * Rich AI Response — supports text + media attachments + discount codes
  */
 export interface AIResponseMedia {
+  promotionGuard?: PromotionBannerGuard;
   type: 'image' | 'document';
   url: string;
   fileName?: string;
@@ -552,7 +554,7 @@ export async function parseAICommands(rawText: string, merchantId: number): Prom
         const caption = promotionBannerCaption(promo);
         // Do not silently cut conditions to fit a provider caption limit.
         if (caption.length > 1024) continue;
-        media.push({type:'image',url:promo.bannerImageUrl,caption});
+        media.push({type:'image',url:promo.bannerImageUrl,caption,promotionGuard:promotionBannerGuard(promo)});
         queuedPromotionIds.add(promoId);
       }
     } catch { console.warn('[AI] Promotion banner unavailable'); }
