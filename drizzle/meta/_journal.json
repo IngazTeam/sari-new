@@ -1422,6 +1422,13 @@
       "when": 1795392000064,
       "tag": "0202_competitor_analysis_jobs",
       "breakpoints": true
+    },
+    {
+      "idx": 203,
+      "version": "5",
+      "when": 1795392000065,
+      "tag": "0203_competitor_request_closure",
+      "breakpoints": true
     }
   ]
 }

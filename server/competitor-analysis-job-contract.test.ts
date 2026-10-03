@@ -4,7 +4,10 @@ import {
   competitorAnalysisStart,
   competitorAnalysisExecution,
   competitorAnalysisResult,
+  competitorAnalysisReceipt,
 } from "../shared/competitor-analysis-job";
+const receipt={actorId:7,merchantId:20,requestId:randomUUID(),state:'closed',competitorId:null,reportAvailable:false};
+it.each([{competitorId:3},{reportAvailable:true},{state:'running'},{token:'PRIVATE'},{actorId:0}])('rejects inconsistent receipt %j',patch=>expect(competitorAnalysisReceipt.safeParse({...receipt,...patch}).success).toBe(false));
 const command = {
   requestId: randomUUID(),
   name: "Example",

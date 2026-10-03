@@ -10,6 +10,28 @@ export const competitorAnalysisStart = z
 export const competitorAnalysisAttempt = z
   .object({ requestId: z.string().uuid() })
   .strict();
+export const competitorAnalysisReceipt = z
+  .object({
+    actorId: id,
+    merchantId: id,
+    requestId: z.string().uuid(),
+    state: z.enum([
+      "idle",
+      "running",
+      "completed",
+      "failed",
+      "interrupted",
+      "closed",
+    ]),
+    competitorId: id.nullable(),
+    reportAvailable: z.boolean(),
+  })
+  .strict()
+  .refine(v =>
+    ["idle", "closed"].includes(v.state)
+      ? v.competitorId === null && !v.reportAvailable
+      : v.competitorId !== null
+  );
 export const competitorAnalysisExecution = z
   .object({
     merchantId: id,

@@ -13,6 +13,7 @@ import {
   competitorAnalysisAttempt,
   competitorAnalysisExecution,
   competitorAnalysisResult,
+  competitorAnalysisReceipt,
   type CompetitorAnalysisExecution,
   type CompetitorAnalysisResult,
 } from "../shared/competitor-analysis-job";
@@ -71,6 +72,12 @@ async function ready() {
         },
       ],
       checkConstraints: [
+        {
+          name: "ck_competitor_job_reference",
+          expression:
+            "(state = 'closed' AND competitor_id IS NULL) OR (state <> 'closed' AND competitor_id IS NOT NULL)",
+          enforced: true,
+        },
         {
           name: "ck_competitor_job_active",
           expression:
@@ -211,7 +218,11 @@ export async function beginCompetitorAnalysisJob(
     );
     if (same) {
       if (same.actor_id !== actorId) throw new CompetitorJobError("forbidden");
-      if (same.name !== command.name || same.website_url !== url)
+      if (
+        same.state === "closed" ||
+        same.name !== command.name ||
+        same.website_url !== url
+      )
         throw new CompetitorJobError("stale");
       return {
         created: false,
@@ -233,7 +244,7 @@ export async function beginCompetitorAnalysisJob(
       throw new CompetitorJobError("busy");
     const [rate] = await rows(
       tx,
-      `SELECT COUNT(*) AS total,COALESCE(SUM(started_at>DATE_SUB(UTC_TIMESTAMP(3),INTERVAL 20 SECOND)),0) AS recent FROM competitor_analysis_jobs WHERE merchant_id=? AND started_at>DATE_SUB(UTC_TIMESTAMP(3),INTERVAL 1 HOUR)`,
+      `SELECT COUNT(*) AS total,COALESCE(SUM(started_at>DATE_SUB(UTC_TIMESTAMP(3),INTERVAL 20 SECOND)),0) AS recent FROM competitor_analysis_jobs WHERE merchant_id=? AND state<>'closed' AND started_at>DATE_SUB(UTC_TIMESTAMP(3),INTERVAL 1 HOUR)`,
       [merchantId]
     );
     if (Number(rate.total) >= 5 || Number(rate.recent) > 0)
@@ -271,6 +282,46 @@ export async function beginCompetitorAnalysisJob(
     };
   });
 }
+async function receipt(
+  tx: PoolConnection,
+  actorId: number,
+  merchantId: number,
+  requestId: string
+) {
+  const [job] = await rows(
+    tx,
+    `SELECT ${columns} FROM competitor_analysis_jobs WHERE merchant_id=? AND request_id=?`,
+    [merchantId, requestId]
+  );
+  const identity = { actorId, merchantId, requestId };
+  if (!job)
+    return competitorAnalysisReceipt.parse({
+      ...identity,
+      state: "idle",
+      competitorId: null,
+      reportAvailable: false,
+    });
+  if (job.actor_id !== actorId) throw new CompetitorJobError("forbidden");
+  if (job.state === "closed")
+    return competitorAnalysisReceipt.parse({
+      ...identity,
+      state: "closed",
+      competitorId: null,
+      reportAvailable: false,
+    });
+  const report = await rows(
+    tx,
+    "SELECT id FROM competitor_analyses WHERE merchant_id=? AND id=? AND BINARY name=BINARY ? AND BINARY url=BINARY ?",
+    [merchantId, job.competitor_id, job.name, job.website_url]
+  );
+  return competitorAnalysisReceipt.parse({
+    ...identity,
+    state:
+      job.state === "running" && !job.lease_current ? "interrupted" : job.state,
+    competitorId: Number(job.competitor_id),
+    reportAvailable: report.length === 1,
+  });
+}
 export async function readCompetitorAnalysisJob(
   actorId: number,
   merchantId: number,
@@ -281,36 +332,35 @@ export async function readCompetitorAnalysisJob(
     merchantId,
     async (tx, merchant) => {
       await authorize(tx, merchant, actorId, false);
-      const [job] = await rows(
-        tx,
-        `SELECT ${columns} FROM competitor_analysis_jobs WHERE merchant_id=? AND request_id=?`,
-        [merchantId, requestId]
-      );
-      const identity = { actorId, merchantId, requestId };
-      if (!job)
-        return {
-          ...identity,
-          state: "idle" as const,
-          competitorId: null,
-          reportAvailable: false,
-        };
-      if (job.actor_id !== actorId) throw new CompetitorJobError("forbidden");
-      const report = await rows(
-        tx,
-        "SELECT id FROM competitor_analyses WHERE merchant_id=? AND id=? AND BINARY name=BINARY ? AND BINARY url=BINARY ?",
-        [merchantId, job.competitor_id, job.name, job.website_url]
-      );
-      return {
-        ...identity,
-        state: (job.state === "running" && !job.lease_current
-          ? "interrupted"
-          : job.state) as "running" | "completed" | "failed" | "interrupted",
-        competitorId: Number(job.competitor_id),
-        reportAvailable: report.length === 1,
-      };
+      return receipt(tx, actorId, merchantId, requestId);
     },
     false
   );
+}
+/** Closes only an unaccepted reference. If start won the merchant lock, return its actual receipt. */
+export async function closeCompetitorAnalysisAttempt(
+  actorId: number,
+  merchantId: number,
+  input: unknown
+) {
+  const { requestId } = competitorAnalysisAttempt.parse(input);
+  return transaction(merchantId, async (tx, merchant) => {
+    await authorize(tx, merchant, actorId, true);
+    await settleExpired(tx, merchantId);
+    const current = await receipt(tx, actorId, merchantId, requestId);
+    if (current.state !== "idle") return current;
+    const [rate] = await rows(
+      tx,
+      "SELECT COUNT(*) AS total FROM competitor_analysis_jobs WHERE merchant_id=? AND state='closed' AND started_at>DATE_SUB(UTC_TIMESTAMP(3),INTERVAL 1 HOUR)",
+      [merchantId]
+    );
+    if (Number(rate.total) >= 20) throw new CompetitorJobError("cooldown");
+    await tx.execute(
+      `INSERT INTO competitor_analysis_jobs (merchant_id,request_id,actor_id,owner_id,competitor_id,name,website_url,state,active_slot,execution_token,lease_expires_at,deadline_at) VALUES (?,?,?,?,NULL,'','','closed',NULL,?,NULL,UTC_TIMESTAMP(3))`,
+      [merchantId, requestId, actorId, merchant.userId, randomUUID()]
+    );
+    return receipt(tx, actorId, merchantId, requestId);
+  });
 }
 // Only DB work belongs inside this callback. Merchant, current authority and report stay locked.
 async function withExecution<T>(

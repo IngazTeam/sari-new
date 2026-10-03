@@ -5,6 +5,7 @@ const m = vi.hoisted(() => ({
   begin: vi.fn(),
   read: vi.fn(),
   worker: vi.fn(),
+  close: vi.fn(),
 }));
 vi.mock("./accounts/merchant-access", () => ({
   resolveMerchantAccess: m.access,
@@ -13,6 +14,7 @@ vi.mock("./competitor-analysis-jobs", async original => ({
   ...(await original<typeof import("./competitor-analysis-jobs")>()),
   beginCompetitorAnalysisJob: m.begin,
   readCompetitorAnalysisJob: m.read,
+  closeCompetitorAnalysisAttempt: m.close,
 }));
 vi.mock("./competitor-analysis-worker", () => ({
   runCompetitorAnalysisWorker: m.worker,
@@ -46,6 +48,15 @@ beforeEach(() => {
     url: input.url,
   });
   m.worker.mockResolvedValue(undefined);
+});
+it('closes an absent reference using only authenticated actor and tenant',async()=>{
+  m.close.mockResolvedValue({state:'closed'});
+  expect(await caller().closeCompetitorAnalysisAttempt({requestId:input.requestId})).toEqual({state:'closed'});
+  expect(m.close).toHaveBeenCalledWith(7,20,{requestId:input.requestId});expect(m.worker).not.toHaveBeenCalled();
+});
+it('denies read-only closure before writing',async()=>{
+  m.access.mockResolvedValue({merchantId:20,role:'viewer'});
+  await expect(caller().closeCompetitorAnalysisAttempt({requestId:input.requestId})).rejects.toMatchObject({code:'FORBIDDEN'});expect(m.close).not.toHaveBeenCalled();
 });
 it("starts only the worker identity accepted for the server-selected tenant", async () => {
   expect(await caller().addCompetitor(input)).toEqual({

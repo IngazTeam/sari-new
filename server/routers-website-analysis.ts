@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { competitorAnalysisStart, competitorAnalysisAttempt } from '../shared/competitor-analysis-job';
-import { beginCompetitorAnalysisJob, readCompetitorAnalysisJob, CompetitorJobError } from './competitor-analysis-jobs';
+import { beginCompetitorAnalysisJob, readCompetitorAnalysisJob, closeCompetitorAnalysisAttempt, CompetitorJobError } from './competitor-analysis-jobs';
 import { runCompetitorAnalysisWorker } from './competitor-analysis-worker';
 import { persistCrawledKnowledge } from './knowledge/crawled-snapshot';
 import { reportListInput, reportReadInput, reportDeleteInput } from '../shared/website-reports';
@@ -499,6 +499,12 @@ export const websiteAnalysisRouter = router({
         }
         return {competitorId:accepted.competitorId,requestId:accepted.requestId,created:accepted.created};
       } catch(error) { throw competitorJobResponse(error); }
+    }),
+  closeCompetitorAnalysisAttempt: permissionProcedure('bot_settings.manage')
+    .input(competitorAnalysisAttempt)
+    .mutation(async({ctx,input})=>{
+      try{return await closeCompetitorAnalysisAttempt(ctx.user.id,ctx.merchantId,input);}
+      catch(error){throw competitorJobResponse(error);}
     }),
   competitorAnalysisAttempt: permissionProcedure('analytics.read')
     .input(competitorAnalysisAttempt)
