@@ -1,4 +1,10 @@
 export const promotionWorkspaceEn={
+"otherStoredTargets":"Other saved references outside this offer scope",
+"namesHelp":"Current store names. Eligibility still depends on the saved offer conditions.",
+"namesFailed":"Could not load item names. Saved identifiers are available below.",
+"namesChanged":"The offer changed or is no longer available. Close this window and refresh the list.",
+"targetUnavailable":"Unavailable in this store",
+"rawTargets":"Saved target identifiers",
 "targetMatches":"Matching items","noTargets":"No products or categories match this search.",
 "chooseSearch":"Find a product or category by name or ID","choicesFailed":"Could not load choices. Existing selection is unchanged.","choicesLoading":"Loading store choices…","selectedTargets":"Selected items","missingTargets":"These saved IDs are unavailable in this store. Remove or correct them before activation.","removeTarget":"Remove","choosePages":"Choice pages","manualTargets":"Advanced: edit saved identifiers",
 "resolveRequest":"Resolve this request", "resolveHelp":"Recover an existing save, or close an unsaved request so it cannot arrive later. This does not undo a saved offer.", "cancelledRequest":"The unsaved request is closed. You can review a new change.",
@@ -118,6 +124,12 @@ export const promotionWorkspaceEn={
   "noChanges": "No changes to save."
 };
 export const promotionWorkspaceAr:typeof promotionWorkspaceEn={
+"otherStoredTargets":"مراجع محفوظة أخرى خارج نطاق هذا العرض",
+"namesHelp":"أسماء العناصر الحالية في المتجر. تطبيق العرض يعتمد على شروطه المحفوظة.",
+"namesFailed":"تعذر تحميل أسماء العناصر. يمكنك مراجعة معرّفاتها المحفوظة أدناه.",
+"namesChanged":"تغير العرض أو لم يعد متاحًا. أغلق هذه النافذة وحدّث القائمة.",
+"targetUnavailable":"غير متاح في هذا المتجر",
+"rawTargets":"معرّفات العناصر المحفوظة",
 "targetMatches":"العناصر المطابقة","noTargets":"لا توجد منتجات أو فئات تطابق البحث.",
 "chooseSearch":"ابحث عن المنتج أو الفئة بالاسم أو الرقم","choicesFailed":"تعذر تحميل الاختيارات. لم يتغير التحديد الحالي.","choicesLoading":"جارٍ تحميل اختيارات المتجر…","selectedTargets":"العناصر المحددة","missingTargets":"هذه الأرقام المحفوظة غير متاحة في هذا المتجر. أزلها أو صححها قبل التفعيل.","removeTarget":"إزالة","choosePages":"صفحات الاختيارات","manualTargets":"متقدم: تعديل الأرقام المحفوظة",
 "resolveRequest":"حسم هذا الطلب", "resolveHelp":"استعد الحفظ إن تم، أو أغلق الطلب غير المحفوظ لمنع وصوله لاحقًا. هذا لا يلغي عرضًا محفوظًا.", "cancelledRequest":"أُغلق الطلب غير المحفوظ. يمكنك مراجعة تغيير جديد.",

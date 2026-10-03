@@ -35,6 +35,7 @@
     "promotion-request-resolution-v1",
     "promotion-reviewed-writes-only-v1",
     "promotion-evidence-boundaries-v1",
-    "promotion-arsenal-evidence-v1"
+    "promotion-arsenal-evidence-v1",
+    "promotion-target-names-v1"
   ]
 }

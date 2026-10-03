@@ -2,7 +2,7 @@
 
 هذا حصر مصدر قابل لإعادة التوليد، وليس ادعاءً بأن كل مسار عمل اختُبر أو أُعيد تصميمه. يشمل المكونات الفرعية المحلية، الحقول، الأزرار، النوافذ، التبويبات، واجهات القراءة والتعديل. العناصر الديناميكية تحتاج مراجعة إضافية.
 
-- 126 مسارًا مسجلًا، 454 ملف واجهة متصلًا، 2601 عنصر تحكم في المصدر.
+- 126 مسارًا مسجلًا، 455 ملف واجهة متصلًا، 2607 عنصر تحكم في المصدر.
 - 0 رابطًا حرفيًا غير مطابق، و0 ملف صفحة غير متصل بالمسارات المحصورة.
 
 | الصفحة | الملفات | عناصر التحكم | القراءة / التعديل | موك أب للصفحة |
@@ -40,7 +40,7 @@
 | /merchant/referrals — إحالات التجار | 6 | 21 | 3 / 4 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/abandoned-carts — السلات المتروكة | 8 | 39 | 6 / 4 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/occasion-campaigns — حملات المناسبات | 6 | 23 | 4 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/promotions — العروض الترويجية | 9 | 40 | 5 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/promotions — العروض الترويجية | 10 | 46 | 6 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/analytics — تحليلات المبيعات | 4 | 16 | 9 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/message-analytics — تحليلات الرسائل | 9 | 10 | 3 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/overview-analytics — نظرة الأداء | 10 | 7 | 3 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -1696,31 +1696,47 @@
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 44 | Button | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
-| 44 | Button | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
-| 47 | Button | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
-| 47 | Button | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
-| 50 | input | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
-| 50 | Button | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
-| 51 | select | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
-| 51 | select | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
-| 51 | select | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
-| 51 | Button | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
+| 46 | Button | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
+| 46 | Button | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
+| 49 | Button | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
+| 49 | Button | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
+| 52 | input | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
 | 52 | Button | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
-| 52 | Button | # | PromotionWorkspace |
-| 52 | Button | # | PromotionWorkspace |
-| 52 | Button | # | PromotionWorkspace |
-| 52 | Button | # | PromotionWorkspace |
+| 53 | select | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
+| 53 | select | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
+| 53 | select | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
 | 53 | Button | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
-| 53 | Button | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
-| 54 | Link | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
-| 56 | DialogContent | details edit review details # details edit : deleted : percentage % · : details edit review create update | PromotionWorkspace |
-| 57 | summary | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
-| 58 | Button | details | PromotionWorkspace |
-| 58 | Button | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
-| 58 | Button | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
-| 58 | Button | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
-| 58 | Button | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
+| 54 | Button | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
+| 54 | Button | # | PromotionWorkspace |
+| 54 | Button | # | PromotionWorkspace |
+| 54 | Button | # | PromotionWorkspace |
+| 54 | Button | # | PromotionWorkspace |
+| 55 | Button | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
+| 55 | Button | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
+| 56 | Link | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
+| 58 | DialogContent | details edit review details # details edit : deleted : percentage % · : details edit review create update | PromotionWorkspace |
+| 59 | summary | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
+| 59 | summary | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
+| 60 | Button | details | PromotionWorkspace |
+| 60 | Button | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
+| 60 | Button | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
+| 60 | Button | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
+| 60 | Button | تسمية ديناميكية / تحتاج مراجعة | PromotionWorkspace |
+
+## client/src/components/merchant/PromotionRecord.tsx
+
+| السطر | النوع | التسمية | القسم |
+|---:|---|---|---|
+| 8 | summary | تسمية ديناميكية / تحتاج مراجعة | PromotionRecord |
+
+## client/src/components/merchant/PromotionTargetNames.tsx
+
+| السطر | النوع | التسمية | القسم |
+|---:|---|---|---|
+| 13 | Button | تسمية ديناميكية / تحتاج مراجعة | ( ) |
+| 13 | Button | تسمية ديناميكية / تحتاج مراجعة | ( ) |
+| 16 | Button | تسمية ديناميكية / تحتاج مراجعة | ( ) |
+| 22 | summary | تسمية ديناميكية / تحتاج مراجعة | PromotionTargetNames |
 
 ## client/src/components/merchant/PromotionForm.tsx
 

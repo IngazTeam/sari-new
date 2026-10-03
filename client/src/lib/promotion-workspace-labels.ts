@@ -1,4 +1,10 @@
 export function promotionWorkspaceLabels(t:(key:string)=>string){return {
+otherStoredTargets:t('merchantUx.promotionWorkspace.otherStoredTargets'),
+namesHelp:t('merchantUx.promotionWorkspace.namesHelp'),
+namesFailed:t('merchantUx.promotionWorkspace.namesFailed'),
+namesChanged:t('merchantUx.promotionWorkspace.namesChanged'),
+targetUnavailable:t('merchantUx.promotionWorkspace.targetUnavailable'),
+rawTargets:t('merchantUx.promotionWorkspace.rawTargets'),
 targetMatches:t('merchantUx.promotionWorkspace.targetMatches'),
 noTargets:t('merchantUx.promotionWorkspace.noTargets'),
 chooseSearch:t('merchantUx.promotionWorkspace.chooseSearch'),

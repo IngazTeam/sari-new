@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-03T08:33:17.923Z",
+  "generatedAt": "2026-10-03T09:30:26.710Z",
   "definition": "Every registered route is accounted for; source inventory and design completion are different statuses.",
   "routes": [
     {
@@ -36244,7 +36244,7 @@
       "acceptancePlan": "الجمهور والموافقة والقالب والجدولة؛ المسودة، المراجعة، الإرسال، التسليم والفشل؛ التعديل والحذف والتصدير.",
       "gaps": [
         "راجع tenant-occasion-workspace-2026-10-03 وتقارير المصدر والأفعال. الموك أب يستخدم المكونات الفعلية والتقويم والنص المشتركين، بتيننتين ولغتين وحالات القراءة والفشل والحفظ الملتبس. راجع tenant-occasion-prototype-2026-10-03.",
-        "أُغلقت المداخل القديمة في tenant-occasion-legacy-retirement-2026-10-03؛ فحص العامل الخلفي موثق مع نقاط إصلاح معلّقة. استمرار الموافقة وشروط الخصم بين التفعيل والقبول والإرسال غير محسوم بهذه الواجهة، والقوالب المخصصة لا يستخدمها المرسل الحالي. لا Safari/iPhone فعلي أو نشر."
+        "أُغلقت المداخل القديمة في tenant-occasion-legacy-retirement-2026-10-03؛ فحص العامل الخلفي موثق مع نقاط إصلاح معلّقة. أُنجزت صلاحية التحضير والإرسال ومراجعة استمرار الموافقة في المراحل373–375، وتبقى مصالحة النتائج المجهولة، والقوالب المخصصة لا يستخدمها المرسل الحالي. لا Safari/iPhone فعلي أو نشر."
       ],
       "controlDetails": [
         {
@@ -36823,6 +36823,7 @@
         "client/src/pages/merchant/Promotions.tsx",
         "client/src/components/merchant/PromotionWorkspace.tsx",
         "client/src/components/merchant/PromotionRecord.tsx",
+        "client/src/components/merchant/PromotionTargetNames.tsx",
         "client/src/components/merchant/PromotionForm.tsx",
         "client/src/components/merchant/PromotionTargetPicker.tsx",
         "client/src/lib/promotion-workspace-labels.ts",
@@ -36831,31 +36832,37 @@
         "client/src/lib/service-catalog-navigation.ts"
       ],
       "controls": [
-        "32cee11f27b9",
-        "caf257e90fad",
-        "e70ed58a867d",
-        "93d1ae2abbb9",
-        "d1d96e685448",
-        "24e12d2f343e",
-        "d7aa5d4cc47b",
-        "a68c83262bc7",
-        "26d8015e1f0d",
-        "b7236804ad79",
-        "107caedd3b18",
-        "99a522c0b3bb",
-        "7884cea71ce9",
-        "6779b20abc09",
-        "4898e8243259",
-        "3fa19bc4a28e",
-        "d1ffd4590412",
-        "a69ebcb9c986",
-        "0c9779730f0c",
-        "6bf94f5da593",
-        "7f756010a24e",
-        "6bb511bac679",
-        "e757d739d1f3",
-        "af3b92b4d845",
-        "8d62438faecc",
+        "67cb22f5bb87",
+        "165d2514b020",
+        "899ecee13f94",
+        "434319dfe8f1",
+        "d01fc76c63c2",
+        "13967c5d3e99",
+        "6a64d6bb23cc",
+        "a492e9a5c604",
+        "cbed3ff7e20a",
+        "d3481b9eb1b0",
+        "a167964a3990",
+        "8e131c174343",
+        "fa228a689fae",
+        "1de0d01f6f84",
+        "8b67a8cad35f",
+        "9586ab12d93f",
+        "3fa2f57eedc2",
+        "35dab1ee514f",
+        "b6cade671bb2",
+        "bf37ffe2f0b8",
+        "bf37ffe2f0b8",
+        "641f81bcc85d",
+        "c0fac7938e6e",
+        "f027abc89085",
+        "8af6054761da",
+        "bdb2e8744ab8",
+        "d57eeedbc075",
+        "29714919c42a",
+        "8cb83314d3fc",
+        "384f6d565e46",
+        "2676edc002fb",
         "733b4e52eba0",
         "e7dd1e1bd7b0",
         "86d79e4988cf",
@@ -36877,6 +36884,7 @@
         "merchants.getCurrent",
         "promotions.workspace",
         "promotions.actionReceipt",
+        "promotions.targetNames",
         "promotions.targetChoices"
       ],
       "mutations": [
@@ -36890,7 +36898,7 @@
           "procedure": "promotions.actionReceipt",
           "method": "fetch",
           "expression": "utils.promotions.actionReceipt.fetch",
-          "line": 43,
+          "line": 45,
           "provenance": "trpc-utility-static"
         }
       ],
@@ -36905,13 +36913,13 @@
       "acceptancePlan": "حقول الإضافة والتعديل والتحقق؛ المصدر والسعر والمخزون؛ الاستيراد والصور والفئات؛ الحالات والتفعيل والحذف والتصفية.",
       "gaps": [
         "راجع tenant-promotion-workspace-2026-10-03 وtenant-promotion-target-picker-2026-10-03 وtenant-promotion-prototype-2026-10-03 وتقارير المصدر والإيصال.",
-        "المداخل القديمة واستخدام العروض داخل عقل ساري ما زالا يتطلبان إغلاقًا وتصحيحًا مستقلين؛ لا Safari/iPhone فعلي أو نشر."
+        "أُغلقت المداخل القديمة ووصل دليل العروض بمساري عقل ساري. أسماء العناصر متاحة بالتفاصيل والمراجعة؛ المتبقي إثبات أهداف النطاق في دليل المساعد وأهلية البانر والنقل. راجع tenant-promotion-target-names-2026-10-03؛ لا Safari/iPhone فعلي أو نشر."
       ],
       "controlDetails": [
         {
-          "id": "32cee11f27b9",
+          "id": "67cb22f5bb87",
           "file": "client/src/components/merchant/PromotionWorkspace.tsx",
-          "line": 44,
+          "line": 46,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -36932,9 +36940,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "caf257e90fad",
+          "id": "165d2514b020",
           "file": "client/src/components/merchant/PromotionWorkspace.tsx",
-          "line": 44,
+          "line": 46,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -36955,9 +36963,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "e70ed58a867d",
+          "id": "899ecee13f94",
           "file": "client/src/components/merchant/PromotionWorkspace.tsx",
-          "line": 47,
+          "line": 49,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -36976,9 +36984,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "93d1ae2abbb9",
+          "id": "434319dfe8f1",
           "file": "client/src/components/merchant/PromotionWorkspace.tsx",
-          "line": 47,
+          "line": 49,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -36999,9 +37007,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "d1d96e685448",
+          "id": "d01fc76c63c2",
           "file": "client/src/components/merchant/PromotionWorkspace.tsx",
-          "line": 50,
+          "line": 52,
           "tag": "input",
           "role": "",
           "kind": "field",
@@ -37023,9 +37031,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "24e12d2f343e",
+          "id": "13967c5d3e99",
           "file": "client/src/components/merchant/PromotionWorkspace.tsx",
-          "line": 50,
+          "line": 52,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -37047,9 +37055,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "d7aa5d4cc47b",
+          "id": "6a64d6bb23cc",
           "file": "client/src/components/merchant/PromotionWorkspace.tsx",
-          "line": 51,
+          "line": 53,
           "tag": "select",
           "role": "",
           "kind": "field",
@@ -37080,9 +37088,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "a68c83262bc7",
+          "id": "a492e9a5c604",
           "file": "client/src/components/merchant/PromotionWorkspace.tsx",
-          "line": 51,
+          "line": 53,
           "tag": "select",
           "role": "",
           "kind": "field",
@@ -37113,9 +37121,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "26d8015e1f0d",
+          "id": "cbed3ff7e20a",
           "file": "client/src/components/merchant/PromotionWorkspace.tsx",
-          "line": 51,
+          "line": 53,
           "tag": "select",
           "role": "",
           "kind": "field",
@@ -37146,9 +37154,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "b7236804ad79",
+          "id": "d3481b9eb1b0",
           "file": "client/src/components/merchant/PromotionWorkspace.tsx",
-          "line": 51,
+          "line": 53,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -37171,9 +37179,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "107caedd3b18",
+          "id": "a167964a3990",
           "file": "client/src/components/merchant/PromotionWorkspace.tsx",
-          "line": 52,
+          "line": 54,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -37197,9 +37205,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "99a522c0b3bb",
+          "id": "8e131c174343",
           "file": "client/src/components/merchant/PromotionWorkspace.tsx",
-          "line": 52,
+          "line": 54,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -37220,9 +37228,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "7884cea71ce9",
+          "id": "fa228a689fae",
           "file": "client/src/components/merchant/PromotionWorkspace.tsx",
-          "line": 52,
+          "line": 54,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -37244,9 +37252,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "6779b20abc09",
+          "id": "1de0d01f6f84",
           "file": "client/src/components/merchant/PromotionWorkspace.tsx",
-          "line": 52,
+          "line": 54,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -37268,9 +37276,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "4898e8243259",
+          "id": "8b67a8cad35f",
           "file": "client/src/components/merchant/PromotionWorkspace.tsx",
-          "line": 52,
+          "line": 54,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -37292,9 +37300,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "3fa19bc4a28e",
+          "id": "9586ab12d93f",
           "file": "client/src/components/merchant/PromotionWorkspace.tsx",
-          "line": 53,
+          "line": 55,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -37317,9 +37325,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "d1ffd4590412",
+          "id": "3fa2f57eedc2",
           "file": "client/src/components/merchant/PromotionWorkspace.tsx",
-          "line": 53,
+          "line": 55,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -37342,9 +37350,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "a69ebcb9c986",
+          "id": "35dab1ee514f",
           "file": "client/src/components/merchant/PromotionWorkspace.tsx",
-          "line": 54,
+          "line": 56,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -37366,9 +37374,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "0c9779730f0c",
+          "id": "b6cade671bb2",
           "file": "client/src/components/merchant/PromotionWorkspace.tsx",
-          "line": 56,
+          "line": 58,
           "tag": "DialogContent",
           "role": "",
           "kind": "dialog",
@@ -37387,9 +37395,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "6bf94f5da593",
+          "id": "bf37ffe2f0b8",
           "file": "client/src/components/merchant/PromotionWorkspace.tsx",
-          "line": 57,
+          "line": 59,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -37413,9 +37421,35 @@
           "review": "source-inventoried"
         },
         {
-          "id": "7f756010a24e",
+          "id": "bf37ffe2f0b8",
           "file": "client/src/components/merchant/PromotionWorkspace.tsx",
-          "line": 58,
+          "line": 59,
+          "tag": "summary",
+          "role": "",
+          "kind": "action",
+          "label": "",
+          "section": "PromotionWorkspace",
+          "binding": "",
+          "type": "text",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": false,
+          "conditions": [
+            "review.before",
+            "review",
+            "modal?.kind==='edit'",
+            "modal?.kind==='details'"
+          ],
+          "disabled": "",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "641f81bcc85d",
+          "file": "client/src/components/merchant/PromotionWorkspace.tsx",
+          "line": 60,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -37434,9 +37468,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "6bb511bac679",
+          "id": "c0fac7938e6e",
           "file": "client/src/components/merchant/PromotionWorkspace.tsx",
-          "line": 58,
+          "line": 60,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -37457,9 +37491,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "e757d739d1f3",
+          "id": "f027abc89085",
           "file": "client/src/components/merchant/PromotionWorkspace.tsx",
-          "line": 58,
+          "line": 60,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -37481,9 +37515,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "af3b92b4d845",
+          "id": "8af6054761da",
           "file": "client/src/components/merchant/PromotionWorkspace.tsx",
-          "line": 58,
+          "line": 60,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -37504,9 +37538,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "8d62438faecc",
+          "id": "bdb2e8744ab8",
           "file": "client/src/components/merchant/PromotionWorkspace.tsx",
-          "line": 58,
+          "line": 60,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -37523,6 +37557,121 @@
           "conditions": [
             "!review&&!busy&&!pending",
             "modal?.kind==='review'"
+          ],
+          "disabled": "",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "d57eeedbc075",
+          "file": "client/src/components/merchant/PromotionRecord.tsx",
+          "line": 8,
+          "tag": "summary",
+          "role": "",
+          "kind": "action",
+          "label": "",
+          "section": "PromotionRecord",
+          "binding": "",
+          "type": "text",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": false,
+          "conditions": [],
+          "disabled": "",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "29714919c42a",
+          "file": "client/src/components/merchant/PromotionTargetNames.tsx",
+          "line": 13,
+          "tag": "Button",
+          "role": "",
+          "kind": "action",
+          "label": "",
+          "section": "( )",
+          "binding": "()=>setPage(at-1)",
+          "type": "button",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": false,
+          "conditions": [
+            "pages>1",
+            "data.ids===null"
+          ],
+          "disabled": "at<=1",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "8cb83314d3fc",
+          "file": "client/src/components/merchant/PromotionTargetNames.tsx",
+          "line": 13,
+          "tag": "Button",
+          "role": "",
+          "kind": "action",
+          "label": "",
+          "section": "( )",
+          "binding": "()=>setPage(at+1)",
+          "type": "button",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": false,
+          "conditions": [
+            "pages>1",
+            "data.ids===null"
+          ],
+          "disabled": "at>=pages",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "384f6d565e46",
+          "file": "client/src/components/merchant/PromotionTargetNames.tsx",
+          "line": 16,
+          "tag": "Button",
+          "role": "",
+          "kind": "action",
+          "label": "",
+          "section": "( )",
+          "binding": "retry",
+          "type": "button",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": false,
+          "conditions": [
+            "failed"
+          ],
+          "disabled": "busy",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "2676edc002fb",
+          "file": "client/src/components/merchant/PromotionTargetNames.tsx",
+          "line": 22,
+          "tag": "summary",
+          "role": "",
+          "kind": "action",
+          "label": "",
+          "section": "PromotionTargetNames",
+          "binding": "",
+          "type": "text",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": true,
+          "conditions": [
+            "(['products','categories'] as const).some(k=>row.scope!==k&&(data[k].ids===null||data[k].ids.length>0))"
           ],
           "disabled": "",
           "review": "source-inventoried"

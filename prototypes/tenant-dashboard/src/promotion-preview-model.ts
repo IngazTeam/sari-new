@@ -1,9 +1,10 @@
 import {promotionWorkspaceInput,promotionWorkspaceSchema,promotionWorkspaceRow,promotionTypes,type PromotionWorkspaceRow} from '../../../shared/promotion-workspace';
 import {promotionActionTarget,promotionActionReview,promotionActionApply,promotionActionResult,promotionReceiptInput,promotionReceiptResult,type PromotionActionTarget} from '../../../shared/promotion-actions';
 import {promotionWriteFields} from '../../../shared/promotion-write';
+import {promotionTargetNamesInput,promotionTargetNamesResult} from '../../../shared/promotion-target-names';
 import {promotionTargetSelection,promotionTargetChoices} from '../../../shared/promotion-targets';
 import type {ServiceMode} from './service-preview-model';
-export const promotionPreviewQueries=['promotions.workspace','promotions.targetChoices','promotions.actionReceipt'] as const;
+export const promotionPreviewQueries=['promotions.workspace','promotions.targetNames','promotions.targetChoices','promotions.actionReceipt'] as const;
 export const promotionPreviewMutations=['promotions.reviewAction','promotions.applyAction','promotions.resolveActionReceipt'] as const;
 const fault=(reason:string,code='BAD_REQUEST')=>({message:'promotion_write:'+reason,data:{code}});
 const editable=['title','description','bannerImageUrl','type','value','scope','productIds','categoryIds','minOrderAmount','minQuantity','startsAt','expiresAt'] as const;
@@ -51,8 +52,14 @@ export class PromotionPreviewStore{
  }
  read(name:string,input:unknown={}){
   if(name==='promotions.actionReceipt'){if(this.mode()==='readonly')throw fault('forbidden','FORBIDDEN');return this.receipts.get(promotionReceiptInput.parse(input).requestKey)?.outcome??{state:'missing',result:null};}
+  if(name==='promotions.targetNames'){
+   const selected=promotionTargetNamesInput.parse(input),identity={actorId:this.actorId,merchantId:this.merchantId,input:selected,checkedAt:this.now},row=this.all().find(r=>r.id===selected.id);
+   if(!row||row.revision!==selected.revision)return promotionTargetNamesResult.parse({...identity,state:row?'changed':'missing',products:null,categories:null});
+   const names=(kind:'products'|'categories',ids:number[]|null)=>{const choices=this.choices(kind).filter(r=>ids?.includes(r.id));return {ids,choices,missingIds:ids?.filter(id=>!choices.some(r=>r.id===id))??[]};};
+   return promotionTargetNamesResult.parse({...identity,state:'ready',products:names('products',row.productIds===null?[]:row.productIdsParsed),categories:names('categories',row.categoryIds===null?[]:row.categoryIdsParsed)});
+  }
   if(name==='promotions.targetChoices'){
-   if(this.mode()==='readonly')throw fault('forbidden','FORBIDDEN');const selection=promotionTargetSelection.parse(input),all=this.choices(selection.kind),q=selection.query.toLowerCase(),matches=all.filter(r=>[r.name,r.alternateName,String(r.id)].some(v=>v.toLowerCase().includes(q))),selected=all.filter(r=>selection.selectedIds.includes(r.id));
+   if(this.mode()==='readonly')throw fault('forbidden','FORBIDDEN');const selection=promotionTargetSelection.parse(input),all=this.choices(selection.kind),q=selection.query.toLowerCase(),matches=all.filter(r=>[r.name,r.alternateName].some(v=>v.toLowerCase().includes(q))||String(r.id)===q),selected=all.filter(r=>selection.selectedIds.includes(r.id));
    return promotionTargetChoices.parse({actorId:this.actorId,merchantId:this.merchantId,selection,total:matches.length,pages:Math.ceil(matches.length/25),pageSize:25,rows:matches.slice((selection.page-1)*25,selection.page*25),selected,missingIds:selection.selectedIds.filter(id=>!selected.some(r=>r.id===id))});
   }
   if(name!=='promotions.workspace')throw fault('missing','NOT_FOUND');const selection=promotionWorkspaceInput.parse(input),all=this.all(),counts={active:0,scheduled:0,expired:0,inactive:0,invalid:0};for(const row of all)counts[row.state]++;

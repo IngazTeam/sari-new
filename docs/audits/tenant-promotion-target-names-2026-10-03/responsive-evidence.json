@@ -1,0 +1,158 @@
+[
+  {
+    "label": "ar-details390",
+    "client": 360,
+    "dialog": {
+      "bottom": 828,
+      "client": 296,
+      "height": 812,
+      "right": 374,
+      "scroll": 296,
+      "top": 0,
+      "width": 328,
+      "x": 46,
+      "y": 16
+    },
+    "focus": "التفاصيل",
+    "height": 844,
+    "rawKeys": false,
+    "scroll": 360,
+    "width": 390
+  },
+  {
+    "label": "ar-details320-short",
+    "client": 290,
+    "dialog": {
+      "bottom": 534,
+      "client": 226,
+      "height": 518,
+      "right": 304,
+      "scroll": 226,
+      "top": 0,
+      "width": 258,
+      "x": 46,
+      "y": 16
+    },
+    "focus": "التفاصيل",
+    "height": 550,
+    "rawKeys": false,
+    "scroll": 290,
+    "width": 320
+  },
+  {
+    "label": "ar-review320-short",
+    "client": 290,
+    "dialog": {
+      "bottom": 534,
+      "client": 226,
+      "height": 518,
+      "right": 304,
+      "scroll": 226,
+      "top": 0,
+      "width": 258,
+      "x": 46,
+      "y": 16
+    },
+    "focus": "راجع هذا القرار",
+    "height": 550,
+    "rawKeys": false,
+    "scroll": 290,
+    "width": 320
+  },
+  {
+    "label": "ar-review768",
+    "client": 738,
+    "dialog": {
+      "bottom": 534,
+      "client": 674,
+      "height": 518,
+      "right": 752,
+      "scroll": 674,
+      "top": 0,
+      "width": 706,
+      "x": 46,
+      "y": 16
+    },
+    "focus": "راجع هذا القرار",
+    "height": 550,
+    "rawKeys": false,
+    "scroll": 738,
+    "width": 768
+  },
+  {
+    "label": "ar-review1440",
+    "client": 1410,
+    "dialog": {
+      "bottom": 534,
+      "client": 736,
+      "height": 518,
+      "right": 1119,
+      "scroll": 736,
+      "top": 0,
+      "width": 768,
+      "x": 351,
+      "y": 16
+    },
+    "focus": "راجع هذا القرار",
+    "height": 550,
+    "rawKeys": false,
+    "scroll": 1410,
+    "width": 1440
+  },
+  {
+    "label": "en-viewer390",
+    "client": 360,
+    "dialog": {
+      "bottom": 828,
+      "client": 296,
+      "height": 812,
+      "right": 344,
+      "scroll": 296,
+      "top": 0,
+      "width": 328,
+      "x": 16,
+      "y": 16
+    },
+    "focus": "Details",
+    "height": 844,
+    "rawKeys": false,
+    "scroll": 360,
+    "width": 390
+  },
+  {
+    "label": "actual-ar-details320-short",
+    "client": 290,
+    "dialog": {
+      "bottom": 605.1875,
+      "client": 226,
+      "height": 589.1875,
+      "right": 304,
+      "scroll": 226,
+      "width": 258,
+      "x": 46,
+      "y": 16
+    },
+    "height": 550,
+    "rawKeys": false,
+    "scroll": 290,
+    "width": 320
+  },
+  {
+    "label": "actual-ar-form320-short-settled",
+    "client": 290,
+    "dialog": {
+      "bottom": 534,
+      "client": 226,
+      "height": 518,
+      "right": 304,
+      "scroll": 226,
+      "width": 258,
+      "x": 46,
+      "y": 16
+    },
+    "height": 550,
+    "rawKeys": false,
+    "scroll": 290,
+    "width": 320
+  }
+]

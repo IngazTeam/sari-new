@@ -9,9 +9,12 @@ import {promotionActionTarget,promotionActionApply,promotionReceiptInput} from '
 import {reviewPromotionAction,applyPromotionAction,readPromotionActionReceipt,resolvePromotionActionReceipt} from './promotion-actions';
 import {promotionTargetSelection} from '../shared/promotion-targets';
 import {readPromotionTargets} from './promotion-targets';
+import {promotionTargetNamesInput} from '../shared/promotion-target-names';
+import {readPromotionTargetNames} from './promotion-target-names';
 const error=(e:unknown)=>new TRPCError({code:e instanceof PromotionWriteError?e.reason==='forbidden'?'FORBIDDEN':e.reason==='missing'?'NOT_FOUND':e.reason==='stale'||e.reason==='reused'||e.reason==='cancelled'?'CONFLICT':e.reason==='invalid'||e.reason.startsWith('code_')?'BAD_REQUEST':e.reason==='limit'?'PRECONDITION_FAILED':'INTERNAL_SERVER_ERROR':'INTERNAL_SERVER_ERROR',message:e instanceof PromotionWriteError?e.message:'promotion_write:unavailable'});
 const reloadWorkspace=():never=>{throw new TRPCError({code:'PRECONDITION_FAILED',message:'promotion_write:reload_reviewed_workspace'});};
 export const promotionsRouter=router({
+ targetNames:permissionProcedure('analytics.read').input(promotionTargetNamesInput).query(async({ctx,input})=>{try{return await readPromotionTargetNames(ctx.user.id,ctx.merchantId,input);}catch(e){throw new TRPCError({code:e instanceof PromotionWorkspaceError&&e.reason==='forbidden'?'FORBIDDEN':'INTERNAL_SERVER_ERROR',message:'promotion_workspace:unavailable'});}}),
  targetChoices:permissionProcedure('campaigns.manage').input(promotionTargetSelection).query(async({ctx,input})=>{try{return await readPromotionTargets(ctx.user.id,ctx.merchantId,input);}catch(e){throw error(e);}}),
  resolveActionReceipt:permissionProcedure('campaigns.manage').input(promotionReceiptInput).mutation(async({ctx,input})=>{try{return await resolvePromotionActionReceipt(ctx.user.id,ctx.merchantId,input);}catch(e){throw error(e);}}),
  reviewAction:permissionProcedure('campaigns.manage').input(promotionActionTarget).mutation(async({ctx,input})=>{try{return await reviewPromotionAction(ctx.user.id,ctx.merchantId,input);}catch(e){throw error(e);}}),
