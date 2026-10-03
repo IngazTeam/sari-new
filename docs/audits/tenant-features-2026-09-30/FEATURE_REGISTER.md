@@ -2,7 +2,7 @@
 
 هذا حصر مصدر قابل لإعادة التوليد، وليس ادعاءً بأن كل مسار عمل اختُبر أو أُعيد تصميمه. يشمل المكونات الفرعية المحلية، الحقول، الأزرار، النوافذ، التبويبات، واجهات القراءة والتعديل. العناصر الديناميكية تحتاج مراجعة إضافية.
 
-- 126 مسارًا مسجلًا، 458 ملف واجهة متصلًا، 2621 عنصر تحكم في المصدر.
+- 126 مسارًا مسجلًا، 462 ملف واجهة متصلًا، 2644 عنصر تحكم في المصدر.
 - 0 رابطًا حرفيًا غير مطابق، و0 ملف صفحة غير متصل بالمسارات المحصورة.
 
 | الصفحة | الملفات | عناصر التحكم | القراءة / التعديل | موك أب للصفحة |
@@ -63,7 +63,7 @@
 | /merchant/acquisition-report — مصادر العملاء | 1 | 0 | 2 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/quotation-templates — قوالب عروض الأسعار | 9 | 35 | 5 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/media-library — مكتبة الوسائط | 5 | 37 | 4 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/scheduled-messages — الرسائل المجدولة | 1 | 13 | 1 / 4 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/scheduled-messages — الرسائل المجدولة | 6 | 36 | 5 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/sari-personality — مدخل لوحة التاجر | 0 | 0 | 0 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/quick-responses — الردود السريعة | 8 | 31 | 3 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/insights — الرؤى والاقتراحات وA/B | 9 | 31 | 5 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -2811,23 +2811,51 @@
 | 168 | Button | تسمية ديناميكية / تحتاج مراجعة | MediaWorkspace |
 | 169 | Button | تسمية ديناميكية / تحتاج مراجعة | MediaWorkspace |
 
-## client/src/pages/merchant/ScheduledMessages.tsx
+## client/src/components/merchant/ScheduledMessageWorkspace.tsx
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 160 | Button | تسمية ديناميكية / تحتاج مراجعة | تعديل الرسالة المجدولة إضافة رسالة مجدولة جديدة |
-| 175 | Input | عنوان الرسالة | تعديل الرسالة المجدولة إضافة رسالة مجدولة جديدة |
-| 186 | Textarea | محتوى الرسالة | تعديل الرسالة المجدولة إضافة رسالة مجدولة جديدة |
-| 199 | Select | اليوم | تعديل الرسالة المجدولة إضافة رسالة مجدولة جديدة |
-| 218 | Input | الوقت (24 ساعة) | تعديل الرسالة المجدولة إضافة رسالة مجدولة جديدة |
-| 229 | Switch | تفعيل الرسالة | تعديل الرسالة المجدولة إضافة رسالة مجدولة جديدة |
-| 237 | Button | تحديث إضافة | تعديل الرسالة المجدولة إضافة رسالة مجدولة جديدة |
-| 241 | Button | إلغاء | تعديل الرسالة المجدولة إضافة رسالة مجدولة جديدة |
-| 252 | Button | إضافة رسالة مجدولة | تعديل الرسالة المجدولة إضافة رسالة مجدولة جديدة |
-| 283 | Calendar | تسمية ديناميكية / تحتاج مراجعة | مفعّل معطّل |
-| 293 | Switch | تسمية ديناميكية / تحتاج مراجعة | مفعّل معطّل |
-| 299 | Button | تسمية ديناميكية / تحتاج مراجعة | مفعّل معطّل |
-| 308 | Button | تسمية ديناميكية / تحتاج مراجعة | مفعّل معطّل |
+| 82 | summary | تسمية ديناميكية / تحتاج مراجعة | ScheduledMessageWorkspace |
+| 82 | Button | تسمية ديناميكية / تحتاج مراجعة | ScheduledMessageWorkspace |
+| 82 | Button | تسمية ديناميكية / تحتاج مراجعة | ScheduledMessageWorkspace |
+| 87 | Button | تسمية ديناميكية / تحتاج مراجعة | ScheduledMessageWorkspace |
+| 87 | Button | تسمية ديناميكية / تحتاج مراجعة | ScheduledMessageWorkspace |
+| 91 | Link | تسمية ديناميكية / تحتاج مراجعة | ScheduledMessageWorkspace |
+| 93 | input | c.searchHint | ScheduledMessageWorkspace |
+| 93 | Button | تسمية ديناميكية / تحتاج مراجعة | ScheduledMessageWorkspace |
+| 94 | select | تسمية ديناميكية / تحتاج مراجعة | ScheduledMessageWorkspace |
+| 95 | select | تسمية ديناميكية / تحتاج مراجعة | ScheduledMessageWorkspace |
+| 96 | select | تسمية ديناميكية / تحتاج مراجعة | ScheduledMessageWorkspace |
+| 97 | Button | تسمية ديناميكية / تحتاج مراجعة | ScheduledMessageWorkspace |
+| 102 | Button | # | ScheduledMessageWorkspace |
+| 102 | Button | # | ScheduledMessageWorkspace |
+| 102 | Button | recorded # | ScheduledMessageWorkspace |
+| 104 | Button | تسمية ديناميكية / تحتاج مراجعة | ScheduledMessageWorkspace |
+| 104 | Button | تسمية ديناميكية / تحتاج مراجعة | ScheduledMessageWorkspace |
+| 107 | DialogContent | details edit review edit edit fieldRequired : details : · · enable : details edit details review create update | ScheduledMessageWorkspace |
+| 110 | input | fieldRequired | details edit |
+| 111 | textarea | fieldRequired | details edit |
+| 112 | select | fieldRequired | details edit |
+| 112 | input | fieldRequired | details edit |
+| 114 | summary | تسمية ديناميكية / تحتاج مراجعة | ScheduledMessageWorkspace |
+| 115 | summary | تسمية ديناميكية / تحتاج مراجعة | ScheduledMessageWorkspace |
+| 118 | Button | details | ScheduledMessageWorkspace |
+| 119 | Button | تسمية ديناميكية / تحتاج مراجعة | ScheduledMessageWorkspace |
+| 119 | Button | تسمية ديناميكية / تحتاج مراجعة | ScheduledMessageWorkspace |
+| 119 | Button | تسمية ديناميكية / تحتاج مراجعة | ScheduledMessageWorkspace |
+| 119 | Button | تسمية ديناميكية / تحتاج مراجعة | ScheduledMessageWorkspace |
+| 120 | Button | تسمية ديناميكية / تحتاج مراجعة | ScheduledMessageWorkspace |
+| 121 | Button | تسمية ديناميكية / تحتاج مراجعة | ScheduledMessageWorkspace |
+| 121 | Button | تسمية ديناميكية / تحتاج مراجعة | ScheduledMessageWorkspace |
+
+## client/src/components/merchant/ScheduledMessageHistory.tsx
+
+| السطر | النوع | التسمية | القسم |
+|---:|---|---|---|
+| 20 | Link | تسمية ديناميكية / تحتاج مراجعة | ScheduledMessageHistory |
+| 29 | Button | تسمية ديناميكية / تحتاج مراجعة | ScheduledMessageHistory |
+| 33 | Button | تسمية ديناميكية / تحتاج مراجعة | ScheduledMessageHistory |
+| 33 | Button | تسمية ديناميكية / تحتاج مراجعة | ScheduledMessageHistory |
 
 ## client/src/components/merchant/QuickResponseWorkspace.tsx
 

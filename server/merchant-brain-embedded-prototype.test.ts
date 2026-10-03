@@ -13,6 +13,25 @@ beforeEach(()=>{
 });
 afterEach(()=>dom.window.close());
 const send=(data:any,origin='http://127.0.0.1:4329',source=frame.contentWindow)=>w.dispatchEvent(new w.MessageEvent('message',{origin,source,data}));
+it.each([
+ ['/merchant/scheduled-messages','state=disabled&day=0&sort=oldest&page=2'],
+ ['/merchant/media-library','category=general&kind=pdf&sort=largest&view=list&requestPage=2&page=2'],
+ ['/merchant/promotions','state=active&type=percentage&scope=products&page=2'],
+])('preserves owned preview selection for %s without foreign or duplicate parameters', (path, selection) => {
+ frame.setAttribute('src','./service-workspace.html?embed=brain&path='+path);w.history.replaceState(null,'','#/page'+path);w.syncServicePreviewContext=vi.fn();
+ const message={type:'sary-brain-preview',action:'serviceState',search:`path=${path}&${selection}&tenant=270&lang=en`};
+ for(const search of [message.search+'&actorId=999',message.search+'&tenant=269',message.search+'&day=7',message.search+'&token=secret'])send({...message,search});
+ send(message,'https://evil.test');send(message,undefined,w);expect(w.location.hash).toBe('#/page'+path);
+ send(message);expect(w.location.hash).toBe(`#/page${path}?${selection}&tenant=270&lang=en`);expect(frame.isConnected).toBe(true);expect(w.syncServicePreviewContext).toHaveBeenCalledOnce();
+});
+it('opens weekly settings and sample reports in the outer preview with its tenant and language',()=>{
+ frame.setAttribute('src','./service-workspace.html?embed=brain&path=/merchant/scheduled-messages&tenant=270&lang=en');w.history.replaceState(null,'','#/page/merchant/scheduled-messages');
+ const message={type:'sary-brain-preview',action:'serviceTool',route:'/merchant/campaigns/1/report'};
+ for(const route of ['/merchant/campaigns/0/report','/merchant/campaigns/2147483648/report','/merchant/campaigns/1/report?token=secret','https://evil.test'])send({...message,route});
+ send(message,'https://evil.test');send(message,undefined,w);expect(w.location.hash).toBe('#/page/merchant/scheduled-messages');
+ send(message);expect(w.location.hash).toBe('#/page/merchant/campaigns/1/report?tenant=259&lang=en');
+ send({...message,route:'/merchant/settings'});expect(w.location.hash).toBe('#/page/merchant/settings?tenant=270&lang=en');
+});
 it('keeps referral tab, state and code only from its owned frame and valid route',()=>{
  frame.setAttribute('src','./service-workspace.html?embed=brain');w.history.replaceState(null,'','#/page/merchant/referrals');w.syncServicePreviewContext=vi.fn();
  const message={type:'sary-brain-preview',action:'serviceState',search:'path=/merchant/referrals&tab=rewards&state=expired&ref=SARY-DEMO-270&page=2&tenant=269&lang=en'};

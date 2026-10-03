@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-03T11:44:29.314Z",
+  "generatedAt": "2026-10-03T13:30:40.619Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -13738,113 +13738,204 @@
     },
     {
       "file": "client/src/pages/merchant/ScheduledMessages.tsx",
-      "hash": "1428d453179a",
+      "hash": "b341e48f23e1",
       "queries": [
-        "scheduledMessages.list"
+        "auth.me",
+        "merchants.getCurrent"
+      ],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [
+        {
+          "query": "auth.me",
+          "binding": "user",
+          "line": 5,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        },
+        {
+          "query": "merchants.getCurrent",
+          "binding": "merchant",
+          "line": 6,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": "!!user.data?.id&&!user.error&&!user.isFetching"
+        }
+      ],
+      "conditions": [],
+      "imports": [
+        "client/src/components/merchant/ScheduledMessageWorkspace.tsx"
+      ],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/components/merchant/ScheduledMessageWorkspace.tsx",
+      "hash": "41202661de79",
+      "queries": [
+        "scheduledMessages.workspace",
+        "scheduledMessages.actionReceipt"
       ],
       "mutations": [
-        "scheduledMessages.create",
-        "scheduledMessages.update",
-        "scheduledMessages.delete",
-        "scheduledMessages.toggle"
+        "scheduledMessages.reviewAction",
+        "scheduledMessages.applyAction",
+        "scheduledMessages.resolveActionReceipt"
       ],
-      "imperativeReads": [],
+      "imperativeReads": [
+        {
+          "procedure": "scheduledMessages.actionReceipt",
+          "method": "fetch",
+          "expression": "utils.scheduledMessages.actionReceipt.fetch",
+          "line": 74,
+          "provenance": "trpc-utility-static"
+        }
+      ],
       "browserRequests": [],
       "sections": [
         {
-          "label": "الرسائل المجدولة",
-          "line": 148,
+          "label": "",
+          "line": 82,
+          "tag": "summary"
+        },
+        {
+          "label": "",
+          "line": 87,
           "tag": "h1"
         },
         {
-          "label": "تعديل الرسالة المجدولة إضافة رسالة مجدولة جديدة",
-          "line": 158,
-          "tag": "CardTitle"
+          "label": "",
+          "line": 99,
+          "tag": "h2"
         },
         {
-          "label": "مفعّل معطّل",
-          "line": 273,
-          "tag": "CardTitle"
+          "label": "details edit",
+          "line": 108,
+          "tag": "DialogTitle"
+        },
+        {
+          "label": "",
+          "line": 114,
+          "tag": "summary"
+        },
+        {
+          "label": "",
+          "line": 115,
+          "tag": "h3"
+        },
+        {
+          "label": "",
+          "line": 115,
+          "tag": "summary"
         }
       ],
       "choices": [
         {
-          "name": "DAYS_OF_WEEK",
-          "line": 28,
+          "name": "days",
+          "line": 38,
           "values": [
-            {
-              "value": "0",
-              "label": "الأحد"
-            },
-            {
-              "value": "1",
-              "label": "الاثنين"
-            },
-            {
-              "value": "2",
-              "label": "الثلاثاء"
-            },
-            {
-              "value": "3",
-              "label": "الأربعاء"
-            },
-            {
-              "value": "4",
-              "label": "الخميس"
-            },
-            {
-              "value": "5",
-              "label": "الجمعة"
-            },
-            {
-              "value": "6",
-              "label": "السبت"
-            }
+            "c.sun",
+            "c.mon",
+            "c.tue",
+            "c.wed",
+            "c.thu",
+            "c.fri",
+            "c.sat"
           ]
         }
       ],
-      "handlers": [
-        {
-          "name": "handleSubmit",
-          "line": 109,
-          "calls": [
-            "updateMutation",
-            "createMutation"
-          ]
-        },
-        {
-          "name": "handleEdit",
-          "line": 119,
-          "calls": []
-        },
-        {
-          "name": "handleDelete",
-          "line": 131,
-          "calls": [
-            "deleteMutation"
-          ]
-        },
-        {
-          "name": "handleToggle",
-          "line": 137,
-          "calls": [
-            "toggleMutation"
-          ]
-        }
-      ],
+      "handlers": [],
       "queryStates": [
         {
-          "query": "scheduledMessages.list",
-          "binding": "{ data: messages, isLoading }",
-          "line": 39,
-          "errorSignal": false,
+          "query": "scheduledMessages.workspace",
+          "binding": "query",
+          "line": 22,
+          "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
         }
       ],
       "conditions": [],
+      "imports": [
+        "client/src/components/merchant/ScheduledMessageHistory.tsx",
+        "client/src/lib/scheduled-workspace-labels.ts",
+        "client/src/lib/scheduled-workspace.ts",
+        "client/src/lib/service-catalog-navigation.ts"
+      ],
+      "controlCount": 32
+    },
+    {
+      "file": "client/src/components/merchant/ScheduledMessageHistory.tsx",
+      "hash": "ee8bc47c88b4",
+      "queries": [
+        "scheduledMessages.history"
+      ],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [
+        {
+          "label": "",
+          "line": 29,
+          "tag": "h3"
+        }
+      ],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [
+        {
+          "query": "scheduledMessages.history",
+          "binding": "query",
+          "line": 27,
+          "errorSignal": true,
+          "loadingSignal": false,
+          "enabled": null
+        }
+      ],
+      "conditions": [],
+      "imports": [
+        "client/src/lib/scheduled-workspace.ts"
+      ],
+      "controlCount": 4
+    },
+    {
+      "file": "client/src/lib/scheduled-workspace.ts",
+      "hash": "4ee1656e32ff",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [
+        {
+          "name": "scheduledSelectionKey",
+          "line": 4,
+          "calls": []
+        }
+      ],
+      "queryStates": [],
+      "conditions": [],
       "imports": [],
-      "controlCount": 13
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/lib/scheduled-workspace-labels.ts",
+      "hash": "bfbeeafe547d",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 0
     },
     {
       "file": "client/src/pages/merchant/QuickResponses.tsx",
@@ -25460,33 +25551,73 @@
         "ScheduledMessages"
       ],
       "files": [
-        "client/src/pages/merchant/ScheduledMessages.tsx"
+        "client/src/pages/merchant/ScheduledMessages.tsx",
+        "client/src/components/merchant/ScheduledMessageWorkspace.tsx",
+        "client/src/components/merchant/ScheduledMessageHistory.tsx",
+        "client/src/lib/scheduled-workspace.ts",
+        "client/src/lib/scheduled-workspace-labels.ts",
+        "client/src/lib/service-catalog-navigation.ts"
       ],
       "controls": [
-        "55deb68beaf2",
-        "7ccbe1b2d92b",
-        "b5ca409aee7d",
-        "ba4bb2dfb1b2",
-        "b343d1b54977",
-        "b1c1246691db",
-        "ea6b3eaefba7",
-        "f187b36d0546",
-        "3a5a90d89531",
-        "0b5e1679f7d0",
-        "2155745192f8",
-        "a5434eae20e0",
-        "797539573782"
+        "c8211b810a01",
+        "1c5bcc8e65f7",
+        "988db97e0536",
+        "31fecea1c508",
+        "c7aadb6b3cda",
+        "5d0f9aa6387b",
+        "5aec92ec6a17",
+        "83aac607d241",
+        "36db2a2ab939",
+        "b6c7116e76b0",
+        "bd9021d466ce",
+        "462fa32cff96",
+        "1eaf51233a9f",
+        "5a2cb5e13531",
+        "136204d3a423",
+        "447c9ac0c172",
+        "a6a7efede36a",
+        "5d46741ddbba",
+        "bdd766538f4e",
+        "5fbe518b49dd",
+        "938010e7f18f",
+        "5e15178b726f",
+        "b5417b84ee64",
+        "92663549c2c9",
+        "492f2721f804",
+        "90f351efe58b",
+        "f7746f1012de",
+        "7ebc16f31a18",
+        "83ee68bd9fa6",
+        "aef7ba91c27e",
+        "bf5e22a6baa3",
+        "d3008b631c3b",
+        "3888748a980d",
+        "6abbf7d7183b",
+        "d5876bf1dab1",
+        "6b5332c56cfa"
       ],
       "queries": [
-        "scheduledMessages.list"
+        "auth.me",
+        "merchants.getCurrent",
+        "scheduledMessages.workspace",
+        "scheduledMessages.actionReceipt",
+        "scheduledMessages.history"
       ],
       "mutations": [
-        "scheduledMessages.create",
-        "scheduledMessages.update",
-        "scheduledMessages.delete",
-        "scheduledMessages.toggle"
+        "scheduledMessages.reviewAction",
+        "scheduledMessages.applyAction",
+        "scheduledMessages.resolveActionReceipt"
       ],
-      "imperativeReads": [],
+      "imperativeReads": [
+        {
+          "file": "client/src/components/merchant/ScheduledMessageWorkspace.tsx",
+          "procedure": "scheduledMessages.actionReceipt",
+          "method": "fetch",
+          "expression": "utils.scheduledMessages.actionReceipt.fetch",
+          "line": 74,
+          "provenance": "trpc-utility-static"
+        }
+      ],
       "browserRequests": []
     },
     {
@@ -70533,136 +70664,129 @@
       "review": "source-inventoried"
     },
     {
-      "id": "55deb68beaf2",
-      "file": "client/src/pages/merchant/ScheduledMessages.tsx",
-      "line": 160,
-      "tag": "Button",
+      "id": "c8211b810a01",
+      "file": "client/src/components/merchant/ScheduledMessageWorkspace.tsx",
+      "line": 82,
+      "tag": "summary",
       "role": "",
       "kind": "action",
       "label": "",
-      "section": "تعديل الرسالة المجدولة إضافة رسالة مجدولة جديدة",
-      "binding": "resetForm",
-      "type": "button",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [
-        "showForm"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "7ccbe1b2d92b",
-      "file": "client/src/pages/merchant/ScheduledMessages.tsx",
-      "line": 175,
-      "tag": "Input",
-      "role": "",
-      "kind": "field",
-      "label": "عنوان الرسالة",
-      "section": "تعديل الرسالة المجدولة إضافة رسالة مجدولة جديدة",
-      "binding": "formData.title",
+      "section": "ScheduledMessageWorkspace",
+      "binding": "",
       "type": "text",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
-      "required": true,
+      "required": false,
       "conditional": false,
       "conditions": [
-        "showForm"
+        "pending"
       ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "b5ca409aee7d",
-      "file": "client/src/pages/merchant/ScheduledMessages.tsx",
-      "line": 186,
-      "tag": "Textarea",
+      "id": "1c5bcc8e65f7",
+      "file": "client/src/components/merchant/ScheduledMessageWorkspace.tsx",
+      "line": 82,
+      "tag": "Button",
       "role": "",
-      "kind": "field",
-      "label": "محتوى الرسالة",
-      "section": "تعديل الرسالة المجدولة إضافة رسالة مجدولة جديدة",
-      "binding": "formData.message",
-      "type": "textarea",
+      "kind": "action",
+      "label": "",
+      "section": "ScheduledMessageWorkspace",
+      "binding": "() => void recover()",
+      "type": "text",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
-      "required": true,
+      "required": false,
       "conditional": false,
       "conditions": [
-        "showForm"
+        "pending"
       ],
-      "disabled": "",
+      "disabled": "busy",
       "review": "source-inventoried"
     },
     {
-      "id": "ba4bb2dfb1b2",
-      "file": "client/src/pages/merchant/ScheduledMessages.tsx",
-      "line": 199,
-      "tag": "Select",
+      "id": "988db97e0536",
+      "file": "client/src/components/merchant/ScheduledMessageWorkspace.tsx",
+      "line": 82,
+      "tag": "Button",
       "role": "",
-      "kind": "field",
-      "label": "اليوم",
-      "section": "تعديل الرسالة المجدولة إضافة رسالة مجدولة جديدة",
-      "binding": "formData.dayOfWeek.toString()",
-      "type": "select",
-      "options": [
-        {
-          "value": "day.value.toString()",
-          "label": ""
-        }
+      "kind": "action",
+      "label": "",
+      "section": "ScheduledMessageWorkspace",
+      "binding": "() => void recover(true)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "pending"
       ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "31fecea1c508",
+      "file": "client/src/components/merchant/ScheduledMessageWorkspace.tsx",
+      "line": 87,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ScheduledMessageWorkspace",
+      "binding": "() => void refresh()",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "busy || query.isFetching",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "c7aadb6b3cda",
+      "file": "client/src/components/merchant/ScheduledMessageWorkspace.tsx",
+      "line": 87,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ScheduledMessageWorkspace",
+      "binding": "() => open({ kind: 'edit' })",
+      "type": "text",
+      "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
       "conditional": true,
       "conditions": [
-        "showForm"
+        "data?.canManage"
       ],
-      "disabled": "",
+      "disabled": "!writable || !zone",
       "review": "source-inventoried"
     },
     {
-      "id": "b343d1b54977",
-      "file": "client/src/pages/merchant/ScheduledMessages.tsx",
-      "line": 218,
-      "tag": "Input",
+      "id": "5d0f9aa6387b",
+      "file": "client/src/components/merchant/ScheduledMessageWorkspace.tsx",
+      "line": 91,
+      "tag": "Link",
       "role": "",
-      "kind": "field",
-      "label": "الوقت (24 ساعة)",
-      "section": "تعديل الرسالة المجدولة إضافة رسالة مجدولة جديدة",
-      "binding": "formData.time",
-      "type": "time",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": true,
-      "conditional": false,
-      "conditions": [
-        "showForm"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "b1c1246691db",
-      "file": "client/src/pages/merchant/ScheduledMessages.tsx",
-      "line": 229,
-      "tag": "Switch",
-      "role": "",
-      "kind": "field",
-      "label": "تفعيل الرسالة",
-      "section": "تعديل الرسالة المجدولة إضافة رسالة مجدولة جديدة",
-      "binding": "formData.isActive",
-      "type": "checkbox",
+      "kind": "action",
+      "label": "",
+      "section": "ScheduledMessageWorkspace",
+      "binding": "/merchant/settings",
+      "type": "text",
       "options": [],
       "min": "",
       "max": "",
@@ -70670,20 +70794,45 @@
       "required": false,
       "conditional": false,
       "conditions": [
-        "showForm"
+        "!data",
+        "query.error"
       ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "ea6b3eaefba7",
-      "file": "client/src/pages/merchant/ScheduledMessages.tsx",
-      "line": 237,
+      "id": "5aec92ec6a17",
+      "file": "client/src/components/merchant/ScheduledMessageWorkspace.tsx",
+      "line": 93,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "c.searchHint",
+      "section": "ScheduledMessageWorkspace",
+      "binding": "searchDraft ?? selection.query",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "100",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!data",
+        "query.error"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "83aac607d241",
+      "file": "client/src/components/merchant/ScheduledMessageWorkspace.tsx",
+      "line": 93,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "تحديث إضافة",
-      "section": "تعديل الرسالة المجدولة إضافة رسالة مجدولة جديدة",
+      "label": "",
+      "section": "ScheduledMessageWorkspace",
       "binding": "",
       "type": "submit",
       "options": [],
@@ -70693,21 +70842,137 @@
       "required": false,
       "conditional": true,
       "conditions": [
-        "showForm"
+        "!data",
+        "query.error"
       ],
-      "disabled": "createMutation.isPending || updateMutation.isPending",
+      "disabled": "busy",
       "review": "source-inventoried"
     },
     {
-      "id": "f187b36d0546",
-      "file": "client/src/pages/merchant/ScheduledMessages.tsx",
-      "line": 241,
+      "id": "36db2a2ab939",
+      "file": "client/src/components/merchant/ScheduledMessageWorkspace.tsx",
+      "line": 94,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "ScheduledMessageWorkspace",
+      "binding": "selection.state",
+      "type": "text",
+      "options": [
+        {
+          "value": "all",
+          "label": ""
+        },
+        {
+          "value": "enabled",
+          "label": ""
+        },
+        {
+          "value": "disabled",
+          "label": ""
+        },
+        {
+          "value": "unknown",
+          "label": ""
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!data",
+        "query.error"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "b6c7116e76b0",
+      "file": "client/src/components/merchant/ScheduledMessageWorkspace.tsx",
+      "line": 95,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "ScheduledMessageWorkspace",
+      "binding": "selection.day ?? ''",
+      "type": "text",
+      "options": [
+        {
+          "value": "",
+          "label": ""
+        },
+        {
+          "value": "i",
+          "label": ""
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!data",
+        "query.error"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "bd9021d466ce",
+      "file": "client/src/components/merchant/ScheduledMessageWorkspace.tsx",
+      "line": 96,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "ScheduledMessageWorkspace",
+      "binding": "selection.sort",
+      "type": "text",
+      "options": [
+        {
+          "value": "newest",
+          "label": ""
+        },
+        {
+          "value": "oldest",
+          "label": ""
+        },
+        {
+          "value": "title",
+          "label": ""
+        },
+        {
+          "value": "schedule",
+          "label": ""
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!data",
+        "query.error"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "462fa32cff96",
+      "file": "client/src/components/merchant/ScheduledMessageWorkspace.tsx",
+      "line": 97,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "إلغاء",
-      "section": "تعديل الرسالة المجدولة إضافة رسالة مجدولة جديدة",
-      "binding": "resetForm",
+      "label": "",
+      "section": "ScheduledMessageWorkspace",
+      "binding": "() => change({ q: null, state: null, day: null, page: null })",
       "type": "button",
       "options": [],
       "min": "",
@@ -70716,21 +70981,94 @@
       "required": false,
       "conditional": true,
       "conditions": [
-        "showForm"
+        "(selection.query || selection.state !== 'all' || selection.day !== null)",
+        "!data",
+        "query.error"
       ],
-      "disabled": "",
+      "disabled": "busy",
       "review": "source-inventoried"
     },
     {
-      "id": "3a5a90d89531",
-      "file": "client/src/pages/merchant/ScheduledMessages.tsx",
-      "line": 252,
+      "id": "1eaf51233a9f",
+      "file": "client/src/components/merchant/ScheduledMessageWorkspace.tsx",
+      "line": 102,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "إضافة رسالة مجدولة",
-      "section": "تعديل الرسالة المجدولة إضافة رسالة مجدولة جديدة",
-      "binding": "() => setShowForm(true)",
+      "label": "#",
+      "section": "ScheduledMessageWorkspace",
+      "binding": "() => open({ kind: 'details', row })",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!data.rows.length"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "5a2cb5e13531",
+      "file": "client/src/components/merchant/ScheduledMessageWorkspace.tsx",
+      "line": 102,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "#",
+      "section": "ScheduledMessageWorkspace",
+      "binding": "() => open({ kind: 'edit', row })",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "data.canManage",
+        "!data.rows.length"
+      ],
+      "disabled": "!writable",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "136204d3a423",
+      "file": "client/src/components/merchant/ScheduledMessageWorkspace.tsx",
+      "line": 102,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "recorded #",
+      "section": "ScheduledMessageWorkspace",
+      "binding": "() => { opener.current = document.activeElement as HTMLElement; void prepare({ action: 'toggle', id: row.id, enabled: !(row.enabled && row.authorization.state === 'recorded') }, row); }",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "data.canManage",
+        "!data.rows.length"
+      ],
+      "disabled": "!writable",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "447c9ac0c172",
+      "file": "client/src/components/merchant/ScheduledMessageWorkspace.tsx",
+      "line": 104,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ScheduledMessageWorkspace",
+      "binding": "() => change({ page: data.currentPage - 1 })",
       "type": "text",
       "options": [],
       "min": "",
@@ -70739,20 +71077,178 @@
       "required": false,
       "conditional": false,
       "conditions": [
-        "!showForm"
+        "data.pages > 1",
+        "!data",
+        "query.error"
       ],
+      "disabled": "busy || query.isFetching || data.currentPage <= 1",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "a6a7efede36a",
+      "file": "client/src/components/merchant/ScheduledMessageWorkspace.tsx",
+      "line": 104,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ScheduledMessageWorkspace",
+      "binding": "() => change({ page: data.currentPage + 1 })",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "data.pages > 1",
+        "!data",
+        "query.error"
+      ],
+      "disabled": "busy || query.isFetching || data.currentPage >= data.pages",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "5d46741ddbba",
+      "file": "client/src/components/merchant/ScheduledMessageWorkspace.tsx",
+      "line": 107,
+      "tag": "DialogContent",
+      "role": "",
+      "kind": "dialog",
+      "label": "details edit review edit edit fieldRequired : details : · · enable : details edit details review create update",
+      "section": "ScheduledMessageWorkspace",
+      "binding": "",
+      "type": "text",
+      "options": [
+        {
+          "value": "",
+          "label": ""
+        },
+        {
+          "value": "i",
+          "label": ""
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "0b5e1679f7d0",
-      "file": "client/src/pages/merchant/ScheduledMessages.tsx",
-      "line": 283,
-      "tag": "Calendar",
+      "id": "bdd766538f4e",
+      "file": "client/src/components/merchant/ScheduledMessageWorkspace.tsx",
+      "line": 110,
+      "tag": "input",
       "role": "",
       "kind": "field",
+      "label": "fieldRequired",
+      "section": "details edit",
+      "binding": "form.title",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "255",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "modal?.kind === 'edit'"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "5fbe518b49dd",
+      "file": "client/src/components/merchant/ScheduledMessageWorkspace.tsx",
+      "line": 111,
+      "tag": "textarea",
+      "role": "",
+      "kind": "field",
+      "label": "fieldRequired",
+      "section": "details edit",
+      "binding": "form.message",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "3800",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "modal?.kind === 'edit'"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "938010e7f18f",
+      "file": "client/src/components/merchant/ScheduledMessageWorkspace.tsx",
+      "line": 112,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "fieldRequired",
+      "section": "details edit",
+      "binding": "form.day",
+      "type": "text",
+      "options": [
+        {
+          "value": "",
+          "label": ""
+        },
+        {
+          "value": "i",
+          "label": ""
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "modal?.kind === 'edit'"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "5e15178b726f",
+      "file": "client/src/components/merchant/ScheduledMessageWorkspace.tsx",
+      "line": 112,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "fieldRequired",
+      "section": "details edit",
+      "binding": "form.time",
+      "type": "time",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "modal?.kind === 'edit'"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "b5417b84ee64",
+      "file": "client/src/components/merchant/ScheduledMessageWorkspace.tsx",
+      "line": 114,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
       "label": "",
-      "section": "مفعّل معطّل",
+      "section": "ScheduledMessageWorkspace",
       "binding": "",
       "type": "text",
       "options": [],
@@ -70760,64 +71256,273 @@
       "max": "",
       "maxLength": "",
       "required": false,
+      "conditional": false,
+      "conditions": [
+        "modal.row.legacyLastSentAt",
+        "modal?.kind === 'details'",
+        "modal?.kind === 'edit'"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "92663549c2c9",
+      "file": "client/src/components/merchant/ScheduledMessageWorkspace.tsx",
+      "line": 115,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ScheduledMessageWorkspace",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "review.before",
+        "review",
+        "modal?.kind === 'details'",
+        "modal?.kind === 'edit'"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "492f2721f804",
+      "file": "client/src/components/merchant/ScheduledMessageWorkspace.tsx",
+      "line": 118,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "details",
+      "section": "ScheduledMessageWorkspace",
+      "binding": "() => setModal(null)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
       "conditional": true,
       "conditions": [],
-      "disabled": "",
+      "disabled": "busy",
       "review": "source-inventoried"
     },
     {
-      "id": "2155745192f8",
-      "file": "client/src/pages/merchant/ScheduledMessages.tsx",
-      "line": 293,
-      "tag": "Switch",
-      "role": "",
-      "kind": "field",
-      "label": "",
-      "section": "مفعّل معطّل",
-      "binding": "message.isActive",
-      "type": "checkbox",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "toggleMutation.isPending",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "a5434eae20e0",
-      "file": "client/src/pages/merchant/ScheduledMessages.tsx",
-      "line": 299,
+      "id": "90f351efe58b",
+      "file": "client/src/components/merchant/ScheduledMessageWorkspace.tsx",
+      "line": 119,
       "tag": "Button",
       "role": "",
       "kind": "action",
       "label": "",
-      "section": "مفعّل معطّل",
-      "binding": "() => handleEdit(message)",
-      "type": "button",
+      "section": "ScheduledMessageWorkspace",
+      "binding": "() => void recover()",
+      "type": "text",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
+      "conditional": true,
+      "conditions": [
+        "pending"
+      ],
+      "disabled": "busy",
       "review": "source-inventoried"
     },
     {
-      "id": "797539573782",
-      "file": "client/src/pages/merchant/ScheduledMessages.tsx",
-      "line": 308,
+      "id": "f7746f1012de",
+      "file": "client/src/components/merchant/ScheduledMessageWorkspace.tsx",
+      "line": 119,
       "tag": "Button",
       "role": "",
       "kind": "action",
       "label": "",
-      "section": "مفعّل معطّل",
-      "binding": "() => handleDelete(message.id)",
-      "type": "button",
+      "section": "ScheduledMessageWorkspace",
+      "binding": "reviewForm",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "modal?.kind === 'edit'",
+        "pending"
+      ],
+      "disabled": "!writable",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "7ebc16f31a18",
+      "file": "client/src/components/merchant/ScheduledMessageWorkspace.tsx",
+      "line": 119,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ScheduledMessageWorkspace",
+      "binding": "() => void prepare({ action: 'delete', id: modal.row.id }, modal.row)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "data?.canManage",
+        "modal?.kind === 'details'",
+        "modal?.kind === 'edit'",
+        "pending"
+      ],
+      "disabled": "!writable",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "83ee68bd9fa6",
+      "file": "client/src/components/merchant/ScheduledMessageWorkspace.tsx",
+      "line": 119,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ScheduledMessageWorkspace",
+      "binding": "() => void prepare({ action: 'toggle', id: modal.row.id, enabled: false }, modal.row)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "modal.row.enabled",
+        "data?.canManage",
+        "modal?.kind === 'details'",
+        "modal?.kind === 'edit'",
+        "pending"
+      ],
+      "disabled": "!writable",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "aef7ba91c27e",
+      "file": "client/src/components/merchant/ScheduledMessageWorkspace.tsx",
+      "line": 120,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ScheduledMessageWorkspace",
+      "binding": "() => { setReview(null); setFailure(''); setModal({ kind: 'edit', row: modal.row }); }",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "modal?.kind === 'review' && ['create', 'update'].includes(modal.target.action)",
+        "modal?.kind === 'details'",
+        "modal?.kind === 'edit'",
+        "pending"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "bf5e22a6baa3",
+      "file": "client/src/components/merchant/ScheduledMessageWorkspace.tsx",
+      "line": 121,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ScheduledMessageWorkspace",
+      "binding": "() => void save()",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "modal?.kind === 'details'",
+        "modal?.kind === 'edit'",
+        "pending"
+      ],
+      "disabled": "!writable || !review",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "d3008b631c3b",
+      "file": "client/src/components/merchant/ScheduledMessageWorkspace.tsx",
+      "line": 121,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ScheduledMessageWorkspace",
+      "binding": "() => { setModal(null); void refresh(); }",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!review && !busy",
+        "modal?.kind === 'details'",
+        "modal?.kind === 'edit'",
+        "pending"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "3888748a980d",
+      "file": "client/src/components/merchant/ScheduledMessageHistory.tsx",
+      "line": 20,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ScheduledMessageHistory",
+      "binding": "`/merchant/campaigns/${row.campaignId}/report`",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "row.linkState !== 'verified'"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "6abbf7d7183b",
+      "file": "client/src/components/merchant/ScheduledMessageHistory.tsx",
+      "line": 29,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ScheduledMessageHistory",
+      "binding": "() => void query.refetch()",
+      "type": "text",
       "options": [],
       "min": "",
       "max": "",
@@ -70825,7 +71530,57 @@
       "required": false,
       "conditional": false,
       "conditions": [],
-      "disabled": "deleteMutation.isPending",
+      "disabled": "query.isFetching",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "d5876bf1dab1",
+      "file": "client/src/components/merchant/ScheduledMessageHistory.tsx",
+      "line": 33,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ScheduledMessageHistory",
+      "binding": "() => setPage(data.currentPage - 1)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "data.pages > 1",
+        "!data",
+        "query.error"
+      ],
+      "disabled": "query.isFetching || data.currentPage <= 1",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "6b5332c56cfa",
+      "file": "client/src/components/merchant/ScheduledMessageHistory.tsx",
+      "line": 33,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ScheduledMessageHistory",
+      "binding": "() => setPage(data.currentPage + 1)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "data.pages > 1",
+        "!data",
+        "query.error"
+      ],
+      "disabled": "query.isFetching || data.currentPage >= data.pages",
       "review": "source-inventoried"
     },
     {

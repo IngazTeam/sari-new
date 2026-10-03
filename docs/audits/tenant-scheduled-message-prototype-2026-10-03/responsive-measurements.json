@@ -1,0 +1,200 @@
+[
+  {
+    "label": "en-review-390",
+    "client": 360,
+    "dialog": {
+      "bottom": 819.3887805938721,
+      "client": 296,
+      "height": 794.777587890625,
+      "scroll": 296,
+      "width": 321.04315185546875,
+      "x": 19.478412628173828,
+      "y": 24.61119270324707
+    },
+    "focus": "Review this decision",
+    "height": 844,
+    "rawKeys": false,
+    "scroll": 360,
+    "width": 390
+  },
+  {
+    "label": "en-pending-320",
+    "client": 290,
+    "dialog": {
+      "bottom": 828,
+      "client": 226,
+      "height": 812,
+      "scroll": 226,
+      "width": 258,
+      "x": 16,
+      "y": 16
+    },
+    "focus": "The save result is not confirmed. Check this request before starting another cha",
+    "height": 844,
+    "rawKeys": false,
+    "scroll": 290,
+    "width": 320
+  },
+  {
+    "label": "en-pending-390",
+    "client": 360,
+    "dialog": {
+      "bottom": 828,
+      "client": 296,
+      "height": 812,
+      "scroll": 296,
+      "width": 328,
+      "x": 16,
+      "y": 16
+    },
+    "focus": "The save result is not confirmed. Check this request before starting another cha",
+    "height": 844,
+    "rawKeys": false,
+    "scroll": 360,
+    "width": 390
+  },
+  {
+    "label": "en-pending-768",
+    "client": 738,
+    "dialog": {
+      "bottom": 828,
+      "client": 674,
+      "height": 812,
+      "scroll": 674,
+      "width": 706,
+      "x": 16,
+      "y": 16
+    },
+    "focus": "The save result is not confirmed. Check this request before starting another cha",
+    "height": 844,
+    "rawKeys": false,
+    "scroll": 738,
+    "width": 768
+  },
+  {
+    "label": "en-pending-1440",
+    "client": 1410,
+    "dialog": {
+      "bottom": 828,
+      "client": 688,
+      "height": 812,
+      "scroll": 688,
+      "width": 720,
+      "x": 345,
+      "y": 16
+    },
+    "focus": "The save result is not confirmed. Check this request before starting another cha",
+    "height": 844,
+    "rawKeys": false,
+    "scroll": 1410,
+    "width": 1440
+  },
+  {
+    "label": "en-pending-320-short-settled",
+    "client": 290,
+    "dialog": {
+      "bottom": 534,
+      "client": 226,
+      "height": 518,
+      "scroll": 226,
+      "width": 258,
+      "x": 16,
+      "y": 16
+    },
+    "focus": "The save result is not confirmed. Check this request before starting another cha",
+    "height": 550,
+    "rawKeys": false,
+    "scroll": 290,
+    "width": 320
+  },
+  {
+    "label": "en-pending-short-focus",
+    "client": 290,
+    "dialog": {
+      "bottom": 533.7855033874512,
+      "client": 226,
+      "height": 517.571044921875,
+      "scroll": 226,
+      "width": 257.786376953125,
+      "x": 16.106815338134766,
+      "y": 16.214458465576172
+    },
+    "focus": "Cancel",
+    "height": 550,
+    "rawKeys": false,
+    "scroll": 290,
+    "width": 320
+  },
+  {
+    "label": "en-history-320",
+    "client": 290,
+    "dialog": {
+      "bottom": 823.9246063232422,
+      "client": 226,
+      "height": 803.8492431640625,
+      "scroll": 226,
+      "width": 255.4102325439453,
+      "x": 17.29488182067871,
+      "y": 20.075363159179688
+    },
+    "focus": "Details and history",
+    "height": 844,
+    "rawKeys": false,
+    "scroll": 290,
+    "width": 320
+  },
+  {
+    "label": "en-history-390",
+    "client": 360,
+    "dialog": {
+      "bottom": 828,
+      "client": 296,
+      "height": 812,
+      "scroll": 296,
+      "width": 328,
+      "x": 16,
+      "y": 16
+    },
+    "focus": "Details and history",
+    "height": 844,
+    "rawKeys": false,
+    "scroll": 360,
+    "width": 390
+  },
+  {
+    "label": "en-history-768",
+    "client": 738,
+    "dialog": {
+      "bottom": 828,
+      "client": 674,
+      "height": 812,
+      "scroll": 674,
+      "width": 706,
+      "x": 16,
+      "y": 16
+    },
+    "focus": "Details and history",
+    "height": 844,
+    "rawKeys": false,
+    "scroll": 738,
+    "width": 768
+  },
+  {
+    "label": "en-history-1440",
+    "client": 1410,
+    "dialog": {
+      "bottom": 828,
+      "client": 688,
+      "height": 812,
+      "scroll": 688,
+      "width": 720,
+      "x": 345,
+      "y": 16
+    },
+    "focus": "Details and history",
+    "height": 844,
+    "rawKeys": false,
+    "scroll": 1410,
+    "width": 1440
+  }
+]
