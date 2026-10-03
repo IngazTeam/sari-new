@@ -1,3 +1,4 @@
+import {promotionWorkspaceEn} from './promotion-workspace';
 import type { SalesCohortInspectionCopy } from './sales-cohort-inspection';
 import type { SalesCohortCopy } from './sales-cohort';
 import type { SalesReplyReviewCopy } from './sales-reply-review';
@@ -72,6 +73,7 @@ import type { SalesExperimentReviewCopy } from './sales-experiment-review';
 import type { SalesExperimentLaunchCopy } from './sales-experiment-launch';
 export type MerchantUxCopy = {
   calendlyAccess: Record<'linkUnavailable'|'unavailable'|'retry'|'loading'|'actionFailed'|'forbidden',string>;
+  promotionWorkspace:typeof promotionWorkspaceEn;
   promotionWrites: typeof import('./promotion-writes').promotionWritesEn;
   occasionWorkspace: typeof import('./occasion-workspace').occasionWorkspaceEn;
   cartWorkspace: typeof import('./cart-workspace').cartWorkspaceEn;

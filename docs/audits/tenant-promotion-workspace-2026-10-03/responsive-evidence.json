@@ -1,0 +1,172 @@
+{
+  "actual": [
+    {
+      "label": "ar-list-390",
+      "dialog": null,
+      "height": 844,
+      "rootClient": 360,
+      "rootScroll": 360,
+      "width": 390
+    },
+    {
+      "label": "ar-edit-390",
+      "dialog": {
+        "bottom": 828,
+        "client": 296,
+        "height": 812,
+        "right": 374,
+        "scroll": 296,
+        "width": 328,
+        "x": 46,
+        "y": 16
+      },
+      "height": 844,
+      "rootClient": 360,
+      "rootScroll": 360,
+      "width": 390
+    },
+    {
+      "label": "ar-edit-320",
+      "dialog": {
+        "bottom": 828,
+        "client": 226,
+        "height": 812,
+        "right": 304,
+        "scroll": 226,
+        "width": 258,
+        "x": 46,
+        "y": 16
+      },
+      "height": 844,
+      "rootClient": 290,
+      "rootScroll": 290,
+      "width": 320
+    },
+    {
+      "label": "ar-edit-320-short",
+      "dialog": {
+        "bottom": 787.8203125,
+        "client": 226,
+        "height": 771.828125,
+        "right": 304,
+        "scroll": 226,
+        "width": 258,
+        "x": 46,
+        "y": 15.9921875
+      },
+      "height": 550,
+      "rootClient": 290,
+      "rootScroll": 290,
+      "width": 320
+    },
+    {
+      "label": "ar-edit-320-short-stable",
+      "dialog": {
+        "bottom": 534,
+        "client": 226,
+        "height": 518,
+        "right": 304,
+        "scroll": 226,
+        "width": 258,
+        "x": 46,
+        "y": 16
+      },
+      "height": 550,
+      "rootClient": 290,
+      "rootScroll": 290,
+      "width": 320
+    },
+    {
+      "label": "ar-edit-390-final",
+      "dialog": {
+        "bottom": 828,
+        "client": 296,
+        "height": 812,
+        "right": 374,
+        "scroll": 296,
+        "width": 328,
+        "x": 46,
+        "y": 16
+      },
+      "height": 844,
+      "rootClient": 360,
+      "rootScroll": 360,
+      "width": 390
+    },
+    {
+      "label": "ar-saved-390",
+      "dialog": null,
+      "height": 844,
+      "rootClient": 360,
+      "rootScroll": 360,
+      "width": 390
+    },
+    {
+      "label": "ar-list-768",
+      "dialog": null,
+      "height": 844,
+      "rootClient": 738,
+      "rootScroll": 738,
+      "width": 768
+    },
+    {
+      "label": "ar-list-1440",
+      "dialog": null,
+      "height": 844,
+      "rootClient": 1410,
+      "rootScroll": 1410,
+      "width": 1440
+    },
+    {
+      "label": "ar-list-320-final",
+      "dialog": null,
+      "height": 844,
+      "rootClient": 290,
+      "rootScroll": 290,
+      "width": 320
+    },
+    {
+      "label": "ar-details-320",
+      "dialog": {
+        "bottom": 828,
+        "client": 226,
+        "height": 812,
+        "right": 304,
+        "scroll": 226,
+        "width": 258,
+        "x": 46,
+        "y": 16
+      },
+      "height": 844,
+      "rootClient": 290,
+      "rootScroll": 290,
+      "width": 320
+    }
+  ],
+  "viewportObservations": [
+    {
+      "label": "ar-review-390",
+      "body": 780,
+      "dialog": {
+        "bottom": 1237.421875,
+        "client": 746,
+        "height": 786.84375,
+        "left": 16,
+        "right": 764,
+        "scroll": 746,
+        "top": 450.578125,
+        "width": 748
+      },
+      "height": 1688,
+      "width": 780
+    },
+    {
+      "label": "ar-list-390-css",
+      "body": 450,
+      "dialog": null,
+      "height": 844,
+      "width": 480
+    }
+  ],
+  "limitation": "Browser viewport control was scaled and clamped; final CSS sizes were measured inside the same-origin responsive test iframe. English UI tests passed; actual app currently advertises Arabic only. Native Safari/iPhone not run."
+}
