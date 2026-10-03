@@ -1,9 +1,7 @@
 import {
-  getDb,
   getNotificationTemplateByStatus,
   getNotificationTemplatesByMerchantId,
 } from '../db';
-import { notificationTemplates } from '../../drizzle/schema';
 import { assertRuntimeSchema } from '../db/schema-readiness';
 import { fillOrderNotificationTemplate, type OrderNotificationData } from '../../shared/order-notification-template';
 
@@ -118,40 +116,6 @@ export async function getOrderNotificationTemplateSettings(merchantId: number) {
       updatedAt: template?.updatedAt || null,
     };
   });
-}
-
-export async function saveOrderNotificationTemplate(input: {
-  merchantId: number;
-  status: OrderNotificationStatus;
-  template: string;
-  enabled: boolean;
-}) {
-  await ensureTemplateSchema();
-  const db = await getDb();
-  if (!db) throw new Error('Database not initialized');
-  const updatedAt = new Date().toISOString().slice(0, 19).replace('T', ' ');
-  await db
-    .insert(notificationTemplates)
-    .values({
-      merchantId: input.merchantId,
-      status: input.status,
-      template: input.template,
-      enabled: input.enabled ? 1 : 0,
-      updatedAt,
-    })
-    .onDuplicateKeyUpdate({
-      set: {
-        template: input.template,
-        enabled: input.enabled ? 1 : 0,
-        updatedAt,
-      },
-    });
-  return {
-    status: input.status,
-    template: input.template,
-    enabled: input.enabled,
-    updatedAt,
-  };
 }
 
 export async function prepareOrderStatusNotification(

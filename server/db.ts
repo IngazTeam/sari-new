@@ -322,8 +322,6 @@ import { assertRuntimeSchema } from './db/schema-readiness';
 // Type aliases for tables that don't export their own types
 type BotSettings = InferSelectModel<typeof botSettings>;
 type InsertBotSettings = InferInsertModel<typeof botSettings>;
-type InsertOrderNotification = InferInsertModel<typeof orderNotifications>;
-type InsertNotificationTemplate = InferInsertModel<typeof notificationTemplates>;
 type SeoKeyword = InferSelectModel<typeof seoKeywordsAnalysis>;
 type InsertSeoKeyword = InferInsertModel<typeof seoKeywordsAnalysis>;
 // seoKeywords table alias — db.ts references this
@@ -3314,20 +3312,7 @@ export async function deleteWhatsAppRequest(id: number) {
 // Order Notifications Functions
 // ============================================
 
-export async function createOrderNotification(data: InsertOrderNotification) {
-  const db = await getDb();
-  if (!db) throw new Error('Database not initialized');
-  const result = await db.insert(orderNotifications).values(data);
-  const id = Number((result[0] as any).insertId);
-  return getOrderNotificationById(id);
-}
 
-export async function getOrderNotificationById(id: number) {
-  const db = await getDb();
-  if (!db) throw new Error('Database not initialized');
-  const result = await db.select().from(orderNotifications).where(eq(orderNotifications.id, id)).limit(1);
-  return result[0] || null;
-}
 
 export async function getOrderNotificationsByOrderId(merchantId: number, orderId: number) {
   if (![merchantId, orderId].every(id => Number.isInteger(id) && id > 0 && id <= 2147483647)) throw new Error('Invalid notification scope');
@@ -3351,31 +3336,12 @@ export async function getOrderNotificationsByMerchantId(merchantId: number, limi
   return rows.map(row => row.notification);
 }
 
-export async function updateOrderNotification(id: number, data: Partial<InsertOrderNotification>) {
-  const db = await getDb();
-  if (!db) throw new Error('Database not initialized');
-  await db.update(orderNotifications).set(data).where(eq(orderNotifications.id, id));
-  return getOrderNotificationById(id);
-}
 
 // ============================================
 // Notification Templates Functions
 // ============================================
 
-export async function createNotificationTemplate(data: InsertNotificationTemplate) {
-  const db = await getDb();
-  if (!db) throw new Error('Database not initialized');
-  const result = await db.insert(notificationTemplates).values(data);
-  const id = Number((result[0] as any).insertId);
-  return getNotificationTemplateById(id);
-}
 
-export async function getNotificationTemplateById(id: number) {
-  const db = await getDb();
-  if (!db) throw new Error('Database not initialized');
-  const result = await db.select().from(notificationTemplates).where(eq(notificationTemplates.id, id)).limit(1);
-  return result[0] || null;
-}
 
 export async function getNotificationTemplateByStatus(merchantId: number, status: string) {
   const db = await getDb();
@@ -3395,18 +3361,7 @@ export async function getNotificationTemplatesByMerchantId(merchantId: number) {
   return db.select().from(notificationTemplates).where(eq(notificationTemplates.merchantId, merchantId));
 }
 
-export async function updateNotificationTemplate(id: number, data: Partial<InsertNotificationTemplate>) {
-  const db = await getDb();
-  if (!db) throw new Error('Database not initialized');
-  await db.update(notificationTemplates).set({ ...data, updatedAt: formatDateForDB(new Date()) }).where(eq(notificationTemplates.id, id));
-  return getNotificationTemplateById(id);
-}
 
-export async function deleteNotificationTemplate(id: number) {
-  const db = await getDb();
-  if (!db) throw new Error('Database not initialized');
-  await db.delete(notificationTemplates).where(eq(notificationTemplates.id, id));
-}
 
 
 // ============================================

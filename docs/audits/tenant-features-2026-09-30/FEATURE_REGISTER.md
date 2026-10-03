@@ -2,7 +2,7 @@
 
 هذا حصر مصدر قابل لإعادة التوليد، وليس ادعاءً بأن كل مسار عمل اختُبر أو أُعيد تصميمه. يشمل المكونات الفرعية المحلية، الحقول، الأزرار، النوافذ، التبويبات، واجهات القراءة والتعديل. العناصر الديناميكية تحتاج مراجعة إضافية.
 
-- 126 مسارًا مسجلًا، 466 ملف واجهة متصلًا، 2647 عنصر تحكم في المصدر.
+- 126 مسارًا مسجلًا، 469 ملف واجهة متصلًا، 2663 عنصر تحكم في المصدر.
 - 0 رابطًا حرفيًا غير مطابق، و0 ملف صفحة غير متصل بالمسارات المحصورة.
 
 | الصفحة | الملفات | عناصر التحكم | القراءة / التعديل | موك أب للصفحة |
@@ -73,7 +73,7 @@
 | /merchant/data-sync — تصدير المخزون إلى Google Sheets | 9 | 16 | 3 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/reviews — تقييمات المنتجات | 6 | 19 | 6 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/booking-reviews — تقييمات الحجوزات | 6 | 19 | 6 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/order-notifications — إشعارات الطلبات | 2 | 9 | 2 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/order-notifications — إشعارات الطلبات | 5 | 25 | 4 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/settings — الحساب والمتجر | 15 | 49 | 5 / 8 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/privacy-center — الخصوصية | 2 | 12 | 1 / 4 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/notifications — الإشعارات | 1 | 4 | 2 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -2994,19 +2994,35 @@
 | 122 | Button | تسمية ديناميكية / تحتاج مراجعة | ReviewWorkspace |
 | 123 | Button | تسمية ديناميكية / تحتاج مراجعة | ReviewWorkspace |
 
-## client/src/pages/merchant/OrderNotificationsSettings.tsx
+## client/src/components/merchant/OrderNoticeWorkspace.tsx
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 132 | Button | مراجعة الحالات | إعدادات إشعارات الطلبات |
-| 201 | Switch | مفعّل معطّل | OrderNotificationsSettings |
-| 219 | Textarea | قالب الرسالة | OrderNotificationsSettings |
-| 236 | Button | حفظ | OrderNotificationsSettings |
-| 240 | Button | إلغاء | OrderNotificationsSettings |
-| 253 | Button | تعديل القالب | OrderNotificationsSettings |
-| 282 | AlertDialogContent | إقرار مراجعة الإشعارات الملتبسة أكد فقط بعد مراجعة سجل مزود واتساب. لن تُحذف السجلات ولن يعاد إرسال الرسائل، وسيُحفظ حساب المستخدم الذي أقر المراجعة. العودة تمت المراجعة دون إعادة إرسال | 💡 نصائح |
-| 290 | AlertDialogCancel | العودة | إقرار مراجعة الإشعارات الملتبسة |
-| 293 | AlertDialogAction | تمت المراجعة دون إعادة إرسال | إقرار مراجعة الإشعارات الملتبسة |
+| 91 | Button | تسمية ديناميكية / تحتاج مراجعة | OrderNoticeWorkspace |
+| 96 | Button | تسمية ديناميكية / تحتاج مراجعة | OrderNoticeWorkspace |
+| 96 | Button | تسمية ديناميكية / تحتاج مراجعة | OrderNoticeWorkspace |
+| 100 | Button | · | · |
+| 103 | input | c.searchHint | · |
+| 103 | Button | تسمية ديناميكية / تحتاج مراجعة | · |
+| 104 | select | تسمية ديناميكية / تحتاج مراجعة | · |
+| 105 | select | تسمية ديناميكية / تحتاج مراجعة | · |
+| 106 | select | تسمية ديناميكية / تحتاج مراجعة | · |
+| 107 | select | تسمية ديناميكية / تحتاج مراجعة | · |
+| 108 | select | تسمية ديناميكية / تحتاج مراجعة | · |
+| 109 | Button | تسمية ديناميكية / تحتاج مراجعة | · |
+| 114 | Button | # | linked |
+| 116 | Button | تسمية ديناميكية / تحتاج مراجعة | linked |
+| 116 | Button | تسمية ديناميكية / تحتاج مراجعة | linked |
+| 119 | DialogContent | template / unlinked linked manual_review linked manual_review | linked |
+| 126 | textarea | / | OrderNoticeWorkspace |
+| 128 | button | تسمية ديناميكية / تحتاج مراجعة | OrderNoticeWorkspace |
+| 129 | input | تسمية ديناميكية / تحتاج مراجعة | OrderNoticeWorkspace |
+| 135 | summary | تسمية ديناميكية / تحتاج مراجعة | OrderNoticeWorkspace |
+| 139 | input | تسمية ديناميكية / تحتاج مراجعة | OrderNoticeWorkspace |
+| 141 | Button | تسمية ديناميكية / تحتاج مراجعة | OrderNoticeWorkspace |
+| 142 | Button | تسمية ديناميكية / تحتاج مراجعة | OrderNoticeWorkspace |
+| 143 | Button | تسمية ديناميكية / تحتاج مراجعة | OrderNoticeWorkspace |
+| 144 | Button | تسمية ديناميكية / تحتاج مراجعة | OrderNoticeWorkspace |
 
 ## client/src/pages/merchant/Settings.tsx
 

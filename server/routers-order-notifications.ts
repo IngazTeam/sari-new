@@ -12,11 +12,9 @@ import {
 import {
   getOrderNotificationTemplateSettings,
   ORDER_NOTIFICATION_STATUSES,
-  saveOrderNotificationTemplate,
 } from './notifications/order-notifications';
 import { getMerchantOrder } from './orders/merchant-order-lifecycle';
 import {
-  acknowledgeOrderStatusNotificationIncidents,
   getOrderStatusNotificationHealth,
 } from './orders/order-status-notification-outbox';
 
@@ -50,17 +48,13 @@ export const orderNotificationsRouter = router({
       template: templateSchema,
       enabled: z.boolean(),
     }).strict())
-    .mutation(async ({ input, ctx }) => {
-      return saveOrderNotificationTemplate({ merchantId: ctx.merchantId, ...input });
-    }),
+    .mutation(() => { throw new TRPCError({code:'PRECONDITION_FAILED',message:'order_notice:reload'}); }),
 
   getHealth: permissionProcedure('analytics.read').query(async ({ ctx }) => {
     return getOrderStatusNotificationHealth(ctx.merchantId);
   }),
 
-  acknowledgeIncidents: permissionProcedure('whatsapp.manage').mutation(async ({ ctx }) => {
-    return acknowledgeOrderStatusNotificationIncidents(ctx.merchantId, ctx.user.id);
-  }),
+  acknowledgeIncidents: permissionProcedure('whatsapp.manage').mutation(() => { throw new TRPCError({code:'PRECONDITION_FAILED',message:'order_notice:reload'}); }),
 
   getHistory: permissionProcedure('analytics.read')
     .input(z.object({ limit: z.number().int().min(1).max(100).default(50) }).strict())

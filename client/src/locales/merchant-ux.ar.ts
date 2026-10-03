@@ -1,3 +1,4 @@
+import {orderNoticeWorkspaceAr} from './order-notice-workspace';
 import {reviewWorkspaceAr} from './review-workspace';
 import {scheduledWorkspaceAr} from './scheduled-workspace';
 import {mediaWorkspaceAr} from './media-workspace';
@@ -67,6 +68,7 @@ import { whatsappWorkspaceAr } from './whatsapp-workspace';
 
 const merchantUxAr: MerchantUxCopy = {
   calendlyAccess: {"linkUnavailable":"رابط الحجز غير متاح أو غير صالح.","unavailable":"تعذر تأكيد بيانات Calendly. حدّث الحالة قبل إجراء تغييرات.","retry":"تحديث الحالة","loading":"جارٍ التحميل…","actionFailed":"تعذر تأكيد النتيجة. حدّث الحالة قبل إعادة المحاولة.","forbidden":"تحتاج صلاحية إدارة التكاملات لهذا المتجر."},
+  orderNoticeWorkspace:orderNoticeWorkspaceAr,
   reviewWorkspace:reviewWorkspaceAr,
   scheduledWorkspace:scheduledWorkspaceAr,
   mediaWorkspace:mediaWorkspaceAr,

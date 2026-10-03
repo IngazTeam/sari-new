@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-03T15:34:09.704Z",
+  "generatedAt": "2026-10-03T16:37:12.367Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -14797,104 +14797,166 @@
     },
     {
       "file": "client/src/pages/merchant/OrderNotificationsSettings.tsx",
-      "hash": "d195ec55e672",
+      "hash": "721e00718aae",
       "queries": [
-        "orderNotifications.getTemplates",
-        "orderNotifications.getHealth"
+        "auth.me",
+        "merchants.getCurrent"
+      ],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [
+        {
+          "query": "auth.me",
+          "binding": "user",
+          "line": 5,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        },
+        {
+          "query": "merchants.getCurrent",
+          "binding": "merchant",
+          "line": 6,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": "!!user.data?.id&&!user.error&&!user.isFetching"
+        }
+      ],
+      "conditions": [],
+      "imports": [
+        "client/src/components/merchant/OrderNoticeWorkspace.tsx"
+      ],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/components/merchant/OrderNoticeWorkspace.tsx",
+      "hash": "6d1344931c62",
+      "queries": [
+        "orderNotifications.workspace",
+        "orderNotifications.detail"
       ],
       "mutations": [
-        "orderNotifications.updateTemplate",
-        "orderNotifications.acknowledgeIncidents"
+        "orderNotifications.saveTemplate",
+        "orderNotifications.acknowledgeReviewed"
       ],
-      "imperativeReads": [],
+      "imperativeReads": [
+        {
+          "procedure": "orderNotifications.workspace",
+          "method": "fetch",
+          "expression": "utils.orderNotifications.workspace.fetch",
+          "line": 49,
+          "provenance": "trpc-utility-static"
+        },
+        {
+          "procedure": "orderNotifications.detail",
+          "method": "fetch",
+          "expression": "utils.orderNotifications.detail.fetch",
+          "line": 54,
+          "provenance": "trpc-utility-static"
+        }
+      ],
       "browserRequests": [],
       "sections": [
         {
-          "label": "إعدادات إشعارات الطلبات",
-          "line": 114,
+          "label": "",
+          "line": 91,
           "tag": "h1"
         },
         {
-          "label": "الإشعارات المفعلة",
-          "line": 143,
-          "tag": "CardTitle"
+          "label": "·",
+          "line": 98,
+          "tag": "h2"
         },
         {
-          "label": "الإشعارات المعطلة",
-          "line": 158,
-          "tag": "CardTitle"
+          "label": "linked",
+          "line": 112,
+          "tag": "h2"
         },
         {
-          "label": "آخر تحديث",
-          "line": 173,
-          "tag": "CardTitle"
+          "label": "template",
+          "line": 122,
+          "tag": "DialogTitle"
         },
         {
           "label": "",
-          "line": 196,
-          "tag": "CardTitle"
+          "line": 125,
+          "tag": "h3"
         },
         {
-          "label": "💡 نصائح",
-          "line": 271,
-          "tag": "CardTitle"
+          "label": "",
+          "line": 130,
+          "tag": "h3"
         },
         {
-          "label": "إقرار مراجعة الإشعارات الملتبسة",
-          "line": 284,
-          "tag": "AlertDialogTitle"
+          "label": "",
+          "line": 135,
+          "tag": "summary"
         }
       ],
       "choices": [],
       "handlers": [
         {
-          "name": "handleToggle",
-          "line": 65,
-          "calls": [
-            "updateTemplate"
-          ]
-        },
-        {
-          "name": "handleEdit",
-          "line": 75,
+          "name": "open",
+          "line": 62,
           "calls": []
         },
         {
-          "name": "handleSave",
-          "line": 80,
-          "calls": [
-            "updateTemplate"
-          ]
-        },
-        {
-          "name": "handleCancel",
-          "line": 91,
+          "name": "close",
+          "line": 89,
           "calls": []
         }
       ],
       "queryStates": [
         {
-          "query": "orderNotifications.getTemplates",
-          "binding": "{ data: templates, isLoading, refetch }",
-          "line": 30,
-          "errorSignal": false,
+          "query": "orderNotifications.workspace",
+          "binding": "query",
+          "line": 25,
+          "errorSignal": true,
           "loadingSignal": true,
-          "enabled": null
-        },
-        {
-          "query": "orderNotifications.getHealth",
-          "binding": "{ data: health, refetch: refetchHealth }",
-          "line": 31,
-          "errorSignal": false,
-          "loadingSignal": false,
           "enabled": null
         }
       ],
       "conditions": [],
       "imports": [
-        "client/src/lib/i18n.ts"
+        "client/src/lib/order-notice-workspace-labels.ts",
+        "client/src/lib/order-notice-workspace.ts",
+        "client/src/lib/service-catalog-navigation.ts"
       ],
-      "controlCount": 9
+      "controlCount": 25
+    },
+    {
+      "file": "client/src/lib/order-notice-workspace-labels.ts",
+      "hash": "608431fdb172",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/lib/order-notice-workspace.ts",
+      "hash": "bf4d4e8ded3b",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 0
     },
     {
       "file": "client/src/pages/merchant/Settings.tsx",
@@ -26120,28 +26182,66 @@
       ],
       "files": [
         "client/src/pages/merchant/OrderNotificationsSettings.tsx",
-        "client/src/lib/i18n.ts"
+        "client/src/components/merchant/OrderNoticeWorkspace.tsx",
+        "client/src/lib/order-notice-workspace-labels.ts",
+        "client/src/lib/order-notice-workspace.ts",
+        "client/src/lib/service-catalog-navigation.ts"
       ],
       "controls": [
-        "913fea555dea",
-        "d0fb536a5d2d",
-        "b631e9b03778",
-        "2f8c6c3cf0ee",
-        "76c34406b881",
-        "dc62558492dc",
-        "068e11bf7a39",
-        "9d4177cac7dc",
-        "b68ed9b98cf7"
+        "8c7fcae5ec7c",
+        "d0360ca3915c",
+        "9c0e07108926",
+        "9679aa62bc20",
+        "4878b90e8856",
+        "dd894f076008",
+        "c1308305489c",
+        "12820ecaf6ae",
+        "284625775a2b",
+        "7d9dce91058e",
+        "921a2f9c45cf",
+        "83bf67ff37c9",
+        "66b39f4aaebc",
+        "315842360208",
+        "b4a4135e5b24",
+        "2f68715aea76",
+        "cc955c35e5d6",
+        "b43375e83bfa",
+        "94834a74a15f",
+        "86ecccf039c7",
+        "f3639d3884cd",
+        "9cd72da125c3",
+        "243f40a7c461",
+        "6f5d1ddf4c7c",
+        "03f4aaf5cafd"
       ],
       "queries": [
-        "orderNotifications.getTemplates",
-        "orderNotifications.getHealth"
+        "auth.me",
+        "merchants.getCurrent",
+        "orderNotifications.workspace",
+        "orderNotifications.detail"
       ],
       "mutations": [
-        "orderNotifications.updateTemplate",
-        "orderNotifications.acknowledgeIncidents"
+        "orderNotifications.saveTemplate",
+        "orderNotifications.acknowledgeReviewed"
       ],
-      "imperativeReads": [],
+      "imperativeReads": [
+        {
+          "file": "client/src/components/merchant/OrderNoticeWorkspace.tsx",
+          "procedure": "orderNotifications.workspace",
+          "method": "fetch",
+          "expression": "utils.orderNotifications.workspace.fetch",
+          "line": 49,
+          "provenance": "trpc-utility-static"
+        },
+        {
+          "file": "client/src/components/merchant/OrderNoticeWorkspace.tsx",
+          "procedure": "orderNotifications.detail",
+          "method": "fetch",
+          "expression": "utils.orderNotifications.detail.fetch",
+          "line": 54,
+          "provenance": "trpc-utility-static"
+        }
+      ],
       "browserRequests": []
     },
     {
@@ -73982,16 +74082,383 @@
       "review": "source-inventoried"
     },
     {
-      "id": "913fea555dea",
-      "file": "client/src/pages/merchant/OrderNotificationsSettings.tsx",
-      "line": 132,
+      "id": "8c7fcae5ec7c",
+      "file": "client/src/components/merchant/OrderNoticeWorkspace.tsx",
+      "line": 91,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "مراجعة الحالات",
-      "section": "إعدادات إشعارات الطلبات",
-      "binding": "() => setReviewOpen(true)",
+      "label": "",
+      "section": "OrderNoticeWorkspace",
+      "binding": "()=>void query.refetch()",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "busy||query.isFetching",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "d0360ca3915c",
+      "file": "client/src/components/merchant/OrderNoticeWorkspace.tsx",
+      "line": 96,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "OrderNoticeWorkspace",
+      "binding": "()=>change({view:null})",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!data",
+        "query.error"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "9c0e07108926",
+      "file": "client/src/components/merchant/OrderNoticeWorkspace.tsx",
+      "line": 96,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "OrderNoticeWorkspace",
+      "binding": "()=>change({view:'history'})",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!data",
+        "query.error"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "9679aa62bc20",
+      "file": "client/src/components/merchant/OrderNoticeWorkspace.tsx",
+      "line": 100,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "·",
+      "section": "·",
+      "binding": "()=>open({kind:'template',status:r.status})",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!history",
+        "!data"
+      ],
+      "disabled": "busy||query.isFetching",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "4878b90e8856",
+      "file": "client/src/components/merchant/OrderNoticeWorkspace.tsx",
+      "line": 103,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "c.searchHint",
+      "section": "·",
+      "binding": "searchDraft??selection.query",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "100",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!history",
+        "!data",
+        "query.error"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "dd894f076008",
+      "file": "client/src/components/merchant/OrderNoticeWorkspace.tsx",
+      "line": 103,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "·",
+      "binding": "",
+      "type": "submit",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!history",
+        "!data",
+        "query.error"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "c1308305489c",
+      "file": "client/src/components/merchant/OrderNoticeWorkspace.tsx",
+      "line": 104,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "·",
+      "binding": "selection.status??''",
+      "type": "text",
+      "options": [
+        {
+          "value": "",
+          "label": ""
+        },
+        {
+          "value": "s",
+          "label": ""
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!history",
+        "!data",
+        "query.error"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "12820ecaf6ae",
+      "file": "client/src/components/merchant/OrderNoticeWorkspace.tsx",
+      "line": 105,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "·",
+      "binding": "selection.state??''",
+      "type": "text",
+      "options": [
+        {
+          "value": "",
+          "label": ""
+        },
+        {
+          "value": "s",
+          "label": ""
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!history",
+        "!data",
+        "query.error"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "284625775a2b",
+      "file": "client/src/components/merchant/OrderNoticeWorkspace.tsx",
+      "line": 106,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "·",
+      "binding": "selection.evidence??''",
+      "type": "text",
+      "options": [
+        {
+          "value": "",
+          "label": ""
+        },
+        {
+          "value": "s",
+          "label": ""
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!history",
+        "!data",
+        "query.error"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "7d9dce91058e",
+      "file": "client/src/components/merchant/OrderNoticeWorkspace.tsx",
+      "line": 107,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "·",
+      "binding": "selection.integrity",
+      "type": "text",
+      "options": [
+        {
+          "value": "all",
+          "label": ""
+        },
+        {
+          "value": "linked",
+          "label": ""
+        },
+        {
+          "value": "unlinked",
+          "label": ""
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!history",
+        "!data",
+        "query.error"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "921a2f9c45cf",
+      "file": "client/src/components/merchant/OrderNoticeWorkspace.tsx",
+      "line": 108,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "·",
+      "binding": "selection.sort",
+      "type": "text",
+      "options": [
+        {
+          "value": "newest",
+          "label": ""
+        },
+        {
+          "value": "oldest",
+          "label": ""
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!history",
+        "!data",
+        "query.error"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "83bf67ff37c9",
+      "file": "client/src/components/merchant/OrderNoticeWorkspace.tsx",
+      "line": 109,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "·",
+      "binding": "()=>change({q:null,status:null,state:null,evidence:null,integrity:null,page:null})",
       "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "(selection.query||selection.status||selection.state||selection.evidence||selection.integrity!=='all')",
+        "!history",
+        "!data",
+        "query.error"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "66b39f4aaebc",
+      "file": "client/src/components/merchant/OrderNoticeWorkspace.tsx",
+      "line": 114,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "#",
+      "section": "linked",
+      "binding": "()=>open({kind:'notice',id:r.id})",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!data.rows.length",
+        "!history"
+      ],
+      "disabled": "busy||query.isFetching",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "315842360208",
+      "file": "client/src/components/merchant/OrderNoticeWorkspace.tsx",
+      "line": 116,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "linked",
+      "binding": "()=>change({page:data.currentPage-1})",
+      "type": "text",
       "options": [],
       "min": "",
       "max": "",
@@ -73999,66 +74466,170 @@
       "required": false,
       "conditional": false,
       "conditions": [
-        "health && health.manualReview > 0"
+        "data.pages>1",
+        "!history",
+        "!data",
+        "query.error"
       ],
+      "disabled": "busy||query.isFetching||data.currentPage<=1",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "b4a4135e5b24",
+      "file": "client/src/components/merchant/OrderNoticeWorkspace.tsx",
+      "line": 116,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "linked",
+      "binding": "()=>change({page:data.currentPage+1})",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "data.pages>1",
+        "!history",
+        "!data",
+        "query.error"
+      ],
+      "disabled": "busy||query.isFetching||data.currentPage>=data.pages",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "2f68715aea76",
+      "file": "client/src/components/merchant/OrderNoticeWorkspace.tsx",
+      "line": 119,
+      "tag": "DialogContent",
+      "role": "",
+      "kind": "dialog",
+      "label": "template / unlinked linked manual_review linked manual_review",
+      "section": "linked",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "d0fb536a5d2d",
-      "file": "client/src/pages/merchant/OrderNotificationsSettings.tsx",
-      "line": 201,
-      "tag": "Switch",
+      "id": "cc955c35e5d6",
+      "file": "client/src/components/merchant/OrderNoticeWorkspace.tsx",
+      "line": 126,
+      "tag": "textarea",
       "role": "",
       "kind": "field",
-      "label": "مفعّل معطّل",
-      "section": "OrderNotificationsSettings",
-      "binding": "template.enabled || false",
+      "label": "/",
+      "section": "OrderNoticeWorkspace",
+      "binding": "draft",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "template",
+        "busy&&!row&&!template"
+      ],
+      "disabled": "!writable||!template.canonicalStatus",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "b43375e83bfa",
+      "file": "client/src/components/merchant/OrderNoticeWorkspace.tsx",
+      "line": 128,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "OrderNoticeWorkspace",
+      "binding": "()=>{setDraft(old=>old+`{{${v}}}`);field.current?.focus();}",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "template",
+        "busy&&!row&&!template"
+      ],
+      "disabled": "!writable||!template.canonicalStatus",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "94834a74a15f",
+      "file": "client/src/components/merchant/OrderNoticeWorkspace.tsx",
+      "line": 129,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "OrderNoticeWorkspace",
+      "binding": "enabled",
       "type": "checkbox",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
+      "conditional": false,
+      "conditions": [
+        "template",
+        "busy&&!row&&!template"
+      ],
+      "disabled": "!writable||!template.canonicalStatus",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "86ecccf039c7",
+      "file": "client/src/components/merchant/OrderNoticeWorkspace.tsx",
+      "line": 135,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "OrderNoticeWorkspace",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
       "conditional": true,
-      "conditions": [],
+      "conditions": [
+        "row.integrity==='unlinked'",
+        "row",
+        "template",
+        "busy&&!row&&!template"
+      ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "b631e9b03778",
-      "file": "client/src/pages/merchant/OrderNotificationsSettings.tsx",
-      "line": 219,
-      "tag": "Textarea",
+      "id": "f3639d3884cd",
+      "file": "client/src/components/merchant/OrderNoticeWorkspace.tsx",
+      "line": 139,
+      "tag": "input",
       "role": "",
       "kind": "field",
-      "label": "قالب الرسالة",
-      "section": "OrderNotificationsSettings",
-      "binding": "editingTemplate",
-      "type": "textarea",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "3500",
-      "required": false,
-      "conditional": true,
-      "conditions": [
-        "editingId === index"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "2f8c6c3cf0ee",
-      "file": "client/src/pages/merchant/OrderNotificationsSettings.tsx",
-      "line": 236,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "حفظ",
-      "section": "OrderNotificationsSettings",
-      "binding": "() => handleSave(template.status, template.enabled)",
-      "type": "button",
+      "label": "",
+      "section": "OrderNoticeWorkspace",
+      "binding": "confirmed",
+      "type": "checkbox",
       "options": [],
       "min": "",
       "max": "",
@@ -74066,67 +74637,24 @@
       "required": false,
       "conditional": false,
       "conditions": [
-        "editingId === index"
+        "row.integrity==='linked'&&row.hasEvent&&row.state==='manual_review'&&data?.canManage&&canManage&&!blocked",
+        "row",
+        "template",
+        "busy&&!row&&!template"
       ],
-      "disabled": "updateTemplate.isPending",
+      "disabled": "!writable",
       "review": "source-inventoried"
     },
     {
-      "id": "76c34406b881",
-      "file": "client/src/pages/merchant/OrderNotificationsSettings.tsx",
-      "line": 240,
+      "id": "9cd72da125c3",
+      "file": "client/src/components/merchant/OrderNoticeWorkspace.tsx",
+      "line": 141,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "إلغاء",
-      "section": "OrderNotificationsSettings",
-      "binding": "handleCancel",
-      "type": "button",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [
-        "editingId === index"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "dc62558492dc",
-      "file": "client/src/pages/merchant/OrderNotificationsSettings.tsx",
-      "line": 253,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "تعديل القالب",
-      "section": "OrderNotificationsSettings",
-      "binding": "() => handleEdit(index, template.template)",
-      "type": "button",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [
-        "editingId === index"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "068e11bf7a39",
-      "file": "client/src/pages/merchant/OrderNotificationsSettings.tsx",
-      "line": 282,
-      "tag": "AlertDialogContent",
-      "role": "",
-      "kind": "dialog",
-      "label": "إقرار مراجعة الإشعارات الملتبسة أكد فقط بعد مراجعة سجل مزود واتساب. لن تُحذف السجلات ولن يعاد إرسال الرسائل، وسيُحفظ حساب المستخدم الذي أقر المراجعة. العودة تمت المراجعة دون إعادة إرسال",
-      "section": "💡 نصائح",
-      "binding": "",
+      "label": "",
+      "section": "OrderNoticeWorkspace",
+      "binding": "close",
       "type": "text",
       "options": [],
       "min": "",
@@ -74135,19 +74663,19 @@
       "required": false,
       "conditional": true,
       "conditions": [],
-      "disabled": "",
+      "disabled": "busy",
       "review": "source-inventoried"
     },
     {
-      "id": "9d4177cac7dc",
-      "file": "client/src/pages/merchant/OrderNotificationsSettings.tsx",
-      "line": 290,
-      "tag": "AlertDialogCancel",
+      "id": "243f40a7c461",
+      "file": "client/src/components/merchant/OrderNoticeWorkspace.tsx",
+      "line": 142,
+      "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "العودة",
-      "section": "إقرار مراجعة الإشعارات الملتبسة",
-      "binding": "",
+      "label": "",
+      "section": "OrderNoticeWorkspace",
+      "binding": "()=>void load(selected,true)",
       "type": "text",
       "options": [],
       "min": "",
@@ -74155,20 +74683,22 @@
       "maxLength": "",
       "required": false,
       "conditional": true,
-      "conditions": [],
-      "disabled": "acknowledgeIncidents.isPending",
+      "conditions": [
+        "selected&&(blocked||(!template&&!row))"
+      ],
+      "disabled": "busy",
       "review": "source-inventoried"
     },
     {
-      "id": "b68ed9b98cf7",
-      "file": "client/src/pages/merchant/OrderNotificationsSettings.tsx",
-      "line": 293,
-      "tag": "AlertDialogAction",
+      "id": "6f5d1ddf4c7c",
+      "file": "client/src/components/merchant/OrderNoticeWorkspace.tsx",
+      "line": 143,
+      "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "تمت المراجعة دون إعادة إرسال",
-      "section": "إقرار مراجعة الإشعارات الملتبسة",
-      "binding": "(event) => {\r\n                event.preventDefault();\r\n                acknowledgeIncidents.mutate();\r\n              }",
+      "label": "",
+      "section": "OrderNoticeWorkspace",
+      "binding": "()=>void save()",
       "type": "text",
       "options": [],
       "min": "",
@@ -74176,8 +74706,33 @@
       "maxLength": "",
       "required": false,
       "conditional": true,
-      "conditions": [],
-      "disabled": "!health?.manualReview || acknowledgeIncidents.isPending",
+      "conditions": [
+        "template?.canonicalStatus&&data?.canManage&&canManage&&!blocked"
+      ],
+      "disabled": "!writable",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "03f4aaf5cafd",
+      "file": "client/src/components/merchant/OrderNoticeWorkspace.tsx",
+      "line": 144,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "OrderNoticeWorkspace",
+      "binding": "()=>void acknowledge()",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "row?.integrity==='linked'&&row.hasEvent&&row.state==='manual_review'&&data?.canManage&&canManage&&!blocked"
+      ],
+      "disabled": "!writable||!confirmed",
       "review": "source-inventoried"
     },
     {

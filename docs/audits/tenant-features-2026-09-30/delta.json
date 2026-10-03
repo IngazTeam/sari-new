@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-03T15:34:09.704Z",
+  "generatedAt": "2026-10-03T16:37:12.367Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 466,
-      "controls": 2647
+      "files": 469,
+      "controls": 2663
     }
   },
   "addedFiles": [
@@ -254,6 +254,9 @@
     "client/src/components/merchant/ReviewWorkspace.tsx",
     "client/src/lib/review-workspace-labels.ts",
     "client/src/lib/review-workspace.ts",
+    "client/src/components/merchant/OrderNoticeWorkspace.tsx",
+    "client/src/lib/order-notice-workspace-labels.ts",
+    "client/src/lib/order-notice-workspace.ts",
     "client/src/hooks/use-toast.ts",
     "client/src/components/merchant/CalendarConnectionWorkspace.tsx",
     "client/src/lib/calendar-connection.ts",
@@ -1856,11 +1859,25 @@
     {
       "route": "/merchant/order-notifications",
       "controlsBefore": 9,
-      "controlsNow": 9,
-      "removedQueries": [],
-      "addedQueries": [],
-      "removedMutations": [],
-      "addedMutations": []
+      "controlsNow": 25,
+      "removedQueries": [
+        "orderNotifications.getTemplates",
+        "orderNotifications.getHealth"
+      ],
+      "addedQueries": [
+        "auth.me",
+        "merchants.getCurrent",
+        "orderNotifications.workspace",
+        "orderNotifications.detail"
+      ],
+      "removedMutations": [
+        "orderNotifications.updateTemplate",
+        "orderNotifications.acknowledgeIncidents"
+      ],
+      "addedMutations": [
+        "orderNotifications.saveTemplate",
+        "orderNotifications.acknowledgeReviewed"
+      ]
     },
     {
       "route": "/merchant/settings",

@@ -1,0 +1,24 @@
+.order-notice-workspace .on-tabs {display:flex;gap:.5rem;flex-wrap:wrap;margin-block:1rem}
+.order-notice-workspace .on-grid {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,20rem),1fr));gap:1rem}
+.on-card {min-width:0;border:1px solid var(--border);border-radius:1rem;padding:1.1rem;background:var(--card);display:flex;flex-direction:column;gap:.75rem}
+.on-card h2 {font-size:1rem;font-weight:650;overflow-wrap:anywhere}
+.on-card>p {font-size:.9rem;line-height:1.8;white-space:pre-wrap;overflow-wrap:anywhere}
+.on-card .on-excerpt {display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.on-card .on-head {display:flex;gap:.5rem;justify-content:space-between;flex-wrap:wrap}
+.on-card button {align-self:flex-start;margin-block-start:auto}
+.on-badges {display:flex;gap:.5rem;flex-wrap:wrap}
+.on-dialog {max-height:calc(100dvh - 2rem);overflow-y:auto;overscroll-behavior:contain;width:min(44rem,calc(100vw - 2rem));min-width:0;scrollbar-gutter:stable}
+.on-dialog label {display:flex;flex-direction:column;gap:.5rem;font-size:.95rem}
+.on-dialog textarea {resize:vertical;width:100%;min-height:10rem;padding:.85rem;border:1px solid var(--border);border-radius:.75rem;font-size:1rem;line-height:1.8;background:var(--background)}
+.on-dialog .on-check {flex-direction:row;align-items:flex-start;gap:.6rem;line-height:1.6;cursor:pointer}
+.on-check input {margin-block-start:.3rem;min-width:1.1rem;min-height:1.1rem}
+.on-variables {display:flex;flex-wrap:wrap;gap:.4rem}
+.on-variables button {padding:.45rem .65rem;border:1px solid var(--border);border-radius:.5rem;min-height:2.75rem;font-size:.8rem}
+.on-preview {padding:1rem;background:var(--muted);border-radius:.75rem;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.8}
+.on-facts {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.8rem}
+.on-facts div {min-width:0}.on-facts dt {font-size:.8rem;color:var(--muted-foreground)}.on-facts dd {overflow-wrap:anywhere;font-size:.95rem}
+.on-dialog summary {cursor:pointer;min-height:2.75rem;padding-block:.65rem;font-weight:600}.on-dialog details>.on-facts{padding-block:.75rem}
+.on-footer {display:flex;gap:.6rem;flex-wrap:wrap;justify-content:flex-end;padding-block:.5rem}
+.on-footer button {white-space:normal;min-height:2.75rem;height:auto}
+.on-dialog :focus-visible,.order-notice-workspace :focus-visible {outline:2px solid var(--primary);outline-offset:3px}
+@media(max-width:480px){.on-facts{grid-template-columns:minmax(0,1fr)}.on-dialog{padding:1rem}.on-footer button{flex:1 1 auto}.on-card{padding:1rem}}

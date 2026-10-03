@@ -13,10 +13,10 @@ const caller = (user: any = { id: 7, role: 'user' }, selected = '20') => orderNo
 const input = { status: 'paid' as const, template: 'Order {{orderNumber}}', enabled: true };
 beforeEach(() => { vi.resetAllMocks(); m.access.mockResolvedValue({ merchantId: 20, role: 'owner', memberId: 3 }); m.order.mockResolvedValue({ id: 4 }); });
 it('routes every read and write through resolved selected-tenant authority', async () => {
-  const api = caller(); await api.getTemplates(); await api.getHealth(); await api.getHistory({ limit: 37 }); await api.getByOrderId({ orderId: 4 }); await api.updateTemplate(input); await api.acknowledgeIncidents();
+  const api = caller(); await api.getTemplates(); await api.getHealth(); await api.getHistory({ limit: 37 }); await api.getByOrderId({ orderId: 4 }); await expect(api.updateTemplate(input)).rejects.toMatchObject({code:'PRECONDITION_FAILED'}); await expect(api.acknowledgeIncidents()).rejects.toMatchObject({code:'PRECONDITION_FAILED'});
   expect(m.access).toHaveBeenCalledWith(7, 20); expect(m.templates).toHaveBeenCalledWith(20); expect(m.health).toHaveBeenCalledWith(20);
   expect(m.history).toHaveBeenCalledWith(20, 37); expect(m.order).toHaveBeenCalledWith(20, 4); expect(m.byOrder).toHaveBeenCalledWith(20, 4);
-  expect(m.save).toHaveBeenCalledWith({ merchantId: 20, ...input }); expect(m.ack).toHaveBeenCalledWith(20, 7);
+  expect(m.save).not.toHaveBeenCalled(); expect(m.ack).not.toHaveBeenCalled();
 });
 it.each(['viewer', 'sales_supervisor'])('allows %s reads and rejects both writes', async role => {
   m.access.mockResolvedValue({ merchantId: 20, role, memberId: 3 }); const api = caller();
@@ -24,8 +24,8 @@ it.each(['viewer', 'sales_supervisor'])('allows %s reads and rejects both writes
   await expect(api.updateTemplate(input)).rejects.toMatchObject({ code: 'FORBIDDEN' }); await expect(api.acknowledgeIncidents()).rejects.toMatchObject({ code: 'FORBIDDEN' });
   expect(m.save).not.toHaveBeenCalled(); expect(m.ack).not.toHaveBeenCalled();
 });
-it('allows a manager to configure the selected tenant', async () => {
-  m.access.mockResolvedValue({ merchantId: 20, role: 'manager', memberId: 3 }); await caller().updateTemplate(input); expect(m.save).toHaveBeenCalledWith({ merchantId: 20, ...input });
+it('requires an old manager client to reload before configuring the selected tenant', async () => {
+  m.access.mockResolvedValue({ merchantId: 20, role: 'manager', memberId: 3 }); await expect(caller().updateTemplate(input)).rejects.toMatchObject({code:'PRECONDITION_FAILED'}); expect(m.save).not.toHaveBeenCalled();
 });
 it('rejects unauthenticated and revoked authority before data access', async () => {
   await expect(caller(null).getTemplates()).rejects.toMatchObject({ code: 'UNAUTHORIZED' }); m.access.mockResolvedValue(null);

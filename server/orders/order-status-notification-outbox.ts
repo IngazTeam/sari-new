@@ -250,26 +250,6 @@ export async function getOrderStatusNotificationHealth(merchantId: number): Prom
   };
 }
 
-export async function acknowledgeOrderStatusNotificationIncidents(
-  merchantId: number,
-  actorUserId: number,
-): Promise<{ acknowledged: number }> {
-  if (!Number.isInteger(merchantId) || merchantId <= 0) throw new Error('Invalid merchant');
-  if (!Number.isInteger(actorUserId) || actorUserId <= 0) throw new Error('Invalid actor');
-  await ensureOutboxSchema();
-  const pool = await getPool();
-  if (!pool) throw new Error('Database unavailable');
-  const [result] = await pool.execute(
-    `UPDATE order_notifications
-        SET delivery_status = 'suppressed', error = 'merchant_acknowledged',
-            reviewed_at = NOW(3), reviewed_by_user_id = ?
-      WHERE merchant_id = ? AND event_key IS NOT NULL
-        AND delivery_status = 'manual_review'`,
-    [actorUserId, merchantId],
-  );
-  return { acknowledged: Number((result as { affectedRows?: number }).affectedRows || 0) };
-}
-
 export async function runOrderStatusNotificationBatch(limit = 10): Promise<number> {
   if (workerRunning) return 0;
   workerRunning = true;

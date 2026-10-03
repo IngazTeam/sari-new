@@ -1,3 +1,4 @@
+import {orderNoticeWorkspaceEn} from './order-notice-workspace';
 import {reviewWorkspaceEn} from './review-workspace';
 import {scheduledWorkspaceEn} from './scheduled-workspace';
 import {mediaWorkspaceEn} from './media-workspace';
@@ -67,6 +68,7 @@ import { whatsappWorkspaceEn } from './whatsapp-workspace';
 
 const merchantUxEn: MerchantUxCopy = {
   calendlyAccess: {"linkUnavailable":"Booking link is unavailable or invalid.","unavailable":"Unable to confirm Calendly data. Refresh before making changes.","retry":"Refresh status","loading":"Loading…","actionFailed":"The result could not be confirmed. Refresh the status before trying again.","forbidden":"You need permission to manage integrations for this store."},
+  orderNoticeWorkspace:orderNoticeWorkspaceEn,
   reviewWorkspace:reviewWorkspaceEn,
   scheduledWorkspace:scheduledWorkspaceEn,
   mediaWorkspace:mediaWorkspaceEn,

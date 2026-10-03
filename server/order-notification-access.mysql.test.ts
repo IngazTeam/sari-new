@@ -24,8 +24,8 @@ describe.skipIf(!process.env.DATABASE_URL)('order notification selected-tenant b
     await q("INSERT INTO merchant_members (merchant_id,user_id,role,is_active) VALUES (?,?,'manager',1)", [b.merchantId, a.userId]);
     await insert(a.merchantId, orderA, 'OTHER_OWNED'); const selected = await insert(b.merchantId, orderB, 'SELECTED');
     expect((await caller().getHistory({})).map(r => r.id)).toEqual([selected]);
-    await caller().updateTemplate({ status: 'paid', template: 'Selected store', enabled: false });
-    expect(await q('SELECT merchant_id,template,enabled FROM notification_templates WHERE merchant_id IN (?,?)', [a.merchantId,b.merchantId])).toEqual([{ merchant_id: b.merchantId, template: 'Selected store', enabled: 0 }]);
+    await expect(caller().updateTemplate({ status: 'paid', template: 'Selected store', enabled: false })).rejects.toMatchObject({code:'PRECONDITION_FAILED'});
+    expect(await q('SELECT merchant_id,template,enabled FROM notification_templates WHERE merchant_id IN (?,?)', [a.merchantId,b.merchantId])).toEqual([]);
   });
   it('allows viewer reads, denies writes, then denies all access after revocation', async () => {
     await q("INSERT INTO merchant_members (merchant_id,user_id,role,is_active) VALUES (?,?,'viewer',1)", [b.merchantId, a.userId]);
