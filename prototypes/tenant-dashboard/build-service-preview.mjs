@@ -1,10 +1,10 @@
 import { build } from 'esbuild';
-import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, readdirSync, renameSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { loadPreviewLocales } from './preview-locales.mjs';
-const routes=JSON.parse(readFileSync('docs/audits/tenant-features-2026-09-30/coverage.json','utf8')).routes.filter(row=>/^\/merchant\/(?:services(?:\/|$)|discounts$|referrals$|abandoned-carts$|service-categories$|service-packages$|staff$|bookings$|integrations\/(?:byaan|zid|calendly|discount|referral|cart)$|zid\/(?:settings|products|sync-logs|callback)$|woocommerce\/(?:settings|products|orders|analytics)$|byaan-dashboard$|salla$|platform-integrations$|calendar(?:\/settings)?$)/.test(row.route));
-const sources=[...new Set(routes.flatMap(route=>route.files)),...readdirSync('client/src/components/merchant').filter(file=>(file.startsWith('Woo')||file.startsWith('Calendly')||file.startsWith('Discount')||file.startsWith('Referral')||file.startsWith('Cart'))&&file.endsWith('.tsx')).map(file=>'client/src/components/merchant/'+file),'client/src/components/merchant/WorkspaceState.tsx','client/src/components/QueryStateCard.tsx',...readdirSync('client/src/components/ui').filter(file=>file.endsWith('.tsx')).map(file=>'client/src/components/ui/'+file)];
+const routes=JSON.parse(readFileSync('docs/audits/tenant-features-2026-09-30/coverage.json','utf8')).routes.filter(row=>/^\/merchant\/(?:services(?:\/|$)|discounts$|referrals$|abandoned-carts$|occasion-campaigns$|service-categories$|service-packages$|staff$|bookings$|integrations\/(?:byaan|zid|calendly|discount|referral|cart|occasion)$|zid\/(?:settings|products|sync-logs|callback)$|woocommerce\/(?:settings|products|orders|analytics)$|byaan-dashboard$|salla$|platform-integrations$|calendar(?:\/settings)?$)/.test(row.route));
+const sources=[...new Set(routes.flatMap(route=>route.files)),...readdirSync('client/src/components/merchant').filter(file=>(file.startsWith('Woo')||file.startsWith('Calendly')||file.startsWith('Discount')||file.startsWith('Referral')||file.startsWith('Cart')||file.startsWith('Occasion'))&&file.endsWith('.tsx')).map(file=>'client/src/components/merchant/'+file),'client/src/components/merchant/WorkspaceState.tsx','client/src/components/QueryStateCard.tsx',...readdirSync('client/src/components/ui').filter(file=>file.endsWith('.tsx')).map(file=>'client/src/components/ui/'+file)];
 const namespaces=new Set(['merchantUx','common']);for(const file of sources.filter(file=>!file.startsWith('client/src/components/ui/')))for(const match of readFileSync(file,'utf8').matchAll(/\bt\(['"]([a-zA-Z][\w]*)\./g))namespaces.add(match[1]);
 const copy=await loadPreviewLocales([...namespaces]);
 await build({entryPoints:['prototypes/tenant-dashboard/src/service-preview.tsx'],outfile:'prototypes/tenant-dashboard/site/service-preview.js',bundle:true,jsx:'automatic',format:'iife',platform:'browser',target:['es2022'],supported:{'template-literal':false},minify:true,legalComments:'none',
@@ -13,10 +13,13 @@ await build({entryPoints:['prototypes/tenant-dashboard/src/service-preview.tsx']
 const require=createRequire(import.meta.url),tw=createRequire(require.resolve('@tailwindcss/vite')),{compile}=tw('@tailwindcss/node');
 const compiler=await compile(readFileSync('client/src/index.css','utf8').replace('@import "tailwindcss";','@import "tailwindcss" source(none);'),{base:path.resolve('client/src'),onDependency(){}});
 const candidates=new Set();for(const file of [...sources,'prototypes/tenant-dashboard/src/service-preview.tsx'])for(const token of readFileSync(file,'utf8').match(/[^\s"'`<>]+/g)||[])candidates.add(token);
-writeFileSync('prototypes/tenant-dashboard/site/service-preview.css',compiler.build([...candidates])+readFileSync('client/src/styles/merchant-workspace.css','utf8')+readFileSync('client/src/styles/merchant-mobile.css','utf8')+'\nbody.merchant-surface{width:100%;max-width:none;margin:0;border:0;border-radius:0;box-shadow:none}');
-writeFileSync("prototypes/tenant-dashboard/site/service-preview.css",readFileSync("prototypes/tenant-dashboard/site/service-preview.css","utf8")+readFileSync("prototypes/tenant-dashboard/src/service-preview.css","utf8"));
+let styles=compiler.build([...candidates])+readFileSync('client/src/styles/merchant-workspace.css','utf8')+readFileSync('client/src/styles/merchant-mobile.css','utf8')+'\nbody.merchant-surface{width:100%;max-width:none;margin:0;border:0;border-radius:0;box-shadow:none}';
+styles+=readFileSync('prototypes/tenant-dashboard/src/service-preview.css','utf8');
 
 // Booking overrides extend the service catalog primitives, matching the app's cascade.
-const workspaceStyles=readdirSync('client/src/styles').filter(file=>/^(?:service|staff|booking|calendar|appointment|platform|byaan|salla|zid|woocommerce|calendly|discount|referral|cart).*\.css$/.test(file)).sort((a,b)=>Number(/^(booking|calendar|appointment|byaan|salla|zid|woocommerce|calendly|discount|referral|cart)/.test(a))-Number(/^(booking|calendar|appointment|byaan|salla|zid|woocommerce|calendly|discount|referral|cart)/.test(b))||a.localeCompare(b));
-for(const file of workspaceStyles)writeFileSync('prototypes/tenant-dashboard/site/service-preview.css',readFileSync('prototypes/tenant-dashboard/site/service-preview.css','utf8')+readFileSync('client/src/styles/'+file,'utf8'));
+const workspaceStyles=readdirSync('client/src/styles').filter(file=>/^(?:service|staff|booking|calendar|appointment|platform|byaan|salla|zid|woocommerce|calendly|discount|referral|cart|occasion).*\.css$/.test(file)).sort((a,b)=>Number(/^(booking|calendar|appointment|byaan|salla|zid|woocommerce|calendly|discount|referral|cart|occasion)/.test(a))-Number(/^(booking|calendar|appointment|byaan|salla|zid|woocommerce|calendly|discount|referral|cart|occasion)/.test(b))||a.localeCompare(b));
+for(const file of workspaceStyles)styles+=readFileSync('client/src/styles/'+file,'utf8');
+// Readers see a complete stylesheet; avoid repeatedly truncating an open Windows file.
+const cssPath='prototypes/tenant-dashboard/site/service-preview.css';
+writeFileSync(cssPath+'.tmp',styles);renameSync(cssPath+'.tmp',cssPath);
 console.log('Actual service pages preview built; '+namespaces.size+' locale namespaces.');

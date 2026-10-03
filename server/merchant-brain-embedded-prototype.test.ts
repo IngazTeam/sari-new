@@ -259,3 +259,10 @@ it('preserves cart states and history pages only from the owned local frame',()=
  for(const search of [message.search+'&merchantId=999',message.search+'&historyPage=3','path=/merchant/abandoned-carts&tab=rewards','path=/merchant/abandoned-carts&state=paid','path=/merchant/referrals&historyPage=2','path=/merchant/abandoned-carts&historyPage=0'])send({...message,search});
  send(message,'https://evil.test');send(message,undefined,w);expect(w.location.hash).toBe('#/page/merchant/abandoned-carts');send(message);expect(w.location.hash).toBe('#/page/merchant/abandoned-carts?tab=reminders&state=waiting&historyPage=2&tenant=270&lang=en');expect(w.syncServicePreviewContext).toHaveBeenCalledOnce();
 });
+
+it('accepts occasion filters only for the owned local occasion frame',()=>{
+ frame.setAttribute('src','./service-workspace.html?embed=brain');w.history.replaceState(null,'','#/page/merchant/occasion-campaigns');w.syncServicePreviewContext=vi.fn();
+ const message={type:'sary-brain-preview',action:'serviceState',search:'path=/merchant/occasion-campaigns&state=disabled&year=2027&page=2&tenant=270&lang=en'};
+ for(const search of [message.search+'&merchantId=999',message.search+'&year=2028','path=/merchant/occasion-campaigns&year=1899','path=/merchant/referrals&year=2027','path=/merchant/occasion-campaigns&state=paid','path=/merchant/occasion-campaigns&historyPage=2'])send({...message,search});
+ send(message,'https://evil.test');send(message,undefined,w);expect(w.location.hash).toBe('#/page/merchant/occasion-campaigns');send(message);expect(w.location.hash).toBe('#/page/merchant/occasion-campaigns?state=disabled&year=2027&page=2&tenant=270&lang=en');expect(w.syncServicePreviewContext).toHaveBeenCalledOnce();
+});

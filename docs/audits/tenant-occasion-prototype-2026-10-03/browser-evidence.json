@@ -1,0 +1,144 @@
+{
+  "browser": "Chromium via Codex IAB; CSS iframe sizes, not native Safari",
+  "notes": [
+    "ar-390-550-review sampled during resize transition; stable sample constrained to 518px inside 550px frame",
+    "uncertain-save: repeat disabled; refresh read enabled=true",
+    "31 rows paginated 25 then 6; tenant 270 and en verified"
+  ],
+  "measurements": [
+    {
+      "label": "ar-320-list",
+      "dialog": null,
+      "overflow": [],
+      "rawKeys": false,
+      "records": 25,
+      "scrollWidth": 290,
+      "smallTargets": [],
+      "width": 290
+    },
+    {
+      "label": "ar-320-review",
+      "dialog": {
+        "height": 630.328125,
+        "scroll": 628,
+        "width": 258
+      },
+      "overflow": [],
+      "rawKeys": false,
+      "records": 25,
+      "scrollWidth": 290,
+      "smallTargets": [],
+      "width": 290
+    },
+    {
+      "label": "ar-390-550-review",
+      "dialog": {
+        "height": 567.9375,
+        "scroll": 566,
+        "width": 328
+      },
+      "overflow": [],
+      "rawKeys": false,
+      "records": 25,
+      "scrollWidth": 360,
+      "smallTargets": [],
+      "width": 360
+    },
+    {
+      "label": "ar-390-550-disable-stable",
+      "dialog": {
+        "height": 518,
+        "scroll": 600,
+        "width": 328
+      },
+      "overflow": [],
+      "rawKeys": false,
+      "records": 25,
+      "scrollWidth": 360,
+      "smallTargets": [],
+      "width": 360
+    },
+    {
+      "label": "en-390-tenant270",
+      "dialog": null,
+      "overflow": [],
+      "rawKeys": false,
+      "records": 25,
+      "scrollWidth": 360,
+      "smallTargets": [],
+      "width": 360
+    },
+    {
+      "label": "en-390-page2",
+      "dialog": null,
+      "overflow": [],
+      "rawKeys": false,
+      "records": 6,
+      "scrollWidth": 360,
+      "smallTargets": [],
+      "width": 360
+    },
+    {
+      "label": "en-768-page2",
+      "dialog": null,
+      "overflow": [],
+      "rawKeys": false,
+      "records": 6,
+      "scrollWidth": 738,
+      "smallTargets": [],
+      "width": 738
+    },
+    {
+      "label": "en-1440-page1",
+      "dialog": null,
+      "overflow": [],
+      "rawKeys": false,
+      "records": 25,
+      "scrollWidth": 1410,
+      "smallTargets": [],
+      "width": 1410
+    },
+    {
+      "label": "en-320-review-stable",
+      "dialog": {
+        "height": 763.90625,
+        "scroll": 762,
+        "width": 258
+      },
+      "overflow": [],
+      "rawKeys": false,
+      "records": 25,
+      "scrollWidth": 290,
+      "smallTargets": [],
+      "width": 290
+    },
+    {
+      "label": "en-320-expanded-review",
+      "dialog": {
+        "height": 812,
+        "scroll": 2334,
+        "width": 258
+      },
+      "overflow": [],
+      "rawKeys": false,
+      "records": 25,
+      "scrollWidth": 290,
+      "smallTargets": [],
+      "width": 290
+    },
+    {
+      "label": "ar-390-review-final",
+      "dialog": {
+        "height": 567.9375,
+        "scroll": 566,
+        "width": 328
+      },
+      "overflow": [],
+      "rawKeys": false,
+      "records": 25,
+      "scrollWidth": 360,
+      "smallTargets": [],
+      "width": 360
+    }
+  ]
+}

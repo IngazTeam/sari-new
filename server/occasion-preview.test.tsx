@@ -1,0 +1,41 @@
+// @vitest-environment jsdom
+import React,{act} from 'react';
+import {createRoot,type Root} from 'react-dom/client';
+import {beforeEach,afterEach,it,expect,vi} from 'vitest';
+import {occasionWorkspaceEn as en,occasionWorkspaceAr as ar} from '../client/src/locales/occasion-workspace';
+const state=vi.hoisted(()=>({language:'en'}));
+vi.mock('@/lib/trpc',()=>import('../prototypes/tenant-dashboard/src/service-preview-api'));
+vi.mock('wouter',()=>import('../prototypes/tenant-dashboard/src/service-preview-router'));
+vi.mock('react-i18next',()=>({useTranslation:()=>({i18n:{language:state.language},t:(key:string)=>(state.language==='ar'?ar:en)[key.split('.').pop() as keyof typeof en]??key})}));
+import Page from '../client/src/pages/merchant/OccasionCampaignsPage';
+import {ServicePreviewContext} from '../prototypes/tenant-dashboard/src/service-preview-api';
+import {ServicePreviewModel,serviceModes} from '../prototypes/tenant-dashboard/src/service-preview-model';
+import {occasionWorkspaceSchema} from '../shared/occasion-workspace';
+import {projectOccasionWorkspace} from './occasion-workspace-source';
+import {getUpcomingOccasions,generateOccasionMessage} from '../shared/occasion-calendar';
+let root:Root,container:HTMLDivElement,model:ServicePreviewModel;
+beforeEach(()=>{Object.assign(globalThis,{React,IS_REACT_ACT_ENVIRONMENT:true});state.language='en';container=document.createElement('div');document.body.append(container);root=createRoot(container);model=new ServicePreviewModel(269,'normal','2026-10-03T12:00:00Z');history.replaceState(null,'','/?path=/merchant/occasion-campaigns');});
+afterEach(async()=>{await act(async()=>root.unmount());model.dispose();container.remove();});
+const render=()=>act(async()=>root.render(<ServicePreviewContext.Provider value={model}><Page/></ServicePreviewContext.Provider>));
+const button=(text:string)=>Array.from(document.querySelectorAll<HTMLButtonElement>('button')).find(b=>b.textContent?.trim().startsWith(text))!;
+const click=(text:string)=>act(async()=>{expect(button(text)).toBeTruthy();button(text).click();});
+const check=()=>act(async()=>{(document.querySelector('[role=dialog] input[type=checkbox]') as HTMLInputElement).click();});
+const read=(input:object={},instance=model)=>{const r=instance.read('occasionCampaigns.workspace',input);expect(r.error).toBeFalsy();return occasionWorkspaceSchema.parse(r.data);};
+const target={action:'toggle' as const,id:31,enabled:true};
+const review=(instance=model,t:any=target)=>instance.read('occasionCampaigns.reviewAction',t).data;
+const value=(instance=model,t:any=target)=>({target:t,reviewRevision:review(instance,t).reviewRevision,acknowledged:true});
+it.each(['ar','en'])('uses the actual page and activation review in %s',async language=>{state.language=language;const c=language==='ar'?ar:en;await render();expect(container.textContent).not.toContain('merchantUx.');await click(c.enable);expect(model.operations).toBe(0);expect(button(c.confirmEnable).disabled).toBe(true);await check();await click(c.confirmEnable);expect(model.operations).toBe(1);expect(read().counts.enabled).toBe(1);expect(container.textContent).toContain(c.saved);});
+it.each(serviceModes)('renders %s with safe scope and no writes',async mode=>{model=new ServicePreviewModel(269,mode);await render();expect(container.querySelectorAll('.oc-record').length>0).toBe(!['empty','loading','failure','forbidden','session','foreign','stale-error'].includes(mode));expect(container.textContent).not.toContain('merchantUx.');expect(model.operations).toBe(0);});
+it.each([269,270])('keeps both pages and actual acceptance evidence for tenant %s',id=>{const m=new ServicePreviewModel(id);try{expect(read({},m).rows).toHaveLength(25);expect(read({page:2},m).rows).toHaveLength(6);expect(read({},m)).toMatchObject({merchantId:id,storedRecipients:999,delivery:{accepted:3,manualReview:4}});}finally{m.dispose();}});
+it('matches server projection, calendar and generated review text',()=>{
+ const all=[...read().rows,...read({page:2}).rows],source=all.map(r=>({...r,merchantId:269,campaign_id:r.campaignId,status:r.storedStatus,enabled:Number(r.enabled),linkedId:r.linkedCampaign?.id,linkedMerchantId:r.linkedCampaign?269:null,linkedName:r.linkedCampaign?.name,linkedStatus:r.linkedCampaign?.status}));
+ const delivery=all.flatMap(r=>r.delivery?(['pending','processing','accepted','retryable','suppressed','manualReview','unknown'] as const).flatMap(k=>r.delivery![k]?[{campaignId:r.campaignId,merchantId:269,status:k==='accepted'?'sent':k==='retryable'?'failed':k==='manualReview'?'manual_review':k,count:r.delivery![k]}]:[]):[]);
+ for(const input of [{},{page:2},{state:'completed'},{query:'Nawa'},{year:2008}]){const local=read(input),actual=projectOccasionWorkspace(1269,269,true,local.selection,source,delivery,getUpcomingOccasions(new Date(model.now)),new Date(model.now));const strip=(v:any)=>({...v,rows:v.rows.map(({revision,...row}:any)=>row)});expect(strip(local)).toEqual(strip(actual));}
+ const r=review(),o=getUpcomingOccasions(new Date(model.now))[0];expect(r.terms.messagePreview).toBe(generateOccasionMessage(o.name,null,'[CODE]',o.discountPercent,'نواة · Nawa'));
+});
+it('prepares a new definition disabled without modifying acceptance evidence',async()=>{await render();await click(en.create);expect(model.operations).toBe(0);await click(en.confirmCreate);expect(model.operations).toBe(1);expect(read().total).toBe(32);expect(read().rows[0]).toMatchObject({enabled:false,state:'disabled',campaignId:null,discountCode:null});expect(read().delivery.accepted).toBe(3);});
+it('does not silently turn off fault simulation when fetching a review',async()=>{model=new ServicePreviewModel(269,'action-failure');await render();await click(en.enable);expect(model.activeMode).toBe('action-failure');await check();await click(en.confirmEnable);expect(model.operations).toBe(0);expect(document.body.textContent).toContain(en.uncertain);});
+it('recovers an uncertain activation by reading the saved setting without another write',async()=>{model=new ServicePreviewModel(269,'uncertain-save');await render();await click(en.enable);await check();await click(en.confirmEnable);expect(model.operations).toBe(1);expect(document.body.textContent).toContain(en.uncertain);expect(read().counts.enabled).toBe(1);await click(en.cancel);await click(en.refresh);expect(button(en.disable)).toBeTruthy();expect(model.operations).toBe(1);});
+it('rejects replay, another tenant revision, invalid fields and a started record',async()=>{const input=value(),other=new ServicePreviewModel(270,'normal',model.now);try{await expect(other.mutate('occasionCampaigns.applyAction',input)).rejects.toMatchObject({data:{code:'CONFLICT'}});await expect(model.mutate('occasionCampaigns.applyAction',{...input,merchantId:270})).rejects.toBeTruthy();await model.mutate('occasionCampaigns.applyAction',input);await expect(model.mutate('occasionCampaigns.applyAction',input)).rejects.toMatchObject({data:{code:'CONFLICT'}});const started={action:'toggle',id:29,enabled:false};expect(review(model,started).eligible).toBe(false);await expect(model.mutate('occasionCampaigns.applyAction',value(model,started))).rejects.toBeTruthy();expect(model.operations).toBe(1);}finally{other.dispose();}});
+it('shows page two through the actual controls and filters by year',async()=>{await render();await click(en.next);expect(new URLSearchParams(location.search).get('page')).toBe('2');expect(container.querySelectorAll('.oc-record')).toHaveLength(6);});
+it('drops pending work on disposal instead of applying it to another tenant',async()=>{model=new ServicePreviewModel(269,'pending-save');const request=model.mutate('occasionCampaigns.applyAction',value()),check=expect(request).rejects.toMatchObject({data:{code:'CONFLICT'}});expect(model.pending).toBe(1);model.dispose();await check;expect(model.operations).toBe(0);});
