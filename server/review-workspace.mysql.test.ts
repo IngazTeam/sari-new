@@ -67,7 +67,7 @@ for (const kind of ['order', 'booking'] as const) describe.skipIf(!process.env.D
     expect((await read({ sort: 'lowest' })).rows.at(-1)?.id).toBe(bad.id);
   });
   it('returns absent mean for empty or unrated sets and clamps empty pages', async () => {
-    expect(await read({ page: 50 })).toMatchObject({ currentPage: 1, pages: 0, rows: [], stats: { average: null, total: 0 } });
+    expect(await read({ page: 50 })).toMatchObject({ collection: 'scoped_invitation_required', currentPage: 1, pages: 0, rows: [], stats: { average: null, total: 0 } });
     await create('Invalid', 0); expect((await read()).stats.average).toBeNull();
   });
   it('retains full content, named records and dimensions without claiming verified sales or delivery', async () => {

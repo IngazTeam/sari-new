@@ -31,7 +31,7 @@ function snapshot() {
       average: rated.length ? rated.reduce((a, r) => a + r.rating, 0) / rated.length : null, pending: linked.filter(r => r.replyState === 'pending').length, replied: linked.filter(r => r.replyState === 'replied').length,
       public: linked.filter(r => r.isPublic === true).length, private: linked.filter(r => r.isPublic === false).length, unknownVisibility: linked.filter(r => r.isPublic === null).length,
       distribution: Object.fromEntries([1, 2, 3, 4, 5].map(n => [n, rated.filter(r => r.rating === n).length])) },
-    matched: filtered.length, pages, currentPage, pageSize: 25, rows: filtered.slice((currentPage - 1) * 25, currentPage * 25), evidence: 'recorded_reviews', salesAttribution: 'not_verified', ...m.override };
+    matched: filtered.length, pages, currentPage, pageSize: 25, rows: filtered.slice((currentPage - 1) * 25, currentPage * 25), evidence: 'recorded_reviews', salesAttribution: 'not_verified', collection: 'scoped_invitation_required', ...m.override };
 }
 const detail = (id = 1) => ({ actorId: m.actor, merchantId: m.merchant, kind: m.kind, checkedAt: new Date().toISOString(), canReply: m.writable, row: m.source.find(r => r.id === id) });
 let root: Root, container: HTMLDivElement, memory: ReturnType<typeof memoryLocation>, booking = false;
@@ -51,6 +51,8 @@ afterEach(async () => { await act(async () => root.unmount()); container.remove(
 for (const kind of ['order', 'booking']) for (const language of ['ar', 'en']) it(`shows the actual ${kind} page and complete literal details in ${language}`, async () => {
   booking = kind === 'booking'; m.source = [row(1, kind)]; m.language = language; const c = language === 'ar' ? ar : en;
   await render(); expect(container.textContent).toContain(booking ? c.bookingTitle : c.orderTitle); expect(container.textContent).not.toContain('merchantUx.');
+  expect(container.querySelector('.rw-collection')?.textContent).toContain(c.collectionHelp);
+  expect(container.querySelector('.rw-collection button')).toBeNull();
   await click(c.details); expect(document.querySelector('[role=dialog]')?.textContent).toContain('<img src=x onerror=alert(1)>'); expect(document.querySelector('img')).toBeNull();
   expect(document.body.textContent).toContain(c.replyHelp); expect(document.activeElement?.textContent).toBe(c.details);
   if (booking) expect(document.body.textContent).toContain(c.professionalism);
@@ -82,6 +84,10 @@ it('hides all write controls for viewers while still showing the existing reply'
 it('does not render foreign list data or stale successful data beside an error', async () => {
   m.override = { merchantId: 999 }; await render(); expect(container.textContent).not.toContain('Synthetic customer');
   m.override = {}; m.error = Error('Database'); await render(); expect(container.textContent).not.toContain('Synthetic customer');
+});
+it.each([undefined, 'enabled', 'unknown'])('does not invent collection readiness from invalid metadata %s', async collection => {
+  m.override = { collection }; await render(); expect(container.textContent).not.toContain('Synthetic customer');
+  expect(container.querySelector('.rw-collection')).toBeNull();
 });
 it('does not display a foreign detail or accept a foreign action response', async () => {
   m.detail.mockResolvedValue({ ...detail(), merchantId: 999 }); await render(); await click(en.details);

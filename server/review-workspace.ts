@@ -134,7 +134,7 @@ export async function readReviewWorkspace(actorId: number, merchantId: number, k
       stats: { total, linked, unlinked: total - linked, rated: valid, invalidRatings: linked - valid, average: valid ? Number(stats.average) : null,
         pending: linked - answered, replied: answered, public: visible, private: hidden, unknownVisibility: linked - visible - hidden,
         distribution: Object.fromEntries([1, 2, 3, 4, 5].map(n => [String(n), Number(stats['star' + n])])) },
-      matched, pages, currentPage, pageSize: 25, rows: source.map(raw => projectReview(raw, kind)), evidence: 'recorded_reviews', salesAttribution: 'not_verified' });
+      matched, pages, currentPage, pageSize: 25, rows: source.map(raw => projectReview(raw, kind)), evidence: 'recorded_reviews', salesAttribution: 'not_verified', collection: 'scoped_invitation_required' });
   });
 }
 

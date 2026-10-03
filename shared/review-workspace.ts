@@ -53,6 +53,7 @@ export const reviewWorkspace = z.object({
   ...scope, selection: reviewSelection, stats: reviewStats, matched: count, pages: count,
   currentPage: z.number().int().positive(), pageSize: z.literal(25), rows: z.array(reviewRow).max(25),
   evidence: z.literal('recorded_reviews'), salesAttribution: z.literal('not_verified'),
+  collection: z.literal('scoped_invitation_required'),
 }).strict();
 export type ReviewWorkspace = z.infer<typeof reviewWorkspace>;
 export const reviewDetail = z.object({ ...scope, row: reviewRow }).strict();

@@ -31,6 +31,7 @@ const detail = (kind: ReviewKind = 'order', id = 32, instance = model) => { cons
 for (const kind of ['order', 'booking'] as const) {
   it.each(['ar', 'en'])(`renders the actual ${kind} page, full details and reply save in %s`, async language => {
     state.language = language; const c = language === 'ar' ? ar : en; await render(kind); expect(container.querySelectorAll('.rw-card')).toHaveLength(25);
+    expect(container.querySelector('.rw-collection')?.textContent).toContain(c.collectionUnavailable); expect(read(kind).collection).toBe('scoped_invitation_required');
     await click(c.details); expect(document.body.textContent).toContain(c.replyHelp); if (kind === 'booking') expect(document.body.textContent).toContain(c.professionalism);
     await fill('  A clear response · رد واضح  '); await click(c.save); expect(document.body.textContent).toContain(c.saved); expect(document.activeElement?.textContent).toBe(c.saved);
     expect(detail(kind).row.merchantReply).toBe('A clear response · رد واضح'); expect(model.operations).toBe(1); expect(container.textContent).not.toContain('merchantUx.');

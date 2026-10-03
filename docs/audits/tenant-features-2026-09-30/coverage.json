@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-03T14:43:38.679Z",
+  "generatedAt": "2026-10-03T15:14:11.400Z",
   "definition": "Every registered route is accounted for; source inventory and design completion are different statuses.",
   "routes": [
     {
@@ -65076,23 +65076,24 @@
       ],
       "controls": [
         "74316d4d5965",
-        "cfa1763f8bd8",
-        "a9acf8d35971",
-        "a576a0ba7c15",
-        "a09419bcc760",
-        "96ef1d348441",
-        "2e65e226adf1",
-        "cc380ea66cfc",
-        "fa352c12fe13",
-        "7cbc7ccc1908",
-        "e04b98f72844",
-        "60a045d504da",
-        "0a7c89ef4d58",
-        "e3d577f277c7",
-        "53df003f5c96",
-        "4b59b29adaff",
-        "a4fe4e4236c8",
-        "fc5ec99b87ff"
+        "a596f8e1a09c",
+        "b81547dfffa9",
+        "f0d7705f841a",
+        "5a2e292badfa",
+        "a1a6c73e9455",
+        "30d6e7c098a9",
+        "dc1fac7a0bfd",
+        "ed80de23aa33",
+        "930701e67ca1",
+        "08081ed93ce9",
+        "e4c66317fa21",
+        "3354c9fed7c5",
+        "16191837e5d5",
+        "e2b94463af21",
+        "fde66f313d1d",
+        "0abeca41b91f",
+        "2765254ef798",
+        "089a4525ea5e"
       ],
       "queries": [
         "auth.me",
@@ -65160,9 +65161,33 @@
           "review": "source-inventoried"
         },
         {
-          "id": "cfa1763f8bd8",
+          "id": "a596f8e1a09c",
           "file": "client/src/components/merchant/ReviewWorkspace.tsx",
-          "line": 83,
+          "line": 81,
+          "tag": "summary",
+          "role": "",
+          "kind": "action",
+          "label": "",
+          "section": "ReviewWorkspace",
+          "binding": "",
+          "type": "text",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": false,
+          "conditions": [
+            "!data",
+            "query.error"
+          ],
+          "disabled": "",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "b81547dfffa9",
+          "file": "client/src/components/merchant/ReviewWorkspace.tsx",
+          "line": 84,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -65184,9 +65209,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "a9acf8d35971",
+          "id": "f0d7705f841a",
           "file": "client/src/components/merchant/ReviewWorkspace.tsx",
-          "line": 85,
+          "line": 86,
           "tag": "input",
           "role": "",
           "kind": "field",
@@ -65208,9 +65233,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "a576a0ba7c15",
+          "id": "5a2e292badfa",
           "file": "client/src/components/merchant/ReviewWorkspace.tsx",
-          "line": 85,
+          "line": 86,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -65232,9 +65257,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "a09419bcc760",
+          "id": "a1a6c73e9455",
           "file": "client/src/components/merchant/ReviewWorkspace.tsx",
-          "line": 86,
+          "line": 87,
           "tag": "select",
           "role": "",
           "kind": "field",
@@ -65265,9 +65290,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "96ef1d348441",
+          "id": "30d6e7c098a9",
           "file": "client/src/components/merchant/ReviewWorkspace.tsx",
-          "line": 87,
+          "line": 88,
           "tag": "select",
           "role": "",
           "kind": "field",
@@ -65302,9 +65327,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "2e65e226adf1",
+          "id": "dc1fac7a0bfd",
           "file": "client/src/components/merchant/ReviewWorkspace.tsx",
-          "line": 88,
+          "line": 89,
           "tag": "select",
           "role": "",
           "kind": "field",
@@ -65343,9 +65368,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "cc380ea66cfc",
+          "id": "ed80de23aa33",
           "file": "client/src/components/merchant/ReviewWorkspace.tsx",
-          "line": 89,
+          "line": 90,
           "tag": "select",
           "role": "",
           "kind": "field",
@@ -65380,9 +65405,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "fa352c12fe13",
+          "id": "930701e67ca1",
           "file": "client/src/components/merchant/ReviewWorkspace.tsx",
-          "line": 90,
+          "line": 91,
           "tag": "select",
           "role": "",
           "kind": "field",
@@ -65421,9 +65446,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "7cbc7ccc1908",
+          "id": "08081ed93ce9",
           "file": "client/src/components/merchant/ReviewWorkspace.tsx",
-          "line": 91,
+          "line": 92,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -65446,9 +65471,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "e04b98f72844",
+          "id": "e4c66317fa21",
           "file": "client/src/components/merchant/ReviewWorkspace.tsx",
-          "line": 96,
+          "line": 97,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -65469,9 +65494,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "60a045d504da",
+          "id": "3354c9fed7c5",
           "file": "client/src/components/merchant/ReviewWorkspace.tsx",
-          "line": 98,
+          "line": 99,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -65494,9 +65519,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "0a7c89ef4d58",
+          "id": "16191837e5d5",
           "file": "client/src/components/merchant/ReviewWorkspace.tsx",
-          "line": 98,
+          "line": 99,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -65519,9 +65544,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "e3d577f277c7",
+          "id": "e2b94463af21",
           "file": "client/src/components/merchant/ReviewWorkspace.tsx",
-          "line": 101,
+          "line": 102,
           "tag": "DialogContent",
           "role": "",
           "kind": "dialog",
@@ -65540,9 +65565,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "53df003f5c96",
+          "id": "fde66f313d1d",
           "file": "client/src/components/merchant/ReviewWorkspace.tsx",
-          "line": 115,
+          "line": 116,
           "tag": "textarea",
           "role": "",
           "kind": "field",
@@ -65566,9 +65591,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "4b59b29adaff",
+          "id": "0abeca41b91f",
           "file": "client/src/components/merchant/ReviewWorkspace.tsx",
-          "line": 120,
+          "line": 121,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -65587,9 +65612,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "a4fe4e4236c8",
+          "id": "2765254ef798",
           "file": "client/src/components/merchant/ReviewWorkspace.tsx",
-          "line": 121,
+          "line": 122,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -65610,9 +65635,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "fc5ec99b87ff",
+          "id": "089a4525ea5e",
           "file": "client/src/components/merchant/ReviewWorkspace.tsx",
-          "line": 122,
+          "line": 123,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -65651,23 +65676,24 @@
       ],
       "controls": [
         "74316d4d5965",
-        "cfa1763f8bd8",
-        "a9acf8d35971",
-        "a576a0ba7c15",
-        "a09419bcc760",
-        "96ef1d348441",
-        "2e65e226adf1",
-        "cc380ea66cfc",
-        "fa352c12fe13",
-        "7cbc7ccc1908",
-        "e04b98f72844",
-        "60a045d504da",
-        "0a7c89ef4d58",
-        "e3d577f277c7",
-        "53df003f5c96",
-        "4b59b29adaff",
-        "a4fe4e4236c8",
-        "fc5ec99b87ff"
+        "a596f8e1a09c",
+        "b81547dfffa9",
+        "f0d7705f841a",
+        "5a2e292badfa",
+        "a1a6c73e9455",
+        "30d6e7c098a9",
+        "dc1fac7a0bfd",
+        "ed80de23aa33",
+        "930701e67ca1",
+        "08081ed93ce9",
+        "e4c66317fa21",
+        "3354c9fed7c5",
+        "16191837e5d5",
+        "e2b94463af21",
+        "fde66f313d1d",
+        "0abeca41b91f",
+        "2765254ef798",
+        "089a4525ea5e"
       ],
       "queries": [
         "auth.me",
@@ -65735,9 +65761,33 @@
           "review": "source-inventoried"
         },
         {
-          "id": "cfa1763f8bd8",
+          "id": "a596f8e1a09c",
           "file": "client/src/components/merchant/ReviewWorkspace.tsx",
-          "line": 83,
+          "line": 81,
+          "tag": "summary",
+          "role": "",
+          "kind": "action",
+          "label": "",
+          "section": "ReviewWorkspace",
+          "binding": "",
+          "type": "text",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": false,
+          "conditions": [
+            "!data",
+            "query.error"
+          ],
+          "disabled": "",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "b81547dfffa9",
+          "file": "client/src/components/merchant/ReviewWorkspace.tsx",
+          "line": 84,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -65759,9 +65809,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "a9acf8d35971",
+          "id": "f0d7705f841a",
           "file": "client/src/components/merchant/ReviewWorkspace.tsx",
-          "line": 85,
+          "line": 86,
           "tag": "input",
           "role": "",
           "kind": "field",
@@ -65783,9 +65833,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "a576a0ba7c15",
+          "id": "5a2e292badfa",
           "file": "client/src/components/merchant/ReviewWorkspace.tsx",
-          "line": 85,
+          "line": 86,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -65807,9 +65857,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "a09419bcc760",
+          "id": "a1a6c73e9455",
           "file": "client/src/components/merchant/ReviewWorkspace.tsx",
-          "line": 86,
+          "line": 87,
           "tag": "select",
           "role": "",
           "kind": "field",
@@ -65840,9 +65890,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "96ef1d348441",
+          "id": "30d6e7c098a9",
           "file": "client/src/components/merchant/ReviewWorkspace.tsx",
-          "line": 87,
+          "line": 88,
           "tag": "select",
           "role": "",
           "kind": "field",
@@ -65877,9 +65927,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "2e65e226adf1",
+          "id": "dc1fac7a0bfd",
           "file": "client/src/components/merchant/ReviewWorkspace.tsx",
-          "line": 88,
+          "line": 89,
           "tag": "select",
           "role": "",
           "kind": "field",
@@ -65918,9 +65968,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "cc380ea66cfc",
+          "id": "ed80de23aa33",
           "file": "client/src/components/merchant/ReviewWorkspace.tsx",
-          "line": 89,
+          "line": 90,
           "tag": "select",
           "role": "",
           "kind": "field",
@@ -65955,9 +66005,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "fa352c12fe13",
+          "id": "930701e67ca1",
           "file": "client/src/components/merchant/ReviewWorkspace.tsx",
-          "line": 90,
+          "line": 91,
           "tag": "select",
           "role": "",
           "kind": "field",
@@ -65996,9 +66046,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "7cbc7ccc1908",
+          "id": "08081ed93ce9",
           "file": "client/src/components/merchant/ReviewWorkspace.tsx",
-          "line": 91,
+          "line": 92,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -66021,9 +66071,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "e04b98f72844",
+          "id": "e4c66317fa21",
           "file": "client/src/components/merchant/ReviewWorkspace.tsx",
-          "line": 96,
+          "line": 97,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -66044,9 +66094,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "60a045d504da",
+          "id": "3354c9fed7c5",
           "file": "client/src/components/merchant/ReviewWorkspace.tsx",
-          "line": 98,
+          "line": 99,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -66069,9 +66119,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "0a7c89ef4d58",
+          "id": "16191837e5d5",
           "file": "client/src/components/merchant/ReviewWorkspace.tsx",
-          "line": 98,
+          "line": 99,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -66094,9 +66144,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "e3d577f277c7",
+          "id": "e2b94463af21",
           "file": "client/src/components/merchant/ReviewWorkspace.tsx",
-          "line": 101,
+          "line": 102,
           "tag": "DialogContent",
           "role": "",
           "kind": "dialog",
@@ -66115,9 +66165,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "53df003f5c96",
+          "id": "fde66f313d1d",
           "file": "client/src/components/merchant/ReviewWorkspace.tsx",
-          "line": 115,
+          "line": 116,
           "tag": "textarea",
           "role": "",
           "kind": "field",
@@ -66141,9 +66191,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "4b59b29adaff",
+          "id": "0abeca41b91f",
           "file": "client/src/components/merchant/ReviewWorkspace.tsx",
-          "line": 120,
+          "line": 121,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -66162,9 +66212,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "a4fe4e4236c8",
+          "id": "2765254ef798",
           "file": "client/src/components/merchant/ReviewWorkspace.tsx",
-          "line": 121,
+          "line": 122,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -66185,9 +66235,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "fc5ec99b87ff",
+          "id": "089a4525ea5e",
           "file": "client/src/components/merchant/ReviewWorkspace.tsx",
-          "line": 122,
+          "line": 123,
           "tag": "Button",
           "role": "",
           "kind": "action",

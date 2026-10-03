@@ -1,5 +1,9 @@
 export const reviewWorkspaceEn = {
   eyebrow: 'Customer experience', orderTitle: 'Order and product reviews', bookingTitle: 'Booking reviews',
+  collectionTitle: 'Collecting new reviews', collectionUnavailable: 'Currently unavailable',
+  collectionHelp: 'Automatic review requests are paused. You can still read recorded reviews and save replies when you have access.',
+  collectionWhy: 'Why are requests paused?',
+  collectionRequirements: 'Invitations need a confirmed delivery or completed booking, customer consent, and a verified connection between the invitation and the response. They also need safeguards against duplicate messages. A recorded review alone does not establish these conditions.',
   intro: 'Read customer feedback, find what needs attention, and keep your replies in one place.', refresh: 'Refresh',
   total: 'All records', average: 'Average rating', pending: 'Awaiting a reply', replied: 'Reply saved', unknown: 'Unavailable',
   statsHelp: 'Summary covers all linked reviews, independently of the filters. Invalid scores and conflicting references are excluded from the average.',
@@ -28,6 +32,10 @@ export const reviewWorkspaceEn = {
 };
 export const reviewWorkspaceAr: typeof reviewWorkspaceEn = {
   eyebrow: 'تجربة العملاء', orderTitle: 'تقييمات الطلبات والمنتجات', bookingTitle: 'تقييمات الحجوزات',
+  collectionTitle: 'جمع تقييمات جديدة', collectionUnavailable: 'غير متاح حاليًا',
+  collectionHelp: 'طلبات التقييم التلقائية متوقفة حاليًا. يمكنك قراءة التقييمات المسجلة وحفظ الردود حسب صلاحيتك.',
+  collectionWhy: 'لماذا توقفت طلبات التقييم؟',
+  collectionRequirements: 'تشغيل الدعوات يحتاج تأكيد التسليم أو اكتمال الحجز، وموافقة العميل، وربط رده بالدعوة الصحيحة، مع منع تكرار الرسائل. وجود تقييم مسجل وحده لا يثبت تحقق هذه الشروط.',
   intro: 'اقرأ ملاحظات العملاء، واعرف ما يحتاج متابعة، واحفظ ردودك في مكان واحد.', refresh: 'تحديث',
   total: 'كل السجلات', average: 'متوسط التقييم', pending: 'بانتظار رد', replied: 'الرد محفوظ', unknown: 'غير متاح',
   statsHelp: 'الملخص يشمل كل التقييمات ذات المراجع المتطابقة ولا يتأثر بالفلاتر. يستبعد المتوسط الدرجات غير الصالحة والمراجع المتعارضة.',

@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-03T14:43:38.679Z",
+  "generatedAt": "2026-10-03T15:14:11.400Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -11,7 +11,7 @@
     "after": {
       "routes": 126,
       "files": 466,
-      "controls": 2646
+      "controls": 2647
     }
   },
   "addedFiles": [
@@ -1810,7 +1810,7 @@
     {
       "route": "/merchant/reviews",
       "controlsBefore": 7,
-      "controlsNow": 18,
+      "controlsNow": 19,
       "removedQueries": [
         "reviews.list",
         "reviews.getStats"
@@ -1833,7 +1833,7 @@
     {
       "route": "/merchant/booking-reviews",
       "controlsBefore": 9,
-      "controlsNow": 18,
+      "controlsNow": 19,
       "removedQueries": [
         "bookingReviews.list"
       ],

@@ -62,7 +62,7 @@ export class ReviewPreviewStore {
       rated: rated.length, invalidRatings: linked.length - rated.length, average: rated.length ? rated.reduce((sum, r) => sum + r.rating!, 0) / rated.length : null,
       pending: linked.length - replied.length, replied: replied.length, public: linked.filter(r => r.isPublic === true).length, private: linked.filter(r => r.isPublic === false).length,
       unknownVisibility: linked.filter(r => r.isPublic === null).length, distribution: Object.fromEntries([1, 2, 3, 4, 5].map(n => [String(n), rated.filter(r => r.rating === n).length])) },
-      matched: matches.length, pages, currentPage, pageSize: 25, rows: matches.slice((currentPage - 1) * 25, currentPage * 25), evidence: 'recorded_reviews', salesAttribution: 'not_verified' });
+      matched: matches.length, pages, currentPage, pageSize: 25, rows: matches.slice((currentPage - 1) * 25, currentPage * 25), evidence: 'recorded_reviews', salesAttribution: 'not_verified', collection: 'scoped_invitation_required' });
   }
   mutate(name: string, input: unknown) {
     if (!reviewPreviewMutations.includes(name as any)) throw fault('missing', 'NOT_FOUND');

@@ -1,0 +1,47 @@
+[
+  {
+    "language": "ar",
+    "card": 266,
+    "cardScroll": 264,
+    "client": 290,
+    "rawKeys": false,
+    "scroll": 290,
+    "width": 320
+  },
+  {
+    "language": "ar",
+    "card": 336,
+    "cardScroll": 334,
+    "client": 360,
+    "rawKeys": false,
+    "scroll": 360,
+    "width": 390
+  },
+  {
+    "language": "ar",
+    "card": 714,
+    "cardScroll": 712,
+    "client": 738,
+    "rawKeys": false,
+    "scroll": 738,
+    "width": 768
+  },
+  {
+    "language": "ar",
+    "card": 1386,
+    "cardScroll": 1384,
+    "client": 1410,
+    "rawKeys": false,
+    "scroll": 1410,
+    "width": 1440
+  },
+  {
+    "language": "en",
+    "card": 266,
+    "cardScroll": 264,
+    "client": 290,
+    "rawKeys": false,
+    "scroll": 290,
+    "width": 320
+  }
+]

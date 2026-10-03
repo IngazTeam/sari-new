@@ -1,5 +1,10 @@
 export function reviewWorkspaceLabels(t: (key: string) => string) { return {
   eyebrow: t('merchantUx.reviewWorkspace.eyebrow'),
+  collectionTitle: t('merchantUx.reviewWorkspace.collectionTitle'),
+  collectionUnavailable: t('merchantUx.reviewWorkspace.collectionUnavailable'),
+  collectionHelp: t('merchantUx.reviewWorkspace.collectionHelp'),
+  collectionWhy: t('merchantUx.reviewWorkspace.collectionWhy'),
+  collectionRequirements: t('merchantUx.reviewWorkspace.collectionRequirements'),
   orderTitle: t('merchantUx.reviewWorkspace.orderTitle'),
   bookingTitle: t('merchantUx.reviewWorkspace.bookingTitle'),
   intro: t('merchantUx.reviewWorkspace.intro'),

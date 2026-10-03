@@ -2,7 +2,7 @@
 
 هذا حصر مصدر قابل لإعادة التوليد، وليس ادعاءً بأن كل مسار عمل اختُبر أو أُعيد تصميمه. يشمل المكونات الفرعية المحلية، الحقول، الأزرار، النوافذ، التبويبات، واجهات القراءة والتعديل. العناصر الديناميكية تحتاج مراجعة إضافية.
 
-- 126 مسارًا مسجلًا، 466 ملف واجهة متصلًا، 2646 عنصر تحكم في المصدر.
+- 126 مسارًا مسجلًا، 466 ملف واجهة متصلًا، 2647 عنصر تحكم في المصدر.
 - 0 رابطًا حرفيًا غير مطابق، و0 ملف صفحة غير متصل بالمسارات المحصورة.
 
 | الصفحة | الملفات | عناصر التحكم | القراءة / التعديل | موك أب للصفحة |
@@ -71,8 +71,8 @@
 | /merchant/analytics-dashboard — تحليلات الرسائل | 9 | 10 | 3 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/performance-metrics — مقاييس الأداء | 10 | 10 | 3 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/data-sync — تصدير المخزون إلى Google Sheets | 9 | 16 | 3 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/reviews — تقييمات المنتجات | 6 | 18 | 6 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/booking-reviews — تقييمات الحجوزات | 6 | 18 | 6 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/reviews — تقييمات المنتجات | 6 | 19 | 6 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/booking-reviews — تقييمات الحجوزات | 6 | 19 | 6 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/order-notifications — إشعارات الطلبات | 2 | 9 | 2 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/settings — الحساب والمتجر | 15 | 49 | 5 / 8 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/privacy-center — الخصوصية | 2 | 12 | 1 / 4 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -2975,23 +2975,24 @@
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
 | 78 | Button | تسمية ديناميكية / تحتاج مراجعة | ReviewWorkspace |
-| 83 | summary | تسمية ديناميكية / تحتاج مراجعة | ReviewWorkspace |
-| 85 | input | c.searchHint | ReviewWorkspace |
-| 85 | Button | تسمية ديناميكية / تحتاج مراجعة | ReviewWorkspace |
-| 86 | select | تسمية ديناميكية / تحتاج مراجعة | ReviewWorkspace |
+| 81 | summary | تسمية ديناميكية / تحتاج مراجعة | ReviewWorkspace |
+| 84 | summary | تسمية ديناميكية / تحتاج مراجعة | ReviewWorkspace |
+| 86 | input | c.searchHint | ReviewWorkspace |
+| 86 | Button | تسمية ديناميكية / تحتاج مراجعة | ReviewWorkspace |
 | 87 | select | تسمية ديناميكية / تحتاج مراجعة | ReviewWorkspace |
 | 88 | select | تسمية ديناميكية / تحتاج مراجعة | ReviewWorkspace |
 | 89 | select | تسمية ديناميكية / تحتاج مراجعة | ReviewWorkspace |
 | 90 | select | تسمية ديناميكية / تحتاج مراجعة | ReviewWorkspace |
-| 91 | Button | تسمية ديناميكية / تحتاج مراجعة | ReviewWorkspace |
-| 96 | Button | # | unlinked # |
-| 98 | Button | تسمية ديناميكية / تحتاج مراجعة | unlinked # |
-| 98 | Button | تسمية ديناميكية / تحتاج مراجعة | unlinked # |
-| 101 | DialogContent | unlinked quality professionalism value : / linked linked | unlinked # |
-| 115 | textarea | / | ReviewWorkspace |
-| 120 | Button | تسمية ديناميكية / تحتاج مراجعة | ReviewWorkspace |
+| 91 | select | تسمية ديناميكية / تحتاج مراجعة | ReviewWorkspace |
+| 92 | Button | تسمية ديناميكية / تحتاج مراجعة | ReviewWorkspace |
+| 97 | Button | # | unlinked # |
+| 99 | Button | تسمية ديناميكية / تحتاج مراجعة | unlinked # |
+| 99 | Button | تسمية ديناميكية / تحتاج مراجعة | unlinked # |
+| 102 | DialogContent | unlinked quality professionalism value : / linked linked | unlinked # |
+| 116 | textarea | / | ReviewWorkspace |
 | 121 | Button | تسمية ديناميكية / تحتاج مراجعة | ReviewWorkspace |
 | 122 | Button | تسمية ديناميكية / تحتاج مراجعة | ReviewWorkspace |
+| 123 | Button | تسمية ديناميكية / تحتاج مراجعة | ReviewWorkspace |
 
 ## client/src/pages/merchant/OrderNotificationsSettings.tsx
 
