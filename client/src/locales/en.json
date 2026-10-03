@@ -5719,6 +5719,10 @@
     "text28": "Most Popular"
   },
   "competitorAnalysisPage": {
+    "addFailed": "Could not start the analysis. Check the competitor name and website URL, then try again.",
+    "deleteFailed": "Could not delete the competitor. Wait for the analysis to finish, refresh, and try again.",
+    "analysisFailed": "The analysis did not finish. Some results may have been saved; they do not form a complete comparison.",
+    "deleteLabel": "Delete competitor {{name}}",
     "text0": "Competitor added and analysis started",
     "text1": "Competitor deleted",
     "text2": "Please fill in all fields",

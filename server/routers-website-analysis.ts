@@ -43,6 +43,11 @@ async function reportOperation<T>(operation: () => Promise<T>): Promise<T> {
   }
 }
 
+// Historic provider/SQL errors are not tenant-facing report content.
+function publicCompetitor(competitor: any) {
+  return { ...competitor, errorMessage: competitor.status === 'failed' ? 'COMPETITOR_ANALYSIS_FAILED' : null };
+}
+
 export const websiteAnalysisRouter = router({
   reports: merchantProcedure.input(reportListInput).query(async ({ctx,input}) => reportOperation(async () => ({
     ...await listWebsiteReports(ctx.merchantId,input), canManage: hasPermission(ctx.merchantRole, 'bot_settings.manage'),
@@ -487,11 +492,14 @@ export const websiteAnalysisRouter = router({
    */
   addCompetitor: permissionProcedure('bot_settings.manage')
     .input(z.object({
-      name: z.string(),
-      url: z.string().url(),
+      name: z.string().trim().min(1).max(255),
+      url: z.string().url().max(500),
     }))
     .mutation(async ({ ctx, input }) => {
       try {
+        if (!analyzer.isUrlSafe(input.url)) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Website URL is not allowed' });
+        }
         const merchant = await getMerchantById(ctx.merchantId);
         if (!merchant) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
@@ -506,7 +514,7 @@ export const websiteAnalysisRouter = router({
         });
 
         // Start analysis in background
-        (async () => {
+        void (async () => {
           try {
             // Analyze competitor website
             const result = await analyzer.analyzeWebsite(input.url, merchant.id);
@@ -518,12 +526,14 @@ export const websiteAnalysisRouter = router({
               performanceScore: result.performanceScore,
               uxScore: result.uxScore,
               contentScore: result.contentQuality,
-              status: 'completed',
             });
 
             // Extract competitor products
-            const { html, text } = await analyzer.scrapeWebsite(input.url);
-            const products = await analyzer.extractProducts(input.url, html, text, merchant.id);
+            const scraped = await analyzer.scrapeWebsite(input.url);
+            let products: analyzer.ExtractedProduct[];
+            try {
+              products = await analyzer.extractProducts(input.url, scraped.html, scraped.text, merchant.id);
+            } finally { scraped.dom.window.close(); }
 
             let totalPrice = 0;
             let minPrice = Infinity;
@@ -561,22 +571,25 @@ export const websiteAnalysisRouter = router({
               });
             }
 
+            // Product writes must settle before a terminal report can be read or deleted.
+            await updateCompetitorAnalysis(competitorId, { status: 'completed' });
             console.log('[CompetitorAnalysis] Analysis completed:', competitorId);
-          } catch (error) {
+          } catch {
             console.error('[CompetitorAnalysis] Analysis failed');
             await updateCompetitorAnalysis(competitorId, {
               status: 'failed',
-              errorMessage: error instanceof Error ? error.message : 'Unknown error',
+              errorMessage: 'COMPETITOR_ANALYSIS_FAILED',
             });
           }
-        })();
+        })().catch(() => { console.error('[CompetitorAnalysis] Failed to store terminal status'); });
 
         return { competitorId, status: 'analyzing' };
       } catch (error) {
         console.error('[CompetitorAnalysis] Error starting analysis');
+        if (error instanceof TRPCError) throw error;
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to start analysis',
+          message: 'Competitor analysis unavailable',
         });
       }
     }),
@@ -584,14 +597,14 @@ export const websiteAnalysisRouter = router({
   /**
    * قائمة المنافسين
    */
-  listCompetitors: merchantProcedure.query(async ({ ctx }) => {
+  listCompetitors: merchantProcedure.query(async ({ ctx }) => reportOperation(async () => {
     const merchant = await getMerchantById(ctx.merchantId);
     if (!merchant) {
       throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
     }
 
-    return await getCompetitorAnalysesByMerchant(merchant.id);
-  }),
+    return (await getCompetitorAnalysesByMerchant(merchant.id)).map(publicCompetitor);
+  })),
 
   /**
    * الحصول على تحليل منافس
@@ -600,7 +613,7 @@ export const websiteAnalysisRouter = router({
     .input(z.object({
       id: z.number(),
     }))
-    .query(async ({ ctx, input }) => {
+    .query(async ({ ctx, input }) => reportOperation(async () => {
       const competitor = await getCompetitorAnalysisById(input.id);
 
       if (!competitor) {
@@ -613,8 +626,8 @@ export const websiteAnalysisRouter = router({
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }
 
-      return competitor;
-    }),
+      return publicCompetitor(competitor);
+    })),
 
   /**
    * الحصول على منتجات المنافس
@@ -734,7 +747,7 @@ export const websiteAnalysisRouter = router({
     .input(z.object({
       id: z.number(),
     }))
-    .mutation(async ({ ctx, input }) => {
+    .mutation(async ({ ctx, input }) => reportOperation(async () => {
       // Verify ownership
       const competitor = await getCompetitorAnalysisById(input.id);
       if (!competitor) {
@@ -746,7 +759,10 @@ export const websiteAnalysisRouter = router({
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }
 
+      if (competitor.status === 'pending' || competitor.status === 'analyzing') {
+        throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'Wait for competitor analysis to settle before deletion' });
+      }
       await deleteCompetitorAnalysis(input.id);
       return { success: true };
-    }),
+    })),
 });

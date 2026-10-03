@@ -55,8 +55,8 @@ export default function CompetitorAnalysis() {
       setName('');
       setUrl('');
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'فشل إضافة المنافس');
+    onError: () => {
+      toast.error(t('competitorAnalysisPage.addFailed'));
     },
   });
 
@@ -65,8 +65,8 @@ export default function CompetitorAnalysis() {
       toast.success(t('competitorAnalysisPage.text1'));
       utils.websiteAnalysis.listCompetitors.invalidate();
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'فشل حذف المنافس');
+    onError: () => {
+      toast.error(t('competitorAnalysisPage.deleteFailed'));
     },
   });
 
@@ -185,6 +185,8 @@ export default function CompetitorAnalysis() {
                   <Button
                     variant="ghost"
                     size="icon"
+                    disabled={competitor.status === 'pending' || competitor.status === 'analyzing' || deleteMutation.isPending}
+                    aria-label={t('competitorAnalysisPage.deleteLabel', { name: competitor.name })}
                     onClick={() => handleDelete(competitor.id)}
                   >
                     <Trash2 className="h-4 w-4" />
@@ -314,7 +316,7 @@ export default function CompetitorAnalysis() {
                   <div className="bg-red-50 p-3 rounded-lg">
                     <div className="flex items-start gap-2">
                       <AlertCircle className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
-                      <p className="text-sm text-red-800">{competitor.errorMessage}</p>
+                      <p className="text-sm text-red-800">{t('competitorAnalysisPage.analysisFailed')}</p>
                     </div>
                   </div>
                 )}
