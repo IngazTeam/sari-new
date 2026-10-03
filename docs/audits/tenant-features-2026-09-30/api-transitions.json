@@ -2029,6 +2029,41 @@
           "contains": "withCartReminderAuthority"
         }
       ]
+    },
+    {
+      "routes": [
+        "/merchant/occasion-campaigns"
+      ],
+      "removed": [
+        "occasionCampaigns.list",
+        "occasionCampaigns.getStats",
+        "occasionCampaigns.getUpcoming",
+        "occasionCampaigns.create",
+        "occasionCampaigns.toggle"
+      ],
+      "required": [
+        "occasionCampaigns.workspace",
+        "occasionCampaigns.reviewAction",
+        "occasionCampaigns.applyAction"
+      ],
+      "note": "Full selected-tenant source with separately labelled stored counts and canonical outbox evidence replaces partial UI reads. Creating saves disabled; activation and pause require a scoped revision review. Existing direct endpoints remain transitional until retirement; ongoing worker authority is not claimed solved by this page.",
+      "evidence": [
+        "docs/audits/tenant-occasion-workspace-2026-10-03/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "client/src/pages/merchant/OccasionCampaignsPage.tsx",
+          "contains": "<OccasionWorkspace"
+        },
+        {
+          "file": "client/src/components/merchant/OccasionWorkspace.tsx",
+          "contains": "scopedOccasionReview"
+        },
+        {
+          "file": "server/occasion-actions.ts",
+          "contains": "reviewRevision!==value.reviewRevision"
+        }
+      ]
     }
   ]
 }

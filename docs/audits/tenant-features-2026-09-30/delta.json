@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-03T01:27:47.515Z",
+  "generatedAt": "2026-10-03T02:21:06.315Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 443,
-      "controls": 2565
+      "files": 447,
+      "controls": 2583
     }
   },
   "addedFiles": [
@@ -142,6 +142,10 @@
     "client/src/lib/cart-workspace-labels.ts",
     "client/src/lib/cart-workspace.ts",
     "client/src/components/merchant/CartDiscountPicker.tsx",
+    "client/src/components/merchant/OccasionWorkspace.tsx",
+    "client/src/components/merchant/OccasionRecord.tsx",
+    "client/src/lib/occasion-workspace.ts",
+    "client/src/lib/occasion-workspace-labels.ts",
     "client/src/lib/sales-analytics-labels.ts",
     "client/src/lib/sales-analytics-trend.ts",
     "client/src/components/merchant/MessageWorkspace.tsx",
@@ -330,6 +334,7 @@
     "client/src/pages/DiscountCodes.tsx",
     "client/src/pages/merchant/Referrals.tsx",
     "client/src/pages/merchant/AbandonedCartsPage.tsx",
+    "client/src/pages/merchant/OccasionCampaignsPage.tsx",
     "client/src/pages/merchant/AnalyticsDashboard.tsx",
     "client/src/pages/merchant/Analytics.tsx",
     "client/src/pages/merchant/OverviewAnalytics.tsx",
@@ -1164,11 +1169,25 @@
     {
       "route": "/merchant/occasion-campaigns",
       "controlsBefore": 4,
-      "controlsNow": 4,
-      "removedQueries": [],
-      "addedQueries": [],
-      "removedMutations": [],
-      "addedMutations": []
+      "controlsNow": 22,
+      "removedQueries": [
+        "occasionCampaigns.list",
+        "occasionCampaigns.getStats",
+        "occasionCampaigns.getUpcoming"
+      ],
+      "addedQueries": [
+        "auth.me",
+        "merchants.getCurrent",
+        "occasionCampaigns.workspace",
+        "occasionCampaigns.reviewAction"
+      ],
+      "removedMutations": [
+        "occasionCampaigns.toggle",
+        "occasionCampaigns.create"
+      ],
+      "addedMutations": [
+        "occasionCampaigns.applyAction"
+      ]
     },
     {
       "route": "/merchant/promotions",

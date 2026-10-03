@@ -23,3 +23,4 @@ export const occasionActionReview=z.object({
   }).strict(),
 }).strict();
 export type OccasionActionReview=z.infer<typeof occasionActionReview>;
+export const occasionActionResult=z.object({actorId:id,merchantId:id,id,enabled:z.boolean(),effect:z.enum(['save_disabled','allow_automatic_admission','disable_future_admission']),sentImmediately:z.literal(false)}).strict();

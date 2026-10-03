@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-03T01:27:47.515Z",
+  "generatedAt": "2026-10-03T02:21:06.315Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -7754,104 +7754,258 @@
     },
     {
       "file": "client/src/pages/merchant/OccasionCampaignsPage.tsx",
-      "hash": "91dfda3bb062",
+      "hash": "d517313b3b3b",
       "queries": [
-        "occasionCampaigns.list",
-        "occasionCampaigns.getStats",
-        "occasionCampaigns.getUpcoming"
+        "auth.me",
+        "merchants.getCurrent"
+      ],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [
+        {
+          "query": "auth.me",
+          "binding": "user",
+          "line": 5,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        },
+        {
+          "query": "merchants.getCurrent",
+          "binding": "merchant",
+          "line": 6,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": "!!user.data?.id&&!user.error&&!user.isFetching"
+        }
+      ],
+      "conditions": [],
+      "imports": [
+        "client/src/components/merchant/OccasionWorkspace.tsx"
+      ],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/components/merchant/OccasionWorkspace.tsx",
+      "hash": "be7431a9d743",
+      "queries": [
+        "occasionCampaigns.workspace",
+        "occasionCampaigns.reviewAction"
       ],
       "mutations": [
-        "occasionCampaigns.toggle",
-        "occasionCampaigns.create"
+        "occasionCampaigns.applyAction"
       ],
-      "imperativeReads": [],
+      "imperativeReads": [
+        {
+          "procedure": "occasionCampaigns.reviewAction",
+          "method": "fetch",
+          "expression": "utils.occasionCampaigns.reviewAction.fetch",
+          "line": 41,
+          "provenance": "trpc-utility-static"
+        }
+      ],
       "browserRequests": [],
       "sections": [
         {
-          "label": "حملات المناسبات",
-          "line": 112,
+          "label": "",
+          "line": 54,
           "tag": "h1"
         },
         {
-          "label": "إجمالي الحملات",
-          "line": 122,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "الحملات المكتملة",
-          "line": 132,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "قبله مزود الإرسال",
-          "line": 142,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "المناسبات القادمة",
-          "line": 154,
-          "tag": "CardTitle"
+          "label": "",
+          "line": 59,
+          "tag": "h2"
         },
         {
           "label": "",
-          "line": 177,
-          "tag": "CardTitle"
+          "line": 61,
+          "tag": "h3"
         },
         {
-          "label": "سجل الحملات",
-          "line": 228,
-          "tag": "CardTitle"
+          "label": "",
+          "line": 66,
+          "tag": "h2"
         },
         {
-          "label": "كيف يعمل النظام؟",
-          "line": 297,
-          "tag": "CardTitle"
+          "label": "·",
+          "line": 73,
+          "tag": "h3"
         },
         {
-          "label": "💡 نصائح لزيادة المبيعات",
-          "line": 353,
-          "tag": "CardTitle"
+          "label": "",
+          "line": 78,
+          "tag": "summary"
+        },
+        {
+          "label": "details",
+          "line": 82,
+          "tag": "DialogTitle"
+        },
+        {
+          "label": "·",
+          "line": 84,
+          "tag": "h3"
+        },
+        {
+          "label": "",
+          "line": 87,
+          "tag": "summary"
+        },
+        {
+          "label": "",
+          "line": 87,
+          "tag": "h3"
+        },
+        {
+          "label": "",
+          "line": 87,
+          "tag": "h3"
+        },
+        {
+          "label": "",
+          "line": 87,
+          "tag": "h3"
         }
       ],
       "choices": [],
-      "handlers": [
-        {
-          "name": "handleToggle",
-          "line": 62,
-          "calls": [
-            "toggleMutation"
-          ]
-        }
-      ],
+      "handlers": [],
       "queryStates": [
         {
-          "query": "occasionCampaigns.list",
-          "binding": "{ data: campaigns = [], refetch: refetchCampaigns }",
-          "line": 34,
-          "errorSignal": false,
-          "loadingSignal": false,
-          "enabled": null
-        },
-        {
-          "query": "occasionCampaigns.getStats",
-          "binding": "{ data: stats, refetch: refetchStats }",
-          "line": 37,
-          "errorSignal": false,
-          "loadingSignal": false,
-          "enabled": null
-        },
-        {
-          "query": "occasionCampaigns.getUpcoming",
-          "binding": "{ data: upcomingOccasions = [] }",
-          "line": 40,
-          "errorSignal": false,
-          "loadingSignal": false,
+          "query": "occasionCampaigns.workspace",
+          "binding": "query",
+          "line": 22,
+          "errorSignal": true,
+          "loadingSignal": true,
           "enabled": null
         }
       ],
       "conditions": [],
+      "imports": [
+        "client/src/components/merchant/OccasionRecord.tsx",
+        "client/src/lib/occasion-workspace-labels.ts",
+        "client/src/lib/occasion-workspace.ts",
+        "client/src/lib/service-catalog-navigation.ts"
+      ],
+      "controlCount": 20
+    },
+    {
+      "file": "client/src/components/merchant/OccasionRecord.tsx",
+      "hash": "816a4fcce38d",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [
+        {
+          "label": "",
+          "line": 13,
+          "tag": "h3"
+        },
+        {
+          "label": "",
+          "line": 14,
+          "tag": "h3"
+        }
+      ],
+      "choices": [
+        {
+          "name": "fields",
+          "line": 7,
+          "values": [
+            [
+              "c.id",
+              "String(row.id)"
+            ],
+            [
+              "c.year",
+              "row.year"
+            ],
+            [
+              "c.discount",
+              "row.discountPercentage===null?null:row.discountPercentage+'%'"
+            ],
+            [
+              "c.code",
+              "row.discountCode"
+            ],
+            [
+              "c.enabledFlag",
+              "row.enabled===null?null:row.enabled?c.yes:c.no"
+            ],
+            [
+              "c.storedStatus",
+              "row.storedStatus==='pending'?c.pending:row.storedStatus&&row.storedStatus in c?c[row.storedStatus as keyof typeof c]:row.storedStatus"
+            ],
+            [
+              "c.storedRecipients",
+              "row.recipientCount"
+            ],
+            [
+              "c.campaign",
+              "row.linkedCampaign?.name??(row.campaignId?'#'+row.campaignId:null)"
+            ],
+            [
+              "c.sentAt",
+              "occasionStamp(row.sentAt,c.notRecorded)"
+            ],
+            [
+              "c.created",
+              "occasionStamp(row.createdAt,c.unknown)"
+            ],
+            [
+              "c.updated",
+              "occasionStamp(row.updatedAt,c.unknown)"
+            ]
+          ]
+        }
+      ],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [
+        "client/src/lib/occasion-workspace.ts"
+      ],
+      "controlCount": 2
+    },
+    {
+      "file": "client/src/lib/occasion-workspace.ts",
+      "hash": "4c07a58953cc",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [
+        {
+          "name": "occasionSelectionKey",
+          "line": 3,
+          "calls": []
+        }
+      ],
+      "queryStates": [],
+      "conditions": [],
       "imports": [],
-      "controlCount": 4
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/lib/occasion-workspace-labels.ts",
+      "hash": "b2c48819da78",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 0
     },
     {
       "file": "client/src/pages/merchant/Promotions.tsx",
@@ -22878,24 +23032,56 @@
         "OccasionCampaignsPage"
       ],
       "files": [
-        "client/src/pages/merchant/OccasionCampaignsPage.tsx"
+        "client/src/pages/merchant/OccasionCampaignsPage.tsx",
+        "client/src/components/merchant/OccasionWorkspace.tsx",
+        "client/src/components/merchant/OccasionRecord.tsx",
+        "client/src/lib/occasion-workspace.ts",
+        "client/src/lib/occasion-workspace-labels.ts",
+        "client/src/lib/service-catalog-navigation.ts"
       ],
       "controls": [
-        "fd0aabcbf78c",
-        "a46b90829179",
-        "b382e4e130a5",
-        "8db783040f70"
+        "29f407afd477",
+        "47c188bc66e0",
+        "f3b73e9f1340",
+        "02b4d511cdf1",
+        "0fe994f5c1b4",
+        "ba3e1ed6ca85",
+        "402649f7d939",
+        "a3e8dcfb2d7b",
+        "459dce9f4529",
+        "1f4a4dde7418",
+        "0a85993173ae",
+        "abd6ceb321e7",
+        "44b75c20e0e2",
+        "c4ecccd1a5ff",
+        "c2de66dd8f8a",
+        "6694571c2f99",
+        "016ae7344cca",
+        "4d44c238c4ed",
+        "d892886f0a80",
+        "e00cf606d1e8",
+        "894c82f5af57",
+        "56e327e4345f"
       ],
       "queries": [
-        "occasionCampaigns.list",
-        "occasionCampaigns.getStats",
-        "occasionCampaigns.getUpcoming"
+        "auth.me",
+        "merchants.getCurrent",
+        "occasionCampaigns.workspace",
+        "occasionCampaigns.reviewAction"
       ],
       "mutations": [
-        "occasionCampaigns.toggle",
-        "occasionCampaigns.create"
+        "occasionCampaigns.applyAction"
       ],
-      "imperativeReads": [],
+      "imperativeReads": [
+        {
+          "file": "client/src/components/merchant/OccasionWorkspace.tsx",
+          "procedure": "occasionCampaigns.reviewAction",
+          "method": "fetch",
+          "expression": "utils.occasionCampaigns.reviewAction.fetch",
+          "line": 41,
+          "provenance": "trpc-utility-static"
+        }
+      ],
       "browserRequests": []
     },
     {
@@ -52261,15 +52447,15 @@
       "review": "source-inventoried"
     },
     {
-      "id": "fd0aabcbf78c",
-      "file": "client/src/pages/merchant/OccasionCampaignsPage.tsx",
-      "line": 155,
-      "tag": "Calendar",
+      "id": "29f407afd477",
+      "file": "client/src/components/merchant/OccasionWorkspace.tsx",
+      "line": 54,
+      "tag": "Button",
       "role": "",
-      "kind": "field",
+      "kind": "action",
       "label": "",
-      "section": "المناسبات القادمة",
-      "binding": "",
+      "section": "OccasionWorkspace",
+      "binding": "()=>void refresh()",
       "type": "text",
       "options": [],
       "min": "",
@@ -52278,18 +52464,329 @@
       "required": false,
       "conditional": false,
       "conditions": [],
+      "disabled": "busy||query.isFetching",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "47c188bc66e0",
+      "file": "client/src/components/merchant/OccasionWorkspace.tsx",
+      "line": 62,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "·",
+      "section": "OccasionWorkspace",
+      "binding": "()=>change({q:String(o.existing!.id),state:null,year:null,page:null})",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "o.existing",
+        "!data.upcoming.length"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "f3b73e9f1340",
+      "file": "client/src/components/merchant/OccasionWorkspace.tsx",
+      "line": 62,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "·",
+      "section": "OccasionWorkspace",
+      "binding": "()=>void prepare({action:'create',occasionType:o.type,year:o.year})",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "data.canManage",
+        "o.existing",
+        "!data.upcoming.length"
+      ],
+      "disabled": "!writable",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "02b4d511cdf1",
+      "file": "client/src/components/merchant/OccasionWorkspace.tsx",
+      "line": 67,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "OccasionWorkspace",
+      "binding": "editSearch??selection.query",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "100",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!data",
+        "query.error"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "0fe994f5c1b4",
+      "file": "client/src/components/merchant/OccasionWorkspace.tsx",
+      "line": 67,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "OccasionWorkspace",
+      "binding": "",
+      "type": "submit",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!data",
+        "query.error"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "ba3e1ed6ca85",
+      "file": "client/src/components/merchant/OccasionWorkspace.tsx",
+      "line": 68,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "OccasionWorkspace",
+      "binding": "selection.state",
+      "type": "text",
+      "options": [
+        {
+          "value": "all",
+          "label": ""
+        },
+        {
+          "value": "s",
+          "label": ""
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!data",
+        "query.error"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "402649f7d939",
+      "file": "client/src/components/merchant/OccasionWorkspace.tsx",
+      "line": 69,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "OccasionWorkspace",
+      "binding": "selection.year??''",
+      "type": "text",
+      "options": [
+        {
+          "value": "",
+          "label": ""
+        },
+        {
+          "value": "y",
+          "label": ""
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!data",
+        "query.error"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "a3e8dcfb2d7b",
+      "file": "client/src/components/merchant/OccasionWorkspace.tsx",
+      "line": 70,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "OccasionWorkspace",
+      "binding": "()=>change({q:null,state:null,year:null,page:null})",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "(selection.query||selection.state!=='all'||selection.year!==null)",
+        "!data",
+        "query.error"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "459dce9f4529",
+      "file": "client/src/components/merchant/OccasionWorkspace.tsx",
+      "line": 72,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "OccasionWorkspace",
+      "binding": "()=>change({page:null})",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "selection.page>1",
+        "!data.rows.length",
+        "!data",
+        "query.error"
+      ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "a46b90829179",
-      "file": "client/src/pages/merchant/OccasionCampaignsPage.tsx",
-      "line": 165,
-      "tag": "Calendar",
+      "id": "1f4a4dde7418",
+      "file": "client/src/components/merchant/OccasionWorkspace.tsx",
+      "line": 75,
+      "tag": "Button",
       "role": "",
-      "kind": "field",
+      "kind": "action",
+      "label": "#",
+      "section": "·",
+      "binding": "()=>openDetails(row)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!data.rows.length"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "0a85993173ae",
+      "file": "client/src/components/merchant/OccasionWorkspace.tsx",
+      "line": 75,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "#",
+      "section": "·",
+      "binding": "()=>void prepare({action:'toggle',id:row.id,enabled:!row.enabled},row)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "data.canManage&&row.storedStatus==='pending'&&row.enabled!==null",
+        "!data.rows.length"
+      ],
+      "disabled": "!writable",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "abd6ceb321e7",
+      "file": "client/src/components/merchant/OccasionWorkspace.tsx",
+      "line": 77,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
       "label": "",
-      "section": "المناسبات القادمة",
+      "section": "·",
+      "binding": "()=>change({page:selection.page-1})",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "data.pages>1",
+        "!data",
+        "query.error"
+      ],
+      "disabled": "busy||query.isFetching||selection.page<=1",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "44b75c20e0e2",
+      "file": "client/src/components/merchant/OccasionWorkspace.tsx",
+      "line": 77,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "·",
+      "binding": "()=>change({page:selection.page+1})",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "data.pages>1",
+        "!data",
+        "query.error"
+      ],
+      "disabled": "busy||query.isFetching||selection.page>=data.pages",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "c4ecccd1a5ff",
+      "file": "client/src/components/merchant/OccasionWorkspace.tsx",
+      "line": 78,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "OccasionWorkspace",
       "binding": "",
       "type": "text",
       "options": [],
@@ -52299,44 +52796,67 @@
       "required": false,
       "conditional": false,
       "conditions": [
-        "upcomingOccasions.length === 0"
+        "!data",
+        "query.error"
       ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "b382e4e130a5",
-      "file": "client/src/pages/merchant/OccasionCampaignsPage.tsx",
-      "line": 202,
-      "tag": "Button",
+      "id": "c2de66dd8f8a",
+      "file": "client/src/components/merchant/OccasionWorkspace.tsx",
+      "line": 81,
+      "tag": "DialogContent",
       "role": "",
-      "kind": "action",
-      "label": "تفعيل هذه الحملة",
-      "section": "OccasionCampaignsPage",
-      "binding": "() => createMutation.mutate({\r\n                                occasionType: occasion.type,\r\n                                year: occasion.year,\r\n                              })",
+      "kind": "dialog",
+      "label": "details details · # details · reason_ : % linked_campaign review toggle details review create",
+      "section": "OccasionWorkspace",
+      "binding": "",
       "type": "text",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": false,
-      "conditions": [
-        "existing"
-      ],
-      "disabled": "createMutation.isPending",
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "8db783040f70",
-      "file": "client/src/pages/merchant/OccasionCampaignsPage.tsx",
-      "line": 280,
-      "tag": "Switch",
+      "id": "6694571c2f99",
+      "file": "client/src/components/merchant/OccasionWorkspace.tsx",
+      "line": 87,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "OccasionWorkspace",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "review",
+        "action?.kind==='details'"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "016ae7344cca",
+      "file": "client/src/components/merchant/OccasionWorkspace.tsx",
+      "line": 88,
+      "tag": "input",
       "role": "",
       "kind": "field",
       "label": "",
-      "section": "سجل الحملات",
-      "binding": "campaign.enabled === 1",
+      "section": "OccasionWorkspace",
+      "binding": "ack",
       "type": "checkbox",
       "options": [],
       "min": "",
@@ -52345,9 +52865,124 @@
       "required": false,
       "conditional": false,
       "conditions": [
-        "campaigns.length === 0"
+        "action?.kind==='review'&&action.target.action==='toggle'",
+        "review",
+        "action?.kind==='details'"
       ],
-      "disabled": "campaign.status !== 'pending' || toggleMutation.isPending",
+      "disabled": "busy||blocked||!same||!review.eligible",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "4d44c238c4ed",
+      "file": "client/src/components/merchant/OccasionWorkspace.tsx",
+      "line": 91,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "details",
+      "section": "OccasionWorkspace",
+      "binding": "()=>setAction(null)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "d892886f0a80",
+      "file": "client/src/components/merchant/OccasionWorkspace.tsx",
+      "line": 91,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "create",
+      "section": "OccasionWorkspace",
+      "binding": "()=>void save()",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "action?.kind==='review'"
+      ],
+      "disabled": "!writable||!review?.eligible||(action.target.action==='toggle'&&!ack)",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "e00cf606d1e8",
+      "file": "client/src/components/merchant/OccasionWorkspace.tsx",
+      "line": 91,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "OccasionWorkspace",
+      "binding": "()=>void refresh()",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "(blocked||!same||failure&&!review)"
+      ],
+      "disabled": "busy||query.isFetching",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "894c82f5af57",
+      "file": "client/src/components/merchant/OccasionRecord.tsx",
+      "line": 12,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "OccasionRecord",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "row.linkedCampaign"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "56e327e4345f",
+      "file": "client/src/components/merchant/OccasionRecord.tsx",
+      "line": 12,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "OccasionRecord",
+      "binding": "'/merchant/campaigns/'+row.linkedCampaign.id",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "row.linkedCampaign"
+      ],
+      "disabled": "",
       "review": "source-inventoried"
     },
     {

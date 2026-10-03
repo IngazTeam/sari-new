@@ -2,7 +2,7 @@
 
 هذا حصر مصدر قابل لإعادة التوليد، وليس ادعاءً بأن كل مسار عمل اختُبر أو أُعيد تصميمه. يشمل المكونات الفرعية المحلية، الحقول، الأزرار، النوافذ، التبويبات، واجهات القراءة والتعديل. العناصر الديناميكية تحتاج مراجعة إضافية.
 
-- 126 مسارًا مسجلًا، 443 ملف واجهة متصلًا، 2565 عنصر تحكم في المصدر.
+- 126 مسارًا مسجلًا، 447 ملف واجهة متصلًا، 2583 عنصر تحكم في المصدر.
 - 0 رابطًا حرفيًا غير مطابق، و0 ملف صفحة غير متصل بالمسارات المحصورة.
 
 | الصفحة | الملفات | عناصر التحكم | القراءة / التعديل | موك أب للصفحة |
@@ -39,7 +39,7 @@
 | /merchant/discounts — كوبونات الخصم | 7 | 28 | 3 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/referrals — إحالات التجار | 6 | 21 | 3 / 4 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/abandoned-carts — السلات المتروكة | 8 | 39 | 6 / 4 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/occasion-campaigns — حملات المناسبات | 1 | 4 | 3 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/occasion-campaigns — حملات المناسبات | 6 | 22 | 4 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/promotions — العروض الترويجية | 1 | 23 | 2 / 4 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/analytics — تحليلات المبيعات | 4 | 16 | 9 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/message-analytics — تحليلات الرسائل | 9 | 10 | 3 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -1659,14 +1659,37 @@
 | 12 | Button | تسمية ديناميكية / تحتاج مراجعة | CartDiscountPicker |
 | 12 | Link | تسمية ديناميكية / تحتاج مراجعة | CartDiscountPicker |
 
-## client/src/pages/merchant/OccasionCampaignsPage.tsx
+## client/src/components/merchant/OccasionWorkspace.tsx
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 155 | Calendar | تسمية ديناميكية / تحتاج مراجعة | المناسبات القادمة |
-| 165 | Calendar | تسمية ديناميكية / تحتاج مراجعة | المناسبات القادمة |
-| 202 | Button | تفعيل هذه الحملة | OccasionCampaignsPage |
-| 280 | Switch | تسمية ديناميكية / تحتاج مراجعة | سجل الحملات |
+| 54 | Button | تسمية ديناميكية / تحتاج مراجعة | OccasionWorkspace |
+| 62 | Button | · | OccasionWorkspace |
+| 62 | Button | · | OccasionWorkspace |
+| 67 | input | تسمية ديناميكية / تحتاج مراجعة | OccasionWorkspace |
+| 67 | Button | تسمية ديناميكية / تحتاج مراجعة | OccasionWorkspace |
+| 68 | select | تسمية ديناميكية / تحتاج مراجعة | OccasionWorkspace |
+| 69 | select | تسمية ديناميكية / تحتاج مراجعة | OccasionWorkspace |
+| 70 | Button | تسمية ديناميكية / تحتاج مراجعة | OccasionWorkspace |
+| 72 | Button | تسمية ديناميكية / تحتاج مراجعة | OccasionWorkspace |
+| 75 | Button | # | · |
+| 75 | Button | # | · |
+| 77 | Button | تسمية ديناميكية / تحتاج مراجعة | · |
+| 77 | Button | تسمية ديناميكية / تحتاج مراجعة | · |
+| 78 | summary | تسمية ديناميكية / تحتاج مراجعة | OccasionWorkspace |
+| 81 | DialogContent | details details · # details · reason_ : % linked_campaign review toggle details review create | OccasionWorkspace |
+| 87 | summary | تسمية ديناميكية / تحتاج مراجعة | OccasionWorkspace |
+| 88 | input | تسمية ديناميكية / تحتاج مراجعة | OccasionWorkspace |
+| 91 | Button | details | OccasionWorkspace |
+| 91 | Button | create | OccasionWorkspace |
+| 91 | Button | تسمية ديناميكية / تحتاج مراجعة | OccasionWorkspace |
+
+## client/src/components/merchant/OccasionRecord.tsx
+
+| السطر | النوع | التسمية | القسم |
+|---:|---|---|---|
+| 12 | Button | تسمية ديناميكية / تحتاج مراجعة | OccasionRecord |
+| 12 | Link | تسمية ديناميكية / تحتاج مراجعة | OccasionRecord |
 
 ## client/src/pages/merchant/Promotions.tsx
 

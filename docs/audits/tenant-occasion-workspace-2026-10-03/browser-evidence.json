@@ -1,0 +1,161 @@
+{
+  "browser": "Chromium CSS iframe sizes, not native Safari/iPhone",
+  "measurements": [
+    {
+      "label": "ar-320-list",
+      "dialog": null,
+      "origin": 30,
+      "overflow": [],
+      "rawKeys": false,
+      "records": 25,
+      "scrollWidth": 290,
+      "smallTargets": [],
+      "width": 290
+    },
+    {
+      "label": "ar-390-review",
+      "dialog": {
+        "height": 621.9375,
+        "scroll": 620,
+        "width": 328
+      },
+      "origin": 30,
+      "overflow": [],
+      "rawKeys": false,
+      "records": 25,
+      "scrollWidth": 360,
+      "smallTargets": [],
+      "width": 360
+    },
+    {
+      "label": "ar-390-short-expanded",
+      "dialog": {
+        "height": 518,
+        "scroll": 1809,
+        "width": 328
+      },
+      "origin": 30,
+      "overflow": [],
+      "rawKeys": false,
+      "records": 25,
+      "scrollWidth": 360,
+      "smallTargets": [],
+      "width": 360
+    },
+    {
+      "label": "ar-320-short-expanded",
+      "dialog": {
+        "height": 518,
+        "scroll": 2205,
+        "width": 258
+      },
+      "origin": 30,
+      "overflow": [],
+      "rawKeys": false,
+      "records": 25,
+      "scrollWidth": 290,
+      "smallTargets": [],
+      "width": 290
+    },
+    {
+      "label": "ar-390-review-final",
+      "dialog": {
+        "height": 621.9375,
+        "scroll": 620,
+        "width": 328
+      },
+      "origin": 30,
+      "overflow": [],
+      "rawKeys": false,
+      "records": 25,
+      "scrollWidth": 360,
+      "smallTargets": [],
+      "width": 360
+    },
+    {
+      "label": "ar-390-page2",
+      "dialog": null,
+      "origin": 30,
+      "overflow": [],
+      "rawKeys": false,
+      "records": 6,
+      "scrollWidth": 360,
+      "smallTargets": [],
+      "width": 360
+    },
+    {
+      "label": "ar-768-page2",
+      "dialog": null,
+      "origin": 30,
+      "overflow": [],
+      "rawKeys": false,
+      "records": 6,
+      "scrollWidth": 738,
+      "smallTargets": [],
+      "width": 738
+    },
+    {
+      "label": "ar-1440-page2",
+      "dialog": null,
+      "origin": 30,
+      "overflow": [],
+      "rawKeys": false,
+      "records": 6,
+      "scrollWidth": 1410,
+      "smallTargets": [],
+      "width": 1410
+    },
+    {
+      "label": "ar-1440-details",
+      "dialog": {
+        "height": 812,
+        "scroll": 859,
+        "width": 704
+      },
+      "origin": 30,
+      "overflow": [],
+      "rawKeys": false,
+      "records": 6,
+      "scrollWidth": 1410,
+      "smallTargets": [],
+      "width": 1410
+    },
+    {
+      "label": "ar-320-details",
+      "dialog": {
+        "height": 812,
+        "scroll": 1248,
+        "width": 287.71875
+      },
+      "origin": 30,
+      "overflow": [],
+      "rawKeys": false,
+      "records": 6,
+      "scrollWidth": 290,
+      "smallTargets": [],
+      "width": 290
+    },
+    {
+      "label": "ar-390-simplified-review",
+      "dialog": {
+        "height": 561.9375,
+        "scroll": 560,
+        "width": 328
+      },
+      "origin": 30,
+      "overflow": [],
+      "rawKeys": false,
+      "records": 25,
+      "scrollWidth": 360,
+      "smallTargets": [],
+      "width": 360
+    }
+  ],
+  "actions": [
+    "real local tenant 17070: enable record 297, reread enabled=1, pause with second review, reread enabled=0",
+    "page 2 showed all six remaining records",
+    "full details show template and counters; no raw translation keys",
+    "simplified review height decreased to 562px at 390"
+  ],
+  "note": "One click on a dialog close control timed out after resizing. Keyboard close was verified. No external message send."
+}
