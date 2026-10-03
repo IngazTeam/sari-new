@@ -31,6 +31,7 @@ export const requiredReleaseCapabilities = Object.freeze([
   'abandoned-cart-reminder-transport-0194',
   'abandoned-cart-reviewed-writes-only-0194',
   'occasion-reviewed-writes-only-v1',
+  'occasion-activation-grants-0195',
 ]);
 
 export function assertZidOrderReleaseCompatible(directory) {

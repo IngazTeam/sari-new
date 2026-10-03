@@ -576,6 +576,20 @@ export const occasionCampaigns = mysqlTable("occasion_campaigns", {
 	check("occasion_campaigns_discount_check", sql`${table.discountPercentage} >= 5 AND ${table.discountPercentage} <= 50`),
 ]);
 
+// Approved activation snapshots; no owner is inferred for legacy enabled rows.
+export const occasionAuthorizations=mysqlTable('occasion_authorizations',{
+ id:int().autoincrement().primaryKey(),grantKey:char('grant_key',{length:36}).notNull(),
+ occasionId:int('occasion_id').notNull().references(()=>occasionCampaigns.id,{onDelete:'cascade'}),
+ merchantId:int('merchant_id').notNull().references(()=>merchants.id,{onDelete:'cascade'}),actorId:int('actor_id').notNull(),
+ active:tinyint().default(1),reviewRevision:char('review_revision',{length:64}).notNull(),contractDigest:char('contract_digest',{length:64}).notNull(),reviewedContract:json('reviewed_contract').notNull(),
+ preparedCampaignId:int('prepared_campaign_id'),preparedCampaignDigest:char('prepared_campaign_digest',{length:64}),preparedDiscountId:int('prepared_discount_id'),preparedDiscountDigest:char('prepared_discount_digest',{length:64}),
+ createdAt:datetime('created_at',{mode:'string',fsp:3}).notNull().default(sql`CURRENT_TIMESTAMP(3)`),revokedAt:datetime('revoked_at',{mode:'string',fsp:3}),
+},table=>[
+ uniqueIndex('uq_occasion_grant_key').on(table.grantKey),uniqueIndex('uq_occasion_active_grant').on(table.occasionId,table.active),index('idx_occasion_grant_history').on(table.merchantId,table.occasionId,table.id),
+ check('chk_occasion_grant_active',sql`(${table.active} IS NOT NULL AND ${table.active}=1 AND ${table.revokedAt} IS NULL) OR (${table.active} IS NULL AND ${table.revokedAt} IS NOT NULL)`),
+ check('chk_occasion_grant_prepared',sql`(${table.preparedCampaignId} IS NULL AND ${table.preparedCampaignDigest} IS NULL AND ${table.preparedDiscountId} IS NULL AND ${table.preparedDiscountDigest} IS NULL) OR (${table.preparedCampaignId} IS NOT NULL AND ${table.preparedCampaignDigest} IS NOT NULL AND ${table.preparedDiscountId} IS NOT NULL AND ${table.preparedDiscountDigest} IS NOT NULL)`),
+]);
+
 export const orderNotifications = mysqlTable("order_notifications", {
 	id: int().autoincrement().primaryKey(),
 	orderId: int("order_id").notNull().references(() => orders.id, { onDelete: "cascade" }),

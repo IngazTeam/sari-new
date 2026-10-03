@@ -1366,6 +1366,13 @@
       "when": 1795392000056,
       "tag": "0194_abandoned_cart_reminders",
       "breakpoints": true
+    },
+    {
+      "idx": 195,
+      "version": "5",
+      "when": 1795392000057,
+      "tag": "0195_occasion_authorizations",
+      "breakpoints": true
     }
   ]
 }
