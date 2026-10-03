@@ -10,7 +10,10 @@ vi.mock('./db', async original => ({ ...await original<typeof import('./db')>(),
   getPool: mocks.pool,
 }));
 import { appRouter } from './routers';
-const caller = (authenticated = true) => appRouter.createCaller({ user: authenticated ? { id: 7, role: 'user' } : null, req: {}, res: {} } as any);
+import { conversationsRouter } from './routers-conversations';
+const routerCallers = { main: (ctx: any) => appRouter.createCaller(ctx).conversations, standalone: (ctx: any) => conversationsRouter.createCaller(ctx) };
+let createConversationCaller = routerCallers.main;
+const caller = (authenticated = true) => ({ conversations: createConversationCaller({ user: authenticated ? { id: 7, role: 'user' } : null, req: {}, res: {} }) });
 beforeEach(() => {
   vi.resetAllMocks();
   mocks.access.mockResolvedValue({ merchantId: 20, role: 'viewer', memberId: 3 });
@@ -23,7 +26,12 @@ beforeEach(() => {
   mocks.messages.mockResolvedValue([{ id: 8, conversationId: 4, content: 'fixture' }]);
   mocks.pool.mockResolvedValue({ execute: mocks.execute });
 });
-describe('conversations router', () => {
+describe.each(['main', 'standalone'] as const)('%s conversations router', kind => {
+  beforeEach(() => { createConversationCaller = routerCallers[kind]; });
+  it('uses the same audited inbox and history procedures at both entry points', () => {
+    for (const name of ['list','getMessages','messageHistory'] as const)
+      expect(appRouter._def.procedures[`conversations.${name}`]).toBe(conversationsRouter._def.procedures[name]);
+  });
   describe('conversations.list', () => {
     it('reads one snapshot in the authenticated membership', async () => {
       expect(await caller().conversations.list()).toMatchObject({merchantId:20,items:[{id:4,merchantId:20}],total:1,page:1,pageSize:50});
@@ -49,7 +57,7 @@ describe('conversations router', () => {
     });
     it('rejects a forged merchant header before reading',async()=>{
       mocks.access.mockResolvedValue(null);
-      await expect(appRouter.createCaller({user:{id:7,role:'user'},req:{headers:{'x-merchant-id':'999'}},res:{}} as any).conversations.list({search:'secret'})).rejects.toMatchObject({code:'FORBIDDEN'});
+      await expect(createConversationCaller({user:{id:7,role:'user'},req:{headers:{'x-merchant-id':'999'}},res:{}}).list({search:'secret'})).rejects.toMatchObject({code:'FORBIDDEN'});
       expect(mocks.access).toHaveBeenCalledWith(7,999);
       expect(mocks.inbox).not.toHaveBeenCalled();
     });
@@ -72,6 +80,25 @@ describe('conversations router', () => {
     it('should reject unauthenticated requests', async () => {
       await expect(caller(false).conversations.getMessages({ conversationId: 4 })).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
       expect(mocks.history).not.toHaveBeenCalled();
+    });
+  });
+  describe('message history authority', () => {
+    it('resolves the selected membership instead of trusting a prefilled context',async()=>{
+      await createConversationCaller({user:{id:7,role:'user'},merchantId:999,req:{headers:{'x-merchant-id':'20'}},res:{}}).messageHistory({conversationId:4,beforeId:80});
+      expect(mocks.access).toHaveBeenCalledWith(7,20);expect(mocks.history).toHaveBeenCalledWith(20,{conversationId:4,beforeId:80,limit:50});
+    });
+    it('rejects revoked membership before reading either list or history',async()=>{
+      mocks.access.mockResolvedValue(null);
+      await expect(caller().conversations.list()).rejects.toMatchObject({code:'FORBIDDEN'});
+      await expect(caller().conversations.messageHistory({conversationId:4})).rejects.toMatchObject({code:'FORBIDDEN'});
+      expect(mocks.inbox).not.toHaveBeenCalled();expect(mocks.history).not.toHaveBeenCalled();
+    });
+    it('hides storage errors and does not invent an empty history',async()=>{
+      mocks.history.mockRejectedValue(Error('PRIVATE_DATABASE_DETAILS'));
+      await expect(caller().conversations.messageHistory({conversationId:4})).rejects.toMatchObject({code:'INTERNAL_SERVER_ERROR',message:'Conversation history unavailable'});
+    });
+    it.each([{conversationId:4,merchantId:999},{conversationId:4,beforeId:0},{conversationId:4,limit:501}])('rejects forged history input %j',async input=>{
+      await expect(caller().conversations.messageHistory(input as any)).rejects.toMatchObject({code:'BAD_REQUEST'});expect(mocks.history).not.toHaveBeenCalled();
     });
   });
 });
