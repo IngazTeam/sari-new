@@ -12,11 +12,13 @@
  */
 
 import { z } from 'zod';
-import { router, protectedProcedure } from './_core/trpc';
+import { router, protectedProcedure, permissionProcedure } from './_core/trpc';
 import { TRPCError } from '@trpc/server';
 import crypto from 'node:crypto';
 import { getMerchantByUserId } from './db';
 import { reserveApiRateLimit } from './api/distributed-rate-limit';
+import { mediaWorkspaceInput } from '../shared/media-workspace';
+import { readMediaWorkspace, MediaWorkspaceError } from './media-workspace';
 import {
   UploadValidationError,
   assertMediaSignature,
@@ -92,6 +94,10 @@ async function getMerchantId(ctx: any): Promise<number> {
 // ═══════════════════════════════════════════════════════════════
 
 export const mediaRouter = router({
+  workspace: permissionProcedure('analytics.read').input(mediaWorkspaceInput).query(async ({ctx, input}) => {
+    try { return await readMediaWorkspace(ctx.user.id, ctx.merchantId, input); }
+    catch (error) { throw new TRPCError({ code: error instanceof MediaWorkspaceError && error.reason === 'forbidden' ? 'FORBIDDEN' : 'INTERNAL_SERVER_ERROR', message: 'media_workspace:unavailable' }); }
+  }),
   /** Upload a media file */
   upload: protectedProcedure
     .input(z.object({
