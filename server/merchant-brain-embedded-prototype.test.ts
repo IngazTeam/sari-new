@@ -13,6 +13,14 @@ beforeEach(()=>{
 });
 afterEach(()=>dom.window.close());
 const send=(data:any,origin='http://127.0.0.1:4329',source=frame.contentWindow)=>w.dispatchEvent(new w.MessageEvent('message',{origin,source,data}));
+it('preserves competitor filters and product pages only from the owned frame',()=>{
+ const path='/merchant/competitor-analysis';frame.setAttribute('src','./service-workspace.html?embed=brain&path='+path);w.history.replaceState(null,'','#/page'+path);w.syncServicePreviewContext=vi.fn();
+ const message={type:'sary-brain-preview',action:'serviceState',search:`path=${path}&report=32&products=2&state=completed&sort=oldest&q=sample&page=2&tenant=270&lang=en`};
+ for(const suffix of ['&actorId=999','&report=33','&token=secret'])send({...message,search:message.search+suffix});
+ for(const invalid of ['report=0','report=2147483648','products=0','products=100001','state=enabled','sort=highest'])send({...message,search:`path=${path}&${invalid}`});
+ send(message,'https://evil.test');send(message,undefined,w);expect(w.location.hash).toBe('#/page'+path);
+ send(message);expect(w.location.hash).toBe('#/page'+path+'?report=32&products=2&state=completed&sort=oldest&q=sample&page=2&tenant=270&lang=en');expect(w.syncServicePreviewContext).toHaveBeenCalledOnce();
+});
 it('preserves all order notification filters only from its owned frame',()=>{
  const path='/merchant/order-notifications';frame.setAttribute('src','./service-workspace.html?embed=brain&path='+path);w.history.replaceState(null,'','#/page'+path);w.syncServicePreviewContext=vi.fn();
  const message={type:'sary-brain-preview',action:'serviceState',search:`path=${path}&view=history&status=shipped&state=manual_review&evidence=accepted&integrity=linked&sort=oldest&q=sample&page=2&tenant=270&lang=en`};

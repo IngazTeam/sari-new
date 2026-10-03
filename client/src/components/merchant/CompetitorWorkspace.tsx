@@ -250,7 +250,7 @@ export function CompetitorWorkspace({
     }
   }
   const dialogProps = {
-    className: "sc-dialog cw-dialog",
+    className: "sc-dialog cmp-dialog",
     dir: locale === "ar" ? ("rtl" as const) : ("ltr" as const),
     closeLabel: c.close,
     showCloseButton: !busy,
@@ -316,7 +316,7 @@ export function CompetitorWorkspace({
           {notice}
         </p>
       )}
-      <p className="cw-evidence">{c.evidence}</p>
+      <p className="cmp-evidence">{c.evidence}</p>
       {query.error ? (
         <WorkspaceState
           kind={workspaceFailureKind(query.error)}
@@ -438,17 +438,17 @@ export function CompetitorWorkspace({
                 <p>{data.stats.total ? c.noResults : c.empty}</p>
               </div>
             ) : (
-              <div className="cw-grid">
+              <div className="cmp-grid">
                 {data.rows.map(r => (
-                  <article className="cw-card" key={r.id}>
-                    <div className="cw-card-head">
+                  <article className="cmp-card" key={r.id}>
+                    <div className="cmp-card-head">
                       <h2>{r.name}</h2>
                       <Badge variant="outline">{state(r.status)}</Badge>
                     </div>
                     <p className="sc-muted">
                       {r.url ? <bdi>{new URL(r.url).hostname}</bdi> : c.unknown}
                     </p>
-                    <dl className="cw-facts">
+                    <dl className="cmp-facts">
                       <div>
                         <dt>{c.overall}</dt>
                         <dd>
@@ -520,7 +520,7 @@ export function CompetitorWorkspace({
             <DialogDescription>{c.addHelp}</DialogDescription>
           </DialogHeader>
           <form
-            className="cw-form"
+            className="cmp-form"
             noValidate
             onSubmit={e => {
               e.preventDefault();
@@ -541,7 +541,7 @@ export function CompetitorWorkspace({
               onChange={e => setName(e.target.value)}
             />
             {errors.name && (
-              <p id="competitor-name-error" className="cw-field-error">
+              <p id="competitor-name-error" className="cmp-field-error">
                 {c.nameError}
               </p>
             )}
@@ -561,7 +561,7 @@ export function CompetitorWorkspace({
               onChange={e => setUrl(e.target.value)}
             />
             {errors.url && (
-              <p id="competitor-url-error" className="cw-field-error">
+              <p id="competitor-url-error" className="cmp-field-error">
                 {c.urlError}
               </p>
             )}
@@ -616,11 +616,11 @@ export function CompetitorWorkspace({
             <WorkspaceState inline kind="loading" />
           ) : (
             <>
-              <div className="cw-card-head">
+              <div className="cmp-card-head">
                 <Badge variant="outline">{state(detail.report.status)}</Badge>
                 {detail.report.url && (
                   <a
-                    className="cw-link"
+                    className="cmp-link"
                     href={detail.report.url}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -634,7 +634,7 @@ export function CompetitorWorkspace({
                 <p className="sc-feedback">{c.partial}</p>
               )}
               <p className="sc-muted">{c.evidence}</p>
-              <dl className="cw-scores">
+              <dl className="cmp-scores">
                 {(
                   ["overall", "seo", "performance", "ux", "content"] as const
                 ).map(key => (
@@ -650,7 +650,7 @@ export function CompetitorWorkspace({
                   </div>
                 ))}
               </dl>
-              <dl className="cw-facts">
+              <dl className="cmp-facts">
                 <div>
                   <dt>{c.created}</dt>
                   <dd>{stamp(detail.report.createdAt)}</dd>
@@ -666,15 +666,15 @@ export function CompetitorWorkspace({
                   </div>
                 )}
               </dl>
-              <details className="cw-notes cw-pricing-section">
+              <details className="cmp-notes cmp-pricing-section">
                 <summary>{c.prices}</summary>
                 <p className="sc-muted">{c.priceHelp}</p>
                 {detail.pricing.groups.map(g => (
-                  <div className="cw-currency" key={g.currency}>
+                  <div className="cmp-currency" key={g.currency}>
                     <strong>
                       <bdi>{g.currency}</bdi> · {number(g.count)} {c.products}
                     </strong>
-                    <dl className="cw-facts">
+                    <dl className="cmp-facts">
                       {(["minimum", "maximum", "average"] as const).map(key => (
                         <div key={key}>
                           <dt>{c[key]}</dt>
@@ -696,7 +696,7 @@ export function CompetitorWorkspace({
                 </p>
               </details>
               <details
-                className="cw-notes cw-product-section"
+                className="cmp-notes cmp-product-section"
                 open={productsExpanded}
                 onToggle={e => setProductsExpanded(e.currentTarget.open)}
               >
@@ -718,10 +718,10 @@ export function CompetitorWorkspace({
                 {!detail.products.length ? (
                   <p>{c.noProducts}</p>
                 ) : (
-                  <ul className="cw-products">
+                  <ul className="cmp-products">
                     {detail.products.map(p => (
                       <li key={p.id}>
-                        <div className="cw-card-head">
+                        <div className="cmp-card-head">
                           <h4>{p.name}</h4>
                           <bdi>
                             {p.price !== null
@@ -731,7 +731,7 @@ export function CompetitorWorkspace({
                         </div>
                         {p.category && <p className="sc-muted">{p.category}</p>}
                         {p.description && (
-                          <p className="cw-text">{p.description}</p>
+                          <p className="cmp-text">{p.description}</p>
                         )}
                         {p.matchedProduct && (
                           <p className="sc-muted">
@@ -741,7 +741,7 @@ export function CompetitorWorkspace({
                         <div className="sc-actions">
                           {p.url && (
                             <a
-                              className="cw-link"
+                              className="cmp-link"
                               href={p.url}
                               target="_blank"
                               rel="noopener noreferrer"
@@ -752,7 +752,7 @@ export function CompetitorWorkspace({
                           )}
                           {p.imageUrl && (
                             <a
-                              className="cw-link"
+                              className="cmp-link"
                               href={p.imageUrl}
                               target="_blank"
                               rel="noopener noreferrer"
@@ -803,7 +803,7 @@ export function CompetitorWorkspace({
               </details>
               {(["strengths", "weaknesses", "opportunities"] as const).map(
                 key => (
-                  <details className="cw-notes" key={key}>
+                  <details className="cmp-notes" key={key}>
                     <summary>
                       {c[key]} · {number(detail.notes[key].items.length)}
                     </summary>
@@ -814,7 +814,7 @@ export function CompetitorWorkspace({
                     ) : (
                       <ul>
                         {detail.notes[key].items.map((item, i) => (
-                          <li className="cw-text" key={i}>
+                          <li className="cmp-text" key={i}>
                             {item}
                           </li>
                         ))}
@@ -824,7 +824,7 @@ export function CompetitorWorkspace({
                 )
               )}
               {feedbackNode}
-              <div className="cw-footer">
+              <div className="cmp-footer">
                 <Button
                   variant="outline"
                   disabled={busy || detailQuery.isFetching}
@@ -849,15 +849,15 @@ export function CompetitorWorkspace({
                 </Button>
               </div>
               {detail.canManage && (
-                <details className="cw-notes cw-remove">
+                <details className="cmp-notes cmp-remove">
                   <summary>{c.remove}</summary>
                   {!["completed", "failed"].includes(detail.report.status) ||
                   detail.report.excludedProducts > 0 ? (
                     <p>{c.deleteBlocked}</p>
                   ) : (
-                    <div className="cw-form">
+                    <div className="cmp-form">
                       <p>{c.removeHelp}</p>
-                      <label className="cw-check">
+                      <label className="cmp-check">
                         <input
                           type="checkbox"
                           checked={ack}

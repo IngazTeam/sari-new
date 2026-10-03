@@ -130,7 +130,7 @@ it.each(["ar", "en"])(
     expect(document.body.textContent).toContain("SAR");
     expect(document.body.textContent).toContain("USD");
     expect(document.body.textContent).toContain(c.recorded);
-    expect(document.querySelector(".cw-notes b")).toBeNull();
+    expect(document.querySelector(".cmp-notes b")).toBeNull();
   }
 );
 it.each(["ar", "en"])(
@@ -216,7 +216,7 @@ it("requires review acknowledgement and sends the exact revision for deletion", 
   await render();
   const c = en.competitorWorkspaceUx;
   expect(button(c.confirmDelete).disabled).toBe(true);
-  const box = document.querySelector(".cw-check input") as HTMLInputElement;
+  const box = document.querySelector(".cmp-check input") as HTMLInputElement;
   await act(async () => box.click());
   await click(c.confirmDelete);
   expect(m.remove).toHaveBeenCalledExactlyOnceWith({
@@ -235,14 +235,14 @@ it("blocks stale confirmation until refreshed and acknowledged again", async () 
   await render();
   const c = en.competitorWorkspaceUx;
   await act(async () =>
-    (document.querySelector(".cw-check input") as HTMLInputElement).click()
+    (document.querySelector(".cmp-check input") as HTMLInputElement).click()
   );
   await click(c.confirmDelete);
   expect(document.body.textContent).toContain(c.changed);
   expect(button(c.confirmDelete).disabled).toBe(true);
   expect(document.body.textContent).not.toContain("PRIVATE_SQL");
   expect(
-    (document.querySelector(".cw-check input") as HTMLInputElement).checked
+    (document.querySelector(".cmp-check input") as HTMLInputElement).checked
   ).toBe(false);
 });
 it.each(["pending", "analyzing", "foreign"])(

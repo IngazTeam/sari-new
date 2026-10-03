@@ -2,7 +2,7 @@
 
 هذا حصر مصدر قابل لإعادة التوليد، وليس ادعاءً بأن كل مسار عمل اختُبر أو أُعيد تصميمه. يشمل المكونات الفرعية المحلية، الحقول، الأزرار، النوافذ، التبويبات، واجهات القراءة والتعديل. العناصر الديناميكية تحتاج مراجعة إضافية.
 
-- 126 مسارًا مسجلًا، 470 ملف واجهة متصلًا، 2665 عنصر تحكم في المصدر.
+- 126 مسارًا مسجلًا، 473 ملف واجهة متصلًا، 2686 عنصر تحكم في المصدر.
 - 0 رابطًا حرفيًا غير مطابق، و0 ملف صفحة غير متصل بالمسارات المحصورة.
 
 | الصفحة | الملفات | عناصر التحكم | القراءة / التعديل | موك أب للصفحة |
@@ -122,7 +122,7 @@
 | /merchant/customers — العملاء | 8 | 12 | 4 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/website-analysis — مدخل لوحة التاجر | 0 | 0 | 0 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/smart-analysis — تحليل الموقع | 13 | 87 | 9 / 9 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/competitor-analysis — تحليل المنافسين | 1 | 8 | 1 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/competitor-analysis — تحليل المنافسين | 5 | 29 | 4 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/customers/:phone — ملف العميل | 10 | 23 | 5 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/ai-suggestions — الرؤى والاقتراحات وA/B | 9 | 31 | 5 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/keywords — مدخل لوحة التاجر | 0 | 0 | 0 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -3977,18 +3977,39 @@
 | 672 | Button | تسمية ديناميكية / تحتاج مراجعة | WebsiteReportsWorkspace |
 | 679 | Button | تسمية ديناميكية / تحتاج مراجعة | WebsiteReportsWorkspace |
 
-## client/src/pages/CompetitorAnalysis.tsx
+## client/src/components/merchant/CompetitorWorkspace.tsx
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 116 | Button | إضافة منافس | تحليل المنافسين |
-| 119 | DialogContent | إضافة منافس جديد أدخل معلومات المنافس لبدء التحليل اسم المنافس رابط الموقع جاري الإضافة... إضافة وتحليل | تحليل المنافسين |
-| 127 | Input | اسم المنافس | إضافة منافس جديد |
-| 136 | Input | رابط الموقع | إضافة منافس جديد |
-| 143 | Button | جاري الإضافة... إضافة وتحليل | إضافة منافس جديد |
-| 174 | a | تسمية ديناميكية / تحتاج مراجعة | CompetitorAnalysis |
-| 185 | Button | تسمية ديناميكية / تحتاج مراجعة | CompetitorAnalysis |
-| 337 | Button | إضافة منافس | النطاق: |
+| 291 | Button | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
+| 300 | Button | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
+| 358 | input | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
+| 364 | Button | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
+| 369 | select | all pending analyzing completed failed all | CompetitorWorkspace |
+| 397 | select | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
+| 415 | Button | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
+| 469 | Button | · | CompetitorWorkspace |
+| 486 | Button | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
+| 497 | Button | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
+| 515 | DialogContent | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
+| 531 | input | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
+| 549 | input | https://example.com | CompetitorWorkspace |
+| 570 | Button | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
+| 585 | Button | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
+| 600 | DialogContent | completed overall seo performance ux content / 100 · minimum maximum average : · : . : strengths weaknesses opportunities · completed failed | CompetitorWorkspace |
+| 622 | a | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
+| 670 | summary | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
+| 703 | summary | · | · |
+| 743 | a | تسمية ديناميكية / تحتاج مراجعة | · |
+| 754 | a | تسمية ديناميكية / تحتاج مراجعة | · |
+| 771 | Button | تسمية ديناميكية / تحتاج مراجعة | · |
+| 788 | Button | تسمية ديناميكية / تحتاج مراجعة | · |
+| 807 | summary | · | · |
+| 828 | Button | تسمية ديناميكية / تحتاج مراجعة | · |
+| 843 | Button | تسمية ديناميكية / تحتاج مراجعة | · |
+| 853 | summary | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
+| 861 | input | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
+| 869 | Button | تسمية ديناميكية / تحتاج مراجعة | CompetitorWorkspace |
 
 ## client/src/components/merchant/CustomerDetailWorkspace.tsx
 
