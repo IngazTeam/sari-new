@@ -452,7 +452,7 @@ async function startServer() {
       // Initialize Order Tracking cron job
       startOrderTrackingJob();
 
-      // Initialize Review Request cron job (runs daily at 10:00 AM)
+      // Report blocked legacy review automation; no timer is registered.
       startReviewRequestJob();
 
       // Initialize Scheduled Campaigns cron job (runs every minute)

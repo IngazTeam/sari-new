@@ -108,9 +108,6 @@ import {
   automationRules,
   AutomationRule,
   InsertAutomationRule,
-  customerReviews,
-  CustomerReview,
-  InsertCustomerReview,
   orderTrackingLogs,
   OrderTrackingLog,
   InsertOrderTrackingLog,
@@ -2515,97 +2512,6 @@ export async function updateAutomationRule(id: number, data: Partial<InsertAutom
     ...data,
     updatedAt: formatDateForDB(new Date())
   }).where(eq(automationRules.id, id));
-}
-
-// ============================================
-// Customer Reviews Functions
-// ============================================
-
-export async function createCustomerReview(data: InsertCustomerReview): Promise<CustomerReview | undefined> {
-  const db = await getDb();
-  if (!db) return undefined;
-
-  const result = await db.insert(customerReviews).values(data);
-  const id = Number((result[0] as any).insertId);
-
-  return getCustomerReviewById(id);
-}
-
-export async function getCustomerReviewById(id: number): Promise<CustomerReview | undefined> {
-  const db = await getDb();
-  if (!db) return undefined;
-
-  const result = await db.select().from(customerReviews).where(eq(customerReviews.id, id)).limit(1);
-  return result[0];
-}
-
-export async function getCustomerReviewsByMerchantId(merchantId: number): Promise<CustomerReview[]> {
-  const db = await getDb();
-  if (!db) return [];
-
-  return db.select().from(customerReviews).where(eq(customerReviews.merchantId, merchantId)).orderBy(desc(customerReviews.createdAt));
-}
-
-export async function getCustomerReviewsByOrderId(orderId: number): Promise<CustomerReview[]> {
-  const db = await getDb();
-  if (!db) return [];
-
-  return db.select().from(customerReviews).where(eq(customerReviews.orderId, orderId));
-}
-
-export async function getPublicReviews(merchantId: number, limit: number = 10): Promise<CustomerReview[]> {
-  const db = await getDb();
-  if (!db) return [];
-
-  return db.select().from(customerReviews).where(
-    and(
-      eq(customerReviews.merchantId, merchantId),
-      eq(customerReviews.isPublic, 1)
-    )
-  ).orderBy(desc(customerReviews.createdAt)).limit(limit);
-}
-
-export async function updateCustomerReview(id: number, data: Partial<InsertCustomerReview>): Promise<void> {
-  const db = await getDb();
-  if (!db) return;
-
-  await db.update(customerReviews).set({
-    ...data,
-    updatedAt: formatDateForDB(new Date())
-  }).where(eq(customerReviews.id, id));
-}
-
-// ============================================
-// Orders - Additional Functions for Automation
-// ============================================
-
-export async function getOrdersForReviewRequest(): Promise<Order[]> {
-  const db = await getDb();
-  if (!db) return [];
-
-  // Get delivered orders from 3 days ago that haven't received review request
-  const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
-  const fourDaysAgo = new Date(Date.now() - 4 * 24 * 60 * 60 * 1000);
-
-  return db.select().from(orders).where(
-    and(
-      eq(orders.status, 'delivered'),
-      eq(orders.reviewRequested, 0),
-      gte(orders.updatedAt, formatDateForDB(fourDaysAgo)),
-      lte(orders.updatedAt, formatDateForDB(threeDaysAgo))
-    )
-  ).limit(50);
-}
-
-export async function markOrderReviewRequested(id: number): Promise<void> {
-  const db = await getDb();
-  if (!db) return;
-
-  await db.update(orders).set({
-    reviewRequested: 1,
-    reviewRequestedAt: formatDateForDB(new Date()),
-    updatedAt: formatDateForDB(new Date())
-  }).where(eq(orders.id, id));
 }
 
 // ============================================

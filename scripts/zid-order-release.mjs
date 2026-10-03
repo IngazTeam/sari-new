@@ -37,7 +37,7 @@ export const requiredReleaseCapabilities = Object.freeze([
   'promotion-atomic-writes-v1',
   'promotion-code-boundaries-v1',
   'promotion-reviewed-receipts-0196',
-  'promotion-request-resolution-v1', 'promotion-reviewed-writes-only-v1', 'promotion-evidence-boundaries-v1', 'promotion-arsenal-evidence-v1', 'promotion-target-names-v1', 'promotion-named-scope-evidence-v1', 'promotion-banner-transport-v1', 'ordinary-reply-media-producer-v2', 'media-action-receipts-0197', 'media-reviewed-writes-only-0197', 'weekly-schedule-transport-0198', 'weekly-reviewed-actions-0198', 'weekly-reviewed-writes-only-0198', 'review-scoped-replies-only-v1',
+  'promotion-request-resolution-v1', 'promotion-reviewed-writes-only-v1', 'promotion-evidence-boundaries-v1', 'promotion-arsenal-evidence-v1', 'promotion-target-names-v1', 'promotion-named-scope-evidence-v1', 'promotion-banner-transport-v1', 'ordinary-reply-media-producer-v2', 'media-action-receipts-0197', 'media-reviewed-writes-only-0197', 'weekly-schedule-transport-0198', 'weekly-reviewed-actions-0198', 'weekly-reviewed-writes-only-0198', 'review-scoped-replies-only-v1', 'review-unscoped-automation-retired-v1',
 ]);
 
 export function assertZidOrderReleaseCompatible(directory) {

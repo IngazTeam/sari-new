@@ -1,209 +1,42 @@
-import { describe, it, expect, beforeAll } from 'vitest';
-import { 
-  shouldRequestReview, 
-  generateReviewMessage, 
-  sendReviewRequest,
-  processReviewResponse,
-  getMerchantReviewStats
-} from './review-request';
-import * as db from '../db';
+import { describe, expect, it, vi } from 'vitest';
 
-describe('Review Request System', () => {
-  let testMerchantId: number;
-  let testOrderId: number;
+// Importing a side-effect module is itself a failure. This suite never touches
+// a developer database or sends a message to a test phone.
+vi.mock('../db', () => { throw new Error('Legacy review automation reached the database'); });
+vi.mock('../whatsapp', () => { throw new Error('Legacy review automation reached global WhatsApp'); });
+vi.mock('../channels/whatsapp/service', () => { throw new Error('No invitation authorizes tenant WhatsApp'); });
+vi.mock('node-cron', () => { throw new Error('A blocked review job must not schedule'); });
+import { generateReviewMessage, getMerchantReviewStats, processReviewResponse, REVIEW_AUTOMATION_BLOCKED, reviewAutomationReadiness, sendReviewRequest, shouldRequestReview } from './review-request';
+import { startReviewRequestJob } from '../jobs/review-request';
 
-  beforeAll(async () => {
-    // Create test merchant
-    const merchant = await db.createMerchant({
-      userId: 1,
-      businessName: 'Test Business',
-      phone: '+966500000001',
-      email: 'test@example.com',
-    });
-    testMerchantId = merchant!.id;
-
-    // Create test order
-    const order = await db.createOrder({
-      merchantId: testMerchantId,
-      customerPhone: '+966500000002',
-      customerName: 'Test Customer',
-      orderNumber: 'ORD-TEST-001',
-      totalAmount: 150,
-      status: 'delivered',
-      items: JSON.stringify([
-        { productId: 1, productName: 'Test Product', quantity: 1, price: 150 }
-      ]),
-    });
-    testOrderId = order!.id;
+describe('review automation safety boundary', () => {
+  it.each([1, 2147483647, 0, -1, NaN, Infinity])('does not look up, qualify or send bare order ID %s', async id => {
+    expect(await shouldRequestReview(id)).toBe(false);
+    expect(await sendReviewRequest(id)).toEqual({ success: false, error: REVIEW_AUTOMATION_BLOCKED });
   });
-
-  describe('shouldRequestReview', () => {
-    it('should return false for non-delivered orders', async () => {
-      const order = await db.createOrder({
-        merchantId: testMerchantId,
-        customerPhone: '+966500000003',
-        customerName: 'Test Customer 2',
-        orderNumber: 'ORD-TEST-002',
-        totalAmount: 200,
-        status: 'pending',
-        items: JSON.stringify([]),
-      });
-
-      const should = await shouldRequestReview(order!.id);
-      expect(should).toBe(false);
-    });
-
-    it('should return false if review already exists', async () => {
-      // Create review first
-      await db.createCustomerReview({
-        orderId: testOrderId,
-        merchantId: testMerchantId,
-        customerPhone: '+966500000002',
-        customerName: 'Test Customer',
-        rating: 5,
-        comment: 'Great!',
-        isPublic: true,
-      });
-
-      const should = await shouldRequestReview(testOrderId);
-      expect(should).toBe(false);
-    });
+  it.each([1, 2, 3, 4, 5])('does not fabricate a customer review or selectively publish score %s', async rating => {
+    expect(await processReviewResponse(123, rating, 'Unverified text')).toEqual({ success: false, error: REVIEW_AUTOMATION_BLOCKED });
   });
-
-  describe('generateReviewMessage', () => {
-    it('should generate review message with customer name', () => {
-      const message = generateReviewMessage(
-        'أحمد',
-        'ORD-123',
-        'متجر الاختبار'
-      );
-
-      expect(message).toContain('أحمد');
-      expect(message).toContain('ORD-123');
-      expect(message).toContain('متجر الاختبار');
-      expect(message).toContain('⭐');
-    });
+  it.each([NaN, Infinity, -Infinity, 0, 6, 1.5, '5', null, undefined])('rejects invalid score %s without side effects', async rating => {
+    expect(await processReviewResponse(123, rating as number)).toEqual({ success: false, error: 'Invalid rating' });
   });
-
-  describe('sendReviewRequest', () => {
-    it('should return error for non-existent order', async () => {
-      const result = await sendReviewRequest(999999);
-      
-      expect(result.success).toBe(false);
-      expect(result.error).toBe('Order not found');
-    });
-
-    it('should handle order without phone', async () => {
-      const order = await db.createOrder({
-        merchantId: testMerchantId,
-        customerPhone: '', // Empty phone
-        customerName: 'Test Customer',
-        orderNumber: 'ORD-TEST-003',
-        totalAmount: 100,
-        status: 'delivered',
-        items: JSON.stringify([]),
-      });
-
-      const result = await sendReviewRequest(order!.id);
-      
-      // Should fail due to missing phone
-      expect(result.success).toBe(false);
-    });
+  it('does not report missing authority as empty/zero statistics', async () => {
+    await expect(getMerchantReviewStats(123)).rejects.toThrow('review_request:authenticated_workspace_required');
   });
-
-  describe('processReviewResponse', () => {
-    it('should reject invalid rating', async () => {
-      const result = await processReviewResponse(testOrderId, 6);
-      
-      expect(result.success).toBe(false);
-      expect(result.error).toBe('Invalid rating');
-    });
-
-    it('should create review with valid rating', async () => {
-      const order = await db.createOrder({
-        merchantId: testMerchantId,
-        customerPhone: '+966500000010',
-        customerName: 'Test Customer 10',
-        orderNumber: 'ORD-TEST-010',
-        totalAmount: 300,
-        status: 'delivered',
-        items: JSON.stringify([]),
-      });
-
-      const result = await processReviewResponse(order!.id, 5, 'Excellent service!');
-      
-      expect(result.success).toBe(true);
-    });
-
-    it('should mark positive reviews as public', async () => {
-      const order = await db.createOrder({
-        merchantId: testMerchantId,
-        customerPhone: '+966500000011',
-        customerName: 'Test Customer 11',
-        orderNumber: 'ORD-TEST-011',
-        totalAmount: 250,
-        status: 'delivered',
-        items: JSON.stringify([]),
-      });
-
-      await processReviewResponse(order!.id, 5, 'Great!');
-      
-      const reviews = await db.getCustomerReviewsByOrderId(order!.id);
-      expect(reviews.length).toBeGreaterThan(0);
-      expect(reviews[0].isPublic).toBe(true);
-    });
-
-    it('should not mark negative reviews as public', async () => {
-      const order = await db.createOrder({
-        merchantId: testMerchantId,
-        customerPhone: '+966500000012',
-        customerName: 'Test Customer 12',
-        orderNumber: 'ORD-TEST-012',
-        totalAmount: 150,
-        status: 'delivered',
-        items: JSON.stringify([]),
-      });
-
-      await processReviewResponse(order!.id, 2, 'Not good');
-      
-      const reviews = await db.getCustomerReviewsByOrderId(order!.id);
-      expect(reviews.length).toBeGreaterThan(0);
-      expect(reviews[0].isPublic).toBe(false);
-    });
+  it('reports blocked startup without a scheduler or recipient scan', () => {
+    const log = vi.spyOn(console, 'info').mockImplementation(() => {});
+    try {
+      expect(startReviewRequestJob()).toBe(reviewAutomationReadiness);
+      expect(reviewAutomationReadiness).toMatchObject({ state: 'blocked', schedulesMessages: false });
+      expect(log).toHaveBeenCalledWith('[Review Request Job] Blocked:', REVIEW_AUTOMATION_BLOCKED);
+      expect(Object.isFrozen(reviewAutomationReadiness.requirements)).toBe(true);
+    } finally { log.mockRestore(); }
   });
-
-  describe('getMerchantReviewStats', () => {
-    it('should return zero stats for merchant with no reviews', async () => {
-      const merchant = await db.createMerchant({
-        userId: 2,
-        businessName: 'New Business',
-        phone: '+966500000020',
-        email: 'new@example.com',
-      });
-
-      const stats = await getMerchantReviewStats(merchant!.id);
-      
-      expect(stats.totalReviews).toBe(0);
-      expect(stats.averageRating).toBe(0);
-    });
-
-    it('should calculate correct average rating', async () => {
-      const stats = await getMerchantReviewStats(testMerchantId);
-      
-      expect(stats.totalReviews).toBeGreaterThan(0);
-      expect(stats.averageRating).toBeGreaterThanOrEqual(1);
-      expect(stats.averageRating).toBeLessThanOrEqual(5);
-    });
-
-    it('should have correct rating distribution', async () => {
-      const stats = await getMerchantReviewStats(testMerchantId);
-      
-      expect(stats.ratingDistribution).toHaveProperty('1');
-      expect(stats.ratingDistribution).toHaveProperty('5');
-      
-      // Sum of distribution should equal total reviews
-      const sum = Object.values(stats.ratingDistribution).reduce((a, b) => a + b, 0);
-      expect(sum).toBe(stats.totalReviews);
-    });
+  it('shows an unambiguous increasing score, with five stars best', () => {
+    const message = generateReviewMessage('أحمد', 'LOCAL-123', 'متجر المثال');
+    expect(message).toContain('أحمد'); expect(message).toContain('#LOCAL-123'); expect(message).toContain('متجر المثال');
+    expect(message.split('\n').filter(line => /^\d ·/.test(line))).toEqual([
+      '5 · ⭐⭐⭐⭐⭐ ممتاز', '4 · ⭐⭐⭐⭐ جيد جداً', '3 · ⭐⭐⭐ جيد', '2 · ⭐⭐ مقبول', '1 · ⭐ ضعيف',
+    ]);
   });
 });
