@@ -10,6 +10,12 @@ import {
 import { publicWebsiteUrl } from "./security/public-website";
 import { estimatedScore } from "../shared/website-reports";
 import {
+  competitorComparisonChoices,
+  competitorComparisonInput,
+  competitorComparisonOptions,
+  competitorComparisonView,
+} from "../shared/competitor-comparison";
+import {
   competitorSelection,
   competitorDetailSelection,
   COMPETITOR_PAGE_SIZE,
@@ -157,6 +163,161 @@ function project(raw: any) {
 const reportColumns = `c.id,c.name,c.industry,c.url,c.status,c.created_at,c.updated_at,c.analyzed_at,c.overall_score,c.seo_score,c.performance_score,c.ux_score,c.content_score,c.product_count,
   (SELECT COUNT(*) FROM competitor_products p WHERE p.competitor_id=c.id AND p.merchant_id=c.merchant_id) AS products,
   (SELECT COUNT(*) FROM competitor_products p WHERE p.competitor_id=c.id AND p.merchant_id<>c.merchant_id) AS excluded_products`;
+const baselineColumns = `c.id,COALESCE(c.title,'') AS name,c.industry,c.url,c.status,c.created_at,c.updated_at,c.analyzed_at,c.overall_score,c.seo_score,c.performance_score,c.ux_score,c.content_quality AS content_score,NULL AS product_count,
+  (SELECT COUNT(*) FROM extracted_products p WHERE p.analysis_id=c.id AND p.merchant_id=c.merchant_id) AS products,
+  (SELECT COUNT(*) FROM extracted_products p WHERE p.analysis_id=c.id AND p.merchant_id<>c.merchant_id) AS excluded_products`;
+/** Complete paginated choices; a failed or running report cannot be used as a comparison baseline. */
+export async function readCompetitorComparisonChoices(
+  actorId: number,
+  merchantId: number,
+  input: unknown
+) {
+  const selection = competitorComparisonChoices.parse(input);
+  return readSnapshot(actorId, merchantId, async tx => {
+    const own = selection.source === "website",
+      table = own ? "website_analyses" : "competitor_analyses",
+      name = own ? "title" : "name";
+    const where =
+      `c.merchant_id=? AND c.status='completed'` +
+      (selection.query
+        ? ` AND LOCATE(?,CONCAT(COALESCE(c.${name},''),' ',c.url,' ',c.id))>0`
+        : "");
+    const args = selection.query ? [merchantId, selection.query] : [merchantId];
+    const [count] = await rows(
+      tx,
+      `SELECT COUNT(*) AS total FROM ${table} c WHERE ${where}`,
+      args
+    );
+    const matched = Number(count.total),
+      pages = Math.ceil(matched / 25),
+      currentPage = Math.min(selection.page, Math.max(1, pages));
+    const values = await rows(
+      tx,
+      `SELECT ${own ? baselineColumns : reportColumns} FROM ${table} c WHERE ${where} ORDER BY c.id DESC LIMIT 25 OFFSET ${(currentPage - 1) * 25}`,
+      args
+    );
+    return competitorComparisonOptions.parse({
+      actorId,
+      merchantId,
+      selection,
+      rows: values.map(project),
+      matched,
+      pages,
+      currentPage,
+    });
+  });
+}
+async function comparisonPricing(
+  tx: PoolConnection,
+  merchantId: number,
+  id: number,
+  source: "website" | "competitor",
+  count: number
+) {
+  const table =
+      source === "website" ? "extracted_products" : "competitor_products",
+    parent = source === "website" ? "analysis_id" : "competitor_id";
+  const groups = await rows(
+    tx,
+    `SELECT currency,COUNT(*) AS count,MIN(price) AS minimum,MAX(price) AS maximum,AVG(price) AS average FROM ${table} WHERE merchant_id=? AND ${parent}=? AND price>0 AND REGEXP_LIKE(currency,'^[A-Z]{3}$','c') GROUP BY currency ORDER BY currency`,
+    [merchantId, id]
+  );
+  const pricedCount = groups.reduce((sum, g) => sum + Number(g.count), 0);
+  return {
+    pricedCount,
+    unverifiedCount: count - pricedCount,
+    groups: groups.map(g => ({
+      currency: String(g.currency),
+      count: Number(g.count),
+      minimum: String(g.minimum),
+      maximum: String(g.maximum),
+      average: String(g.average),
+    })),
+    evidence: "extracted_not_current" as const,
+  };
+}
+/** Read-only arithmetic over one authorized snapshot. No model call, generated advice or sales claim. */
+export async function readCompetitorComparison(
+  actorId: number,
+  merchantId: number,
+  input: unknown
+) {
+  const selection = competitorComparisonInput.parse(input);
+  return readSnapshot(actorId, merchantId, async tx => {
+    const [own] = await rows(
+      tx,
+      `SELECT ${baselineColumns} FROM website_analyses c WHERE c.merchant_id=? AND c.id=?`,
+      [merchantId, selection.analysisId]
+    );
+    if (!own) throw new CompetitorWorkspaceError("missing");
+    if (own.status !== "completed")
+      throw new CompetitorWorkspaceError("running");
+    const saved = await rows(
+      tx,
+      `SELECT ${reportColumns} FROM competitor_analyses c WHERE c.merchant_id=? AND c.id IN (${selection.competitorIds.map(() => "?").join(",")}) ORDER BY c.id`,
+      [merchantId, ...selection.competitorIds]
+    );
+    // Never silently drop an unavailable selected competitor and present a partial comparison.
+    if (saved.length !== selection.competitorIds.length)
+      throw new CompetitorWorkspaceError("missing");
+    if (saved.some(r => r.status !== "completed"))
+      throw new CompetitorWorkspaceError("running");
+    const report = project(own),
+      baseline = {
+        report,
+        pricing: await comparisonPricing(
+          tx,
+          merchantId,
+          report.id,
+          "website",
+          report.products
+        ),
+      };
+    const competitors = [];
+    for (const selectedId of selection.competitorIds) {
+      const item = project(saved.find(r => r.id === selectedId));
+      const pricing = await comparisonPricing(
+        tx,
+        merchantId,
+        item.id,
+        "competitor",
+        item.products
+      );
+      competitors.push({
+        report: item,
+        pricing,
+        differences: (
+          ["overall", "seo", "performance", "ux", "content"] as const
+        ).map(metric => ({
+          metric,
+          baseline: report.scores[metric],
+          competitor: item.scores[metric],
+          difference:
+            report.scores[metric] === null || item.scores[metric] === null
+              ? null
+              : report.scores[metric]! - item.scores[metric]!,
+        })),
+        commonCurrencies: baseline.pricing.groups
+          .filter(g => pricing.groups.some(p => p.currency === g.currency))
+          .map(g => g.currency),
+      });
+    }
+    const revision = createHash("sha256")
+      .update(JSON.stringify([merchantId, selection, baseline, competitors]))
+      .digest("hex");
+    return competitorComparisonView.parse({
+      actorId,
+      merchantId,
+      selection,
+      revision,
+      baseline,
+      competitors,
+      evidence: "stored_website_estimates",
+      priceComparability: "products_not_matched",
+      salesProficiency: null,
+    });
+  });
+}
 export async function readCompetitorWorkspace(
   actorId: number,
   merchantId: number,

@@ -3,6 +3,10 @@ import {
   CompetitorJobError,
 } from "./competitor-analysis-jobs";
 import { TRPCError } from "@trpc/server";
+import {
+  competitorComparisonChoices,
+  competitorComparisonInput,
+} from "../shared/competitor-comparison";
 import { permissionProcedure } from "./_core/trpc";
 import {
   competitorSelection,
@@ -14,6 +18,8 @@ import {
   readCompetitorDetail,
   CompetitorWorkspaceError,
   deleteReviewedCompetitor,
+  readCompetitorComparisonChoices,
+  readCompetitorComparison,
 } from "./competitor-workspace";
 function mapped(error: unknown): never {
   throw new TRPCError({
@@ -30,6 +36,40 @@ function mapped(error: unknown): never {
   });
 }
 export const competitorReadProcedures = {
+  competitorComparisonChoices: permissionProcedure("analytics.read")
+    .input(competitorComparisonChoices)
+    .query(async ({ ctx, input }) => {
+      try {
+        return await readCompetitorComparisonChoices(
+          ctx.user.id,
+          ctx.merchantId,
+          input
+        );
+      } catch (error) {
+        return mapped(error);
+      }
+    }),
+  competitorComparison: permissionProcedure("analytics.read")
+    .input(competitorComparisonInput)
+    .query(async ({ ctx, input }) => {
+      try {
+        return await readCompetitorComparison(
+          ctx.user.id,
+          ctx.merchantId,
+          input
+        );
+      } catch (error) {
+        if (
+          error instanceof CompetitorWorkspaceError &&
+          error.reason === "running"
+        )
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "competitor_comparison:report_not_ready",
+          });
+        return mapped(error);
+      }
+    }),
   deleteReviewedCompetitor: permissionProcedure("bot_settings.manage")
     .input(competitorDeleteInput)
     .mutation(async ({ ctx, input }) => {

@@ -1,6 +1,8 @@
 import { beforeEach, expect, it, vi } from "vitest";
 const m = vi.hoisted(() => ({
   settle: vi.fn(),
+  comparison: vi.fn(),
+  comparisonChoices: vi.fn(),
   remove: vi.fn(),
   access: vi.fn(),
   read: vi.fn(),
@@ -18,6 +20,8 @@ vi.mock("./competitor-workspace", async original => ({
   readCompetitorWorkspace: m.read,
   readCompetitorDetail: m.detail,
   deleteReviewedCompetitor: m.remove,
+  readCompetitorComparison: m.comparison,
+  readCompetitorComparisonChoices: m.comparisonChoices,
 }));
 import { router } from "./_core/trpc";
 import { competitorReadProcedures } from "./routers-competitor-workspace";
@@ -45,6 +49,15 @@ it("forwards authenticated actor and server-selected merchant for reads", async 
   });
   expect(m.detail).toHaveBeenCalledWith(7, 20, { id: 8, productPage: 1 });
   expect(m.settle).toHaveBeenCalledWith(7, 20);
+});
+it('reads comparison and paginated options using only authenticated scope',async()=>{
+  await caller().competitorComparison({analysisId:8,competitorIds:[9,10]});
+  await caller().competitorComparisonChoices({source:'website',query:' sample '});
+  expect(m.comparison).toHaveBeenCalledWith(7,20,{analysisId:8,competitorIds:[9,10]});expect(m.comparisonChoices).toHaveBeenCalledWith(7,20,{source:'website',query:'sample',page:1});
+});
+it('rejects an unready comparison with a static recoverable error',async()=>{
+  m.comparison.mockRejectedValue(new CompetitorWorkspaceError('running'));
+  await expect(caller().competitorComparison({analysisId:8,competitorIds:[9]})).rejects.toMatchObject({code:'PRECONDITION_FAILED',message:'competitor_comparison:report_not_ready'});
 });
 it("rejects client scope injection without reading", async () => {
   await expect(
