@@ -10945,19 +10945,6 @@ export async function updateEmailTemplate(id: number, data: {
     .where(eq(emailTemplates.id, id));
 }
 
-// ============================================
-// Promotions Management
-// ============================================
-
-export async function createPromotion(data: InsertPromotion): Promise<Promotion | undefined> {
-  const db = await getDb();
-  if (!db) return undefined;
-
-  const result = await requireDb().insert(promotions).values(data);
-  const insertId = Number((result[0] as any).insertId);
-  return getPromotionById(insertId);
-}
-
 export async function getPromotionById(id: number): Promise<Promotion | undefined> {
   const db = await getDb();
   if (!db) return undefined;
@@ -11013,32 +11000,6 @@ export async function countActivePromotions(merchantId: number): Promise<number>
   return result[0]?.count || 0;
 }
 
-export async function updatePromotion(id: number, data: Partial<InsertPromotion>): Promise<Promotion | undefined> {
-  const db = await getDb();
-  if (!db) return undefined;
-
-  await requireDb().update(promotions).set(data).where(eq(promotions.id, id));
-  return getPromotionById(id);
-}
-
-export async function deletePromotion(id: number): Promise<void> {
-  const db = await getDb();
-  if (!db) return;
-
-  // PEN-PROMO-10: Clean up orphaned auto-discount code before deleting promo
-  const promo = await getPromotionById(id);
-  if (promo?.autoDiscountCodeId) {
-    try {
-      await db.delete(discountCodes).where(eq(discountCodes.id, promo.autoDiscountCodeId));
-      console.log(`[DB] PEN-PROMO-10: Cleaned up orphaned discount code ID=${promo.autoDiscountCodeId} for promo ID=${id}`);
-    } catch (err) {
-      console.warn(`[DB] Failed to clean up discount code for promo ${id}:`, err);
-    }
-  }
-
-  await requireDb().delete(promotions).where(eq(promotions.id, id));
-}
-
 export async function incrementPromotionViewCount(id: number): Promise<void> {
   const db = await getDb();
   if (!db) return;
@@ -11055,29 +11016,4 @@ export async function incrementPromotionClickCount(id: number): Promise<void> {
   await requireDb().update(promotions)
     .set({ clickCount: sql`${promotions.clickCount} + 1` })
     .where(eq(promotions.id, id));
-}
-
-/**
- * PEN-PROMO-03: Auto-deactivate expired promotions for a merchant.
- * Called before counting active promotions to prevent expired-but-active
- * promos from blocking new activation slots.
- */
-export async function deactivateExpiredPromotions(merchantId: number): Promise<number> {
-  const db = await getDb();
-  if (!db) return 0;
-
-  const now = formatDateForDB(new Date());
-  const result = await requireDb().update(promotions)
-    .set({ isActive: 0 })
-    .where(and(
-      eq(promotions.merchantId, merchantId),
-      eq(promotions.isActive, 1),
-      lte(promotions.expiresAt, now),
-    ));
-
-  const deactivated = (result as any)[0]?.affectedRows || 0;
-  if (deactivated > 0) {
-    console.log(`[DB] PEN-PROMO-03: Auto-deactivated ${deactivated} expired promotions for merchant ${merchantId}`);
-  }
-  return deactivated;
 }
