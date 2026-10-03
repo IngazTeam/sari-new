@@ -141,7 +141,7 @@ describe('verified inbox scope and draft lifetime',()=>{
     expect(apply('Suggestion','Existing draft')).toBe(false);expect(readConversationDraft(conversationDraftScope(7,20,4))).toMatchObject({record:{text:'Newer saved draft'}});expect(m.send).not.toHaveBeenCalled();
   });
   it('adds an explicitly reviewed suggestion to the saved draft without sending',async()=>{
-    await render();await choose();await fill('Original');await act(async()=>{expect(m.suggestionProps.onSelectSuggestion('Original\n\nSuggestion','Original')).toBe(true);});expect(draft().value).toBe('Original\n\nSuggestion');expect(m.send).not.toHaveBeenCalled();
+    await render();await choose();await fill('Original');await act(async()=>{expect(m.suggestionProps.onSelectSuggestion('Original\n\nSuggestion','Original')).toBe(true);});expect(draft().value).toBe('Original\n\nSuggestion');expect(m.send).not.toHaveBeenCalled();expect(m.voice).not.toHaveBeenCalled();expect(readConversationDraft(conversationDraftScope(7,20,4))).toMatchObject({state:'ready',record:{text:'Original\n\nSuggestion',review:false}});
   });
   it('rejects suggestion insertion after a send review marker is saved',async()=>{
     await render();await choose();const apply=m.suggestionProps.onSelectSuggestion;saveConversationDraft(conversationDraftScope(7,20,4),'',true,conversationDraftEpoch());expect(apply('Suggestion','')).toBe(false);expect(m.send).not.toHaveBeenCalled();
@@ -241,5 +241,35 @@ describe('verified inbox scope and draft lifetime',()=>{
     const base=m.queries.history.data;m.queries.history=({beforeId}:any)=>query({...base,items:[{...base.items[0],id:beforeId-1}],hasMore:true,nextBeforeId:beforeId-1});await render();
     const older=Array.from(container.querySelectorAll('button')).find(b=>b.textContent===ar.conversationHistory.older)!;await click(older);
     const saved=new URL(memory.history!.at(-1)!,'https://local.test').searchParams.get('history')!.split(',');expect(saved).toHaveLength(100);expect(saved[0]).toBe('200');expect(saved.at(-1)).toBe('101');expect(container.textContent).toContain(ar.conversationHistory.latest);
+  });
+});
+
+// Selection drives the existing mobile CSS without hiding loading/error recovery.
+describe('mobile inbox pane selection state', () => {
+  const selected = () => container.querySelector('.mw-inbox-grid')?.getAttribute('data-selected');
+  it('selects and leaves a loaded conversation through visible controls', async () => {
+    await render(); expect(selected()).toBe('false');
+    await choose(); expect(selected()).toBe('true');
+    const back = container.querySelector('.mw-chat-back') as HTMLButtonElement;
+    expect(back).not.toBeNull(); await click(back);
+    expect(selected()).toBe('false'); expect(draft()).toBeNull();
+  });
+  for (const language of ['ar', 'en']) for (const loading of [true, false])
+    it(`keeps the ${loading ? 'loading' : 'unavailable'} direct-link pane reachable in ${language}`, async () => {
+      m.language = language;
+      memory.navigate('/merchant/conversations?conversationId=9');
+      m.queries.history = { ...query(undefined), isLoading: loading, isFetching: loading, error: loading ? null : Error('unavailable') };
+      await render(); expect(selected()).toBe('true'); expect(draft()).toBeNull();
+      const c = (language === 'ar' ? ar : en).conversationNavigation;
+      expect(container.textContent).toContain(loading ? c.loading : c.unavailable);
+      const back = Array.from(container.querySelectorAll('button')).find(b => b.textContent === c.backToList)!;
+      expect(back).toBeTruthy(); await click(back);
+      expect(selected()).toBe('false'); expect(container.querySelector('[data-staff-conversation]')).not.toBeNull();
+    });
+  it('returns to the list error pane when the selected inbox cannot be read', async () => {
+    memory.navigate('/merchant/conversations?conversationId=4');
+    m.queries.list.error = Error('failed');
+    await render(); expect(selected()).toBe('false'); expect(draft()).toBeNull();
+    expect(container.textContent).toContain(merchantAr.conversationInbox.listFailed);
   });
 });
