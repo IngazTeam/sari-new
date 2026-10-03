@@ -3,6 +3,7 @@ export function promotionWriteError(error:unknown,t:(key:string)=>string){
  switch(message){
   case 'promotion_write:stale':
   case 'promotion_write:reused':return t('merchantUx.promotionWorkspace.stale');
+  case 'promotion_write:cancelled':return t('merchantUx.promotionWorkspace.cancelledRequest');
   case 'promotion_write:code_scope':return t('merchantUx.promotionWrites.code_scope');
   case 'promotion_write:code_start':return t('merchantUx.promotionWrites.code_start');
   case 'promotion_write:code_quantity':return t('merchantUx.promotionWrites.code_quantity');

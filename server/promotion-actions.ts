@@ -1,6 +1,6 @@
 import {createHash} from 'node:crypto';
 import type {PoolConnection} from 'mysql2/promise';
-import {promotionActionTarget,promotionActionReview,promotionActionApply,promotionActionResult,promotionReceiptInput,type PromotionActionTarget} from '../shared/promotion-actions';
+import {promotionActionTarget,promotionActionReview,promotionActionApply,promotionActionResult,promotionReceiptInput,promotionCancelledReceipt,type PromotionActionTarget} from '../shared/promotion-actions';
 import {promotionMutationInput} from '../shared/promotion-write';
 import {promotionWorkspaceInput} from '../shared/promotion-workspace';
 import {projectPromotionWorkspace,PROMOTION_FIELDS} from './promotion-workspace-source';
@@ -47,17 +47,37 @@ function savedReceipt(row:any,actorId:number,merchantId:number,requestKey:string
  const value=promotionActionResult.parse(typeof row.result_json==='string'?JSON.parse(row.result_json):row.result_json);
  if(value.actorId!==actorId||value.merchantId!==merchantId||value.requestKey!==requestKey)throw new PromotionWriteError('unavailable');return value;
 }
+function receiptOutcome(row:any,actorId:number,merchantId:number,requestKey:string){
+ if(row.actor_id!==actorId)throw new PromotionWriteError('reused');
+ const raw=typeof row.result_json==='string'?JSON.parse(row.result_json):row.result_json;
+ if(raw?.state==='cancelled'){
+  const result=promotionCancelledReceipt.parse(raw);
+  if(result.actorId!==actorId||result.merchantId!==merchantId||result.requestKey!==requestKey||row.request_digest!=='0'.repeat(64))throw new PromotionWriteError('unavailable');
+  return {state:'cancelled' as const,result};
+ }
+ return {state:'saved' as const,result:savedReceipt(row,actorId,merchantId,requestKey)};
+}
 export function readPromotionActionReceipt(actorId:number,merchantId:number,input:unknown){
  const value=promotionReceiptInput.parse(input);return transaction(actorId,merchantId,async tx=>{
   const saved=(await rows(tx,'SELECT actor_id,request_digest,result_json FROM promotion_action_receipts WHERE merchant_id=? AND request_key=? FOR SHARE',[merchantId,value.requestKey]))[0];
-  return saved?{state:'saved' as const,result:savedReceipt(saved,actorId,merchantId,value.requestKey)}:{state:'missing' as const,result:null};
+  return saved?receiptOutcome(saved,actorId,merchantId,value.requestKey):{state:'missing' as const,result:null};
+ });
+}
+/** A durable tombstone fences delayed writes; absence alone is never permission to retry under a new key. */
+export function resolvePromotionActionReceipt(actorId:number,merchantId:number,input:unknown){
+ const value=promotionReceiptInput.parse(input);return transaction(actorId,merchantId,async tx=>{
+  const saved=(await rows(tx,'SELECT actor_id,request_digest,result_json FROM promotion_action_receipts WHERE merchant_id=? AND request_key=? FOR UPDATE',[merchantId,value.requestKey]))[0];
+  if(saved)return receiptOutcome(saved,actorId,merchantId,value.requestKey);
+  const result=promotionCancelledReceipt.parse({state:'cancelled',requestKey:value.requestKey,actorId,merchantId,cancelledAt:new Date().toISOString()});
+  const [inserted]=await tx.execute<any>('INSERT INTO promotion_action_receipts (merchant_id,actor_id,request_key,request_digest,result_json) VALUES (?,?,?,?,?)',[merchantId,actorId,value.requestKey,'0'.repeat(64),JSON.stringify(result)]);
+  if(inserted.affectedRows!==1)throw new PromotionWriteError('unavailable');return {state:'cancelled' as const,result};
  });
 }
 export function applyPromotionAction(actorId:number,merchantId:number,input:unknown){
  const value=promotionActionApply.parse(input),requestDigest=digest(value);
  return transaction(actorId,merchantId,async tx=>{
   const saved=(await rows(tx,'SELECT actor_id,request_digest,result_json FROM promotion_action_receipts WHERE merchant_id=? AND request_key=? FOR UPDATE',[merchantId,value.requestKey]))[0];
-  if(saved){if(saved.request_digest!==requestDigest)throw new PromotionWriteError('reused');return savedReceipt(saved,actorId,merchantId,value.requestKey);}
+  if(saved){const outcome=receiptOutcome(saved,actorId,merchantId,value.requestKey);if(outcome.state==='cancelled')throw new PromotionWriteError('cancelled');if(saved.request_digest!==requestDigest)throw new PromotionWriteError('reused');return outcome.result;}
   const current=await snapshot(tx,actorId,merchantId,value.target,value.checkedAt);
   if(current.review.reviewRevision!==value.reviewRevision)throw new PromotionWriteError('stale');
   const row=await applyPromotionMutation(tx,merchantId,current.mutation,current.source);

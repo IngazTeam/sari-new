@@ -1,4 +1,7 @@
 export function promotionWorkspaceLabels(t:(key:string)=>string){return {
+resolveRequest:t('merchantUx.promotionWorkspace.resolveRequest'),
+resolveHelp:t('merchantUx.promotionWorkspace.resolveHelp'),
+cancelledRequest:t('merchantUx.promotionWorkspace.cancelledRequest'),
 title:t('merchantUx.promotionWorkspace.title'),
 eyebrow:t('merchantUx.promotionWorkspace.eyebrow'),
 intro:t('merchantUx.promotionWorkspace.intro'),

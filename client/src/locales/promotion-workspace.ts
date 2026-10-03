@@ -1,4 +1,5 @@
 export const promotionWorkspaceEn={
+"resolveRequest":"Resolve this request", "resolveHelp":"Recover an existing save, or close an unsaved request so it cannot arrive later. This does not undo a saved offer.", "cancelledRequest":"The unsaved request is closed. You can review a new change.",
   "title": "Promotions",
   "eyebrow": "Marketing · Offers",
   "intro": "Manage clear offers your assistant can refer to. Review conditions before saving.",
@@ -115,6 +116,7 @@ export const promotionWorkspaceEn={
   "noChanges": "No changes to save."
 };
 export const promotionWorkspaceAr:typeof promotionWorkspaceEn={
+"resolveRequest":"حسم هذا الطلب", "resolveHelp":"استعد الحفظ إن تم، أو أغلق الطلب غير المحفوظ لمنع وصوله لاحقًا. هذا لا يلغي عرضًا محفوظًا.", "cancelledRequest":"أُغلق الطلب غير المحفوظ. يمكنك مراجعة تغيير جديد.",
   "title": "العروض الترويجية",
   "eyebrow": "التسويق · العروض",
   "intro": "جهّز عروضًا واضحة يرجع إليها مساعدك. راجع الشروط قبل الحفظ.",

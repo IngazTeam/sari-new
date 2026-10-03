@@ -5,7 +5,7 @@ import {ALL_ROLES,hasPermission,type MerchantRole} from './_core/permissions';
 import {promotionMutationInput,promotionWriteFields,type PromotionMutation} from '../shared/promotion-write';
 import {PROMOTION_SELECT,PROMOTION_FIELDS} from './promotion-workspace-source';
 import {databaseTimeEpoch} from './db/time';
-export class PromotionWriteError extends Error{constructor(readonly reason:'forbidden'|'missing'|'invalid'|'limit'|'unavailable'|'unknown'|'code_scope'|'code_start'|'code_quantity'|'code_expired'|'stale'|'reused'){super(`promotion_write:${reason}`);}}
+export class PromotionWriteError extends Error{constructor(readonly reason:'forbidden'|'missing'|'invalid'|'limit'|'unavailable'|'unknown'|'code_scope'|'code_start'|'code_quantity'|'code_expired'|'stale'|'reused'|'cancelled'){super(`promotion_write:${reason}`);}}
 const invalid=():never=>{throw new PromotionWriteError('invalid');};
 export const promotionWriteRows=async(tx:PoolConnection,sql:string,args:any[]=[])=>{const [result]=await tx.execute(sql,args);if(!Array.isArray(result))throw new PromotionWriteError('unavailable');return result as any[];};
 export const promotionEditable=['title','description','bannerImageUrl','type','value','scope','productIds','categoryIds','minOrderAmount','minQuantity','startsAt','expiresAt'] as const;

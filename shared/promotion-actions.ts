@@ -12,6 +12,12 @@ export const promotionActionReview=z.object({actorId:promotionId,merchantId:prom
 export const promotionActionApply=z.object({target:promotionActionTarget,reviewRevision:hash,checkedAt:z.string().datetime(),requestKey:z.string().uuid()}).strict();
 export const promotionActionResult=z.object({requestKey:z.string().uuid(),actorId:promotionId,merchantId:promotionId,id:promotionId,action:z.enum(['create','update','toggle','delete']),active:z.boolean().nullable(),retainedDiscount:z.boolean(),savedAt:z.string().datetime()}).strict();
 export const promotionReceiptInput=z.object({requestKey:z.string().uuid()}).strict();
+export const promotionCancelledReceipt=z.object({state:z.literal('cancelled'),requestKey:z.string().uuid(),actorId:promotionId,merchantId:promotionId,cancelledAt:z.string().datetime()}).strict();
+export const promotionReceiptResult=z.discriminatedUnion('state',[
+ z.object({state:z.literal('saved'),result:promotionActionResult}).strict(),
+ z.object({state:z.literal('missing'),result:z.null()}).strict(),
+ z.object({state:z.literal('cancelled'),result:promotionCancelledReceipt}).strict(),
+]);
 export type PromotionActionTarget=z.infer<typeof promotionActionTarget>;
 export type PromotionActionReview=z.infer<typeof promotionActionReview>;
 export type PromotionActionResult=z.infer<typeof promotionActionResult>;

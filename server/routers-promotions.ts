@@ -8,9 +8,10 @@ import {writePromotion,PromotionWriteError} from './promotion-writes';
 import {getPromotionById,getPromotionsByMerchant,countActivePromotions} from './db';
 import {databaseTimeEpoch} from './db/time';
 import {promotionActionTarget,promotionActionApply,promotionReceiptInput} from '../shared/promotion-actions';
-import {reviewPromotionAction,applyPromotionAction,readPromotionActionReceipt} from './promotion-actions';
-const error=(e:unknown)=>new TRPCError({code:e instanceof PromotionWriteError?e.reason==='forbidden'?'FORBIDDEN':e.reason==='missing'?'NOT_FOUND':e.reason==='stale'||e.reason==='reused'?'CONFLICT':e.reason==='invalid'||e.reason.startsWith('code_')?'BAD_REQUEST':e.reason==='limit'?'PRECONDITION_FAILED':'INTERNAL_SERVER_ERROR':'INTERNAL_SERVER_ERROR',message:e instanceof PromotionWriteError?e.message:'promotion_write:unavailable'});
+import {reviewPromotionAction,applyPromotionAction,readPromotionActionReceipt,resolvePromotionActionReceipt} from './promotion-actions';
+const error=(e:unknown)=>new TRPCError({code:e instanceof PromotionWriteError?e.reason==='forbidden'?'FORBIDDEN':e.reason==='missing'?'NOT_FOUND':e.reason==='stale'||e.reason==='reused'||e.reason==='cancelled'?'CONFLICT':e.reason==='invalid'||e.reason.startsWith('code_')?'BAD_REQUEST':e.reason==='limit'?'PRECONDITION_FAILED':'INTERNAL_SERVER_ERROR':'INTERNAL_SERVER_ERROR',message:e instanceof PromotionWriteError?e.message:'promotion_write:unavailable'});
 export const promotionsRouter=router({
+ resolveActionReceipt:permissionProcedure('campaigns.manage').input(promotionReceiptInput).mutation(async({ctx,input})=>{try{return await resolvePromotionActionReceipt(ctx.user.id,ctx.merchantId,input);}catch(e){throw error(e);}}),
  reviewAction:permissionProcedure('campaigns.manage').input(promotionActionTarget).mutation(async({ctx,input})=>{try{return await reviewPromotionAction(ctx.user.id,ctx.merchantId,input);}catch(e){throw error(e);}}),
  applyAction:permissionProcedure('campaigns.manage').input(promotionActionApply).mutation(async({ctx,input})=>{try{return await applyPromotionAction(ctx.user.id,ctx.merchantId,input);}catch(e){throw error(e);}}),
  actionReceipt:permissionProcedure('campaigns.manage').input(promotionReceiptInput).query(async({ctx,input})=>{try{return await readPromotionActionReceipt(ctx.user.id,ctx.merchantId,input);}catch(e){throw error(e);}}),

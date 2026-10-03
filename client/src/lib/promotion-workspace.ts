@@ -1,5 +1,5 @@
 import {promotionWorkspaceInput,promotionWorkspaceSchema,promotionStates,promotionTypes,promotionScopes,type PromotionSelection,type PromotionWorkspaceRow} from '@shared/promotion-workspace';
-import {promotionActionTarget,promotionActionReview,promotionActionResult,type PromotionActionTarget} from '@shared/promotion-actions';
+import {promotionActionTarget,promotionActionReview,promotionActionResult,promotionCancelledReceipt,type PromotionActionTarget} from '@shared/promotion-actions';
 export const promotionSelectionKey=(s:PromotionSelection)=>JSON.stringify([s.query,s.state,s.type,s.scope,s.page]);
 export function promotionNavigation(search:string){const p=new URLSearchParams(search),page=p.get('page');return promotionWorkspaceInput.parse({query:(p.get('q')??'').trim().slice(0,100),state:promotionStates.includes(p.get('state') as any)?p.get('state'):'all',type:promotionTypes.includes(p.get('type') as any)?p.get('type'):'all',scope:promotionScopes.includes(p.get('scope') as any)?p.get('scope'):'any',page:page&&/^[1-9]\d*$/.test(page)&&Number(page)<=1000000?Number(page):1});}
 export function scopedPromotionWorkspace(raw:unknown,a:number,m:number,s:PromotionSelection){const p=promotionWorkspaceSchema.safeParse(raw);return p.success&&p.data.actorId===a&&p.data.merchantId===m&&promotionSelectionKey(p.data.selection)===promotionSelectionKey(s)?p.data:null;}
@@ -32,3 +32,4 @@ export function promotionFormTarget(form:PromotionForm,row?:PromotionWorkspaceRo
  const result=promotionActionTarget.safeParse({action:row?'update':'create',data});return result.success?{target:result.data,errors}:{target:null,errors:{title:'fieldInvalid' as const}};
 }
 export const promotionReceiptStorageKey=(actorId:number,merchantId:number)=>`sary:promotion-pending:${actorId}:${merchantId}`;
+export function scopedPromotionCancellation(raw:unknown,actorId:number,merchantId:number,requestKey:string){const p=promotionCancelledReceipt.safeParse(raw);return p.success&&p.data.actorId===actorId&&p.data.merchantId===merchantId&&p.data.requestKey===requestKey?p.data:null;}
