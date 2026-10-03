@@ -10,6 +10,8 @@ import { TRPCError } from "@trpc/server";
 import { protectedProcedure, merchantProcedure, permissionProcedure, router } from "./_core/trpc";
 import {cartWorkspaceInput,cartRecoveryReviewInput,cartRecoveryRecordInput} from '../shared/abandoned-cart-workspace';
 import {readCartWorkspace,reviewCartRecovery,recordCartRecovery,CartWorkspaceError} from './abandoned-cart-workspace-store';
+import {cartReminderReviewInput,cartReminderReceiptInput} from '../shared/abandoned-cart-reminder';
+import {reviewCartReminder,readCartReminderReceipt} from './abandoned-cart-reminder';
 import {
   getAbandonedCartById,
   getAbandonedCartsByMerchantId,
@@ -19,6 +21,8 @@ import {
 
 async function recoveryGuard<T>(operation:()=>Promise<T>){try{return await operation();}catch(error){const reason=error instanceof CartWorkspaceError?error.reason:'unavailable';throw new TRPCError({code:reason==='forbidden'?'FORBIDDEN':reason==='missing'?'NOT_FOUND':reason==='stale'?'CONFLICT':reason==='invalid'?'PRECONDITION_FAILED':'INTERNAL_SERVER_ERROR',message:reason==='stale'?'تغير السجل. حدّثه وراجعه مجددًا.':'تعذر تأكيد تسجيل الاستعادة. حدّث البيانات وراجع الحالة قبل المحاولة مجددًا.'});}}
 export const abandonedCartsRouter = router({
+    reviewReminder:permissionProcedure('campaigns.manage').input(cartReminderReviewInput).mutation(({ctx,input})=>recoveryGuard(()=>reviewCartReminder(ctx.user.id,ctx.merchantId,input))),
+    reminderReceipt:merchantProcedure.input(cartReminderReceiptInput).query(({ctx,input})=>recoveryGuard(()=>readCartReminderReceipt(ctx.user.id,ctx.merchantId,input))),
     reviewRecovery:permissionProcedure('campaigns.manage').input(cartRecoveryReviewInput).mutation(({ctx,input})=>recoveryGuard(()=>reviewCartRecovery(ctx.user.id,ctx.merchantId,input))),
     recordRecovery:permissionProcedure('campaigns.manage').input(cartRecoveryRecordInput).mutation(({ctx,input})=>recoveryGuard(()=>recordCartRecovery(ctx.user.id,ctx.merchantId,input))),
     workspace: merchantProcedure.input(cartWorkspaceInput).query(async({ctx,input})=>{try{return await readCartWorkspace(ctx.user.id,ctx.merchantId,input);}catch(error){throw new TRPCError({code:error instanceof CartWorkspaceError&&error.reason==='forbidden'?'FORBIDDEN':'INTERNAL_SERVER_ERROR',message:'تعذر قراءة السلات لهذا المتجر. حدّث الصفحة وحاول مجددًا.'});}}),

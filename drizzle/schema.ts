@@ -123,6 +123,15 @@ export const abandonedCarts = mysqlTable("abandoned_carts", {
 	updatedAt: timestamp({ mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 });
 
+export const abandonedCartReminders = mysqlTable('abandoned_cart_reminders', {
+ id:int().autoincrement().primaryKey(), operationKey:char('operation_key',{length:36}).notNull(),
+ merchantId:int('merchant_id').notNull().references(()=>merchants.id,{onDelete:'cascade'}), actorId:int('actor_id').notNull(), cartId:int('cart_id').notNull().references(()=>abandonedCarts.id,{onDelete:'cascade'}),
+ requestDigest:char('request_digest',{length:64}).notNull(),reviewRevision:char('review_revision',{length:64}).notNull(),cartRevision:char('cart_revision',{length:64}).notNull(),channelId:int('channel_id').notNull(),channelRevision:char('channel_revision',{length:64}).notNull(),
+ discountId:int('discount_id'),discountRevision:char('discount_revision',{length:64}),locale:mysqlEnum(['ar','en']).notNull(),toPhone:varchar('to_phone',{length:16}).notNull(),messageText:text('message_text').notNull(),
+ state:mysqlEnum(['reserved','dispatching','accepted','rejected','unknown','suppressed']).default('reserved').notNull(),quotaSubscriptionId:int('quota_subscription_id'),quotaPeriodStart:datetime('quota_period_start',{mode:'string',fsp:3}),quotaReserved:tinyint('quota_reserved').default(0).notNull(),expiresAt:datetime('expires_at',{mode:'string',fsp:3}).notNull(),
+ createdAt:timestamp('created_at',{mode:'string',fsp:3}).defaultNow().notNull(),updatedAt:timestamp('updated_at',{mode:'string',fsp:3}).defaultNow().onUpdateNow().notNull(),
+},table=>[uniqueIndex('uq_cart_reminder_operation').on(table.merchantId,table.operationKey),index('idx_cart_reminder_history').on(table.merchantId,table.cartId,table.id),check('chk_cart_reminder_quota',sql`(${table.quotaReserved}=0 AND ${table.quotaSubscriptionId} IS NULL AND ${table.quotaPeriodStart} IS NULL) OR (${table.quotaReserved}=1 AND ${table.quotaSubscriptionId} IS NOT NULL AND ${table.quotaPeriodStart} IS NOT NULL)`),check('chk_cart_reminder_discount',sql`(${table.discountId} IS NULL AND ${table.discountRevision} IS NULL) OR (${table.discountId} IS NOT NULL AND ${table.discountRevision} IS NOT NULL)`)]);
+
 export const analytics = mysqlTable("analytics", {
 	id: int().autoincrement().primaryKey(),
 	merchantId: int().notNull().references(() => merchants.id, { onDelete: "cascade" }),

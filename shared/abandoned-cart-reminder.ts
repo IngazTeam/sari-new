@@ -1,0 +1,13 @@
+import {z} from 'zod';
+import {cartWorkspaceRow} from './abandoned-cart-workspace';
+import {discountWorkspaceRow} from './discount-workspace';
+const id=z.number().int().positive().max(2147483647),revision=z.string().regex(/^[a-f0-9]{64}$/);
+export const cartReminderReviewInput=z.object({cartId:id,discountId:id.nullable().default(null),locale:z.enum(['ar','en']).default('ar')}).strict();
+export const cartReminderSendInput=cartReminderReviewInput.extend({expectedRevision:revision,operationKey:z.string().uuid(),confirm:z.literal(true)}).strict();
+export const cartReminderReceiptInput=z.object({operationKey:z.string().uuid()}).strict();
+export const cartReminderStates=['reserved','dispatching','accepted','rejected','unknown','suppressed'] as const;
+export const cartReminderBlockers=['cart_state','phone','channel','consent','quiet_hours','subscription','quota','discount','prior_reminder','message','merchant'] as const;
+export const cartReminderReceiptSchema=z.object({id,operationKey:z.string().uuid(),merchantId:id,actorId:id,cartId:id,state:z.enum(cartReminderStates),createdAt:z.string().datetime(),updatedAt:z.string().datetime(),quotaReserved:z.boolean(),providerAccepted:z.boolean(),salesVerified:z.literal(false)}).strict();
+export const cartReminderReviewSchema=z.object({actorId:id,merchantId:id,selection:cartReminderReviewInput,row:cartWorkspaceRow,expectedRevision:revision,checkedAt:z.string().datetime(),eligible:z.boolean(),blockers:z.array(z.enum(cartReminderBlockers)),recipient:z.string().max(16).nullable(),text:z.string().max(4096).nullable(),channel:z.object({id,provider:z.enum(['green_api','meta_cloud','mock'])}).strict().nullable(),discount:discountWorkspaceRow.nullable(),latest:cartReminderReceiptSchema.nullable(),quotaRemaining:z.number().int().nonnegative().max(2147483647).nullable(),currency:z.null(),salesVerified:z.literal(false)}).strict();
+export type CartReminderReview=z.infer<typeof cartReminderReviewSchema>;
+export type CartReminderReceipt=z.infer<typeof cartReminderReceiptSchema>;

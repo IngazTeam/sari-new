@@ -1359,6 +1359,13 @@
       "when": 1795392000055,
       "tag": "0193_merchant_referral_programs",
       "breakpoints": true
+    },
+    {
+      "idx": 194,
+      "version": "5",
+      "when": 1795392000056,
+      "tag": "0194_abandoned_cart_reminders",
+      "breakpoints": true
     }
   ]
 }
