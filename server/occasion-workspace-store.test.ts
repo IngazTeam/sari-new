@@ -1,5 +1,6 @@
 import {beforeEach,expect,it,vi} from 'vitest';
 const m=vi.hoisted(()=>({pool:vi.fn(),getConnection:vi.fn(),query:vi.fn(),execute:vi.fn(),beginTransaction:vi.fn(),commit:vi.fn(),rollback:vi.fn(),release:vi.fn(),destroy:vi.fn()}));
+vi.mock('./db/schema-readiness',()=>({assertRuntimeSchema:vi.fn()}));
 vi.mock('./db/connection',()=>({getPool:m.pool}));
 vi.mock('./automation/occasion-campaigns',()=>({getUpcomingOccasions:()=>[]}));
 import {readOccasionWorkspace} from './occasion-workspace-store';

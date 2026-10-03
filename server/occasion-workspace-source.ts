@@ -1,12 +1,12 @@
 import {createHash} from 'node:crypto';
-import {occasionTypes,occasionWorkspaceInput,occasionWorkspaceSchema,type OccasionSelection,type OccasionWorkspaceRow} from '../shared/occasion-workspace';
+import {missingOccasionAuthorization,occasionTypes,occasionWorkspaceInput,occasionWorkspaceSchema,type OccasionSelection,type OccasionWorkspaceRow} from '../shared/occasion-workspace';
 import type {UpcomingOccasion} from './automation/occasion-campaigns';
 export const OCCASION_COLUMNS='id,merchantId,campaign_id,occasionType,year,enabled,discountCode,discountPercentage,messageTemplate,sentAt,recipientCount,status,createdAt,updatedAt';
 export const emptyOccasionDelivery=()=>({total:0,pending:0,processing:0,accepted:0,retryable:0,suppressed:0,manualReview:0,unknown:0});
 const number=(v:unknown)=>typeof v==='number'&&Number.isSafeInteger(v)&&v>=0?v:null;
 const aggregate=(v:unknown)=>{const n=typeof v==='string'&&/^\d+$/.test(v)?Number(v):v;const valid=number(n);if(valid===null)throw Error('Invalid occasion count');return valid;};
 function sum(a:number,b:number){const result=a+b;if(!Number.isSafeInteger(result))throw Error('Occasion count overflow');return result;}
-export function projectOccasionWorkspace(actorId:number,merchantId:number,canManage:boolean,input:OccasionSelection,source:any[],deliveryRows:any[],upcoming:UpcomingOccasion[],now=new Date()){
+export function projectOccasionWorkspace(actorId:number,merchantId:number,canManage:boolean,input:OccasionSelection,source:any[],deliveryRows:any[],upcoming:UpcomingOccasion[],now=new Date(),authorizations=new Map<number,OccasionWorkspaceRow['authorization']>()){
  const selection=occasionWorkspaceInput.parse(input);
  if(source.some(r=>r.merchantId!==merchantId)||deliveryRows.some(r=>r.merchantId!==merchantId))throw Error('Invalid occasion source scope');
  if(new Set(source.map(r=>r.id)).size!==source.length)throw Error('Duplicate occasion rows');
@@ -27,8 +27,9 @@ export function projectOccasionWorkspace(actorId:number,merchantId:number,canMan
   let linkedCampaign:OccasionWorkspaceRow['linkedCampaign']=null;
   if(campaignId!==null){if(raw.linkedId===campaignId&&raw.linkedMerchantId===merchantId&&typeof raw.linkedName==='string'&&raw.linkedName.length<=255&&['draft','scheduled','sending','completed','failed'].includes(raw.linkedStatus))linkedCampaign={id:campaignId,name:raw.linkedName,status:raw.linkedStatus};else issues.push('campaign_link');}
   const delivery=linkedCampaign?deliveries.get(linkedCampaign.id)??emptyOccasionDelivery():null;if(delivery?.unknown)issues.push('delivery_state');
-  const revision=createHash('sha256').update(JSON.stringify(OCCASION_COLUMNS.split(',').map(k=>raw[k]))).digest('hex');
-  return {id:raw.id,revision,occasionType,year,enabled,discountCode,discountPercentage,messageTemplate,sentAt,recipientCount,storedStatus,createdAt,updatedAt,campaignId,linkedCampaign,delivery,state:issues.length?'invalid':storedStatus==='pending'?enabled?'enabled':'disabled':storedStatus as 'sending'|'completed'|'failed',issues:Array.from(new Set(issues))};
+  const authorization=authorizations.get(raw.id)??missingOccasionAuthorization();
+  const revision=createHash('sha256').update(JSON.stringify([OCCASION_COLUMNS.split(',').map(k=>raw[k]),authorization])).digest('hex');
+  return {id:raw.id,authorization,revision,occasionType,year,enabled,discountCode,discountPercentage,messageTemplate,sentAt,recipientCount,storedStatus,createdAt,updatedAt,campaignId,linkedCampaign,delivery,state:issues.length?'invalid':storedStatus==='pending'?enabled?'enabled':'disabled':storedStatus as 'sending'|'completed'|'failed',issues:Array.from(new Set(issues))};
  });
  const counts={enabled:0,disabled:0,sending:0,completed:0,failed:0,invalid:0},delivery=emptyOccasionDelivery();let storedRecipients:number|null=0,invalidRecipientRows=0;
  for(const row of rows){counts[row.state]++;if(row.recipientCount===null)invalidRecipientRows++;else if(storedRecipients!==null){const n:number=storedRecipients+row.recipientCount;storedRecipients=Number.isSafeInteger(n)?n:null;}if(row.delivery)for(const key of Object.keys(delivery) as Array<keyof typeof delivery>)delivery[key]=sum(delivery[key],row.delivery[key]);}

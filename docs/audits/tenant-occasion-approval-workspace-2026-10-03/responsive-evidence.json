@@ -1,0 +1,101 @@
+{
+  "measures": [
+    {
+      "label": "ar-320-legacy",
+      "dialog": null,
+      "dir": "rtl",
+      "height": 844,
+      "scroll": 290,
+      "width": 290
+    },
+    {
+      "label": "ar-320-renew",
+      "dialog": {
+        "bottom": 751.5625,
+        "client": 657,
+        "height": 659.125,
+        "left": 46,
+        "right": 304,
+        "scroll": 657,
+        "top": 92.4375
+      },
+      "dir": "rtl",
+      "height": 844,
+      "scroll": 290,
+      "width": 290
+    },
+    {
+      "label": "ar-390-short-renew",
+      "dialog": {
+        "bottom": 702.15625,
+        "client": 566,
+        "height": 567.9375,
+        "left": 46,
+        "right": 374,
+        "scroll": 566,
+        "top": 134.21875
+      },
+      "dir": "rtl",
+      "height": 550,
+      "scroll": 360,
+      "width": 360
+    },
+    {
+      "label": "ar-390-short-expanded-stable",
+      "dialog": {
+        "bottom": 534,
+        "client": 516,
+        "height": 518,
+        "left": 46,
+        "right": 374,
+        "scroll": 1721,
+        "top": 16
+      },
+      "dir": "rtl",
+      "height": 550,
+      "scroll": 360,
+      "width": 360
+    },
+    {
+      "label": "en-390-list",
+      "dialog": null,
+      "dir": "ltr",
+      "height": 550,
+      "scroll": 360,
+      "width": 360
+    },
+    {
+      "label": "en-768-list",
+      "dialog": null,
+      "dir": "ltr",
+      "height": 550,
+      "scroll": 738,
+      "width": 738
+    },
+    {
+      "label": "en-1440-list",
+      "dialog": null,
+      "dir": "ltr",
+      "height": 550,
+      "scroll": 1410,
+      "width": 1410
+    },
+    {
+      "label": "ar-390-approval-details",
+      "dialog": {
+        "bottom": 828,
+        "client": 810,
+        "height": 812,
+        "left": 46,
+        "right": 374,
+        "scroll": 1326,
+        "top": 16
+      },
+      "dir": "rtl",
+      "height": 844,
+      "scroll": 360,
+      "width": 360
+    }
+  ],
+  "note": "First short-height measurement occurred during CSS dialog resize; stable expanded dialog is 518px within 550px. CSS iframe testing in Chromium, no native Safari or iPhone."
+}

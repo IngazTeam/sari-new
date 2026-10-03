@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-03T02:33:03.976Z",
+  "generatedAt": "2026-10-03T03:21:13.410Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -7791,7 +7791,7 @@
     },
     {
       "file": "client/src/components/merchant/OccasionWorkspace.tsx",
-      "hash": "be7431a9d743",
+      "hash": "abecf968aad7",
       "queries": [
         "occasionCampaigns.workspace",
         "occasionCampaigns.reviewAction"
@@ -7812,62 +7812,62 @@
       "sections": [
         {
           "label": "",
-          "line": 54,
+          "line": 55,
           "tag": "h1"
         },
         {
           "label": "",
-          "line": 59,
+          "line": 60,
           "tag": "h2"
         },
         {
           "label": "",
-          "line": 61,
+          "line": 62,
           "tag": "h3"
         },
         {
           "label": "",
-          "line": 66,
+          "line": 67,
           "tag": "h2"
         },
         {
           "label": "·",
-          "line": 73,
+          "line": 74,
           "tag": "h3"
         },
         {
           "label": "",
-          "line": 78,
+          "line": 80,
           "tag": "summary"
         },
         {
           "label": "details",
-          "line": 82,
+          "line": 84,
           "tag": "DialogTitle"
         },
         {
           "label": "·",
-          "line": 84,
+          "line": 86,
           "tag": "h3"
         },
         {
           "label": "",
-          "line": 87,
+          "line": 89,
           "tag": "summary"
         },
         {
           "label": "",
-          "line": 87,
+          "line": 89,
           "tag": "h3"
         },
         {
           "label": "",
-          "line": 87,
+          "line": 89,
           "tag": "h3"
         },
         {
           "label": "",
-          "line": 87,
+          "line": 89,
           "tag": "h3"
         }
       ],
@@ -7890,11 +7890,11 @@
         "client/src/lib/occasion-workspace.ts",
         "client/src/lib/service-catalog-navigation.ts"
       ],
-      "controlCount": 20
+      "controlCount": 21
     },
     {
       "file": "client/src/components/merchant/OccasionRecord.tsx",
-      "hash": "816a4fcce38d",
+      "hash": "f16a5ab651d5",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
@@ -7908,6 +7908,11 @@
         {
           "label": "",
           "line": 14,
+          "tag": "h3"
+        },
+        {
+          "label": "",
+          "line": 15,
           "tag": "h3"
         }
       ],
@@ -7994,7 +7999,7 @@
     },
     {
       "file": "client/src/lib/occasion-workspace-labels.ts",
-      "hash": "b2c48819da78",
+      "hash": "b50c0cf22d70",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
@@ -23040,26 +23045,27 @@
         "client/src/lib/service-catalog-navigation.ts"
       ],
       "controls": [
-        "29f407afd477",
-        "47c188bc66e0",
-        "f3b73e9f1340",
-        "02b4d511cdf1",
-        "0fe994f5c1b4",
-        "ba3e1ed6ca85",
-        "402649f7d939",
-        "a3e8dcfb2d7b",
-        "459dce9f4529",
-        "1f4a4dde7418",
-        "0a85993173ae",
-        "abd6ceb321e7",
-        "44b75c20e0e2",
-        "c4ecccd1a5ff",
-        "c2de66dd8f8a",
-        "6694571c2f99",
-        "016ae7344cca",
-        "4d44c238c4ed",
-        "d892886f0a80",
-        "e00cf606d1e8",
+        "68447f2e245d",
+        "1f94693679c4",
+        "1d237ab685dd",
+        "b803866157e8",
+        "58bccc1dd671",
+        "7f9592c2e0e7",
+        "a79d60c5e357",
+        "5e35ef93e054",
+        "f8f491a62221",
+        "2d3289180ad2",
+        "3634fbd3ed32",
+        "5c0d4ba14428",
+        "e2cf1eaf6697",
+        "b44d556875b4",
+        "21c23e66ee16",
+        "f2c531caed55",
+        "e3d5a2899257",
+        "58eec20ade85",
+        "4201ec608ea4",
+        "914ae809ef5a",
+        "3db407661882",
         "894c82f5af57",
         "56e327e4345f"
       ],
@@ -52447,9 +52453,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "29f407afd477",
+      "id": "68447f2e245d",
       "file": "client/src/components/merchant/OccasionWorkspace.tsx",
-      "line": 54,
+      "line": 55,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -52468,9 +52474,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "47c188bc66e0",
+      "id": "1f94693679c4",
       "file": "client/src/components/merchant/OccasionWorkspace.tsx",
-      "line": 62,
+      "line": 63,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -52492,9 +52498,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "f3b73e9f1340",
+      "id": "1d237ab685dd",
       "file": "client/src/components/merchant/OccasionWorkspace.tsx",
-      "line": 62,
+      "line": 63,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -52517,9 +52523,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "02b4d511cdf1",
+      "id": "b803866157e8",
       "file": "client/src/components/merchant/OccasionWorkspace.tsx",
-      "line": 67,
+      "line": 68,
       "tag": "input",
       "role": "",
       "kind": "field",
@@ -52541,9 +52547,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "0fe994f5c1b4",
+      "id": "58bccc1dd671",
       "file": "client/src/components/merchant/OccasionWorkspace.tsx",
-      "line": 67,
+      "line": 68,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -52565,9 +52571,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ba3e1ed6ca85",
+      "id": "7f9592c2e0e7",
       "file": "client/src/components/merchant/OccasionWorkspace.tsx",
-      "line": 68,
+      "line": 69,
       "tag": "select",
       "role": "",
       "kind": "field",
@@ -52598,9 +52604,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "402649f7d939",
+      "id": "a79d60c5e357",
       "file": "client/src/components/merchant/OccasionWorkspace.tsx",
-      "line": 69,
+      "line": 70,
       "tag": "select",
       "role": "",
       "kind": "field",
@@ -52631,9 +52637,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "a3e8dcfb2d7b",
+      "id": "5e35ef93e054",
       "file": "client/src/components/merchant/OccasionWorkspace.tsx",
-      "line": 70,
+      "line": 71,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -52656,9 +52662,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "459dce9f4529",
+      "id": "f8f491a62221",
       "file": "client/src/components/merchant/OccasionWorkspace.tsx",
-      "line": 72,
+      "line": 73,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -52682,9 +52688,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "1f4a4dde7418",
+      "id": "2d3289180ad2",
       "file": "client/src/components/merchant/OccasionWorkspace.tsx",
-      "line": 75,
+      "line": 77,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -52705,9 +52711,33 @@
       "review": "source-inventoried"
     },
     {
-      "id": "0a85993173ae",
+      "id": "3634fbd3ed32",
       "file": "client/src/components/merchant/OccasionWorkspace.tsx",
-      "line": 75,
+      "line": 77,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "#",
+      "section": "·",
+      "binding": "()=>void prepare({action:'toggle',id:row.id,enabled:true,renew:true},row)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "data.canManage&&row.storedStatus==='pending'&&row.enabled===true",
+        "!data.rows.length"
+      ],
+      "disabled": "!writable",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "5c0d4ba14428",
+      "file": "client/src/components/merchant/OccasionWorkspace.tsx",
+      "line": 77,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -52729,9 +52759,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "abd6ceb321e7",
+      "id": "e2cf1eaf6697",
       "file": "client/src/components/merchant/OccasionWorkspace.tsx",
-      "line": 77,
+      "line": 79,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -52754,9 +52784,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "44b75c20e0e2",
+      "id": "b44d556875b4",
       "file": "client/src/components/merchant/OccasionWorkspace.tsx",
-      "line": 77,
+      "line": 79,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -52779,9 +52809,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "c4ecccd1a5ff",
+      "id": "21c23e66ee16",
       "file": "client/src/components/merchant/OccasionWorkspace.tsx",
-      "line": 78,
+      "line": 80,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -52803,9 +52833,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "c2de66dd8f8a",
+      "id": "f2c531caed55",
       "file": "client/src/components/merchant/OccasionWorkspace.tsx",
-      "line": 81,
+      "line": 83,
       "tag": "DialogContent",
       "role": "",
       "kind": "dialog",
@@ -52824,9 +52854,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "6694571c2f99",
+      "id": "e3d5a2899257",
       "file": "client/src/components/merchant/OccasionWorkspace.tsx",
-      "line": 87,
+      "line": 89,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -52848,9 +52878,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "016ae7344cca",
+      "id": "58eec20ade85",
       "file": "client/src/components/merchant/OccasionWorkspace.tsx",
-      "line": 88,
+      "line": 90,
       "tag": "input",
       "role": "",
       "kind": "field",
@@ -52873,9 +52903,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "4d44c238c4ed",
+      "id": "4201ec608ea4",
       "file": "client/src/components/merchant/OccasionWorkspace.tsx",
-      "line": 91,
+      "line": 93,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -52894,9 +52924,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "d892886f0a80",
+      "id": "914ae809ef5a",
       "file": "client/src/components/merchant/OccasionWorkspace.tsx",
-      "line": 91,
+      "line": 93,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -52917,9 +52947,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "e00cf606d1e8",
+      "id": "3db407661882",
       "file": "client/src/components/merchant/OccasionWorkspace.tsx",
-      "line": 91,
+      "line": 93,
       "tag": "Button",
       "role": "",
       "kind": "action",

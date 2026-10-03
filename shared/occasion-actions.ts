@@ -4,8 +4,8 @@ import {occasionTypes,occasionWorkspaceRow} from './occasion-workspace';
 const id=z.number().int().positive().max(2147483647);
 export const occasionActionTarget=z.discriminatedUnion('action',[
   z.object({action:z.literal('create'),occasionType:z.enum(occasionTypes),year:z.number().int().min(1900).max(9999)}).strict(),
-  z.object({action:z.literal('toggle'),id,enabled:z.boolean()}).strict(),
-]);
+  z.object({action:z.literal('toggle'),id,enabled:z.boolean(),renew:z.literal(true).optional()}).strict(),
+]).refine(v=>v.action!=='toggle'||!v.renew||v.enabled,{message:'Renewal must authorize sending'});
 export type OccasionActionTarget=z.infer<typeof occasionActionTarget>;
 export const occasionActionApply=z.object({target:occasionActionTarget,reviewRevision:z.string().regex(/^[a-f0-9]{64}$/),acknowledged:z.literal(true)}).strict();
 export const occasionActionReview=z.object({

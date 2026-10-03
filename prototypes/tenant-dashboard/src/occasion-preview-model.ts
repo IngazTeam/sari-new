@@ -1,6 +1,6 @@
-import {occasionWorkspaceInput,occasionWorkspaceSchema,occasionWorkspaceRow,type OccasionWorkspaceRow} from '../../../shared/occasion-workspace';
+import {missingOccasionAuthorization,occasionWorkspaceInput,occasionWorkspaceSchema,occasionWorkspaceRow,type OccasionWorkspaceRow} from '../../../shared/occasion-workspace';
 import {occasionActionTarget,occasionActionReview,occasionActionApply,type OccasionActionTarget} from '../../../shared/occasion-actions';
-import {getUpcomingOccasions,generateOccasionMessage} from '../../../shared/occasion-calendar';
+import {getUpcomingOccasions,getOccasionEndDate,generateOccasionMessage} from '../../../shared/occasion-calendar';
 import type {ServiceMode} from './service-preview-model';
 export const occasionPreviewQueries=['occasionCampaigns.workspace','occasionCampaigns.reviewAction'] as const;
 export const occasionPreviewMutations=['occasionCampaigns.applyAction'] as const;
@@ -12,12 +12,12 @@ export class OccasionPreviewStore{
  private upcoming:ReturnType<typeof getUpcomingOccasions>;
  constructor(readonly actorId:number,readonly merchantId:number,readonly now:string,private mode:()=>ServiceMode){
   this.upcoming=getUpcomingOccasions(new Date(now));if(mode()==='empty')return;
-  for(let id=31;id>=1;id--){const occasion=this.upcoming[0],state=id===29?'sending':id===28?'completed':id===27?'failed':'disabled';
-   this.rows.push(occasionWorkspaceRow.parse({id,revision:this.marker(id,0),occasionType:id===31?occasion.type:'national_day',year:id===31?occasion.year:1980+id,enabled:id<30&&id>26,discountCode:id<30&&id>26?'DEMO-'+merchantId+'-'+id:null,discountPercentage:id===31?occasion.discountPercent:23,messageTemplate:null,sentAt:state==='completed'?now:null,recipientCount:id===28?999:0,storedStatus:state==='disabled'?'pending':state,createdAt:now,updatedAt:now,campaignId:id<30&&id>26?merchantId*1000+id:null,linkedCampaign:id<30&&id>26?{id:merchantId*1000+id,name:(merchantId===269?'نواة · Nawa':'مدار · Madar')+' '+id,status:state}:null,delivery:id<30&&id>26?{...emptyDelivery(),total:4,accepted:id===28?3:0,pending:id===29?4:0,suppressed:id===28?1:0,manualReview:id===27?4:0}:null,state,issues:[]}));
+  for(let id=31;id>=1;id--){const occasion=this.upcoming[0],state=id===31&&mode()==='legacy'?'enabled':id===29?'sending':id===28?'completed':id===27?'failed':'disabled';
+   this.rows.push(occasionWorkspaceRow.parse({id,authorization:missingOccasionAuthorization(),revision:this.marker(id,0),occasionType:id===31?occasion.type:'national_day',year:id===31?occasion.year:1980+id,enabled:state==='enabled'||id<30&&id>26,discountCode:id<30&&id>26?'DEMO-'+merchantId+'-'+id:null,discountPercentage:id===31?occasion.discountPercent:23,messageTemplate:null,sentAt:state==='completed'?now:null,recipientCount:id===28?999:0,storedStatus:['disabled','enabled'].includes(state)?'pending':state,createdAt:now,updatedAt:now,campaignId:id<30&&id>26?merchantId*1000+id:null,linkedCampaign:id<30&&id>26?{id:merchantId*1000+id,name:(merchantId===269?'نواة · Nawa':'مدار · Madar')+' '+id,status:state}:null,delivery:id<30&&id>26?{...emptyDelivery(),total:4,accepted:id===28?3:0,pending:id===29?4:0,suppressed:id===28?1:0,manualReview:id===27?4:0}:null,state,issues:[]}));
   }
  }
  private marker(id:number,version:number){return [this.actorId,this.merchantId,id,version,0,0,0,0].map(n=>n.toString(16).padStart(8,'0')).join('');}
- private all(){return this.rows.map(value=>{const row=structuredClone(value);if(this.mode()==='legacy'&&row.id%3===1){row.discountPercentage=null;row.messageTemplate='<img src=x onerror=alert(1)> · saved legacy text';row.issues=['discount'];row.state='invalid';row.revision=this.marker(row.id,999);}return row;});}
+ private all(){return this.rows.map(value=>{const row=structuredClone(value);if(this.mode()==='legacy'&&row.id!==31&&row.id%3===1){row.discountPercentage=null;row.messageTemplate='<img src=x onerror=alert(1)> · saved legacy text';row.issues=['discount'];row.state='invalid';row.revision=this.marker(row.id,999);}return row;});}
  private review(input:unknown){
   if(this.mode()==='readonly')throw fault('FORBIDDEN');const target=occasionActionTarget.parse(input),all=this.all();
   const row=target.action==='create'?all.find(r=>r.occasionType===target.occasionType&&r.year===target.year)??null:all.find(r=>r.id===target.id)??null;
@@ -26,7 +26,8 @@ export class OccasionPreviewStore{
   let reason:'ready'|'duplicate'|'not_available'|'in_progress'|'invalid'|'no_change'='ready';
   if(target.action==='create')reason=row?'duplicate':!available?'not_available':'ready';
   else if(row!.storedStatus!=='pending'||row!.delivery&&row!.delivery.total>0)reason='in_progress';
-  else if(row!.enabled===target.enabled)reason='no_change';
+  else if(target.renew&&row!.enabled!==true)reason='invalid';
+  else if(row!.enabled===target.enabled&&!target.renew)reason='no_change';
   else if(target.enabled&&(row!.state==='invalid'||row!.messageTemplate!==null||row!.recipientCount!==0||row!.sentAt!==null))reason='invalid';
   else if(target.enabled&&!available)reason='not_available';
   const discountPercent=target.action==='create'?available?.discountPercent??null:row!.discountPercentage;
@@ -48,8 +49,8 @@ export class OccasionPreviewStore{
   const target=value.target;let id:number;
   if(target.action==='create'){
    id=Math.max(0,...this.rows.map(r=>r.id))+1;
-   this.rows.unshift({id,revision:this.marker(id,++this.version),occasionType:target.occasionType,year:target.year,enabled:false,discountCode:null,discountPercentage:review.terms.discountPercent,messageTemplate:null,sentAt:null,recipientCount:0,storedStatus:'pending',createdAt:this.now,updatedAt:this.now,campaignId:null,linkedCampaign:null,delivery:null,state:'disabled',issues:[]});
-  }else{id=target.id;const row=this.rows.find(r=>r.id===id)!;row.enabled=target.enabled;row.state=target.enabled?'enabled':'disabled';row.revision=this.marker(id,++this.version);row.updatedAt=this.now;}
+   this.rows.unshift({id,authorization:missingOccasionAuthorization(),revision:this.marker(id,++this.version),occasionType:target.occasionType,year:target.year,enabled:false,discountCode:null,discountPercentage:review.terms.discountPercent,messageTemplate:null,sentAt:null,recipientCount:0,storedStatus:'pending',createdAt:this.now,updatedAt:this.now,campaignId:null,linkedCampaign:null,delivery:null,state:'disabled',issues:[]});
+  }else{id=target.id;const row=this.rows.find(r=>r.id===id)!;row.enabled=target.enabled;row.authorization={state:target.enabled?'recorded':'revoked',actorId:this.actorId,reviewedAt:this.now,expiresAt:target.enabled?new Date(Math.floor(getOccasionEndDate(row.occasionType as any,new Date(this.upcoming.find(o=>o.type===row.occasionType&&o.year===row.year)!.date+'T09:00:00Z')).getTime()/1000)*1000).toISOString():row.authorization.expiresAt,revision:this.marker(id,++this.version)};row.state=target.enabled?'enabled':'disabled';row.revision=this.marker(id,++this.version);row.updatedAt=this.now;}
   this.writes++;return {actorId:this.actorId,merchantId:this.merchantId,id,enabled:target.action==='toggle'?target.enabled:false,effect:review.terms.effect,sentImmediately:false};
  }
 }

@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-03T02:33:03.976Z",
+  "generatedAt": "2026-10-03T03:21:13.410Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -11,7 +11,7 @@
     "after": {
       "routes": 126,
       "files": 447,
-      "controls": 2583
+      "controls": 2584
     }
   },
   "addedFiles": [
@@ -1169,7 +1169,7 @@
     {
       "route": "/merchant/occasion-campaigns",
       "controlsBefore": 4,
-      "controlsNow": 22,
+      "controlsNow": 23,
       "removedQueries": [
         "occasionCampaigns.list",
         "occasionCampaigns.getStats",

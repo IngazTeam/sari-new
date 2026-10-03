@@ -1,3 +1,4 @@
+import {summarizeOccasionAuthorization} from './occasion-authorization-summary';
 import {buildOccasionAuthorization,ensureOccasionAuthorizationSchema,writeOccasionAuthorization,revokeOccasionAuthorization} from './occasion-authorization';
 import {validPreparedOccasion} from './occasion-envelope-policy';
 import {createHash} from 'node:crypto';
@@ -59,7 +60,9 @@ async function snapshot(tx:PoolConnection,actorId:number,merchantId:number,busin
   }
   const source=raw?[{...raw,linkedId:linked?.id??null,linkedMerchantId:linked?.merchantId??null,linkedName:linked?.name??null,linkedStatus:linked?.status??null}]:[];
   const groups=linked?await rows(tx,'SELECT campaign_id AS campaignId,merchant_id AS merchantId,status,COUNT(*) AS count FROM campaign_delivery_outbox WHERE campaign_id=? GROUP BY campaign_id,merchant_id,status',[linked.id]):[];
-  const row=source.length?projectOccasionWorkspace(actorId,merchantId,true,occasionWorkspaceInput.parse({}),source,groups,[],now).rows[0]:null;
+  const grants=raw?await rows(tx,'SELECT * FROM occasion_authorizations WHERE occasion_id=? AND merchant_id=? ORDER BY id DESC LIMIT 1 FOR UPDATE',[raw.id,merchantId]):[];
+  const authorizations=new Map(raw?[[raw.id,summarizeOccasionAuthorization(grants[0],merchantId,raw.id,now)]]:[]);
+  const row=source.length?projectOccasionWorkspace(actorId,merchantId,true,occasionWorkspaceInput.parse({}),source,groups,[],now,authorizations).rows[0]:null;
   const type=target.action==='create'?target.occasionType:row!.occasionType,year=target.action==='create'?target.year:row!.year;
   const available=upcoming.find(o=>o.type===type&&o.year===year);
   const discountPercent=target.action==='create'?getOccasionDiscountPercentage(target.occasionType):row!.discountPercentage;
@@ -73,7 +76,8 @@ async function snapshot(tx:PoolConnection,actorId:number,merchantId:number,busin
   let reason:'ready'|'duplicate'|'not_available'|'in_progress'|'invalid'|'no_change'='ready';
   if(target.action==='create')reason=row?'duplicate':!available?'not_available':'ready';
   else if(row!.storedStatus!=='pending'||row!.delivery&&row!.delivery.total>0||linked&&!['draft','scheduled'].includes(linked.status))reason='in_progress';
-  else if(row!.enabled===target.enabled)reason='no_change';
+  else if(target.renew&&row!.enabled!==true)reason='invalid';
+  else if(row!.enabled===target.enabled&&!target.renew)reason='no_change';
   else if(target.enabled&&(row!.state==='invalid'||row!.messageTemplate!==null||row!.recipientCount!==0||row!.sentAt!==null||!preparedValid))reason='invalid';
   else if(target.enabled&&!available)reason='not_available';
   else if(row!.enabled===null)reason='invalid';

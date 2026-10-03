@@ -15,6 +15,7 @@ beforeEach(()=>{vi.useFakeTimers({toFake:['Date']});vi.setSystemTime(new Date('2
   if(sql.includes('FROM users'))return [[{account_status:account}]];
   if(sql.includes('FROM merchant_members'))return [[member]];
   if(sql.includes('FROM occasion_campaigns'))return [raw?[raw]:[]];
+  if(sql.includes('FROM occasion_authorizations'))return [[]];
   if(sql.includes('FROM campaigns'))return [linked?[linked]:[]];
   if(sql.includes('FROM campaign_delivery_outbox'))return [deliveries];
   return [{insertId:12,affectedRows:1}];

@@ -5,6 +5,8 @@ import {createDisposableMerchant,cleanupDisposableMerchants} from './tests/helpe
 import {reviewOccasionAction,applyOccasionAction} from './occasion-actions';
 import {getUpcomingOccasions} from '../shared/occasion-calendar';
 import {parseOccasionAuthorization,ensureOccasionAuthorizationSchema} from './occasion-authorization';
+import {readOccasionWorkspace} from './occasion-workspace-store';
+import {occasionWorkspaceInput} from '../shared/occasion-workspace';
 
 describe.skipIf(!process.env.DATABASE_URL)('durable activation grants on disposable MySQL tenants',()=>{
  let owner:Awaited<ReturnType<typeof createDisposableMerchant>>,other:typeof owner,id:number;
@@ -18,6 +20,29 @@ describe.skipIf(!process.env.DATABASE_URL)('durable activation grants on disposa
   id=(await applyOccasionAction(owner.userId,other.merchantId,{target,reviewRevision:r.reviewRevision,acknowledged:true})).id;
  });
  afterEach(async()=>{vi.restoreAllMocks();await cleanupDisposableMerchants([owner.userId,other.userId]);});afterAll(closeDb);
+ const workspace=()=>readOccasionWorkspace(owner.userId,other.merchantId,occasionWorkspaceInput.parse({}));
+ const renew=async()=>{const target={action:'toggle' as const,id,enabled:true,renew:true as const},review=await reviewOccasionAction(owner.userId,other.merchantId,target);expect(review.eligible).toBe(true);return {target,reviewRevision:review.reviewRevision,acknowledged:true as const};};
+ it('shows missing approval on a legacy enabled record, then renews directly without disabling it',async()=>{
+  await q('UPDATE occasion_campaigns SET enabled=1 WHERE id=?',[id]);expect((await workspace()).rows[0].authorization.state).toBe('missing');
+  const value=await renew();await applyOccasionAction(owner.userId,other.merchantId,value);
+  expect((await workspace()).rows[0]).toMatchObject({enabled:true,authorization:{state:'recorded',actorId:owner.userId}});expect(await grants()).toHaveLength(1);
+  await expect(applyOccasionAction(owner.userId,other.merchantId,value)).rejects.toMatchObject({reason:'stale'});
+ });
+ it('replaces an existing approval while preserving its history and exposes the current saved one',async()=>{
+  await applyOccasionAction(owner.userId,other.merchantId,await toggle(true));const before=(await workspace()).rows[0];
+  await applyOccasionAction(owner.userId,other.merchantId,await renew());const after=(await workspace()).rows[0],history=await grants();
+  expect(history).toHaveLength(2);expect(history[0].active).toBeNull();expect(history[1].active).toBe(1);expect(after.authorization.state).toBe('recorded');expect(after.revision).not.toBe(before.revision);
+ });
+ it('rejects a renewal if the approval was revoked after review, without silently replacing it',async()=>{
+  await applyOccasionAction(owner.userId,other.merchantId,await toggle(true));const value=await renew();
+  await q('UPDATE occasion_authorizations SET active=NULL,revoked_at=UTC_TIMESTAMP(3) WHERE occasion_id=?',[id]);
+  expect((await workspace()).rows[0].authorization.state).toBe('revoked');await expect(applyOccasionAction(owner.userId,other.merchantId,value)).rejects.toMatchObject({reason:'stale'});expect(await grants()).toHaveLength(1);
+ });
+ it('rolls back both replacement and revocation if renewing approval fails',async()=>{
+  await applyOccasionAction(owner.userId,other.merchantId,await toggle(true));const value=await renew(),pool=(await getPool())!,tx=await pool.getConnection(),native=tx.execute.bind(tx);vi.spyOn(pool,'getConnection').mockResolvedValueOnce(tx);
+  vi.spyOn(tx,'execute').mockImplementation((async(sql:any,args:any)=>{if(String(sql).startsWith('INSERT INTO occasion_authorizations'))throw Error('Injected renewal failure');return native(sql,args);}) as any);
+  await expect(applyOccasionAction(owner.userId,other.merchantId,value)).rejects.toMatchObject({reason:'unavailable'});vi.restoreAllMocks();expect(await grants()).toHaveLength(1);expect((await grants())[0].active).toBe(1);expect((await workspace()).rows[0].authorization.state).toBe('recorded');
+ });
  it('records the exact approving member and reviewed terms, never the unrelated merchant owner',async()=>{
   expect(await grants()).toEqual([]);const value=await toggle(true);await applyOccasionAction(owner.userId,other.merchantId,value);const [grant]=await grants();
   expect(grant).toMatchObject({actor_id:owner.userId,merchant_id:other.merchantId,occasion_id:id,active:1,review_revision:value.reviewRevision,revoked_at:null});
