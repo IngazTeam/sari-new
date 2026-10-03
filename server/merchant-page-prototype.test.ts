@@ -74,7 +74,7 @@ describe('complete tenant page prototype', () => {
       ]);
       const destination = page.redirect || page.route;
       if (/^\/merchant\/campaigns(?:\/|$)/.test(destination)) embeddedPages.set(destination, 'campaign-workspace.html?embed=brain&path=' + encodeURIComponent(destination));
-      if (/^\/merchant\/(?:services(?:\/|$)|service-categories$|service-packages$|staff$|bookings$|integrations\/byaan$|byaan-dashboard$|platform-integrations$|calendar(?:\/settings)?$)/.test(destination)) embeddedPages.set(destination, 'service-workspace.html?embed=brain&path=' + encodeURIComponent(destination));
+      if (/^\/merchant\/(?:services(?:\/|$)|discounts$|referrals$|abandoned-carts$|service-categories$|service-packages$|staff$|bookings$|integrations\/(?:byaan|zid|calendly)$|zid\/(?:settings|products|sync-logs|callback)$|woocommerce\/(?:settings|products|orders|analytics)$|byaan-dashboard$|salla$|platform-integrations$|calendar(?:\/settings)?$)/.test(destination)) embeddedPages.set(destination, 'service-workspace.html?embed=brain&path=' + encodeURIComponent(destination));
       if (embeddedPages.has(destination)) {
         await vi.waitFor(() =>
           expect(
@@ -105,7 +105,7 @@ describe('complete tenant page prototype', () => {
             page.route
           ).toBe(1)
         );
-      if (page.kind === 'result' && page.route.includes('/zid/')) {
+      if (!embeddedPages.has(destination) && page.kind === 'result' && page.route.includes('/zid/')) {
         expect(text()).toContain('التحقق من ربط زد');
         expect(text()).not.toContain('تأكيد الدفع');
       }
@@ -178,13 +178,14 @@ describe('complete tenant page prototype', () => {
     expect(text()).not.toContain('249 ر.س');
   });
 
-  it('simulates connection state and recovers an error without losing the selected page', () => {
-    route('/merchant/salla'); click('connect');
-    expect(text()).toContain('متصل تجريبيًا');
-    click('states'); w.document.querySelector('[data-page-action="state"][data-value="offline"]').click();
-    expect(text()).toContain('تعذّر الاتصال'); click('recover');
-    expect(text()).toContain('متصل تجريبيًا'); click('disconnect');
-    expect(text()).toContain('غير متصل');
+  it('opens actual Salla recovery controls and preserves context instead of fake connection state', () => {
+    route('/merchant/salla?connection=salla-error&tenant=270&lang=en&scenario=failure');
+    const frame=w.document.querySelector('#main iframe[data-brain-preview]');
+    const url=new URL(frame.getAttribute('src'),w.location.href);
+    expect(url.pathname).toBe('/service-workspace.html');
+    expect(Object.fromEntries(url.searchParams)).toEqual({connection:'salla-error',tenant:'270',lang:'en',scenario:'failure',embed:'brain',path:'/merchant/salla'});
+    expect(w.document.querySelector('[data-page-action="connect"]')).toBeNull();
+    expect(errors).toEqual([]);
   });
 
   it('opens the actual campaign editor with its scenario and language instead of the retired wizard', () => {

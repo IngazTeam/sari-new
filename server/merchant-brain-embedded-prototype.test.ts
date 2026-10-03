@@ -252,3 +252,10 @@ it('syncs discount search, status and origin from its owned frame and rejects in
  for(const search of ['path=/merchant/discounts&origin=secret','path=/merchant/discounts&status=paid','path=/merchant/discounts&tenant=999','path=/merchant/discounts&origin=manual&origin=automatic','path=/merchant/discounts&merchantId=999','path=/merchant/discounts/secret'])send({...message,search});
  send(message,'https://evil.test');send(message,undefined,w);expect(w.location.hash).toBe('#/page/merchant/discounts');send(message);expect(w.location.hash).toBe('#/page/merchant/discounts?q=DEMO&status=expired&origin=automatic&page=2&tenant=270&lang=en');expect(frame.isConnected).toBe(true);expect(w.syncServicePreviewContext).toHaveBeenCalledOnce();
 });
+
+it('preserves cart states and history pages only from the owned local frame',()=>{
+ frame.setAttribute('src','./service-workspace.html?embed=brain');w.history.replaceState(null,'','#/page/merchant/abandoned-carts');w.syncServicePreviewContext=vi.fn();
+ const message={type:'sary-brain-preview',action:'serviceState',search:'path=/merchant/abandoned-carts&tab=reminders&state=waiting&historyPage=2&tenant=270&lang=en'};
+ for(const search of [message.search+'&merchantId=999',message.search+'&historyPage=3','path=/merchant/abandoned-carts&tab=rewards','path=/merchant/abandoned-carts&state=paid','path=/merchant/referrals&historyPage=2','path=/merchant/abandoned-carts&historyPage=0'])send({...message,search});
+ send(message,'https://evil.test');send(message,undefined,w);expect(w.location.hash).toBe('#/page/merchant/abandoned-carts');send(message);expect(w.location.hash).toBe('#/page/merchant/abandoned-carts?tab=reminders&state=waiting&historyPage=2&tenant=270&lang=en');expect(w.syncServicePreviewContext).toHaveBeenCalledOnce();
+});

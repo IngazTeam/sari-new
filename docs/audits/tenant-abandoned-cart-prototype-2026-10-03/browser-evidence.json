@@ -1,0 +1,111 @@
+{
+  "environment": "Chromium IAB; authored iframe CSS widths; not native iPhone or Safari",
+  "measurements": [
+    {
+      "label": "carts-ar-320",
+      "dialog": null,
+      "origin": 30,
+      "overflow": [],
+      "rawKeys": false,
+      "scrollWidth": 290,
+      "smallTargets": [],
+      "width": 290
+    },
+    {
+      "label": "review-ar-320",
+      "dialog": {
+        "height": 812,
+        "scroll": 1124,
+        "width": 258
+      },
+      "origin": 30,
+      "overflow": [],
+      "rawKeys": false,
+      "scrollWidth": 290,
+      "smallTargets": [],
+      "width": 290
+    },
+    {
+      "label": "accepted-receipt-ar-320",
+      "dialog": null,
+      "origin": 30,
+      "overflow": [],
+      "rawKeys": false,
+      "scrollWidth": 290,
+      "smallTargets": [],
+      "width": 290
+    },
+    {
+      "label": "history-page2-ar-320",
+      "dialog": null,
+      "origin": 30,
+      "overflow": [],
+      "rawKeys": false,
+      "scrollWidth": 290,
+      "smallTargets": [],
+      "width": 290
+    },
+    {
+      "label": "review-en-390-h550",
+      "dialog": {
+        "height": 518,
+        "scroll": 1093,
+        "width": 328
+      },
+      "origin": 0,
+      "overflow": [],
+      "rawKeys": false,
+      "scrollWidth": 360,
+      "smallTargets": [],
+      "width": 360
+    },
+    {
+      "label": "unknown-receipt-en-390",
+      "dialog": null,
+      "origin": 0,
+      "overflow": [],
+      "rawKeys": false,
+      "scrollWidth": 360,
+      "smallTargets": [],
+      "width": 360
+    },
+    {
+      "label": "carts-en-768",
+      "dialog": null,
+      "origin": 0,
+      "overflow": [],
+      "rawKeys": false,
+      "scrollWidth": 738,
+      "smallTargets": [],
+      "width": 738
+    },
+    {
+      "label": "carts-en-1440",
+      "dialog": null,
+      "origin": 0,
+      "overflow": [],
+      "rawKeys": false,
+      "scrollWidth": 1410,
+      "smallTargets": [],
+      "width": 1410
+    },
+    {
+      "label": "readonly-en-1440",
+      "dialog": null,
+      "origin": 0,
+      "overflow": [],
+      "rawKeys": false,
+      "scrollWidth": 1410,
+      "smallTargets": [],
+      "width": 1410
+    }
+  ],
+  "checks": [
+    "AR local accepted result and read-only receipt lookup",
+    "AR full history page two",
+    "EN isolated tenant270",
+    "EN unknown result remains unknown after lookup",
+    "Read-only mode hides reminder and recovery actions"
+  ],
+  "realMessagesSent": 0
+}
