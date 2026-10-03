@@ -1,0 +1,10 @@
+import {beforeEach,expect,it,vi} from 'vitest';
+const m=vi.hoisted(()=>({pool:vi.fn(),primary:vi.fn(),instance:vi.fn()}));
+vi.mock('./db',()=>({getPool:m.pool,getPrimaryWhatsAppInstance:m.primary,getWhatsAppInstanceById:m.instance}));
+import {sendMerchantWhatsApp} from './channels/whatsapp/service';
+import {validCartReminderTransport,sameCartReminderRequest} from './abandoned-cart-reminder-transport';
+import type {SendMerchantWhatsAppInput} from './channels/whatsapp/types';
+const base=():SendMerchantWhatsAppInput=>({merchantId:20,instanceRecordId:3,idempotencyKey:'cart-reminder:20:30',kind:'text',to:'+966500000001',text:'Reviewed message',retryFailed:false,cartReminderGuard:{operationId:30,actorId:7,reviewRevision:'a'.repeat(64)}});
+beforeEach(()=>vi.resetAllMocks());
+it.each([{cartReminderGuard:undefined},{instanceRecordId:undefined},{retryFailed:true},{kind:'image',mediaUrl:'https://example.test/image'},{messageId:1},{calendlyGuard:{}},{idempotencyKey:'unrelated-transport:20:30'},{idempotencyKey:'cart-reminder:21:30'},{to:'0500000001'}])('blocks malformed cart transport %j before storage or provider lookup',async patch=>{const input={...base(),...patch} as SendMerchantWhatsAppInput;expect(validCartReminderTransport(input)).toBe(false);expect((await sendMerchantWhatsApp(input)).accepted).toBe(false);expect(m.pool).not.toHaveBeenCalled();expect(m.primary).not.toHaveBeenCalled();expect(m.instance).not.toHaveBeenCalled();});
+it('requires exact durable request content and authority for duplicate evidence',()=>{const input=base();expect(sameCartReminderRequest(input,input)).toBe(true);for(const patch of [{to:'+966500000002'},{text:'Changed'},{kind:'image'},{cartReminderGuard:{...input.cartReminderGuard!,actorId:8}},{cartReminderGuard:{...input.cartReminderGuard!,reviewRevision:'b'.repeat(64)}},{cartReminderGuard:undefined}])expect(sameCartReminderRequest(input,{...input,...patch})).toBe(false);});
