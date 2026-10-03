@@ -2,6 +2,7 @@ import { persistCrawledKnowledge } from './knowledge/crawled-snapshot';
 import { reportListInput, reportReadInput, reportDeleteInput } from '../shared/website-reports';
 import { listWebsiteReports, readWebsiteReport, deleteReviewedWebsiteReport } from './knowledge/website-reports';
 import { hasPermission } from './_core/permissions';
+import { competitorReadProcedures } from './routers-competitor-workspace';
 /**
  * Website Analysis Router
  * 
@@ -49,6 +50,7 @@ function publicCompetitor(competitor: any) {
 }
 
 export const websiteAnalysisRouter = router({
+  ...competitorReadProcedures,
   reports: merchantProcedure.input(reportListInput).query(async ({ctx,input}) => reportOperation(async () => ({
     ...await listWebsiteReports(ctx.merchantId,input), canManage: hasPermission(ctx.merchantRole, 'bot_settings.manage'),
   }))),
