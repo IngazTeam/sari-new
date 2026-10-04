@@ -2,7 +2,7 @@
  * ط¯ظˆط§ظ„ ظ‚ط§ط¹ط¯ط© ط§ظ„ط¨ظٹط§ظ†ط§طھ ظ„ظ†ط¸ط§ظ… ط§ظ„ط¯ظپط¹ Tap Payments
  */
 
-import { eq, and, desc, gte, lte } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import { 
   orderPayments, 
   paymentLinks,
@@ -70,116 +70,6 @@ export async function getOrderPaymentsByBookingId(bookingId: number): Promise<Or
     .from(orderPayments)
     .where(eq(orderPayments.bookingId, bookingId))
     .orderBy(desc(orderPayments.createdAt));
-}
-
-/**
- * ط§ظ„ط­طµظˆظ„ ط¹ظ„ظ‰ ط¬ظ…ظٹط¹ ظ…ط¹ط§ظ…ظ„ط§طھ ط§ظ„ط¯ظپط¹ ظ„طھط§ط¬ط±
- */
-export async function getOrderPaymentsByMerchant(
-  merchantId: number,
-  filters?: {
-    status?: string;
-    startDate?: Date;
-    endDate?: Date;
-    limit?: number;
-  }
-): Promise<OrderPayment[]> {
-  const db = await getDb();
-  let query = db
-    .select()
-    .from(orderPayments)
-    .where(eq(orderPayments.merchantId, merchantId));
-
-  // طھط·ط¨ظٹظ‚ ط§ظ„ظپظ„ط§طھط±
-  const conditions = [eq(orderPayments.merchantId, merchantId)];
-  
-  if (filters?.status) {
-    conditions.push(eq(orderPayments.status, filters.status as any));
-  }
-  
-  if (filters?.startDate) {
-    conditions.push(gte(orderPayments.createdAt, filters.startDate.toISOString()));
-  }
-  
-  if (filters?.endDate) {
-    conditions.push(lte(orderPayments.createdAt, filters.endDate.toISOString()));
-  }
-
-  const results = await db
-    .select()
-    .from(orderPayments)
-    .where(and(...conditions))
-    .orderBy(desc(orderPayments.createdAt))
-    .limit(filters?.limit || 100);
-
-  return results;
-}
-
-/**
- * طھط­ط¯ظٹط« ظ…ط¹ط§ظ…ظ„ط© ط¯ظپط¹
- */
-/**
- * ط¥ط­طµط§ط¦ظٹط§طھ ط§ظ„ط¯ظپط¹ ظ„طھط§ط¬ط±
- */
-export async function getPaymentStats(
-  merchantId: number,
-  startDate?: Date,
-  endDate?: Date
-): Promise<{
-  totalPayments: number;
-  totalAmount: number;
-  successfulPayments: number;
-  successfulAmount: number;
-  failedPayments: number;
-  pendingPayments: number;
-  refundedPayments: number;
-  refundedAmount: number;
-}> {
-  const db = await getDb();
-  
-  const conditions = [eq(orderPayments.merchantId, merchantId)];
-  
-  if (startDate) {
-    conditions.push(gte(orderPayments.createdAt, startDate.toISOString()));
-  }
-  
-  if (endDate) {
-    conditions.push(lte(orderPayments.createdAt, endDate.toISOString()));
-  }
-
-  const payments = await db
-    .select()
-    .from(orderPayments)
-    .where(and(...conditions));
-
-  const stats = {
-    totalPayments: payments.length,
-    totalAmount: 0,
-    successfulPayments: 0,
-    successfulAmount: 0,
-    failedPayments: 0,
-    pendingPayments: 0,
-    refundedPayments: 0,
-    refundedAmount: 0,
-  };
-
-  payments.forEach(payment => {
-    stats.totalAmount += payment.amount;
-    
-    if (payment.status === 'captured' || payment.status === 'authorized') {
-      stats.successfulPayments++;
-      stats.successfulAmount += payment.amount;
-    } else if (payment.status === 'failed') {
-      stats.failedPayments++;
-    } else if (payment.status === 'pending') {
-      stats.pendingPayments++;
-    } else if (payment.status === 'refunded') {
-      stats.refundedPayments++;
-      stats.refundedAmount += payment.amount;
-    }
-  });
-
-  return stats;
 }
 
 // ============================================

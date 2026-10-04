@@ -48,6 +48,34 @@ describe.skipIf(!process.env.DATABASE_URL)(
     });
     afterEach(() => cleanupDisposableMerchants([owner.userId, other.userId]));
     afterAll(closeDb);
+    it("rejects all legacy history routes without exposing or altering stored private evidence", async () => {
+      const id = await add();
+      await add({ merchant: other.merchantId });
+      const before = await q("SELECT * FROM order_payments WHERE id = ?", [id]);
+      for (const merchantId of [owner.merchantId, other.merchantId]) {
+        const api = appRouter.createCaller({
+          user: { id: owner.userId, role: "user" },
+          req: { headers: { "x-merchant-id": String(merchantId) } },
+          res: {},
+        } as any).payments;
+        for (const run of [
+          () => api.getById({ id }),
+          () => api.list({ limit: 50 }),
+          () => api.getStats({}),
+        ])
+          await expect(run()).rejects.toMatchObject({
+            code: "PRECONDITION_FAILED",
+            message: "payment_history:workspace_required",
+          });
+      }
+      expect(
+        await q("SELECT * FROM order_payments WHERE id = ?", [id])
+      ).toEqual(before);
+      const current = await caller().detail({ id });
+      expect(current.state).toBe("found");
+      expect(JSON.stringify(current)).not.toContain("private");
+      expect(current.payment?.hasRecordedError).toBe(true);
+    });
     it("keeps captured, authorized, refunded and currencies independent", async () => {
       await add({ amount: 10000 });
       await add({ amount: 20000, status: "authorized" });

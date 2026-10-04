@@ -1,5 +1,5 @@
 import { merchantPaymentsRouter } from "./routers-merchant-payments";
-import { paymentHistoryWorkspaceRouter } from "./routers-payment-history-workspace";
+import { paymentHistoryWorkspaceRouter, retiredPaymentHistoryProcedures } from "./routers-payment-history-workspace";
 import {selfProfileProcedures} from "./routers-self-profile-workspace";
 import { notificationPreferenceProcedures } from './routers-notification-preference-workspace';
 import {scheduledMessagesRouter} from './routers-scheduled-messages';
@@ -3386,49 +3386,7 @@ export const appRouter = router({
         return { status: toPublicOrderPaymentStatus(payment?.status) };
       }),
 
-    getById: protectedProcedure
-      .input(z.object({ id: z.number() }))
-      .query(async ({ ctx, input }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        const dbPayments = await import('./db_payments');
-        const payment = await dbPayments.getOrderPaymentById(input.id);
-        if (!payment || payment.merchantId !== merchant.id) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Payment not found' });
-        }
-        return payment;
-      }),
-
-    list: protectedProcedure
-      .input(z.object({
-        status: z.string().optional(),
-        startDate: z.string().optional(),
-        endDate: z.string().optional(),
-        limit: z.number().default(50),
-      }))
-      .query(async ({ ctx, input }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        const dbPayments = await import('./db_payments');
-        const filters: any = { status: input.status, limit: input.limit };
-        if (input.startDate) filters.startDate = new Date(input.startDate);
-        if (input.endDate) filters.endDate = new Date(input.endDate);
-        return await dbPayments.getOrderPaymentsByMerchant(merchant.id, filters);
-      }),
-
-    getStats: protectedProcedure
-      .input(z.object({
-        startDate: z.string().optional(),
-        endDate: z.string().optional(),
-      }))
-      .query(async ({ ctx, input }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        const dbPayments = await import('./db_payments');
-        const startDate = input.startDate ? new Date(input.startDate) : undefined;
-        const endDate = input.endDate ? new Date(input.endDate) : undefined;
-        return await dbPayments.getPaymentStats(merchant.id, startDate, endDate);
-      }),
+    ...retiredPaymentHistoryProcedures,
 
     createLink: protectedProcedure
       .input(z.object({
