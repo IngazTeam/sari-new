@@ -43,6 +43,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { Link } from "wouter";
+import { formatStoredPaymentMoney } from "@shared/payment-money";
 
 export default function Payments() {
   const { t, i18n } = useTranslation();
@@ -69,7 +70,7 @@ export default function Payments() {
 
   // تنسيق المبلغ
   const formatAmount = (amount: number, currency: string = "SAR") => {
-    return `${(amount / 100).toFixed(2)} ${currency}`;
+    return formatStoredPaymentMoney(amount, currency, i18n.language) ?? t("paymentMoneyUx.unavailable");
   };
 
   // تنسيق التاريخ

@@ -13070,5 +13070,8 @@
     "payments": "Payment history",
     "statusDetails": "Saved status details",
     "sar": "Saudi Riyal"
+  },
+  "paymentMoneyUx": {
+    "unavailable": "Amount or unit needs review"
   }
 }

@@ -41,9 +41,10 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
+import { formatStoredPaymentMoney } from "@shared/payment-money";
 
 export default function PaymentLinks() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { toast } = useToast();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newLink, setNewLink] = useState({
@@ -145,7 +146,7 @@ export default function PaymentLinks() {
 
   // تنسيق المبلغ
   const formatAmount = (amount: number, currency: string = "SAR") => {
-    return `${(amount / 100).toFixed(2)} ${currency}`;
+    return formatStoredPaymentMoney(amount, currency, i18n.language) ?? t("paymentMoneyUx.unavailable");
   };
 
   // تنسيق التاريخ

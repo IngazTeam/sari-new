@@ -21,9 +21,10 @@ import {
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
+import { formatStoredPaymentMoney } from '@shared/payment-money';
 
 export default function PaymentDetails() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const params = useParams();
   const [, navigate] = useLocation();
   const paymentId = parseInt(params.id || '0');
@@ -131,8 +132,8 @@ export default function PaymentDetails() {
           {/* Amount Section */}
           <div className="bg-muted/50 rounded-lg p-6 text-center">
             <p className="text-sm text-muted-foreground mb-2">{t('paymentDetailsPage.text2')}</p>
-            <p className="text-4xl font-bold text-primary">
-              {payment.amount.toFixed(2)} {payment.currency}
+            <p data-payment-amount className="text-4xl font-bold text-primary">
+              {formatStoredPaymentMoney(payment.amount, payment.currency, i18n.language) ?? t('paymentMoneyUx.unavailable')}
             </p>
           </div>
 
