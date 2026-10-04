@@ -5315,3 +5315,9 @@ export const websiteAnalysisRequestLinks = mysqlTable('website_analysis_request_
   merchantId:int('merchant_id').notNull(),requestId:char('request_id',{length:36}).notNull(),
   jobPk:int('job_pk').notNull(),actorId:int('actor_id').notNull(),createdAt:datetime('created_at',{mode:'string',fsp:3}).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
 },table=>[primaryKey({columns:[table.merchantId,table.requestId]}),index('idx_website_request_job').on(table.merchantId,table.jobPk),foreignKey({name:'fk_website_request_job',columns:[table.merchantId,table.jobPk],foreignColumns:[websiteAnalysisJobs.merchantId,websiteAnalysisJobs.id]}).onDelete('cascade')]);
+
+export const loyaltyActionReceipts=mysqlTable('loyalty_action_receipts',{
+ id:int().autoincrement().primaryKey(),merchantId:int('merchant_id').notNull().references(()=>merchants.id,{onDelete:'cascade'}),actorId:int('actor_id').notNull(),
+ requestKey:char('request_key',{length:36}).notNull(),requestDigest:char('request_digest',{length:64}).notNull(),resultJson:json('result_json').notNull(),
+ createdAt:datetime('created_at',{mode:'string',fsp:3}).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+},table=>[uniqueIndex('uq_loyalty_request').on(table.merchantId,table.requestKey)]);

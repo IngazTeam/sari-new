@@ -1,7 +1,39 @@
 import { router, permissionProcedure } from './_core/trpc';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
-import {addPointsToCustomer, createLoyaltyReward, deductPointsFromCustomer, deleteLoyaltyReward, getAllCustomersPoints, getAllRedemptions, getAllTransactions, getCustomerPoints, getCustomerRedemptions, getCustomerTransactions, getLoyaltyRedemptionById, getLoyaltyRewardById, getLoyaltyRewards, getLoyaltySettings, getLoyaltyStats, getLoyaltyTierById, getLoyaltyTiers, redeemReward, updateLoyaltyRedemption, updateLoyaltyReward, updateLoyaltySettings, updateLoyaltyTier} from './db_loyalty';
+import {
+  loyaltyWorkspaceSelection,
+  loyaltyActionInput,
+} from '../shared/loyalty-workspace';
+import {
+  readLoyaltyWorkspace,
+  readLoyaltyReceipt,
+  applyLoyaltyAction,
+} from './loyalty/workspace';
+import {
+  addPointsToCustomer,
+  createLoyaltyReward,
+  deductPointsFromCustomer,
+  deleteLoyaltyReward,
+  getAllCustomersPoints,
+  getAllRedemptions,
+  getAllTransactions,
+  getCustomerPoints,
+  getCustomerRedemptions,
+  getCustomerTransactions,
+  getLoyaltyRedemptionById,
+  getLoyaltyRewardById,
+  getLoyaltyRewards,
+  getLoyaltySettings,
+  getLoyaltyStats,
+  getLoyaltyTierById,
+  getLoyaltyTiers,
+  redeemReward,
+  updateLoyaltyRedemption,
+  updateLoyaltyReward,
+  updateLoyaltySettings,
+  updateLoyaltyTier,
+} from './db_loyalty';
 import { withLoyaltyTransaction, loyaltyContext } from './loyalty/transaction';
 import {
   loyaltyId,
@@ -34,6 +66,45 @@ const found = <T>(value: T | null | undefined): T => {
   return value;
 };
 export const loyaltyRouter = router({
+  workspace: procedure
+    .input(loyaltyWorkspaceSelection)
+    .query(({ ctx, input }) =>
+      readLoyaltyWorkspace(
+        {
+          merchantId: ctx.merchantId,
+          actorId: ctx.user.id,
+          sessionId: ctx.session?.sessionId || '',
+          permission: 'campaigns.manage',
+        },
+        input
+      )
+    ),
+  reviewedAction: procedure
+    .input(loyaltyActionInput)
+    .mutation(({ ctx, input }) =>
+      applyLoyaltyAction(
+        {
+          merchantId: ctx.merchantId,
+          actorId: ctx.user.id,
+          sessionId: ctx.session?.sessionId || '',
+          permission: 'campaigns.manage',
+        },
+        input
+      )
+    ),
+  receipt: procedure
+    .input(z.object({ requestId: z.string().uuid() }))
+    .query(({ ctx, input }) =>
+      readLoyaltyReceipt(
+        {
+          merchantId: ctx.merchantId,
+          actorId: ctx.user.id,
+          sessionId: ctx.session?.sessionId || '',
+          permission: 'campaigns.manage',
+        },
+        input.requestId
+      )
+    ),
   getSettings: procedure.query(({ ctx }) =>
     run(ctx, () => getLoyaltySettings(ctx.merchantId))
   ),
@@ -132,17 +203,15 @@ export const loyaltyRouter = router({
     .query(({ ctx, input }) =>
       run(ctx, () => getLoyaltyRewards(ctx.merchantId, input.activeOnly))
     ),
-  createReward: procedure
-    .input(loyaltyRewardInput)
-    .mutation(({ ctx, input }) =>
-      run(ctx, () =>
-        createLoyaltyReward({
-          ...input,
-          merchantId: ctx.merchantId,
-          currentRedemptions: 0,
-        })
-      )
-    ),
+  createReward: procedure.input(loyaltyRewardInput).mutation(({ ctx, input }) =>
+    run(ctx, () =>
+      createLoyaltyReward({
+        ...input,
+        merchantId: ctx.merchantId,
+        currentRedemptions: 0,
+      })
+    )
+  ),
   updateReward: procedure
     .input(loyaltyRewardInput.partial().extend({ id: loyaltyId }))
     .mutation(({ ctx, input }) =>

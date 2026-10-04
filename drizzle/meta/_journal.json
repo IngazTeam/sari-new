@@ -1450,6 +1450,13 @@
       "when": 1795392000068,
       "tag": "0206_push_device_authority",
       "breakpoints": true
+    },
+    {
+      "idx": 207,
+      "version": "5",
+      "when": 1795392000069,
+      "tag": "0207_loyalty_action_receipts",
+      "breakpoints": true
     }
   ]
 }

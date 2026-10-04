@@ -1,0 +1,34 @@
+{
+  "unit": {
+    "passed": 175,
+    "failed": 0
+  },
+  "mysql": {
+    "passed": 46,
+    "failed": 0
+  },
+  "types": "passed",
+  "build": "passed",
+  "releasePassed": 76,
+  "translations": {
+    "advertisedLocale": "ar",
+    "callsChecked": 14050,
+    "dynamicKeysChecked": 852,
+    "unresolvedDynamicCalls": [],
+    "missing": [],
+    "interpolationErrors": []
+  },
+  "inventory": {
+    "routes": 126,
+    "files": 604,
+    "controls": 2815,
+    "browserRequests": 3,
+    "imperativeReads": 53,
+    "unresolvedReads": 0,
+    "queryCalls": 394,
+    "errorSignalMissing": 41,
+    "choices": 68,
+    "conditions": 1627
+  },
+  "migration": "0207 applied to local disposable database without advancing its historical journal"
+}
