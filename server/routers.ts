@@ -1,3 +1,4 @@
+import {paymentSettingsWorkspaceProcedures} from "./routers-payment-settings-workspace";
 import {selfProfileProcedures} from "./routers-self-profile-workspace";
 import { notificationPreferenceProcedures } from './routers-notification-preference-workspace';
 import {scheduledMessagesRouter} from './routers-scheduled-messages';
@@ -3561,6 +3562,7 @@ export const appRouter = router({
 
   // ==================== Merchant Payment Settings ====================
   merchantPayments: router({
+    ...paymentSettingsWorkspaceProcedures,
     // Get merchant's payment settings
     getSettings: permissionProcedure('settings.manage').query(async ({ ctx }) => {
       const merchant = await getMerchantById(ctx.merchantId);

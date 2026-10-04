@@ -5,6 +5,7 @@
  * This is a standalone module following the "Parallel Coexistence" pattern.
  */
 
+import { paymentSettingsWorkspaceProcedures } from './routers-payment-settings-workspace';
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { permissionProcedure, router } from "./_core/trpc";
@@ -15,6 +16,7 @@ import {
 } from './db';
 
 export const merchantPaymentsRouter = router({
+    ...paymentSettingsWorkspaceProcedures,
     // Get merchant's payment settings
     getSettings: permissionProcedure('settings.manage').query(async ({ ctx }) => {
         const merchant = await getMerchantById(ctx.merchantId);
