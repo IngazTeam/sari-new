@@ -60,15 +60,16 @@ describe.skipIf(!process.env.DATABASE_URL)(
         invalidFields: ["quietHoursStart", "quietHoursEnd", "batchInterval"],
       });
     });
-    it("exposes duplicate evidence without picking an arbitrary record", async () => {
-      await q(
-        "INSERT INTO notification_preferences (merchant_id,preferred_method) VALUES (?,'email'),(?,'push')",
-        [owner.merchantId, owner.merchantId]
-      );
+    it("database uniqueness rejects conflicting duplicate records", async () => {
+      await expect(
+        q(
+          "INSERT INTO notification_preferences (merchant_id,preferred_method) VALUES (?,'email'),(?,'push')",
+          [owner.merchantId, owner.merchantId]
+        )
+      ).rejects.toMatchObject({ code: "ER_DUP_ENTRY" });
       expect(await read()).toMatchObject({
-        status: "duplicate",
-        storedRecords: 2,
-        values: null,
+        status: "default",
+        storedRecords: 0,
       });
     });
     it.each(["viewer", "sales_supervisor", "manager"])(

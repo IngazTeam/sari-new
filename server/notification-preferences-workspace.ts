@@ -8,6 +8,8 @@ import {
 } from "./_core/permissions";
 import {
   defaultNotificationPreferences,
+  notificationPreferenceConfiguration,
+  notificationPreferenceSave,
   notificationPreferenceKeys,
   notificationPreferenceStoredFields,
   notificationPreferenceWorkspace,
@@ -212,5 +214,68 @@ export async function readNotificationPreferences(
         merchantId,
         canManage
       )
+  );
+}
+export async function saveNotificationPreferences(
+  actorId: number,
+  merchantId: number,
+  input: unknown
+) {
+  const { expectedRevision, ...configuration } =
+    notificationPreferenceSave.parse(input);
+  return withPreferenceAuthority(
+    actorId,
+    merchantId,
+    "write",
+    async (tx, canManage) => {
+      // Do not accept a write while a concurrent legacy/default writer can create duplicates.
+      const index = await preferenceRows(
+        tx,
+        `SELECT COLUMN_NAME,NON_UNIQUE,SEQ_IN_INDEX,SUB_PART FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='notification_preferences' AND INDEX_NAME='notification_preferences_merchant_unique' ORDER BY SEQ_IN_INDEX`
+      );
+      if (
+        index.length !== 1 ||
+        index[0].COLUMN_NAME !== "merchant_id" ||
+        Number(index[0].NON_UNIQUE) !== 0 ||
+        Number(index[0].SEQ_IN_INDEX) !== 1 ||
+        index[0].SUB_PART !== null
+      )
+        throw new NotificationPreferenceError("unavailable");
+      const raw = await storedPreferences(tx, merchantId, true);
+      const previous = projectPreferences(raw, actorId, merchantId, canManage);
+      if (previous.status === "duplicate")
+        throw new NotificationPreferenceError("duplicate");
+      if (expectedRevision !== previous.revision)
+        throw new NotificationPreferenceError("stale");
+      const keys = notificationPreferenceConfiguration.keyof().options;
+      const changed =
+        !raw.length ||
+        keys.some(key => previous.values![key] !== configuration[key]);
+      if (changed) {
+        const values = keys.map(key => configuration[key]);
+        if (raw.length)
+          await tx.execute(
+            `UPDATE notification_preferences SET ${keys.map(key => `${preferenceColumns[key]}=?`).join(",")} WHERE id=? AND merchant_id=?`,
+            [...values, raw[0].id, merchantId]
+          );
+        else
+          await tx.execute(
+            `INSERT INTO notification_preferences (merchant_id,${keys.map(key => preferenceColumns[key]).join(",")}) VALUES (?,${keys.map(() => "?").join(",")})`,
+            [merchantId, ...values]
+          );
+      }
+      const workspace = projectPreferences(
+        await storedPreferences(tx, merchantId, true),
+        actorId,
+        merchantId,
+        canManage
+      );
+      if (
+        workspace.storedRecords !== 1 ||
+        keys.some(key => workspace.values?.[key] !== configuration[key])
+      )
+        throw new NotificationPreferenceError("unavailable");
+      return { changed, workspace };
+    }
   );
 }

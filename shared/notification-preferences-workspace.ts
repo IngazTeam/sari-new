@@ -103,3 +103,23 @@ export type NotificationPreferenceWorkspace = z.infer<
 export type NotificationPreferenceConfiguration = z.infer<
   typeof notificationPreferenceConfiguration
 >;
+export const notificationPreferenceSave = notificationPreferenceConfiguration
+  .extend({ expectedRevision: z.string().regex(/^[a-f0-9]{64}$/) })
+  .strict()
+  .superRefine((value, ctx) => {
+    if (
+      value.quietHoursEnabled &&
+      value.quietHoursStart === value.quietHoursEnd
+    )
+      ctx.addIssue({
+        code: "custom",
+        path: ["quietHoursEnd"],
+        message: "notification_preferences:empty_quiet_hours",
+      });
+  });
+export const notificationPreferenceSaveResult = z
+  .object({
+    changed: z.boolean(),
+    workspace: notificationPreferenceWorkspace,
+  })
+  .strict();

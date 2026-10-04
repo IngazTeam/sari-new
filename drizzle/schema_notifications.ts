@@ -1,4 +1,4 @@
-import { mysqlTable, int, varchar, text, timestamp, boolean, mysqlEnum, index } from "drizzle-orm/mysql-core";
+import { mysqlTable, int, varchar, text, timestamp, boolean, mysqlEnum, index, uniqueIndex } from "drizzle-orm/mysql-core";
 import { merchants } from "./schema";
 
 /**
@@ -37,6 +37,7 @@ export const notificationPreferences = mysqlTable("notification_preferences", {
 },
 (table) => [
   index("notification_preferences_merchant_id_idx").on(table.merchantId),
+  uniqueIndex("notification_preferences_merchant_unique").on(table.merchantId),
 ]);
 
 /**
