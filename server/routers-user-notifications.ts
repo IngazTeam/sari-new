@@ -8,6 +8,7 @@
 
 import { z } from "zod";
 import { protectedProcedure, router } from "./_core/trpc";
+import { accountNotificationsWorkspaceRouter } from "./routers-account-notifications-workspace";
 import {
   deleteNotification,
   getNotificationsByUserId,
@@ -17,6 +18,7 @@ import {
 } from './db';
 
 export const userNotificationsRouter = router({
+    workspace: accountNotificationsWorkspaceRouter,
     list: protectedProcedure.query(async ({ ctx }) => {
         return await getNotificationsByUserId(ctx.user.id);
     }),
