@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-04T06:49:35.709Z",
+  "generatedAt": "2026-10-04T08:28:13.094Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,7 +10,7 @@
     },
     "after": {
       "routes": 126,
-      "files": 503,
+      "files": 506,
       "controls": 2747
     }
   },
@@ -323,6 +323,9 @@
     "client/src/lib/report-export.ts",
     "client/src/lib/merchant-report-document.ts",
     "client/src/components/merchant/MerchantReportView.tsx",
+    "client/src/components/merchant/UsageWorkspacePage.tsx",
+    "client/src/components/merchant/UsageWorkspace.tsx",
+    "client/src/lib/usage-workspace-view.ts",
     "client/src/components/merchant/MerchantToolsDirectory.tsx",
     "client/src/components/merchant/navigation.ts",
     "client/src/components/merchant/tools.ts",
@@ -445,6 +448,8 @@
     "client/src/pages/CurrencySettings.tsx",
     "client/src/pages/Reports.tsx",
     "client/src/pages/merchant/MySubscription.tsx",
+    "client/src/pages/merchant/Usage.tsx",
+    "client/src/pages/merchant/UsageDashboard.tsx",
     "client/src/pages/merchant/SubscriptionPlans.tsx",
     "client/src/pages/merchant/Tools.tsx",
     "client/src/pages/Customers.tsx",
@@ -2504,18 +2509,30 @@
     {
       "route": "/merchant/usage",
       "controlsBefore": 2,
-      "controlsNow": 2,
-      "removedQueries": [],
-      "addedQueries": [],
+      "controlsNow": 7,
+      "removedQueries": [
+        "subscriptions.getUsage"
+      ],
+      "addedQueries": [
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "usage.workspace"
+      ],
       "removedMutations": [],
       "addedMutations": []
     },
     {
       "route": "/merchant/usage-dashboard",
       "controlsBefore": 5,
-      "controlsNow": 5,
-      "removedQueries": [],
-      "addedQueries": [],
+      "controlsNow": 7,
+      "removedQueries": [
+        "usage.getCurrentUsage"
+      ],
+      "addedQueries": [
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "usage.workspace"
+      ],
       "removedMutations": [],
       "addedMutations": []
     },

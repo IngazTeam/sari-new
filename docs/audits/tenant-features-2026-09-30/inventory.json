@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-04T06:49:35.709Z",
+  "generatedAt": "2026-10-04T08:28:13.094Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -19975,159 +19975,179 @@
     },
     {
       "file": "client/src/pages/merchant/Usage.tsx",
-      "hash": "363656bdadc1",
+      "hash": "d012191e1558",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [
+        "client/src/components/merchant/UsageWorkspacePage.tsx"
+      ],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/components/merchant/UsageWorkspacePage.tsx",
+      "hash": "19dac72924b9",
       "queries": [
-        "subscriptions.getUsage"
+        "auth.me",
+        "merchants.workspaceIdentity"
+      ],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [
+        {
+          "query": "auth.me",
+          "binding": "user",
+          "line": 10,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        },
+        {
+          "query": "merchants.workspaceIdentity",
+          "binding": "merchant",
+          "line": 11,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": "!!user.data?.id && !user.error && !user.isFetching"
+        }
+      ],
+      "conditions": [],
+      "imports": [
+        "client/src/components/merchant/UsageWorkspace.tsx",
+        "client/src/lib/usage-workspace-view.ts"
+      ],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/components/merchant/UsageWorkspace.tsx",
+      "hash": "d2d532dfb03f",
+      "queries": [
+        "usage.workspace"
       ],
       "mutations": [],
       "imperativeReads": [],
       "browserRequests": [],
       "sections": [
         {
-          "label": "استهلاك الباقة",
-          "line": 60,
+          "label": "",
+          "line": 40,
+          "tag": "h3"
+        },
+        {
+          "label": "",
+          "line": 134,
           "tag": "h1"
         },
         {
-          "label": "المحادثات",
-          "line": 87,
-          "tag": "CardTitle"
+          "label": "ar trial",
+          "line": 195,
+          "tag": "h2"
         },
         {
-          "label": "الرسائل",
-          "line": 120,
-          "tag": "CardTitle"
+          "label": "",
+          "line": 266,
+          "tag": "h2"
         },
         {
-          "label": "الرسائل الصوتية",
-          "line": 153,
-          "tag": "CardTitle"
+          "label": "",
+          "line": 287,
+          "tag": "h2"
         },
         {
-          "label": "معلومات إعادة التعيين",
-          "line": 187,
-          "tag": "CardTitle"
+          "label": "·",
+          "line": 307,
+          "tag": "h2"
         },
         {
-          "label": "ترقية الباقة",
-          "line": 213,
-          "tag": "CardTitle"
+          "label": "",
+          "line": 314,
+          "tag": "h3"
+        },
+        {
+          "label": "",
+          "line": 318,
+          "tag": "h3"
+        },
+        {
+          "label": "",
+          "line": 333,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 386,
+          "tag": "summary"
         }
       ],
       "choices": [],
       "handlers": [],
       "queryStates": [
         {
-          "query": "subscriptions.getUsage",
-          "binding": "{ data: usage, isLoading }",
-          "line": 10,
-          "errorSignal": false,
-          "loadingSignal": true,
-          "enabled": null
-        }
-      ],
-      "conditions": [],
-      "imports": [],
-      "controlCount": 2
-    },
-    {
-      "file": "client/src/pages/merchant/UsageDashboard.tsx",
-      "hash": "54f1ab1de254",
-      "queries": [
-        "usage.getCurrentUsage"
-      ],
-      "mutations": [],
-      "imperativeReads": [],
-      "browserRequests": [],
-      "sections": [
-        {
-          "label": "لوحة تحكم الاستخدام",
-          "line": 132,
-          "tag": "h1"
-        },
-        {
-          "label": "",
-          "line": 174,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "معلومات الباقة",
-          "line": 231,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "",
-          "line": 237,
-          "tag": "h3"
-        },
-        {
-          "label": "نصائح لتحسين الاستخدام",
-          "line": 262,
-          "tag": "CardTitle"
-        }
-      ],
-      "choices": [
-        {
-          "name": "usageItems",
-          "line": 82,
-          "values": [
-            {
-              "icon": "Users",
-              "title": "العملاء",
-              "current": "usage.customers.current",
-              "max": "usage.customers.max",
-              "percentage": "usage.customers.percentage",
-              "description": "عدد العملاء المسجلين"
-            },
-            {
-              "icon": "MessageSquare",
-              "title": "أرقام الواتساب",
-              "current": "usage.whatsappNumbers.current",
-              "max": "usage.whatsappNumbers.max",
-              "percentage": "usage.whatsappNumbers.percentage",
-              "description": "الأرقام المربوطة"
-            },
-            {
-              "icon": "Package",
-              "title": "المنتجات",
-              "current": "usage.products.current",
-              "max": "usage.products.max",
-              "percentage": "usage.products.percentage",
-              "description": "المنتجات المضافة"
-            },
-            {
-              "icon": "Send",
-              "title": "الحملات الشهرية",
-              "current": "usage.campaigns.current",
-              "max": "usage.campaigns.max",
-              "percentage": "usage.campaigns.percentage",
-              "description": "الحملات هذا الشهر"
-            },
-            {
-              "icon": "Bot",
-              "title": "رسائل AI",
-              "current": "usage.aiMessages.current",
-              "max": "usage.aiMessages.max",
-              "percentage": "usage.aiMessages.percentage",
-              "description": "الرسائل الذكية هذا الشهر"
-            }
-          ]
-        }
-      ],
-      "handlers": [],
-      "queryStates": [
-        {
-          "query": "usage.getCurrentUsage",
-          "binding": "{ data: usage, isLoading, error, refetch }",
-          "line": 24,
+          "query": "usage.workspace",
+          "binding": "query",
+          "line": 99,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
         }
       ],
       "conditions": [],
+      "imports": [
+        "client/src/lib/usage-workspace-view.ts"
+      ],
+      "controlCount": 7
+    },
+    {
+      "file": "client/src/lib/usage-workspace-view.ts",
+      "hash": "5e6588971922",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [
+        {
+          "name": "usageViews",
+          "line": 2,
+          "values": [
+            "subscription",
+            "resources",
+            "history"
+          ]
+        }
+      ],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
       "imports": [],
-      "controlCount": 5
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/pages/merchant/UsageDashboard.tsx",
+      "hash": "b9962cbcb8e7",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [
+        "client/src/components/merchant/UsageWorkspacePage.tsx"
+      ],
+      "controlCount": 0
     },
     {
       "file": "client/src/pages/merchant/SubscriptionPlans.tsx",
@@ -28989,14 +29009,24 @@
         "Usage"
       ],
       "files": [
-        "client/src/pages/merchant/Usage.tsx"
+        "client/src/pages/merchant/Usage.tsx",
+        "client/src/components/merchant/UsageWorkspacePage.tsx",
+        "client/src/components/merchant/UsageWorkspace.tsx",
+        "client/src/lib/usage-workspace-view.ts"
       ],
       "controls": [
-        "0a482c8edbc6",
-        "79242a767ab6"
+        "3269b64c5c07",
+        "0c172d0246af",
+        "79cd8fac476e",
+        "0df6dc8ce2eb",
+        "4b265e08c65e",
+        "4b27ea09ca76",
+        "68f11913fc15"
       ],
       "queries": [
-        "subscriptions.getUsage"
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "usage.workspace"
       ],
       "mutations": [],
       "imperativeReads": [],
@@ -29010,17 +29040,24 @@
         "UsageDashboard"
       ],
       "files": [
-        "client/src/pages/merchant/UsageDashboard.tsx"
+        "client/src/pages/merchant/UsageDashboard.tsx",
+        "client/src/components/merchant/UsageWorkspacePage.tsx",
+        "client/src/components/merchant/UsageWorkspace.tsx",
+        "client/src/lib/usage-workspace-view.ts"
       ],
       "controls": [
-        "6cf1c3943f36",
-        "0d7c495427cb",
-        "a96cf739b67e",
-        "8de1f5985803",
-        "15702b2e0016"
+        "3269b64c5c07",
+        "0c172d0246af",
+        "79cd8fac476e",
+        "0df6dc8ce2eb",
+        "4b265e08c65e",
+        "4b27ea09ca76",
+        "68f11913fc15"
       ],
       "queries": [
-        "usage.getCurrentUsage"
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "usage.workspace"
       ],
       "mutations": [],
       "imperativeReads": [],
@@ -89292,15 +89329,36 @@
       "review": "source-inventoried"
     },
     {
-      "id": "0a482c8edbc6",
-      "file": "client/src/pages/merchant/Usage.tsx",
-      "line": 188,
-      "tag": "Calendar",
+      "id": "3269b64c5c07",
+      "file": "client/src/components/merchant/UsageWorkspace.tsx",
+      "line": 140,
+      "tag": "Link",
       "role": "",
-      "kind": "field",
+      "kind": "action",
       "label": "",
-      "section": "معلومات إعادة التعيين",
-      "binding": "",
+      "section": "UsageWorkspace",
+      "binding": "`${path}?tab=${item}`",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "0c172d0246af",
+      "file": "client/src/components/merchant/UsageWorkspace.tsx",
+      "line": 152,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "UsageWorkspace",
+      "binding": "path",
       "type": "text",
       "options": [],
       "min": "",
@@ -89308,19 +89366,47 @@
       "maxLength": "",
       "required": false,
       "conditional": false,
-      "conditions": [],
+      "conditions": [
+        "!view"
+      ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "79242a767ab6",
-      "file": "client/src/pages/merchant/Usage.tsx",
-      "line": 222,
-      "tag": "a",
+      "id": "79cd8fac476e",
+      "file": "client/src/components/merchant/UsageWorkspace.tsx",
+      "line": 185,
+      "tag": "button",
       "role": "",
       "kind": "action",
-      "label": "عرض الباقات",
-      "section": "ترقية الباقة",
+      "label": "",
+      "section": "UsageWorkspace",
+      "binding": "() => void query.refetch()",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "!data",
+        "query.isLoading || query.isFetching",
+        "query.error",
+        "!view"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "0df6dc8ce2eb",
+      "file": "client/src/components/merchant/UsageWorkspace.tsx",
+      "line": 254,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "ar trial",
       "binding": "/merchant/subscription/plans",
       "type": "text",
       "options": [],
@@ -89330,63 +89416,23 @@
       "required": false,
       "conditional": false,
       "conditions": [
-        "(usage.conversations.percentage >= 80 ||\r\n        usage.messages.percentage >= 80 ||\r\n        usage.voiceMessages.percentage >= 80)"
+        "view === \"subscription\"",
+        "!data",
+        "query.isLoading || query.isFetching"
       ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "6cf1c3943f36",
-      "file": "client/src/pages/merchant/UsageDashboard.tsx",
-      "line": 54,
-      "tag": "Button",
+      "id": "4b265e08c65e",
+      "file": "client/src/components/merchant/UsageWorkspace.tsx",
+      "line": 257,
+      "tag": "Link",
       "role": "",
       "kind": "action",
-      "label": "عرض الباقات",
-      "section": "UsageDashboard",
-      "binding": "() => setLocation('/merchant/subscription/plans')",
-      "type": "button",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "0d7c495427cb",
-      "file": "client/src/pages/merchant/UsageDashboard.tsx",
-      "line": 137,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "ترقية الباقة",
-      "section": "لوحة تحكم الاستخدام",
-      "binding": "() => setLocation('/merchant/subscription/compare')",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "a96cf739b67e",
-      "file": "client/src/pages/merchant/UsageDashboard.tsx",
-      "line": 149,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "عرض الباقات",
-      "section": "لوحة تحكم الاستخدام",
-      "binding": "() => setLocation('/merchant/subscription/compare')",
+      "label": "",
+      "section": "ar trial",
+      "binding": "/merchant/subscription/compare",
       "type": "text",
       "options": [],
       "min": "",
@@ -89395,42 +89441,46 @@
       "required": false,
       "conditional": false,
       "conditions": [
-        "hasWarnings"
+        "view === \"subscription\"",
+        "!data",
+        "query.isLoading || query.isFetching"
       ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "8de1f5985803",
-      "file": "client/src/pages/merchant/UsageDashboard.tsx",
-      "line": 244,
-      "tag": "Button",
+      "id": "4b27ea09ca76",
+      "file": "client/src/components/merchant/UsageWorkspace.tsx",
+      "line": 340,
+      "tag": "button",
       "role": "",
       "kind": "action",
-      "label": "إدارة الاشتراك",
-      "section": "UsageDashboard",
-      "binding": "() => setLocation('/merchant/subscription')",
-      "type": "text",
+      "label": "",
+      "section": "UsageWorkspace",
+      "binding": "() => setSelectedMonth(row.month)",
+      "type": "button",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": false,
-      "conditions": [],
+      "conditional": true,
+      "conditions": [
+        "view === \"history\""
+      ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "15702b2e0016",
-      "file": "client/src/pages/merchant/UsageDashboard.tsx",
-      "line": 250,
-      "tag": "Button",
+      "id": "68f11913fc15",
+      "file": "client/src/components/merchant/UsageWorkspace.tsx",
+      "line": 386,
+      "tag": "summary",
       "role": "",
       "kind": "action",
-      "label": "ترقية الباقة",
-      "section": "UsageDashboard",
-      "binding": "() => setLocation('/merchant/subscription/compare')",
+      "label": "",
+      "section": "UsageWorkspace",
+      "binding": "",
       "type": "text",
       "options": [],
       "min": "",
@@ -89438,7 +89488,12 @@
       "maxLength": "",
       "required": false,
       "conditional": false,
-      "conditions": [],
+      "conditions": [
+        "!data",
+        "query.isLoading || query.isFetching",
+        "query.error",
+        "!view"
+      ],
       "disabled": "",
       "review": "source-inventoried"
     },

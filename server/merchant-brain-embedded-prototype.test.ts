@@ -13,6 +13,18 @@ beforeEach(()=>{
 });
 afterEach(()=>dom.window.close());
 const send=(data:any,origin='http://127.0.0.1:4329',source=frame.contentWindow)=>w.dispatchEvent(new w.MessageEvent('message',{origin,source,data}));
+it.each(['/merchant/usage','/merchant/usage-dashboard'])('preserves usage sections and limits plan navigation to its owned frame: %s',path=>{
+ frame.setAttribute('src','./service-workspace.html?embed=brain&path='+path);w.history.replaceState(null,'','#/page'+path);w.syncServicePreviewContext=vi.fn();
+ const message={type:'sary-brain-preview',action:'serviceState',search:`path=${path}&tab=history&tenant=270&lang=en`};
+ for(const search of [`path=${path}&tab=other`,`path=${path}&tab=history&tab=resources`,`path=${path}&actorId=999`])send({...message,search});
+ send(message,'https://evil.test');send(message,undefined,w);expect(w.location.hash).toBe('#/page'+path);
+ send(message);expect(w.location.hash).toBe('#/page'+path+'?tab=history&tenant=270&lang=en');expect(frame.isConnected).toBe(true);
+ for(const route of ['/merchant/subscription/plans','/merchant/subscription/compare']){
+   send({type:'sary-brain-preview',action:'serviceTool',route});expect(w.location.hash).toBe('#/page'+route);
+ }
+ frame.setAttribute('src','./service-workspace.html?embed=brain&path=/merchant/services');
+ send({type:'sary-brain-preview',action:'serviceTool',route:'/merchant/subscription/plans'});expect(w.location.hash).toBe('#/page/merchant/subscription/compare');
+});
 it('preserves competitor filters and product pages only from the owned frame',()=>{
  const path='/merchant/competitor-analysis';frame.setAttribute('src','./service-workspace.html?embed=brain&path='+path);w.history.replaceState(null,'','#/page'+path);w.syncServicePreviewContext=vi.fn();
  const message={type:'sary-brain-preview',action:'serviceState',search:`path=${path}&report=32&products=2&state=completed&sort=oldest&q=sample&page=2&tenant=270&lang=en`};
