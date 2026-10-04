@@ -47,6 +47,26 @@ export async function wireTransactions(
   };
   const path = location.pathname,
     params = new URLSearchParams(location.search);
+  if (path.replace(/\/+$/, "") === "/payment/callback") {
+    try {
+      const { mountSubscriptionReturn } = await import("./subscription-return");
+      await mountSubscriptionReturn(box, lang, api);
+    } catch {
+      box.textContent = localizedText(
+        "تعذر عرض حالة الدفع. حدّث الصفحة أو راجع اشتراكك دون إعادة الدفع.",
+        "Payment status could not be displayed. Refresh the page or review your subscription without paying again."
+      );
+      const link = document.createElement("a");
+      link.href = "/merchant/subscription";
+      link.textContent = localizedText(
+        "مراجعة الاشتراك",
+        "Review subscription"
+      );
+      box.append(document.createElement("br"), link);
+      box.setAttribute("role", "alert");
+    }
+    return;
+  }
   const price = (n: number, currency: string) =>
     `${new Intl.NumberFormat(lang === "ar" ? "ar-SA" : "en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n)} ${e(currency)}`;
   const redirect = (value: string) => {
@@ -234,25 +254,20 @@ export async function wireTransactions(
   const renderStatus = (
     kind: "success" | "failure" | "waiting" | "timeout" | "error"
   ) => {
-    box.innerHTML = `<span class="auth-state-icon">${icon(kind === "success" ? "check" : kind === "failure" ? "x" : "rotate")}</span><h2>${kind === "success" ? localizedText("اكتملت العملية.", "The transaction is confirmed.") : kind === "failure" ? localizedText("لم تكتمل العملية.", "The transaction did not complete.") : localizedText("الدفع قيد التأكيد.", "Payment is being confirmed.")}</h2><p>${kind === "success" ? localizedText("تم تسجيل الحالة المؤكدة في النظام.", "The confirmed status has been recorded by the platform.") : kind === "failure" ? localizedText("راجع الطلب أو تواصل مع الدعم قبل المحاولة مجددًا.", "Review the request or contact support before trying again.") : kind === "timeout" ? localizedText("ما زلنا ننتظر تأكيد مزوّد الدفع. احتفظ بالإيصال وتواصل مع الدعم قبل إعادة الدفع.", "We are still waiting for the provider’s confirmation. Keep your receipt and contact support before paying again.") : kind === "error" ? localizedText("تعذر تحديث الحالة مؤقتًا. سنحاول مجددًا، فلا تعد الدفع الآن.", "The status is temporarily unavailable. We will retry; do not pay again now.") : localizedText("ننتظر تأكيد القبض من مزوّد الدفع؛ الحجز المبدئي وحده لا يعني اكتمال الدفع.", "We are waiting for the provider to confirm capture. An initial authorisation alone does not confirm payment.")}</p><a class="text-link" href="${path === "/payment/callback" ? "/merchant/dashboard" : href("/support")}">${path === "/payment/callback" ? localizedText("العودة للحساب", "Return to account") : localizedText("تواصل مع الدعم", "Contact support")}</a>`;
+    box.innerHTML = `<span class="auth-state-icon">${icon(kind === "success" ? "check" : kind === "failure" ? "x" : "rotate")}</span><h2>${kind === "success" ? localizedText("اكتملت العملية.", "The transaction is confirmed.") : kind === "failure" ? localizedText("لم تكتمل العملية.", "The transaction did not complete.") : localizedText("الدفع قيد التأكيد.", "Payment is being confirmed.")}</h2><p>${kind === "success" ? localizedText("تم تسجيل الحالة المؤكدة في النظام.", "The confirmed status has been recorded by the platform.") : kind === "failure" ? localizedText("راجع الطلب أو تواصل مع الدعم قبل المحاولة مجددًا.", "Review the request or contact support before trying again.") : kind === "timeout" ? localizedText("ما زلنا ننتظر تأكيد مزوّد الدفع. احتفظ بالإيصال وتواصل مع الدعم قبل إعادة الدفع.", "We are still waiting for the provider’s confirmation. Keep your receipt and contact support before paying again.") : kind === "error" ? localizedText("تعذر تحديث الحالة مؤقتًا. سنحاول مجددًا، فلا تعد الدفع الآن.", "The status is temporarily unavailable. We will retry; do not pay again now.") : localizedText("ننتظر تأكيد القبض من مزوّد الدفع؛ الحجز المبدئي وحده لا يعني اكتمال الدفع.", "We are waiting for the provider to confirm capture. An initial authorisation alone does not confirm payment.")}</p><a class="text-link" href="${href("/support")}">${localizedText("تواصل مع الدعم", "Contact support")}</a>`;
   };
   const poll = async () => {
     if (finished || document.hidden || inFlight) return;
     inFlight = true;
     polls++;
     try {
-      const result =
-        path === "/payment/callback"
-          ? await api.payment.getPaymentCallbackStatus.query({
-              tap_id: chargeId,
-            })
-          : linkId
-            ? await api.payments.getPublicLinkPaymentStatus.query({
-                linkId,
-                chargeId,
-              })
-            : await api.payments.getPublicChargeStatus.query({ chargeId });
-      if (result.status === "captured" || result.status === "completed") {
+      const result = linkId
+        ? await api.payments.getPublicLinkPaymentStatus.query({
+            linkId,
+            chargeId,
+          })
+        : await api.payments.getPublicChargeStatus.query({ chargeId });
+      if (result.status === "captured") {
         finished = true;
         renderStatus("success");
       } else if (result.status === "failed") {

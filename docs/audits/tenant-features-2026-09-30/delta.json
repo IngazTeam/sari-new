@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-04T10:46:47.420Z",
+  "generatedAt": "2026-10-04T11:07:09.191Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -11,7 +11,7 @@
     "after": {
       "routes": 126,
       "files": 514,
-      "controls": 2763
+      "controls": 2759
     }
   },
   "addedFiles": [
@@ -2624,7 +2624,7 @@
     {
       "route": "/merchant/payment/success",
       "controlsBefore": 3,
-      "controlsNow": 15,
+      "controlsNow": 11,
       "removedQueries": [],
       "addedQueries": [
         "payment.getPaymentCallbackStatus"
@@ -2635,7 +2635,7 @@
     {
       "route": "/merchant/payment/cancel",
       "controlsBefore": 2,
-      "controlsNow": 15,
+      "controlsNow": 11,
       "removedQueries": [],
       "addedQueries": [
         "payment.getPaymentCallbackStatus",

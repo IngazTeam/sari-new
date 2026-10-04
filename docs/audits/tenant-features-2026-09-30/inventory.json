@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-04T10:46:47.420Z",
+  "generatedAt": "2026-10-04T11:07:09.191Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -20456,7 +20456,7 @@
     },
     {
       "file": "client/src/components/merchant/PaymentReturnWorkspace.tsx",
-      "hash": "3c21f37c3c7c",
+      "hash": "1d7e27c3b16e",
       "queries": [
         "payment.getPaymentCallbackStatus",
         "subscriptionPayments.verifyPayment"
@@ -20464,20 +20464,14 @@
       "mutations": [],
       "imperativeReads": [],
       "browserRequests": [],
-      "sections": [
-        {
-          "label": "",
-          "line": 124,
-          "tag": "h1"
-        }
-      ],
+      "sections": [],
       "choices": [],
       "handlers": [],
       "queryStates": [
         {
           "query": "payment.getPaymentCallbackStatus",
           "binding": "tap",
-          "line": 50,
+          "line": 62,
           "errorSignal": false,
           "loadingSignal": false,
           "enabled": "selection.kind === \"tap\" "
@@ -20485,7 +20479,7 @@
         {
           "query": "subscriptionPayments.verifyPayment",
           "binding": "legacy",
-          "line": 54,
+          "line": 66,
           "errorSignal": false,
           "loadingSignal": false,
           "enabled": "selection.kind === \"legacy\" "
@@ -20496,7 +20490,7 @@
         "client/src/lib/usage-workspace-view.ts",
         "client/src/lib/payment-return-view.ts"
       ],
-      "controlCount": 5
+      "controlCount": 1
     },
     {
       "file": "client/src/lib/payment-return-view.ts",
@@ -29427,11 +29421,7 @@
         "0da8aaca8584",
         "9b15991becb0",
         "8179a71d3d3b",
-        "55a0a1682530",
-        "c9618960d461",
-        "cd52e3abec76",
-        "3e57feb41e02",
-        "52ad1d309c82"
+        "71f9c5277aa9"
       ],
       "queries": [
         "payment.getPaymentCallbackStatus",
@@ -29468,11 +29458,7 @@
         "0da8aaca8584",
         "9b15991becb0",
         "8179a71d3d3b",
-        "55a0a1682530",
-        "c9618960d461",
-        "cd52e3abec76",
-        "3e57feb41e02",
-        "52ad1d309c82"
+        "71f9c5277aa9"
       ],
       "queries": [
         "payment.getPaymentCallbackStatus",
@@ -90370,30 +90356,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "55a0a1682530",
+      "id": "71f9c5277aa9",
       "file": "client/src/components/merchant/PaymentReturnWorkspace.tsx",
-      "line": 137,
-      "tag": "Link",
-      "role": "",
-      "kind": "action",
-      "label": "",
-      "section": "PaymentReturnWorkspace",
-      "binding": "/merchant/usage?tab=subscription",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "c9618960d461",
-      "file": "client/src/components/merchant/PaymentReturnWorkspace.tsx",
-      "line": 142,
+      "line": 157,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -90411,71 +90376,6 @@
         "valid"
       ],
       "disabled": "source.isFetching",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "cd52e3abec76",
-      "file": "client/src/components/merchant/PaymentReturnWorkspace.tsx",
-      "line": 148,
-      "tag": "Link",
-      "role": "",
-      "kind": "action",
-      "label": "",
-      "section": "PaymentReturnWorkspace",
-      "binding": "/login",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [
-        "source.error?.data?.code === \"UNAUTHORIZED\" && valid"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "3e57feb41e02",
-      "file": "client/src/components/merchant/PaymentReturnWorkspace.tsx",
-      "line": 150,
-      "tag": "Link",
-      "role": "",
-      "kind": "action",
-      "label": "",
-      "section": "PaymentReturnWorkspace",
-      "binding": "/merchant/subscription",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "52ad1d309c82",
-      "file": "client/src/components/merchant/PaymentReturnWorkspace.tsx",
-      "line": 151,
-      "tag": "Link",
-      "role": "",
-      "kind": "action",
-      "label": "",
-      "section": "PaymentReturnWorkspace",
-      "binding": "/merchant/dashboard",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "",
       "review": "source-inventoried"
     },
     {

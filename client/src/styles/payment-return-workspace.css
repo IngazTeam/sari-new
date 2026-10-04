@@ -34,7 +34,8 @@
   background: #edf5ef;
   color: #316748;
 }
-.pr-workspace h1 {
+.pr-workspace h1,
+.pr-workspace h2 {
   margin: 12px 0;
   font-size: clamp(26px, 4vw, 34px);
   line-height: 1.45;
@@ -117,4 +118,17 @@
   .pr-actions {
     grid-template-columns: 1fr;
   }
+}
+
+.pr-public-host {
+  background: transparent;
+}
+.pr-public-host .pr-workspace {
+  box-sizing: border-box;
+}
+
+.central-site .pr-subscription-return {
+  width: 100%;
+  max-width: 720px;
+  margin-inline: auto;
 }

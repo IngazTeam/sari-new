@@ -22,13 +22,25 @@ import {
 } from "@/lib/payment-return-view";
 import "@/styles/payment-return-workspace.css";
 
-export function PaymentReturnWorkspace({ kind }: { kind: ReturnKind }) {
+type Props = {
+  kind: ReturnKind;
+  headingLevel?: 1 | 2;
+  fullPageNavigation?: boolean;
+};
+export function PaymentReturnWorkspace(props: Props) {
   const search = useSearch();
   return (
-    <PaymentReturn key={kind + ":" + search} kind={kind} search={search} />
+    <PaymentReturn key={props.kind + ":" + search} {...props} search={search} />
   );
 }
-function PaymentReturn({ kind, search }: { kind: ReturnKind; search: string }) {
+function PaymentReturn({
+  kind,
+  search,
+  headingLevel = 1,
+  fullPageNavigation = false,
+}: Props & { search: string }) {
+  const Heading = headingLevel === 2 ? "h2" : "h1";
+  const NavigationLink = fullPageNavigation ? "a" : Link;
   const { t, i18n } = useTranslation(),
     c = paymentReturnLabels(t);
   const selection = paymentReturnSelection(search, kind);
@@ -121,7 +133,7 @@ function PaymentReturn({ kind, search }: { kind: ReturnKind; search: string }) {
       <div className="pr-icon">
         <Icon size={36} aria-hidden="true" />
       </div>
-      <h1 id="payment-return-title">{c[state]}</h1>
+      <Heading id="payment-return-title">{c[state]}</Heading>
       <p
         className="pr-description"
         role={
@@ -134,10 +146,13 @@ function PaymentReturn({ kind, search }: { kind: ReturnKind; search: string }) {
         <p className="pr-check-note">{paused ? c.noRepeat : c.autoCheck}</p>
       )}
       <div className="pr-actions">
-        <Link className="pr-primary" href="/merchant/usage?tab=subscription">
+        <NavigationLink
+          className="pr-primary"
+          href="/merchant/usage?tab=subscription"
+        >
           <ArrowRightLeft size={18} aria-hidden="true" />
           {c.subscription}
-        </Link>
+        </NavigationLink>
         {valid && (
           <button type="button" onClick={refresh} disabled={source.isFetching}>
             <RefreshCw size={18} aria-hidden="true" />
@@ -145,10 +160,14 @@ function PaymentReturn({ kind, search }: { kind: ReturnKind; search: string }) {
           </button>
         )}
         {source.error?.data?.code === "UNAUTHORIZED" && valid && (
-          <Link href="/login">{c.signIn}</Link>
+          <NavigationLink href="/login">{c.signIn}</NavigationLink>
         )}
-        <Link href="/merchant/subscription">{c.history}</Link>
-        <Link href="/merchant/dashboard">{c.dashboard}</Link>
+        <NavigationLink href="/merchant/subscription">
+          {c.history}
+        </NavigationLink>
+        <NavigationLink href="/merchant/dashboard">
+          {c.dashboard}
+        </NavigationLink>
       </div>
       <p className="pr-source">{c.source}</p>
     </section>

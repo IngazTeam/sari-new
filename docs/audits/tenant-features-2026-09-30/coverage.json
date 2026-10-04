@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-04T10:46:47.420Z",
+  "generatedAt": "2026-10-04T11:07:09.191Z",
   "definition": "Every registered route is accounted for; source inventory and design completion are different statuses.",
   "routes": [
     {
@@ -89374,11 +89374,7 @@
         "0da8aaca8584",
         "9b15991becb0",
         "8179a71d3d3b",
-        "55a0a1682530",
-        "c9618960d461",
-        "cd52e3abec76",
-        "3e57feb41e02",
-        "52ad1d309c82"
+        "71f9c5277aa9"
       ],
       "queries": [
         "payment.getPaymentCallbackStatus",
@@ -89396,7 +89392,7 @@
       ],
       "acceptancePlan": "السجل والتفاصيل والحالات؛ المبالغ والضريبة والتكلفة؛ اعتماد الفاتورة والخصم والهامش؛ نتيجة الدفع المؤكدة والمصالحة ومنع الإرسال المتكرر.",
       "gaps": [
-        "راجع المرحلة494. تعرض حالة سجل محلي عامة دون استعلام مباشر للمزود أو تعديل مالي؛ لا تحصيل خارجي أو Safari/iPhone فعلي أو نشر.",
+        "راجع المرحلتين494–495؛ رُبط callback العام الفعلي بالمكوّن المشترك مع عزل تنسيقه وترجمته. تعرض حالة سجل محلي عامة دون استعلام مباشر للمزود أو تعديل مالي؛ لا تحصيل خارجي أو Safari/iPhone فعلي أو نشر.",
         "استعادة الدفع المحفوظة متاحة عبر شاشة مراجعة الباقة؛ تسوية التحصيل المتعارض ومراجعة صفحة الاشتراك وسجلها القديم أعمال لاحقة."
       ],
       "controlDetails": [
@@ -89637,30 +89633,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "55a0a1682530",
+          "id": "71f9c5277aa9",
           "file": "client/src/components/merchant/PaymentReturnWorkspace.tsx",
-          "line": 137,
-          "tag": "Link",
-          "role": "",
-          "kind": "action",
-          "label": "",
-          "section": "PaymentReturnWorkspace",
-          "binding": "/merchant/usage?tab=subscription",
-          "type": "text",
-          "options": [],
-          "min": "",
-          "max": "",
-          "maxLength": "",
-          "required": false,
-          "conditional": true,
-          "conditions": [],
-          "disabled": "",
-          "review": "source-inventoried"
-        },
-        {
-          "id": "c9618960d461",
-          "file": "client/src/components/merchant/PaymentReturnWorkspace.tsx",
-          "line": 142,
+          "line": 157,
           "tag": "button",
           "role": "",
           "kind": "action",
@@ -89678,71 +89653,6 @@
             "valid"
           ],
           "disabled": "source.isFetching",
-          "review": "source-inventoried"
-        },
-        {
-          "id": "cd52e3abec76",
-          "file": "client/src/components/merchant/PaymentReturnWorkspace.tsx",
-          "line": 148,
-          "tag": "Link",
-          "role": "",
-          "kind": "action",
-          "label": "",
-          "section": "PaymentReturnWorkspace",
-          "binding": "/login",
-          "type": "text",
-          "options": [],
-          "min": "",
-          "max": "",
-          "maxLength": "",
-          "required": false,
-          "conditional": false,
-          "conditions": [
-            "source.error?.data?.code === \"UNAUTHORIZED\" && valid"
-          ],
-          "disabled": "",
-          "review": "source-inventoried"
-        },
-        {
-          "id": "3e57feb41e02",
-          "file": "client/src/components/merchant/PaymentReturnWorkspace.tsx",
-          "line": 150,
-          "tag": "Link",
-          "role": "",
-          "kind": "action",
-          "label": "",
-          "section": "PaymentReturnWorkspace",
-          "binding": "/merchant/subscription",
-          "type": "text",
-          "options": [],
-          "min": "",
-          "max": "",
-          "maxLength": "",
-          "required": false,
-          "conditional": true,
-          "conditions": [],
-          "disabled": "",
-          "review": "source-inventoried"
-        },
-        {
-          "id": "52ad1d309c82",
-          "file": "client/src/components/merchant/PaymentReturnWorkspace.tsx",
-          "line": 151,
-          "tag": "Link",
-          "role": "",
-          "kind": "action",
-          "label": "",
-          "section": "PaymentReturnWorkspace",
-          "binding": "/merchant/dashboard",
-          "type": "text",
-          "options": [],
-          "min": "",
-          "max": "",
-          "maxLength": "",
-          "required": false,
-          "conditional": true,
-          "conditions": [],
-          "disabled": "",
           "review": "source-inventoried"
         }
       ]
@@ -89774,11 +89684,7 @@
         "0da8aaca8584",
         "9b15991becb0",
         "8179a71d3d3b",
-        "55a0a1682530",
-        "c9618960d461",
-        "cd52e3abec76",
-        "3e57feb41e02",
-        "52ad1d309c82"
+        "71f9c5277aa9"
       ],
       "queries": [
         "payment.getPaymentCallbackStatus",
@@ -89796,7 +89702,7 @@
       ],
       "acceptancePlan": "السجل والتفاصيل والحالات؛ المبالغ والضريبة والتكلفة؛ اعتماد الفاتورة والخصم والهامش؛ نتيجة الدفع المؤكدة والمصالحة ومنع الإرسال المتكرر.",
       "gaps": [
-        "راجع المرحلة494. تعرض حالة سجل محلي عامة دون استعلام مباشر للمزود أو تعديل مالي؛ لا تحصيل خارجي أو Safari/iPhone فعلي أو نشر.",
+        "راجع المرحلتين494–495؛ رُبط callback العام الفعلي بالمكوّن المشترك مع عزل تنسيقه وترجمته. تعرض حالة سجل محلي عامة دون استعلام مباشر للمزود أو تعديل مالي؛ لا تحصيل خارجي أو Safari/iPhone فعلي أو نشر.",
         "استعادة الدفع المحفوظة متاحة عبر شاشة مراجعة الباقة؛ تسوية التحصيل المتعارض ومراجعة صفحة الاشتراك وسجلها القديم أعمال لاحقة."
       ],
       "controlDetails": [
@@ -90037,30 +89943,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "55a0a1682530",
+          "id": "71f9c5277aa9",
           "file": "client/src/components/merchant/PaymentReturnWorkspace.tsx",
-          "line": 137,
-          "tag": "Link",
-          "role": "",
-          "kind": "action",
-          "label": "",
-          "section": "PaymentReturnWorkspace",
-          "binding": "/merchant/usage?tab=subscription",
-          "type": "text",
-          "options": [],
-          "min": "",
-          "max": "",
-          "maxLength": "",
-          "required": false,
-          "conditional": true,
-          "conditions": [],
-          "disabled": "",
-          "review": "source-inventoried"
-        },
-        {
-          "id": "c9618960d461",
-          "file": "client/src/components/merchant/PaymentReturnWorkspace.tsx",
-          "line": 142,
+          "line": 157,
           "tag": "button",
           "role": "",
           "kind": "action",
@@ -90078,71 +89963,6 @@
             "valid"
           ],
           "disabled": "source.isFetching",
-          "review": "source-inventoried"
-        },
-        {
-          "id": "cd52e3abec76",
-          "file": "client/src/components/merchant/PaymentReturnWorkspace.tsx",
-          "line": 148,
-          "tag": "Link",
-          "role": "",
-          "kind": "action",
-          "label": "",
-          "section": "PaymentReturnWorkspace",
-          "binding": "/login",
-          "type": "text",
-          "options": [],
-          "min": "",
-          "max": "",
-          "maxLength": "",
-          "required": false,
-          "conditional": false,
-          "conditions": [
-            "source.error?.data?.code === \"UNAUTHORIZED\" && valid"
-          ],
-          "disabled": "",
-          "review": "source-inventoried"
-        },
-        {
-          "id": "3e57feb41e02",
-          "file": "client/src/components/merchant/PaymentReturnWorkspace.tsx",
-          "line": 150,
-          "tag": "Link",
-          "role": "",
-          "kind": "action",
-          "label": "",
-          "section": "PaymentReturnWorkspace",
-          "binding": "/merchant/subscription",
-          "type": "text",
-          "options": [],
-          "min": "",
-          "max": "",
-          "maxLength": "",
-          "required": false,
-          "conditional": true,
-          "conditions": [],
-          "disabled": "",
-          "review": "source-inventoried"
-        },
-        {
-          "id": "52ad1d309c82",
-          "file": "client/src/components/merchant/PaymentReturnWorkspace.tsx",
-          "line": 151,
-          "tag": "Link",
-          "role": "",
-          "kind": "action",
-          "label": "",
-          "section": "PaymentReturnWorkspace",
-          "binding": "/merchant/dashboard",
-          "type": "text",
-          "options": [],
-          "min": "",
-          "max": "",
-          "maxLength": "",
-          "required": false,
-          "conditional": true,
-          "conditions": [],
-          "disabled": "",
           "review": "source-inventoried"
         }
       ]
