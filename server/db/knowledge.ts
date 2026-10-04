@@ -14,6 +14,7 @@ import { getPool } from '../db';
 import { assertRuntimeSchema } from './schema-readiness';
 import { runKnowledgeWrite } from '../knowledge/intake-execution';
 import { readVerifiedBotSections } from '../knowledge/teaching-read';
+import { KnowledgeStorageError, verifiedKnowledgeInsert, verifiedKnowledgeUpdate } from '../knowledge/storage-acknowledgement';
 
 // ═══════════════════════════════════════════════════════════════
 // Types
@@ -120,7 +121,7 @@ export async function ensureKnowledgeTables(): Promise<void> {
 export async function getSectionsByMerchantId(merchantId: number): Promise<KnowledgeSection[]> {
   await ensureKnowledgeTables();
   const pool = await getPool();
-  if (!pool) return [];
+  if (!pool) throw new KnowledgeStorageError('unavailable');
 
   const [rows] = await pool.execute(
     `SELECT id, merchant_id, parent_id, section_type, title, content, summary, source, source_url, confidence, status, use_in_bot, inject_as, sort_order, merchant_edited, valid_until, provenance, created_at, updated_at
@@ -175,34 +176,36 @@ export async function getSectionById(sectionId: number, merchantId: number): Pro
 export async function createSection(data: InsertKnowledgeSection): Promise<number> {
   await ensureKnowledgeTables();
   const pool = await getPool();
-  if (!pool) throw new Error('DB unavailable');
+  if (!pool) throw new KnowledgeStorageError('unavailable');
 
-  const [result] = await runKnowledgeWrite(pool, data.merchantId, connection => connection.execute(
-    `INSERT INTO knowledge_sections 
-     (merchant_id, parent_id, section_type, title, content, summary, source, source_url, 
-      confidence, status, use_in_bot, inject_as, sort_order, merchant_edited, embedding, valid_until, provenance)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      data.merchantId,
-      data.parentId ?? null,
-      data.sectionType,
-      data.title.substring(0, 500),
-      data.content,
-      data.summary?.substring(0, 1000) ?? null,
-      data.source,
-      data.sourceUrl ?? null,
-      data.confidence ?? 0.90,
-      data.status ?? 'auto_approved',
-      data.useInBot !== false ? 1 : 0,
-      data.injectAs ?? 'fact',
-      data.sortOrder ?? 0,
-      data.merchantEdited ? 1 : 0,
-      data.embedding ?? null,
-      data.validUntil ?? null,
-      data.provenance ? JSON.stringify(data.provenance) : null,
-    ]
-  ));
-  return (result as any).insertId;
+  return runKnowledgeWrite(pool, data.merchantId, async connection => {
+    const [result] = await connection.execute(
+      `INSERT INTO knowledge_sections 
+       (merchant_id, parent_id, section_type, title, content, summary, source, source_url, 
+        confidence, status, use_in_bot, inject_as, sort_order, merchant_edited, embedding, valid_until, provenance)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        data.merchantId,
+        data.parentId ?? null,
+        data.sectionType,
+        data.title.substring(0, 500),
+        data.content,
+        data.summary?.substring(0, 1000) ?? null,
+        data.source,
+        data.sourceUrl ?? null,
+        data.confidence ?? 0.90,
+        data.status ?? 'auto_approved',
+        data.useInBot !== false ? 1 : 0,
+        data.injectAs ?? 'fact',
+        data.sortOrder ?? 0,
+        data.merchantEdited ? 1 : 0,
+        data.embedding ?? null,
+        data.validUntil ?? null,
+        data.provenance ? JSON.stringify(data.provenance) : null,
+      ]
+    );
+    return verifiedKnowledgeInsert(result);
+  });
 }
 
 /** Update a section */
@@ -213,7 +216,7 @@ export async function updateSection(
 ): Promise<void> {
   await ensureKnowledgeTables();
   const pool = await getPool();
-  if (!pool) return;
+  if (!pool) throw new KnowledgeStorageError('unavailable');
 
   const updates: string[] = [];
   const values: any[] = [];
@@ -257,10 +260,13 @@ export async function updateSection(
   }
 
   values.push(sectionId, merchantId);
-  await runKnowledgeWrite(pool, merchantId, connection => connection.execute(
-    `UPDATE knowledge_sections SET ${updates.join(', ')} WHERE id = ? AND merchant_id = ?`,
-    values
-  ));
+  await runKnowledgeWrite(pool, merchantId, async connection => {
+    const [result] = await connection.execute(
+      `UPDATE knowledge_sections SET ${updates.join(', ')} WHERE id = ? AND merchant_id = ?`,
+      values
+    );
+    verifiedKnowledgeUpdate(result);
+  });
 }
 
 /** Publish an embedding only for the exact text read before the network request. */
@@ -422,22 +428,24 @@ export async function logChange(data: {
 }): Promise<number> {
   await ensureKnowledgeTables();
   const pool = await getPool();
-  if (!pool) return 0;
+  if (!pool) throw new KnowledgeStorageError('unavailable');
 
-  const [result] = await runKnowledgeWrite(pool, data.merchantId, connection => connection.execute(
-    `INSERT INTO knowledge_changelog (merchant_id, section_id, action, reason, old_content, new_content, source)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    [
-      data.merchantId,
-      data.sectionId ?? null,
-      data.action,
-      data.reason ?? null,
-      data.oldContent ?? null,
-      data.newContent ?? null,
-      data.source ?? null,
-    ]
-  ));
-  return (result as any).insertId;
+  return runKnowledgeWrite(pool, data.merchantId, async connection => {
+    const [result] = await connection.execute(
+      `INSERT INTO knowledge_changelog (merchant_id, section_id, action, reason, old_content, new_content, source)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        data.merchantId,
+        data.sectionId ?? null,
+        data.action,
+        data.reason ?? null,
+        data.oldContent ?? null,
+        data.newContent ?? null,
+        data.source ?? null,
+      ]
+    );
+    return verifiedKnowledgeInsert(result);
+  });
 }
 
 /** Get changelog for a merchant */
