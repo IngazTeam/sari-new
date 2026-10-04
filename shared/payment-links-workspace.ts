@@ -265,3 +265,87 @@ export const paymentLinkDisableResult = z
       v.workspace.link.availability === "disabled",
     "unverified_disable_result"
   );
+
+const requestId = z
+  .string()
+  .regex(
+    /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/
+  );
+export const paymentLinkCreateInput = z
+  .object({
+    requestId,
+    reviewed: z.literal(true),
+    title: z.string().trim().min(2).max(255),
+    description: z.string().trim().max(1000).default(""),
+    amountMinor: z.number().int().min(100).max(100_000_000),
+    currency: z.literal("SAR").default("SAR"),
+    maxUsageCount: z
+      .number()
+      .int()
+      .min(1)
+      .max(100_000)
+      .nullable()
+      .default(null),
+    expiresAt: z
+      .string()
+      .datetime()
+      .refine(v => {
+        const d = new Date(v);
+        return (
+          Number.isFinite(d.getTime()) &&
+          d.toISOString() === v &&
+          v.endsWith(".000Z") &&
+          v <= "2037-12-31T23:59:59.999Z"
+        );
+      })
+      .nullable()
+      .default(null),
+  })
+  .strict();
+export const paymentLinkRequestInput = z.object({ requestId }).strict();
+export const paymentLinkCreateResult = z
+  .object({
+    outcome: z.enum(["created", "recovered"]),
+    requestId,
+    workspace: paymentLinkDetail,
+  })
+  .strict()
+  .refine(
+    v =>
+      v.workspace.state === "found" &&
+      v.workspace.canView &&
+      v.workspace.canManage &&
+      v.workspace.link?.linkId === `link_${v.requestId.replaceAll("-", "")}` &&
+      v.workspace.link.related.kind === "none" &&
+      (v.outcome === "recovered" ||
+        (v.workspace.link.enabled === true &&
+          v.workspace.link.storedStatus === "active" &&
+          v.workspace.link.usageCount === 0 &&
+          v.workspace.link.totalCollectedMinor === 0 &&
+          v.workspace.link.successfulPayments === 0 &&
+          v.workspace.link.failedPayments === 0)),
+    "unverified_creation_result"
+  );
+export const paymentLinkRequestResult = z
+  .object({
+    requestId,
+    outcome: z.enum(["found", "not_found", "unverified", "restricted"]),
+    workspace: paymentLinkDetail,
+  })
+  .strict()
+  .refine(
+    v =>
+      v.workspace.link === null ||
+      (v.workspace.link.linkId === `link_${v.requestId.replaceAll("-", "")}` &&
+        v.workspace.link.related.kind === "none"),
+    "unverified_creation_recovery"
+  )
+  .refine(
+    v =>
+      v.workspace.state === "found"
+        ? v.outcome === "found"
+        : v.workspace.state === "restricted"
+          ? v.outcome === "restricted"
+          : ["not_found", "unverified"].includes(v.outcome),
+    "inconsistent_request_outcome"
+  );

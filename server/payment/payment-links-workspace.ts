@@ -1,4 +1,10 @@
 import {
+  paymentLinkCreateInput,
+  paymentLinkCreateResult,
+  paymentLinkRequestInput,
+  paymentLinkRequestResult,
+} from "../../shared/payment-links-workspace";
+import {
   paymentLinkDisableInput,
   paymentLinkDisableResult,
 } from "../../shared/payment-links-workspace";
@@ -347,7 +353,14 @@ export function readPaymentLinkDetail(
 }
 
 export class PaymentLinksActionError extends Error {
-  constructor(readonly reason: "missing" | "stale" | "unavailable") {
+  constructor(
+    readonly reason:
+      | "missing"
+      | "stale"
+      | "unavailable"
+      | "request_conflict"
+      | "expiry"
+  ) {
     super("payment_links:" + reason);
   }
 }
@@ -407,4 +420,235 @@ export function disableReviewedPaymentLink(
       },
     });
   });
+}
+
+// A client-generated UUIDv4 maps to the existing globally unique link_id. This
+// avoids a second link after a lost response without relying on a transient cache.
+// A scoped marker authenticates the original actor and normalized creation payload.
+const requestToken = (requestId: string) =>
+  "link_" + requestId.replaceAll("-", "");
+function creationMarker(
+  actorId: number,
+  merchantId: number,
+  requestId: string,
+  fingerprint: string
+) {
+  return {
+    version: 1,
+    actorId,
+    requestId,
+    fingerprint,
+    proof: privacyHashExact(
+      JSON.stringify([
+        "payment-link-create:v1",
+        actorId,
+        merchantId,
+        requestId,
+        fingerprint,
+      ])
+    ),
+  };
+}
+function readCreationMarker(
+  actorId: number,
+  merchantId: number,
+  requestId: string,
+  row: any
+) {
+  try {
+    if (
+      row.merchant_id !== merchantId ||
+      row.link_id !== requestToken(requestId) ||
+      row.order_id !== null ||
+      row.booking_id !== null ||
+      typeof row.metadata !== "string"
+    )
+      return null;
+    const marker = JSON.parse(row.metadata)?.workspaceCreation;
+    if (
+      !marker ||
+      marker.version !== 1 ||
+      marker.actorId !== actorId ||
+      marker.requestId !== requestId ||
+      typeof marker.fingerprint !== "string" ||
+      !/^[a-f0-9]{64}$/.test(marker.fingerprint) ||
+      marker.proof !==
+        creationMarker(actorId, merchantId, requestId, marker.fingerprint).proof
+    )
+      return null;
+    return marker;
+  } catch {
+    return null;
+  }
+}
+function creationWorkspace(
+  actorId: number,
+  merchantId: number,
+  a: { isOwner: boolean; canManage: boolean },
+  saved: any[]
+) {
+  const checkedAt = new Date();
+  return paymentLinkDetail.parse({
+    actorId,
+    merchantId,
+    canView: a.isOwner,
+    canManage: a.canManage,
+    checkedAt: checkedAt.toISOString(),
+    source: "local_payment_links",
+    state: !a.isOwner ? "restricted" : saved.length ? "found" : "missing",
+    link: saved.length
+      ? projectPaymentLinkRecord(actorId, merchantId, saved[0], checkedAt)
+      : null,
+  });
+}
+export function createReviewedPaymentLink(
+  actorId: number,
+  merchantId: number,
+  raw: unknown
+) {
+  const input = paymentLinkCreateInput.parse(raw),
+    token = requestToken(input.requestId);
+  const { requestId, reviewed, ...values } = input;
+  const fingerprint = privacyHashExact(
+    JSON.stringify(["payment-link-payload:v1", values])
+  );
+  return withMerchantOwnerSettings(actorId, merchantId, true, async (tx, a) => {
+    const read = () =>
+      rows(
+        tx,
+        `SELECT ${selected} FROM payment_links p ${joins} WHERE p.link_id=? AND p.merchant_id=? FOR UPDATE`,
+        [token, merchantId]
+      );
+    let saved = await read();
+    if (saved.length > 1) throw new PaymentLinksActionError("unavailable");
+    if (saved.length) {
+      if (
+        readCreationMarker(actorId, merchantId, requestId, saved[0])
+          ?.fingerprint !== fingerprint
+      )
+        throw new PaymentLinksActionError("request_conflict");
+      return paymentLinkCreateResult.parse({
+        outcome: "recovered",
+        requestId,
+        workspace: creationWorkspace(actorId, merchantId, a, saved),
+      });
+    }
+    if (input.expiresAt !== null && Date.parse(input.expiresAt) <= Date.now())
+      throw new PaymentLinksActionError("expiry");
+    const url = publicPaymentUrls.link(token),
+      metadata = JSON.stringify({
+        workspaceCreation: creationMarker(
+          actorId,
+          merchantId,
+          requestId,
+          fingerprint
+        ),
+      });
+    let ack: any;
+    try {
+      [ack] = await tx.execute(
+        "INSERT INTO payment_links(merchant_id,link_id,title,description,amount,currency,is_fixed_amount,min_amount,max_amount,tap_payment_url,max_usage_count,expires_at,status,is_active,order_id,booking_id,metadata) VALUES (?,?,?,?,?,'SAR',1,NULL,NULL,?,?,?,'active',1,NULL,NULL,?)",
+        [
+          merchantId,
+          token,
+          input.title,
+          input.description || null,
+          input.amountMinor,
+          url,
+          input.maxUsageCount,
+          input.expiresAt === null
+            ? null
+            : input.expiresAt.slice(0, 19).replace("T", " "),
+          metadata,
+        ]
+      );
+    } catch (e) {
+      if ((e as any)?.code === "ER_DUP_ENTRY")
+        throw new PaymentLinksActionError("request_conflict");
+      throw e;
+    }
+    if (
+      ack?.affectedRows !== 1 ||
+      !Number.isSafeInteger(ack.insertId) ||
+      ack.insertId < 1
+    )
+      throw new PaymentLinksActionError("unavailable");
+    saved = await read();
+    if (
+      saved.length !== 1 ||
+      saved[0].id !== ack.insertId ||
+      readCreationMarker(actorId, merchantId, requestId, saved[0])
+        ?.fingerprint !== fingerprint
+    )
+      throw new PaymentLinksActionError("unavailable");
+    const confirmed = projectPaymentLinkRecord(
+      actorId,
+      merchantId,
+      saved[0],
+      new Date()
+    );
+    if (
+      confirmed.title !== input.title ||
+      confirmed.description !== (input.description || null) ||
+      confirmed.amountMinor !== input.amountMinor ||
+      confirmed.currency !== input.currency ||
+      confirmed.fixedAmount !== true ||
+      confirmed.minAmountMinor !== null ||
+      confirmed.maxAmountMinor !== null ||
+      confirmed.maxUsageCount !== input.maxUsageCount ||
+      confirmed.expiresAt !== input.expiresAt ||
+      confirmed.enabled !== true ||
+      confirmed.storedStatus !== "active" ||
+      confirmed.usageCount !== 0 ||
+      confirmed.totalCollectedMinor !== 0 ||
+      confirmed.successfulPayments !== 0 ||
+      confirmed.failedPayments !== 0
+    )
+      throw new PaymentLinksActionError("unavailable");
+    return paymentLinkCreateResult.parse({
+      outcome: "created",
+      requestId,
+      workspace: creationWorkspace(actorId, merchantId, a, saved),
+    });
+  });
+}
+export function readPaymentLinkRequest(
+  actorId: number,
+  merchantId: number,
+  raw: unknown
+) {
+  const input = paymentLinkRequestInput.parse(raw);
+  return withMerchantOwnerSettings(
+    actorId,
+    merchantId,
+    false,
+    async (tx, a) => {
+      let saved: any[] = [];
+      let outcome: "found" | "not_found" | "unverified" | "restricted" =
+        a.isOwner ? "not_found" : "restricted";
+      if (a.isOwner) {
+        saved = await rows(
+          tx,
+          `SELECT ${selected} FROM payment_links p ${joins} WHERE p.link_id=? AND p.merchant_id=?`,
+          [requestToken(input.requestId), merchantId]
+        );
+        if (saved.length > 1) throw new PaymentLinksActionError("unavailable");
+        if (saved.length) {
+          if (
+            readCreationMarker(actorId, merchantId, input.requestId, saved[0])
+          )
+            outcome = "found";
+          else {
+            outcome = "unverified";
+            saved = [];
+          }
+        }
+      }
+      return paymentLinkRequestResult.parse({
+        requestId: input.requestId,
+        outcome,
+        workspace: creationWorkspace(actorId, merchantId, a, saved),
+      });
+    }
+  );
 }

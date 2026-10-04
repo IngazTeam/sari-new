@@ -1,3 +1,6 @@
+import { paymentLinkCreateResult } from "../shared/payment-links-workspace";
+import { createReviewedPaymentLink } from "./payment/payment-links-workspace";
+import { paymentLinkCreateInput } from "../shared/payment-links-workspace";
 import { disableReviewedPaymentLink } from "./payment/payment-links-workspace";
 import {
   paymentLinkDisableInput,
@@ -397,4 +400,134 @@ it("rejects a disable result that is only optimistic or belongs to a restricted 
       workspace: { ...result.workspace, link: project() },
     }).success
   ).toBe(false);
+});
+
+const createInput = {
+  requestId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+  reviewed: true as const,
+  title: "Local link",
+  description: "",
+  amountMinor: 12550,
+  currency: "SAR",
+  maxUsageCount: null,
+  expiresAt: null,
+};
+it.each([
+  { requestId: "aaaaaaaa-aaaa-1aaa-8aaa-aaaaaaaaaaaa" },
+  { reviewed: false },
+  { title: " " },
+  { amountMinor: 99 },
+  { amountMinor: 100.5 },
+  { amountMinor: 100000001 },
+  { currency: "USD" },
+  { maxUsageCount: 0 },
+  { expiresAt: "2038-01-01T00:00:00.000Z" },
+  { expiresAt: "2030-02-30T00:00:00.000Z" },
+  { expiresAt: "2030-01-01T00:00:00.123Z" },
+  { expiresAt: "2030-01-01 00:00:00" },
+  { merchantId: 8 },
+  { orderId: 7 },
+  { bookingId: 9 },
+  { isFixedAmount: false },
+])("rejects unsafe or ambiguous generic creation %j", patch =>
+  expect(
+    paymentLinkCreateInput.safeParse({ ...createInput, ...patch }).success
+  ).toBe(false)
+);
+it("accepts exact minor units, optional no-expiry and canonical whole-second UTC expiry", () => {
+  expect(paymentLinkCreateInput.parse(createInput).amountMinor).toBe(12550);
+  expect(
+    paymentLinkCreateInput.parse({
+      ...createInput,
+      expiresAt: "2030-01-01T00:00:00.000Z",
+    }).expiresAt
+  ).toBe("2030-01-01T00:00:00.000Z");
+});
+
+it.each([0, 2, undefined])(
+  "never acknowledges creation without exactly one insert %s",
+  async affectedRows => {
+    tx.execute
+      .mockResolvedValueOnce([[]])
+      .mockResolvedValueOnce([{ affectedRows, insertId: 1 }]);
+    await expect(createReviewedPaymentLink(21, 7, createInput)).rejects.toThrow(
+      "unavailable"
+    );
+    expect(tx.execute).toHaveBeenCalledTimes(2);
+  }
+);
+it("checks persisted amount against the reviewed creation rather than trusting the insert receipt", async () => {
+  let metadata: string | undefined;
+  tx.execute.mockImplementation(async (sql: string, args: any[]) => {
+    if (sql.startsWith("INSERT")) {
+      metadata = args.at(-1);
+      return [{ affectedRows: 1, insertId: 1 }];
+    }
+    if (!metadata) return [[]];
+    return [
+      [
+        {
+          ...row(),
+          link_id: "link_" + createInput.requestId.replaceAll("-", ""),
+          metadata,
+          amount: 12551,
+        },
+      ],
+    ];
+  });
+  await expect(createReviewedPaymentLink(21, 7, createInput)).rejects.toThrow(
+    "unavailable"
+  );
+});
+it("does not claim a successful creation when the transaction result is unknown", async () => {
+  authority.run.mockRejectedValueOnce(Error("merchant_settings:unknown"));
+  await expect(createReviewedPaymentLink(21, 7, createInput)).rejects.toThrow(
+    "unknown"
+  );
+});
+
+it("distinguishes a newly created receipt from a recovered current state", () => {
+  const link = project({
+    link_id: "link_" + createInput.requestId.replaceAll("-", ""),
+  });
+  const receipt = {
+    outcome: "created",
+    requestId: createInput.requestId,
+    workspace: {
+      actorId: 21,
+      merchantId: 7,
+      canView: true,
+      canManage: true,
+      checkedAt: now.toISOString(),
+      source: "local_payment_links",
+      state: "found",
+      link,
+    },
+  };
+  expect(paymentLinkCreateResult.safeParse(receipt).success).toBe(true);
+  expect(
+    paymentLinkCreateResult.safeParse({
+      ...receipt,
+      workspace: { ...receipt.workspace, canManage: false },
+    }).success
+  ).toBe(false);
+  const disabled = {
+    ...link,
+    enabled: false,
+    storedStatus: "disabled",
+    availability: "disabled",
+  };
+  expect(
+    paymentLinkCreateResult.safeParse({
+      ...receipt,
+      workspace: { ...receipt.workspace, link: disabled },
+    }).success
+  ).toBe(false);
+  expect(
+    paymentLinkCreateResult.safeParse({
+      ...receipt,
+      outcome: "recovered",
+      workspace: { ...receipt.workspace, link: disabled },
+    }).success
+  ).toBe(true);
 });
