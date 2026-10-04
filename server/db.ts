@@ -808,9 +808,12 @@ export async function getAllMerchants() {
 
 export async function updateMerchant(id: number, data: Partial<InsertMerchant>): Promise<void> {
   const db = await getDb();
-  if (!db) return;
+  if (!db) throw new Error('MERCHANT_UPDATE_UNCONFIRMED');
 
-  await db.update(merchants).set(data).where(eq(merchants.id, id));
+  const [result] = await db.update(merchants).set(data).where(eq(merchants.id, id));
+  // affectedRows includes a matched unchanged row with mysql2's default FOUND_ROWS.
+  // A missing/deleted row or an unrecognized driver receipt must never look saved.
+  if (result?.affectedRows !== 1) throw new Error('MERCHANT_UPDATE_UNCONFIRMED');
 }
 
 // ============================================

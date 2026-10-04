@@ -1,7 +1,7 @@
 import { beforeEach, afterEach, afterAll, describe, expect, it } from "vitest";
 import { appRouter } from "./routers";
 import { getPool, closeDb } from "./db/connection";
-import { getMerchantById } from "./db";
+import { getMerchantById, updateMerchant } from "./db";
 import {
   createDisposableMerchant,
   cleanupDisposableMerchants,
@@ -79,6 +79,16 @@ describe.skipIf(!process.env.DATABASE_URL)(
       expect(
         (await getMerchantById(fixture.merchantId))?.businessName
       ).not.toBe("forged");
+    });
+    it("accepts repeated identical profile saves using the real driver receipt", async () => {
+      await expect(caller().merchants.update({businessName:"Same name"})).resolves.toEqual({success:true});
+      await expect(caller().merchants.update({businessName:"Same name"})).resolves.toEqual({success:true});
+      expect((await getMerchantById(fixture.merchantId))?.businessName).toBe("Same name");
+    });
+    it("does not acknowledge a profile write to a missing merchant", async () => {
+      const [rows]=await (await getPool())!.execute<any[]>("SELECT id FROM merchants WHERE id=2147483647");
+      expect(rows).toHaveLength(0);
+      await expect(updateMerchant(2147483647,{businessName:"Missing"})).rejects.toThrow("MERCHANT_UPDATE_UNCONFIRMED");
     });
   }
 );
