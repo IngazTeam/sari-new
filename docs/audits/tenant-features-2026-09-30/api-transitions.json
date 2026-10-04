@@ -3205,7 +3205,7 @@
           ]
         }
       ],
-      "note": "The shared tenant/account-bound loyalty workspace preserves the old page actions and every settings/tier/reward field, adds global search, pagination, customer ledger/redemptions, product search, reviewed actions and recoverable receipts. Legacy write endpoints are retired in the next phase.",
+      "note": "The shared tenant/account-bound loyalty workspace preserves the old page actions and every settings/tier/reward field, adds global search, pagination, customer ledger/redemptions, product search, reviewed actions and recoverable receipts. Legacy write endpoints were retired in phase 525.",
       "evidence": [
         "docs/audits/tenant-loyalty-workspace-2026-10-04/REPORT.md"
       ],
@@ -3251,7 +3251,7 @@
           ]
         }
       ],
-      "note": "The shared tenant/account-bound loyalty workspace preserves the old page actions and every settings/tier/reward field, adds global search, pagination, customer ledger/redemptions, product search, reviewed actions and recoverable receipts. Legacy write endpoints are retired in the next phase.",
+      "note": "The shared tenant/account-bound loyalty workspace preserves the old page actions and every settings/tier/reward field, adds global search, pagination, customer ledger/redemptions, product search, reviewed actions and recoverable receipts. Legacy write endpoints were retired in phase 525.",
       "evidence": [
         "docs/audits/tenant-loyalty-workspace-2026-10-04/REPORT.md"
       ],
@@ -3311,7 +3311,7 @@
           ]
         }
       ],
-      "note": "The shared tenant/account-bound loyalty workspace preserves the old page actions and every settings/tier/reward field, adds global search, pagination, customer ledger/redemptions, product search, reviewed actions and recoverable receipts. Legacy write endpoints are retired in the next phase.",
+      "note": "The shared tenant/account-bound loyalty workspace preserves the old page actions and every settings/tier/reward field, adds global search, pagination, customer ledger/redemptions, product search, reviewed actions and recoverable receipts. Legacy write endpoints were retired in phase 525.",
       "evidence": [
         "docs/audits/tenant-loyalty-workspace-2026-10-04/REPORT.md"
       ],
@@ -3371,7 +3371,7 @@
           ]
         }
       ],
-      "note": "The shared tenant/account-bound loyalty workspace preserves the old page actions and every settings/tier/reward field, adds global search, pagination, customer ledger/redemptions, product search, reviewed actions and recoverable receipts. Legacy write endpoints are retired in the next phase.",
+      "note": "The shared tenant/account-bound loyalty workspace preserves the old page actions and every settings/tier/reward field, adds global search, pagination, customer ledger/redemptions, product search, reviewed actions and recoverable receipts. Legacy write endpoints were retired in phase 525.",
       "evidence": [
         "docs/audits/tenant-loyalty-workspace-2026-10-04/REPORT.md"
       ],

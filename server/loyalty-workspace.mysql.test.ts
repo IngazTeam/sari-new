@@ -1,3 +1,4 @@
+import { reviewedLoyaltyFixture } from './tests/helpers/loyalty-reviewed-fixture';
 import { beforeEach, afterEach, afterAll, describe, it, expect } from 'vitest';
 import { getPool, closeDb } from './db/connection';
 import {
@@ -17,6 +18,25 @@ describe.skipIf(!process.env.DATABASE_URL)(
       b: typeof a,
       sessionId: string,
       caller: ReturnType<typeof loyaltyRouter.createCaller>;
+    let writes: ReturnType<typeof reviewedLoyaltyFixture>;
+    const scoped = <T>(work: () => Promise<T>) =>
+      withLoyaltyTransaction(a.merchantId, work, {
+        merchantId: a.merchantId,
+        actorId: a.userId,
+        sessionId,
+        permission: 'campaigns.manage',
+      });
+    const atomicCredit = (input: any) =>
+      scoped(() =>
+        db.addPointsToCustomer(
+          a.merchantId,
+          input.customerPhone,
+          input.points,
+          input.reason,
+          input.reasonAr,
+          input.orderId
+        )
+      );
     const phone = '966500000522',
       adjust = {
         customerPhone: phone,
@@ -61,6 +81,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
         session: { sessionId },
         req: { headers: { 'x-merchant-id': String(a.merchantId) } },
       } as any);
+      writes = reviewedLoyaltyFixture(caller, phone);
     });
     afterEach(async () => {
       // Remove leaf rows before fixture cascades; never touch another account's records.
@@ -98,8 +119,15 @@ describe.skipIf(!process.env.DATABASE_URL)(
     });
     it('initializes settings/tiers once and preserves explicit zeros and disabled defaults', async () => {
       await Promise.all([
-        caller.updateSettings({ pointsPerCurrency: 0, pointsExpiryDays: 0 }),
-        caller.updateSettings({ referralBonusPoints: 0 }),
+        scoped(() =>
+          db.updateLoyaltySettings(a.merchantId, {
+            pointsPerCurrency: 0,
+            pointsExpiryDays: 0,
+          })
+        ),
+        scoped(() =>
+          db.updateLoyaltySettings(a.merchantId, { referralBonusPoints: 0 })
+        ),
       ]);
       expect(await caller.getSettings()).toMatchObject({
         ...loyaltyDefaults,
@@ -137,7 +165,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
         await expect(caller.getSettings()).rejects.toMatchObject({
           code: 'UNAUTHORIZED',
         });
-        await expect(caller.addPoints(adjust)).rejects.toMatchObject({
+        await expect(writes.addPoints(adjust)).rejects.toMatchObject({
           code: 'UNAUTHORIZED',
         });
         expect(await db.getCustomerPoints(a.merchantId, phone)).toBeNull();
@@ -155,7 +183,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
             role === 'inactive' ? 0 : 1,
           ]
         );
-        await expect(caller.addPoints(adjust)).rejects.toMatchObject({
+        await expect(writes.addPoints(adjust)).rejects.toMatchObject({
           code: 'FORBIDDEN',
         });
         expect(await db.getCustomerPoints(a.merchantId, phone)).toBeNull();
@@ -166,7 +194,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
         "INSERT INTO merchant_members(merchant_id,user_id,role,is_active) VALUES (?,?,'manager',1)",
         [a.merchantId, a.userId]
       );
-      await caller.addPoints(adjust);
+      await writes.addPoints(adjust);
       await q("UPDATE merchant_members SET role='viewer' WHERE merchant_id=?", [
         a.merchantId,
       ]);
@@ -194,10 +222,10 @@ describe.skipIf(!process.env.DATABASE_URL)(
       ).toBe(100);
     });
     it('rejects foreign reward redemption without touching either tenant', async () => {
-      await caller.addPoints(adjust);
+      await writes.addPoints(adjust);
       const id = await reward(b.merchantId);
       await expect(
-        caller.redeemReward({
+        writes.redeemReward({
           customerPhone: phone,
           customerName: 'Test',
           rewardId: id,
@@ -222,16 +250,16 @@ describe.skipIf(!process.env.DATABASE_URL)(
         id = await reward(b.merchantId),
         foreignOrder = await order(b.merchantId);
       await expect(
-        caller.updateTier({ id: tier.id, minPoints: 900 })
+        writes.updateTier({ id: tier.id, minPoints: 900 })
       ).rejects.toMatchObject({ code: 'NOT_FOUND' });
       await expect(
-        caller.updateReward({ id, title: 'Wrong' })
+        writes.updateReward({ id, title: 'Wrong' })
       ).rejects.toMatchObject({ code: 'NOT_FOUND' });
-      await expect(caller.deleteReward({ id })).rejects.toMatchObject({
+      await expect(writes.deleteReward({ id })).rejects.toMatchObject({
         code: 'NOT_FOUND',
       });
       await expect(
-        caller.addPoints({ ...adjust, orderId: foreignOrder })
+        atomicCredit({ ...adjust, orderId: foreignOrder })
       ).rejects.toMatchObject({ code: 'NOT_FOUND' });
       const product = Number(
         (
@@ -242,7 +270,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
         ).insertId
       );
       await expect(
-        caller.createReward({
+        writes.createReward({
           title: 'Free',
           titleAr: 'مجاني',
           type: 'free_product',
@@ -260,13 +288,13 @@ describe.skipIf(!process.env.DATABASE_URL)(
         ).insertId
       );
       await expect(
-        caller.updateRedemption({ id: redemption, status: 'used' })
+        writes.updateRedemption({ id: redemption, status: 'used' })
       ).rejects.toMatchObject({ code: 'NOT_FOUND' });
     });
     it('scopes linked tiers even if a historical points row references another tenant', async () => {
       await db.getOrCreateLoyaltySettings(b.merchantId);
       const tier = (await db.getLoyaltyTiers(b.merchantId))[0];
-      await caller.addPoints(adjust);
+      await writes.addPoints(adjust);
       await q(
         'UPDATE loyalty_points SET current_tier_id=? WHERE merchant_id=?',
         [tier.id, a.merchantId]
@@ -276,10 +304,8 @@ describe.skipIf(!process.env.DATABASE_URL)(
       ).toBeNull();
       expect((await caller.getAllCustomersPoints({}))[0].tier).toBeNull();
     });
-    it('serializes concurrent credits and initial customer creation', async () => {
-      await Promise.all(
-        Array.from({ length: 8 }, () => caller.addPoints(adjust))
-      );
+    it('serializes concurrent internal ledger credits and initial customer creation', async () => {
+      await Promise.all(Array.from({ length: 8 }, () => atomicCredit(adjust)));
       expect(await db.getCustomerPoints(a.merchantId, phone)).toMatchObject({
         totalPoints: 800,
         lifetimePoints: 800,
@@ -292,10 +318,10 @@ describe.skipIf(!process.env.DATABASE_URL)(
       ).toHaveLength(1);
     });
     it('prevents double spending under concurrent deductions', async () => {
-      await caller.addPoints(adjust);
+      await writes.addPoints(adjust);
       const results = await Promise.allSettled([
-        caller.deductPoints({ ...adjust, points: 70 }),
-        caller.deductPoints({ ...adjust, points: 70 }),
+        writes.deductPoints({ ...adjust, points: 70 }),
+        writes.deductPoints({ ...adjust, points: 70 }),
       ]);
       expect(results.filter(r => r.status === 'fulfilled')).toHaveLength(1);
       expect(
@@ -304,11 +330,11 @@ describe.skipIf(!process.env.DATABASE_URL)(
       expect(await caller.getTransactions({})).toHaveLength(2);
     });
     it('atomically enforces reward stock and links the redemption to its ledger row', async () => {
-      await caller.addPoints(adjust);
+      await writes.addPoints(adjust);
       const id = await reward(a.merchantId, '1');
       const results = await Promise.allSettled(
         Array.from({ length: 3 }, () =>
-          caller.redeemReward({
+          writes.redeemReward({
             customerPhone: phone,
             customerName: 'Test',
             rewardId: id,
@@ -327,7 +353,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
       ).toBe(redemptions[0].id);
     });
     it('rolls back redemption insertion, debit and stock if a later operation fails', async () => {
-      await caller.addPoints(adjust);
+      await writes.addPoints(adjust);
       const id = await reward();
       await expect(
         withLoyaltyTransaction(a.merchantId, async () => {
@@ -355,34 +381,34 @@ describe.skipIf(!process.env.DATABASE_URL)(
     it('applies an order credit once and rejects changed repeat payloads', async () => {
       const orderId = await order();
       const results = await Promise.all([
-        caller.addPoints({ ...adjust, orderId }),
-        caller.addPoints({ ...adjust, orderId }),
+        atomicCredit({ ...adjust, orderId }),
+        atomicCredit({ ...adjust, orderId }),
       ]);
       expect(results.filter(r => r.alreadyApplied)).toHaveLength(1);
       expect(
         (await db.getCustomerPoints(a.merchantId, phone))?.totalPoints
       ).toBe(100);
       await expect(
-        caller.addPoints({ ...adjust, orderId, points: 99 })
+        atomicCredit({ ...adjust, orderId, points: 99 })
       ).rejects.toMatchObject({ code: 'PRECONDITION_FAILED' });
       expect(await caller.getTransactions({})).toHaveLength(1);
     });
     it('preserves reward history and refuses terminal redemption resurrection', async () => {
-      await caller.addPoints(adjust);
+      await writes.addPoints(adjust);
       const id = await reward();
-      await caller.redeemReward({
+      await writes.redeemReward({
         customerPhone: phone,
         customerName: 'Test',
         rewardId: id,
       });
       const redemption = (await caller.getRedemptions({}))[0];
-      await expect(caller.deleteReward({ id })).rejects.toMatchObject({
+      await expect(writes.deleteReward({ id })).rejects.toMatchObject({
         code: 'PRECONDITION_FAILED',
         message: 'loyalty:reward_has_history',
       });
-      await caller.updateRedemption({ id: redemption.id, status: 'used' });
+      await writes.updateRedemption({ id: redemption.id, status: 'used' });
       await expect(
-        caller.updateRedemption({ id: redemption.id, status: 'approved' })
+        writes.updateRedemption({ id: redemption.id, status: 'approved' })
       ).rejects.toMatchObject({ code: 'CONFLICT' });
       expect(await caller.getRedemptions({})).toHaveLength(1);
     });
@@ -391,7 +417,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
         'INSERT INTO loyalty_points(merchant_id,customer_phone) VALUES (?,?),(?,?)',
         [a.merchantId, phone, a.merchantId, phone]
       );
-      await expect(caller.addPoints(adjust)).rejects.toMatchObject({
+      await expect(writes.addPoints(adjust)).rejects.toMatchObject({
         code: 'PRECONDITION_FAILED',
         message: 'loyalty:duplicate_record',
       });
@@ -405,7 +431,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
       { reason: '' },
     ])('rejects invalid adjustment %j', async invalid => {
       await expect(
-        caller.addPoints({ ...adjust, ...invalid })
+        writes.addPoints({ ...adjust, ...invalid })
       ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
       expect(await db.getCustomerPoints(a.merchantId, phone)).toBeNull();
     });
@@ -424,21 +450,21 @@ describe.skipIf(!process.env.DATABASE_URL)(
         { pointsExpiryDays: 3651 },
         { currencyPerPoint: 0 },
       ])
-        await expect(caller.updateSettings(input)).rejects.toMatchObject({
+        await expect(writes.updateSettings(input)).rejects.toMatchObject({
           code: 'BAD_REQUEST',
         });
     });
     it('requires an enabled program and does not advertise disabled or expired benefits', async () => {
-      await caller.addPoints(adjust);
+      await writes.addPoints(adjust);
       const id = await reward();
-      await caller.updateSettings({ isEnabled: 0 });
+      await writes.updateSettings({ isEnabled: 0 });
       expect(await loadLoyaltySalesEvidence(a.merchantId, phone)).toEqual({
         loyaltyPoints: 0,
         loyaltyTier: null,
         availableRewards: [],
       });
       await expect(
-        caller.redeemReward({
+        writes.redeemReward({
           customerPhone: phone,
           customerName: 'Test',
           rewardId: id,
@@ -447,7 +473,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
         code: 'PRECONDITION_FAILED',
         message: 'loyalty:program_disabled',
       });
-      await caller.updateSettings({ isEnabled: 1 });
+      await writes.updateSettings({ isEnabled: 1 });
       await q(
         'UPDATE loyalty_rewards SET valid_until=DATE_SUB(UTC_TIMESTAMP(),INTERVAL 1 DAY) WHERE id=?',
         [id]
@@ -457,16 +483,16 @@ describe.skipIf(!process.env.DATABASE_URL)(
       ).toEqual([]);
     });
     it('returns fresh tier evidence after thresholds change', async () => {
-      await caller.updateSettings({ isEnabled: 1 });
-      await caller.addPoints({ ...adjust, points: 500 });
+      await writes.updateSettings({ isEnabled: 1 });
+      await writes.addPoints({ ...adjust, points: 500 });
       const tier = (await caller.getTiers()).find(t => t.name === 'Silver')!;
-      await caller.updateTier({ id: tier.id, minPoints: 1000 });
+      await writes.updateTier({ id: tier.id, minPoints: 1000 });
       expect(
         (await loadLoyaltySalesEvidence(a.merchantId, phone)).loyaltyTier?.name
       ).toBe('برونزي');
     });
     it('validates complete reward edits and leaves prior values on rejection', async () => {
-      const result = await caller.createReward({
+      const result = await writes.createReward({
         title: 'Discount',
         titleAr: 'خصم',
         type: 'discount',
@@ -476,7 +502,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
         isActive: 1,
       });
       await expect(
-        caller.updateReward({
+        writes.updateReward({
           id: Number(result.insertId),
           discountAmount: 101,
         })

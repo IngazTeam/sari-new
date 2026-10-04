@@ -1,0 +1,18 @@
+{
+  "unit": {
+    "passed": 212,
+    "failed": 0
+  },
+  "mysql": {
+    "passed": 63,
+    "failed": 0
+  },
+  "types": "passed",
+  "build": "passed",
+  "releasePassed": 78,
+  "retiredWrites": 9,
+  "publicWritePaths": [
+    "loyalty.reviewedAction",
+    "loyalty.closeRequest"
+  ]
+}
