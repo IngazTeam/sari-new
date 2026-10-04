@@ -351,6 +351,24 @@ it("hides a recorded checkout link whose expiry has passed", async () => {
   const raw = JSON.parse(window.localStorage.getItem(key)!); raw.linkExpiresAt = new Date(Date.now()-1).toISOString(); window.localStorage.setItem(key, JSON.stringify(raw));
   await render("checkout"); expect(host.textContent).toContain(c().noRecordedLink); expect(host.textContent).not.toContain(c().openAttempt); expect(model.operations).toBe(0);
 });
+it.each(["ar", "en"])("preserves a captured review checkpoint and blocks repayment after refresh in %s", async lang => {
+  state.language = lang;
+  await go("/merchant/checkout", "&planId=11"); await render("checkout");
+  await act(async () => (host.querySelector("input[type=checkbox]") as HTMLInputElement).click()); await clickText(c().pay);
+  const checkpoint = window.localStorage.getItem("sari.subscription-checkout.v1:1269:269");
+  await act(async () => root.render(<div />)); model.dispose(); model = new ServicePreviewModel(269, "capture-review");
+  state.navigate.mockClear(); await render("checkout");
+  expect(host.textContent).toContain(c().attempt_requires_review);
+  expect(host.querySelector('[role="alert"]')?.textContent).toBe(c().captureReviewBody);
+  expect(host.querySelector('a[href$="/support"]')).not.toBeNull();
+  expect(host.querySelector("input[type=checkbox]")).toBeNull();
+  expect(host.textContent).not.toContain(c().openAttempt);
+  expect(host.textContent).not.toContain(c().chooseAgain);
+  await clickText(c().checkAttempt);
+  expect(host.textContent).toContain(c().attempt_requires_review);
+  expect(window.localStorage.getItem("sari.subscription-checkout.v1:1269:269")).toBe(checkpoint);
+  expect(state.navigate).not.toHaveBeenCalled(); expect(model.operations).toBe(0);
+});
 
 it("does not send a payment when browser storage rejects the write", async () => {
   vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new DOMException("Denied", "QuotaExceededError"); });

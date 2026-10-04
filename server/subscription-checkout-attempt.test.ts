@@ -16,7 +16,7 @@ it('projects only public fields and a verified unexpired stored checkout URL', (
   const r = project(row()); expect(r).toMatchObject({ amountMinor: 9990, currency: 'SAR', state: 'pending', planId: 2, billingCycle: 'yearly', recordedCheckoutUrl: saved().transaction.url, linkExpiresAt: saved().expires_at });
   expect(JSON.stringify(r)).not.toMatch(/PRIVATE_|tap_charge_id|tap_response|metadata|live_mode/);
 });
-it.each(['completed', 'failed', 'refunded', 'other'])('does not expose a checkout URL for %s', status => {
+it.each(['completed', 'failed', 'refunded', 'requires_review', 'other'])('does not expose a checkout URL for %s', status => {
   expect(project({ ...row(), status })).toMatchObject({ state: status === 'other' ? 'unknown' : status, recordedCheckoutUrl: null, linkExpiresAt: null });
 });
 it.each(['amount', 'currency', 'id', 'captured', 'mode', 'expired', 'missing-expiry', 'bad-expiry', 'url', 'port', 'credentials', 'json'])('does not reopen invalid stored checkout evidence: %s', reason => {
@@ -42,6 +42,7 @@ it('does not infer plan selection from malformed metadata or an addon request', 
 it('rejects contradictory contract data', () => {
   expect(checkoutAttemptSchema.safeParse({ ...project(), amountMinor: 0 }).success).toBe(false);
   expect(checkoutAttemptSchema.safeParse({ ...project(row()), state: 'completed' }).success).toBe(false);
+  expect(checkoutAttemptSchema.safeParse({ ...project(row()), state: 'requires_review' }).success).toBe(false);
 });
 it('uses actor authority and exact tenant+UUID query without mutations', async () => {
   m.execute.mockResolvedValueOnce([[{ checked_at: checkedAt }]]).mockResolvedValueOnce([[row()]]);

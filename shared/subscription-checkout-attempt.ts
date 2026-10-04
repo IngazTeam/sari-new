@@ -9,7 +9,7 @@ export function recordedTapCheckoutUrl(value: unknown): string | null {
 export const checkoutAttemptSchema = z.object({
   actorId: id, merchantId: id, checkoutAttemptId: z.string().uuid(), checkedAt: z.string().datetime(),
   found: z.boolean(), transactionId: id.nullable(),
-  state: z.enum(['not_found', 'pending', 'completed', 'failed', 'refunded', 'unknown']),
+  state: z.enum(['not_found', 'pending', 'completed', 'failed', 'refunded', 'requires_review', 'unknown']),
   planId: id.nullable(), billingCycle: z.enum(['monthly', 'yearly']).nullable(),
   amountMinor: z.number().int().nonnegative().max(100_000_000).nullable(), currency: z.enum(['SAR', 'USD']).nullable(),
   recordedCheckoutUrl: z.string().nullable(), linkExpiresAt: z.string().datetime().nullable(),

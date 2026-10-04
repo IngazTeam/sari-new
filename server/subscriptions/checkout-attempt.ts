@@ -21,7 +21,7 @@ export function projectCheckoutAttempt(actorId: number, merchantId: number, chec
   const normalizedCurrency = typeof row.currency === 'string' ? row.currency.trim().toUpperCase() : null;
   const currency = (normalizedCurrency === 'SAR' || normalizedCurrency === 'USD') ? normalizedCurrency : null;
   const parsedAmount = planPriceMinor(row.amount), amountMinor = currency && parsedAmount !== null && parsedAmount <= 100_000_000 ? parsedAmount : null;
-  const state = ['pending', 'completed', 'failed', 'refunded'].includes(row.status) ? row.status : 'unknown';
+  const state = ['pending', 'completed', 'failed', 'refunded', 'requires_review'].includes(row.status) ? row.status : 'unknown';
   let recordedCheckoutUrl: string | null = null, linkExpiresAt: string | null = null;
   // This is stored checkout evidence only. No provider verification or new charge occurs here.
   if (supported && state === 'pending' && planId && cycle && amountMinor !== null && amountMinor > 0 && currency) {

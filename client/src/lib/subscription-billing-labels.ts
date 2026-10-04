@@ -1,6 +1,9 @@
 export const billingLabels = (
   t: (key: string) => string
 ): Record<string, string> => ({
+  payment_requires_review: t("subscriptionBillingUx.payment_requires_review"),
+  captureReviewBody: t("subscriptionBillingUx.captureReviewBody"),
+  support: t("subscriptionBillingUx.support"),
   eyebrow: t("subscriptionBillingUx.eyebrow"),
   title: t("subscriptionBillingUx.title"),
   intro: t("subscriptionBillingUx.intro"),

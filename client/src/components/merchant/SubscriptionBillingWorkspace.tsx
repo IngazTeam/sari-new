@@ -596,6 +596,12 @@ function BillingHistory({
                       <dd>{date(r.createdAt)}</dd>
                     </div>
                   </dl>
+                  {r.status === "requires_review" && (
+                    <div className="sbw-notice">
+                      <p>{c.captureReviewBody}</p>
+                      <Link className="sbw-button" href="/support">{c.support}</Link>
+                    </div>
+                  )}
                   <details>
                     <summary>{c.recordDetails}</summary>
                     <dl className="sbw-facts">

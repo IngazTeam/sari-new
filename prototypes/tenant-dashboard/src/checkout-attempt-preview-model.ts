@@ -17,7 +17,7 @@ export class CheckoutAttemptPreviewStore {
   private key(id: string) {
     return `sari.preview.checkout-record.v1:${this.actorId}:${this.merchantId}:${id}`;
   }
-  read(input: unknown) {
+  read(input: unknown, mode?: ServiceMode) {
     const { checkoutAttemptId } = checkoutAttemptLookup.parse(input);
     let row = this.records.get(checkoutAttemptId);
     if (!row && typeof window !== "undefined") {
@@ -37,6 +37,9 @@ export class CheckoutAttemptPreviewStore {
         ? {
             ...row,
             checkedAt: now,
+            ...(mode === "capture-review"
+              ? { state: "requires_review", recordedCheckoutUrl: null, linkExpiresAt: null }
+              : {}),
             ...(row.linkExpiresAt &&
             Date.parse(row.linkExpiresAt) <= Date.parse(now)
               ? { recordedCheckoutUrl: null, linkExpiresAt: null }
@@ -70,17 +73,17 @@ export class CheckoutAttemptPreviewStore {
       ...old,
       found: true,
       transactionId: 41,
-      state: "pending",
+      state: mode === "capture-review" ? "requires_review" : "pending",
       planId: quote.planId,
       billingCycle: quote.billingCycle,
       currency: quote.currency,
       amountMinor: quote.chargeMinor,
       recordedCheckoutUrl:
-        mode === "uncertain-save"
+        mode === "uncertain-save" || mode === "capture-review"
           ? null
           : "https://sandbox.payments.tap.company/preview-only",
       linkExpiresAt:
-        mode === "uncertain-save"
+        mode === "uncertain-save" || mode === "capture-review"
           ? null
           : new Date(Date.now() + 600000).toISOString(),
     });

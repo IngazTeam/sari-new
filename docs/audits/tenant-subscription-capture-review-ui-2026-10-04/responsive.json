@@ -1,0 +1,330 @@
+[
+  {
+    "frame": 0,
+    "overflow": [],
+    "scroll": 290,
+    "smallFonts": 0,
+    "smallTargets": [],
+    "title": "التحصيل مسجل ويحتاج مراجعة",
+    "viewport": 320,
+    "width": 290
+  },
+  {
+    "frame": 1,
+    "overflow": [],
+    "scroll": 360,
+    "smallFonts": 0,
+    "smallTargets": [],
+    "title": "التحصيل مسجل ويحتاج مراجعة",
+    "viewport": 390,
+    "width": 360
+  },
+  {
+    "frame": 2,
+    "overflow": [],
+    "scroll": 738,
+    "smallFonts": 0,
+    "smallTargets": [],
+    "title": "التحصيل مسجل ويحتاج مراجعة",
+    "viewport": 768,
+    "width": 738
+  },
+  {
+    "frame": 3,
+    "overflow": [],
+    "scroll": 1360,
+    "smallFonts": 0,
+    "smallTargets": [],
+    "title": "التحصيل مسجل ويحتاج مراجعة",
+    "viewport": 1440,
+    "width": 1360
+  },
+  {
+    "frame": 4,
+    "overflow": [],
+    "scroll": 290,
+    "smallFonts": 0,
+    "smallTargets": [],
+    "title": "Captured payment needs review",
+    "viewport": 320,
+    "width": 290
+  },
+  {
+    "frame": 5,
+    "overflow": [],
+    "scroll": 360,
+    "smallFonts": 0,
+    "smallTargets": [],
+    "title": "Captured payment needs review",
+    "viewport": 390,
+    "width": 360
+  },
+  {
+    "frame": 6,
+    "overflow": [],
+    "scroll": 738,
+    "smallFonts": 0,
+    "smallTargets": [],
+    "title": "Captured payment needs review",
+    "viewport": 768,
+    "width": 738
+  },
+  {
+    "frame": 7,
+    "overflow": [],
+    "scroll": 1360,
+    "smallFonts": 0,
+    "smallTargets": [],
+    "title": "Captured payment needs review",
+    "viewport": 1440,
+    "width": 1360
+  },
+  {
+    "frame": 8,
+    "overflow": [],
+    "scroll": 290,
+    "smallFonts": 0,
+    "smallTargets": [],
+    "title": "الباقة والفوترة",
+    "viewport": 320,
+    "width": 290
+  },
+  {
+    "frame": 9,
+    "overflow": [],
+    "scroll": 360,
+    "smallFonts": 0,
+    "smallTargets": [],
+    "title": "الباقة والفوترة",
+    "viewport": 390,
+    "width": 360
+  },
+  {
+    "frame": 10,
+    "overflow": [],
+    "scroll": 738,
+    "smallFonts": 0,
+    "smallTargets": [],
+    "title": "الباقة والفوترة",
+    "viewport": 768,
+    "width": 738
+  },
+  {
+    "frame": 11,
+    "overflow": [],
+    "scroll": 1360,
+    "smallFonts": 0,
+    "smallTargets": [],
+    "title": "الباقة والفوترة",
+    "viewport": 1440,
+    "width": 1360
+  },
+  {
+    "frame": 12,
+    "overflow": [],
+    "scroll": 290,
+    "smallFonts": 0,
+    "smallTargets": [],
+    "title": "Subscription and billing",
+    "viewport": 320,
+    "width": 290
+  },
+  {
+    "frame": 13,
+    "overflow": [],
+    "scroll": 360,
+    "smallFonts": 0,
+    "smallTargets": [],
+    "title": "Subscription and billing",
+    "viewport": 390,
+    "width": 360
+  },
+  {
+    "frame": 14,
+    "overflow": [],
+    "scroll": 738,
+    "smallFonts": 0,
+    "smallTargets": [],
+    "title": "Subscription and billing",
+    "viewport": 768,
+    "width": 738
+  },
+  {
+    "frame": 15,
+    "overflow": [],
+    "scroll": 1360,
+    "smallFonts": 0,
+    "smallTargets": [],
+    "title": "Subscription and billing",
+    "viewport": 1440,
+    "width": 1360
+  },
+  {
+    "frame": 16,
+    "overflow": [],
+    "scroll": 290,
+    "smallFonts": 0,
+    "smallTargets": [],
+    "title": "مراجعة الاشتراك",
+    "viewport": 320,
+    "width": 290
+  },
+  {
+    "frame": 17,
+    "overflow": [],
+    "scroll": 360,
+    "smallFonts": 0,
+    "smallTargets": [],
+    "title": "مراجعة الاشتراك",
+    "viewport": 390,
+    "width": 360
+  },
+  {
+    "frame": 18,
+    "overflow": [],
+    "scroll": 738,
+    "smallFonts": 0,
+    "smallTargets": [],
+    "title": "مراجعة الاشتراك",
+    "viewport": 768,
+    "width": 738
+  },
+  {
+    "frame": 19,
+    "overflow": [],
+    "scroll": 1360,
+    "smallFonts": 0,
+    "smallTargets": [],
+    "title": "مراجعة الاشتراك",
+    "viewport": 1440,
+    "width": 1360
+  },
+  {
+    "frame": 20,
+    "overflow": [],
+    "scroll": 290,
+    "smallFonts": 0,
+    "smallTargets": [],
+    "title": "Review subscription",
+    "viewport": 320,
+    "width": 290
+  },
+  {
+    "frame": 21,
+    "overflow": [],
+    "scroll": 360,
+    "smallFonts": 0,
+    "smallTargets": [],
+    "title": "Review subscription",
+    "viewport": 390,
+    "width": 360
+  },
+  {
+    "frame": 22,
+    "overflow": [],
+    "scroll": 738,
+    "smallFonts": 0,
+    "smallTargets": [],
+    "title": "Review subscription",
+    "viewport": 768,
+    "width": 738
+  },
+  {
+    "frame": 23,
+    "overflow": [],
+    "scroll": 1360,
+    "smallFonts": 0,
+    "smallTargets": [],
+    "title": "Review subscription",
+    "viewport": 1440,
+    "width": 1360
+  },
+  {
+    "frame": 8,
+    "filtered": true,
+    "overflow": [],
+    "scroll": 290,
+    "smallFonts": 0,
+    "smallTargets": [],
+    "title": "الباقة والفوترة",
+    "viewport": 320,
+    "width": 290
+  },
+  {
+    "frame": 9,
+    "filtered": true,
+    "overflow": [],
+    "scroll": 360,
+    "smallFonts": 0,
+    "smallTargets": [],
+    "title": "الباقة والفوترة",
+    "viewport": 390,
+    "width": 360
+  },
+  {
+    "frame": 10,
+    "filtered": true,
+    "overflow": [],
+    "scroll": 738,
+    "smallFonts": 0,
+    "smallTargets": [],
+    "title": "الباقة والفوترة",
+    "viewport": 768,
+    "width": 738
+  },
+  {
+    "frame": 11,
+    "filtered": true,
+    "overflow": [],
+    "scroll": 1360,
+    "smallFonts": 0,
+    "smallTargets": [],
+    "title": "الباقة والفوترة",
+    "viewport": 1440,
+    "width": 1360
+  },
+  {
+    "frame": 12,
+    "filtered": true,
+    "overflow": [],
+    "scroll": 290,
+    "smallFonts": 0,
+    "smallTargets": [],
+    "title": "Subscription and billing",
+    "viewport": 320,
+    "width": 290
+  },
+  {
+    "frame": 13,
+    "filtered": true,
+    "overflow": [],
+    "scroll": 360,
+    "smallFonts": 0,
+    "smallTargets": [],
+    "title": "Subscription and billing",
+    "viewport": 390,
+    "width": 360
+  },
+  {
+    "frame": 14,
+    "filtered": true,
+    "overflow": [],
+    "scroll": 738,
+    "smallFonts": 0,
+    "smallTargets": [],
+    "title": "Subscription and billing",
+    "viewport": 768,
+    "width": 738
+  },
+  {
+    "frame": 15,
+    "filtered": true,
+    "overflow": [],
+    "scroll": 1360,
+    "smallFonts": 0,
+    "smallTargets": [],
+    "title": "Subscription and billing",
+    "viewport": 1440,
+    "width": 1360
+  }
+]

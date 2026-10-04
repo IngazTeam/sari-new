@@ -35,6 +35,18 @@ it('keeps history independent of summary availability', async () => {
  const read = model.read.bind(model); vi.spyOn(model, 'read').mockImplementation((name,input) => name === 'merchantSubscription.workspace' ? { data: undefined, error: Error('PRIVATE'), isLoading: false, isFetching: false } as any : read(name,input));
  await navigate('payments'); await render(); expect(host.querySelectorAll('.sbw-record')).toHaveLength(25); expect(host.textContent).not.toContain('PRIVATE');
 });
+it.each(['ar','en'])('filters captured review payments with visible guidance and support in %s', async lang => {
+ state.language = lang; mode('capture-review'); await navigate('payments'); await render();
+ const select = host.querySelector<HTMLSelectElement>('select')!;
+ await act(async () => { select.value = 'requires_review'; select.dispatchEvent(new Event('change', { bubbles: true })); });
+ expect(host.querySelectorAll('.sbw-record')).toHaveLength(1);
+ const record = host.querySelector('.sbw-record')!;
+ expect(record.querySelector('.sbw-status')?.textContent).toBe(c().payment_requires_review);
+ expect(record.querySelector('.sbw-notice')?.textContent).toContain(c().captureReviewBody);
+ expect(record.querySelector('a[href$="/support"]')?.textContent).toBe(c().support);
+ expect(record.textContent).not.toMatch(/subscriptionBillingUx\.|NaN/);
+ expect(model.operations).toBe(0);
+});
 it('does not load owner payment history for a known read-only member', async () => { mode('readonly'); const read = vi.spyOn(model,'read'); await navigate('payments'); await render(); expect(host.textContent).toContain(c().ownerHistoryBody); expect(read.mock.calls.some(([name]) => name === 'merchantSubscription.paymentHistory')).toBe(false); });
 it('keeps unavailable history distinct from empty history', async () => { mode('stale-error'); await navigate('payments'); await render(); expect(host.querySelectorAll('.sbw-record')).toHaveLength(0); expect(host.textContent).not.toContain(c().noPayments); });
 it('requires a separate cancellation review and confirms the fresh local record', async () => {

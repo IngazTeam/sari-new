@@ -241,6 +241,10 @@ it("keeps unsupported currency and unknown record values honest", () =>
     type: "unknown",
     createdAt: null,
   }));
+it("keeps a captured payment requiring review distinct from applied or pending payments", () => {
+  expect(billingHistoryInput.parse({ status: "requires_review" }).status).toBe("requires_review");
+  expect(projectBillingPayment({ ...payment(), status: "requires_review", paid_at: now })).toMatchObject({ status: "requires_review", paidAt: now });
+});
 it.each([
   { pageSize: 1000 },
   { beforeId: -1 },

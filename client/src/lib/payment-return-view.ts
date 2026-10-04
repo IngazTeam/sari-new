@@ -36,7 +36,7 @@ export function paymentReturnSelection(
 }
 export function paymentReturnStatus(
   value: unknown
-): "processing" | "completed" | "failed" | null {
+): "processing" | "completed" | "failed" | "requires_review" | null {
   if (
     !value ||
     typeof value !== "object" ||
@@ -47,6 +47,7 @@ export function paymentReturnStatus(
   const status = (value as { status?: unknown }).status;
   return status === "processing" ||
     status === "completed" ||
+    status === "requires_review" ||
     status === "failed"
     ? status
     : null;
@@ -79,6 +80,9 @@ export const paymentReturnLabels = (t: (key: string) => string) => ({
   completedBody: t("paymentReturnUx.completedBody"),
   failed: t("paymentReturnUx.failed"),
   failedBody: t("paymentReturnUx.failedBody"),
+  requires_review: t("paymentReturnUx.requires_review"),
+  requires_reviewBody: t("paymentReturnUx.requires_reviewBody"),
+  support: t("paymentReturnUx.support"),
   pending: t("paymentReturnUx.pending"),
   pendingBody: t("paymentReturnUx.pendingBody"),
   unavailable: t("paymentReturnUx.unavailable"),

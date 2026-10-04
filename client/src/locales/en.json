@@ -13485,7 +13485,10 @@
     "privacy": "Privacy",
     "completed": "Plan changed",
     "changePlan": "Choose another plan",
-    "limits": "Plan allowances"
+    "limits": "Plan allowances",
+    "attempt_requires_review": "Captured payment needs review",
+    "captureReviewBody": "The payment was captured, but a subscription change prevented the plan from being applied. Do not pay again for this attempt. Check payment history and contact support.",
+    "support": "Contact support"
   },
   "paymentReturnUx": {
     "eyebrow": "Subscription and billing",
@@ -13510,7 +13513,10 @@
     "source": "This is the Sari payment record only. This page does not create a charge or change your subscription.",
     "noRepeat": "Automatic updates have stopped. You can refresh the status manually without paying again.",
     "autoCheck": "We refresh the record for up to one minute. There is no need to pay again.",
-    "signIn": "Sign in to review the result"
+    "signIn": "Sign in to review the result",
+    "requires_review": "Captured payment needs review",
+    "requires_reviewBody": "The payment was captured, but a subscription change prevented the plan from being applied. Do not pay again for this attempt. Check payment history and contact support.",
+    "support": "Contact support"
   },
   "subscriptionBillingUx": {
     "eyebrow": "Merchant workspace",
@@ -13590,6 +13596,9 @@
     "type_renewal": "Renewal",
     "type_upgrade": "Upgrade",
     "type_downgrade": "Downgrade",
-    "type_unknown": "Unknown type"
+    "type_unknown": "Unknown type",
+    "payment_requires_review": "Captured payment needs review",
+    "captureReviewBody": "The payment was captured, but a subscription change prevented the plan from being applied. Do not pay again for this attempt. Check payment history and contact support.",
+    "support": "Contact support"
   }
 }

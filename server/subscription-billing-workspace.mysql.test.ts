@@ -44,6 +44,18 @@ describe.skipIf(!process.env.DATABASE_URL)(
       await cleanupDisposableMerchants([a?.userId, b?.userId].filter(Boolean));
     });
     afterAll(closeDb);
+    it("filters held captures for their owner without exposing provider data or changing entitlement", async () => {
+      const id = await addPayment(a.merchantId, "requires_review");
+      await addPayment(a.merchantId, "completed");
+      await addPayment(b.merchantId, "requires_review");
+      await q("UPDATE payment_transactions SET paid_at=UTC_TIMESTAMP() WHERE id=?", [id]);
+      const result = await readBillingHistory(a.userId, a.merchantId, { status: "requires_review" });
+      expect(result.rows).toHaveLength(1);
+      expect(result.rows[0]).toMatchObject({ id, status: "requires_review", amountMinor: 9990, paidAt: expect.any(String) });
+      expect(JSON.stringify(result)).not.toMatch(/PRIVATE|tap_response|metadata/);
+      expect(await readSubscriptionBilling(a.userId, a.merchantId)).toMatchObject({ state: "trial", subscription: { id: subId } });
+      await expect(readBillingHistory(b.userId, a.merchantId, { status: "requires_review" })).rejects.toThrow();
+    });
     it("reads trial limits and never expires a record or changes entitlement on read", async () => {
       expect(
         await readSubscriptionBilling(a.userId, a.merchantId)

@@ -19,6 +19,22 @@ const c = () => state.language === "ar" ? ar.paymentReturnUx : en.paymentReturnU
 beforeEach(() => { vi.stubGlobal("React", React); (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; state.language = "en"; history.replaceState(null, "", "/?path=/merchant/payment/success&tap_id=chg_preview_record"); host = document.createElement("div"); document.body.append(host); root = createRoot(host); model = new ServicePreviewModel(269); });
 afterEach(async () => { await act(async () => root.unmount()); model.dispose(); host.remove(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 const render = (view: "success" | "cancel" | "public" = "success") => act(async () => root.render(<ServicePreviewContext.Provider value={model}>{view === "success" ? <Success /> : view === "cancel" ? <Cancel /> : <PaymentReturnWorkspace kind="public" />}</ServicePreviewContext.Provider>));
+it.each(["ar", "en"])("shows capture review without reporting activation or continuing automatic checks in %s", async lang => {
+  state.language = lang; model.dispose(); model = new ServicePreviewModel(269, "capture-review");
+  for (const view of ["success", "cancel", "public"] as const) {
+    await render(view);
+    expect(host.querySelector("h1")?.textContent).toBe(c().requires_review);
+    expect(host.querySelector('[role="alert"]')?.textContent).toBe(c().requires_reviewBody);
+    expect(host.querySelector('a[href$="/support"]')?.textContent).toBe(c().support);
+    expect(host.textContent).not.toContain(c().completedBody);
+    const button = Array.from(host.querySelectorAll<HTMLButtonElement>("button")).find(n => n.textContent === c().refresh)!;
+    await act(async () => button.click());
+    expect(host.querySelector("h1")?.textContent).toBe(c().requires_review);
+    expect(model.operations).toBe(0);
+  }
+  expect(paymentReturnStatus({ status: "requires_review" })).toBe("requires_review");
+  expect(paymentReturnInterval({ status: "requires_review" }, false, 1, 1000)).toBe(false);
+});
 it.each(["ar", "en"])("shows translated record-only pending state in %s with no payment mutation", async lang => { state.language = lang; await render(); expect(host.textContent).toContain(c().pending); expect(host.textContent).toContain(c().source); expect(host.textContent).not.toContain("paymentReturnUx."); expect(host.querySelectorAll("h1")).toHaveLength(1); expect(model.operations).toBe(0); });
 it.each([["empty", "completed"], ["legacy", "failed"], ["failure", "unavailable"], ["stale-error", "unavailable"], ["loading", "checking"], ["foreign", "unavailable"]])("renders %s using the actual shared component", async (mode, expected) => { model.dispose(); model = new ServicePreviewModel(269, mode as ServiceMode); await render(); expect(host.querySelector("h1")?.textContent).toBe((c() as any)[expected]); expect(model.operations).toBe(0); });
 it("never interprets a cancel URL alone as failed or cancelled payment", async () => { history.replaceState(null, "", "/?path=/merchant/payment/cancel&status=cancelled"); await render("cancel"); expect(host.textContent).toContain(c().interruptedBody); expect(host.querySelector("h1")?.textContent).toBe(c().interrupted); expect(model.operations).toBe(0); });

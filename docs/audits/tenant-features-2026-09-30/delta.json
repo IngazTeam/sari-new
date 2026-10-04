@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-04T12:09:16.476Z",
+  "generatedAt": "2026-10-04T12:42:09.276Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -11,7 +11,7 @@
     "after": {
       "routes": 126,
       "files": 518,
-      "controls": 2768
+      "controls": 2770
     }
   },
   "addedFiles": [
@@ -2519,7 +2519,7 @@
     {
       "route": "/merchant/subscriptions",
       "controlsBefore": 7,
-      "controlsNow": 26,
+      "controlsNow": 27,
       "removedQueries": [
         "merchantSubscription.getCurrentSubscription",
         "merchantSubscription.getDaysRemaining",
@@ -2568,7 +2568,7 @@
     {
       "route": "/merchant/subscription/plans",
       "controlsBefore": 3,
-      "controlsNow": 28,
+      "controlsNow": 29,
       "removedQueries": [
         "subscriptionPlans.listPlans",
         "merchantSubscription.getCurrentSubscription"
@@ -2589,7 +2589,7 @@
     {
       "route": "/merchant/subscription/compare",
       "controlsBefore": 3,
-      "controlsNow": 28,
+      "controlsNow": 29,
       "removedQueries": [
         "subscriptionPlans.listPlans",
         "merchantSubscription.getCurrentSubscription"
@@ -2610,7 +2610,7 @@
     {
       "route": "/merchant/subscription",
       "controlsBefore": 7,
-      "controlsNow": 26,
+      "controlsNow": 27,
       "removedQueries": [
         "merchantSubscription.getCurrentSubscription",
         "merchantSubscription.getDaysRemaining",
@@ -2629,7 +2629,7 @@
     {
       "route": "/merchant/checkout",
       "controlsBefore": 5,
-      "controlsNow": 28,
+      "controlsNow": 29,
       "removedQueries": [
         "subscriptionPlans.listPlans"
       ],
@@ -2938,7 +2938,7 @@
     {
       "route": "/merchant/my-subscription",
       "controlsBefore": 7,
-      "controlsNow": 26,
+      "controlsNow": 27,
       "removedQueries": [
         "merchantSubscription.getCurrentSubscription",
         "merchantSubscription.getDaysRemaining",

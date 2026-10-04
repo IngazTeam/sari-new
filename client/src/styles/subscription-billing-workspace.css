@@ -63,7 +63,8 @@
 .sbw-unknown,
 .sbw-ambiguous,
 .sbw-expired,
-.sbw-failed {
+.sbw-failed,
+.sbw-requires_review {
   background: #fff5e5;
   color: #805d24;
 }

@@ -172,6 +172,9 @@ export function PlanCatalogCheckout(props: Props) {
           {c["attempt_" + attempt.state]}
         </p>
         <p>{attempt.found ? c.recordedOnly : c.attemptMissingNote}</p>
+        {attempt.state === "requires_review" && (
+          <p className="pc-warning" role="alert">{c.captureReviewBody}</p>
+        )}
         {attempt.found && (
           <dl>
             <div>
@@ -199,6 +202,9 @@ export function PlanCatalogCheckout(props: Props) {
           <p className="pc-note">{c.noRecordedLink}</p>
         )}
         <div className="pc-recovery-actions">
+          {attempt.state === "requires_review" && (
+            <Link href="/support">{c.support}</Link>
+          )}
           {link && (
             <button
               type="button"

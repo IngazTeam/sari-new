@@ -7,6 +7,7 @@ export const billingStates = [
   "completed",
   "failed",
   "refunded",
+  "requires_review",
 ] as const;
 export const billingTypes = [
   "subscription",

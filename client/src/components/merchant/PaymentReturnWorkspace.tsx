@@ -105,6 +105,8 @@ function PaymentReturn({
           ? "completed"
           : value === "failed"
             ? "failed"
+            : value === "requires_review"
+              ? "requires_review"
             : value === "processing"
               ? "pending"
               : "unavailable";
@@ -137,7 +139,7 @@ function PaymentReturn({
       <p
         className="pr-description"
         role={
-          state === "unavailable" || state === "invalid" ? "alert" : "status"
+          state === "unavailable" || state === "invalid" || state === "requires_review" ? "alert" : "status"
         }
       >
         {c[`${state}Body`]}
@@ -146,6 +148,9 @@ function PaymentReturn({
         <p className="pr-check-note">{paused ? c.noRepeat : c.autoCheck}</p>
       )}
       <div className="pr-actions">
+        {state === "requires_review" && (
+          <NavigationLink href="/support">{c.support}</NavigationLink>
+        )}
         <NavigationLink
           className="pr-primary"
           href="/merchant/usage?tab=subscription"

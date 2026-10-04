@@ -85,12 +85,12 @@ export class SubscriptionBillingPreviewStore {
           : Array.from({ length: 31 }, (_, i) => ({
               id: 100 + this.merchantId * 100 - i,
               type: billingTypes[i % 5],
-              status: billingStates[i % 4],
+              status: this.mode() === "capture-review" && i === 4 ? "requires_review" : billingStates[i % 4],
               amountMinor:
                 this.mode() === "legacy" ? null : i === 0 ? 0 : 9990 + i * 100,
               currency: "SAR" as const,
               createdAt: this.now,
-              paidAt: i % 4 === 1 ? this.now : null,
+              paidAt: i % 4 === 1 || (this.mode() === "capture-review" && i === 4) ? this.now : null,
               refundedAt: i % 4 === 3 ? this.now : null,
             }));
     const filtered = all.filter(

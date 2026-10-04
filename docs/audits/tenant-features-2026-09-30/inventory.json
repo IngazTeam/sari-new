@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-04T12:09:16.476Z",
+  "generatedAt": "2026-10-04T12:42:09.276Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -19974,7 +19974,7 @@
     },
     {
       "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-      "hash": "d0876a301acb",
+      "hash": "39af9a00e718",
       "queries": [
         "auth.me",
         "merchants.workspaceIdentity",
@@ -20029,7 +20029,7 @@
         },
         {
           "label": "",
-          "line": 600,
+          "line": 606,
           "tag": "summary"
         }
       ],
@@ -20084,11 +20084,11 @@
         "client/src/lib/subscription-billing-labels.ts",
         "client/src/components/merchant/UsageWorkspace.tsx"
       ],
-      "controlCount": 19
+      "controlCount": 20
     },
     {
       "file": "client/src/lib/subscription-billing-labels.ts",
-      "hash": "7e0606badd0c",
+      "hash": "fd5ada2c3f55",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
@@ -20380,7 +20380,7 @@
     },
     {
       "file": "client/src/components/merchant/PlanCatalogCheckout.tsx",
-      "hash": "0ed84ddfcb57",
+      "hash": "c5a3f918bca7",
       "queries": [
         "merchantSubscription.checkoutAttempt",
         "merchantSubscription.reviewCheckout"
@@ -20409,17 +20409,17 @@
         },
         {
           "label": "",
-          "line": 412,
+          "line": 418,
           "tag": "h2"
         },
         {
           "label": "",
-          "line": 425,
+          "line": 431,
           "tag": "h2"
         },
         {
           "label": "",
-          "line": 454,
+          "line": 460,
           "tag": "h2"
         }
       ],
@@ -20427,7 +20427,7 @@
       "handlers": [
         {
           "name": "confirm",
-          "line": 321,
+          "line": 327,
           "calls": [
             "subscribe",
             "upgrade"
@@ -20446,7 +20446,7 @@
         {
           "query": "merchantSubscription.reviewCheckout",
           "binding": "quote",
-          "line": 279,
+          "line": 285,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": "canManage "
@@ -20459,7 +20459,7 @@
         "client/src/lib/plan-catalog-view.ts",
         "client/src/lib/subscription-checkout-recovery.ts"
       ],
-      "controlCount": 16
+      "controlCount": 17
     },
     {
       "file": "client/src/lib/subscription-checkout-navigation.ts",
@@ -20478,7 +20478,7 @@
     },
     {
       "file": "client/src/lib/plan-catalog-view.ts",
-      "hash": "7920abf88d6f",
+      "hash": "3dcd3b1e3ae6",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
@@ -20559,7 +20559,7 @@
     },
     {
       "file": "client/src/components/merchant/PaymentReturnWorkspace.tsx",
-      "hash": "a778b25cb794",
+      "hash": "e292f6fe62a3",
       "queries": [
         "payment.getPaymentCallbackStatus",
         "subscriptionPayments.verifyPayment"
@@ -20597,7 +20597,7 @@
     },
     {
       "file": "client/src/lib/payment-return-view.ts",
-      "hash": "a76664ac3034",
+      "hash": "8cb86b405c76",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
@@ -29206,9 +29206,10 @@
         "1254c9f1590d",
         "460da1ff9025",
         "80c70ada1c36",
-        "b3c92c6a3c83",
-        "037ea3810faa",
-        "13f66ef074f2",
+        "d4aac9097a5c",
+        "5baaab8fb408",
+        "519b716efc94",
+        "fe76768bcc19",
         "3269b64c5c07",
         "0c172d0246af",
         "79cd8fac476e",
@@ -29326,18 +29327,19 @@
         "6638fc8653ee",
         "27e6de9d0313",
         "ebd6694a7eff",
-        "062ccdb01d63",
-        "75ce8284545e",
-        "0740dd6cce25",
-        "038d2bc7038d",
-        "f3a47faf2904",
-        "24640b8c260c",
-        "53681c266096",
-        "dc44324ce0f1",
-        "7e01732e128a",
-        "833fd6d673b0",
-        "cc270c40ca17",
-        "84d1089a902b"
+        "71fd7f52f3b2",
+        "20b8fea6b2a7",
+        "c71935f869ad",
+        "9fe2b7396c33",
+        "fbda6c1d4939",
+        "9c6a320729e6",
+        "6799b5dbe281",
+        "da889684f5ad",
+        "7d74b812b9ed",
+        "604d5616f08a",
+        "f9b6b6cd8f76",
+        "1fbc6a32a335",
+        "fa68733a7e50"
       ],
       "queries": [
         "auth.me",
@@ -29388,18 +29390,19 @@
         "6638fc8653ee",
         "27e6de9d0313",
         "ebd6694a7eff",
-        "062ccdb01d63",
-        "75ce8284545e",
-        "0740dd6cce25",
-        "038d2bc7038d",
-        "f3a47faf2904",
-        "24640b8c260c",
-        "53681c266096",
-        "dc44324ce0f1",
-        "7e01732e128a",
-        "833fd6d673b0",
-        "cc270c40ca17",
-        "84d1089a902b"
+        "71fd7f52f3b2",
+        "20b8fea6b2a7",
+        "c71935f869ad",
+        "9fe2b7396c33",
+        "fbda6c1d4939",
+        "9c6a320729e6",
+        "6799b5dbe281",
+        "da889684f5ad",
+        "7d74b812b9ed",
+        "604d5616f08a",
+        "f9b6b6cd8f76",
+        "1fbc6a32a335",
+        "fa68733a7e50"
       ],
       "queries": [
         "auth.me",
@@ -29448,9 +29451,10 @@
         "1254c9f1590d",
         "460da1ff9025",
         "80c70ada1c36",
-        "b3c92c6a3c83",
-        "037ea3810faa",
-        "13f66ef074f2",
+        "d4aac9097a5c",
+        "5baaab8fb408",
+        "519b716efc94",
+        "fe76768bcc19",
         "3269b64c5c07",
         "0c172d0246af",
         "79cd8fac476e",
@@ -29506,18 +29510,19 @@
         "6638fc8653ee",
         "27e6de9d0313",
         "ebd6694a7eff",
-        "062ccdb01d63",
-        "75ce8284545e",
-        "0740dd6cce25",
-        "038d2bc7038d",
-        "f3a47faf2904",
-        "24640b8c260c",
-        "53681c266096",
-        "dc44324ce0f1",
-        "7e01732e128a",
-        "833fd6d673b0",
-        "cc270c40ca17",
-        "84d1089a902b"
+        "71fd7f52f3b2",
+        "20b8fea6b2a7",
+        "c71935f869ad",
+        "9fe2b7396c33",
+        "fbda6c1d4939",
+        "9c6a320729e6",
+        "6799b5dbe281",
+        "da889684f5ad",
+        "7d74b812b9ed",
+        "604d5616f08a",
+        "f9b6b6cd8f76",
+        "1fbc6a32a335",
+        "fa68733a7e50"
       ],
       "queries": [
         "auth.me",
@@ -29561,7 +29566,7 @@
         "0da8aaca8584",
         "9b15991becb0",
         "8179a71d3d3b",
-        "71f9c5277aa9"
+        "2d1d95e6d46d"
       ],
       "queries": [
         "payment.getPaymentCallbackStatus",
@@ -29598,7 +29603,7 @@
         "0da8aaca8584",
         "9b15991becb0",
         "8179a71d3d3b",
-        "71f9c5277aa9"
+        "2d1d95e6d46d"
       ],
       "queries": [
         "payment.getPaymentCallbackStatus",
@@ -30391,9 +30396,10 @@
         "1254c9f1590d",
         "460da1ff9025",
         "80c70ada1c36",
-        "b3c92c6a3c83",
-        "037ea3810faa",
-        "13f66ef074f2",
+        "d4aac9097a5c",
+        "5baaab8fb408",
+        "519b716efc94",
+        "fe76768bcc19",
         "3269b64c5c07",
         "0c172d0246af",
         "79cd8fac476e",
@@ -89884,9 +89890,32 @@
       "review": "source-inventoried"
     },
     {
-      "id": "b3c92c6a3c83",
+      "id": "d4aac9097a5c",
       "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-      "line": 600,
+      "line": 602,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "#",
+      "binding": "/support",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "r.status === \"requires_review\""
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "5baaab8fb408",
+      "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
+      "line": 606,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -89907,9 +89936,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "037ea3810faa",
+      "id": "519b716efc94",
       "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-      "line": 618,
+      "line": 624,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -89932,9 +89961,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "13f66ef074f2",
+      "id": "fe76768bcc19",
       "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-      "line": 633,
+      "line": 639,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -90490,9 +90519,32 @@
       "review": "source-inventoried"
     },
     {
-      "id": "062ccdb01d63",
+      "id": "71fd7f52f3b2",
       "file": "client/src/components/merchant/PlanCatalogCheckout.tsx",
-      "line": 203,
+      "line": 206,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "PlanCatalogCheckout",
+      "binding": "/support",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "attempt.state === \"requires_review\""
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "20b8fea6b2a7",
+      "file": "client/src/components/merchant/PlanCatalogCheckout.tsx",
+      "line": 209,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -90513,9 +90565,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "75ce8284545e",
+      "id": "c71935f869ad",
       "file": "client/src/components/merchant/PlanCatalogCheckout.tsx",
-      "line": 217,
+      "line": 223,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -90534,9 +90586,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "0740dd6cce25",
+      "id": "9fe2b7396c33",
       "file": "client/src/components/merchant/PlanCatalogCheckout.tsx",
-      "line": 221,
+      "line": 227,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -90555,9 +90607,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "038d2bc7038d",
+      "id": "fbda6c1d4939",
       "file": "client/src/components/merchant/PlanCatalogCheckout.tsx",
-      "line": 223,
+      "line": 229,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -90578,9 +90630,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "f3a47faf2904",
+      "id": "9c6a320729e6",
       "file": "client/src/components/merchant/PlanCatalogCheckout.tsx",
-      "line": 232,
+      "line": 238,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -90601,9 +90653,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "24640b8c260c",
+      "id": "6799b5dbe281",
       "file": "client/src/components/merchant/PlanCatalogCheckout.tsx",
-      "line": 413,
+      "line": 419,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -90622,9 +90674,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "53681c266096",
+      "id": "da889684f5ad",
       "file": "client/src/components/merchant/PlanCatalogCheckout.tsx",
-      "line": 449,
+      "line": 455,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -90643,9 +90695,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "dc44324ce0f1",
+      "id": "7d74b812b9ed",
       "file": "client/src/components/merchant/PlanCatalogCheckout.tsx",
-      "line": 467,
+      "line": 473,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -90666,9 +90718,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "7e01732e128a",
+      "id": "604d5616f08a",
       "file": "client/src/components/merchant/PlanCatalogCheckout.tsx",
-      "line": 476,
+      "line": 482,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -90690,9 +90742,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "833fd6d673b0",
+      "id": "f9b6b6cd8f76",
       "file": "client/src/components/merchant/PlanCatalogCheckout.tsx",
-      "line": 480,
+      "line": 486,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -90713,9 +90765,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "cc270c40ca17",
+      "id": "1fbc6a32a335",
       "file": "client/src/components/merchant/PlanCatalogCheckout.tsx",
-      "line": 484,
+      "line": 490,
       "tag": "input",
       "role": "",
       "kind": "field",
@@ -90734,9 +90786,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "84d1089a902b",
+      "id": "fa68733a7e50",
       "file": "client/src/components/merchant/PlanCatalogCheckout.tsx",
-      "line": 492,
+      "line": 498,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -90755,9 +90807,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "71f9c5277aa9",
+      "id": "2d1d95e6d46d",
       "file": "client/src/components/merchant/PaymentReturnWorkspace.tsx",
-      "line": 157,
+      "line": 162,
       "tag": "button",
       "role": "",
       "kind": "action",

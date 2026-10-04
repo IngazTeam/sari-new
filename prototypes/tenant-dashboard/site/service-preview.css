@@ -10022,7 +10022,8 @@ body.merchant-surface{width:100%;max-width:none;margin:0;border:0;border-radius:
 }
 .pr-failed .pr-icon,
 .pr-invalid .pr-icon,
-.pr-unavailable .pr-icon {
+.pr-unavailable .pr-icon,
+.pr-requires_review .pr-icon {
   background: #fff5e7;
   color: #906d29;
 }
@@ -10114,7 +10115,8 @@ body.merchant-surface{width:100%;max-width:none;margin:0;border:0;border-radius:
 .sbw-unknown,
 .sbw-ambiguous,
 .sbw-expired,
-.sbw-failed {
+.sbw-failed,
+.sbw-requires_review {
   background: #fff5e5;
   color: #805d24;
 }

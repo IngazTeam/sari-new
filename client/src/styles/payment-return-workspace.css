@@ -105,7 +105,8 @@
 }
 .pr-failed .pr-icon,
 .pr-invalid .pr-icon,
-.pr-unavailable .pr-icon {
+.pr-unavailable .pr-icon,
+.pr-requires_review .pr-icon {
   background: #fff5e7;
   color: #906d29;
 }
