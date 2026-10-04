@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-04T13:10:15.665Z",
+  "generatedAt": "2026-10-04T13:30:29.059Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 520,
-      "controls": 2776
+      "files": 521,
+      "controls": 2779
     }
   },
   "addedFiles": [
@@ -173,6 +173,7 @@
     "client/src/components/merchant/OrderHistory.tsx",
     "client/src/components/SallaCartRecovery.tsx",
     "client/src/lib/salla-checkout-review.ts",
+    "client/src/components/merchant/WhatsAppSetupWorkspace.tsx",
     "client/src/components/TestSessionHistory.tsx",
     "client/src/lib/test-session-reference.ts",
     "client/src/components/merchant/TestMetricsWorkspace.tsx",
@@ -416,8 +417,10 @@
     "client/src/components/OrderCheckoutAttempts.tsx",
     "client/src/components/CheckoutDiscountRelease.tsx",
     "client/src/components/SallaCheckoutReview.tsx",
+    "client/src/pages/merchant/GreenAPISetupGuide.tsx",
     "client/src/pages/merchant/TestSari.tsx",
     "client/src/pages/merchant/MetricsDashboard.tsx",
+    "client/src/pages/merchant/WhatsAppWebhookSetup.tsx",
     "client/src/pages/merchant/BotSettings.tsx",
     "client/src/components/CheckoutMarginPolicySettings.tsx",
     "client/src/components/DiscountPolicySettings.tsx",
@@ -1431,7 +1434,7 @@
     {
       "route": "/merchant/greenapi-setup",
       "controlsBefore": 8,
-      "controlsNow": 8,
+      "controlsNow": 17,
       "removedQueries": [],
       "addedQueries": [],
       "removedMutations": [],
@@ -1474,8 +1477,10 @@
     {
       "route": "/merchant/whatsapp-webhook-setup",
       "controlsBefore": 6,
-      "controlsNow": 6,
-      "removedQueries": [],
+      "controlsNow": 17,
+      "removedQueries": [
+        "auth.me"
+      ],
       "addedQueries": [],
       "removedMutations": [],
       "addedMutations": []

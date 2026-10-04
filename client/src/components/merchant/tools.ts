@@ -208,7 +208,7 @@ export const merchantTools: MerchantTool[] = [
     paths: ['/merchant/metrics-dashboard', '/merchant/try-sari-analytics'],
   },
   {
-    title: 'تشخيص Webhook',
+    title: 'دليل الاستقبال والرد',
     section: 'settings',
     paths: ['/merchant/whatsapp-webhook-setup'],
   },

@@ -13,6 +13,14 @@ beforeEach(()=>{
 });
 afterEach(()=>dom.window.close());
 const send=(data:any,origin='http://127.0.0.1:4329',source=frame.contentWindow)=>w.dispatchEvent(new w.MessageEvent('message',{origin,source,data}));
+it.each(['/merchant/greenapi-setup','/merchant/whatsapp-webhook-setup'])('keeps WhatsApp guidance navigation within the owned frame: %s',path=>{
+ frame.setAttribute('src','./service-workspace.html?embed=brain&path='+path);w.history.replaceState(null,'','#/page'+path);w.syncServicePreviewContext=vi.fn();
+ const state={type:'sary-brain-preview',action:'serviceState',search:`path=${path}&lang=en`};
+ send({...state,search:state.search+'&merchantId=999'});send(state,'https://evil.test');send(state,undefined,w);expect(w.location.hash).toBe('#/page'+path);
+ send(state);expect(w.location.hash).toBe('#/page'+path+'?lang=en');
+ for(const route of ['/merchant/conversations','/merchant/bot-settings']){const message={type:'sary-brain-preview',action:'serviceTool',route};send(message,'https://evil.test');expect(w.location.hash).not.toBe('#/page'+route);send(message);expect(w.location.hash).toBe('#/page'+route);}
+ frame.setAttribute('src','./service-workspace.html?embed=brain&path=/merchant/services');w.history.replaceState(null,'','#/page/merchant/services');send({type:'sary-brain-preview',action:'serviceTool',route:'/merchant/bot-settings'});expect(w.location.hash).toBe('#/page/merchant/services');
+});
 it('keeps acquisition periods and customer navigation within the owned preview frame',()=>{
  const path='/merchant/acquisition-report';frame.setAttribute('src','./service-workspace.html?embed=brain&path='+path);w.history.replaceState(null,'','#/page'+path);w.syncServicePreviewContext=vi.fn();
  const message={type:'sary-brain-preview',action:'serviceState',search:`path=${path}&period=30d&lang=en`};
