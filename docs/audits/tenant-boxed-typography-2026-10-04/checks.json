@@ -1,0 +1,29 @@
+{
+  "phase": 527,
+  "date": "2026-10-04",
+  "font": "IBM Plex Sans Arabic / SaryArabic",
+  "realWeights": [
+    300,
+    400,
+    600
+  ],
+  "maxShellWidthIncludingSidebar": 1440,
+  "sidebarWidth": 238,
+  "mobileBreakpoint": 900,
+  "regressionPassed": 2071,
+  "shellAndSetupPassed": 86,
+  "releasePassed": 78,
+  "typescript": "passed",
+  "wizardPreviewTypescript": "passed",
+  "productionBuild": "passed",
+  "translationKeysChecked": 14083,
+  "missingTranslations": 0,
+  "responsiveCases": 20,
+  "standalonePreviewDocuments": 16,
+  "previewEnglishPersona": "passed",
+  "mobilePersonaDialog": "passed",
+  "sameOriginAssetChecks": 8,
+  "productionDeployed": false,
+  "actualSafari": false,
+  "actualIphone": false
+}

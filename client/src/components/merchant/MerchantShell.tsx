@@ -209,7 +209,7 @@ export default function MerchantShell({ children }: { children: ReactNode }) {
     sectionLabel
   );
   return (
-    <div className="merchant-workspace" dir={direction}>
+    <div className="merchant-workspace mw-shell" dir={direction}>
       <a
         href="#merchant-main"
         className="mw-skip"

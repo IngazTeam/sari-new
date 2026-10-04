@@ -136,7 +136,7 @@ export function mount() {
   priorStyles = Array.from(
     document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')
   )
-    .filter(node => !node.href.endsWith("/setup-preview.css"))
+    .filter(node => !node.href.endsWith("/setup-preview.css") && !node.href.endsWith("/tenant/brand.css"))
     .map(node => ({ node, disabled: node.disabled }));
   priorStyles.forEach(({ node }) => {
     node.disabled = true;

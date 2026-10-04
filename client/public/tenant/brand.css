@@ -1,0 +1,106 @@
+/* Same local font files and real weights as central/central.css + refinements.css. */
+@font-face {
+  font-family: SaryArabic;
+  src: url('/central/fonts/IBMPlexSansArabic-Light.ttf') format('truetype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: SaryArabic;
+  src: url('/central/fonts/IBMPlexSansArabic-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: SaryArabic;
+  src: url('/central/fonts/IBMPlexSansArabic-SemiBold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+:is(body.merchant-surface, body.tenant-prototype, .merchant-workspace) {
+  --font-sans: SaryArabic, Tahoma, Arial, sans-serif;
+  font-family: var(--font-sans);
+  font-weight: 400;
+  font-synthesis: none;
+  -webkit-font-smoothing: antialiased;
+}
+:is(body.merchant-surface, body.tenant-prototype) :is(h1, h2, h3, h4, h5, h6) {
+  font-family: inherit;
+}
+:is(body.merchant-surface, body.tenant-prototype) [data-sonner-toaster] {
+  font-family: var(--font-sans);
+}
+/* The grid owns BOTH columns. Sticky navigation stays within the boxed shell. */
+:is(.mw-shell, .tenant-preview-shell) {
+  --mw-shell-max-width: 1440px;
+  --mw-sidebar-width: 238px;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: var(--mw-sidebar-width) minmax(0, 1fr);
+  width: calc(100% - 32px);
+  max-width: var(--mw-shell-max-width);
+  min-width: 0;
+  min-height: calc(100dvh - 32px);
+  margin: 16px auto;
+  border: 1px solid var(--border, #dfe5da);
+  border-radius: 24px;
+  box-shadow: 0 12px 42px #20352e0a;
+  background: var(--background, #f5f6f1);
+}
+:is(.mw-shell > .mw-sidebar, .tenant-preview-shell > .sidebar) {
+  position: sticky;
+  inset: auto;
+  top: 16px;
+  align-self: start;
+  width: 100%;
+  height: calc(100dvh - 34px);
+  min-height: 0;
+  border-start-start-radius: 23px;
+  border-end-start-radius: 23px;
+}
+:is(.mw-shell > .mw-workspace, .tenant-preview-shell > .workspace) {
+  margin: 0;
+  min-width: 0;
+  min-height: calc(100dvh - 34px);
+}
+:is(.mw-shell > .mw-workspace, .tenant-preview-shell > .workspace) > :is(.mw-topbar, .topbar) {
+  border-start-end-radius: 23px;
+}
+/* Only the outer preview is boxed; embedded workspaces keep all their room. */
+body.tenant-prototype {
+  max-width: none;
+  margin: 0 !important;
+  border-radius: 0;
+  box-shadow: none;
+}
+@media (max-width: 900px) {
+  :is(.mw-shell, .tenant-preview-shell) {
+    display: block;
+    width: 100%;
+    max-width: none;
+    min-height: 100dvh;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  :is(.mw-shell > .mw-workspace, .tenant-preview-shell > .workspace) {
+    min-height: 100dvh;
+  }
+  :is(.mw-shell > .mw-workspace, .tenant-preview-shell > .workspace) > :is(.mw-topbar, .topbar) {
+    border-radius: 0;
+  }
+}
+@media print {
+  :is(.mw-shell, .tenant-preview-shell) {
+    display: block;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    border: 0;
+    box-shadow: none;
+  }
+}

@@ -2,9 +2,10 @@ import http from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { resolve, extname, sep } from 'node:path';
 import { previewPolicy } from './preview-policy.mjs';
+import './build-brand.mjs';
 const root = resolve(import.meta.dirname, 'site');
 const port = Number(process.env.PORT || 4329);
-const types = {'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.woff2':'font/woff2','.json':'application/json; charset=utf-8','.md':'text/markdown; charset=utf-8','.png':'image/png','.wav':'audio/wav','.txt':'text/plain; charset=utf-8'};
+const types = {'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.ttf':'font/ttf','.woff2':'font/woff2','.json':'application/json; charset=utf-8','.md':'text/markdown; charset=utf-8','.png':'image/png','.wav':'audio/wav','.txt':'text/plain; charset=utf-8'};
 http.createServer(async (req, res) => {
   if (!['GET','HEAD'].includes(req.method)) { res.writeHead(405); return res.end(); }
   let pathname, url;

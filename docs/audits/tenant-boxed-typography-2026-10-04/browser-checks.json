@@ -1,0 +1,570 @@
+{
+  "actualResponsive": [
+    {
+      "page": "dashboard",
+      "language": "ar",
+      "frame": 320,
+      "box": {
+        "right": 320,
+        "width": 290,
+        "x": 30
+      },
+      "dir": "rtl",
+      "font": "SaryArabic, Tahoma, Arial, sans-serif",
+      "heading": "مرحبًا، متجر الفحص المحلي — WooCommerce",
+      "main": {
+        "right": 320,
+        "width": 290,
+        "x": 30
+      },
+      "scrollWidth": 290,
+      "sidebar": {
+        "display": "none",
+        "position": "sticky",
+        "right": 0,
+        "width": 0,
+        "x": 0
+      },
+      "width": 290
+    },
+    {
+      "page": "dashboard",
+      "language": "ar",
+      "frame": 390,
+      "box": {
+        "right": 390,
+        "width": 360,
+        "x": 30
+      },
+      "dir": "rtl",
+      "font": "SaryArabic, Tahoma, Arial, sans-serif",
+      "heading": "مرحبًا، متجر الفحص المحلي — WooCommerce",
+      "main": {
+        "right": 390,
+        "width": 360,
+        "x": 30
+      },
+      "scrollWidth": 360,
+      "sidebar": {
+        "display": "none",
+        "position": "sticky",
+        "right": 0,
+        "width": 0,
+        "x": 0
+      },
+      "width": 360
+    },
+    {
+      "page": "dashboard",
+      "language": "ar",
+      "frame": 768,
+      "box": {
+        "right": 768,
+        "width": 738,
+        "x": 30
+      },
+      "dir": "rtl",
+      "font": "SaryArabic, Tahoma, Arial, sans-serif",
+      "heading": "مرحبًا، متجر الفحص المحلي — WooCommerce",
+      "main": {
+        "right": 768,
+        "width": 738,
+        "x": 30
+      },
+      "scrollWidth": 738,
+      "sidebar": {
+        "display": "none",
+        "position": "sticky",
+        "right": 0,
+        "width": 0,
+        "x": 0
+      },
+      "width": 738
+    },
+    {
+      "page": "dashboard",
+      "language": "ar",
+      "frame": 1440,
+      "box": {
+        "right": 1424,
+        "width": 1378,
+        "x": 46
+      },
+      "dir": "rtl",
+      "font": "SaryArabic, Tahoma, Arial, sans-serif",
+      "heading": "مرحبًا، متجر الفحص المحلي — WooCommerce",
+      "main": {
+        "right": 1185,
+        "width": 1138,
+        "x": 47
+      },
+      "scrollWidth": 1410,
+      "sidebar": {
+        "display": "flex",
+        "position": "sticky",
+        "right": 1423,
+        "width": 238,
+        "x": 1185
+      },
+      "width": 1410
+    },
+    {
+      "page": "dashboard",
+      "language": "ar",
+      "frame": 1920,
+      "box": {
+        "right": 1695,
+        "width": 1440,
+        "x": 255
+      },
+      "dir": "rtl",
+      "font": "SaryArabic, Tahoma, Arial, sans-serif",
+      "heading": "مرحبًا، متجر الفحص المحلي — WooCommerce",
+      "main": {
+        "right": 1456,
+        "width": 1200,
+        "x": 256
+      },
+      "scrollWidth": 1890,
+      "sidebar": {
+        "display": "flex",
+        "position": "sticky",
+        "right": 1694,
+        "width": 238,
+        "x": 1456
+      },
+      "width": 1890
+    },
+    {
+      "page": "personas",
+      "language": "ar",
+      "frame": 320,
+      "boxWidth": 290,
+      "dir": "rtl",
+      "font": "SaryArabic, Tahoma, Arial, sans-serif",
+      "heading": "شخصيات فريقك الافتراضي",
+      "scrollWidth": 290,
+      "sideDisplay": "none",
+      "width": 290
+    },
+    {
+      "page": "personas",
+      "language": "ar",
+      "frame": 390,
+      "boxWidth": 360,
+      "dir": "rtl",
+      "font": "SaryArabic, Tahoma, Arial, sans-serif",
+      "heading": "شخصيات فريقك الافتراضي",
+      "scrollWidth": 360,
+      "sideDisplay": "none",
+      "width": 360
+    },
+    {
+      "page": "personas",
+      "language": "ar",
+      "frame": 768,
+      "boxWidth": 738,
+      "dir": "rtl",
+      "font": "SaryArabic, Tahoma, Arial, sans-serif",
+      "heading": "شخصيات فريقك الافتراضي",
+      "scrollWidth": 738,
+      "sideDisplay": "none",
+      "width": 738
+    },
+    {
+      "page": "personas",
+      "language": "ar",
+      "frame": 1440,
+      "boxWidth": 1378,
+      "dir": "rtl",
+      "font": "SaryArabic, Tahoma, Arial, sans-serif",
+      "heading": "شخصيات فريقك الافتراضي",
+      "scrollWidth": 1410,
+      "sideDisplay": "flex",
+      "width": 1410
+    },
+    {
+      "page": "personas",
+      "language": "ar",
+      "frame": 1920,
+      "boxWidth": 1440,
+      "dir": "rtl",
+      "font": "SaryArabic, Tahoma, Arial, sans-serif",
+      "heading": "شخصيات فريقك الافتراضي",
+      "scrollWidth": 1890,
+      "sideDisplay": "flex",
+      "width": 1890
+    },
+    {
+      "page": "assistant-settings",
+      "language": "ar",
+      "frame": 320,
+      "boxWidth": 290,
+      "dir": "rtl",
+      "font": "SaryArabic, Tahoma, Arial, sans-serif",
+      "heading": "إعدادات الروبوت",
+      "scrollWidth": 290,
+      "sideDisplay": "none",
+      "width": 290
+    },
+    {
+      "page": "assistant-settings",
+      "language": "ar",
+      "frame": 390,
+      "boxWidth": 360,
+      "dir": "rtl",
+      "font": "SaryArabic, Tahoma, Arial, sans-serif",
+      "heading": "إعدادات الروبوت",
+      "scrollWidth": 360,
+      "sideDisplay": "none",
+      "width": 360
+    },
+    {
+      "page": "assistant-settings",
+      "language": "ar",
+      "frame": 768,
+      "boxWidth": 738,
+      "dir": "rtl",
+      "font": "SaryArabic, Tahoma, Arial, sans-serif",
+      "heading": "إعدادات الروبوت",
+      "scrollWidth": 738,
+      "sideDisplay": "none",
+      "width": 738
+    },
+    {
+      "page": "assistant-settings",
+      "language": "ar",
+      "frame": 1440,
+      "boxWidth": 1378,
+      "dir": "rtl",
+      "font": "SaryArabic, Tahoma, Arial, sans-serif",
+      "heading": "إعدادات الروبوت",
+      "scrollWidth": 1410,
+      "sideDisplay": "flex",
+      "width": 1410
+    },
+    {
+      "page": "assistant-settings",
+      "language": "ar",
+      "frame": 1920,
+      "boxWidth": 1440,
+      "dir": "rtl",
+      "font": "SaryArabic, Tahoma, Arial, sans-serif",
+      "heading": "إعدادات الروبوت",
+      "scrollWidth": 1890,
+      "sideDisplay": "flex",
+      "width": 1890
+    },
+    {
+      "page": "loyalty-rewards",
+      "language": "ar",
+      "frame": 320,
+      "boxWidth": 290,
+      "dir": "rtl",
+      "font": "SaryArabic, Tahoma, Arial, sans-serif",
+      "heading": "المكافآت",
+      "scrollWidth": 290,
+      "sideDisplay": "none",
+      "width": 290
+    },
+    {
+      "page": "loyalty-rewards",
+      "language": "ar",
+      "frame": 390,
+      "boxWidth": 360,
+      "dir": "rtl",
+      "font": "SaryArabic, Tahoma, Arial, sans-serif",
+      "heading": "المكافآت",
+      "scrollWidth": 360,
+      "sideDisplay": "none",
+      "width": 360
+    },
+    {
+      "page": "loyalty-rewards",
+      "language": "ar",
+      "frame": 768,
+      "boxWidth": 738,
+      "dir": "rtl",
+      "font": "SaryArabic, Tahoma, Arial, sans-serif",
+      "heading": "المكافآت",
+      "scrollWidth": 738,
+      "sideDisplay": "none",
+      "width": 738
+    },
+    {
+      "page": "loyalty-rewards",
+      "language": "ar",
+      "frame": 1440,
+      "boxWidth": 1378,
+      "dir": "rtl",
+      "font": "SaryArabic, Tahoma, Arial, sans-serif",
+      "heading": "المكافآت",
+      "scrollWidth": 1410,
+      "sideDisplay": "flex",
+      "width": 1410
+    },
+    {
+      "page": "loyalty-rewards",
+      "language": "ar",
+      "frame": 1920,
+      "boxWidth": 1440,
+      "dir": "rtl",
+      "font": "SaryArabic, Tahoma, Arial, sans-serif",
+      "heading": "المكافآت",
+      "scrollWidth": 1890,
+      "sideDisplay": "flex",
+      "width": 1890
+    }
+  ],
+  "mobilePersonaDialog": {
+    "bottom": 805,
+    "clientWidth": 256,
+    "fields": [
+      {
+        "font": "SaryArabic, Tahoma, Arial, sans-serif",
+        "size": "16px"
+      },
+      {
+        "font": "SaryArabic, Tahoma, Arial, sans-serif",
+        "size": "16px"
+      },
+      {
+        "font": "SaryArabic, Tahoma, Arial, sans-serif",
+        "size": "16px"
+      },
+      {
+        "font": "SaryArabic, Tahoma, Arial, sans-serif",
+        "size": "16px"
+      }
+    ],
+    "font": "SaryArabic, Tahoma, Arial, sans-serif",
+    "scrollWidth": 256,
+    "viewportHeight": 850,
+    "viewportWidth": 290,
+    "width": 258,
+    "x": 46,
+    "y": 45
+  },
+  "previewDocuments": [
+    {
+      "page": "assistant-options",
+      "font": "SaryArabic, Tahoma, Arial, sans-serif",
+      "headingFont": "SaryArabic, Tahoma, Arial, sans-serif",
+      "loaded": true
+    },
+    {
+      "page": "assistant-settings",
+      "font": "SaryArabic, Tahoma, Arial, sans-serif",
+      "headingFont": "SaryArabic, Tahoma, Arial, sans-serif",
+      "loaded": true
+    },
+    {
+      "page": "brain-preview",
+      "font": "SaryArabic, Tahoma, Arial, sans-serif",
+      "headingFont": "SaryArabic, Tahoma, Arial, sans-serif",
+      "loaded": true
+    },
+    {
+      "page": "campaign-workspace",
+      "font": "SaryArabic, Tahoma, Arial, sans-serif",
+      "headingFont": "SaryArabic, Tahoma, Arial, sans-serif",
+      "loaded": true
+    },
+    {
+      "page": "dashboard",
+      "font": "SaryArabic, Tahoma, Arial, sans-serif",
+      "headingFont": "SaryArabic, Tahoma, Arial, sans-serif",
+      "loaded": true
+    },
+    {
+      "page": "inbox",
+      "font": "SaryArabic, Tahoma, Arial, sans-serif",
+      "headingFont": "SaryArabic, Tahoma, Arial, sans-serif",
+      "loaded": true
+    },
+    {
+      "page": "knowledge-activity",
+      "font": "SaryArabic, Tahoma, Arial, sans-serif",
+      "headingFont": "SaryArabic, Tahoma, Arial, sans-serif",
+      "loaded": true
+    },
+    {
+      "page": "knowledge-groups",
+      "font": "SaryArabic, Tahoma, Arial, sans-serif",
+      "headingFont": "SaryArabic, Tahoma, Arial, sans-serif",
+      "loaded": true
+    },
+    {
+      "page": "knowledge-removal",
+      "font": "SaryArabic, Tahoma, Arial, sans-serif",
+      "headingFont": "SaryArabic, Tahoma, Arial, sans-serif",
+      "loaded": true
+    },
+    {
+      "page": "messages-analytics",
+      "font": "SaryArabic, Tahoma, Arial, sans-serif",
+      "headingFont": "SaryArabic, Tahoma, Arial, sans-serif",
+      "loaded": true
+    },
+    {
+      "page": "personas",
+      "font": "SaryArabic, Tahoma, Arial, sans-serif",
+      "headingFont": "SaryArabic, Tahoma, Arial, sans-serif",
+      "loaded": true
+    },
+    {
+      "page": "reply-quality",
+      "font": "SaryArabic, Tahoma, Arial, sans-serif",
+      "headingFont": "SaryArabic, Tahoma, Arial, sans-serif",
+      "loaded": true
+    },
+    {
+      "page": "sales-analytics",
+      "font": "SaryArabic, Tahoma, Arial, sans-serif",
+      "headingFont": "SaryArabic, Tahoma, Arial, sans-serif",
+      "loaded": true
+    },
+    {
+      "page": "sales-knowledge",
+      "font": "SaryArabic, Tahoma, Arial, sans-serif",
+      "headingFont": "SaryArabic, Tahoma, Arial, sans-serif",
+      "loaded": true
+    },
+    {
+      "page": "service-workspace",
+      "font": "SaryArabic, Tahoma, Arial, sans-serif",
+      "headingFont": "SaryArabic, Tahoma, Arial, sans-serif",
+      "loaded": true
+    },
+    {
+      "page": "website-analysis",
+      "font": "SaryArabic, Tahoma, Arial, sans-serif",
+      "headingFont": "SaryArabic, Tahoma, Arial, sans-serif",
+      "loaded": true
+    }
+  ],
+  "englishPersona": {
+    "fonts": [
+      {
+        "font": "SaryArabic, Tahoma, Arial, sans-serif",
+        "tag": "H1",
+        "weight": "600"
+      },
+      {
+        "font": "SaryArabic, Tahoma, Arial, sans-serif",
+        "tag": "SELECT",
+        "weight": "400"
+      },
+      {
+        "font": "SaryArabic, Tahoma, Arial, sans-serif",
+        "tag": "SELECT",
+        "weight": "400"
+      },
+      {
+        "font": "SaryArabic, Tahoma, Arial, sans-serif",
+        "tag": "SELECT",
+        "weight": "400"
+      },
+      {
+        "font": "SaryArabic, Tahoma, Arial, sans-serif",
+        "tag": "BUTTON",
+        "weight": "400"
+      },
+      {
+        "font": "SaryArabic, Tahoma, Arial, sans-serif",
+        "tag": "H1",
+        "weight": "700"
+      },
+      {
+        "font": "SaryArabic, Tahoma, Arial, sans-serif",
+        "tag": "BUTTON",
+        "weight": "400"
+      },
+      {
+        "font": "SaryArabic, Tahoma, Arial, sans-serif",
+        "tag": "INPUT",
+        "weight": "400"
+      },
+      {
+        "font": "SaryArabic, Tahoma, Arial, sans-serif",
+        "tag": "BUTTON",
+        "weight": "400"
+      },
+      {
+        "font": "SaryArabic, Tahoma, Arial, sans-serif",
+        "tag": "BUTTON",
+        "weight": "400"
+      },
+      {
+        "font": "SaryArabic, Tahoma, Arial, sans-serif",
+        "tag": "H2",
+        "weight": "600"
+      },
+      {
+        "font": "SaryArabic, Tahoma, Arial, sans-serif",
+        "tag": "BUTTON",
+        "weight": "400"
+      },
+      {
+        "font": "SaryArabic, Tahoma, Arial, sans-serif",
+        "tag": "BUTTON",
+        "weight": "400"
+      },
+      {
+        "font": "SaryArabic, Tahoma, Arial, sans-serif",
+        "tag": "BUTTON",
+        "weight": "400"
+      },
+      {
+        "font": "SaryArabic, Tahoma, Arial, sans-serif",
+        "tag": "BUTTON",
+        "weight": "400"
+      },
+      {
+        "font": "SaryArabic, Tahoma, Arial, sans-serif",
+        "tag": "BUTTON",
+        "weight": "400"
+      },
+      {
+        "font": "SaryArabic, Tahoma, Arial, sans-serif",
+        "tag": "H2",
+        "weight": "600"
+      },
+      {
+        "font": "SaryArabic, Tahoma, Arial, sans-serif",
+        "tag": "BUTTON",
+        "weight": "400"
+      },
+      {
+        "font": "SaryArabic, Tahoma, Arial, sans-serif",
+        "tag": "BUTTON",
+        "weight": "400"
+      },
+      {
+        "font": "SaryArabic, Tahoma, Arial, sans-serif",
+        "tag": "BUTTON",
+        "weight": "400"
+      }
+    ],
+    "headings": [
+      "Work personas preview",
+      "Your virtual team"
+    ]
+  },
+  "wizard": {
+    "font": "SaryArabic, Tahoma, Arial, sans-serif",
+    "brandDisabled": false,
+    "sidebarDisplay": "none",
+    "shellDisplay": "block"
+  },
+  "physicalSafari": false,
+  "physicalIphone": false,
+  "stickyAfterScroll": {
+    "shellLeft": 545,
+    "shellRight": 1985,
+    "shellTop": -1306,
+    "sidebarLeft": 1746,
+    "sidebarRight": 1984,
+    "sidebarTop": 16
+  }
+}

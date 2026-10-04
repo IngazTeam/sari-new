@@ -1,0 +1,82 @@
+[
+  {
+    "port": 3025,
+    "path": "tenant/brand.css",
+    "status": 200,
+    "contentType": "text/css",
+    "bytes": 3030,
+    "sha256": "82ae5b30b3d5d7d2dc03cf6f326bdd012b8d3b8a53f2f576c5831a2f6271f523",
+    "matchesProductionSource": true,
+    "builtAssetMatches": true
+  },
+  {
+    "port": 3025,
+    "path": "central/fonts/IBMPlexSansArabic-Light.ttf",
+    "status": 200,
+    "contentType": "font/ttf",
+    "bytes": 238564,
+    "sha256": "0af9d1effbb36ff74d13c64f752c771ecb9162a451cf151c5425f4d00d4daa7c",
+    "matchesProductionSource": true,
+    "builtAssetMatches": true
+  },
+  {
+    "port": 3025,
+    "path": "central/fonts/IBMPlexSansArabic-Regular.ttf",
+    "status": 200,
+    "contentType": "font/ttf",
+    "bytes": 235924,
+    "sha256": "6f611412270a132bbac838da9259d4c68569b4175f3b3b8fa3fa36a30b56dab9",
+    "matchesProductionSource": true,
+    "builtAssetMatches": true
+  },
+  {
+    "port": 3025,
+    "path": "central/fonts/IBMPlexSansArabic-SemiBold.ttf",
+    "status": 200,
+    "contentType": "font/ttf",
+    "bytes": 244616,
+    "sha256": "597bd5502e5997be4414e4c9c88834b30ff3784250c84f20bce2b20e53ebd467",
+    "matchesProductionSource": true,
+    "builtAssetMatches": true
+  },
+  {
+    "port": 4329,
+    "path": "tenant/brand.css",
+    "status": 200,
+    "contentType": "text/css; charset=utf-8",
+    "bytes": 3030,
+    "sha256": "82ae5b30b3d5d7d2dc03cf6f326bdd012b8d3b8a53f2f576c5831a2f6271f523",
+    "matchesProductionSource": true,
+    "builtAssetMatches": true
+  },
+  {
+    "port": 4329,
+    "path": "central/fonts/IBMPlexSansArabic-Light.ttf",
+    "status": 200,
+    "contentType": "font/ttf",
+    "bytes": 238564,
+    "sha256": "0af9d1effbb36ff74d13c64f752c771ecb9162a451cf151c5425f4d00d4daa7c",
+    "matchesProductionSource": true,
+    "builtAssetMatches": true
+  },
+  {
+    "port": 4329,
+    "path": "central/fonts/IBMPlexSansArabic-Regular.ttf",
+    "status": 200,
+    "contentType": "font/ttf",
+    "bytes": 235924,
+    "sha256": "6f611412270a132bbac838da9259d4c68569b4175f3b3b8fa3fa36a30b56dab9",
+    "matchesProductionSource": true,
+    "builtAssetMatches": true
+  },
+  {
+    "port": 4329,
+    "path": "central/fonts/IBMPlexSansArabic-SemiBold.ttf",
+    "status": 200,
+    "contentType": "font/ttf",
+    "bytes": 244616,
+    "sha256": "597bd5502e5997be4414e4c9c88834b30ff3784250c84f20bce2b20e53ebd467",
+    "matchesProductionSource": true,
+    "builtAssetMatches": true
+  }
+]
