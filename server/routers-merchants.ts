@@ -102,7 +102,7 @@ export const merchantsRouter = router({
             });
         }),
 
-    // Update merchant profile
+    // Retired: tenant profile writes require a reviewed snapshot and live authority.
     update: protectedProcedure
         .input(z.object({
             businessName: z.string().min(1).max(255).optional(), // SEC-R3-03
@@ -113,15 +113,11 @@ export const merchantsRouter = router({
             }, { message: 'منطقة زمنية غير صالحة' }).optional(),
             logoUrl: z.string().url().max(500).nullable().optional(),
         }).strict())
-        .mutation(async ({ input, ctx }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
-            if (!merchant) {
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-            }
-
-            // @ts-ignore
-            await updateMerchant(merchant.id, input);
-            return { success: true };
+        .mutation(() => {
+            throw new TRPCError({
+                code: 'PRECONDITION_FAILED',
+                message: 'merchant_profile:reviewed_write_required',
+            });
         }),
 
     // Get all merchants (Admin only)

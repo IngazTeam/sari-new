@@ -260,7 +260,6 @@ import {
   updateServicePackage,
   updateSubscription,
   updateTemplateTranslation,
-  updateUser,
   updateUserLastSignedIn,
   updateWhatsAppConnectionRequest,
   updateWhatsAppInstance,
@@ -667,26 +666,17 @@ export const appRouter = router({
         return { success: true, message: 'تم تغيير كلمة المرور بنجاح' };
       }),
 
-    // Update user profile
+    // Retired: account renames require the reviewed self-profile snapshot.
     updateProfile: protectedProcedure
       .input(z.object({
         name: z.string().trim().min(2).max(120).optional(),
         email: z.string().trim().email().max(320).transform(value => value.toLowerCase()).optional(),
-      }))
-      .mutation(async ({ input, ctx }) => {
-        if (
-          input.email &&
-          input.email !== ctx.user.email?.trim().toLowerCase()
-        ) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'تغيير البريد يتطلب مسار تحقق مخصص. تواصل مع الدعم حالياً.',
-          });
-        }
-        if (input.name) {
-          await updateUser(ctx.user.id, { name: input.name });
-        }
-        return { success: true };
+      }).strict())
+      .mutation(() => {
+        throw new TRPCError({
+          code: 'PRECONDITION_FAILED',
+          message: 'self_profile:reviewed_write_required',
+        });
       }),
 
   }),

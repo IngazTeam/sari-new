@@ -59,6 +59,7 @@
     "competitor-request-closure-0203",
     "notification-preferences-unique-0204",
     "notification-preferences-reviewed-tenant-only-v1",
-    "currency-reviewed-owner-only-v1"
+    "currency-reviewed-owner-only-v1",
+    "profile-reviewed-writes-only-v1"
   ]
 }
