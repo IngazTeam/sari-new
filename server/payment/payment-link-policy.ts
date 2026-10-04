@@ -1,36 +1,8 @@
 import { createHash } from 'node:crypto';
 import { majorToMinor } from '../../shared/product-money';
 
-export interface PaymentLinkState {
-  isActive: number | boolean;
-  status: string;
-  expiresAt?: string | Date | null;
-  maxUsageCount?: number | null;
-  usageCount: number;
-}
-
-export type PaymentLinkAvailability =
-  | { available: true }
-  | { available: false; reason: 'disabled' | 'expired' | 'exhausted' };
-
-export function getPaymentLinkAvailability(
-  link: PaymentLinkState,
-  now = new Date(),
-): PaymentLinkAvailability {
-  if (!link.isActive || link.status === 'disabled' || link.status === 'completed') {
-    return { available: false, reason: link.status === 'completed' ? 'exhausted' : 'disabled' };
-  }
-
-  if (link.expiresAt && new Date(link.expiresAt).getTime() <= now.getTime()) {
-    return { available: false, reason: 'expired' };
-  }
-
-  if (link.maxUsageCount != null && link.usageCount >= link.maxUsageCount) {
-    return { available: false, reason: 'exhausted' };
-  }
-
-  return { available: true };
-}
+export { getPaymentLinkAvailability } from '../../shared/payment-link-availability';
+export type { PaymentLinkAvailability, PaymentLinkState } from '../../shared/payment-link-availability';
 
 export function halalasToTapAmount(amountInHalalas: number): number {
   if (!Number.isSafeInteger(amountInHalalas) || amountInHalalas < 100) {

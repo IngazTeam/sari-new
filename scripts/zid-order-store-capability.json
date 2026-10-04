@@ -62,6 +62,7 @@
     "currency-reviewed-owner-only-v1",
     "profile-reviewed-writes-only-v1",
     "payment-settings-reviewed-only-v1",
-    "payment-history-scoped-read-only-v1"
+    "payment-history-scoped-read-only-v1",
+    "payment-link-availability-validated-v1"
   ]
 }
