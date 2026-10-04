@@ -14,6 +14,8 @@ export const loyaltyWorkspaceSelection = z
   .object({
     view: z.enum(['customers', 'settings', 'tiers', 'rewards']),
     search: z.string().trim().max(100).default(''),
+    productSearch: z.string().trim().max(100).default(''),
+    productId: loyaltyId.optional(),
     offset: z.number().int().min(0).max(1000000).default(0),
     customerPhone: loyaltyPhone.optional(),
     historyOffset: z.number().int().min(0).max(1000000).default(0),
@@ -81,6 +83,30 @@ export const loyaltyWorkspaceSchema = z
   .object({
     actorId: loyaltyId,
     merchantId: loyaltyId,
+    products: z
+      .array(
+        z
+          .object({
+            id: loyaltyId,
+            name: z.string().max(255),
+            nameAr: z.string().max(255).nullable(),
+            sku: z.string().max(100).nullable(),
+            isActive: z.number().int(),
+          })
+          .strict()
+      )
+      .max(25),
+    selectedProduct: z
+      .object({
+        id: loyaltyId,
+        name: z.string().max(255),
+        nameAr: z.string().max(255).nullable(),
+        sku: z.string().max(100).nullable(),
+        isActive: z.number().int(),
+      })
+      .strict()
+      .nullable(),
+    hasMoreProducts: z.boolean(),
     selection: loyaltyWorkspaceSelection,
     settings: loyaltySettingsInput.nullable(),
     settingsRevision: revision,
@@ -89,6 +115,7 @@ export const loyaltyWorkspaceSchema = z
     rewards: z.array(loyaltyRewardView).max(25),
     total: count,
     hasMore: z.boolean(),
+    hasMoreRewards: z.boolean(),
     stats: z
       .object({
         totalCustomers: count,
@@ -206,3 +233,15 @@ export const loyaltyReceiptSchema = z
   })
   .strict();
 export type LoyaltyReceipt = z.infer<typeof loyaltyReceiptSchema>;
+export const loyaltyClosedReceiptSchema = z
+  .object({
+    closed: z.literal(true),
+    actorId: loyaltyId,
+    merchantId: loyaltyId,
+    requestId: z.string().uuid(),
+  })
+  .strict();
+export const loyaltyRequestOutcome = z.union([
+  loyaltyReceiptSchema,
+  loyaltyClosedReceiptSchema,
+]);

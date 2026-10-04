@@ -1,10 +1,15 @@
 import { createHash } from 'node:crypto';
+import {
+  loyaltyRequestOutcome,
+  loyaltyClosedReceiptSchema,
+} from '../../shared/loyalty-workspace';
 import { TRPCError } from '@trpc/server';
 import { and, eq, or, like, desc, sql } from 'drizzle-orm';
 import {
   loyaltyPoints,
   loyaltyRewards,
   loyaltyTiers,
+  products,
 } from '../../drizzle/schema';
 import {
   getLoyaltySettings,
@@ -288,7 +293,51 @@ export async function readLoyaltyWorkspace(
               selection.historyOffset
             )
           : [];
+      const productFields = {
+        id: products.id,
+        name: products.name,
+        nameAr: products.nameAr,
+        sku: products.sku,
+        isActive: products.isActive,
+      };
+      const productSearch =
+        '%' + selection.productSearch.replace(/[\\%_]/g, m => '\\' + m) + '%';
+      const productRows = await db
+        .select(productFields)
+        .from(products)
+        .where(
+          and(
+            eq(products.merchantId, merchantId),
+            selection.productSearch
+              ? or(
+                  like(products.name, productSearch),
+                  like(products.nameAr, productSearch),
+                  like(products.sku, productSearch)
+                )
+              : undefined
+          )
+        )
+        .orderBy(products.id)
+        .limit(26);
+      const selectedProduct = selection.productId
+        ? ((
+            await db
+              .select(productFields)
+              .from(products)
+              .where(
+                and(
+                  eq(products.merchantId, merchantId),
+                  eq(products.id, selection.productId)
+                )
+              )
+              .limit(1)
+          )[0] ?? null)
+        : null;
       return loyaltyWorkspaceSchema.parse({
+        products: productRows.slice(0, 25),
+        hasMoreProducts: productRows.length > 25,
+        selectedProduct,
+        hasMoreRewards: rewards.length > 25,
         actorId: scope.actorId,
         merchantId,
         selection,
@@ -361,7 +410,7 @@ async function storedReceipt(
       code: 'CONFLICT',
       message: 'loyalty:request_changed',
     });
-  const value = loyaltyReceiptSchema.parse(
+  const value = loyaltyRequestOutcome.parse(
     typeof rows[0].result_json === 'string'
       ? JSON.parse(rows[0].result_json)
       : rows[0].result_json
@@ -376,6 +425,40 @@ async function storedReceipt(
       message: 'loyalty:invalid_receipt',
     });
   return value;
+}
+/** A tombstone serializes against late requests; absence alone cannot cancel an in-flight write. */
+export function closeLoyaltyRequest(scope: LoyaltyScope, requestId: string) {
+  return withLoyaltyTransaction(
+    scope.merchantId,
+    async () => {
+      const previous = await storedReceipt(scope, requestId);
+      if (previous) return previous;
+      const closed = loyaltyClosedReceiptSchema.parse({
+        closed: true,
+        actorId: scope.actorId,
+        merchantId: scope.merchantId,
+        requestId,
+      });
+      const [result] = await loyaltyContext()!.tx.execute<any>(
+        'INSERT INTO loyalty_action_receipts(merchant_id,actor_id,request_key,request_digest,result_json) VALUES (?,?,?,?,?)',
+        [
+          scope.merchantId,
+          scope.actorId,
+          requestId,
+          '0'.repeat(64),
+          JSON.stringify(closed),
+        ]
+      );
+      if (
+        result.affectedRows !== 1 ||
+        !Number.isSafeInteger(Number(result.insertId)) ||
+        Number(result.insertId) < 1
+      )
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+      return closed;
+    },
+    scope
+  );
 }
 export function readLoyaltyReceipt(scope: LoyaltyScope, requestId: string) {
   return withLoyaltyTransaction(
@@ -392,7 +475,14 @@ export function applyLoyaltyAction(scope: LoyaltyScope, raw: LoyaltyAction) {
     scope.merchantId,
     async () => {
       const previous = await storedReceipt(scope, input.requestId, digest);
-      if (previous) return previous;
+      if (previous) {
+        if ('closed' in previous)
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'loyalty:request_closed',
+          });
+        return previous;
+      }
       let targetId: number | null = 'id' in input ? input.id : null,
         newBalance: number | null = null;
       const merchantId = scope.merchantId;

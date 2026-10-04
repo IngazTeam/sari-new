@@ -1,0 +1,20 @@
+[
+  {
+    "rawKeys": false,
+    "scope": "متجر رقم #17070 · معطّل",
+    "title": "عملاء الولاء",
+    "view": "customers"
+  },
+  {
+    "rawKeys": false,
+    "scope": "متجر رقم #17070 · معطّل",
+    "title": "المكافآت",
+    "view": "rewards"
+  },
+  {
+    "rawKeys": false,
+    "scope": "متجر رقم #17070 · معطّل",
+    "title": "مستويات العملاء",
+    "view": "tiers"
+  }
+]

@@ -9,6 +9,7 @@ import {
   readLoyaltyWorkspace,
   readLoyaltyReceipt,
   applyLoyaltyAction,
+  closeLoyaltyRequest,
 } from './loyalty/workspace';
 import {
   addPointsToCustomer,
@@ -66,6 +67,7 @@ const found = <T>(value: T | null | undefined): T => {
   return value;
 };
 export const loyaltyRouter = router({
+  closeRequest:procedure.input(z.object({requestId:z.string().uuid(),reviewed:z.literal(true)})).mutation(({ctx,input})=>closeLoyaltyRequest({merchantId:ctx.merchantId,actorId:ctx.user.id,sessionId:ctx.session?.sessionId||'',permission:'campaigns.manage'},input.requestId)),
   workspace: procedure
     .input(loyaltyWorkspaceSelection)
     .query(({ ctx, input }) =>

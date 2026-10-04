@@ -1,0 +1,616 @@
+{
+  "pages": [
+    {
+      "view": "rewards",
+      "lang": "ar",
+      "requestedWidth": 320,
+      "inputFonts": [
+        "16px"
+      ],
+      "rawKeys": false,
+      "scroll": 290,
+      "smallTargets": [],
+      "title": "المكافآت",
+      "width": 290
+    },
+    {
+      "view": "rewards",
+      "lang": "ar",
+      "requestedWidth": 390,
+      "inputFonts": [
+        "16px"
+      ],
+      "rawKeys": false,
+      "scroll": 360,
+      "smallTargets": [],
+      "title": "المكافآت",
+      "width": 360
+    },
+    {
+      "view": "rewards",
+      "lang": "ar",
+      "requestedWidth": 768,
+      "inputFonts": [
+        "16px"
+      ],
+      "rawKeys": false,
+      "scroll": 738,
+      "smallTargets": [],
+      "title": "المكافآت",
+      "width": 738
+    },
+    {
+      "view": "rewards",
+      "lang": "ar",
+      "requestedWidth": 1440,
+      "inputFonts": [
+        "16px"
+      ],
+      "rawKeys": false,
+      "scroll": 1410,
+      "smallTargets": [],
+      "title": "المكافآت",
+      "width": 1410
+    },
+    {
+      "view": "customers",
+      "lang": "ar",
+      "requestedWidth": 320,
+      "inputFonts": [
+        "16px",
+        "16px"
+      ],
+      "rawKeys": false,
+      "scroll": 290,
+      "smallTargets": [],
+      "title": "عملاء الولاء",
+      "width": 290
+    },
+    {
+      "view": "customers",
+      "lang": "ar",
+      "requestedWidth": 390,
+      "inputFonts": [
+        "16px",
+        "16px"
+      ],
+      "rawKeys": false,
+      "scroll": 360,
+      "smallTargets": [],
+      "title": "عملاء الولاء",
+      "width": 360
+    },
+    {
+      "view": "customers",
+      "lang": "ar",
+      "requestedWidth": 768,
+      "inputFonts": [
+        "16px",
+        "16px"
+      ],
+      "rawKeys": false,
+      "scroll": 738,
+      "smallTargets": [],
+      "title": "عملاء الولاء",
+      "width": 738
+    },
+    {
+      "view": "customers",
+      "lang": "ar",
+      "requestedWidth": 1440,
+      "inputFonts": [
+        "16px",
+        "16px"
+      ],
+      "rawKeys": false,
+      "scroll": 1410,
+      "smallTargets": [],
+      "title": "عملاء الولاء",
+      "width": 1410
+    },
+    {
+      "view": "settings",
+      "lang": "ar",
+      "requestedWidth": 320,
+      "inputFonts": [],
+      "rawKeys": false,
+      "scroll": 290,
+      "smallTargets": [],
+      "title": "إعدادات الولاء",
+      "width": 290
+    },
+    {
+      "view": "settings",
+      "lang": "ar",
+      "requestedWidth": 390,
+      "inputFonts": [],
+      "rawKeys": false,
+      "scroll": 360,
+      "smallTargets": [],
+      "title": "إعدادات الولاء",
+      "width": 360
+    },
+    {
+      "view": "settings",
+      "lang": "ar",
+      "requestedWidth": 768,
+      "inputFonts": [],
+      "rawKeys": false,
+      "scroll": 738,
+      "smallTargets": [],
+      "title": "إعدادات الولاء",
+      "width": 738
+    },
+    {
+      "view": "settings",
+      "lang": "ar",
+      "requestedWidth": 1440,
+      "inputFonts": [],
+      "rawKeys": false,
+      "scroll": 1410,
+      "smallTargets": [],
+      "title": "إعدادات الولاء",
+      "width": 1410
+    },
+    {
+      "view": "tiers",
+      "lang": "ar",
+      "requestedWidth": 320,
+      "inputFonts": [],
+      "rawKeys": false,
+      "scroll": 290,
+      "smallTargets": [],
+      "title": "مستويات العملاء",
+      "width": 290
+    },
+    {
+      "view": "tiers",
+      "lang": "ar",
+      "requestedWidth": 390,
+      "inputFonts": [],
+      "rawKeys": false,
+      "scroll": 360,
+      "smallTargets": [],
+      "title": "مستويات العملاء",
+      "width": 360
+    },
+    {
+      "view": "tiers",
+      "lang": "ar",
+      "requestedWidth": 768,
+      "inputFonts": [],
+      "rawKeys": false,
+      "scroll": 738,
+      "smallTargets": [],
+      "title": "مستويات العملاء",
+      "width": 738
+    },
+    {
+      "view": "tiers",
+      "lang": "ar",
+      "requestedWidth": 1440,
+      "inputFonts": [],
+      "rawKeys": false,
+      "scroll": 1410,
+      "smallTargets": [],
+      "title": "مستويات العملاء",
+      "width": 1410
+    },
+    {
+      "view": "customers",
+      "lang": "en",
+      "requestedWidth": 320,
+      "inputFonts": [
+        "16px",
+        "16px"
+      ],
+      "rawKeys": false,
+      "scroll": 290,
+      "smallTargets": [],
+      "title": "Loyalty customers",
+      "width": 290
+    },
+    {
+      "view": "customers",
+      "lang": "en",
+      "requestedWidth": 390,
+      "inputFonts": [
+        "16px",
+        "16px"
+      ],
+      "rawKeys": false,
+      "scroll": 360,
+      "smallTargets": [],
+      "title": "Loyalty customers",
+      "width": 360
+    },
+    {
+      "view": "customers",
+      "lang": "en",
+      "requestedWidth": 768,
+      "inputFonts": [
+        "16px",
+        "16px"
+      ],
+      "rawKeys": false,
+      "scroll": 738,
+      "smallTargets": [],
+      "title": "Loyalty customers",
+      "width": 738
+    },
+    {
+      "view": "customers",
+      "lang": "en",
+      "requestedWidth": 1440,
+      "inputFonts": [
+        "16px",
+        "16px"
+      ],
+      "rawKeys": false,
+      "scroll": 1410,
+      "smallTargets": [],
+      "title": "Loyalty customers",
+      "width": 1410
+    },
+    {
+      "view": "settings",
+      "lang": "en",
+      "requestedWidth": 320,
+      "inputFonts": [],
+      "rawKeys": false,
+      "scroll": 290,
+      "smallTargets": [],
+      "title": "Loyalty settings",
+      "width": 290
+    },
+    {
+      "view": "settings",
+      "lang": "en",
+      "requestedWidth": 390,
+      "inputFonts": [],
+      "rawKeys": false,
+      "scroll": 360,
+      "smallTargets": [],
+      "title": "Loyalty settings",
+      "width": 360
+    },
+    {
+      "view": "settings",
+      "lang": "en",
+      "requestedWidth": 768,
+      "inputFonts": [],
+      "rawKeys": false,
+      "scroll": 738,
+      "smallTargets": [],
+      "title": "Loyalty settings",
+      "width": 738
+    },
+    {
+      "view": "settings",
+      "lang": "en",
+      "requestedWidth": 1440,
+      "inputFonts": [],
+      "rawKeys": false,
+      "scroll": 1410,
+      "smallTargets": [],
+      "title": "Loyalty settings",
+      "width": 1410
+    },
+    {
+      "view": "tiers",
+      "lang": "en",
+      "requestedWidth": 320,
+      "inputFonts": [],
+      "rawKeys": false,
+      "scroll": 290,
+      "smallTargets": [],
+      "title": "Customer tiers",
+      "width": 290
+    },
+    {
+      "view": "tiers",
+      "lang": "en",
+      "requestedWidth": 390,
+      "inputFonts": [],
+      "rawKeys": false,
+      "scroll": 360,
+      "smallTargets": [],
+      "title": "Customer tiers",
+      "width": 360
+    },
+    {
+      "view": "tiers",
+      "lang": "en",
+      "requestedWidth": 768,
+      "inputFonts": [],
+      "rawKeys": false,
+      "scroll": 738,
+      "smallTargets": [],
+      "title": "Customer tiers",
+      "width": 738
+    },
+    {
+      "view": "tiers",
+      "lang": "en",
+      "requestedWidth": 1440,
+      "inputFonts": [],
+      "rawKeys": false,
+      "scroll": 1410,
+      "smallTargets": [],
+      "title": "Customer tiers",
+      "width": 1410
+    },
+    {
+      "view": "rewards",
+      "lang": "en",
+      "requestedWidth": 320,
+      "inputFonts": [
+        "16px"
+      ],
+      "rawKeys": false,
+      "scroll": 290,
+      "smallTargets": [],
+      "title": "Rewards",
+      "width": 290
+    },
+    {
+      "view": "rewards",
+      "lang": "en",
+      "requestedWidth": 390,
+      "inputFonts": [
+        "16px"
+      ],
+      "rawKeys": false,
+      "scroll": 360,
+      "smallTargets": [],
+      "title": "Rewards",
+      "width": 360
+    },
+    {
+      "view": "rewards",
+      "lang": "en",
+      "requestedWidth": 768,
+      "inputFonts": [
+        "16px"
+      ],
+      "rawKeys": false,
+      "scroll": 738,
+      "smallTargets": [],
+      "title": "Rewards",
+      "width": 738
+    },
+    {
+      "view": "rewards",
+      "lang": "en",
+      "requestedWidth": 1440,
+      "inputFonts": [
+        "16px"
+      ],
+      "rawKeys": false,
+      "scroll": 1410,
+      "smallTargets": [],
+      "title": "Rewards",
+      "width": 1410
+    }
+  ],
+  "rewardDialog": {
+    "buttons": [
+      {
+        "height": 45.1875,
+        "label": "إلغاء"
+      },
+      {
+        "height": 45.1875,
+        "label": "مراجعة التغيير"
+      },
+      {
+        "height": 44,
+        "label": "إغلاق"
+      }
+    ],
+    "height": 810,
+    "inputFonts": [
+      {
+        "font": "16px",
+        "id": "loyalty-titleAr",
+        "width": 194
+      },
+      {
+        "font": "16px",
+        "id": "loyalty-title",
+        "width": 194
+      },
+      {
+        "font": "16px",
+        "id": "loyalty-type",
+        "width": 194
+      },
+      {
+        "font": "16px",
+        "id": "loyalty-pointsCost",
+        "width": 194
+      },
+      {
+        "font": "16px",
+        "id": "loyalty-isActive",
+        "width": 44
+      },
+      {
+        "font": "16px",
+        "id": "loyalty-maxRedemptions",
+        "width": 194
+      },
+      {
+        "font": "16px",
+        "id": "loyalty-descriptionAr",
+        "width": 194
+      },
+      {
+        "font": "16px",
+        "id": "loyalty-description",
+        "width": 194
+      },
+      {
+        "font": "16px",
+        "id": "loyalty-validFrom",
+        "width": 194
+      },
+      {
+        "font": "16px",
+        "id": "loyalty-validUntil",
+        "width": 194
+      },
+      {
+        "font": "16px",
+        "id": "loyalty-imageUrl",
+        "width": 194
+      },
+      {
+        "font": "16px",
+        "id": "loyalty-termsAndConditionsAr",
+        "width": 194
+      },
+      {
+        "font": "16px",
+        "id": "loyalty-termsAndConditions",
+        "width": 194
+      }
+    ],
+    "rect": {
+      "left": 46,
+      "right": 304
+    },
+    "scroll": 226,
+    "scrollHeight": 1873,
+    "width": 226
+  },
+  "otherDialogs": [
+    {
+      "view": "settings",
+      "lang": "ar",
+      "fonts": [
+        "16px",
+        "16px",
+        "16px",
+        "16px",
+        "16px",
+        "16px",
+        "16px",
+        "16px",
+        "16px",
+        "16px"
+      ],
+      "scroll": 226,
+      "shortButtons": [],
+      "title": "تعديل · إعدادات الولاء",
+      "width": 226
+    },
+    {
+      "view": "tiers",
+      "lang": "ar",
+      "fonts": [
+        "16px",
+        "16px",
+        "16px",
+        "16px",
+        "16px",
+        "16px",
+        "16px",
+        "16px",
+        "16px"
+      ],
+      "scroll": 226,
+      "shortButtons": [],
+      "title": "تعديل · مستويات العملاء",
+      "width": 226
+    },
+    {
+      "view": "customers",
+      "lang": "ar",
+      "fonts": [
+        "16px",
+        "16px",
+        "16px"
+      ],
+      "scroll": 256,
+      "shortButtons": [],
+      "title": "إضافة نقاط",
+      "width": 256
+    },
+    {
+      "view": "settings",
+      "lang": "en",
+      "fonts": [
+        "16px",
+        "16px",
+        "16px",
+        "16px",
+        "16px",
+        "16px",
+        "16px",
+        "16px",
+        "16px",
+        "16px"
+      ],
+      "scroll": 226,
+      "shortButtons": [],
+      "title": "Edit · Loyalty settings",
+      "width": 226
+    },
+    {
+      "view": "tiers",
+      "lang": "en",
+      "fonts": [
+        "16px",
+        "16px",
+        "16px",
+        "16px",
+        "16px",
+        "16px",
+        "16px",
+        "16px",
+        "16px"
+      ],
+      "scroll": 226,
+      "shortButtons": [],
+      "title": "Edit · Customer tiers",
+      "width": 226
+    },
+    {
+      "view": "customers",
+      "lang": "en",
+      "fonts": [
+        "16px",
+        "16px",
+        "16px"
+      ],
+      "scroll": 256,
+      "shortButtons": [],
+      "title": "Add points",
+      "width": 256
+    },
+    {
+      "view": "rewards",
+      "lang": "en",
+      "fonts": [
+        "16px",
+        "16px",
+        "16px",
+        "16px",
+        "16px",
+        "16px",
+        "16px",
+        "16px",
+        "16px",
+        "16px",
+        "16px",
+        "16px",
+        "16px"
+      ],
+      "scroll": 226,
+      "shortButtons": [],
+      "title": "Create reward",
+      "width": 226
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-04T17:41:51.009Z",
+  "generatedAt": "2026-10-04T18:04:50.460Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 604,
-      "controls": 2815
+      "files": 606,
+      "controls": 2800
     }
   },
   "addedFiles": [
@@ -395,7 +395,9 @@
     "client/src/components/merchant/PaymentLinkCreate.tsx",
     "client/src/components/merchant/PaymentSettingsWorkspace.tsx",
     "client/src/lib/payment-settings-labels.ts",
-    "client/src/hooks/use-toast.ts",
+    "client/src/components/merchant/LoyaltyWorkspace.tsx",
+    "client/src/lib/loyalty-workspace-labels.ts",
+    "client/src/lib/loyalty-editor.ts",
     "client/src/_core/hooks/useAuth.ts",
     "client/src/components/merchant/PlatformIntegrationsWorkspace.tsx",
     "client/src/components/merchant/CalendarConnectionCard.tsx",
@@ -549,6 +551,10 @@
     "client/src/pages/PaymentDetails.tsx",
     "client/src/pages/merchant/PaymentLinks.tsx",
     "client/src/pages/merchant/PaymentSettings.tsx",
+    "client/src/pages/LoyaltySettings.tsx",
+    "client/src/pages/LoyaltyTiers.tsx",
+    "client/src/pages/LoyaltyRewards.tsx",
+    "client/src/pages/LoyaltyCustomers.tsx",
     "client/src/pages/PlatformIntegrations.tsx",
     "client/src/pages/NotificationSettings.tsx",
     "client/src/pages/CurrencySettings.tsx",
@@ -2500,38 +2506,90 @@
     {
       "route": "/merchant/loyalty/settings",
       "controlsBefore": 11,
-      "controlsNow": 11,
-      "removedQueries": [],
-      "addedQueries": [],
-      "removedMutations": [],
-      "addedMutations": []
+      "controlsNow": 37,
+      "removedQueries": [
+        "loyalty.getSettings"
+      ],
+      "addedQueries": [
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "loyalty.workspace",
+        "loyalty.receipt"
+      ],
+      "removedMutations": [
+        "loyalty.updateSettings"
+      ],
+      "addedMutations": [
+        "loyalty.reviewedAction",
+        "loyalty.closeRequest"
+      ]
     },
     {
       "route": "/merchant/loyalty/tiers",
       "controlsBefore": 8,
-      "controlsNow": 8,
-      "removedQueries": [],
-      "addedQueries": [],
-      "removedMutations": [],
-      "addedMutations": []
+      "controlsNow": 37,
+      "removedQueries": [
+        "loyalty.getTiers"
+      ],
+      "addedQueries": [
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "loyalty.workspace",
+        "loyalty.receipt"
+      ],
+      "removedMutations": [
+        "loyalty.updateTier"
+      ],
+      "addedMutations": [
+        "loyalty.reviewedAction",
+        "loyalty.closeRequest"
+      ]
     },
     {
       "route": "/merchant/loyalty/rewards",
       "controlsBefore": 19,
-      "controlsNow": 19,
-      "removedQueries": [],
-      "addedQueries": [],
-      "removedMutations": [],
-      "addedMutations": []
+      "controlsNow": 37,
+      "removedQueries": [
+        "loyalty.getRewards"
+      ],
+      "addedQueries": [
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "loyalty.workspace",
+        "loyalty.receipt"
+      ],
+      "removedMutations": [
+        "loyalty.createReward",
+        "loyalty.updateReward",
+        "loyalty.deleteReward"
+      ],
+      "addedMutations": [
+        "loyalty.reviewedAction",
+        "loyalty.closeRequest"
+      ]
     },
     {
       "route": "/merchant/loyalty/customers",
       "controlsBefore": 14,
-      "controlsNow": 14,
-      "removedQueries": [],
-      "addedQueries": [],
-      "removedMutations": [],
-      "addedMutations": []
+      "controlsNow": 37,
+      "removedQueries": [
+        "loyalty.getAllCustomersPoints",
+        "loyalty.getStats"
+      ],
+      "addedQueries": [
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "loyalty.workspace",
+        "loyalty.receipt"
+      ],
+      "removedMutations": [
+        "loyalty.addPoints",
+        "loyalty.deductPoints"
+      ],
+      "addedMutations": [
+        "loyalty.reviewedAction",
+        "loyalty.closeRequest"
+      ]
     },
     {
       "route": "/merchant/integrations-dashboard",

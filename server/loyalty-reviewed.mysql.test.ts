@@ -77,6 +77,18 @@ describe.skipIf(!process.env.DATABASE_URL)('Reviewed loyalty workspace and durab
   const i=await credit();await caller.reviewedAction(i);await q('UPDATE loyalty_action_receipts SET actor_id=? WHERE merchant_id=?',[b.userId,a.merchantId]);await expect(caller.receipt({requestId:i.requestId})).rejects.toMatchObject({code:'CONFLICT'});await expect(caller.reviewedAction(i)).rejects.toMatchObject({code:'CONFLICT'});
   await q('UPDATE auth_sessions SET revoked_at=UTC_TIMESTAMP() WHERE user_id=?',[a.userId]);await expect(caller.receipt({requestId:i.requestId})).rejects.toMatchObject({code:'UNAUTHORIZED'});await expect(read()).rejects.toMatchObject({code:'UNAUTHORIZED'});
  });
+ it('closes an unapplied request permanently and refuses a late write',async()=>{
+  const i=await credit(),closed=await caller.closeRequest({requestId:i.requestId,reviewed:true});expect(closed).toMatchObject({closed:true,actorId:a.userId,merchantId:a.merchantId});expect(await caller.closeRequest({requestId:i.requestId,reviewed:true})).toEqual(closed);await expect(caller.reviewedAction(i)).rejects.toMatchObject({code:'CONFLICT'});expect((await read()).customer).toBeNull();expect(await caller.receipt({requestId:i.requestId})).toEqual(closed);
+ });
+ it('returns the confirmed receipt if closure races after a successful write',async()=>{
+  const i=await credit(),receipt=await caller.reviewedAction(i);expect(await caller.closeRequest({requestId:i.requestId,reviewed:true})).toEqual(receipt);expect((await read()).customer?.totalPoints).toBe(100);
+ });
+ it('searches only owned product choices and resolves an owned selection beyond the page',async()=>{
+  for(let n=0;n<26;n++)await q("INSERT INTO products(merchantId,name,price) VALUES (?,? ,100)",[a.merchantId,'Local '+n]);
+  const foreign=Number((await q("INSERT INTO products(merchantId,name,price) VALUES (?,'Private product',100)",[b.merchantId])).insertId);
+  const first=await caller.workspace({view:'rewards'});expect(first.products).toHaveLength(25);expect(first.hasMoreProducts).toBe(true);const found=await caller.workspace({view:'rewards',productSearch:'Local 25'});expect(found.products).toHaveLength(1);
+  expect((await caller.workspace({view:'rewards',productId:found.products[0].id})).selectedProduct?.name).toBe('Local 25');expect((await caller.workspace({view:'rewards',productId:foreign})).selectedProduct).toBeNull();expect((await caller.workspace({view:'rewards',productSearch:'Private'})).products).toEqual([]);
+ });
  it('returns no receipt for a different tenant and never reuses a foreign review hash',async()=>{
   const i=await credit();await caller.reviewedAction(i);await q('UPDATE loyalty_action_receipts SET merchant_id=? WHERE merchant_id=?',[b.merchantId,a.merchantId]);expect(await caller.receipt({requestId:i.requestId})).toBeNull();
   const other=await q('SELECT id FROM loyalty_points WHERE merchant_id=?',[a.merchantId]);await q('UPDATE loyalty_points SET merchant_id=? WHERE id=?',[b.merchantId,other[0].id]);const d=await read();expect(d.customer).toBeNull();expect(d.customers).toEqual([]);

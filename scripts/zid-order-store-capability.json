@@ -86,6 +86,7 @@
     "team-session-scoped-workspace-v1",
     "team-reviewed-workspace-v1",
     "loyalty-atomic-tenant-ledger-v1",
-    "loyalty-reviewed-receipts-0207"
+    "loyalty-reviewed-receipts-0207",
+    "loyalty-shared-reviewed-workspace-v1"
   ]
 }

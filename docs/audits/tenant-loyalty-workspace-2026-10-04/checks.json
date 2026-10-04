@@ -1,0 +1,43 @@
+{
+  "unit": {
+    "passed": 212,
+    "failed": 0
+  },
+  "mysql": {
+    "passed": 49,
+    "failed": 0
+  },
+  "types": "passed",
+  "build": "passed",
+  "preview": "passed: 28 locale namespaces",
+  "releasePassed": 77,
+  "translations": {
+    "advertisedLocale": "ar",
+    "callsChecked": 14083,
+    "dynamicKeysChecked": 852,
+    "unresolvedDynamicCalls": [],
+    "missing": [],
+    "interpolationErrors": []
+  },
+  "inventory": {
+    "routes": 126,
+    "files": 606,
+    "controls": 2800,
+    "browserRequests": 3,
+    "imperativeReads": 53,
+    "unresolvedReads": 0,
+    "queryCalls": 393,
+    "errorSignalMissing": 37,
+    "choices": 71,
+    "conditions": 1644
+  },
+  "designCounts": {
+    "تفصيلي جزئي": 65,
+    "إعادة توجيه": 8,
+    "تفصيلي": 51,
+    "موك أب عام": 2
+  },
+  "browserPageCases": 32,
+  "browserDialogCases": 8,
+  "actualLocalReads": 4
+}

@@ -3177,6 +3177,218 @@
           "contains": "teamWorkspaceSchema.parse"
         }
       ]
+    },
+    {
+      "routes": [
+        "/merchant/loyalty/settings"
+      ],
+      "removed": [
+        "loyalty.getSettings",
+        "loyalty.updateSettings"
+      ],
+      "required": [
+        "loyalty.workspace",
+        "loyalty.reviewedAction"
+      ],
+      "reviewedIn": 524,
+      "featureMappings": [
+        {
+          "before": "loyalty.getSettings",
+          "after": [
+            "loyalty.workspace"
+          ]
+        },
+        {
+          "before": "loyalty.updateSettings",
+          "after": [
+            "loyalty.reviewedAction"
+          ]
+        }
+      ],
+      "note": "The shared tenant/account-bound loyalty workspace preserves the old page actions and every settings/tier/reward field, adds global search, pagination, customer ledger/redemptions, product search, reviewed actions and recoverable receipts. Legacy write endpoints are retired in the next phase.",
+      "evidence": [
+        "docs/audits/tenant-loyalty-workspace-2026-10-04/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "client/src/components/merchant/LoyaltyWorkspace.tsx",
+          "contains": "trpc.loyalty.workspace.useQuery"
+        },
+        {
+          "file": "client/src/components/merchant/LoyaltyWorkspace.tsx",
+          "contains": "trpc.loyalty.reviewedAction.useMutation"
+        },
+        {
+          "file": "server/loyalty/workspace.ts",
+          "contains": "closeLoyaltyRequest"
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/loyalty/tiers"
+      ],
+      "removed": [
+        "loyalty.getTiers",
+        "loyalty.updateTier"
+      ],
+      "required": [
+        "loyalty.workspace",
+        "loyalty.reviewedAction"
+      ],
+      "reviewedIn": 524,
+      "featureMappings": [
+        {
+          "before": "loyalty.getTiers",
+          "after": [
+            "loyalty.workspace"
+          ]
+        },
+        {
+          "before": "loyalty.updateTier",
+          "after": [
+            "loyalty.reviewedAction"
+          ]
+        }
+      ],
+      "note": "The shared tenant/account-bound loyalty workspace preserves the old page actions and every settings/tier/reward field, adds global search, pagination, customer ledger/redemptions, product search, reviewed actions and recoverable receipts. Legacy write endpoints are retired in the next phase.",
+      "evidence": [
+        "docs/audits/tenant-loyalty-workspace-2026-10-04/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "client/src/components/merchant/LoyaltyWorkspace.tsx",
+          "contains": "trpc.loyalty.workspace.useQuery"
+        },
+        {
+          "file": "client/src/components/merchant/LoyaltyWorkspace.tsx",
+          "contains": "trpc.loyalty.reviewedAction.useMutation"
+        },
+        {
+          "file": "server/loyalty/workspace.ts",
+          "contains": "closeLoyaltyRequest"
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/loyalty/rewards"
+      ],
+      "removed": [
+        "loyalty.getRewards",
+        "loyalty.createReward",
+        "loyalty.updateReward",
+        "loyalty.deleteReward"
+      ],
+      "required": [
+        "loyalty.workspace",
+        "loyalty.reviewedAction"
+      ],
+      "reviewedIn": 524,
+      "featureMappings": [
+        {
+          "before": "loyalty.getRewards",
+          "after": [
+            "loyalty.workspace"
+          ]
+        },
+        {
+          "before": "loyalty.createReward",
+          "after": [
+            "loyalty.reviewedAction"
+          ]
+        },
+        {
+          "before": "loyalty.updateReward",
+          "after": [
+            "loyalty.reviewedAction"
+          ]
+        },
+        {
+          "before": "loyalty.deleteReward",
+          "after": [
+            "loyalty.reviewedAction"
+          ]
+        }
+      ],
+      "note": "The shared tenant/account-bound loyalty workspace preserves the old page actions and every settings/tier/reward field, adds global search, pagination, customer ledger/redemptions, product search, reviewed actions and recoverable receipts. Legacy write endpoints are retired in the next phase.",
+      "evidence": [
+        "docs/audits/tenant-loyalty-workspace-2026-10-04/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "client/src/components/merchant/LoyaltyWorkspace.tsx",
+          "contains": "trpc.loyalty.workspace.useQuery"
+        },
+        {
+          "file": "client/src/components/merchant/LoyaltyWorkspace.tsx",
+          "contains": "trpc.loyalty.reviewedAction.useMutation"
+        },
+        {
+          "file": "server/loyalty/workspace.ts",
+          "contains": "closeLoyaltyRequest"
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/loyalty/customers"
+      ],
+      "removed": [
+        "loyalty.getAllCustomersPoints",
+        "loyalty.getStats",
+        "loyalty.addPoints",
+        "loyalty.deductPoints"
+      ],
+      "required": [
+        "loyalty.workspace",
+        "loyalty.reviewedAction"
+      ],
+      "reviewedIn": 524,
+      "featureMappings": [
+        {
+          "before": "loyalty.getAllCustomersPoints",
+          "after": [
+            "loyalty.workspace"
+          ]
+        },
+        {
+          "before": "loyalty.getStats",
+          "after": [
+            "loyalty.workspace"
+          ]
+        },
+        {
+          "before": "loyalty.addPoints",
+          "after": [
+            "loyalty.reviewedAction"
+          ]
+        },
+        {
+          "before": "loyalty.deductPoints",
+          "after": [
+            "loyalty.reviewedAction"
+          ]
+        }
+      ],
+      "note": "The shared tenant/account-bound loyalty workspace preserves the old page actions and every settings/tier/reward field, adds global search, pagination, customer ledger/redemptions, product search, reviewed actions and recoverable receipts. Legacy write endpoints are retired in the next phase.",
+      "evidence": [
+        "docs/audits/tenant-loyalty-workspace-2026-10-04/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "client/src/components/merchant/LoyaltyWorkspace.tsx",
+          "contains": "trpc.loyalty.workspace.useQuery"
+        },
+        {
+          "file": "client/src/components/merchant/LoyaltyWorkspace.tsx",
+          "contains": "trpc.loyalty.reviewedAction.useMutation"
+        },
+        {
+          "file": "server/loyalty/workspace.ts",
+          "contains": "closeLoyaltyRequest"
+        }
+      ]
     }
   ]
 }

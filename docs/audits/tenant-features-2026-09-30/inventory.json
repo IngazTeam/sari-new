@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-04T17:41:51.009Z",
+  "generatedAt": "2026-10-04T18:04:50.460Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -20059,84 +20059,284 @@
     },
     {
       "file": "client/src/pages/LoyaltySettings.tsx",
-      "hash": "7eefa02af188",
-      "queries": [
-        "loyalty.getSettings"
-      ],
-      "mutations": [
-        "loyalty.updateSettings"
-      ],
-      "imperativeReads": [],
-      "browserRequests": [],
-      "sections": [
-        {
-          "label": "إعدادات برنامج الولاء",
-          "line": 79,
-          "tag": "h1"
-        },
-        {
-          "label": "خطأ",
-          "line": 88,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "إدارة برنامج النقاط والمكافآت",
-          "line": 108,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "تحديد قيمة النقاط وطريقة حسابها",
-          "line": 161,
-          "tag": "CardTitle"
-        }
-      ],
-      "choices": [],
-      "handlers": [
-        {
-          "name": "handleSave",
-          "line": 49,
-          "calls": [
-            "updateSettings"
-          ]
-        }
-      ],
-      "queryStates": [
-        {
-          "query": "loyalty.getSettings",
-          "binding": "{ data: settings, isLoading, refetch }",
-          "line": 15,
-          "errorSignal": false,
-          "loadingSignal": true,
-          "enabled": null
-        }
-      ],
-      "conditions": [],
-      "imports": [
-        "client/src/hooks/use-toast.ts"
-      ],
-      "controlCount": 11
-    },
-    {
-      "file": "client/src/hooks/use-toast.ts",
-      "hash": "f9bb878946fd",
+      "hash": "9955455009d4",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
       "browserRequests": [],
       "sections": [],
       "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [
+        "client/src/components/merchant/LoyaltyWorkspace.tsx"
+      ],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/components/merchant/LoyaltyWorkspace.tsx",
+      "hash": "1caa84e05de2",
+      "queries": [
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "loyalty.workspace",
+        "loyalty.receipt"
+      ],
+      "mutations": [
+        "loyalty.reviewedAction",
+        "loyalty.closeRequest"
+      ],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [
+        {
+          "label": "",
+          "line": 607,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 622,
+          "tag": "summary"
+        },
+        {
+          "label": "",
+          "line": 813,
+          "tag": "h1"
+        },
+        {
+          "label": "",
+          "line": 863,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 911,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 935,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 957,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 979,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 1072,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 1117,
+          "tag": "h2"
+        },
+        {
+          "label": "·",
+          "line": 1144,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 1196,
+          "tag": "h3"
+        },
+        {
+          "label": "#",
+          "line": 1219,
+          "tag": "h3"
+        },
+        {
+          "label": "",
+          "line": 1263,
+          "tag": "summary"
+        },
+        {
+          "label": "",
+          "line": 1289,
+          "tag": "DialogTitle"
+        },
+        {
+          "label": "",
+          "line": 1304,
+          "tag": "h3"
+        },
+        {
+          "label": "",
+          "line": 1337,
+          "tag": "h3"
+        },
+        {
+          "label": "",
+          "line": 1345,
+          "tag": "h3"
+        },
+        {
+          "label": "",
+          "line": 1358,
+          "tag": "summary"
+        }
+      ],
+      "choices": [],
       "handlers": [
         {
-          "name": "addToRemoveQueue",
-          "line": 56,
+          "name": "open",
+          "line": 289,
+          "calls": []
+        },
+        {
+          "name": "close",
+          "line": 306,
           "calls": []
         },
         {
           "name": "update",
-          "line": 141,
+          "line": 696,
           "calls": []
         }
       ],
+      "queryStates": [
+        {
+          "query": "auth.me",
+          "binding": "user",
+          "line": 87,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        },
+        {
+          "query": "merchants.workspaceIdentity",
+          "binding": "identity",
+          "line": 88,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": "!!user.data?.id && !user.error && !user.isFetching"
+        },
+        {
+          "query": "loyalty.workspace",
+          "binding": "query",
+          "line": 197,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        },
+        {
+          "query": "loyalty.receipt",
+          "binding": "receipt",
+          "line": 200,
+          "errorSignal": false,
+          "loadingSignal": false,
+          "enabled": "false "
+        }
+      ],
+      "conditions": [],
+      "imports": [
+        "client/src/lib/usage-workspace-view.ts",
+        "client/src/lib/loyalty-workspace-labels.ts",
+        "client/src/lib/loyalty-editor.ts"
+      ],
+      "controlCount": 37
+    },
+    {
+      "file": "client/src/lib/loyalty-workspace-labels.ts",
+      "hash": "f3eab12b394e",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/lib/loyalty-editor.ts",
+      "hash": "23e15a942c83",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [
+        {
+          "name": "settingsFields",
+          "line": 42,
+          "values": [
+            "f('isEnabled', 'flag')",
+            "f('pointsPerCurrency', 'number')",
+            "f('currencyPerPoint', 'number')",
+            "f('pointsExpiryDays', 'number')",
+            "f('enableReferralBonus', 'flag', true)",
+            "f('referralBonusPoints', 'number', true)",
+            "f('enableReviewBonus', 'flag', true)",
+            "f('reviewBonusPoints', 'number', true)",
+            "f('enableBirthdayBonus', 'flag', true)",
+            "f('birthdayBonusPoints', 'number', true)"
+          ]
+        },
+        {
+          "name": "tierFields",
+          "line": 54,
+          "values": [
+            "f('nameAr')",
+            "f('name')",
+            "f('minPoints', 'number')",
+            "f('discountPercentage', 'number')",
+            "f('freeShipping', 'flag')",
+            "f('priority', 'number')",
+            "f('color', 'color', true)",
+            "f('icon', 'text', true)",
+            "f('benefits', 'textarea', true, true)"
+          ]
+        },
+        {
+          "name": "rewardFields",
+          "line": 65,
+          "values": [
+            "f('titleAr')",
+            "f('title')",
+            {
+              "options": [
+                "gift",
+                "discount",
+                "free_product",
+                "free_shipping"
+              ]
+            },
+            "f('pointsCost', 'number')",
+            "f('isActive', 'flag')",
+            "f('discountAmount', 'number')",
+            {
+              "options": [
+                "fixed",
+                "percentage"
+              ]
+            },
+            "f('productId', 'product')",
+            "f('maxRedemptions', 'number')",
+            "f('descriptionAr', 'textarea', true, true)",
+            "f('description', 'textarea', true, true)",
+            "f('validFrom', 'datetime-local', true, true)",
+            "f('validUntil', 'datetime-local', true, true)",
+            "f('imageUrl', 'text', true, true)",
+            "f('termsAndConditionsAr', 'textarea', true, true)",
+            "f('termsAndConditions', 'textarea', true, true)"
+          ]
+        }
+      ],
+      "handlers": [],
       "queryStates": [],
       "conditions": [],
       "imports": [],
@@ -20144,243 +20344,54 @@
     },
     {
       "file": "client/src/pages/LoyaltyTiers.tsx",
-      "hash": "61e825e433f9",
-      "queries": [
-        "loyalty.getTiers"
-      ],
-      "mutations": [
-        "loyalty.updateTier"
-      ],
+      "hash": "aa6c3d99b669",
+      "queries": [],
+      "mutations": [],
       "imperativeReads": [],
       "browserRequests": [],
-      "sections": [
-        {
-          "label": "مستويات الولاء",
-          "line": 80,
-          "tag": "h1"
-        },
-        {
-          "label": "",
-          "line": 97,
-          "tag": "CardTitle"
-        }
-      ],
+      "sections": [],
       "choices": [],
-      "handlers": [
-        {
-          "name": "handleEdit",
-          "line": 20,
-          "calls": []
-        },
-        {
-          "name": "handleSave",
-          "line": 27,
-          "calls": [
-            "updateTier"
-          ]
-        },
-        {
-          "name": "handleCancel",
-          "line": 51,
-          "calls": []
-        },
-        {
-          "name": "updateEditingTier",
-          "line": 57,
-          "calls": []
-        }
-      ],
-      "queryStates": [
-        {
-          "query": "loyalty.getTiers",
-          "binding": "{ data: tiers, isLoading, refetch }",
-          "line": 15,
-          "errorSignal": false,
-          "loadingSignal": true,
-          "enabled": null
-        }
-      ],
+      "handlers": [],
+      "queryStates": [],
       "conditions": [],
       "imports": [
-        "client/src/hooks/use-toast.ts"
+        "client/src/components/merchant/LoyaltyWorkspace.tsx"
       ],
-      "controlCount": 8
+      "controlCount": 0
     },
     {
       "file": "client/src/pages/LoyaltyRewards.tsx",
-      "hash": "55d47b05420f",
-      "queries": [
-        "loyalty.getRewards"
-      ],
-      "mutations": [
-        "loyalty.createReward",
-        "loyalty.updateReward",
-        "loyalty.deleteReward"
-      ],
+      "hash": "d2ab601ae1d4",
+      "queries": [],
+      "mutations": [],
       "imperativeReads": [],
       "browserRequests": [],
-      "sections": [
-        {
-          "label": "مكافآت الولاء",
-          "line": 173,
-          "tag": "h1"
-        },
-        {
-          "label": "خطأ",
-          "line": 185,
-          "tag": "DialogTitle"
-        },
-        {
-          "label": "",
-          "line": 216,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "هل أنت متأكد من حذف هذه المكافأة؟",
-          "line": 291,
-          "tag": "DialogTitle"
-        }
-      ],
+      "sections": [],
       "choices": [],
-      "handlers": [
-        {
-          "name": "handleCreate",
-          "line": 71,
-          "calls": [
-            "createReward"
-          ]
-        },
-        {
-          "name": "handleUpdate",
-          "line": 90,
-          "calls": [
-            "updateReward"
-          ]
-        },
-        {
-          "name": "handleDelete",
-          "line": 114,
-          "calls": [
-            "deleteReward"
-          ]
-        },
-        {
-          "name": "handleEdit",
-          "line": 133,
-          "calls": []
-        }
-      ],
-      "queryStates": [
-        {
-          "query": "loyalty.getRewards",
-          "binding": "{ data: rewards, isLoading, refetch }",
-          "line": 33,
-          "errorSignal": false,
-          "loadingSignal": true,
-          "enabled": null
-        }
-      ],
+      "handlers": [],
+      "queryStates": [],
       "conditions": [],
       "imports": [
-        "client/src/hooks/use-toast.ts"
+        "client/src/components/merchant/LoyaltyWorkspace.tsx"
       ],
-      "controlCount": 19
+      "controlCount": 0
     },
     {
       "file": "client/src/pages/LoyaltyCustomers.tsx",
-      "hash": "37ab4aed3d80",
-      "queries": [
-        "loyalty.getAllCustomersPoints",
-        "loyalty.getStats"
-      ],
-      "mutations": [
-        "loyalty.addPoints",
-        "loyalty.deductPoints"
-      ],
+      "hash": "8e0bd93452ad",
+      "queries": [],
+      "mutations": [],
       "imperativeReads": [],
       "browserRequests": [],
-      "sections": [
-        {
-          "label": "عملاء الولاء",
-          "line": 114,
-          "tag": "h1"
-        },
-        {
-          "label": "",
-          "line": 124,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "",
-          "line": 131,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "",
-          "line": 138,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "",
-          "line": 145,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "عرض وإدارة نقاط العملاء",
-          "line": 153,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "إجمالي النقاط",
-          "line": 244,
-          "tag": "DialogTitle"
-        },
-        {
-          "label": "إضافة نقاط",
-          "line": 305,
-          "tag": "DialogTitle"
-        }
-      ],
+      "sections": [],
       "choices": [],
-      "handlers": [
-        {
-          "name": "handleAddPoints",
-          "line": 49,
-          "calls": [
-            "addPoints"
-          ]
-        },
-        {
-          "name": "handleDeductPoints",
-          "line": 75,
-          "calls": [
-            "deductPoints"
-          ]
-        }
-      ],
-      "queryStates": [
-        {
-          "query": "loyalty.getAllCustomersPoints",
-          "binding": "{ data: customers, isLoading, refetch }",
-          "line": 32,
-          "errorSignal": false,
-          "loadingSignal": true,
-          "enabled": null
-        },
-        {
-          "query": "loyalty.getStats",
-          "binding": "{ data: stats }",
-          "line": 36,
-          "errorSignal": false,
-          "loadingSignal": false,
-          "enabled": null
-        }
-      ],
+      "handlers": [],
+      "queryStates": [],
       "conditions": [],
       "imports": [
-        "client/src/hooks/use-toast.ts"
+        "client/src/components/merchant/LoyaltyWorkspace.tsx"
       ],
-      "controlCount": 14
+      "controlCount": 0
     },
     {
       "file": "client/src/pages/IntegrationsDashboard.tsx",
@@ -30327,26 +30338,59 @@
       ],
       "files": [
         "client/src/pages/LoyaltySettings.tsx",
-        "client/src/hooks/use-toast.ts"
+        "client/src/components/merchant/LoyaltyWorkspace.tsx",
+        "client/src/lib/usage-workspace-view.ts",
+        "client/src/lib/loyalty-workspace-labels.ts",
+        "client/src/lib/loyalty-editor.ts"
       ],
       "controls": [
-        "521485cd9939",
-        "72ce1c3a0eef",
-        "8b941d7f22bc",
-        "34c9d971bc60",
-        "416310527bae",
-        "2543b82121b5",
-        "c17669b29d5a",
-        "cfd8f6b01970",
-        "5abb7edf3e49",
-        "fd182176f704",
-        "e15baa12c078"
+        "0b5986169f78",
+        "40d44642c743",
+        "b5ca0503e236",
+        "8fe56e74307d",
+        "a6d434823f23",
+        "2d48b22a4774",
+        "f95a1ed57a57",
+        "40e72159760e",
+        "91728d6fe363",
+        "e70a5c15fefc",
+        "32282839fb99",
+        "0c1abe440afd",
+        "0b8381332ecd",
+        "c345dcfcbb00",
+        "e7adeab97ee7",
+        "80a5c0a49a54",
+        "d79a581a8f2b",
+        "6818b6a265fc",
+        "dabdd0e0561c",
+        "bee7f44e695f",
+        "62861689fc86",
+        "051062e1cd88",
+        "6dd7612a69b0",
+        "5287473efd3f",
+        "6356ecb78744",
+        "aa88d8d339e5",
+        "4a939df30e8e",
+        "be8d369a4b8d",
+        "c4873b233ebb",
+        "79cc45e95cb0",
+        "8a21b164f4b7",
+        "871bafad49c1",
+        "bfc5cd783af1",
+        "49cbff20908b",
+        "07bfd15fb318",
+        "fb2129b5a439",
+        "77fd4d59a986"
       ],
       "queries": [
-        "loyalty.getSettings"
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "loyalty.workspace",
+        "loyalty.receipt"
       ],
       "mutations": [
-        "loyalty.updateSettings"
+        "loyalty.reviewedAction",
+        "loyalty.closeRequest"
       ],
       "imperativeReads": [],
       "browserRequests": []
@@ -30360,23 +30404,59 @@
       ],
       "files": [
         "client/src/pages/LoyaltyTiers.tsx",
-        "client/src/hooks/use-toast.ts"
+        "client/src/components/merchant/LoyaltyWorkspace.tsx",
+        "client/src/lib/usage-workspace-view.ts",
+        "client/src/lib/loyalty-workspace-labels.ts",
+        "client/src/lib/loyalty-editor.ts"
       ],
       "controls": [
-        "c7bf4e960cb5",
-        "e006a8dcdf8b",
-        "fb73af1a52f8",
-        "f6454b8e00ef",
-        "1de12f8de8de",
-        "687fb305a9ce",
-        "d8a9ec76ba1e",
-        "979fc51c9bfe"
+        "0b5986169f78",
+        "40d44642c743",
+        "b5ca0503e236",
+        "8fe56e74307d",
+        "a6d434823f23",
+        "2d48b22a4774",
+        "f95a1ed57a57",
+        "40e72159760e",
+        "91728d6fe363",
+        "e70a5c15fefc",
+        "32282839fb99",
+        "0c1abe440afd",
+        "0b8381332ecd",
+        "c345dcfcbb00",
+        "e7adeab97ee7",
+        "80a5c0a49a54",
+        "d79a581a8f2b",
+        "6818b6a265fc",
+        "dabdd0e0561c",
+        "bee7f44e695f",
+        "62861689fc86",
+        "051062e1cd88",
+        "6dd7612a69b0",
+        "5287473efd3f",
+        "6356ecb78744",
+        "aa88d8d339e5",
+        "4a939df30e8e",
+        "be8d369a4b8d",
+        "c4873b233ebb",
+        "79cc45e95cb0",
+        "8a21b164f4b7",
+        "871bafad49c1",
+        "bfc5cd783af1",
+        "49cbff20908b",
+        "07bfd15fb318",
+        "fb2129b5a439",
+        "77fd4d59a986"
       ],
       "queries": [
-        "loyalty.getTiers"
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "loyalty.workspace",
+        "loyalty.receipt"
       ],
       "mutations": [
-        "loyalty.updateTier"
+        "loyalty.reviewedAction",
+        "loyalty.closeRequest"
       ],
       "imperativeReads": [],
       "browserRequests": []
@@ -30390,36 +30470,59 @@
       ],
       "files": [
         "client/src/pages/LoyaltyRewards.tsx",
-        "client/src/hooks/use-toast.ts"
+        "client/src/components/merchant/LoyaltyWorkspace.tsx",
+        "client/src/lib/usage-workspace-view.ts",
+        "client/src/lib/loyalty-workspace-labels.ts",
+        "client/src/lib/loyalty-editor.ts"
       ],
       "controls": [
-        "d4c260c97adb",
-        "2ecf408b30e1",
-        "e94b9380cb14",
-        "9e35283257e1",
-        "e764394b6502",
-        "c076301f75dc",
-        "d3632093aea3",
-        "23f7bf86e925",
-        "156691534f62",
-        "dad185e24d5e",
-        "aa15c5cf5b95",
-        "795cd030b2de",
-        "a3065dbb899c",
-        "d38a8506d4d4",
-        "7fa79b64d07e",
-        "07aefd28b555",
-        "de7b1a58a3a1",
-        "d3cc218d82a7",
-        "6efabf8b7874"
+        "0b5986169f78",
+        "40d44642c743",
+        "b5ca0503e236",
+        "8fe56e74307d",
+        "a6d434823f23",
+        "2d48b22a4774",
+        "f95a1ed57a57",
+        "40e72159760e",
+        "91728d6fe363",
+        "e70a5c15fefc",
+        "32282839fb99",
+        "0c1abe440afd",
+        "0b8381332ecd",
+        "c345dcfcbb00",
+        "e7adeab97ee7",
+        "80a5c0a49a54",
+        "d79a581a8f2b",
+        "6818b6a265fc",
+        "dabdd0e0561c",
+        "bee7f44e695f",
+        "62861689fc86",
+        "051062e1cd88",
+        "6dd7612a69b0",
+        "5287473efd3f",
+        "6356ecb78744",
+        "aa88d8d339e5",
+        "4a939df30e8e",
+        "be8d369a4b8d",
+        "c4873b233ebb",
+        "79cc45e95cb0",
+        "8a21b164f4b7",
+        "871bafad49c1",
+        "bfc5cd783af1",
+        "49cbff20908b",
+        "07bfd15fb318",
+        "fb2129b5a439",
+        "77fd4d59a986"
       ],
       "queries": [
-        "loyalty.getRewards"
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "loyalty.workspace",
+        "loyalty.receipt"
       ],
       "mutations": [
-        "loyalty.createReward",
-        "loyalty.updateReward",
-        "loyalty.deleteReward"
+        "loyalty.reviewedAction",
+        "loyalty.closeRequest"
       ],
       "imperativeReads": [],
       "browserRequests": []
@@ -30433,31 +30536,59 @@
       ],
       "files": [
         "client/src/pages/LoyaltyCustomers.tsx",
-        "client/src/hooks/use-toast.ts"
+        "client/src/components/merchant/LoyaltyWorkspace.tsx",
+        "client/src/lib/usage-workspace-view.ts",
+        "client/src/lib/loyalty-workspace-labels.ts",
+        "client/src/lib/loyalty-editor.ts"
       ],
       "controls": [
-        "3f63e1a617ce",
-        "ef13690ff5f5",
-        "4b1c3dbd2df7",
-        "6f6102acc879",
-        "4bf7aaf8cb2a",
-        "369c11804da1",
-        "92eb67a79d51",
-        "c538a820478e",
-        "949caefe3344",
-        "631128b76e7a",
-        "c2ec528649cf",
-        "e74426cd7314",
-        "5cbe246ce354",
-        "81c69070b33d"
+        "0b5986169f78",
+        "40d44642c743",
+        "b5ca0503e236",
+        "8fe56e74307d",
+        "a6d434823f23",
+        "2d48b22a4774",
+        "f95a1ed57a57",
+        "40e72159760e",
+        "91728d6fe363",
+        "e70a5c15fefc",
+        "32282839fb99",
+        "0c1abe440afd",
+        "0b8381332ecd",
+        "c345dcfcbb00",
+        "e7adeab97ee7",
+        "80a5c0a49a54",
+        "d79a581a8f2b",
+        "6818b6a265fc",
+        "dabdd0e0561c",
+        "bee7f44e695f",
+        "62861689fc86",
+        "051062e1cd88",
+        "6dd7612a69b0",
+        "5287473efd3f",
+        "6356ecb78744",
+        "aa88d8d339e5",
+        "4a939df30e8e",
+        "be8d369a4b8d",
+        "c4873b233ebb",
+        "79cc45e95cb0",
+        "8a21b164f4b7",
+        "871bafad49c1",
+        "bfc5cd783af1",
+        "49cbff20908b",
+        "07bfd15fb318",
+        "fb2129b5a439",
+        "77fd4d59a986"
       ],
       "queries": [
-        "loyalty.getAllCustomersPoints",
-        "loyalty.getStats"
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "loyalty.workspace",
+        "loyalty.receipt"
       ],
       "mutations": [
-        "loyalty.addPoints",
-        "loyalty.deductPoints"
+        "loyalty.reviewedAction",
+        "loyalty.closeRequest"
       ],
       "imperativeReads": [],
       "browserRequests": []
@@ -88993,231 +89124,57 @@
       "review": "source-inventoried"
     },
     {
-      "id": "521485cd9939",
-      "file": "client/src/pages/LoyaltySettings.tsx",
-      "line": 94,
-      "tag": "Switch",
-      "role": "",
-      "kind": "field",
-      "label": "إعدادات نظام الولاء",
-      "section": "خطأ",
-      "binding": "formData.isEnabled === 1",
-      "type": "checkbox",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "72ce1c3a0eef",
-      "file": "client/src/pages/LoyaltySettings.tsx",
-      "line": 115,
-      "tag": "Input",
-      "role": "",
-      "kind": "field",
-      "label": "تشغيل أو إيقاف برنامج النقاط للعملاء",
-      "section": "إدارة برنامج النقاط والمكافآت",
-      "binding": "formData.pointsPerCurrency",
-      "type": "number",
-      "options": [],
-      "min": "1",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "8b941d7f22bc",
-      "file": "client/src/pages/LoyaltySettings.tsx",
-      "line": 129,
-      "tag": "Input",
-      "role": "",
-      "kind": "field",
-      "label": "تفعيل النظام",
-      "section": "إدارة برنامج النقاط والمكافآت",
-      "binding": "formData.currencyPerPoint",
-      "type": "number",
-      "options": [],
-      "min": "1",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "34c9d971bc60",
-      "file": "client/src/pages/LoyaltySettings.tsx",
-      "line": 144,
-      "tag": "Input",
-      "role": "",
-      "kind": "field",
-      "label": "إعدادات النقاط",
-      "section": "إدارة برنامج النقاط والمكافآت",
-      "binding": "formData.pointsExpiryDays",
-      "type": "number",
-      "options": [],
-      "min": "0",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "416310527bae",
-      "file": "client/src/pages/LoyaltySettings.tsx",
-      "line": 169,
-      "tag": "Switch",
-      "role": "",
-      "kind": "field",
-      "label": "مكافأة الإحالة",
-      "section": "تحديد قيمة النقاط وطريقة حسابها",
-      "binding": "formData.enableReferralBonus === 1",
-      "type": "checkbox",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "2543b82121b5",
-      "file": "client/src/pages/LoyaltySettings.tsx",
-      "line": 180,
-      "tag": "Input",
-      "role": "",
-      "kind": "field",
-      "label": "ريال لكل 1 نقطة",
-      "section": "تحديد قيمة النقاط وطريقة حسابها",
-      "binding": "formData.referralBonusPoints",
-      "type": "number",
-      "options": [],
-      "min": "0",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [
-        "formData.enableReferralBonus === 1"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "c17669b29d5a",
-      "file": "client/src/pages/LoyaltySettings.tsx",
-      "line": 197,
-      "tag": "Switch",
-      "role": "",
-      "kind": "field",
-      "label": "مكافأة التقييم",
-      "section": "تحديد قيمة النقاط وطريقة حسابها",
-      "binding": "formData.enableReviewBonus === 1",
-      "type": "checkbox",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "cfd8f6b01970",
-      "file": "client/src/pages/LoyaltySettings.tsx",
-      "line": 208,
-      "tag": "Input",
-      "role": "",
-      "kind": "field",
-      "label": "مدة صلاحية النقاط (بالأيام)",
-      "section": "تحديد قيمة النقاط وطريقة حسابها",
-      "binding": "formData.reviewBonusPoints",
-      "type": "number",
-      "options": [],
-      "min": "0",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [
-        "formData.enableReviewBonus === 1"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "5abb7edf3e49",
-      "file": "client/src/pages/LoyaltySettings.tsx",
-      "line": 225,
-      "tag": "Switch",
-      "role": "",
-      "kind": "field",
-      "label": "مكافأة عيد الميلاد",
-      "section": "تحديد قيمة النقاط وطريقة حسابها",
-      "binding": "formData.enableBirthdayBonus === 1",
-      "type": "checkbox",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "fd182176f704",
-      "file": "client/src/pages/LoyaltySettings.tsx",
-      "line": 236,
-      "tag": "Input",
-      "role": "",
-      "kind": "field",
-      "label": "مكافآت إضافية",
-      "section": "تحديد قيمة النقاط وطريقة حسابها",
-      "binding": "formData.birthdayBonusPoints",
-      "type": "number",
-      "options": [],
-      "min": "0",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [
-        "formData.enableBirthdayBonus === 1"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "e15baa12c078",
-      "file": "client/src/pages/LoyaltySettings.tsx",
-      "line": 253,
-      "tag": "Button",
+      "id": "0b5986169f78",
+      "file": "client/src/components/merchant/LoyaltyWorkspace.tsx",
+      "line": 519,
+      "tag": "button",
       "role": "",
       "kind": "action",
-      "label": "جاري الحفظ... حفظ الإعدادات",
-      "section": "تحديد قيمة النقاط وطريقة حسابها",
-      "binding": "handleSave",
+      "label": "",
+      "section": "LoyaltyWorkspace",
+      "binding": "() => change(Math.max(0, value - 25))",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "running || value === 0",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "40d44642c743",
+      "file": "client/src/components/merchant/LoyaltyWorkspace.tsx",
+      "line": 529,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "LoyaltyWorkspace",
+      "binding": "() => change(value + 25)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "running || !more",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "b5ca0503e236",
+      "file": "client/src/components/merchant/LoyaltyWorkspace.tsx",
+      "line": 557,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "LoyaltyWorkspace",
+      "binding": "e =>\n          open(\n            {\n              kind: 'points',\n              mode: 'credit',\n              phone: phoneValue,\n              version: targetVersion,\n              balance: row?.totalPoints ?? 0,\n            },\n            e.currentTarget\n          )",
       "type": "text",
       "options": [],
       "min": "",
@@ -89226,124 +89183,19 @@
       "required": false,
       "conditional": true,
       "conditions": [],
-      "disabled": "updateSettings.isPending",
+      "disabled": "disabled",
       "review": "source-inventoried"
     },
     {
-      "id": "c7bf4e960cb5",
-      "file": "client/src/pages/LoyaltyTiers.tsx",
-      "line": 110,
-      "tag": "Input",
-      "role": "",
-      "kind": "field",
-      "label": "فشل حفظ المستوى",
-      "section": "LoyaltyTiers",
-      "binding": "displayTier.minPoints",
-      "type": "number",
-      "options": [],
-      "min": "0",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "!isEditing",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "e006a8dcdf8b",
-      "file": "client/src/pages/LoyaltyTiers.tsx",
-      "line": 124,
-      "tag": "Input",
-      "role": "",
-      "kind": "field",
-      "label": "مستويات الولاء",
-      "section": "LoyaltyTiers",
-      "binding": "displayTier.discountPercentage",
-      "type": "number",
-      "options": [],
-      "min": "0",
-      "max": "100",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "!isEditing",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "fb73af1a52f8",
-      "file": "client/src/pages/LoyaltyTiers.tsx",
-      "line": 139,
-      "tag": "Input",
-      "role": "",
-      "kind": "field",
-      "label": "إدارة مستويات العملاء ومزاياهم",
-      "section": "LoyaltyTiers",
-      "binding": "displayTier.priority",
-      "type": "number",
-      "options": [],
-      "min": "0",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "!isEditing",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "f6454b8e00ef",
-      "file": "client/src/pages/LoyaltyTiers.tsx",
-      "line": 154,
-      "tag": "Input",
-      "role": "",
-      "kind": "field",
-      "label": "الحد الأدنى من النقاط",
-      "section": "LoyaltyTiers",
-      "binding": "displayTier.color",
-      "type": "color",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "!isEditing",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "1de12f8de8de",
-      "file": "client/src/pages/LoyaltyTiers.tsx",
-      "line": 162,
-      "tag": "Input",
-      "role": "",
-      "kind": "field",
-      "label": "الحد الأدنى من النقاط",
-      "section": "LoyaltyTiers",
-      "binding": "displayTier.color",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "!isEditing",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "687fb305a9ce",
-      "file": "client/src/pages/LoyaltyTiers.tsx",
-      "line": 186,
-      "tag": "Button",
+      "id": "8fe56e74307d",
+      "file": "client/src/components/merchant/LoyaltyWorkspace.tsx",
+      "line": 576,
+      "tag": "button",
       "role": "",
       "kind": "action",
-      "label": "إلغاء",
-      "section": "LoyaltyTiers",
-      "binding": "() => handleCancel(tier.id)",
+      "label": "",
+      "section": "LoyaltyWorkspace",
+      "binding": "e =>\n          open(\n            {\n              kind: 'points',\n              mode: 'debit',\n              phone: phoneValue,\n              version: targetVersion,\n              balance: row?.totalPoints ?? 0,\n            },\n            e.currentTarget\n          )",
       "type": "text",
       "options": [],
       "min": "",
@@ -89351,88 +89203,19 @@
       "maxLength": "",
       "required": false,
       "conditional": true,
-      "conditions": [
-        "isEditing"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "d8a9ec76ba1e",
-      "file": "client/src/pages/LoyaltyTiers.tsx",
-      "line": 192,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "جاري الحفظ... حفظ",
-      "section": "LoyaltyTiers",
-      "binding": "() => handleSave(tier.id)",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [
-        "isEditing"
-      ],
-      "disabled": "updateTier.isPending",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "979fc51c9bfe",
-      "file": "client/src/pages/LoyaltyTiers.tsx",
-      "line": 206,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "تعديل",
-      "section": "LoyaltyTiers",
-      "binding": "() => handleEdit(tier)",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [
-        "isEditing"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "d4c260c97adb",
-      "file": "client/src/pages/LoyaltyRewards.tsx",
-      "line": 180,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "إضافة مكافأة جديدة",
-      "section": "مكافآت الولاء",
-      "binding": "resetForm",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
       "conditions": [],
-      "disabled": "",
+      "disabled": "disabled || !row?.totalPoints",
       "review": "source-inventoried"
     },
     {
-      "id": "2ecf408b30e1",
-      "file": "client/src/pages/LoyaltyRewards.tsx",
-      "line": 183,
-      "tag": "DialogContent",
+      "id": "a6d434823f23",
+      "file": "client/src/components/merchant/LoyaltyWorkspace.tsx",
+      "line": 622,
+      "tag": "summary",
       "role": "",
-      "kind": "dialog",
-      "label": "خطأ أنشئ مكافأة جديدة يمكن للعملاء استبدالها بالنقاط إلغاء جاري الإنشاء... إنشاء المكافأة",
-      "section": "مكافآت الولاء",
+      "kind": "action",
+      "label": "",
+      "section": "LoyaltyWorkspace",
       "binding": "",
       "type": "text",
       "options": [],
@@ -89446,78 +89229,38 @@
       "review": "source-inventoried"
     },
     {
-      "id": "e94b9380cb14",
-      "file": "client/src/pages/LoyaltyRewards.tsx",
-      "line": 192,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "إلغاء",
-      "section": "خطأ",
-      "binding": "() => setIsCreateDialogOpen(false)",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "9e35283257e1",
-      "file": "client/src/pages/LoyaltyRewards.tsx",
-      "line": 195,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "جاري الإنشاء... إنشاء المكافأة",
-      "section": "خطأ",
-      "binding": "handleCreate",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "createReward.isPending",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "e764394b6502",
-      "file": "client/src/pages/LoyaltyRewards.tsx",
-      "line": 229,
-      "tag": "Button",
+      "id": "2d48b22a4774",
+      "file": "client/src/components/merchant/LoyaltyWorkspace.tsx",
+      "line": 647,
+      "tag": "button",
       "role": "",
       "kind": "action",
       "label": "",
-      "section": "LoyaltyRewards",
-      "binding": "() => handleEdit(reward)",
+      "section": "LoyaltyWorkspace",
+      "binding": "e =>\n              open(\n                {\n                  kind: 'redeem',\n                  row,\n                  phone,\n                  balance: data.customer?.totalPoints,\n                },\n                e.currentTarget\n              )",
       "type": "text",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
+      "conditional": true,
+      "conditions": [
+        "forCustomer"
+      ],
+      "disabled": "disabled ||\n              !row.available ||\n              !data.customer ||\n              data.customer.totalPoints < row.pointsCost ||\n              !row.redemptionRevision",
       "review": "source-inventoried"
     },
     {
-      "id": "c076301f75dc",
-      "file": "client/src/pages/LoyaltyRewards.tsx",
-      "line": 236,
-      "tag": "Button",
+      "id": "f95a1ed57a57",
+      "file": "client/src/components/merchant/LoyaltyWorkspace.tsx",
+      "line": 672,
+      "tag": "button",
       "role": "",
       "kind": "action",
       "label": "",
-      "section": "LoyaltyRewards",
-      "binding": "() => handleDelete(reward.id)",
+      "section": "LoyaltyWorkspace",
+      "binding": "e => open({ kind: 'reward', row }, e.currentTarget)",
       "type": "text",
       "options": [],
       "min": "",
@@ -89525,43 +89268,68 @@
       "maxLength": "",
       "required": false,
       "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "d3632093aea3",
-      "file": "client/src/pages/LoyaltyRewards.tsx",
-      "line": 289,
-      "tag": "DialogContent",
-      "role": "",
-      "kind": "dialog",
-      "label": "هل أنت متأكد من حذف هذه المكافأة؟ تم الحذف بنجاح إلغاء جاري التحديث... حفظ التعديلات",
-      "section": "LoyaltyRewards",
-      "binding": "",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
       "conditions": [
-        "editingReward"
+        "forCustomer"
       ],
-      "disabled": "",
+      "disabled": "disabled",
       "review": "source-inventoried"
     },
     {
-      "id": "23f7bf86e925",
-      "file": "client/src/pages/LoyaltyRewards.tsx",
-      "line": 298,
-      "tag": "Button",
+      "id": "40e72159760e",
+      "file": "client/src/components/merchant/LoyaltyWorkspace.tsx",
+      "line": 679,
+      "tag": "button",
       "role": "",
       "kind": "action",
-      "label": "إلغاء",
-      "section": "هل أنت متأكد من حذف هذه المكافأة؟",
-      "binding": "() => setEditingReward(null)",
+      "label": "",
+      "section": "LoyaltyWorkspace",
+      "binding": "e =>\n                open({ kind: 'deleteReward', row }, e.currentTarget)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "forCustomer"
+      ],
+      "disabled": "disabled",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "91728d6fe363",
+      "file": "client/src/components/merchant/LoyaltyWorkspace.tsx",
+      "line": 718,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "LoyaltyWorkspace",
+      "binding": "Number(draft[field.key]) === 1",
+      "type": "checkbox",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "field.type === 'flag'"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "e70a5c15fefc",
+      "file": "client/src/components/merchant/LoyaltyWorkspace.tsx",
+      "line": 725,
+      "tag": "textarea",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "LoyaltyWorkspace",
+      "binding": "draft[field.key] ?? ''",
       "type": "text",
       "options": [],
       "min": "",
@@ -89570,264 +89338,191 @@
       "required": false,
       "conditional": true,
       "conditions": [
-        "editingReward"
+        "field.type === 'textarea'",
+        "field.type === 'flag'"
       ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "156691534f62",
-      "file": "client/src/pages/LoyaltyRewards.tsx",
-      "line": 301,
-      "tag": "Button",
+      "id": "32282839fb99",
+      "file": "client/src/components/merchant/LoyaltyWorkspace.tsx",
+      "line": 732,
+      "tag": "select",
       "role": "",
-      "kind": "action",
-      "label": "جاري التحديث... حفظ التعديلات",
-      "section": "هل أنت متأكد من حذف هذه المكافأة؟",
-      "binding": "handleUpdate",
+      "kind": "field",
+      "label": "",
+      "section": "LoyaltyWorkspace",
+      "binding": "draft[field.key] ?? ''",
       "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [
-        "editingReward"
-      ],
-      "disabled": "updateReward.isPending",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "dad185e24d5e",
-      "file": "client/src/pages/LoyaltyRewards.tsx",
-      "line": 325,
-      "tag": "Input",
-      "role": "",
-      "kind": "field",
-      "label": "تم حذف المكافأة",
-      "section": "هل أنت متأكد من حذف هذه المكافأة؟",
-      "binding": "formData.titleAr",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "aa15c5cf5b95",
-      "file": "client/src/pages/LoyaltyRewards.tsx",
-      "line": 335,
-      "tag": "Input",
-      "role": "",
-      "kind": "field",
-      "label": "فشل حذف المكافأة",
-      "section": "هل أنت متأكد من حذف هذه المكافأة؟",
-      "binding": "formData.title",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "795cd030b2de",
-      "file": "client/src/pages/LoyaltyRewards.tsx",
-      "line": 347,
-      "tag": "Textarea",
-      "role": "",
-      "kind": "field",
-      "label": "خصم",
-      "section": "هل أنت متأكد من حذف هذه المكافأة؟",
-      "binding": "formData.descriptionAr",
-      "type": "textarea",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "a3065dbb899c",
-      "file": "client/src/pages/LoyaltyRewards.tsx",
-      "line": 357,
-      "tag": "Textarea",
-      "role": "",
-      "kind": "field",
-      "label": "شحن مجاني",
-      "section": "هل أنت متأكد من حذف هذه المكافأة؟",
-      "binding": "formData.description",
-      "type": "textarea",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "d38a8506d4d4",
-      "file": "client/src/pages/LoyaltyRewards.tsx",
-      "line": 369,
-      "tag": "Select",
-      "role": "",
-      "kind": "field",
-      "label": "هدية",
-      "section": "هل أنت متأكد من حذف هذه المكافأة؟",
-      "binding": "formData.type",
-      "type": "select",
       "options": [
         {
-          "value": "discount",
-          "label": "المكافآت"
-        },
-        {
-          "value": "free_product",
-          "label": "إدارة المكافآت المتاحة للعملاء"
-        },
-        {
-          "value": "free_shipping",
-          "label": "إضافة مكافأة جديدة"
-        },
-        {
-          "value": "gift",
-          "label": "معطل"
+          "value": "k",
+          "label": ""
         }
       ],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "7fa79b64d07e",
-      "file": "client/src/pages/LoyaltyRewards.tsx",
-      "line": 387,
-      "tag": "Input",
-      "role": "",
-      "kind": "field",
-      "label": "النوع",
-      "section": "هل أنت متأكد من حذف هذه المكافأة؟",
-      "binding": "formData.pointsCost",
-      "type": "number",
-      "options": [],
-      "min": "1",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "07aefd28b555",
-      "file": "client/src/pages/LoyaltyRewards.tsx",
-      "line": 401,
-      "tag": "Input",
-      "role": "",
-      "kind": "field",
-      "label": "قيمة الخصم",
-      "section": "هل أنت متأكد من حذف هذه المكافأة؟",
-      "binding": "formData.discountAmount",
-      "type": "number",
-      "options": [],
-      "min": "0",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
+      "conditional": true,
       "conditions": [
-        "formData.type === \"discount\""
+        "field.type === 'select'",
+        "field.type === 'textarea'",
+        "field.type === 'flag'"
       ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "de7b1a58a3a1",
-      "file": "client/src/pages/LoyaltyRewards.tsx",
-      "line": 414,
-      "tag": "Select",
+      "id": "0c1abe440afd",
+      "file": "client/src/components/merchant/LoyaltyWorkspace.tsx",
+      "line": 746,
+      "tag": "input",
       "role": "",
       "kind": "field",
-      "label": "ريال",
-      "section": "هل أنت متأكد من حذف هذه المكافأة؟",
-      "binding": "formData.discountType",
-      "type": "select",
+      "label": "c.productSearch",
+      "section": "LoyaltyWorkspace",
+      "binding": "productSearch",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "field.type === 'product'",
+        "field.type === 'select'",
+        "field.type === 'textarea'",
+        "field.type === 'flag'"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "0b8381332ecd",
+      "file": "client/src/components/merchant/LoyaltyWorkspace.tsx",
+      "line": 752,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "LoyaltyWorkspace",
+      "binding": "() => setProductTerm(productSearch.trim())",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "field.type === 'product'",
+        "field.type === 'select'",
+        "field.type === 'textarea'",
+        "field.type === 'flag'"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "c345dcfcbb00",
+      "file": "client/src/components/merchant/LoyaltyWorkspace.tsx",
+      "line": 760,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "LoyaltyWorkspace",
+      "binding": "draft.productId ?? ''",
+      "type": "text",
       "options": [
         {
-          "value": "fixed",
-          "label": "عدد الاستبدالات"
+          "value": "",
+          "label": ""
         },
         {
-          "value": "percentage",
-          "label": "/ غير محدود"
+          "value": "data.selectedProduct.id",
+          "label": ""
+        },
+        {
+          "value": "p.id",
+          "label": "·"
         }
       ],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": false,
+      "conditional": true,
       "conditions": [
-        "formData.type === \"discount\""
+        "field.type === 'product'",
+        "field.type === 'select'",
+        "field.type === 'textarea'",
+        "field.type === 'flag'"
       ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "d3cc218d82a7",
-      "file": "client/src/pages/LoyaltyRewards.tsx",
-      "line": 433,
-      "tag": "Input",
+      "id": "e7adeab97ee7",
+      "file": "client/src/components/merchant/LoyaltyWorkspace.tsx",
+      "line": 786,
+      "tag": "input",
       "role": "",
       "kind": "field",
-      "label": "لا توجد مكافآت حتى الآن",
-      "section": "هل أنت متأكد من حذف هذه المكافأة؟",
-      "binding": "formData.maxRedemptions",
-      "type": "number",
+      "label": "",
+      "section": "LoyaltyWorkspace",
+      "binding": "draft[field.key] ?? ''",
+      "type": "field.type",
       "options": [],
-      "min": "0",
+      "min": "field.type === 'number' ? 0 : undefined",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "field.type === 'product'",
+        "field.type === 'select'",
+        "field.type === 'textarea'",
+        "field.type === 'flag'"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "80a5c0a49a54",
+      "file": "client/src/components/merchant/LoyaltyWorkspace.tsx",
+      "line": 816,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "LoyaltyWorkspace",
+      "binding": "() => void query.refetch()",
+      "type": "text",
+      "options": [],
+      "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
       "conditional": false,
       "conditions": [],
-      "disabled": "",
+      "disabled": "running",
       "review": "source-inventoried"
     },
     {
-      "id": "6efabf8b7874",
-      "file": "client/src/pages/LoyaltyRewards.tsx",
-      "line": 448,
-      "tag": "Switch",
+      "id": "d79a581a8f2b",
+      "file": "client/src/components/merchant/LoyaltyWorkspace.tsx",
+      "line": 826,
+      "tag": "Link",
       "role": "",
-      "kind": "field",
-      "label": "نشط معطل",
-      "section": "هل أنت متأكد من حذف هذه المكافأة؟",
-      "binding": "formData.isActive === 1",
-      "type": "checkbox",
+      "kind": "action",
+      "label": "customers rewards tiers",
+      "section": "LoyaltyWorkspace",
+      "binding": "{\n                customers: '/merchant/loyalty/customers',\n                rewards: '/merchant/loyalty/rewards',\n                tiers: '/merchant/loyalty/tiers',\n                settings: '/merchant/loyalty/settings',\n              }[k]",
+      "type": "text",
       "options": [],
       "min": "",
       "max": "",
@@ -89839,15 +89534,342 @@
       "review": "source-inventoried"
     },
     {
-      "id": "3f63e1a617ce",
-      "file": "client/src/pages/LoyaltyCustomers.tsx",
-      "line": 205,
-      "tag": "Button",
+      "id": "6818b6a265fc",
+      "file": "client/src/components/merchant/LoyaltyWorkspace.tsx",
+      "line": 870,
+      "tag": "button",
       "role": "",
       "kind": "action",
       "label": "",
-      "section": "عرض وإدارة نقاط العملاء",
-      "binding": "() => {\r\n                          setSelectedCustomer(customer);\r\n                          setIsAddPointsDialogOpen(true);\r\n                        }",
+      "section": "LoyaltyWorkspace",
+      "binding": "() => void checkPending()",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "pending.requestId",
+        "pending && !running"
+      ],
+      "disabled": "running",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "dabdd0e0561c",
+      "file": "client/src/components/merchant/LoyaltyWorkspace.tsx",
+      "line": 878,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "LoyaltyWorkspace",
+      "binding": "() => void checkPending(true)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "missingReceipt",
+        "pending.requestId"
+      ],
+      "disabled": "running",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "bee7f44e695f",
+      "file": "client/src/components/merchant/LoyaltyWorkspace.tsx",
+      "line": 914,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "LoyaltyWorkspace",
+      "binding": "e =>\n                  open(\n                    { kind: 'settings', version: data.settingsRevision },\n                    e.currentTarget\n                  )",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "view === 'settings'"
+      ],
+      "disabled": "disabled",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "62861689fc86",
+      "file": "client/src/components/merchant/LoyaltyWorkspace.tsx",
+      "line": 968,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "LoyaltyWorkspace",
+      "binding": "e => open({ kind: 'tier', row }, e.currentTarget)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "view === 'tiers'"
+      ],
+      "disabled": "disabled",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "051062e1cd88",
+      "file": "client/src/components/merchant/LoyaltyWorkspace.tsx",
+      "line": 981,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "LoyaltyWorkspace",
+      "binding": "/merchant/loyalty/settings",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "!data.tiers.length",
+        "view === 'tiers'"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "6dd7612a69b0",
+      "file": "client/src/components/merchant/LoyaltyWorkspace.tsx",
+      "line": 999,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "customers",
+      "section": "LoyaltyWorkspace",
+      "binding": "search",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "100",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "(view === 'customers' || view === 'rewards') && !phone"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "5287473efd3f",
+      "file": "client/src/components/merchant/LoyaltyWorkspace.tsx",
+      "line": 1005,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "customers",
+      "section": "LoyaltyWorkspace",
+      "binding": "",
+      "type": "submit",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "(view === 'customers' || view === 'rewards') && !phone"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "6356ecb78744",
+      "file": "client/src/components/merchant/LoyaltyWorkspace.tsx",
+      "line": 1009,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "LoyaltyWorkspace",
+      "binding": "e => open({ kind: 'createReward' }, e.currentTarget)",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "view === 'rewards'",
+        "(view === 'customers' || view === 'rewards') && !phone"
+      ],
+      "disabled": "disabled",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "aa88d8d339e5",
+      "file": "client/src/components/merchant/LoyaltyWorkspace.tsx",
+      "line": 1039,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "LoyaltyWorkspace",
+      "binding": "lookup",
+      "type": "tel",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "view === 'customers' && !phone"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "4a939df30e8e",
+      "file": "client/src/components/merchant/LoyaltyWorkspace.tsx",
+      "line": 1063,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "LoyaltyWorkspace",
+      "binding": "",
+      "type": "submit",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "view === 'customers' && !phone"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "be8d369a4b8d",
+      "file": "client/src/components/merchant/LoyaltyWorkspace.tsx",
+      "line": 1093,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "LoyaltyWorkspace",
+      "binding": "() => {\n                      setPhone(row.customerPhone);\n                      setOffset(0);\n                      setHistoryOffset(0);\n                      setTerm('');\n                    }",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "view === 'customers' && !phone"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "c4873b233ebb",
+      "file": "client/src/components/merchant/LoyaltyWorkspace.tsx",
+      "line": 1134,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "LoyaltyWorkspace",
+      "binding": "() => {\n                setPhone(undefined);\n                setOffset(0);\n                setHistoryOffset(0);\n              }",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "phone"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "79cc45e95cb0",
+      "file": "client/src/components/merchant/LoyaltyWorkspace.tsx",
+      "line": 1168,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "·",
+      "binding": "() => {\n                  setHistoryTab(k);\n                  setHistoryOffset(0);\n                  setOffset(0);\n                }",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "phone"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "8a21b164f4b7",
+      "file": "client/src/components/merchant/LoyaltyWorkspace.tsx",
+      "line": 1235,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "#",
+      "binding": "e =>\n                            open({ kind: 'redemption', row }, e.currentTarget)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "historyTab === 'transactions'",
+        "historyTab === 'rewards'"
+      ],
+      "disabled": "disabled",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "871bafad49c1",
+      "file": "client/src/components/merchant/LoyaltyWorkspace.tsx",
+      "line": 1263,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "LoyaltyWorkspace",
+      "binding": "",
       "type": "text",
       "options": [],
       "min": "",
@@ -89860,35 +89882,14 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ef13690ff5f5",
-      "file": "client/src/pages/LoyaltyCustomers.tsx",
-      "line": 215,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "",
-      "section": "عرض وإدارة نقاط العملاء",
-      "binding": "() => {\r\n                          setSelectedCustomer(customer);\r\n                          setIsDeductPointsDialogOpen(true);\r\n                        }",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "4b1c3dbd2df7",
-      "file": "client/src/pages/LoyaltyCustomers.tsx",
-      "line": 242,
+      "id": "bfc5cd783af1",
+      "file": "client/src/components/merchant/LoyaltyWorkspace.tsx",
+      "line": 1272,
       "tag": "DialogContent",
       "role": "",
       "kind": "dialog",
-      "label": "إجمالي النقاط إضافة نقاط لـ المستوى آخر نشاط لا يوجد إلغاء جاري الإضافة... إضافة النقاط",
-      "section": "عرض وإدارة نقاط العملاء",
+      "label": "values points points reasonAr reason : · credit redemption status notes orderId redeem : · deleteReward redeem",
+      "section": "LoyaltyWorkspace",
       "binding": "",
       "type": "text",
       "options": [],
@@ -89902,119 +89903,14 @@
       "review": "source-inventoried"
     },
     {
-      "id": "6f6102acc879",
-      "file": "client/src/pages/LoyaltyCustomers.tsx",
-      "line": 253,
-      "tag": "Input",
-      "role": "",
-      "kind": "field",
-      "label": "المستوى",
-      "section": "إجمالي النقاط",
-      "binding": "pointsForm.points",
-      "type": "number",
-      "options": [],
-      "min": "1",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "4bf7aaf8cb2a",
-      "file": "client/src/pages/LoyaltyCustomers.tsx",
-      "line": 266,
-      "tag": "Textarea",
-      "role": "",
-      "kind": "field",
-      "label": "آخر نشاط",
-      "section": "إجمالي النقاط",
-      "binding": "pointsForm.reasonAr",
-      "type": "textarea",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "369c11804da1",
-      "file": "client/src/pages/LoyaltyCustomers.tsx",
-      "line": 276,
-      "tag": "Textarea",
-      "role": "",
-      "kind": "field",
-      "label": "لا يوجد",
-      "section": "إجمالي النقاط",
-      "binding": "pointsForm.reason",
-      "type": "textarea",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "92eb67a79d51",
-      "file": "client/src/pages/LoyaltyCustomers.tsx",
-      "line": 286,
-      "tag": "Button",
+      "id": "49cbff20908b",
+      "file": "client/src/components/merchant/LoyaltyWorkspace.tsx",
+      "line": 1358,
+      "tag": "summary",
       "role": "",
       "kind": "action",
-      "label": "إلغاء",
-      "section": "إجمالي النقاط",
-      "binding": "() => setIsAddPointsDialogOpen(false)",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "c538a820478e",
-      "file": "client/src/pages/LoyaltyCustomers.tsx",
-      "line": 289,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "جاري الإضافة... إضافة النقاط",
-      "section": "إجمالي النقاط",
-      "binding": "handleAddPoints",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "addPoints.isPending",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "949caefe3344",
-      "file": "client/src/pages/LoyaltyCustomers.tsx",
-      "line": 303,
-      "tag": "DialogContent",
-      "role": "",
-      "kind": "dialog",
-      "label": "إضافة نقاط خصم نقاط من (الرصيد الحالي: ) عدد النقاط السبب (بالعربي) السبب (بالإنجليزي) إلغاء جاري الخصم... خصم النقاط",
-      "section": "إجمالي النقاط",
+      "label": "",
+      "section": "LoyaltyWorkspace",
       "binding": "",
       "type": "text",
       "options": [],
@@ -90023,113 +89919,81 @@
       "maxLength": "",
       "required": false,
       "conditional": true,
-      "conditions": [],
+      "conditions": [
+        "list.some(f => f.advanced)",
+        "action"
+      ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "631128b76e7a",
-      "file": "client/src/pages/LoyaltyCustomers.tsx",
-      "line": 314,
-      "tag": "Input",
+      "id": "07bfd15fb318",
+      "file": "client/src/components/merchant/LoyaltyWorkspace.tsx",
+      "line": 1375,
+      "tag": "button",
       "role": "",
-      "kind": "field",
-      "label": "عدد النقاط",
-      "section": "إضافة نقاط",
-      "binding": "pointsForm.points",
-      "type": "number",
-      "options": [],
-      "min": "1",
-      "max": "selectedCustomer?.totalPoints || 0",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "c2ec528649cf",
-      "file": "client/src/pages/LoyaltyCustomers.tsx",
-      "line": 328,
-      "tag": "Textarea",
-      "role": "",
-      "kind": "field",
-      "label": "السبب (بالعربي)",
-      "section": "إضافة نقاط",
-      "binding": "pointsForm.reasonAr",
-      "type": "textarea",
+      "kind": "action",
+      "label": "",
+      "section": "LoyaltyWorkspace",
+      "binding": "() => setAction(null)",
+      "type": "button",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
       "conditional": false,
-      "conditions": [],
-      "disabled": "",
+      "conditions": [
+        "action &&\n                  editor.kind !== 'deleteReward' &&\n                  editor.kind !== 'redeem'",
+        "editor"
+      ],
+      "disabled": "running",
       "review": "source-inventoried"
     },
     {
-      "id": "e74426cd7314",
-      "file": "client/src/pages/LoyaltyCustomers.tsx",
-      "line": 338,
-      "tag": "Textarea",
-      "role": "",
-      "kind": "field",
-      "label": "السبب (بالإنجليزي)",
-      "section": "إضافة نقاط",
-      "binding": "pointsForm.reason",
-      "type": "textarea",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "5cbe246ce354",
-      "file": "client/src/pages/LoyaltyCustomers.tsx",
-      "line": 348,
-      "tag": "Button",
+      "id": "fb2129b5a439",
+      "file": "client/src/components/merchant/LoyaltyWorkspace.tsx",
+      "line": 1384,
+      "tag": "button",
       "role": "",
       "kind": "action",
-      "label": "إلغاء",
-      "section": "إضافة نقاط",
-      "binding": "() => setIsDeductPointsDialogOpen(false)",
-      "type": "text",
+      "label": "",
+      "section": "LoyaltyWorkspace",
+      "binding": "close",
+      "type": "button",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
       "conditional": true,
-      "conditions": [],
-      "disabled": "",
+      "conditions": [
+        "editor"
+      ],
+      "disabled": "running",
       "review": "source-inventoried"
     },
     {
-      "id": "81c69070b33d",
-      "file": "client/src/pages/LoyaltyCustomers.tsx",
-      "line": 351,
-      "tag": "Button",
+      "id": "77fd4d59a986",
+      "file": "client/src/components/merchant/LoyaltyWorkspace.tsx",
+      "line": 1392,
+      "tag": "button",
       "role": "",
       "kind": "action",
-      "label": "جاري الخصم... خصم النقاط",
-      "section": "إضافة نقاط",
-      "binding": "handleDeductPoints",
-      "type": "text",
+      "label": "",
+      "section": "LoyaltyWorkspace",
+      "binding": "",
+      "type": "submit",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
       "conditional": true,
-      "conditions": [],
-      "disabled": "deductPoints.isPending",
+      "conditions": [
+        "editor"
+      ],
+      "disabled": "running || !!pending",
       "review": "source-inventoried"
     },
     {
