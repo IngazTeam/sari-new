@@ -1,3 +1,4 @@
+import { subscriptionUsageProcedure } from './routers-usage';
 /**
  * Subscriptions Router Module
  * Handles subscription management and usage tracking
@@ -27,21 +28,7 @@ export const subscriptionsRouter = router({
     }),
 
     // Get usage statistics
-    getUsage: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) {
-            throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        }
-
-        const { getUsageStats } = await import('./usage-tracking');
-        const stats = await getUsageStats(merchant.id);
-
-        if (!stats) {
-            throw new TRPCError({ code: 'NOT_FOUND', message: 'No active subscription found' });
-        }
-
-        return stats;
-    }),
+    getUsage: subscriptionUsageProcedure,
 
     // Create subscription (Admin only — SEC-01 FIX: was protectedProcedure, allowed free activation)
     create: adminProcedure

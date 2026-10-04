@@ -222,8 +222,7 @@ export async function getUsageStats(merchantId: number) {
       nextResetAt: getNextResetDate(subscription.lastResetAt),
     };
   } catch (error: any) {
-    console.error('[Usage] Error getting usage stats:', error);
-    return null;
+    throw new Error('Usage statistics unavailable');
   }
 }
 

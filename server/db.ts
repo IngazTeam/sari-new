@@ -9789,7 +9789,7 @@ export async function getCouponUsageLogsByCoupon(couponId: number) {
  */
 export async function getMerchantCurrentUsage(merchantId: number) {
   const db = await getDb();
-  if (!db) return null;
+  if (!db) throw new Error("Usage database unavailable");
 
   // Get subscription and plan
   const subscription = await getMerchantCurrentSubscription(merchantId);
@@ -9854,7 +9854,7 @@ export async function getMerchantCurrentUsage(merchantId: number) {
  */
 export async function getMerchantUsageHistory(merchantId: number) {
   const db = await getDb();
-  if (!db) return [];
+  if (!db) throw new Error("Usage database unavailable");
 
   const history = [];
   const now = new Date();

@@ -93,7 +93,7 @@ import { reportsRouter } from "./routers-reports";
 import { pushRouter } from "./routers-push";
 import { smtpRouter } from "./routers-smtp";
 import { couponsRouter } from "./routers-coupons";
-import { usageRouter } from "./routers-usage";
+import { usageRouter, subscriptionUsageProcedure } from "./routers-usage";
 import { trialRouter } from "./routers-trial";
 import { emailRouter } from "./routers-email";
 import { integrationsRouter } from "./routers-integrations";
@@ -808,21 +808,7 @@ export const appRouter = router({
     }),
 
     // Get usage statistics
-    getUsage: protectedProcedure.query(async ({ ctx }) => {
-      const merchant = await getMerchantByUserId(ctx.user.id);
-      if (!merchant) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-      }
-
-      const { getUsageStats } = await import('./usage-tracking');
-      const stats = await getUsageStats(merchant.id);
-
-      if (!stats) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'No active subscription found' });
-      }
-
-      return stats;
-    }),
+    getUsage: subscriptionUsageProcedure,
 
     // Create subscription
     create: protectedProcedure
