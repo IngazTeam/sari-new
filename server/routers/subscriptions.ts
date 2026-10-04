@@ -68,6 +68,20 @@ import {
 
 import { billingPriceMinor, billingCurrency, assertProrationCharge } from '../subscriptions/billing-price';
 
+import { checkoutReviewInput, checkoutReviewProof } from '../../shared/subscription-checkout-review';
+import { readCheckoutReview, CheckoutReviewError } from '../subscriptions/checkout-review';
+
+async function checkoutReview(actor: number, merchant: number, plan: number, cycle: 'monthly' | 'yearly', proof?: z.infer<typeof checkoutReviewProof>) {
+  try { return await readCheckoutReview(actor, merchant, plan, cycle, proof); }
+  catch (error) {
+    if (error instanceof MerchantSettingsAuthorityError && error.reason === 'forbidden')
+      throw new TRPCError({ code: 'FORBIDDEN', message: 'Checkout requires owner access' });
+    if (error instanceof CheckoutReviewError && ['stale', 'unchanged'].includes(error.reason))
+      throw new TRPCError({ code: 'CONFLICT', message: 'Checkout changed; review it again' });
+    throw new TRPCError({ code: 'BAD_REQUEST', message: 'Checkout review unavailable' });
+  }
+}
+
 function readBillablePrice(value: unknown): number {
   try { return billingPriceMinor(value) / 100; }
   catch { throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid billable price' }); }
@@ -86,18 +100,18 @@ function assertBillableAmount(amount: number, currency: string): { amount: numbe
 
 function subscriptionCheckoutError(error: unknown): TRPCError {
   if (error instanceof Error && error.message === 'CHECKOUT_ATTEMPT_CONFLICT') {
-    return new TRPCError({ code: 'CONFLICT', message: 'محاولة الدفع مرتبطة بطلب مختلف؛ أعد تحميل الصفحة' });
+    return new TRPCError({ code: 'CONFLICT', message: 'ط¸â€¦ط·آ­ط·آ§ط¸ث†ط¸â€‍ط·آ© ط·آ§ط¸â€‍ط·آ¯ط¸ظ¾ط·آ¹ ط¸â€¦ط·آ±ط·ع¾ط·آ¨ط·آ·ط·آ© ط·آ¨ط·آ·ط¸â€‍ط·آ¨ ط¸â€¦ط·آ®ط·ع¾ط¸â€‍ط¸ظ¾ط·â€؛ ط·آ£ط·آ¹ط·آ¯ ط·ع¾ط·آ­ط¸â€¦ط¸ظ¹ط¸â€‍ ط·آ§ط¸â€‍ط·آµط¸ظ¾ط·آ­ط·آ©' });
   }
   if (error instanceof SubscriptionTapCheckoutError) {
     if (error.failure === 'gateway_not_ready') {
-      return new TRPCError({ code: 'BAD_REQUEST', message: 'بوابة الدفع غير جاهزة حالياً' });
+      return new TRPCError({ code: 'BAD_REQUEST', message: 'ط·آ¨ط¸ث†ط·آ§ط·آ¨ط·آ© ط·آ§ط¸â€‍ط·آ¯ط¸ظ¾ط·آ¹ ط·ط›ط¸ظ¹ط·آ± ط·آ¬ط·آ§ط¸â€،ط·آ²ط·آ© ط·آ­ط·آ§ط¸â€‍ط¸ظ¹ط·آ§ط¸â€¹' });
     }
     if (error.failure === 'attempt_already_finished' || error.failure === 'charge_identity_conflict') {
-      return new TRPCError({ code: 'CONFLICT', message: 'تعذر إعادة استخدام محاولة الدفع؛ أعد تحميل الصفحة' });
+      return new TRPCError({ code: 'CONFLICT', message: 'ط·ع¾ط·آ¹ط·آ°ط·آ± ط·آ¥ط·آ¹ط·آ§ط·آ¯ط·آ© ط·آ§ط·آ³ط·ع¾ط·آ®ط·آ¯ط·آ§ط¸â€¦ ط¸â€¦ط·آ­ط·آ§ط¸ث†ط¸â€‍ط·آ© ط·آ§ط¸â€‍ط·آ¯ط¸ظ¾ط·آ¹ط·â€؛ ط·آ£ط·آ¹ط·آ¯ ط·ع¾ط·آ­ط¸â€¦ط¸ظ¹ط¸â€‍ ط·آ§ط¸â€‍ط·آµط¸ظ¾ط·آ­ط·آ©' });
     }
-    return new TRPCError({ code: 'BAD_GATEWAY', message: 'تعذر إنشاء جلسة الدفع؛ حاول مرة أخرى' });
+    return new TRPCError({ code: 'BAD_GATEWAY', message: 'ط·ع¾ط·آ¹ط·آ°ط·آ± ط·آ¥ط¸â€ ط·آ´ط·آ§ط·طŒ ط·آ¬ط¸â€‍ط·آ³ط·آ© ط·آ§ط¸â€‍ط·آ¯ط¸ظ¾ط·آ¹ط·â€؛ ط·آ­ط·آ§ط¸ث†ط¸â€‍ ط¸â€¦ط·آ±ط·آ© ط·آ£ط·آ®ط·آ±ط¸â€°' });
   }
-  return new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'تعذر بدء عملية الدفع' });
+  return new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'ط·ع¾ط·آ¹ط·آ°ط·آ± ط·آ¨ط·آ¯ط·طŒ ط·آ¹ط¸â€¦ط¸â€‍ط¸ظ¹ط·آ© ط·آ§ط¸â€‍ط·آ¯ط¸ظ¾ط·آ¹' });
 }
 
 // ============================================
@@ -339,6 +353,8 @@ export const subscriptionAddonsRouter = router({
 // ============================================
 
 export const merchantSubscriptionRouter = router({
+  reviewCheckout: merchantProcedure.input(checkoutReviewInput).query(({ ctx, input }) =>
+    checkoutReview(ctx.user.id, ctx.merchantId!, input.planId, input.billingCycle)),
   // Get current subscription
   getCurrentSubscription: protectedProcedure.query(async ({ ctx }) => {
     const merchant = await getMerchantByUserId(ctx.user.id);
@@ -389,12 +405,16 @@ export const merchantSubscriptionRouter = router({
       planId: z.number().int().positive(),
       billingCycle: z.enum(['monthly', 'yearly']),
       checkoutAttemptId: z.string().uuid(),
+      review: checkoutReviewProof.optional(),
     }).strict())
     .mutation(async ({ ctx, input }) => {
       const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
       }
+
+      const reviewed = input.review ? await checkoutReview(ctx.user.id, merchant.id, input.planId, input.billingCycle, input.review) : null;
+      if (reviewed && reviewed.mode !== 'subscribe') throw new TRPCError({ code: 'CONFLICT', message: 'Checkout changed; review it again' });
 
       // Get plan details
       const plan = await getSubscriptionPlanById(input.planId);
@@ -407,6 +427,8 @@ export const merchantSubscriptionRouter = router({
         ? readBillablePrice(plan.monthlyPrice)
         : readBillablePrice(plan.yearlyPrice);
       const { amount, currency } = assertBillableAmount(selectedAmount, plan.currency);
+      if (reviewed && (reviewed.chargeMinor !== Math.round(amount * 100) || reviewed.currency !== currency))
+        throw new TRPCError({ code: 'CONFLICT', message: 'Checkout changed; review it again' });
 
       try {
         const { transaction } = await createOrReusePaymentTransactionForCheckout({
@@ -452,6 +474,7 @@ export const merchantSubscriptionRouter = router({
       newPlanId: z.number().int().positive(),
       newBillingCycle: z.enum(['monthly', 'yearly']),
       checkoutAttemptId: z.string().uuid(),
+      review: checkoutReviewProof.optional(),
     }).strict())
     .mutation(async ({ ctx, input }) => {
       const merchant = await getMerchantByUserId(ctx.user.id);
@@ -459,12 +482,17 @@ export const merchantSubscriptionRouter = router({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
       }
 
+      const reviewed = input.review ? await checkoutReview(ctx.user.id, merchant.id, input.newPlanId, input.newBillingCycle, input.review) : null;
+      if (reviewed && reviewed.mode !== 'upgrade') throw new TRPCError({ code: 'CONFLICT', message: 'Checkout changed; review it again' });
+
       // Get current subscription
       const currentSubscription = await getMerchantCurrentSubscription(merchant.id);
       if (!currentSubscription) {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'No active subscription found' });
       }
 
+      if (reviewed && reviewed.subscriptionId !== currentSubscription.id)
+        throw new TRPCError({ code: 'CONFLICT', message: 'Checkout changed; review it again' });
       const newPlan = await getSubscriptionPlanById(input.newPlanId);
       if (!newPlan || newPlan.isActive !== 1) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Plan not found' });
@@ -474,11 +502,14 @@ export const merchantSubscriptionRouter = router({
       const selectedPrice = input.newBillingCycle === 'monthly'
         ? readBillablePrice(newPlan.monthlyPrice)
         : readBillablePrice(newPlan.yearlyPrice);
-      let proration: Awaited<ReturnType<typeof calculateProration>>;
+      let proration: Awaited<ReturnType<typeof calculateProration>> | Pick<Awaited<ReturnType<typeof calculateProration>>, 'proratedAmount' | 'chargeAmount' | 'creditAmount' | 'daysRemaining'>;
       let currency: string;
       try {
       currency = billingCurrency(newPlan.currency);
-      proration = currentSubscription.planId
+      proration = reviewed ? {
+        proratedAmount: reviewed.chargeMinor / 100, chargeAmount: reviewed.chargeMinor / 100,
+        creditAmount: reviewed.creditMinor / 100, daysRemaining: reviewed.daysRemaining,
+      } : currentSubscription.planId
         ? await calculateProration(currentSubscription.id, input.newPlanId, input.newBillingCycle)
         : {
             proratedAmount: selectedPrice,
@@ -493,6 +524,8 @@ export const merchantSubscriptionRouter = router({
       } catch {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Could not calculate a valid plan change' });
       }
+      if (reviewed && (reviewed.priceMinor !== Math.round(selectedPrice * 100) || reviewed.currency !== currency))
+        throw new TRPCError({ code: 'CONFLICT', message: 'Checkout changed; review it again' });
       const payable = proration.chargeAmount > 0
         ? assertBillableAmount(proration.chargeAmount, currency)
         : { amount: 0, currency };
@@ -599,8 +632,8 @@ export const merchantSubscriptionRouter = router({
     return {
       isActive,
       reason: isActive
-        ? subscription?.status === 'trial' ? 'الفترة التجريبية نشطة' : 'اشتراك نشط'
-        : 'لا يوجد اشتراك نشط. يرجى الاشتراك في باقة للوصول إلى هذه الميزة.',
+        ? subscription?.status === 'trial' ? 'ط·آ§ط¸â€‍ط¸ظ¾ط·ع¾ط·آ±ط·آ© ط·آ§ط¸â€‍ط·ع¾ط·آ¬ط·آ±ط¸ظ¹ط·آ¨ط¸ظ¹ط·آ© ط¸â€ ط·آ´ط·آ·ط·آ©' : 'ط·آ§ط·آ´ط·ع¾ط·آ±ط·آ§ط¸ئ’ ط¸â€ ط·آ´ط·آ·'
+        : 'ط¸â€‍ط·آ§ ط¸ظ¹ط¸ث†ط·آ¬ط·آ¯ ط·آ§ط·آ´ط·ع¾ط·آ±ط·آ§ط¸ئ’ ط¸â€ ط·آ´ط·آ·. ط¸ظ¹ط·آ±ط·آ¬ط¸â€° ط·آ§ط¸â€‍ط·آ§ط·آ´ط·ع¾ط·آ±ط·آ§ط¸ئ’ ط¸ظ¾ط¸ظ¹ ط·آ¨ط·آ§ط¸â€ڑط·آ© ط¸â€‍ط¸â€‍ط¸ث†ط·آµط¸ث†ط¸â€‍ ط·آ¥ط¸â€‍ط¸â€° ط¸â€،ط·آ°ط¸â€، ط·آ§ط¸â€‍ط¸â€¦ط¸ظ¹ط·آ²ط·آ©.',
       isTrial: subscription?.status === 'trial',
     };
   }),
@@ -811,7 +844,7 @@ export const tapSettingsRouter = router({
       const testMode = !Boolean(input.isLive);
       if (!tapKeyMatchesMode(effectiveSecret, testMode)
         || !tapPublicKeyMatchesMode(input.publicKey, testMode)) {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'نوع المفتاح لا يطابق وضع Tap المحدد' });
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'ط¸â€ ط¸ث†ط·آ¹ ط·آ§ط¸â€‍ط¸â€¦ط¸ظ¾ط·ع¾ط·آ§ط·آ­ ط¸â€‍ط·آ§ ط¸ظ¹ط·آ·ط·آ§ط·آ¨ط¸â€ڑ ط¸ث†ط·آ¶ط·آ¹ Tap ط·آ§ط¸â€‍ط¸â€¦ط·آ­ط·آ¯ط·آ¯' });
       }
 
       const credentialsChanged = !existingSettings
@@ -835,7 +868,7 @@ export const tapSettingsRouter = router({
         await updateTapSettings(existingSettings.id, update);
       } else {
         if (!input.secretKey) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'مفتاح Tap السري مطلوب عند الإعداد الأول' });
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'ط¸â€¦ط¸ظ¾ط·ع¾ط·آ§ط·آ­ Tap ط·آ§ط¸â€‍ط·آ³ط·آ±ط¸ظ¹ ط¸â€¦ط·آ·ط¸â€‍ط¸ث†ط·آ¨ ط·آ¹ط¸â€ ط·آ¯ ط·آ§ط¸â€‍ط·آ¥ط·آ¹ط·آ¯ط·آ§ط·آ¯ ط·آ§ط¸â€‍ط·آ£ط¸ث†ط¸â€‍' });
         }
         await createTapSettings({ ...update, secretKey: input.secretKey });
       }
@@ -855,12 +888,12 @@ export const tapSettingsRouter = router({
     .mutation(async () => {
       const settings = await getTapSettings();
       if (!settings) {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'إعدادات Tap غير مكتملة' });
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'ط·آ¥ط·آ¹ط·آ¯ط·آ§ط·آ¯ط·آ§ط·ع¾ Tap ط·ط›ط¸ظ¹ط·آ± ط¸â€¦ط¸ئ’ط·ع¾ط¸â€¦ط¸â€‍ط·آ©' });
       }
       const testMode = !Boolean(settings.isLive);
       if (!tapKeyMatchesMode(settings.secretKey, testMode)
         || !tapPublicKeyMatchesMode(settings.publicKey, testMode)) {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'نوع المفتاح لا يطابق وضع Tap المحدد' });
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'ط¸â€ ط¸ث†ط·آ¹ ط·آ§ط¸â€‍ط¸â€¦ط¸ظ¾ط·ع¾ط·آ§ط·آ­ ط¸â€‍ط·آ§ ط¸ظ¹ط·آ·ط·آ§ط·آ¨ط¸â€ڑ ط¸ث†ط·آ¶ط·آ¹ Tap ط·آ§ط¸â€‍ط¸â€¦ط·آ­ط·آ¯ط·آ¯' });
       }
 
       const result = await verifyPlatformTapCredentialsSnapshot({
@@ -871,11 +904,11 @@ export const tapSettingsRouter = router({
       });
       if (result.outcome === 'verified') return { success: true, message: 'verified' };
       if (result.outcome === 'changed') {
-        throw new TRPCError({ code: 'CONFLICT', message: 'تغيرت إعدادات Tap أثناء الاختبار؛ أعد المحاولة' });
+        throw new TRPCError({ code: 'CONFLICT', message: 'ط·ع¾ط·ط›ط¸ظ¹ط·آ±ط·ع¾ ط·آ¥ط·آ¹ط·آ¯ط·آ§ط·آ¯ط·آ§ط·ع¾ Tap ط·آ£ط·آ«ط¸â€ ط·آ§ط·طŒ ط·آ§ط¸â€‍ط·آ§ط·آ®ط·ع¾ط·آ¨ط·آ§ط·آ±ط·â€؛ ط·آ£ط·آ¹ط·آ¯ ط·آ§ط¸â€‍ط¸â€¦ط·آ­ط·آ§ط¸ث†ط¸â€‍ط·آ©' });
       }
       if (result.outcome === 'rejected') return { success: false, message: 'rejected' };
       console.warn('[PlatformTapCredentials] Credential probe unavailable', { failure: result.failure });
-      throw new TRPCError({ code: 'BAD_GATEWAY', message: 'تعذر الاتصال بـ Tap؛ حاول لاحقاً' });
+      throw new TRPCError({ code: 'BAD_GATEWAY', message: 'ط·ع¾ط·آ¹ط·آ°ط·آ± ط·آ§ط¸â€‍ط·آ§ط·ع¾ط·آµط·آ§ط¸â€‍ ط·آ¨ط¸â‚¬ Tapط·â€؛ ط·آ­ط·آ§ط¸ث†ط¸â€‍ ط¸â€‍ط·آ§ط·آ­ط¸â€ڑط·آ§ط¸â€¹' });
     }),
 });
 

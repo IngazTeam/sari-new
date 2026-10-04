@@ -17,6 +17,7 @@ import {
   updateMerchantSubscriptionStatus,
 } from '../db';
 
+import { subscriptionTimestamp } from '../../shared/subscription-usage';
 import { billingCurrency, billingPriceMinor } from '../subscriptions/billing-price';
 
 // ============================================
@@ -68,10 +69,20 @@ export async function calculateProration(
 		throw new Error('New plan not found');
 	}
 
+	return calculateProrationValues(subscription, currentPlan, newPlan, newBillingCycle);
+}
+
+/** Pure arithmetic shared by the read-only checkout review and legacy adapter. */
+export function calculateProrationValues(
+ subscription: { startDate: Date | string; endDate: Date | string; status: string; billingCycle: string },
+ currentPlan: { monthlyPrice: string; yearlyPrice: string; currency: string },
+ newPlan: { monthlyPrice: string; yearlyPrice: string; currency: string },
+ newBillingCycle: 'monthly' | 'yearly',
+ now = Date.now(),
+): ProrationResult {
 	// Reject invalid periods before computing credit. A trial has no paid credit.
-	const now = Date.now();
-	const start = new Date(subscription.startDate).getTime();
-	const end = new Date(subscription.endDate).getTime();
+	const start = subscription.startDate instanceof Date ? subscription.startDate.getTime() : subscriptionTimestamp(subscription.startDate) ?? NaN;
+	const end = subscription.endDate instanceof Date ? subscription.endDate.getTime() : subscriptionTimestamp(subscription.endDate) ?? NaN;
 	if (![now, start, end].every(Number.isFinite) || end <= start || now < start || now >= end ||
 		!['active', 'trial'].includes(subscription.status) ||
 		!['monthly', 'yearly'].includes(subscription.billingCycle) ||
@@ -224,9 +235,9 @@ async function sendExpiryNotification(
 		// Prepare message
 		let message = '';
 		if (type === 'reminder') {
-			message = `⏰ تنبيه: اشتراكك في ساري سينتهي خلال ${daysBefore} ${daysBefore === 1 ? 'يوم' : 'أيام'}.\n\nلتجديد اشتراكك والاستمرار في استخدام الخدمة، يرجى زيارة لوحة التحكم.\n\nشكراً لاستخدامك ساري! 🌟`;
+			message = `أ¢عˆآ° ط·ع¾ط¸â€ ط·آ¨ط¸ظ¹ط¸â€،: ط·آ§ط·آ´ط·ع¾ط·آ±ط·آ§ط¸ئ’ط¸ئ’ ط¸ظ¾ط¸ظ¹ ط·آ³ط·آ§ط·آ±ط¸ظ¹ ط·آ³ط¸ظ¹ط¸â€ ط·ع¾ط¸â€،ط¸ظ¹ ط·آ®ط¸â€‍ط·آ§ط¸â€‍ ${daysBefore} ${daysBefore === 1 ? 'ط¸ظ¹ط¸ث†ط¸â€¦' : 'ط·آ£ط¸ظ¹ط·آ§ط¸â€¦'}.\n\nط¸â€‍ط·ع¾ط·آ¬ط·آ¯ط¸ظ¹ط·آ¯ ط·آ§ط·آ´ط·ع¾ط·آ±ط·آ§ط¸ئ’ط¸ئ’ ط¸ث†ط·آ§ط¸â€‍ط·آ§ط·آ³ط·ع¾ط¸â€¦ط·آ±ط·آ§ط·آ± ط¸ظ¾ط¸ظ¹ ط·آ§ط·آ³ط·ع¾ط·آ®ط·آ¯ط·آ§ط¸â€¦ ط·آ§ط¸â€‍ط·آ®ط·آ¯ط¸â€¦ط·آ©ط·إ’ ط¸ظ¹ط·آ±ط·آ¬ط¸â€° ط·آ²ط¸ظ¹ط·آ§ط·آ±ط·آ© ط¸â€‍ط¸ث†ط·آ­ط·آ© ط·آ§ط¸â€‍ط·ع¾ط·آ­ط¸ئ’ط¸â€¦.\n\nط·آ´ط¸ئ’ط·آ±ط·آ§ط¸â€¹ ط¸â€‍ط·آ§ط·آ³ط·ع¾ط·آ®ط·آ¯ط·آ§ط¸â€¦ط¸ئ’ ط·آ³ط·آ§ط·آ±ط¸ظ¹! ظ‹ع؛إ’ع؛`;
 		} else {
-			message = `⚠️ انتهى اشتراكك في ساري.\n\nلتجديد اشتراكك واستعادة الوصول إلى جميع الميزات، يرجى زيارة لوحة التحكم.\n\nنحن هنا لمساعدتك! 💙`;
+			message = `أ¢ع‘آ أ¯آ¸عˆ ط·آ§ط¸â€ ط·ع¾ط¸â€،ط¸â€° ط·آ§ط·آ´ط·ع¾ط·آ±ط·آ§ط¸ئ’ط¸ئ’ ط¸ظ¾ط¸ظ¹ ط·آ³ط·آ§ط·آ±ط¸ظ¹.\n\nط¸â€‍ط·ع¾ط·آ¬ط·آ¯ط¸ظ¹ط·آ¯ ط·آ§ط·آ´ط·ع¾ط·آ±ط·آ§ط¸ئ’ط¸ئ’ ط¸ث†ط·آ§ط·آ³ط·ع¾ط·آ¹ط·آ§ط·آ¯ط·آ© ط·آ§ط¸â€‍ط¸ث†ط·آµط¸ث†ط¸â€‍ ط·آ¥ط¸â€‍ط¸â€° ط·آ¬ط¸â€¦ط¸ظ¹ط·آ¹ ط·آ§ط¸â€‍ط¸â€¦ط¸ظ¹ط·آ²ط·آ§ط·ع¾ط·إ’ ط¸ظ¹ط·آ±ط·آ¬ط¸â€° ط·آ²ط¸ظ¹ط·آ§ط·آ±ط·آ© ط¸â€‍ط¸ث†ط·آ­ط·آ© ط·آ§ط¸â€‍ط·ع¾ط·آ­ط¸ئ’ط¸â€¦.\n\nط¸â€ ط·آ­ط¸â€  ط¸â€،ط¸â€ ط·آ§ ط¸â€‍ط¸â€¦ط·آ³ط·آ§ط·آ¹ط·آ¯ط·ع¾ط¸ئ’! ظ‹ع؛â€™â„¢`;
 		}
 
 		// Send WhatsApp message
@@ -348,7 +359,7 @@ async function sendAutoRenewalFailureNotification(merchantId: number): Promise<v
 		}
 
 		// Prepare message
-		const message = `⚠️ فشل تجديد اشتراكك تلقائياً.\n\nيرجى تحديث معلومات الدفع في لوحة التحكم لتجديد اشتراكك.\n\nإذا كنت بحاجة إلى مساعدة، نحن هنا من أجلك! 💙`;
+		const message = `أ¢ع‘آ أ¯آ¸عˆ ط¸ظ¾ط·آ´ط¸â€‍ ط·ع¾ط·آ¬ط·آ¯ط¸ظ¹ط·آ¯ ط·آ§ط·آ´ط·ع¾ط·آ±ط·آ§ط¸ئ’ط¸ئ’ ط·ع¾ط¸â€‍ط¸â€ڑط·آ§ط·آ¦ط¸ظ¹ط·آ§ط¸â€¹.\n\nط¸ظ¹ط·آ±ط·آ¬ط¸â€° ط·ع¾ط·آ­ط·آ¯ط¸ظ¹ط·آ« ط¸â€¦ط·آ¹ط¸â€‍ط¸ث†ط¸â€¦ط·آ§ط·ع¾ ط·آ§ط¸â€‍ط·آ¯ط¸ظ¾ط·آ¹ ط¸ظ¾ط¸ظ¹ ط¸â€‍ط¸ث†ط·آ­ط·آ© ط·آ§ط¸â€‍ط·ع¾ط·آ­ط¸ئ’ط¸â€¦ ط¸â€‍ط·ع¾ط·آ¬ط·آ¯ط¸ظ¹ط·آ¯ ط·آ§ط·آ´ط·ع¾ط·آ±ط·آ§ط¸ئ’ط¸ئ’.\n\nط·آ¥ط·آ°ط·آ§ ط¸ئ’ط¸â€ ط·ع¾ ط·آ¨ط·آ­ط·آ§ط·آ¬ط·آ© ط·آ¥ط¸â€‍ط¸â€° ط¸â€¦ط·آ³ط·آ§ط·آ¹ط·آ¯ط·آ©ط·إ’ ط¸â€ ط·آ­ط¸â€  ط¸â€،ط¸â€ ط·آ§ ط¸â€¦ط¸â€  ط·آ£ط·آ¬ط¸â€‍ط¸ئ’! ظ‹ع؛â€™â„¢`;
 
 		// Send WhatsApp message
 		// TODO: Implement WhatsApp notification
