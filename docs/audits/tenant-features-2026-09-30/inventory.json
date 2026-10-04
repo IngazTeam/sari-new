@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-04T02:20:47.154Z",
+  "generatedAt": "2026-10-04T03:17:16.323Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -18132,78 +18132,118 @@
     },
     {
       "file": "client/src/pages/merchant/PaymentSettings.tsx",
-      "hash": "fb740fa027c2",
+      "hash": "4fbe8d11efdf",
       "queries": [
-        "merchantPayments.getSettings"
+        "auth.me",
+        "merchants.workspaceIdentity"
+      ],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [
+        {
+          "query": "auth.me",
+          "binding": "user",
+          "line": 8,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        },
+        {
+          "query": "merchants.workspaceIdentity",
+          "binding": "merchant",
+          "line": 13,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": "!!user.data?.id && !user.error && !user.isFetching"
+        }
+      ],
+      "conditions": [],
+      "imports": [
+        "client/src/components/merchant/PaymentSettingsWorkspace.tsx"
+      ],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/components/merchant/PaymentSettingsWorkspace.tsx",
+      "hash": "16ef7cf782a0",
+      "queries": [
+        "merchantPayments.workspace"
       ],
       "mutations": [
-        "merchantPayments.saveSettings",
-        "merchantPayments.testConnection"
+        "merchantPayments.saveReviewed",
+        "merchantPayments.probeReviewed"
       ],
       "imperativeReads": [],
       "browserRequests": [],
       "sections": [
         {
-          "label": "إعدادات الدفع الإلكتروني",
-          "line": 131,
+          "label": "",
+          "line": 327,
           "tag": "h1"
         },
         {
-          "label": "Tap Payments",
-          "line": 160,
-          "tag": "CardTitle"
+          "label": "",
+          "line": 361,
+          "tag": "h2"
         },
         {
-          "label": "مفاتيح API",
-          "line": 222,
-          "tag": "h3"
+          "label": "",
+          "line": 570,
+          "tag": "h2"
         },
         {
-          "label": "إعدادات واتساب",
-          "line": 279,
-          "tag": "h3"
+          "label": "",
+          "line": 580,
+          "tag": "summary"
         },
         {
-          "label": "كيفية الحصول على مفاتيح Tap",
-          "line": 355,
-          "tag": "CardTitle"
+          "label": "",
+          "line": 625,
+          "tag": "summary"
         },
         {
-          "label": "حالة التكامل",
-          "line": 395,
-          "tag": "CardTitle"
+          "label": "",
+          "line": 645,
+          "tag": "summary"
         }
       ],
       "choices": [],
-      "handlers": [
-        {
-          "name": "handleSave",
-          "line": 89,
-          "calls": [
-            "saveMutation"
-          ]
-        },
-        {
-          "name": "handleTestConnection",
-          "line": 106,
-          "calls": [
-            "testMutation"
-          ]
-        }
-      ],
+      "handlers": [],
       "queryStates": [
         {
-          "query": "merchantPayments.getSettings",
-          "binding": "{ data: settings, isLoading, refetch }",
-          "line": 45,
-          "errorSignal": false,
+          "query": "merchantPayments.workspace",
+          "binding": "query",
+          "line": 54,
+          "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
         }
       ],
       "conditions": [],
+      "imports": [
+        "client/src/lib/payment-settings-labels.ts",
+        "client/src/lib/knowledge-workspace-cache.ts"
+      ],
+      "controlCount": 17
+    },
+    {
+      "file": "client/src/lib/payment-settings-labels.ts",
+      "hash": "0eb4e9e39c49",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
       "imports": [],
-      "controlCount": 10
+      "controlCount": 0
     },
     {
       "file": "client/src/pages/LoyaltySettings.tsx",
@@ -27980,26 +28020,41 @@
         "PaymentSettings"
       ],
       "files": [
-        "client/src/pages/merchant/PaymentSettings.tsx"
+        "client/src/pages/merchant/PaymentSettings.tsx",
+        "client/src/components/merchant/PaymentSettingsWorkspace.tsx",
+        "client/src/lib/payment-settings-labels.ts",
+        "client/src/lib/knowledge-workspace-cache.ts",
+        "client/src/lib/sales-policy-draft.ts",
+        "client/src/lib/conversation-draft.ts",
+        "client/src/lib/test-workspace-draft.ts"
       ],
       "controls": [
-        "e192827c7449",
-        "a65c521cc3b2",
-        "2935ed3d0d10",
-        "9293f984d87f",
-        "a7ebc8a918a1",
-        "99383c6b7d6e",
-        "e1b6342a486b",
-        "de23a8960b8f",
-        "9b6d4fe29980",
-        "47d408ba703c"
+        "1cae85fbb73e",
+        "d50d10e681a5",
+        "58236d84f38f",
+        "5ab1521d282a",
+        "47a74492e079",
+        "b90892403196",
+        "fbc7aba55e8c",
+        "b1925136a434",
+        "9cef5d942067",
+        "608d3754125d",
+        "a32e4cb0f677",
+        "92e0a2193b14",
+        "222a32ea326a",
+        "0c7413174d9d",
+        "4e7ad81b8a03",
+        "c7ebfab94fac",
+        "50fdac5390f0"
       ],
       "queries": [
-        "merchantPayments.getSettings"
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "merchantPayments.workspace"
       ],
       "mutations": [
-        "merchantPayments.saveSettings",
-        "merchantPayments.testConnection"
+        "merchantPayments.saveReviewed",
+        "merchantPayments.probeReviewed"
       ],
       "imperativeReads": [],
       "browserRequests": []
@@ -83819,99 +83874,169 @@
       "review": "source-inventoried"
     },
     {
-      "id": "e192827c7449",
-      "file": "client/src/pages/merchant/PaymentSettings.tsx",
-      "line": 184,
-      "tag": "Switch",
+      "id": "1cae85fbb73e",
+      "file": "client/src/components/merchant/PaymentSettingsWorkspace.tsx",
+      "line": 368,
+      "tag": "select",
       "role": "",
       "kind": "field",
-      "label": "تفعيل Tap Payment",
-      "section": "Tap Payments",
-      "binding": "tapEnabled",
-      "type": "checkbox",
-      "options": [],
+      "label": "",
+      "section": "PaymentSettingsWorkspace",
+      "binding": "draft.tapTestMode === null\n                        ? \"\"\n                        : draft.tapTestMode\n                          ? \"test\"\n                          : \"live\"",
+      "type": "text",
+      "options": [
+        {
+          "value": "",
+          "label": ""
+        },
+        {
+          "value": "test",
+          "label": ""
+        },
+        {
+          "value": "live",
+          "label": ""
+        }
+      ],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
+      "conditional": true,
+      "conditions": [
+        "current.state === \"duplicate\"",
+        "current.state === \"restricted\""
+      ],
+      "disabled": "disabled",
       "review": "source-inventoried"
     },
     {
-      "id": "a65c521cc3b2",
-      "file": "client/src/pages/merchant/PaymentSettings.tsx",
-      "line": 201,
-      "tag": "Switch",
+      "id": "d50d10e681a5",
+      "file": "client/src/components/merchant/PaymentSettingsWorkspace.tsx",
+      "line": 395,
+      "tag": "select",
       "role": "",
       "kind": "field",
-      "label": "وضع الاختبار (Sandbox)",
-      "section": "Tap Payments",
-      "binding": "tapTestMode",
-      "type": "checkbox",
-      "options": [],
+      "label": "",
+      "section": "PaymentSettingsWorkspace",
+      "binding": "draft.defaultCurrency ?? \"\"",
+      "type": "text",
+      "options": [
+        {
+          "value": "",
+          "label": ""
+        },
+        {
+          "value": "SAR",
+          "label": "SAR ·"
+        }
+      ],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
+      "conditional": true,
+      "conditions": [
+        "current.state === \"duplicate\"",
+        "current.state === \"restricted\""
+      ],
+      "disabled": "disabled",
       "review": "source-inventoried"
     },
     {
-      "id": "2935ed3d0d10",
-      "file": "client/src/pages/merchant/PaymentSettings.tsx",
-      "line": 226,
-      "tag": "Input",
+      "id": "58236d84f38f",
+      "file": "client/src/components/merchant/PaymentSettingsWorkspace.tsx",
+      "line": 415,
+      "tag": "input",
       "role": "",
       "kind": "field",
-      "label": "Public Key",
-      "section": "مفاتيح API",
-      "binding": "tapPublicKey",
+      "label": "",
+      "section": "PaymentSettingsWorkspace",
+      "binding": "draft.tapPublicKey ?? \"\"",
       "type": "text",
       "options": [],
       "min": "",
       "max": "",
-      "maxLength": "",
+      "maxLength": "500",
       "required": false,
       "conditional": true,
-      "conditions": [],
-      "disabled": "",
+      "conditions": [
+        "current.state === \"duplicate\"",
+        "current.state === \"restricted\""
+      ],
+      "disabled": "disabled",
       "review": "source-inventoried"
     },
     {
-      "id": "9293f984d87f",
-      "file": "client/src/pages/merchant/PaymentSettings.tsx",
-      "line": 241,
-      "tag": "Input",
+      "id": "5ab1521d282a",
+      "file": "client/src/components/merchant/PaymentSettingsWorkspace.tsx",
+      "line": 432,
+      "tag": "select",
       "role": "",
       "kind": "field",
-      "label": "Secret Key",
-      "section": "مفاتيح API",
-      "binding": "tapSecretKey",
-      "type": "showSecretKey ? \"text\" : \"password\"",
-      "options": [],
+      "label": "",
+      "section": "PaymentSettingsWorkspace",
+      "binding": "draft.secretAction",
+      "type": "text",
+      "options": [
+        {
+          "value": "keep",
+          "label": ""
+        },
+        {
+          "value": "replace",
+          "label": ""
+        },
+        {
+          "value": "clear",
+          "label": ""
+        }
+      ],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "",
+      "conditional": false,
+      "conditions": [
+        "current.state === \"duplicate\"",
+        "current.state === \"restricted\""
+      ],
+      "disabled": "disabled",
       "review": "source-inventoried"
     },
     {
-      "id": "a7ebc8a918a1",
-      "file": "client/src/pages/merchant/PaymentSettings.tsx",
-      "line": 249,
-      "tag": "Button",
+      "id": "47a74492e079",
+      "file": "client/src/components/merchant/PaymentSettingsWorkspace.tsx",
+      "line": 456,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "PaymentSettingsWorkspace",
+      "binding": "draft.secretInput",
+      "type": "shown ? \"text\" : \"password\"",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "500",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "draft.secretAction === \"replace\""
+      ],
+      "disabled": "disabled",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "b90892403196",
+      "file": "client/src/components/merchant/PaymentSettingsWorkspace.tsx",
+      "line": 469,
+      "tag": "button",
       "role": "",
       "kind": "action",
-      "label": "Secret Key",
-      "section": "مفاتيح API",
-      "binding": "() => setShowSecretKey(!showSecretKey)",
+      "label": "shown ? c.hide : c.show",
+      "section": "PaymentSettingsWorkspace",
+      "binding": "() => setShown(v => !v)",
       "type": "button",
       "options": [],
       "min": "",
@@ -83919,21 +84044,180 @@
       "maxLength": "",
       "required": false,
       "conditional": true,
-      "conditions": [],
+      "conditions": [
+        "draft.secretAction === \"replace\""
+      ],
+      "disabled": "disabled",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "fbc7aba55e8c",
+      "file": "client/src/components/merchant/PaymentSettingsWorkspace.tsx",
+      "line": 494,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "PaymentSettingsWorkspace",
+      "binding": "draft.tapEnabled === null\n                      ? \"\"\n                      : draft.tapEnabled\n                        ? \"on\"\n                        : \"off\"",
+      "type": "text",
+      "options": [
+        {
+          "value": "",
+          "label": ""
+        },
+        {
+          "value": "off",
+          "label": ""
+        },
+        {
+          "value": "on",
+          "label": ""
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "current.state === \"duplicate\"",
+        "current.state === \"restricted\""
+      ],
+      "disabled": "disabled",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "b1925136a434",
+      "file": "client/src/components/merchant/PaymentSettingsWorkspace.tsx",
+      "line": 549,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "save",
+      "section": "PaymentSettingsWorkspace",
+      "binding": "",
+      "type": "submit",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "current.state === \"duplicate\"",
+        "current.state === \"restricted\""
+      ],
+      "disabled": "disabled || (!dirty && base.state !== \"missing\")",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "9cef5d942067",
+      "file": "client/src/components/merchant/PaymentSettingsWorkspace.tsx",
+      "line": 555,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "PaymentSettingsWorkspace",
+      "binding": "() => void refresh()",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "current.state === \"duplicate\"",
+        "current.state === \"restricted\""
+      ],
+      "disabled": "!!busy || query.isFetching",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "608d3754125d",
+      "file": "client/src/components/merchant/PaymentSettingsWorkspace.tsx",
+      "line": 580,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "PaymentSettingsWorkspace",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "current.state === \"duplicate\"",
+        "current.state === \"restricted\""
+      ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "99383c6b7d6e",
-      "file": "client/src/pages/merchant/PaymentSettings.tsx",
-      "line": 291,
-      "tag": "Switch",
+      "id": "a32e4cb0f677",
+      "file": "client/src/components/merchant/PaymentSettingsWorkspace.tsx",
+      "line": 613,
+      "tag": "Button",
       "role": "",
-      "kind": "field",
-      "label": "إرسال رابط الدفع تلقائياً",
-      "section": "إعدادات واتساب",
-      "binding": "autoSendPaymentLink",
-      "type": "checkbox",
+      "kind": "action",
+      "label": "probe",
+      "section": "PaymentSettingsWorkspace",
+      "binding": "() => void check()",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "current.state === \"duplicate\"",
+        "current.state === \"restricted\""
+      ],
+      "disabled": "disabled || dirty || !base.keysMatchMode",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "92e0a2193b14",
+      "file": "client/src/components/merchant/PaymentSettingsWorkspace.tsx",
+      "line": 625,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "PaymentSettingsWorkspace",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "current.state === \"duplicate\"",
+        "current.state === \"restricted\""
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "222a32ea326a",
+      "file": "client/src/components/merchant/PaymentSettingsWorkspace.tsx",
+      "line": 645,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "PaymentSettingsWorkspace",
+      "binding": "",
+      "type": "text",
       "options": [],
       "min": "",
       "max": "",
@@ -83945,78 +84229,78 @@
       "review": "source-inventoried"
     },
     {
-      "id": "e1b6342a486b",
-      "file": "client/src/pages/merchant/PaymentSettings.tsx",
-      "line": 300,
-      "tag": "Textarea",
-      "role": "",
-      "kind": "field",
-      "label": "رسالة رابط الدفع",
-      "section": "إعدادات واتساب",
-      "binding": "paymentLinkMessage",
-      "type": "textarea",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "de23a8960b8f",
-      "file": "client/src/pages/merchant/PaymentSettings.tsx",
-      "line": 317,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "حفظ الإعدادات",
-      "section": "إعدادات واتساب",
-      "binding": "handleSave",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "isSaving",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "9b6d4fe29980",
-      "file": "client/src/pages/merchant/PaymentSettings.tsx",
-      "line": 326,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "اختبار الاتصال",
-      "section": "إعدادات واتساب",
-      "binding": "handleTestConnection",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "isTesting || !hasStoredTapKeys || credentialInputsDirty",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "47d408ba703c",
-      "file": "client/src/pages/merchant/PaymentSettings.tsx",
-      "line": 364,
+      "id": "0c7413174d9d",
+      "file": "client/src/components/merchant/PaymentSettingsWorkspace.tsx",
+      "line": 647,
       "tag": "a",
       "role": "",
       "kind": "action",
-      "label": "tap.company",
-      "section": "كيفية الحصول على مفاتيح Tap",
+      "label": "",
+      "section": "PaymentSettingsWorkspace",
       "binding": "https://tap.company",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "4e7ad81b8a03",
+      "file": "client/src/components/merchant/PaymentSettingsWorkspace.tsx",
+      "line": 653,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "PaymentSettingsWorkspace",
+      "binding": "/merchant/settings",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "c7ebfab94fac",
+      "file": "client/src/components/merchant/PaymentSettingsWorkspace.tsx",
+      "line": 654,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "PaymentSettingsWorkspace",
+      "binding": "/merchant/payment-links",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "50fdac5390f0",
+      "file": "client/src/components/merchant/PaymentSettingsWorkspace.tsx",
+      "line": 655,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "PaymentSettingsWorkspace",
+      "binding": "/merchant/payments",
       "type": "text",
       "options": [],
       "min": "",

@@ -1,0 +1,218 @@
+[
+  {
+    "lang": "ar",
+    "expanded": false,
+    "buttonHeights": [
+      44,
+      44,
+      44,
+      44,
+      48,
+      48
+    ],
+    "contentLeft": 0,
+    "contentRight": 320,
+    "contentWidth": 320,
+    "inputFonts": [
+      "16px",
+      "16px",
+      "16px",
+      "16px",
+      "16px"
+    ],
+    "overflow": [],
+    "scrollWidth": 320,
+    "secretInput": false,
+    "width": 320
+  },
+  {
+    "lang": "ar",
+    "expanded": true,
+    "buttonHeights": [
+      46,
+      44,
+      62,
+      44,
+      44,
+      48,
+      48
+    ],
+    "contentLeft": 30,
+    "contentRight": 320,
+    "contentWidth": 290,
+    "inputFonts": [
+      "16px",
+      "16px",
+      "16px",
+      "16px",
+      "16px",
+      "16px"
+    ],
+    "overflow": [],
+    "scrollWidth": 290,
+    "secretInput": true,
+    "width": 290
+  },
+  {
+    "lang": "ar",
+    "expanded": false,
+    "buttonHeights": [
+      44,
+      44,
+      44,
+      44,
+      48,
+      48
+    ],
+    "contentLeft": 0,
+    "contentRight": 390,
+    "contentWidth": 390,
+    "inputFonts": [
+      "16px",
+      "16px",
+      "16px",
+      "16px",
+      "16px"
+    ],
+    "overflow": [],
+    "scrollWidth": 390,
+    "secretInput": false,
+    "width": 390
+  },
+  {
+    "lang": "ar",
+    "expanded": true,
+    "buttonHeights": [
+      46,
+      44,
+      44,
+      44,
+      44,
+      48,
+      48
+    ],
+    "contentLeft": 30,
+    "contentRight": 390,
+    "contentWidth": 360,
+    "inputFonts": [
+      "16px",
+      "16px",
+      "16px",
+      "16px",
+      "16px",
+      "16px"
+    ],
+    "overflow": [],
+    "scrollWidth": 360,
+    "secretInput": true,
+    "width": 360
+  },
+  {
+    "lang": "ar",
+    "expanded": false,
+    "buttonHeights": [
+      44,
+      44,
+      44,
+      44,
+      48,
+      48
+    ],
+    "contentLeft": 0,
+    "contentRight": 768,
+    "contentWidth": 768,
+    "inputFonts": [
+      "16px",
+      "16px",
+      "16px",
+      "16px",
+      "16px"
+    ],
+    "overflow": [],
+    "scrollWidth": 768,
+    "secretInput": false,
+    "width": 768
+  },
+  {
+    "lang": "ar",
+    "expanded": true,
+    "buttonHeights": [
+      46,
+      44,
+      44,
+      44,
+      44,
+      48,
+      48
+    ],
+    "contentLeft": 0,
+    "contentRight": 768,
+    "contentWidth": 768,
+    "inputFonts": [
+      "16px",
+      "16px",
+      "16px",
+      "16px",
+      "16px",
+      "16px"
+    ],
+    "overflow": [],
+    "scrollWidth": 768,
+    "secretInput": true,
+    "width": 768
+  },
+  {
+    "lang": "ar",
+    "expanded": false,
+    "buttonHeights": [
+      44,
+      44,
+      44,
+      44,
+      48,
+      48
+    ],
+    "contentLeft": 0,
+    "contentRight": 1440,
+    "contentWidth": 1440,
+    "inputFonts": [
+      "16px",
+      "16px",
+      "16px",
+      "16px",
+      "16px"
+    ],
+    "overflow": [],
+    "scrollWidth": 1440,
+    "secretInput": false,
+    "width": 1440
+  },
+  {
+    "lang": "ar",
+    "expanded": true,
+    "buttonHeights": [
+      46,
+      44,
+      44,
+      44,
+      44,
+      48,
+      48
+    ],
+    "contentLeft": 0,
+    "contentRight": 1440,
+    "contentWidth": 1440,
+    "inputFonts": [
+      "16px",
+      "16px",
+      "16px",
+      "16px",
+      "16px",
+      "16px"
+    ],
+    "overflow": [],
+    "scrollWidth": 1440,
+    "secretInput": true,
+    "width": 1440
+  }
+]

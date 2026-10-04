@@ -1,0 +1,225 @@
+.pw-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.8fr) minmax(250px, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+.pw-workspace .sw-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.pw-full {
+  grid-column: 1/-1;
+}
+.pw-enabled {
+  margin-block: 24px;
+}
+.pw-secret-input {
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+}
+.pw-secret-input input {
+  flex: 1;
+  width: 0;
+}
+.pw-secret-input button {
+  display: grid;
+  place-items: center;
+  min-width: 46px;
+  min-height: 46px;
+  border: 1px solid #cfdcd3;
+  border-radius: 11px;
+}
+.pw-secret-input svg {
+  width: 20px;
+  height: 20px;
+}
+.pw-secret-input button:focus-visible {
+  outline: 3px solid #a5cfb7;
+}
+.pw-status h2 {
+  font-size: 18px;
+}
+.pw-status-details summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+  list-style: none;
+  gap: 8px;
+}
+.pw-status-details summary:after {
+  content: "+";
+  margin-inline-start: auto;
+}
+.pw-status-details[open] summary:after {
+  content: "−";
+}
+.pw-status-details {
+  border-block: 1px solid #e1e9df;
+  margin-bottom: 14px;
+}
+.pw-status-details summary:focus-visible {
+  outline: 3px solid #a5cfb7;
+  outline-offset: 2px;
+}
+.pw-readiness {
+  display: block;
+  background: #f3efe6;
+  color: #74602e;
+  padding: 14px;
+  border-radius: 12px;
+  line-height: 1.7;
+  margin-bottom: 18px;
+}
+.pw-readiness.pw-ready {
+  background: #e9f5eb;
+  color: #27613f;
+}
+.pw-workspace dl {
+  display: grid;
+  gap: 16px;
+  margin-block: 18px;
+}
+.pw-workspace dt {
+  font-size: 12px;
+  color: #657167;
+  margin-bottom: 6px;
+}
+.pw-workspace dd {
+  font-size: 14px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+.pw-status p {
+  font-size: 14px;
+  line-height: 1.8;
+}
+.pw-status > button {
+  width: 100%;
+  height: auto;
+  min-height: 46px;
+  white-space: normal;
+  margin-block: 16px 8px;
+}
+.pw-status > small {
+  display: block;
+  font-size: 12px;
+  color: #657167;
+  line-height: 1.8;
+}
+.pw-details {
+  margin-top: 20px;
+  padding-block: 8px;
+}
+.pw-details summary {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 650;
+  cursor: pointer;
+  list-style: none;
+}
+.pw-details summary:after {
+  content: "+";
+  margin-inline-start: auto;
+  padding-inline: 8px;
+  font-size: 20px;
+}
+.pw-details[open] summary:after {
+  content: "−";
+}
+.pw-details p {
+  font-size: 14px;
+  line-height: 1.9;
+  margin-block: 10px;
+}
+.pw-details a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #276b48;
+  min-height: 44px;
+  text-decoration: underline;
+}
+.pw-details a svg {
+  width: 18px;
+  height: 18px;
+}
+.pw-message {
+  white-space: pre-wrap;
+}
+.pw-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 18px;
+}
+.pw-links a {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  padding: 8px 14px;
+  border: 1px solid #dce6df;
+  border-radius: 12px;
+  font-size: 14px;
+  color: #32644b;
+}
+.pw-dirty {
+  color: #765e2e;
+  font-size: 14px;
+  line-height: 1.8;
+  margin-block: 12px;
+}
+.pw-workspace .sw-notice {
+  margin-block: 12px;
+}
+.pw-workspace [hidden] {
+  display: none;
+}
+@media (max-width: 850px) {
+  .pw-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .pw-status {
+    order: -1;
+  }
+  .pw-status dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .pw-status .sw-section-head {
+    margin-bottom: 14px;
+  }
+  .pw-status .pw-readiness {
+    margin-bottom: 12px;
+  }
+  .pw-status > button {
+    max-width: 100%;
+  }
+}
+@media (max-width: 400px) {
+  .pw-status dl {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .pw-links a {
+    width: 100%;
+    justify-content: center;
+  }
+  .pw-workspace .sw-actions {
+    flex-direction: column;
+  }
+  .pw-workspace .sw-actions button {
+    width: 100%;
+    min-height: 44px;
+    white-space: normal;
+    height: auto;
+  }
+  .pw-status .sw-section-head > svg {
+    display: none;
+  }
+}

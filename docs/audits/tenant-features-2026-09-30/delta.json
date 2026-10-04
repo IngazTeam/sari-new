@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-04T02:20:47.154Z",
+  "generatedAt": "2026-10-04T03:17:16.323Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 486,
-      "controls": 2693
+      "files": 488,
+      "controls": 2700
     }
   },
   "addedFiles": [
@@ -293,6 +293,8 @@
     "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
     "client/src/components/merchant/InventorySheetWorkspace.tsx",
     "client/src/lib/inventory-sheet-workspace.ts",
+    "client/src/components/merchant/PaymentSettingsWorkspace.tsx",
+    "client/src/lib/payment-settings-labels.ts",
     "client/src/_core/hooks/useAuth.ts",
     "client/src/components/merchant/PlatformIntegrationsWorkspace.tsx",
     "client/src/components/merchant/CalendarConnectionCard.tsx",
@@ -418,6 +420,7 @@
     "client/src/pages/merchant/ServicePackages.tsx",
     "client/src/pages/SheetsSettings.tsx",
     "client/src/pages/SheetsInventory.tsx",
+    "client/src/pages/merchant/PaymentSettings.tsx",
     "client/src/pages/PlatformIntegrations.tsx",
     "client/src/pages/NotificationSettings.tsx",
     "client/src/pages/CurrencySettings.tsx",
@@ -2250,11 +2253,23 @@
     {
       "route": "/merchant/payment-settings",
       "controlsBefore": 10,
-      "controlsNow": 10,
-      "removedQueries": [],
-      "addedQueries": [],
-      "removedMutations": [],
-      "addedMutations": []
+      "controlsNow": 17,
+      "removedQueries": [
+        "merchantPayments.getSettings"
+      ],
+      "addedQueries": [
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "merchantPayments.workspace"
+      ],
+      "removedMutations": [
+        "merchantPayments.saveSettings",
+        "merchantPayments.testConnection"
+      ],
+      "addedMutations": [
+        "merchantPayments.saveReviewed",
+        "merchantPayments.probeReviewed"
+      ]
     },
     {
       "route": "/merchant/loyalty/settings",

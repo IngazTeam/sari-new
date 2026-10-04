@@ -2,7 +2,7 @@
 
 هذا حصر مصدر قابل لإعادة التوليد، وليس ادعاءً بأن كل مسار عمل اختُبر أو أُعيد تصميمه. يشمل المكونات الفرعية المحلية، الحقول، الأزرار، النوافذ، التبويبات، واجهات القراءة والتعديل. العناصر الديناميكية تحتاج مراجعة إضافية.
 
-- 126 مسارًا مسجلًا، 486 ملف واجهة متصلًا، 2693 عنصر تحكم في المصدر.
+- 126 مسارًا مسجلًا، 488 ملف واجهة متصلًا، 2700 عنصر تحكم في المصدر.
 - 0 رابطًا حرفيًا غير مطابق، و0 ملف صفحة غير متصل بالمسارات المحصورة.
 
 | الصفحة | الملفات | عناصر التحكم | القراءة / التعديل | موك أب للصفحة |
@@ -96,7 +96,7 @@
 | /merchant/payments — المدفوعات | 1 | 7 | 2 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/payments/:id — تفاصيل معاملة | 1 | 10 | 1 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/payment-links — روابط الدفع | 2 | 12 | 1 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/payment-settings — بوابة دفع العملاء | 1 | 10 | 1 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/payment-settings — بوابة دفع العملاء | 7 | 17 | 3 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/loyalty/settings — إعدادات الولاء | 2 | 11 | 1 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/loyalty/tiers — مستويات الولاء | 2 | 8 | 1 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/loyalty/rewards — مكافآت الولاء | 2 | 19 | 1 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -3573,20 +3573,27 @@
 | 386 | Button | t("merchantUx.actions.disableNamed", {                                 name: link.title,                               }) | إنشاء رابط دفع جديد |
 | 417 | Button | إنشاء أول رابط | لا توجد روابط دفع |
 
-## client/src/pages/merchant/PaymentSettings.tsx
+## client/src/components/merchant/PaymentSettingsWorkspace.tsx
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 184 | Switch | تفعيل Tap Payment | Tap Payments |
-| 201 | Switch | وضع الاختبار (Sandbox) | Tap Payments |
-| 226 | Input | Public Key | مفاتيح API |
-| 241 | Input | Secret Key | مفاتيح API |
-| 249 | Button | Secret Key | مفاتيح API |
-| 291 | Switch | إرسال رابط الدفع تلقائياً | إعدادات واتساب |
-| 300 | Textarea | رسالة رابط الدفع | إعدادات واتساب |
-| 317 | Button | حفظ الإعدادات | إعدادات واتساب |
-| 326 | Button | اختبار الاتصال | إعدادات واتساب |
-| 364 | a | tap.company | كيفية الحصول على مفاتيح Tap |
+| 368 | select | تسمية ديناميكية / تحتاج مراجعة | PaymentSettingsWorkspace |
+| 395 | select | تسمية ديناميكية / تحتاج مراجعة | PaymentSettingsWorkspace |
+| 415 | input | تسمية ديناميكية / تحتاج مراجعة | PaymentSettingsWorkspace |
+| 432 | select | تسمية ديناميكية / تحتاج مراجعة | PaymentSettingsWorkspace |
+| 456 | input | تسمية ديناميكية / تحتاج مراجعة | PaymentSettingsWorkspace |
+| 469 | button | shown ? c.hide : c.show | PaymentSettingsWorkspace |
+| 494 | select | تسمية ديناميكية / تحتاج مراجعة | PaymentSettingsWorkspace |
+| 549 | Button | save | PaymentSettingsWorkspace |
+| 555 | Button | تسمية ديناميكية / تحتاج مراجعة | PaymentSettingsWorkspace |
+| 580 | summary | تسمية ديناميكية / تحتاج مراجعة | PaymentSettingsWorkspace |
+| 613 | Button | probe | PaymentSettingsWorkspace |
+| 625 | summary | تسمية ديناميكية / تحتاج مراجعة | PaymentSettingsWorkspace |
+| 645 | summary | تسمية ديناميكية / تحتاج مراجعة | PaymentSettingsWorkspace |
+| 647 | a | تسمية ديناميكية / تحتاج مراجعة | PaymentSettingsWorkspace |
+| 653 | Link | تسمية ديناميكية / تحتاج مراجعة | PaymentSettingsWorkspace |
+| 654 | Link | تسمية ديناميكية / تحتاج مراجعة | PaymentSettingsWorkspace |
+| 655 | Link | تسمية ديناميكية / تحتاج مراجعة | PaymentSettingsWorkspace |
 
 ## client/src/pages/LoyaltySettings.tsx
 
