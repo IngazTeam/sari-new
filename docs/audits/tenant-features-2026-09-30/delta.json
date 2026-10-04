@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-04T08:28:13.094Z",
+  "generatedAt": "2026-10-04T09:50:19.972Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 506,
-      "controls": 2747
+      "files": 510,
+      "controls": 2754
     }
   },
   "addedFiles": [
@@ -326,6 +326,10 @@
     "client/src/components/merchant/UsageWorkspacePage.tsx",
     "client/src/components/merchant/UsageWorkspace.tsx",
     "client/src/lib/usage-workspace-view.ts",
+    "client/src/components/merchant/PlanCatalogWorkspacePage.tsx",
+    "client/src/components/merchant/PlanCatalogWorkspace.tsx",
+    "client/src/lib/subscription-checkout-navigation.ts",
+    "client/src/lib/plan-catalog-view.ts",
     "client/src/components/merchant/MerchantToolsDirectory.tsx",
     "client/src/components/merchant/navigation.ts",
     "client/src/components/merchant/tools.ts",
@@ -451,6 +455,8 @@
     "client/src/pages/merchant/Usage.tsx",
     "client/src/pages/merchant/UsageDashboard.tsx",
     "client/src/pages/merchant/SubscriptionPlans.tsx",
+    "client/src/pages/ComparePlans.tsx",
+    "client/src/pages/merchant/Checkout.tsx",
     "client/src/pages/merchant/Tools.tsx",
     "client/src/pages/Customers.tsx",
     "client/src/pages/SmartAnalysis.tsx",
@@ -2539,20 +2545,42 @@
     {
       "route": "/merchant/subscription/plans",
       "controlsBefore": 3,
-      "controlsNow": 4,
-      "removedQueries": [],
-      "addedQueries": [],
+      "controlsNow": 19,
+      "removedQueries": [
+        "subscriptionPlans.listPlans",
+        "merchantSubscription.getCurrentSubscription"
+      ],
+      "addedQueries": [
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "subscriptionPlans.workspace",
+        "usage.workspace",
+        "merchantSubscription.reviewCheckout"
+      ],
       "removedMutations": [],
-      "addedMutations": []
+      "addedMutations": [
+        "merchantSubscription.upgradePlan"
+      ]
     },
     {
       "route": "/merchant/subscription/compare",
       "controlsBefore": 3,
-      "controlsNow": 3,
-      "removedQueries": [],
-      "addedQueries": [],
+      "controlsNow": 19,
+      "removedQueries": [
+        "subscriptionPlans.listPlans",
+        "merchantSubscription.getCurrentSubscription"
+      ],
+      "addedQueries": [
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "subscriptionPlans.workspace",
+        "usage.workspace",
+        "merchantSubscription.reviewCheckout"
+      ],
       "removedMutations": [],
-      "addedMutations": []
+      "addedMutations": [
+        "merchantSubscription.subscribe"
+      ]
     },
     {
       "route": "/merchant/subscription",
@@ -2568,11 +2596,21 @@
     {
       "route": "/merchant/checkout",
       "controlsBefore": 5,
-      "controlsNow": 5,
-      "removedQueries": [],
-      "addedQueries": [],
+      "controlsNow": 19,
+      "removedQueries": [
+        "subscriptionPlans.listPlans"
+      ],
+      "addedQueries": [
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "subscriptionPlans.workspace",
+        "usage.workspace",
+        "merchantSubscription.reviewCheckout"
+      ],
       "removedMutations": [],
-      "addedMutations": []
+      "addedMutations": [
+        "merchantSubscription.upgradePlan"
+      ]
     },
     {
       "route": "/merchant/payment/success",

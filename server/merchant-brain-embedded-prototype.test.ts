@@ -330,3 +330,18 @@ it('preserves account notification filters and detail while rejecting injected o
  send(message,'https://evil.test');send(message,undefined,w);expect(w.location.hash).toBe('#/page'+path);
  send(message);expect(w.location.hash).toBe('#/page'+path+'?notification=52&state=unread&search=sample&page=2&pageSize=50&tenant=270&lang=en');expect(w.syncServicePreviewContext).toHaveBeenCalledOnce();
 });
+
+it.each(['/merchant/subscription/plans','/merchant/subscription/compare','/merchant/checkout'])('preserves reviewed checkout selection only from the owned frame: %s',path=>{
+ frame.setAttribute('src','./service-workspace.html?embed=brain&path='+path);w.history.replaceState(null,'','#/page'+path);w.syncServicePreviewContext=vi.fn();
+ const suffix=path.endsWith('/checkout')?'&planId=11':'';
+ const message={type:'sary-brain-preview',action:'serviceState',search:`path=${path}&cycle=yearly${suffix}&tenant=270&lang=en`};
+ for(const search of [message.search+'&merchantId=999',message.search+'&cycle=monthly',`path=${path}&cycle=weekly`,'path=/merchant/services&cycle=yearly','path=/merchant/checkout&planId=11x'])send({...message,search});
+ send(message,'https://evil.test');send(message,undefined,w);expect(w.location.hash).toBe('#/page'+path);
+ send(message);expect(w.location.hash).toBe('#/page'+path+`?cycle=yearly${suffix}&tenant=270&lang=en`);expect(w.syncServicePreviewContext).toHaveBeenCalledOnce();
+});
+
+it('keeps the mock payment handoff inside the central route',()=>{
+ const path='/merchant/checkout';frame.setAttribute('src','./service-workspace.html?embed=brain&path='+path);w.history.replaceState(null,'','#/page'+path);w.syncServicePreviewContext=vi.fn();
+ send({type:'sary-brain-preview',action:'serviceState',search:'path=/merchant/payments&tenant=269&lang=ar'});
+ expect(w.location.hash).toBe('#/page/merchant/payments?tenant=269&lang=ar');
+});
