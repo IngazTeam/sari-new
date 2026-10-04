@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-04T15:41:38.320Z",
+  "generatedAt": "2026-10-04T15:52:46.636Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -19118,105 +19118,165 @@
     },
     {
       "file": "client/src/pages/SheetsReports.tsx",
-      "hash": "e347ae89edd5",
+      "hash": "313d6c869008",
       "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [
+        "client/src/components/merchant/SheetsReportsWorkspace.tsx"
+      ],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/components/merchant/SheetsReportsWorkspace.tsx",
+      "hash": "0f6db2dab278",
+      "queries": [
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "sheets.getStatus",
+        "sheets.reportContext"
+      ],
       "mutations": [
         "sheets.generateDailyReport",
         "sheets.generateWeeklyReport",
         "sheets.generateMonthlyReport",
+        "sheets.generateCustomReport",
         "sheets.sendReportViaWhatsApp"
       ],
       "imperativeReads": [],
       "browserRequests": [],
       "sections": [
         {
-          "label": "تقارير Google Sheets",
-          "line": 134,
+          "label": "",
+          "line": 292,
           "tag": "h1"
         },
         {
           "label": "",
-          "line": 155,
-          "tag": "h3"
-        },
-        {
-          "label": "محتويات التقارير",
-          "line": 203,
+          "line": 323,
           "tag": "h2"
         },
         {
-          "label": "📊 الإحصائيات الأساسية",
-          "line": 208,
+          "label": "",
+          "line": 351,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 434,
+          "tag": "summary"
+        },
+        {
+          "label": "",
+          "line": 456,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 478,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 495,
           "tag": "h3"
         },
         {
-          "label": "📈 التحليلات المتقدمة",
-          "line": 221,
+          "label": "",
+          "line": 516,
           "tag": "h3"
         },
         {
-          "label": "💡 ملاحظات مهمة:",
-          "line": 237,
-          "tag": "h3"
-        }
-      ],
-      "choices": [
+          "label": "",
+          "line": 529,
+          "tag": "summary"
+        },
         {
-          "name": "reports",
-          "line": 100,
-          "values": [
-            {
-              "id": "daily",
-              "title": "تقرير يومي",
-              "description": "ملخص الأداء لليوم الحالي",
-              "icon": "Calendar",
-              "color": "text-blue-600",
-              "bgColor": "bg-blue-50",
-              "schedule": "يتم توليده تلقائياً في الساعة 11:59 مساءً"
-            },
-            {
-              "id": "weekly",
-              "title": "تقرير أسبوعي",
-              "description": "ملخص الأداء للأسبوع الماضي",
-              "icon": "TrendingUp",
-              "color": "text-green-600",
-              "bgColor": "bg-green-50",
-              "schedule": "يتم توليده تلقائياً كل يوم أحد"
-            },
-            {
-              "id": "monthly",
-              "title": "تقرير شهري",
-              "description": "إحصائيات شاملة للشهر الماضي",
-              "icon": "FileText",
-              "color": "text-purple-600",
-              "bgColor": "bg-purple-50",
-              "schedule": "يتم توليده تلقائياً في آخر يوم من الشهر"
-            }
-          ]
+          "label": "whatsapp",
+          "line": 578,
+          "tag": "DialogTitle"
         }
       ],
+      "choices": [],
       "handlers": [
         {
-          "name": "handleGenerateReport",
-          "line": 81,
-          "calls": [
-            "dailyMutation",
-            "weeklyMutation",
-            "monthlyMutation"
-          ]
+          "name": "open",
+          "line": 164,
+          "calls": []
         },
         {
-          "name": "handleSendReport",
-          "line": 96,
+          "name": "confirm",
+          "line": 198,
           "calls": [
-            "sendMutation"
+            "send",
+            "daily",
+            "weekly",
+            "monthly",
+            "custom"
           ]
         }
       ],
+      "queryStates": [
+        {
+          "query": "auth.me",
+          "binding": "user",
+          "line": 40,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        },
+        {
+          "query": "merchants.workspaceIdentity",
+          "binding": "identity",
+          "line": 41,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": "!!user.data?.id && !user.error && !user.isFetching"
+        },
+        {
+          "query": "sheets.getStatus",
+          "binding": "connection",
+          "line": 90,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        },
+        {
+          "query": "sheets.reportContext",
+          "binding": "context",
+          "line": 94,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        }
+      ],
+      "conditions": [],
+      "imports": [
+        "client/src/lib/usage-workspace-view.ts",
+        "client/src/lib/sheets-reports-labels.ts"
+      ],
+      "controlCount": 14
+    },
+    {
+      "file": "client/src/lib/sheets-reports-labels.ts",
+      "hash": "790a091cd98a",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
       "queryStates": [],
       "conditions": [],
       "imports": [],
-      "controlCount": 2
+      "controlCount": 0
     },
     {
       "file": "client/src/pages/SheetsInventory.tsx",
@@ -29771,17 +29831,38 @@
         "SheetsReports"
       ],
       "files": [
-        "client/src/pages/SheetsReports.tsx"
+        "client/src/pages/SheetsReports.tsx",
+        "client/src/components/merchant/SheetsReportsWorkspace.tsx",
+        "client/src/lib/usage-workspace-view.ts",
+        "client/src/lib/sheets-reports-labels.ts"
       ],
       "controls": [
-        "28fb2dc5403f",
-        "aa7ac6ab1a1d"
+        "3c8c55c5b400",
+        "7902085e6440",
+        "1c035a1a5ede",
+        "16d388feb641",
+        "822ba52e82dc",
+        "8ae8d95903a6",
+        "1849d2078415",
+        "9e329a98aad1",
+        "67e0b3492c41",
+        "fe353e7e96e4",
+        "62f5af4a1978",
+        "4aa6734ba900",
+        "aa98eda01c9f",
+        "6f49c96e8a8f"
       ],
-      "queries": [],
+      "queries": [
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "sheets.getStatus",
+        "sheets.reportContext"
+      ],
       "mutations": [
         "sheets.generateDailyReport",
         "sheets.generateWeeklyReport",
         "sheets.generateMonthlyReport",
+        "sheets.generateCustomReport",
         "sheets.sendReportViaWhatsApp"
       ],
       "imperativeReads": [],
@@ -85752,36 +85833,286 @@
       "review": "source-inventoried"
     },
     {
-      "id": "28fb2dc5403f",
-      "file": "client/src/pages/SheetsReports.tsx",
-      "line": 161,
-      "tag": "Button",
+      "id": "3c8c55c5b400",
+      "file": "client/src/components/merchant/SheetsReportsWorkspace.tsx",
+      "line": 295,
+      "tag": "Link",
       "role": "",
       "kind": "action",
-      "label": "توليد الآن",
-      "section": "SheetsReports",
-      "binding": "() =>\r\n                      handleGenerateReport(\r\n                        report.id as \"daily\" | \"weekly\" | \"monthly\"\r\n                      )",
+      "label": "",
+      "section": "SheetsReportsWorkspace",
+      "binding": "/merchant/sheets/export",
       "type": "text",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": true,
+      "conditional": false,
       "conditions": [],
-      "disabled": "isGenerating",
+      "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "aa7ac6ab1a1d",
-      "file": "client/src/pages/SheetsReports.tsx",
-      "line": 178,
-      "tag": "Button",
+      "id": "7902085e6440",
+      "file": "client/src/components/merchant/SheetsReportsWorkspace.tsx",
+      "line": 324,
+      "tag": "Link",
       "role": "",
       "kind": "action",
-      "label": "إرسال عبر WhatsApp",
-      "section": "SheetsReports",
-      "binding": "() => handleSendReport(report.title.split(\" \")[1])",
+      "label": "",
+      "section": "SheetsReportsWorkspace",
+      "binding": "/merchant/sheets/settings",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "!ready",
+        "loading",
+        "error"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "1c035a1a5ede",
+      "file": "client/src/components/merchant/SheetsReportsWorkspace.tsx",
+      "line": 344,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "SheetsReportsWorkspace",
+      "binding": "/merchant/whatsapp",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "!target?.canSend",
+        "!ready",
+        "loading",
+        "error"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "16d388feb641",
+      "file": "client/src/components/merchant/SheetsReportsWorkspace.tsx",
+      "line": 355,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "SheetsReportsWorkspace",
+      "binding": "() => {\n                      setKind(value);\n                      setFieldError(false);\n                    }",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "!ready",
+        "loading"
+      ],
+      "disabled": "disabled",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "822ba52e82dc",
+      "file": "client/src/components/merchant/SheetsReportsWorkspace.tsx",
+      "line": 376,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "SheetsReportsWorkspace",
+      "binding": "start",
+      "type": "date",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "kind === \"custom\"",
+        "!ready",
+        "loading"
+      ],
+      "disabled": "disabled",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "8ae8d95903a6",
+      "file": "client/src/components/merchant/SheetsReportsWorkspace.tsx",
+      "line": 391,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "SheetsReportsWorkspace",
+      "binding": "end",
+      "type": "date",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "kind === \"custom\"",
+        "!ready",
+        "loading"
+      ],
+      "disabled": "disabled",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "1849d2078415",
+      "file": "client/src/components/merchant/SheetsReportsWorkspace.tsx",
+      "line": 413,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "SheetsReportsWorkspace",
+      "binding": "e => open(\"sheet\", e.currentTarget)",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!ready",
+        "loading",
+        "error"
+      ],
+      "disabled": "disabled || !linked",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "9e329a98aad1",
+      "file": "client/src/components/merchant/SheetsReportsWorkspace.tsx",
+      "line": 421,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "SheetsReportsWorkspace",
+      "binding": "e => open(\"whatsapp\", e.currentTarget)",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!ready",
+        "loading",
+        "error"
+      ],
+      "disabled": "disabled || !linked || !target?.canSend || kind === \"custom\"",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "67e0b3492c41",
+      "file": "client/src/components/merchant/SheetsReportsWorkspace.tsx",
+      "line": 434,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "SheetsReportsWorkspace",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!ready",
+        "loading",
+        "error"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "fe353e7e96e4",
+      "file": "client/src/components/merchant/SheetsReportsWorkspace.tsx",
+      "line": 461,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "SheetsReportsWorkspace",
+      "binding": "() => {\n                      setLocked(false);\n                      setNotice(null);\n                      setResult(null);\n                    }",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "locked",
+        "notice"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "62f5af4a1978",
+      "file": "client/src/components/merchant/SheetsReportsWorkspace.tsx",
+      "line": 529,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "SheetsReportsWorkspace",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "result",
+        "!ready",
+        "loading",
+        "error"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "4aa6734ba900",
+      "file": "client/src/components/merchant/SheetsReportsWorkspace.tsx",
+      "line": 559,
+      "tag": "DialogContent",
+      "role": "",
+      "kind": "dialog",
+      "label": "whatsapp : custom — Hint dailyHint : whatsapp :",
+      "section": "SheetsReportsWorkspace",
+      "binding": "",
       "type": "text",
       "options": [],
       "min": "",
@@ -85790,7 +86121,49 @@
       "required": false,
       "conditional": true,
       "conditions": [],
-      "disabled": "isSending",
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "aa98eda01c9f",
+      "file": "client/src/components/merchant/SheetsReportsWorkspace.tsx",
+      "line": 616,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "whatsapp",
+      "binding": "() => setReview(null)",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "running",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "6f49c96e8a8f",
+      "file": "client/src/components/merchant/SheetsReportsWorkspace.tsx",
+      "line": 624,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "whatsapp",
+      "binding": "() => void confirm()",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "running || !sameReview",
       "review": "source-inventoried"
     },
     {

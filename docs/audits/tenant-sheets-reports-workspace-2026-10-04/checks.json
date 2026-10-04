@@ -1,0 +1,28 @@
+{
+  "final-unit": {
+    "numTotalTests": 270,
+    "numPassedTests": 270,
+    "numFailedTests": 0
+  },
+  "mysql": {
+    "numTotalTests": 27,
+    "numPassedTests": 27,
+    "numFailedTests": 0
+  },
+  "types": "passed",
+  "build": "passed",
+  "translations": "no missing keys or interpolation errors",
+  "release": {
+    "passed": 68
+  },
+  "responsive": "8 custom forms + 8 send review dialogs; 320/390/768/1440; Arabic/English; no horizontal overflow; 44px controls; 16px date inputs",
+  "inventory": {
+    "routes": 126,
+    "files": 596,
+    "controls": 2804,
+    "removedRoutes": 0,
+    "invalidLinks": 0,
+    "orphanFiles": 0
+  },
+  "externalEffects": "None; mocked providers and disposable MySQL only"
+}

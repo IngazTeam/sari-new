@@ -10609,3 +10609,85 @@ body.merchant-surface{width:100%;max-width:none;margin:0;border:0;border-radius:
     width: 100%;
   }
 }
+
+.sr-periods,
+.sr-actions {
+  display: flex;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  margin-block: 1rem;
+}
+.sr-periods button[aria-pressed="true"] {
+  background: #e7f2e9;
+  border: 2px solid #386b4b;
+}
+.sr-dates {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+.sr-dates label {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+}
+.sr-dates input {
+  width: 100%;
+  min-width: 0;
+  min-height: 46px;
+  border: 1px solid #bdcfc2;
+  border-radius: 0.75rem;
+  padding: 0.6rem;
+  font-size: 16px;
+}
+.sr-dates input:focus-visible {
+  outline: 3px solid #488d63;
+  outline-offset: 3px;
+}
+.sr-dates [role="alert"] {
+  grid-column: 1/-1;
+  color: #993030;
+}
+.sr-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-block: 1.5rem;
+}
+.sr-stats > div {
+  padding: 1rem;
+  background: #f2f7f3;
+  border-radius: 0.8rem;
+  overflow-wrap: anywhere;
+}
+.sr-stats strong {
+  display: block;
+  font-size: 1.8rem;
+}
+.sd-card h3 {
+  font-weight: 700;
+  margin-top: 1.25rem;
+}
+.sd-card summary {
+  min-height: 44px;
+  cursor: pointer;
+  padding-block: 0.75rem;
+  line-height: 1.7;
+}
+.sd-card summary:focus-visible {
+  outline: 3px solid #488d63;
+  outline-offset: 3px;
+}
+@media (max-width: 700px) {
+  .sr-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 480px) {
+  .sr-dates {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sr-actions > .sd-button {
+    width: 100%;
+  }
+}

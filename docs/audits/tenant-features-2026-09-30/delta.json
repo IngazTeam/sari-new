@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-04T15:41:38.320Z",
+  "generatedAt": "2026-10-04T15:52:46.636Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 594,
-      "controls": 2792
+      "files": 596,
+      "controls": 2804
     }
   },
   "addedFiles": [
@@ -376,6 +376,8 @@
     "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
     "client/src/components/merchant/SheetsExportWorkspace.tsx",
     "client/src/lib/sheets-export-labels.ts",
+    "client/src/components/merchant/SheetsReportsWorkspace.tsx",
+    "client/src/lib/sheets-reports-labels.ts",
     "client/src/components/merchant/InventorySheetWorkspace.tsx",
     "client/src/lib/inventory-sheet-workspace.ts",
     "client/src/components/merchant/PaymentHistoryPage.tsx",
@@ -2361,11 +2363,18 @@
     {
       "route": "/merchant/sheets/reports",
       "controlsBefore": 2,
-      "controlsNow": 2,
+      "controlsNow": 14,
       "removedQueries": [],
-      "addedQueries": [],
+      "addedQueries": [
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "sheets.getStatus",
+        "sheets.reportContext"
+      ],
       "removedMutations": [],
-      "addedMutations": []
+      "addedMutations": [
+        "sheets.generateCustomReport"
+      ]
     },
     {
       "route": "/merchant/sheets/inventory",

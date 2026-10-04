@@ -66,6 +66,7 @@ beforeEach(() => {
   m.merchant.mockResolvedValue({ id: 7, phone: "99900000001" });
   m.instances.mockResolvedValue([
     {
+      id:3,merchantId:7,isPrimary:1,provider:"green_api",expiresAt:null,
       status: "active",
       instanceId: "7512345678",
       token: "synthetic",
@@ -152,3 +153,6 @@ it("requires a provider message receipt, not only a boolean success", async () =
     success: false,
   });
 });
+it("rejects a spreadsheet changed since review before provider writes",async()=>{expect(await generateDailyReport(7,{expectedSpreadsheetId:'other'})).toMatchObject({success:false});expect(m.add).not.toHaveBeenCalled();expect(m.append).not.toHaveBeenCalled();});
+it.each([{isPrimary:0},{provider:'meta_cloud'},{status:'expired'},{expiresAt:'2020-01-01 00:00:00'},{apiUrl:'https://localhost/private'}])('rejects an ineligible primary sender %j',async patch=>{m.instances.mockResolvedValue([{id:3,isPrimary:1,provider:'green_api',status:'active',expiresAt:null,instanceId:'7512345678',token:'synthetic',apiUrl:'https://api.green-api.com',...patch}]);expect(await sendReportViaWhatsApp(7,'يومي',data()as any)).toMatchObject({success:false});expect(m.send).not.toHaveBeenCalled();});
+it('requires the exact reviewed recipient and primary record',async()=>{for(const review of [{expectedRecipientPhone:'99900000003',expectedInstanceId:3},{expectedRecipientPhone:'99900000001',expectedInstanceId:4}])expect(await sendReportViaWhatsApp(7,'يومي',data()as any,review)).toMatchObject({success:false});expect(m.send).not.toHaveBeenCalled();});

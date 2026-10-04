@@ -2,7 +2,7 @@
 
 هذا حصر مصدر قابل لإعادة التوليد، وليس ادعاءً بأن كل مسار عمل اختُبر أو أُعيد تصميمه. يشمل المكونات الفرعية المحلية، الحقول، الأزرار، النوافذ، التبويبات، واجهات القراءة والتعديل. العناصر الديناميكية تحتاج مراجعة إضافية.
 
-- 126 مسارًا مسجلًا، 594 ملف واجهة متصلًا، 2792 عنصر تحكم في المصدر.
+- 126 مسارًا مسجلًا، 596 ملف واجهة متصلًا، 2804 عنصر تحكم في المصدر.
 - 0 رابطًا حرفيًا غير مطابق، و0 ملف صفحة غير متصل بالمسارات المحصورة.
 
 | الصفحة | الملفات | عناصر التحكم | القراءة / التعديل | موك أب للصفحة |
@@ -91,7 +91,7 @@
 | /merchant/service-packages — حزم الخدمات | 11 | 48 | 5 / 7 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/sheets/settings — ربط Google Sheets | 8 | 30 | 4 / 6 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/sheets/export — تصدير المحادثات | 4 | 15 | 4 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/sheets/reports — تقارير Google Sheets | 1 | 2 | 0 / 4 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/sheets/reports — تقارير Google Sheets | 4 | 14 | 4 / 5 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/sheets/inventory — مخزون Google Sheets | 9 | 30 | 6 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/payments — المدفوعات | 5 | 23 | 4 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/payments/:id — تفاصيل معاملة | 5 | 23 | 4 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -3539,12 +3539,24 @@
 | 511 | button | تسمية ديناميكية / تحتاج مراجعة | SheetsExportWorkspace |
 | 519 | button | تسمية ديناميكية / تحتاج مراجعة | SheetsExportWorkspace |
 
-## client/src/pages/SheetsReports.tsx
+## client/src/components/merchant/SheetsReportsWorkspace.tsx
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 161 | Button | توليد الآن | SheetsReports |
-| 178 | Button | إرسال عبر WhatsApp | SheetsReports |
+| 295 | Link | تسمية ديناميكية / تحتاج مراجعة | SheetsReportsWorkspace |
+| 324 | Link | تسمية ديناميكية / تحتاج مراجعة | SheetsReportsWorkspace |
+| 344 | Link | تسمية ديناميكية / تحتاج مراجعة | SheetsReportsWorkspace |
+| 355 | button | تسمية ديناميكية / تحتاج مراجعة | SheetsReportsWorkspace |
+| 376 | input | تسمية ديناميكية / تحتاج مراجعة | SheetsReportsWorkspace |
+| 391 | input | تسمية ديناميكية / تحتاج مراجعة | SheetsReportsWorkspace |
+| 413 | button | تسمية ديناميكية / تحتاج مراجعة | SheetsReportsWorkspace |
+| 421 | button | تسمية ديناميكية / تحتاج مراجعة | SheetsReportsWorkspace |
+| 434 | summary | تسمية ديناميكية / تحتاج مراجعة | SheetsReportsWorkspace |
+| 461 | button | تسمية ديناميكية / تحتاج مراجعة | SheetsReportsWorkspace |
+| 529 | summary | تسمية ديناميكية / تحتاج مراجعة | SheetsReportsWorkspace |
+| 559 | DialogContent | whatsapp : custom — Hint dailyHint : whatsapp : | SheetsReportsWorkspace |
+| 616 | button | تسمية ديناميكية / تحتاج مراجعة | whatsapp |
+| 624 | button | تسمية ديناميكية / تحتاج مراجعة | whatsapp |
 
 ## client/src/components/merchant/InventorySheetWorkspace.tsx
 

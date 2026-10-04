@@ -16,12 +16,18 @@ import {
   sheetReportPeriod,
   type SheetsReportData as ReportData,
 } from "../shared/sheets-report-data";
+import { canonicalWhatsAppPhoneDigits } from "./channels/whatsapp/instance-ownership";
+import { reportProviderOrigin } from "./sheets-report-review";
+type ReviewedDestination = { expectedSpreadsheetId: string };
 import { getPool } from "./db/connection";
 
 /**
  * توليد تقرير يومي
  */
-export async function generateDailyReport(merchantId: number): Promise<{
+export async function generateDailyReport(
+  merchantId: number,
+  review?: ReviewedDestination
+): Promise<{
   success: boolean;
   data?: ReportData;
   message: string;
@@ -31,7 +37,7 @@ export async function generateDailyReport(merchantId: number): Promise<{
     const data = await collectSheetReportData(merchantId, start, end);
 
     // حفظ التقرير في Google Sheets
-    await saveReportToSheets(merchantId, "يومي", data);
+    await saveReportToSheets(merchantId, "يومي", data, review);
 
     return {
       success: true,
@@ -53,7 +59,10 @@ export async function generateDailyReport(merchantId: number): Promise<{
 /**
  * توليد تقرير أسبوعي
  */
-export async function generateWeeklyReport(merchantId: number): Promise<{
+export async function generateWeeklyReport(
+  merchantId: number,
+  review?: ReviewedDestination
+): Promise<{
   success: boolean;
   data?: ReportData;
   message: string;
@@ -62,7 +71,7 @@ export async function generateWeeklyReport(merchantId: number): Promise<{
     const { start, end } = sheetReportPeriod("weekly");
     const data = await collectSheetReportData(merchantId, start, end);
 
-    await saveReportToSheets(merchantId, "أسبوعي", data);
+    await saveReportToSheets(merchantId, "أسبوعي", data, review);
 
     return {
       success: true,
@@ -84,7 +93,10 @@ export async function generateWeeklyReport(merchantId: number): Promise<{
 /**
  * توليد تقرير شهري
  */
-export async function generateMonthlyReport(merchantId: number): Promise<{
+export async function generateMonthlyReport(
+  merchantId: number,
+  review?: ReviewedDestination
+): Promise<{
   success: boolean;
   data?: ReportData;
   message: string;
@@ -93,7 +105,7 @@ export async function generateMonthlyReport(merchantId: number): Promise<{
     const { start, end } = sheetReportPeriod("monthly");
     const data = await collectSheetReportData(merchantId, start, end);
 
-    await saveReportToSheets(merchantId, "شهري", data);
+    await saveReportToSheets(merchantId, "شهري", data, review);
 
     return {
       success: true,
@@ -118,7 +130,8 @@ export async function generateMonthlyReport(merchantId: number): Promise<{
 async function saveReportToSheets(
   merchantId: number,
   reportType: string,
-  data: ReportData
+  data: ReportData,
+  review?: ReviewedDestination
 ): Promise<void> {
   const integration = await getGoogleIntegration(merchantId, "sheets");
 
@@ -127,6 +140,8 @@ async function saveReportToSheets(
   }
 
   const spreadsheetId = integration.sheetId;
+  if (review && review.expectedSpreadsheetId !== spreadsheetId)
+    throw Error("Reviewed destination changed");
 
   const current = async () => {
     const next = await getGoogleIntegration(merchantId, "sheets");
@@ -222,7 +237,8 @@ async function saveReportToSheets(
 export async function generateCustomReport(
   merchantId: number,
   startDate: Date,
-  endDate: Date
+  endDate: Date,
+  review?: ReviewedDestination
 ): Promise<{
   success: boolean;
   data?: ReportData;
@@ -231,7 +247,7 @@ export async function generateCustomReport(
   try {
     const data = await collectSheetReportData(merchantId, startDate, endDate);
 
-    await saveReportToSheets(merchantId, "مخصص", data);
+    await saveReportToSheets(merchantId, "مخصص", data, review);
 
     return {
       success: true,
@@ -256,8 +272,9 @@ export async function generateCustomReport(
 export async function sendReportViaWhatsApp(
   merchantId: number,
   reportType: string,
-  data: ReportData
-): Promise<{ success: boolean; message: string }> {
+  data: ReportData,
+  review?: { expectedRecipientPhone: string; expectedInstanceId: number }
+): Promise<{ success: boolean; message: string; messageId?: string }> {
   try {
     data = sheetsReportData.parse(data);
     if (data.merchantId !== merchantId) throw Error("Report scope mismatch");
@@ -268,7 +285,31 @@ export async function sendReportViaWhatsApp(
 
     // RPT-01 FIX: Use merchant's own WhatsApp instance (not global ENV credentials)
     const instances = await getWhatsAppInstancesByMerchantId(merchantId);
-    const activeInstance = instances.find((i: any) => i.status === "active");
+    const candidates = instances.filter(i => i.isPrimary === 1);
+    const activeInstance = candidates.length === 1 ? candidates[0] : undefined;
+    const recipientPhone = canonicalWhatsAppPhoneDigits(merchant.phone);
+    const expiry = activeInstance?.expiresAt
+      ? new Date(
+          String(activeInstance.expiresAt).replace(" ", "T") +
+            (String(activeInstance.expiresAt).includes("Z") ? "" : "Z")
+        ).getTime()
+      : Infinity;
+    if (
+      !/^[1-9]\d{6,14}$/.test(recipientPhone) ||
+      !activeInstance ||
+      activeInstance.status !== "active" ||
+      activeInstance.provider !== "green_api" ||
+      !(expiry > Date.now()) ||
+      !reportProviderOrigin(activeInstance.apiUrl) ||
+      (review &&
+        (review.expectedRecipientPhone !== recipientPhone ||
+          review.expectedInstanceId !== activeInstance.id))
+    )
+      return {
+        success: false,
+        message: "تعذر التحقق من مستلم التقرير أو القناة",
+      };
+
     if (!activeInstance) {
       console.warn(
         `[Sheets Reports] No active WhatsApp instance for merchant ${merchantId} — skipping report send`
@@ -312,7 +353,7 @@ ${
       (activeInstance as any).instanceId,
       (activeInstance as any).token,
       (activeInstance as any).apiUrl || "https://api.green-api.com",
-      merchant.phone,
+      recipientPhone,
       reportMessage
     );
 
@@ -330,6 +371,7 @@ ${
     return {
       success: true,
       message: "قُبل التقرير لدى مزود واتساب؛ التسليم غير مؤكد",
+      messageId: result.messageId,
     };
   } catch (error: any) {
     console.error(
