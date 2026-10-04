@@ -3,16 +3,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const dependencies = vi.hoisted(() => ({
   callGPT4: vi.fn(),
   checkpoint: vi.fn(),
-  createSection: vi.fn(),
-  updateSection: vi.fn(),
-  logChange: vi.fn(),
-  getSectionsByMerchantId: vi.fn(),
+  commit: vi.fn(),
+  read: vi.fn(),
 }));
 vi.mock("./openai", () => ({ callGPT4: dependencies.callGPT4 }));
 vi.mock("../knowledge/intake-execution", () => ({
   assertIntakeCheckpoint: dependencies.checkpoint,
 }));
-vi.mock("../db/knowledge", () => dependencies);
+vi.mock("../knowledge/evolution-storage", () => ({
+  readEvolutionSnapshot: dependencies.read,
+  commitEvolution: dependencies.commit,
+}));
 
 import {
   analyzeSalesIntelligence,
@@ -62,8 +63,7 @@ beforeEach(() => {
       output.push(args);
     });
   dependencies.checkpoint.mockResolvedValue(undefined);
-  dependencies.getSectionsByMerchantId.mockResolvedValue([]);
-  dependencies.createSection.mockResolvedValue(7);
+  dependencies.read.mockResolvedValue({ merchantId: 42, sections: [], revision: 'test' });
 });
 afterEach(() => vi.restoreAllMocks());
 
@@ -137,31 +137,18 @@ describe("knowledge operational logs exclude tenant content", () => {
       },
       salesIntel: sales,
     });
-    expect(dependencies.createSection).toHaveBeenCalledWith(
-      expect.objectContaining({
-        merchantId: 42,
-        content: secret.content,
-        title: secret.title,
-        sourceUrl: secret.url,
-      })
-    );
-    expect(dependencies.logChange).toHaveBeenCalledWith(
-      expect.objectContaining({ merchantId: 42, newContent: secret.content })
-    );
-    expect(dependencies.createSection).toHaveBeenCalledWith(
-      expect.objectContaining({
-        sectionType: "sales_intel",
-        content: expect.stringContaining(secret.tip),
-      })
-    );
-    expect(dependencies.createSection).toHaveBeenCalledWith(
-      expect.objectContaining({
-        sectionType: "opportunities",
-        useInBot: false,
-        injectAs: "none",
-        content: expect.stringContaining(secret.opportunity),
-      })
-    );
+    expect(dependencies.commit).toHaveBeenCalledTimes(1);
+    const [snapshot, operations] = dependencies.commit.mock.calls[0];
+    expect(snapshot.merchantId).toBe(42);
+    expect(operations).toHaveLength(3);
+    expect(operations[0]).toMatchObject({ kind: 'create',
+      values: { content: secret.content, title: secret.title, sourceUrl: secret.url },
+      audit: { newContent: secret.content } });
+    expect(operations[1]).toMatchObject({ kind: 'create', values: {
+      sectionType: 'sales_intel', content: expect.stringContaining(secret.tip) } });
+    expect(operations[2]).toMatchObject({ kind: 'create', values: {
+      sectionType: 'opportunities', useInBot: false, injectAs: 'none',
+      content: expect.stringContaining(secret.opportunity) } });
     expect(assertPrivateLogs()).toContain("Classified 1 sections");
   });
   it("keeps a numeric empty-outcome diagnostic without leaking the uploaded file", async () => {
@@ -172,7 +159,7 @@ describe("knowledge operational logs exclude tenant content", () => {
       name: "KnowledgeAnalysisError",
       stage: "empty_classification",
     });
-    expect(dependencies.createSection).not.toHaveBeenCalled();
+    expect(dependencies.commit).not.toHaveBeenCalled();
     expect(assertPrivateLogs()).toContain("ZERO SECTIONS");
   });
 });
@@ -192,9 +179,7 @@ it.each(["classification", "sales"] as const)(
     await expect(
       ingestContent(42, secret.raw, "document", context)
     ).rejects.toMatchObject({ name: "KnowledgeAnalysisError", stage });
-    expect(dependencies.createSection).not.toHaveBeenCalled();
-    expect(dependencies.updateSection).not.toHaveBeenCalled();
-    expect(dependencies.logChange).not.toHaveBeenCalled();
+    expect(dependencies.commit).not.toHaveBeenCalled();
     assertPrivateLogs();
   }
 );
@@ -210,7 +195,7 @@ it("does not classify a late response or request sales analysis after the execut
     expired
   );
   expect(dependencies.callGPT4).toHaveBeenCalledTimes(1);
-  expect(dependencies.createSection).not.toHaveBeenCalled();
+  expect(dependencies.commit).not.toHaveBeenCalled();
 });
 it("does not write a late sales result after the execution closes", async () => {
   dependencies.callGPT4
@@ -228,7 +213,7 @@ it("does not write a late sales result after the execution closes", async () => 
     expired
   );
   expect(dependencies.callGPT4).toHaveBeenCalledTimes(2);
-  expect(dependencies.createSection).not.toHaveBeenCalled();
+  expect(dependencies.commit).not.toHaveBeenCalled();
 });
 
 it("uses full parent and child evidence in sales analysis without copying it to logs", async () => {

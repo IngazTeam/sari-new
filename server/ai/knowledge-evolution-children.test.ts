@@ -4,6 +4,7 @@ const m = vi.hoisted(() => ({
   create: vi.fn(),
   update: vi.fn(),
   log: vi.fn(),
+  commit: vi.fn(),
   call: vi.fn(),
   checkpoint: vi.fn(),
 }));
@@ -11,11 +12,14 @@ vi.mock("./openai", () => ({ callGPT4: m.call }));
 vi.mock("../knowledge/intake-execution", () => ({
   assertIntakeCheckpoint: m.checkpoint,
 }));
-vi.mock("../db/knowledge", () => ({
-  getSectionsByMerchantId: m.read,
-  createSection: m.create,
-  updateSection: m.update,
-  logChange: m.log,
+// These are planner assertions. The actual transaction and rollback are covered
+// by evolution-atomic.mysql.test.ts; record the committed plan at this boundary.
+vi.mock("../knowledge/evolution-storage", () => ({
+  readEvolutionSnapshot: async (merchantId: number) => ({ merchantId, revision: 'test', sections: (await m.read()).map((item: any) => ({
+    ...item, parentId: item.parent_id ?? null, sectionType: item.section_type,
+    merchantEdited: item.merchant_edited, useInBot: item.use_in_bot,
+  })) }),
+  commitEvolution: m.commit,
 }));
 import { evolveKnowledge, type ClassifiedSection } from "./knowledge-engine";
 const parent: ClassifiedSection = {
@@ -55,6 +59,22 @@ beforeEach(() => {
   m.call.mockResolvedValue("unchanged");
   let id = 100;
   m.create.mockImplementation(async () => ++id);
+  m.commit.mockImplementation(async (snapshot, operations) => {
+    const ids = new Map<number, number>();
+    for (const operation of operations) {
+      let sectionId: number;
+      if (operation.kind === 'create') {
+        const parentId = operation.values.parentId;
+        sectionId = await m.create({ merchantId: snapshot.merchantId, ...operation.values,
+          parentId: parentId < 0 ? ids.get(parentId) : parentId });
+        ids.set(operation.temporaryId, sectionId);
+      } else {
+        sectionId = operation.id < 0 ? ids.get(operation.id)! : operation.id;
+        await m.update(sectionId, snapshot.merchantId, operation.values);
+      }
+      await m.log({ merchantId: snapshot.merchantId, sectionId, ...operation.audit });
+    }
+  });
 });
 afterEach(() => vi.restoreAllMocks());
 it.each([false, true])(

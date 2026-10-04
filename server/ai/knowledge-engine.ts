@@ -14,15 +14,10 @@ import { KnowledgeAnalysisError, parseKnowledgeSections, parseSalesIntelligence,
 import { assertIntakeCheckpoint } from '../knowledge/intake-execution';
 import type { ChatMessage } from './openai';
 import {
-  createSection,
-  updateSection,
-  logChange,
-  getSectionsByMerchantId,
-  type InsertKnowledgeSection,
-  type KnowledgeSection,
   type SectionType,
   type SectionSource,
 } from '../db/knowledge';
+import { readEvolutionSnapshot, commitEvolution, type EvolutionSection, type EvolutionOperation } from '../knowledge/evolution-storage';
 
 // ═══════════════════════════════════════════════════════════════
 // Types
@@ -219,37 +214,46 @@ export async function evolveKnowledge(
   source: SectionSource,
   sourceUrl?: string
 ): Promise<EvolveResult> {
+  const plan = await prepareEvolution(merchantId, newSections, source, sourceUrl);
+  await commitEvolution(plan.snapshot, plan.operations);
+  return plan.result;
+}
+
+async function prepareEvolution(merchantId: number, newSections: ClassifiedSection[], source: SectionSource, sourceUrl?: string) {
+  await assertIntakeCheckpoint(merchantId);
+  const snapshot = await readEvolutionSnapshot(merchantId);
+  const operations: EvolutionOperation[] = [];
+  let nextId = -1;
   const result: EvolveResult = { added: 0, merged: 0, evolved: 0, conflicts: 0, unchanged: 0 };
 
   // Match within the same parent. A root, a child and a sibling in another
   // group must never overwrite one another merely because their text overlaps.
-  const existingSections = await getSectionsByMerchantId(merchantId);
-  const parentOf = (item: KnowledgeSection) => (item as any).parent_id ?? item.parentId ?? null;
-  const disabled = (item: KnowledgeSection) => {
-    const value = (item as any).use_in_bot ?? item.useInBot;
-    return value === false || value === 0;
+  const existingSections = snapshot.sections.map(item => ({ ...item }));
+  const parentOf = (item: EvolutionSection) => item.parentId;
+  const disabled = (item: EvolutionSection) => {
+    return item.useInBot === 0;
   };
   async function apply(section: ClassifiedSection, parentId: number | null, inheritedReview: boolean): Promise<void> {
     await assertIntakeCheckpoint(merchantId);
     const match = findBestMatch(section, existingSections.filter(item => parentOf(item) === parentId));
     let sectionId: number;
     let reviewChildren = inheritedReview || !!match && (match.status === 'pending_review' || disabled(match));
-    async function add(review: boolean, previous?: KnowledgeSection) {
-      const values: InsertKnowledgeSection = {
-        merchantId, parentId, sectionType: section.sectionType,
+    async function add(review: boolean, previous?: EvolutionSection) {
+      const values: Extract<EvolutionOperation, { kind: 'create' }>['values'] = {
+        parentId, sectionType: section.sectionType,
         title: previous ? `⚠️ تعارض: ${section.title}`.substring(0, 500) : section.title,
         content: section.content, summary: section.summary, source, sourceUrl,
         confidence: section.confidence, status: review ? 'pending_review' : 'auto_approved',
         useInBot: !review, injectAs: section.sectionType === 'opportunities' ? 'none' : 'fact',
       };
-      const id = await createSection(values);
-      if (!Number.isSafeInteger(id) || id <= 0) throw new KnowledgeAnalysisError('evolution');
-      await logChange({ merchantId, sectionId: id, action: review ? 'conflict' : 'add',
+      const id = nextId--;
+      operations.push({ kind: 'create', temporaryId: id, values, audit: { action: review ? 'conflict' : 'add',
         reason: review ? `يحتاج مراجعة: ${section.title}` : `قسم جديد مكتشف: ${section.title}`,
-        ...(previous ? { oldContent: previous.content } : {}), newContent: section.content, source });
-      // Include successful writes in this pass so duplicate siblings do not
-      // create duplicate knowledge. These fields are only used for matching.
-      existingSections.push({ ...values, id, parentId, merchantEdited: false } as KnowledgeSection);
+        ...(previous ? { oldContent: previous.content } : {}), newContent: section.content, source } });
+      // Temporary identities preserve parent/child links and sibling matching
+      // while all model decisions are prepared outside the database transaction.
+      existingSections.push({ ...values, id, merchantId, parentId, confidence: String(section.confidence),
+        useInBot: review ? 0 : 1, merchantEdited: 0 } as EvolutionSection);
       if (review) result.conflicts++; else result.added++;
       return id;
     }
@@ -257,7 +261,7 @@ export async function evolveKnowledge(
       sectionId = await add(inheritedReview);
     } else {
       sectionId = match.id;
-      if ((match as any).merchant_edited || match.merchantEdited) {
+      if (match.merchantEdited) {
         result.unchanged++;
       } else {
         const decision = match.content === section.content ? 'unchanged'
@@ -268,11 +272,9 @@ export async function evolveKnowledge(
           sectionId = await add(true, match);
           reviewChildren = true;
         } else {
-          await logChange({ merchantId, sectionId: match.id, action: 'evolve',
-            reason: `تطوير: ${section.title}`, oldContent: match.content, newContent: section.content, source });
-          await updateSection(match.id, merchantId, {
-            content: section.content, summary: section.summary, confidence: section.confidence, source, sourceUrl,
-          });
+          operations.push({ kind: 'update', id: match.id,
+            values: { content: section.content, summary: section.summary, confidence: section.confidence, source, sourceUrl },
+            audit: { action: 'evolve', reason: `تطوير: ${section.title}`, oldContent: match.content, newContent: section.content, source } });
           match.content = section.content; match.summary = section.summary;
           result.evolved++;
         }
@@ -284,7 +286,7 @@ export async function evolveKnowledge(
   }
   for (const section of newSections) await apply(section, null, false);
 
-  return result;
+  return { snapshot, operations, result, existingSections, nextId };
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -293,11 +295,11 @@ export async function evolveKnowledge(
 
 function findBestMatch(
   newSection: ClassifiedSection,
-  existingSections: KnowledgeSection[]
-): KnowledgeSection | null {
+  existingSections: EvolutionSection[]
+): EvolutionSection | null {
   // First: exact type match
   const sameType = existingSections.filter(
-    e => (e as any).section_type === newSection.sectionType || e.sectionType === newSection.sectionType
+    e => e.sectionType === newSection.sectionType
   );
 
   if (sameType.length === 0) return null;
@@ -340,7 +342,7 @@ function findBestMatch(
 
 async function decideEvolution(
   merchantId: number,
-  existing: KnowledgeSection,
+  existing: EvolutionSection,
   newSection: ClassifiedSection
 ): Promise<'unchanged' | 'evolve' | 'conflict'> {
   await assertIntakeCheckpoint(merchantId);
@@ -431,66 +433,35 @@ export async function ingestContent(
   const salesIntel = await analyzeSalesIntelligence(merchantId, classifiedSections, merchantContext);
   console.log(`[KnowledgeEngine] Sales intel: ${salesIntel.usps.length} USPs, ${salesIntel.sellingTips.length} tips, ${salesIntel.opportunities.length} opportunities`);
 
-  // Step 3: Evolve knowledge (merge with existing)
-  const evolveResult = await evolveKnowledge(merchantId, classifiedSections, source, sourceUrl);
-  console.log(`[KnowledgeEngine] Evolution: +${evolveResult.added} added, ↗${evolveResult.evolved} evolved, ⚠${evolveResult.conflicts} conflicts`);
-
-  // Step 4: Save sales intelligence as special sections
-  if (salesIntel.usps.length > 0 || salesIntel.sellingTips.length > 0) {
-    const existingSections = await getSectionsByMerchantId(merchantId);
-    const existingIntel = existingSections.find(
-      s => (s as any).section_type === 'sales_intel' || s.sectionType === 'sales_intel'
-    );
-
-    const intelContent = [
-      salesIntel.usps.length > 0 ? `نقاط القوة:\n${salesIntel.usps.map(u => `• ${u}`).join('\n')}` : '',
-      salesIntel.sellingTips.length > 0 ? `\nإرشادات البيع:\n${salesIntel.sellingTips.map(t => `• ${t}`).join('\n')}` : '',
+  // Prepare every decision before taking database locks, then persist the
+  // hierarchy, sales sections and audit as one snapshot-checked transaction.
+  const plan = await prepareEvolution(merchantId, classifiedSections, source, sourceUrl);
+  const saveSpecial = (sectionType: 'sales_intel' | 'opportunities', title: string, content: string, summary: string) => {
+    const existing = plan.existingSections.find(item => item.parentId === null && item.sectionType === sectionType);
+    if (existing?.merchantEdited) return;
+    if (existing) {
+      if (existing.content === content && existing.summary === summary) return;
+      plan.operations.push({ kind: 'update', id: existing.id, values: { content, summary },
+        audit: { action: 'evolve', reason: `تطوير: ${title}`, oldContent: existing.content, newContent: content, source: 'ai_evolved' } });
+    } else {
+      plan.operations.push({ kind: 'create', temporaryId: plan.nextId--,
+        values: { parentId: null, sectionType, title, content, summary, source: 'ai_evolved',
+          injectAs: sectionType === 'opportunities' ? 'none' : 'behavior', useInBot: sectionType !== 'opportunities' },
+        audit: { action: 'add', reason: `قسم جديد مكتشف: ${title}`, newContent: content, source: 'ai_evolved' } });
+    }
+  };
+  if (salesIntel.usps.length || salesIntel.sellingTips.length) {
+    const content = [
+      salesIntel.usps.length ? `نقاط القوة:\n${salesIntel.usps.map(u => `• ${u}`).join('\n')}` : '',
+      salesIntel.sellingTips.length ? `\nإرشادات البيع:\n${salesIntel.sellingTips.map(t => `• ${t}`).join('\n')}` : '',
     ].filter(Boolean).join('\n');
-
-    if (existingIntel && !((existingIntel as any).merchant_edited || existingIntel.merchantEdited)) {
-      // Update existing sales intel
-      await updateSection(existingIntel.id, merchantId, {
-        content: intelContent,
-        summary: `${salesIntel.usps.length} نقاط قوة، ${salesIntel.sellingTips.length} إرشادات بيع`,
-      });
-    } else if (!existingIntel) {
-      // Create new sales intel section
-      await createSection({
-        merchantId,
-        sectionType: 'sales_intel',
-        title: 'ذكاء المبيعات',
-        content: intelContent,
-        summary: `${salesIntel.usps.length} نقاط قوة، ${salesIntel.sellingTips.length} إرشادات بيع`,
-        source: 'ai_evolved',
-        injectAs: 'behavior',
-      });
-    }
+    saveSpecial('sales_intel', 'ذكاء المبيعات', content, `${salesIntel.usps.length} نقاط قوة، ${salesIntel.sellingTips.length} إرشادات بيع`);
   }
-
-  // Save opportunities (merchant-only, not for bot)
-  if (salesIntel.opportunities.length > 0) {
-    const existingSections = await getSectionsByMerchantId(merchantId);
-    const existingOpps = existingSections.find(
-      s => (s as any).section_type === 'opportunities' || s.sectionType === 'opportunities'
-    );
-
-    const oppsContent = salesIntel.opportunities.map(o => `• ${o}`).join('\n');
-
-    if (existingOpps && !((existingOpps as any).merchant_edited || existingOpps.merchantEdited)) {
-      await updateSection(existingOpps.id, merchantId, { content: oppsContent });
-    } else if (!existingOpps) {
-      await createSection({
-        merchantId,
-        sectionType: 'opportunities',
-        title: 'فرص التطوير',
-        content: oppsContent,
-        summary: `${salesIntel.opportunities.length} فرص تطوير`,
-        source: 'ai_evolved',
-        injectAs: 'none',  // Merchant-only, not sent to bot
-        useInBot: false,
-      });
-    }
+  if (salesIntel.opportunities.length) {
+    saveSpecial('opportunities', 'فرص التطوير', salesIntel.opportunities.map(o => `• ${o}`).join('\n'), `${salesIntel.opportunities.length} فرص تطوير`);
   }
-
+  await commitEvolution(plan.snapshot, plan.operations);
+  const evolveResult = plan.result;
+  console.log(`[KnowledgeEngine] Evolution: +${evolveResult.added} added, ↗${evolveResult.evolved} evolved, ⚠${evolveResult.conflicts} conflicts`);
   return { evolveResult, salesIntel };
 }

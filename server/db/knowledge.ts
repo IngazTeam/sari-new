@@ -180,8 +180,8 @@ export async function createSection(data: InsertKnowledgeSection): Promise<numbe
 
   return runKnowledgeWrite(pool, data.merchantId, async connection => {
     const [result] = await connection.execute(
-      `INSERT INTO knowledge_sections 
-       (merchant_id, parent_id, section_type, title, content, summary, source, source_url, 
+      `INSERT INTO knowledge_sections
+       (merchant_id, parent_id, section_type, title, content, summary, source, source_url,
         confidence, status, use_in_bot, inject_as, sort_order, merchant_edited, embedding, valid_until, provenance)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
