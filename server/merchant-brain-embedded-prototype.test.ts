@@ -13,6 +13,16 @@ beforeEach(()=>{
 });
 afterEach(()=>dom.window.close());
 const send=(data:any,origin='http://127.0.0.1:4329',source=frame.contentWindow)=>w.dispatchEvent(new w.MessageEvent('message',{origin,source,data}));
+it('keeps acquisition periods and customer navigation within the owned preview frame',()=>{
+ const path='/merchant/acquisition-report';frame.setAttribute('src','./service-workspace.html?embed=brain&path='+path);w.history.replaceState(null,'','#/page'+path);w.syncServicePreviewContext=vi.fn();
+ const message={type:'sary-brain-preview',action:'serviceState',search:`path=${path}&period=30d&lang=en`};
+ for(const search of [`path=${path}&period=bad`,`path=${path}&period=30d&period=90d`,`path=${path}&merchantId=999`])send({...message,search});
+ send(message,'https://evil.test');send(message,undefined,w);expect(w.location.hash).toBe('#/page'+path);
+ send(message);expect(w.location.hash).toBe('#/page'+path+'?period=30d&lang=en');expect(frame.isConnected).toBe(true);
+ send({type:'sary-brain-preview',action:'serviceTool',route:'/merchant/customers'});expect(w.location.hash).toBe('#/page/merchant/customers');
+ frame.setAttribute('src','./service-workspace.html?embed=brain&path=/merchant/services');w.history.replaceState(null,'','#/page/merchant/services');
+ send({type:'sary-brain-preview',action:'serviceTool',route:'/merchant/customers'});expect(w.location.hash).toBe('#/page/merchant/services');
+});
 it.each(['/merchant/usage','/merchant/usage-dashboard'])('preserves usage sections and limits plan navigation to its owned frame: %s',path=>{
  frame.setAttribute('src','./service-workspace.html?embed=brain&path='+path);w.history.replaceState(null,'','#/page'+path);w.syncServicePreviewContext=vi.fn();
  const message={type:'sary-brain-preview',action:'serviceState',search:`path=${path}&tab=history&tenant=270&lang=en`};

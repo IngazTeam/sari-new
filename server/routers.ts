@@ -1,3 +1,4 @@
+import { acquisitionProcedures } from './routers-acquisition-workspace';
 import { paymentLinksWorkspaceRouter, retiredPaymentLinksProcedures } from "./routers-payment-links-workspace";
 import { merchantPaymentsRouter } from "./routers-merchant-payments";
 import { paymentHistoryWorkspaceRouter, retiredPaymentHistoryProcedures } from "./routers-payment-history-workspace";
@@ -1650,6 +1651,7 @@ export const appRouter = router({
 
   // Advanced Analytics
   analytics: router({
+    ...acquisitionProcedures,
     // Dashboard KPIs
     getDashboardKPIs: permissionProcedure('analytics.read')
       .input(

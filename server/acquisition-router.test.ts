@@ -1,11 +1,16 @@
 import {beforeEach,expect,it,vi} from 'vitest';
+import {readFileSync} from 'node:fs';
 const m=vi.hoisted(()=>({access:vi.fn(),read:vi.fn()}));
 vi.mock('./accounts/merchant-access',()=>({resolveMerchantAccess:m.access}));
 vi.mock('./analytics/acquisition-workspace',()=>({readAcquisitionWorkspace:m.read}));
 vi.mock('./db',()=>({}));
-import {analyticsRouter} from './routers-analytics';
+import {acquisitionRouter as analyticsRouter} from './routers-acquisition-workspace';
 import {MerchantSettingsAuthorityError} from './accounts/merchant-settings-authority';
 const caller=(user:any={id:7,role:'user'})=>analyticsRouter.createCaller({user,req:{headers:{'x-merchant-id':'20'}},res:{}} as any);
+it('mounts the same tested procedures in the actual analytics namespace',()=>{
+ expect(readFileSync('server/routers.ts','utf8')).toMatch(/analytics: router\(\{\s*\.\.\.acquisitionProcedures,/);
+ expect(readFileSync('client/src/pages/merchant/AcquisitionReport.tsx','utf8')).not.toMatch(/@ts-nocheck|@ts-ignore/);
+});
 beforeEach(()=>{vi.clearAllMocks();m.access.mockResolvedValue({merchantId:20,role:'viewer'});m.read.mockResolvedValue({totalProfiles:3,sources:[{source:'unattributed',count:3,sharePermille:1000}]});});
 it('uses the selected tenant and actor for the bounded workspace',async()=>{await caller().acquisitionWorkspace({period:'30d'});expect(m.access).toHaveBeenCalledWith(7,20);expect(m.read).toHaveBeenCalledWith(7,20,{period:'30d'});});
 it.each([{merchantId:21},{period:'bad'},{period:'all',actorId:99}])('rejects forged new workspace input %j',async input=>{await expect(caller().acquisitionWorkspace(input as any)).rejects.toMatchObject({code:'BAD_REQUEST'});expect(m.read).not.toHaveBeenCalled();});

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-04T12:42:09.276Z",
+  "generatedAt": "2026-10-04T13:10:15.665Z",
   "definition": "Every registered route is accounted for; source inventory and design completion are different statuses.",
   "routes": [
     {
@@ -59274,24 +59274,189 @@
         "AcquisitionReport"
       ],
       "files": [
-        "client/src/pages/merchant/AcquisitionReport.tsx"
+        "client/src/pages/merchant/AcquisitionReport.tsx",
+        "client/src/components/merchant/AcquisitionWorkspace.tsx",
+        "client/src/lib/acquisition-workspace-view.ts",
+        "client/src/lib/usage-workspace-view.ts"
       ],
-      "controls": [],
+      "controls": [
+        "b902de5d537c",
+        "f4a784b2637f",
+        "9a14f8637fde",
+        "d9d9d2d1c898",
+        "cd890b00c059",
+        "15be968603c4"
+      ],
       "queries": [
-        "merchants.getCurrent",
-        "analytics.getAcquisitionSources"
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "analytics.acquisitionWorkspace"
       ],
       "mutations": [],
       "imperativeReads": [],
       "browserRequests": [],
-      "design": "موك أب عام",
-      "productionChanged": false,
-      "designSections": [],
+      "design": "تفصيلي جزئي",
+      "productionChanged": true,
+      "designSections": [
+        "مكوّن فعلي مشترك مع الموك أب باللغتين، بفترة كل السجل أو 30/90 يومًا حسب إنشاء ملف العميل",
+        "ملخص تغطية وتوزيع جميع المصادر ونسبها وأبرز ثلاثة وسوم وشرح قابل للفتح، مع إظهار غير المنسوب والمجهول",
+        "عزل المتجر والحساب والفترة، وحالات الفراغ والتعذر والصلاحية والتحميل، وتصميم موبايل ببطاقات مختصرة"
+      ],
       "acceptancePlan": "الفترة والمرشحات؛ تعريف المؤشر ومصدره والعينة؛ الجدول والتفاصيل والتصدير؛ الصفر الحقيقي مقابل فشل تحميل البيانات.",
       "gaps": [
-        "التصميم العام موجود. لا يوجد إثبات تطابق جميع الحقول والأزرار والنوافذ أدناه مع الموك أب."
+        "راجع المرحلتين503–504: صُحح تجميع المصدر ووُصل الإجراء بالراوتر الرئيسي الذي كانت الصفحة القديمة تستدعي فيه إجراء غير مسجل مع تجاهل الأنواع. استبدل التصميم القديم والموك أب العام بالمكوّن نفسه.",
+        "التقرير يعد وسوم ملفات العملاء؛ لا يثبت أشخاصًا فريدين أو إسناد إعلانات أو عائدًا أو نسبة احتراف مبيعات. تبقى تغذية الوسوم الموثوقة وSafari/iPhone الفعلي؛ لا نشر."
       ],
-      "controlDetails": []
+      "controlDetails": [
+        {
+          "id": "b902de5d537c",
+          "file": "client/src/components/merchant/AcquisitionWorkspace.tsx",
+          "line": 35,
+          "tag": "Link",
+          "role": "",
+          "kind": "action",
+          "label": "customers",
+          "section": "title",
+          "binding": "/merchant/customers",
+          "type": "text",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": false,
+          "conditions": [],
+          "disabled": "",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "f4a784b2637f",
+          "file": "client/src/components/merchant/AcquisitionWorkspace.tsx",
+          "line": 38,
+          "tag": "select",
+          "role": "",
+          "kind": "field",
+          "label": "period invalidPeriod period_",
+          "section": "title",
+          "binding": "period??''",
+          "type": "text",
+          "options": [
+            {
+              "value": "",
+              "label": "invalidPeriod"
+            },
+            {
+              "value": "p",
+              "label": "period_"
+            }
+          ],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": true,
+          "conditions": [],
+          "disabled": "",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "9a14f8637fde",
+          "file": "client/src/components/merchant/AcquisitionWorkspace.tsx",
+          "line": 42,
+          "tag": "button",
+          "role": "",
+          "kind": "action",
+          "label": "period invalidPeriod period_",
+          "section": "title",
+          "binding": "()=>void query.refetch()",
+          "type": "button",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": true,
+          "conditions": [],
+          "disabled": "waiting||period===null",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "d9d9d2d1c898",
+          "file": "client/src/components/merchant/AcquisitionWorkspace.tsx",
+          "line": 44,
+          "tag": "button",
+          "role": "",
+          "kind": "action",
+          "label": "reset",
+          "section": "title",
+          "binding": "()=>changePeriod('all')",
+          "type": "text",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": false,
+          "conditions": [
+            "!period"
+          ],
+          "disabled": "",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "cd890b00c059",
+          "file": "client/src/components/merchant/AcquisitionWorkspace.tsx",
+          "line": 64,
+          "tag": "summary",
+          "role": "",
+          "kind": "action",
+          "label": "top",
+          "section": "top",
+          "binding": "",
+          "type": "text",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": true,
+          "conditions": [
+            "top.length>0",
+            "!data",
+            "waiting",
+            "query.error",
+            "!period"
+          ],
+          "disabled": "",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "15be968603c4",
+          "file": "client/src/components/merchant/AcquisitionWorkspace.tsx",
+          "line": 65,
+          "tag": "summary",
+          "role": "",
+          "kind": "action",
+          "label": "method",
+          "section": "method",
+          "binding": "",
+          "type": "text",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": false,
+          "conditions": [
+            "!data",
+            "waiting",
+            "query.error",
+            "!period"
+          ],
+          "disabled": "",
+          "review": "source-inventoried"
+        }
+      ]
     },
     {
       "route": "/merchant/quotation-templates",

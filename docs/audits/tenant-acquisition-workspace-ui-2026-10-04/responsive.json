@@ -1,0 +1,758 @@
+{
+  "initialFailures": [
+    {
+      "mode": "failure",
+      "frame": 0,
+      "overflow": [],
+      "scroll": 290,
+      "smallFonts": 0,
+      "smallTargets": [
+        {
+          "tag": "A",
+          "text": "تواصل مع الدعم"
+        }
+      ],
+      "title": "مصادر العملاء المسجلة",
+      "viewport": 320,
+      "width": 290
+    },
+    {
+      "mode": "failure",
+      "frame": 1,
+      "overflow": [],
+      "scroll": 360,
+      "smallFonts": 0,
+      "smallTargets": [
+        {
+          "tag": "A",
+          "text": "تواصل مع الدعم"
+        }
+      ],
+      "title": "مصادر العملاء المسجلة",
+      "viewport": 390,
+      "width": 360
+    },
+    {
+      "mode": "failure",
+      "frame": 2,
+      "overflow": [],
+      "scroll": 738,
+      "smallFonts": 0,
+      "smallTargets": [
+        {
+          "tag": "A",
+          "text": "تواصل مع الدعم"
+        }
+      ],
+      "title": "مصادر العملاء المسجلة",
+      "viewport": 768,
+      "width": 738
+    },
+    {
+      "mode": "failure",
+      "frame": 3,
+      "overflow": [],
+      "scroll": 1410,
+      "smallFonts": 0,
+      "smallTargets": [
+        {
+          "tag": "A",
+          "text": "ابحث عن أداة"
+        },
+        {
+          "tag": "A",
+          "text": "تواصل مع الدعم"
+        }
+      ],
+      "title": "مصادر العملاء المسجلة",
+      "viewport": 1440,
+      "width": 1410
+    },
+    {
+      "mode": "failure",
+      "frame": 4,
+      "overflow": [],
+      "scroll": 290,
+      "smallFonts": 0,
+      "smallTargets": [
+        {
+          "tag": "A",
+          "text": "Contact support"
+        }
+      ],
+      "title": "Recorded customer sources",
+      "viewport": 320,
+      "width": 290
+    },
+    {
+      "mode": "failure",
+      "frame": 5,
+      "overflow": [],
+      "scroll": 360,
+      "smallFonts": 0,
+      "smallTargets": [
+        {
+          "tag": "A",
+          "text": "Contact support"
+        }
+      ],
+      "title": "Recorded customer sources",
+      "viewport": 390,
+      "width": 360
+    },
+    {
+      "mode": "failure",
+      "frame": 6,
+      "overflow": [],
+      "scroll": 738,
+      "smallFonts": 0,
+      "smallTargets": [
+        {
+          "tag": "A",
+          "text": "Contact support"
+        }
+      ],
+      "title": "Recorded customer sources",
+      "viewport": 768,
+      "width": 738
+    },
+    {
+      "mode": "failure",
+      "frame": 7,
+      "overflow": [],
+      "scroll": 1410,
+      "smallFonts": 0,
+      "smallTargets": [
+        {
+          "tag": "A",
+          "text": "Find a tool"
+        },
+        {
+          "tag": "A",
+          "text": "Contact support"
+        }
+      ],
+      "title": "Recorded customer sources",
+      "viewport": 1440,
+      "width": 1410
+    }
+  ],
+  "final": [
+    {
+      "mode": "empty",
+      "frame": 0,
+      "overflow": [],
+      "scroll": 290,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "مصادر العملاء المسجلة",
+      "viewport": 320,
+      "width": 290
+    },
+    {
+      "mode": "empty",
+      "frame": 1,
+      "overflow": [],
+      "scroll": 360,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "مصادر العملاء المسجلة",
+      "viewport": 390,
+      "width": 360
+    },
+    {
+      "mode": "empty",
+      "frame": 2,
+      "overflow": [],
+      "scroll": 738,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "مصادر العملاء المسجلة",
+      "viewport": 768,
+      "width": 738
+    },
+    {
+      "mode": "empty",
+      "frame": 3,
+      "overflow": [],
+      "scroll": 1410,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "مصادر العملاء المسجلة",
+      "viewport": 1440,
+      "width": 1410
+    },
+    {
+      "mode": "empty",
+      "frame": 4,
+      "overflow": [],
+      "scroll": 290,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Recorded customer sources",
+      "viewport": 320,
+      "width": 290
+    },
+    {
+      "mode": "empty",
+      "frame": 5,
+      "overflow": [],
+      "scroll": 360,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Recorded customer sources",
+      "viewport": 390,
+      "width": 360
+    },
+    {
+      "mode": "empty",
+      "frame": 6,
+      "overflow": [],
+      "scroll": 738,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Recorded customer sources",
+      "viewport": 768,
+      "width": 738
+    },
+    {
+      "mode": "empty",
+      "frame": 7,
+      "overflow": [],
+      "scroll": 1410,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Recorded customer sources",
+      "viewport": 1440,
+      "width": 1410
+    },
+    {
+      "mode": "legacy",
+      "frame": 0,
+      "overflow": [],
+      "scroll": 290,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "مصادر العملاء المسجلة",
+      "viewport": 320,
+      "width": 290
+    },
+    {
+      "mode": "legacy",
+      "frame": 1,
+      "overflow": [],
+      "scroll": 360,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "مصادر العملاء المسجلة",
+      "viewport": 390,
+      "width": 360
+    },
+    {
+      "mode": "legacy",
+      "frame": 2,
+      "overflow": [],
+      "scroll": 738,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "مصادر العملاء المسجلة",
+      "viewport": 768,
+      "width": 738
+    },
+    {
+      "mode": "legacy",
+      "frame": 3,
+      "overflow": [],
+      "scroll": 1410,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "مصادر العملاء المسجلة",
+      "viewport": 1440,
+      "width": 1410
+    },
+    {
+      "mode": "legacy",
+      "frame": 4,
+      "overflow": [],
+      "scroll": 290,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Recorded customer sources",
+      "viewport": 320,
+      "width": 290
+    },
+    {
+      "mode": "legacy",
+      "frame": 5,
+      "overflow": [],
+      "scroll": 360,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Recorded customer sources",
+      "viewport": 390,
+      "width": 360
+    },
+    {
+      "mode": "legacy",
+      "frame": 6,
+      "overflow": [],
+      "scroll": 738,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Recorded customer sources",
+      "viewport": 768,
+      "width": 738
+    },
+    {
+      "mode": "legacy",
+      "frame": 7,
+      "overflow": [],
+      "scroll": 1410,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Recorded customer sources",
+      "viewport": 1440,
+      "width": 1410
+    },
+    {
+      "mode": "loading",
+      "frame": 0,
+      "overflow": [],
+      "scroll": 290,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "مصادر العملاء المسجلة",
+      "viewport": 320,
+      "width": 290
+    },
+    {
+      "mode": "loading",
+      "frame": 1,
+      "overflow": [],
+      "scroll": 360,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "مصادر العملاء المسجلة",
+      "viewport": 390,
+      "width": 360
+    },
+    {
+      "mode": "loading",
+      "frame": 2,
+      "overflow": [],
+      "scroll": 738,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "مصادر العملاء المسجلة",
+      "viewport": 768,
+      "width": 738
+    },
+    {
+      "mode": "loading",
+      "frame": 3,
+      "overflow": [],
+      "scroll": 1410,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "مصادر العملاء المسجلة",
+      "viewport": 1440,
+      "width": 1410
+    },
+    {
+      "mode": "loading",
+      "frame": 4,
+      "overflow": [],
+      "scroll": 290,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Recorded customer sources",
+      "viewport": 320,
+      "width": 290
+    },
+    {
+      "mode": "loading",
+      "frame": 5,
+      "overflow": [],
+      "scroll": 360,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Recorded customer sources",
+      "viewport": 390,
+      "width": 360
+    },
+    {
+      "mode": "loading",
+      "frame": 6,
+      "overflow": [],
+      "scroll": 738,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Recorded customer sources",
+      "viewport": 768,
+      "width": 738
+    },
+    {
+      "mode": "loading",
+      "frame": 7,
+      "overflow": [],
+      "scroll": 1410,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Recorded customer sources",
+      "viewport": 1440,
+      "width": 1410
+    },
+    {
+      "mode": "readonly",
+      "frame": 0,
+      "overflow": [],
+      "scroll": 290,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "مصادر العملاء المسجلة",
+      "viewport": 320,
+      "width": 290
+    },
+    {
+      "mode": "readonly",
+      "frame": 1,
+      "overflow": [],
+      "scroll": 360,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "مصادر العملاء المسجلة",
+      "viewport": 390,
+      "width": 360
+    },
+    {
+      "mode": "readonly",
+      "frame": 2,
+      "overflow": [],
+      "scroll": 738,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "مصادر العملاء المسجلة",
+      "viewport": 768,
+      "width": 738
+    },
+    {
+      "mode": "readonly",
+      "frame": 3,
+      "overflow": [],
+      "scroll": 1410,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "مصادر العملاء المسجلة",
+      "viewport": 1440,
+      "width": 1410
+    },
+    {
+      "mode": "readonly",
+      "frame": 4,
+      "overflow": [],
+      "scroll": 290,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Recorded customer sources",
+      "viewport": 320,
+      "width": 290
+    },
+    {
+      "mode": "readonly",
+      "frame": 5,
+      "overflow": [],
+      "scroll": 360,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Recorded customer sources",
+      "viewport": 390,
+      "width": 360
+    },
+    {
+      "mode": "readonly",
+      "frame": 6,
+      "overflow": [],
+      "scroll": 738,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Recorded customer sources",
+      "viewport": 768,
+      "width": 738
+    },
+    {
+      "mode": "readonly",
+      "frame": 7,
+      "overflow": [],
+      "scroll": 1410,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Recorded customer sources",
+      "viewport": 1440,
+      "width": 1410
+    },
+    {
+      "mode": "failure",
+      "frame": 0,
+      "overflow": [],
+      "scroll": 290,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "مصادر العملاء المسجلة",
+      "viewport": 320,
+      "width": 290
+    },
+    {
+      "mode": "failure",
+      "frame": 1,
+      "overflow": [],
+      "scroll": 360,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "مصادر العملاء المسجلة",
+      "viewport": 390,
+      "width": 360
+    },
+    {
+      "mode": "failure",
+      "frame": 2,
+      "overflow": [],
+      "scroll": 738,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "مصادر العملاء المسجلة",
+      "viewport": 768,
+      "width": 738
+    },
+    {
+      "mode": "failure",
+      "frame": 3,
+      "overflow": [],
+      "scroll": 1410,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "مصادر العملاء المسجلة",
+      "viewport": 1440,
+      "width": 1410
+    },
+    {
+      "mode": "failure",
+      "frame": 4,
+      "overflow": [],
+      "scroll": 290,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Recorded customer sources",
+      "viewport": 320,
+      "width": 290
+    },
+    {
+      "mode": "failure",
+      "frame": 5,
+      "overflow": [],
+      "scroll": 360,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Recorded customer sources",
+      "viewport": 390,
+      "width": 360
+    },
+    {
+      "mode": "failure",
+      "frame": 6,
+      "overflow": [],
+      "scroll": 738,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Recorded customer sources",
+      "viewport": 768,
+      "width": 738
+    },
+    {
+      "mode": "failure",
+      "frame": 7,
+      "overflow": [],
+      "scroll": 1410,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Recorded customer sources",
+      "viewport": 1440,
+      "width": 1410
+    },
+    {
+      "mode": "normal",
+      "frame": 0,
+      "overflow": [],
+      "scroll": 290,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "مصادر العملاء المسجلة",
+      "viewport": 320,
+      "width": 290
+    },
+    {
+      "mode": "normal-expanded",
+      "frame": 0,
+      "overflow": [],
+      "scroll": 290,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "مصادر العملاء المسجلة",
+      "viewport": 320,
+      "width": 290
+    },
+    {
+      "mode": "normal",
+      "frame": 1,
+      "overflow": [],
+      "scroll": 360,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "مصادر العملاء المسجلة",
+      "viewport": 390,
+      "width": 360
+    },
+    {
+      "mode": "normal-expanded",
+      "frame": 1,
+      "overflow": [],
+      "scroll": 360,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "مصادر العملاء المسجلة",
+      "viewport": 390,
+      "width": 360
+    },
+    {
+      "mode": "normal",
+      "frame": 2,
+      "overflow": [],
+      "scroll": 738,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "مصادر العملاء المسجلة",
+      "viewport": 768,
+      "width": 738
+    },
+    {
+      "mode": "normal-expanded",
+      "frame": 2,
+      "overflow": [],
+      "scroll": 738,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "مصادر العملاء المسجلة",
+      "viewport": 768,
+      "width": 738
+    },
+    {
+      "mode": "normal",
+      "frame": 3,
+      "overflow": [],
+      "scroll": 1410,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "مصادر العملاء المسجلة",
+      "viewport": 1440,
+      "width": 1410
+    },
+    {
+      "mode": "normal-expanded",
+      "frame": 3,
+      "overflow": [],
+      "scroll": 1410,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "مصادر العملاء المسجلة",
+      "viewport": 1440,
+      "width": 1410
+    },
+    {
+      "mode": "normal",
+      "frame": 4,
+      "overflow": [],
+      "scroll": 290,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Recorded customer sources",
+      "viewport": 320,
+      "width": 290
+    },
+    {
+      "mode": "normal-expanded",
+      "frame": 4,
+      "overflow": [],
+      "scroll": 290,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Recorded customer sources",
+      "viewport": 320,
+      "width": 290
+    },
+    {
+      "mode": "normal",
+      "frame": 5,
+      "overflow": [],
+      "scroll": 360,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Recorded customer sources",
+      "viewport": 390,
+      "width": 360
+    },
+    {
+      "mode": "normal-expanded",
+      "frame": 5,
+      "overflow": [],
+      "scroll": 360,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Recorded customer sources",
+      "viewport": 390,
+      "width": 360
+    },
+    {
+      "mode": "normal",
+      "frame": 6,
+      "overflow": [],
+      "scroll": 738,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Recorded customer sources",
+      "viewport": 768,
+      "width": 738
+    },
+    {
+      "mode": "normal-expanded",
+      "frame": 6,
+      "overflow": [],
+      "scroll": 738,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Recorded customer sources",
+      "viewport": 768,
+      "width": 738
+    },
+    {
+      "mode": "normal",
+      "frame": 7,
+      "overflow": [],
+      "scroll": 1410,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Recorded customer sources",
+      "viewport": 1440,
+      "width": 1410
+    },
+    {
+      "mode": "normal-expanded",
+      "frame": 7,
+      "overflow": [],
+      "scroll": 1410,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Recorded customer sources",
+      "viewport": 1440,
+      "width": 1410
+    }
+  ]
+}

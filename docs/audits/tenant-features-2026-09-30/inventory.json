@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-04T12:42:09.276Z",
+  "generatedAt": "2026-10-04T13:10:15.665Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -13476,51 +13476,110 @@
     },
     {
       "file": "client/src/pages/merchant/AcquisitionReport.tsx",
-      "hash": "b651b5c9ceef",
+      "hash": "17ec39cd9e29",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [
+        "client/src/components/merchant/AcquisitionWorkspace.tsx"
+      ],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/components/merchant/AcquisitionWorkspace.tsx",
+      "hash": "34c6317da22f",
       "queries": [
-        "merchants.getCurrent",
-        "analytics.getAcquisitionSources"
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "analytics.acquisitionWorkspace"
       ],
       "mutations": [],
       "imperativeReads": [],
       "browserRequests": [],
       "sections": [
         {
-          "label": "📊 مصادر العملاء",
-          "line": 45,
+          "label": "title",
+          "line": 34,
           "tag": "h1"
         },
         {
-          "label": "تفاصيل المصادر",
-          "line": 87,
-          "tag": "CardTitle"
+          "label": "sources",
+          "line": 56,
+          "tag": "h2"
         },
         {
-          "label": "💡 كيف تتبع مصادر العملاء؟",
-          "line": 145,
+          "label": "empty",
+          "line": 57,
           "tag": "h3"
+        },
+        {
+          "label": "",
+          "line": 59,
+          "tag": "h3"
+        },
+        {
+          "label": "top",
+          "line": 64,
+          "tag": "summary"
+        },
+        {
+          "label": "method",
+          "line": 65,
+          "tag": "summary"
         }
       ],
       "choices": [],
       "handlers": [],
       "queryStates": [
         {
-          "query": "merchants.getCurrent",
-          "binding": "{ data: merchant }",
-          "line": 22,
-          "errorSignal": false,
-          "loadingSignal": false,
+          "query": "auth.me",
+          "binding": "user",
+          "line": 12,
+          "errorSignal": true,
+          "loadingSignal": true,
           "enabled": null
         },
         {
-          "query": "analytics.getAcquisitionSources",
-          "binding": "{ data, isLoading }",
-          "line": 25,
-          "errorSignal": false,
+          "query": "merchants.workspaceIdentity",
+          "binding": "merchant",
+          "line": 13,
+          "errorSignal": true,
           "loadingSignal": true,
-          "enabled": "!!merchantId "
+          "enabled": "!!user.data?.id&&!user.error&&!user.isFetching"
+        },
+        {
+          "query": "analytics.acquisitionWorkspace",
+          "binding": "query",
+          "line": 25,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": "period!==null"
         }
       ],
+      "conditions": [],
+      "imports": [
+        "client/src/lib/acquisition-workspace-view.ts",
+        "client/src/lib/usage-workspace-view.ts"
+      ],
+      "controlCount": 6
+    },
+    {
+      "file": "client/src/lib/acquisition-workspace-view.ts",
+      "hash": "9fb758b0444b",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
       "conditions": [],
       "imports": [],
       "controlCount": 0
@@ -26579,12 +26638,23 @@
         "AcquisitionReport"
       ],
       "files": [
-        "client/src/pages/merchant/AcquisitionReport.tsx"
+        "client/src/pages/merchant/AcquisitionReport.tsx",
+        "client/src/components/merchant/AcquisitionWorkspace.tsx",
+        "client/src/lib/acquisition-workspace-view.ts",
+        "client/src/lib/usage-workspace-view.ts"
       ],
-      "controls": [],
+      "controls": [
+        "b902de5d537c",
+        "f4a784b2637f",
+        "9a14f8637fde",
+        "d9d9d2d1c898",
+        "cd890b00c059",
+        "15be968603c4"
+      ],
       "queries": [
-        "merchants.getCurrent",
-        "analytics.getAcquisitionSources"
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "analytics.acquisitionWorkspace"
       ],
       "mutations": [],
       "imperativeReads": [],
@@ -70701,6 +70771,154 @@
       "required": false,
       "conditional": false,
       "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "b902de5d537c",
+      "file": "client/src/components/merchant/AcquisitionWorkspace.tsx",
+      "line": 35,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "customers",
+      "section": "title",
+      "binding": "/merchant/customers",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "f4a784b2637f",
+      "file": "client/src/components/merchant/AcquisitionWorkspace.tsx",
+      "line": 38,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "period invalidPeriod period_",
+      "section": "title",
+      "binding": "period??''",
+      "type": "text",
+      "options": [
+        {
+          "value": "",
+          "label": "invalidPeriod"
+        },
+        {
+          "value": "p",
+          "label": "period_"
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "9a14f8637fde",
+      "file": "client/src/components/merchant/AcquisitionWorkspace.tsx",
+      "line": 42,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "period invalidPeriod period_",
+      "section": "title",
+      "binding": "()=>void query.refetch()",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "waiting||period===null",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "d9d9d2d1c898",
+      "file": "client/src/components/merchant/AcquisitionWorkspace.tsx",
+      "line": 44,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "reset",
+      "section": "title",
+      "binding": "()=>changePeriod('all')",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "!period"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "cd890b00c059",
+      "file": "client/src/components/merchant/AcquisitionWorkspace.tsx",
+      "line": 64,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "top",
+      "section": "top",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "top.length>0",
+        "!data",
+        "waiting",
+        "query.error",
+        "!period"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "15be968603c4",
+      "file": "client/src/components/merchant/AcquisitionWorkspace.tsx",
+      "line": 65,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "method",
+      "section": "method",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "!data",
+        "waiting",
+        "query.error",
+        "!period"
+      ],
       "disabled": "",
       "review": "source-inventoried"
     },

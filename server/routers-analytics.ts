@@ -12,21 +12,10 @@ import {
 } from './db';
 import { TRPCError } from "@trpc/server";
 
-import { acquisitionInput } from "../shared/acquisition-workspace";
-import { readAcquisitionWorkspace } from "./analytics/acquisition-workspace";
-import { MerchantSettingsAuthorityError } from "./accounts/merchant-settings-authority";
-
-async function acquisitionRead(actorId: number, merchantId: number, input: unknown) {
-  try { return await readAcquisitionWorkspace(actorId, merchantId, input); }
-  catch (error) {
-    throw new TRPCError({ code: error instanceof MerchantSettingsAuthorityError && error.reason === "forbidden" ? "FORBIDDEN" : "INTERNAL_SERVER_ERROR", message: "acquisition:unavailable" });
-  }
-}
+import { acquisitionProcedures } from './routers-acquisition-workspace';
 
 export const analyticsRouter = router({
-  acquisitionWorkspace: permissionProcedure('analytics.read')
-    .input(acquisitionInput)
-    .query(({ ctx, input }) => acquisitionRead(ctx.user.id, ctx.merchantId, input)),
+  ...acquisitionProcedures,
   // Get analytics summary
   getSummary: permissionProcedure('analytics.read')
     .input(z.object({
@@ -221,15 +210,6 @@ export const analyticsRouter = router({
           message: 'فشل إنشاء تقرير PDF. حاول مرة أخرى.',
         });
       }
-    }),
-
-  // Compatibility read; the tenant is still selected by the authenticated request.
-  getAcquisitionSources: permissionProcedure('analytics.read')
-    .input(z.object({ merchantId: z.number().int().positive().max(2147483647) }).strict())
-    .query(async ({ input, ctx }) => {
-      if (input.merchantId !== ctx.merchantId) throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
-      const data = await acquisitionRead(ctx.user.id, ctx.merchantId, { period: "all" });
-      return { totalCustomers: data.totalProfiles, sources: data.sources.map(r => ({ source: r.source, count: r.count, percentage: r.sharePermille / 10 })) };
     }),
 
   // Supervisor Recovery statistics

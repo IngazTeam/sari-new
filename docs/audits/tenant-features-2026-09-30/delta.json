@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-04T12:42:09.276Z",
+  "generatedAt": "2026-10-04T13:10:15.665Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 518,
-      "controls": 2770
+      "files": 520,
+      "controls": 2776
     }
   },
   "addedFiles": [
@@ -234,6 +234,8 @@
     "client/src/components/merchant/PipelineWorkspace.tsx",
     "client/src/lib/pipeline-labels.ts",
     "client/src/components/merchant/PipelineReport.tsx",
+    "client/src/components/merchant/AcquisitionWorkspace.tsx",
+    "client/src/lib/acquisition-workspace-view.ts",
     "client/src/components/merchant/QuotationTemplateWorkspace.tsx",
     "client/src/lib/quotation-template-cache.ts",
     "client/src/components/merchant/QuotationTemplateReport.tsx",
@@ -426,6 +428,7 @@
     "client/src/pages/SariPlayground.tsx",
     "client/src/pages/merchant/SalesHub.tsx",
     "client/src/pages/merchant/SalesPipeline.tsx",
+    "client/src/pages/merchant/AcquisitionReport.tsx",
     "client/src/pages/merchant/QuotationTemplates.tsx",
     "client/src/pages/merchant/MediaLibrary.tsx",
     "client/src/pages/merchant/ScheduledMessages.tsx",
@@ -1678,9 +1681,16 @@
     {
       "route": "/merchant/acquisition-report",
       "controlsBefore": 0,
-      "controlsNow": 0,
-      "removedQueries": [],
-      "addedQueries": [],
+      "controlsNow": 6,
+      "removedQueries": [
+        "merchants.getCurrent",
+        "analytics.getAcquisitionSources"
+      ],
+      "addedQueries": [
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "analytics.acquisitionWorkspace"
+      ],
       "removedMutations": [],
       "addedMutations": []
     },
