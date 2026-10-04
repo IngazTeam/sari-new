@@ -13723,7 +13723,7 @@
     "status_pending": "Pending",
     "status_expired": "Expired",
     "empty": "This store has no saved connections. You can test your credentials before saving a new connection.",
-    "truncated": "Showing the first 100 connections. Open number management for the remaining records. Deletion here is unavailable for this limited list.",
+    "truncated": "Showing the first 100 connections. Open number management for the remaining records. Saving and deletion here are unavailable for this limited list.",
     "instanceId": "Connection ID · Instance ID",
     "token": "Connection token · API Token",
     "secretHint": "Enter the token yourself. Sary does not display the saved token or retain this draft after leaving the page.",

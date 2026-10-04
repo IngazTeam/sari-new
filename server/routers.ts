@@ -1175,74 +1175,8 @@ export const appRouter = router({
 
     ...whatsappDiagnosticProcedures,
 
-    // Save WhatsApp instance
-    saveInstance: protectedProcedure
-      .input(
-        z.object({
-          instanceId: z.string(),
-          token: z.string(),
-          phoneNumber: z.string().optional(),
-          expiresAt: z.string().optional(), // ISO date string
-        })
-      )
-      .mutation(async ({ input, ctx }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        }
-
-        // SEC-FIX: Verify active subscription before allowing instance save
-        const subscription = await getActiveSubscriptionByMerchantId(merchant.id);
-        if (!subscription) {
-          throw new TRPCError({
-            code: 'FORBIDDEN',
-            message: 'لا يوجد اشتراك نشط. يرجى تجديد اشتراكك لربط رقم الواتساب.',
-          });
-        }
-
-        // Check if instance already exists
-        const existing = await getWhatsAppInstanceByInstanceId(input.instanceId);
-
-        // If creating new instance, check WhatsApp number limit
-        if (!existing) {
-          const { checkWhatsAppNumberLimit } = await import('./helpers/subscriptionGuard');
-          await checkWhatsAppNumberLimit(merchant.id);
-        }
-        if (existing && existing.merchantId !== merchant.id) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Instance ID already in use' });
-        }
-        if (input.phoneNumber) {
-          const phoneOwner = await getActiveInstanceByPhoneNumber(input.phoneNumber);
-          if (phoneOwner && phoneOwner.id !== existing?.id) {
-            throw new TRPCError({ code: 'CONFLICT', message: 'رقم واتساب مرتبط بحساب آخر ويتطلب نقل ملكية موثقًا' });
-          }
-        }
-
-        if (existing) {
-          // Update existing instance
-          await updateWhatsAppInstance(existing.id, {
-            token: input.token,
-            phoneNumber: input.phoneNumber,
-            status: 'active',
-            connectedAt: new Date().toISOString().slice(0, 19).replace("T", " "),
-            expiresAt: input.expiresAt ? new Date(input.expiresAt).toISOString().slice(0, 19).replace("T", " ") : undefined,
-          });
-          return { success: true, instanceId: existing.id };
-        } else {
-          // Create new instance
-          const instance = await createWhatsAppInstance({
-            merchantId: merchant.id,
-            instanceId: input.instanceId,
-            token: input.token,
-            phoneNumber: input.phoneNumber,
-            status: 'active',
-            isPrimary: 1, // First instance is primary
-            connectedAt: new Date().toISOString().slice(0, 19).replace("T", " "),
-            expiresAt: input.expiresAt ? new Date(input.expiresAt).toISOString().slice(0, 19).replace("T", " ") : undefined,
-          });
-          return { success: true, instanceId: instance?.id };
-        }
-      }),
+    // Old clients cannot assert a verified phone or alter provider expiry.
+    saveInstance: protectedProcedure.input(z.unknown()).mutation(()=>{throw new TRPCError({code:'PRECONDITION_FAILED',message:'whatsapp_save:review_required'});}),
 
     // Get primary WhatsApp instance
     getPrimaryInstance: protectedProcedure.query(async ({ ctx }) => {

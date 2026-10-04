@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-04T14:44:51.734Z",
+  "generatedAt": "2026-10-04T15:10:59.827Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -1507,9 +1507,11 @@
         "whatsapp.diagnosticWorkspace"
       ],
       "removedMutations": [
+        "whatsapp.saveInstance",
         "whatsapp.deleteInstance"
       ],
       "addedMutations": [
+        "whatsapp.saveReviewedInstance",
         "whatsapp.deleteReviewedInstance"
       ]
     },

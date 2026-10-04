@@ -1,0 +1,76 @@
+{
+  "unit_and_inventory": {
+    "passed": 287,
+    "failed": 0,
+    "files": [
+      {
+        "file": "merchant-feature-inventory.test.ts",
+        "passed": 6
+      },
+      {
+        "file": "merchant-feature-preservation.test.ts",
+        "passed": 127
+      },
+      {
+        "file": "tenant-source-analysis.test.ts",
+        "passed": 8
+      },
+      {
+        "file": "whatsapp-diagnostic-workspace-ui.test.tsx",
+        "passed": 24
+      },
+      {
+        "file": "whatsapp-diagnostic.test.ts",
+        "passed": 62
+      },
+      {
+        "file": "whatsapp-removal-retirement.test.ts",
+        "passed": 3
+      },
+      {
+        "file": "whatsapp-reviewed-removal.test.ts",
+        "passed": 20
+      },
+      {
+        "file": "whatsapp-reviewed-save-preview.test.ts",
+        "passed": 3
+      },
+      {
+        "file": "whatsapp-reviewed-save.test.ts",
+        "passed": 31
+      },
+      {
+        "file": "whatsapp-save-retirement.test.ts",
+        "passed": 3
+      }
+    ]
+  },
+  "mysql": {
+    "passed": 47,
+    "failed": 0,
+    "files": [
+      {
+        "file": "whatsapp-diagnostic.mysql.test.ts",
+        "passed": 18
+      },
+      {
+        "file": "whatsapp-reviewed-removal.mysql.test.ts",
+        "passed": 14
+      },
+      {
+        "file": "whatsapp-reviewed-save.mysql.test.ts",
+        "passed": 15
+      }
+    ]
+  },
+  "release": {
+    "passed": 64,
+    "failed": 0
+  },
+  "typescript": "passed",
+  "production_build": "passed",
+  "preview_build": "passed",
+  "translations": "no missing keys or interpolation errors",
+  "browser": "local reviewed update completed; success verified after refetch and token cleared",
+  "scope": "disposable MySQL, mocked provider, no external messages, no deployment"
+}

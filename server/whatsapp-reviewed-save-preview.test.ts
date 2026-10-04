@@ -1,0 +1,7 @@
+import {expect,it} from 'vitest';
+import {WhatsAppDiagnosticPreviewStore} from '../prototypes/tenant-dashboard/src/whatsapp-diagnostic-preview-model';
+const create=(mode='ready')=>new WhatsAppDiagnosticPreviewStore(7,269,'2026-10-04T00:00:00.000Z',mode);
+const draft=(s:WhatsAppDiagnosticPreviewStore,id='7510000269')=>({merchantId:269,instanceId:id,token:'local-demo-token',expectedPhone:'99900000269',expectedRevision:s.removalRevision()});
+it('creates the first verified preview connection as the primary and returns a scoped receipt',()=>{const s=create('empty');expect(s.mutate('whatsapp.saveReviewedInstance',draft(s))).toEqual({success:true,actorId:7,merchantId:269,instanceId:3,phoneNumber:'99900000269'});expect(s.read({merchantId:269}).connections).toMatchObject([{primary:true,status:'active'}]);});
+it('rejects duplicate active phone ownership without changing records or the revision',()=>{const s=create(),before=s.read({merchantId:269});expect(()=>s.mutate('whatsapp.saveReviewedInstance',draft(s))).toThrow();expect(s.read({merchantId:269})).toEqual(before);});
+it('updates the existing preview identity and refuses a replay of the old revision',()=>{const s=create(),p=draft(s,'7103000269');expect(s.mutate('whatsapp.saveReviewedInstance',p)).toMatchObject({instanceId:1,success:true});expect(s.read({merchantId:269}).connections).toHaveLength(2);expect(()=>s.mutate('whatsapp.saveReviewedInstance',p)).toThrow();});

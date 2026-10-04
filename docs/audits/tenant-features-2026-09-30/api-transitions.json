@@ -2086,7 +2086,7 @@
         "whatsapp.testConnection",
         "whatsapp.sendTestMessage",
         "whatsapp.sendTestImage",
-        "whatsapp.saveInstance",
+        "whatsapp.saveReviewedInstance",
         "whatsapp.deleteReviewedInstance"
       ],
       "note": "The explicit, selected-tenant owner-only connection picker replaces implicit primary selection. Existing connection, text/image, save and delete actions remain present with reviewed content and no default recipient or returned token. Backend write hardening remains tracked separately. Stage509 replaces direct deletion with actor/tenant/snapshot-reviewed transactional removal.",
@@ -3059,6 +3059,40 @@
         {
           "file": "client/src/components/merchant/WhatsAppDiagnosticWorkspace.tsx",
           "contains": "expectedRevision:current.removalRevision"
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/whatsapp-test"
+      ],
+      "removed": [
+        "whatsapp.saveInstance"
+      ],
+      "required": [
+        "whatsapp.saveReviewedInstance"
+      ],
+      "note": "The same save review now freezes the scoped snapshot and verified number. The server repeats provider verification, checks live owner, plan capacity and phone ownership, verifies encrypted storage and primary election before commit. Legacy save is closed. Caller-supplied expiry is rejected.",
+      "reviewedIn": 510,
+      "featureMappings": [
+        {
+          "before": "whatsapp.saveInstance",
+          "after": [
+            "whatsapp.saveReviewedInstance"
+          ]
+        }
+      ],
+      "evidence": [
+        "docs/audits/tenant-whatsapp-reviewed-save-2026-10-04/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "server/whatsapp/reviewed-save.ts",
+          "contains": "await runWhatsAppDiagnostic"
+        },
+        {
+          "file": "server/whatsapp/reviewed-save.ts",
+          "contains": "await capacity(tx,merchantId)"
         }
       ]
     }
