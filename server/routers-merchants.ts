@@ -1,5 +1,6 @@
 import { merchantWorkspaceIdentityProcedure } from "./routers-merchant-workspace-identity";
 import { currencyWorkspaceProcedures } from "./routers-currency-workspace";
+import { merchantProfileWorkspaceProcedures } from "./routers-merchant-profile-workspace";
 /**
  * Merchants Router Module
  * Handles merchant profile and management operations
@@ -82,6 +83,7 @@ function mapAdminDeletionError(error: unknown): never {
 }
 
 export const merchantsRouter = router({
+    ...merchantProfileWorkspaceProcedures,
     ...currencyWorkspaceProcedures,
     workspaceIdentity: merchantWorkspaceIdentityProcedure,
     // Get current merchant for logged-in user
