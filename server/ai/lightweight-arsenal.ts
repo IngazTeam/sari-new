@@ -1,3 +1,4 @@
+import {loadLoyaltySalesEvidence} from '../loyalty/sales-evidence';
 import {loadSalesPromotionEvidence} from './promotion-evidence-source';
 import {selectSalesCart} from './cart-sales-evidence';
 /** Fast-path sales context: fresh offers, cart and loyalty scoped to the current customer. */
@@ -47,21 +48,7 @@ export async function loadLightweightArsenal(
 
   try {
     // 3. Loyalty points (lightweight — points and tier only)
-    const loyaltyDb = await import('../db_loyalty');
-    const customerPoints = await loyaltyDb.getCustomerPoints(merchantId, customerPhone);
-    if (customerPoints) {
-      arsenal.loyaltyPoints = customerPoints.totalPoints || 0;
-      if (customerPoints.currentTierId) {
-        const tier = await loyaltyDb.getLoyaltyTierById(customerPoints.currentTierId);
-        if (tier && tier.merchantId === merchantId) {
-          arsenal.loyaltyTier = {
-            name: tier.nameAr || tier.name,
-            icon: tier.icon || '⭐',
-            discount: tier.discountPercentage || 0,
-          };
-        }
-      }
-    }
+    Object.assign(arsenal,await loadLoyaltySalesEvidence(merchantId,customerPhone));
   } catch { /* loyalty may not be set up */ }
 
   return arsenal;

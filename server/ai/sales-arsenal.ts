@@ -1,3 +1,4 @@
+import {loadLoyaltySalesEvidence} from '../loyalty/sales-evidence';
 import type {SalesPromotionEvidence} from './promotion-evidence';
 import {loadSalesPromotionEvidence} from './promotion-evidence-source';
 import {selectSalesCart,salesCartPrompt,type SalesCartEvidence} from './cart-sales-evidence';
@@ -129,27 +130,7 @@ export async function loadArsenal(
 
   try {
     // 4. Loyalty points — REAL integration with db_loyalty
-    const loyaltyDb = await import('../db_loyalty');
-    const customerPoints = await loyaltyDb.getCustomerPoints(merchantId, customerPhone);
-    if (customerPoints) {
-      arsenal.loyaltyPoints = customerPoints.totalPoints || 0;
-      if (customerPoints.currentTierId) {
-        const tier = await loyaltyDb.getLoyaltyTierById(customerPoints.currentTierId);
-        if (tier && tier.merchantId === merchantId) {
-          arsenal.loyaltyTier = {
-            name: tier.nameAr || tier.name,
-            icon: tier.icon || '⭐',
-            discount: tier.discountPercentage || 0,
-          };
-        }
-      }
-    }
-    // Available rewards
-    const rewards = await loyaltyDb.getLoyaltyRewards(merchantId, true);
-    arsenal.availableRewards = rewards.slice(0, 5).map((r: any) => ({
-      name: r.titleAr || r.title,
-      pointsCost: r.pointsCost,
-    }));
+    Object.assign(arsenal,await loadLoyaltySalesEvidence(merchantId,customerPhone));
   } catch { /* loyalty may not be set up */ }
 
   try {
@@ -236,7 +217,7 @@ function buildLoyaltyPrompt(
   if (tier) {
     // SEC-V6-01 FIX: sanitize tier name
     const safeTierName = sanitizeForArsenalPrompt(tier.name);
-    prompt += `- مستواه: ${tier.icon} ${safeTierName} (خصم ${tier.discount}%)\n`;
+    prompt += `- مستواه: ${tier.icon} ${safeTierName} (ميزة خصم معدّة ${tier.discount}%؛ تحقق من تطبيقها على الطلب)\n`;
     prompt += `- اذكر مستواه بفخر: "أنت عميل ${safeTierName} عندنا!"\n`;
   }
   // SEC-V6-08 FIX: show max 2 rewards in prompt to reduce context bloat

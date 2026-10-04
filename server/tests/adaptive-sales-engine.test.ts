@@ -250,7 +250,7 @@ describe('Sales Arsenal — Persuasion Selection', () => {
   };
 
   it('should discuss the owned abandoned cart when the customer asks about it', () => {
-    const arsenal = { ...baseArsenal, abandonedCart: { items: ['Phone'], total: 2000 } };
+    const arsenal = { ...baseArsenal, abandonedCart: { id:1,merchantId:7,checkedAt:new Date().toISOString(),recordedAt:new Date(Date.now()-1000).toISOString(),items:[{productId:9,name:'Phone',quantity:1}],itemCount:1,recordedTotal:2000,currency:null,amountUnit:'source_unspecified' as const,availability:'not_verified' as const,orderStatus:'not_verified' as const } };
     const plan = selectPersuasion(baseProfile, arsenal, 'browsing', 'neutral', [], { customerMessage: 'ما الموجود في السلة؟' });
     expect(plan.strategy).toBe('cart_recovery');
   });

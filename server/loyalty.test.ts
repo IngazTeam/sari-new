@@ -1,196 +1,138 @@
-/**
- * Loyalty System Tests
- * 
- * Tests for loyalty system integration
- */
-
-import { describe, it, expect, beforeAll } from 'vitest';
-import * as loyaltyDb from './db_loyalty';
-import * as db from './db';
-import { calculatePointsFromOrder, awardPointsForOrder } from './loyalty-integration';
-
-describe('Loyalty System', () => {
-  let testMerchantId: number;
-  let testCustomerPhone: string;
-
-  beforeAll(async () => {
-    // استخدام merchant موجود للاختبار
-    testMerchantId = 150001;
-    testCustomerPhone = '966500000001';
+import { beforeEach, describe, it, expect, vi } from 'vitest';
+const m = vi.hoisted(() => ({
+  settings: vi.fn(),
+  add: vi.fn(),
+  send: vi.fn(),
+}));
+vi.mock('./db_loyalty', () => ({
+  getLoyaltySettings: m.settings,
+  addPointsToCustomer: m.add,
+}));
+vi.mock('./whatsapp', () => ({ sendTextMessage: m.send }));
+import {
+  calculatePointsFromOrder,
+  awardPointsForOrder,
+} from './loyalty-integration';
+import { rewardAvailable } from './loyalty/sales-evidence';
+import {
+  loyaltySettingsInput,
+  loyaltyDefaults,
+  validLoyaltyReward,
+} from '../shared/loyalty-input';
+beforeEach(() => {
+  vi.clearAllMocks();
+  m.settings.mockResolvedValue({
+    ...loyaltyDefaults,
+    isEnabled: 1,
+    pointsPerCurrency: 2,
   });
-
-  describe('Loyalty Settings', () => {
-    it('should get or create loyalty settings', async () => {
-      const settings = await loyaltyDb.getOrCreateLoyaltySettings(testMerchantId);
-      
-      expect(settings).toBeDefined();
-      expect(settings.merchantId).toBe(testMerchantId);
-      expect(settings.isEnabled).toBeDefined();
-      expect(settings.pointsPerCurrency).toBeGreaterThan(0);
-    });
-
-    it('should update loyalty settings', async () => {
-      const updated = await loyaltyDb.updateLoyaltySettings(testMerchantId, {
-        pointsPerCurrency: 2,
-        currencyPerPoint: 5,
+});
+describe('Loyalty calculation and sales evidence', () => {
+  it('calculates whole points without increasing fractional earnings', async () => {
+    expect(await calculatePointsFromOrder(7, 10.75)).toBe(21);
+  });
+  it.each([-1, NaN, Infinity, 100000000])(
+    'refuses unsafe order amount %s',
+    async amount => {
+      expect(await calculatePointsFromOrder(7, amount)).toBe(0);
+    }
+  );
+  it('has no points promise when settings are absent or disabled', async () => {
+    m.settings
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ ...loyaltyDefaults });
+    expect(await calculatePointsFromOrder(7, 10)).toBe(0);
+    expect(await calculatePointsFromOrder(7, 10)).toBe(0);
+  });
+  it('returns the actual balance and suppresses duplicate order notifications', async () => {
+    m.add
+      .mockResolvedValueOnce({
+        newBalance: 250,
+        newTier: null,
+        tierUpgraded: false,
+        alreadyApplied: false,
+      })
+      .mockResolvedValueOnce({
+        newBalance: 250,
+        newTier: null,
+        tierUpgraded: false,
+        alreadyApplied: true,
       });
-
-      expect(updated).toBeDefined();
-      expect(updated?.pointsPerCurrency).toBe(2);
-      expect(updated?.currencyPerPoint).toBe(5);
+    const params = {
+      merchantId: 7,
+      customerPhone: '966500000007',
+      orderId: 9,
+      orderTotal: 10,
+    };
+    expect(await awardPointsForOrder(params)).toMatchObject({
+      points: 20,
+      newBalance: 250,
     });
+    expect(await awardPointsForOrder(params)).toBeNull();
+    expect(m.send).not.toHaveBeenCalled();
   });
-
-  describe('Loyalty Tiers', () => {
-    it('should get all tiers', async () => {
-      const tiers = await loyaltyDb.getLoyaltyTiers(testMerchantId);
-      
-      expect(tiers).toBeDefined();
-      expect(Array.isArray(tiers)).toBe(true);
-      expect(tiers.length).toBeGreaterThan(0);
-    });
-
-    it('should have bronze, silver, gold tiers', async () => {
-      const tiers = await loyaltyDb.getLoyaltyTiers(testMerchantId);
-      
-      const tierNames = tiers.map(t => t.name);
-      expect(tierNames).toContain('Bronze');
-      expect(tierNames).toContain('Silver');
-      expect(tierNames).toContain('Gold');
-    });
+  const sample = {
+    isActive: 1,
+    pointsCost: 50,
+    maxRedemptions: null,
+    currentRedemptions: 0,
+    validFrom: null,
+    validUntil: null,
+  };
+  it.each([
+    { isActive: 0 },
+    { pointsCost: -5 },
+    { pointsCost: 0.5 },
+    { currentRedemptions: -1 },
+    { maxRedemptions: 1, currentRedemptions: 1 },
+    { validFrom: '2030-01-01 00:00:00' },
+    { validUntil: '2025-01-01 00:00:00' },
+    { validUntil: 'invalid' },
+  ])('excludes unavailable reward %j', input => {
+    expect(rewardAvailable({ ...sample, ...input }, Date.UTC(2026, 9, 4))).toBe(
+      false
+    );
   });
-
-  describe('Customer Points', () => {
-    it('should initialize customer points', async () => {
-      const customerPoints = await loyaltyDb.initializeCustomerPoints(
-        testMerchantId,
-        testCustomerPhone,
-        'Test Customer'
-      );
-
-      expect(customerPoints).toBeDefined();
-      expect(customerPoints.merchantId).toBe(testMerchantId);
-      expect(customerPoints.customerPhone).toBe(testCustomerPhone);
-      expect(customerPoints.totalPoints).toBeGreaterThanOrEqual(0);
-    });
-
-    it('should get customer points', async () => {
-      const customerPoints = await loyaltyDb.getCustomerPoints(
-        testMerchantId,
-        testCustomerPhone
-      );
-
-      expect(customerPoints).toBeDefined();
-      if (customerPoints) {
-        expect(customerPoints.merchantId).toBe(testMerchantId);
-        expect(customerPoints.customerPhone).toBe(testCustomerPhone);
-      }
-    });
-
-    it('should add points to customer', async () => {
-      const initialPoints = await loyaltyDb.getCustomerPoints(testMerchantId, testCustomerPhone);
-      const initialTotal = initialPoints?.totalPoints || 0;
-
-      const result = await loyaltyDb.addPointsToCustomer(
-        testMerchantId,
-        testCustomerPhone,
-        100,
-        'Test points',
-        'نقاط اختبار'
-      );
-
-      expect(result).toBeDefined();
-      expect(result.newBalance).toBe(initialTotal + 100);
-    });
-
-    it('should deduct points from customer', async () => {
-      const initialPoints = await loyaltyDb.getCustomerPoints(testMerchantId, testCustomerPhone);
-      const initialTotal = initialPoints?.totalPoints || 0;
-
-      if (initialTotal >= 50) {
-        const result = await loyaltyDb.deductPointsFromCustomer(
-          testMerchantId,
-          testCustomerPhone,
-          50,
-          'Test deduction',
-          'خصم اختبار'
-        );
-
-        expect(result).toBeDefined();
-        expect(result.newBalance).toBe(initialTotal - 50);
-      }
-    });
+  it('handles UTC database dates and the exact expiry boundary', () => {
+    const until = '2026-10-04 12:00:00';
+    expect(
+      rewardAvailable(
+        { ...sample, validUntil: until },
+        Date.UTC(2026, 9, 4, 11, 59)
+      )
+    ).toBe(true);
+    expect(
+      rewardAvailable(
+        { ...sample, validUntil: until },
+        Date.UTC(2026, 9, 4, 12)
+      )
+    ).toBe(false);
   });
-
-  describe('Points Calculation', () => {
-    it('should calculate points from order amount', async () => {
-      const points = await calculatePointsFromOrder(testMerchantId, 100);
-      
-      expect(points).toBeGreaterThan(0);
-    });
-
-    it('should return 0 points if loyalty is disabled', async () => {
-      // تعطيل النظام مؤقتاً
-      await loyaltyDb.updateLoyaltySettings(testMerchantId, { isEnabled: 0 });
-      
-      const points = await calculatePointsFromOrder(testMerchantId, 100);
-      expect(points).toBe(0);
-
-      // إعادة التفعيل
-      await loyaltyDb.updateLoyaltySettings(testMerchantId, { isEnabled: 1 });
-    });
-  });
-
-  describe('Loyalty Rewards', () => {
-    it('should get active rewards', async () => {
-      const rewards = await loyaltyDb.getLoyaltyRewards(testMerchantId, true);
-      
-      expect(rewards).toBeDefined();
-      expect(Array.isArray(rewards)).toBe(true);
-    });
-
-    it('should create a reward', async () => {
-      const reward = await loyaltyDb.createLoyaltyReward({
-        merchantId: testMerchantId,
-        title: 'Test Reward',
-        titleAr: 'مكافأة اختبار',
-        description: 'Test description',
-        descriptionAr: 'وصف اختبار',
+  it('preserves zero-valued settings and validates conditional reward fields', () => {
+    expect(
+      loyaltySettingsInput.parse({
+        ...loyaltyDefaults,
+        pointsExpiryDays: 0,
+        referralBonusPoints: 0,
+      })
+    ).toMatchObject({ pointsExpiryDays: 0, referralBonusPoints: 0 });
+    expect(() =>
+      validLoyaltyReward({
+        title: 'A',
+        titleAr: 'أ',
         type: 'discount',
-        pointsCost: 100,
-        discountAmount: 10,
-        discountType: 'fixed',
-        isActive: 1,
-      });
-
-      expect(reward).toBeDefined();
-      expect(reward?.title).toBe('Test Reward');
-      expect(reward?.pointsCost).toBe(100);
-    });
-  });
-
-  describe('Transactions', () => {
-    it('should get customer transactions', async () => {
-      const transactions = await loyaltyDb.getPointsTransactions(
-        testMerchantId,
-        testCustomerPhone,
-        10,
-        0
-      );
-
-      expect(transactions).toBeDefined();
-      expect(Array.isArray(transactions)).toBe(true);
-    });
-  });
-
-  describe('Statistics', () => {
-    it('should get loyalty statistics', async () => {
-      const stats = await loyaltyDb.getLoyaltyStats(testMerchantId);
-
-      expect(stats).toBeDefined();
-      expect(stats.totalCustomers).toBeGreaterThanOrEqual(0);
-      expect(stats.totalPointsDistributed).toBeGreaterThanOrEqual(0);
-      expect(stats.totalRedemptions).toBeGreaterThanOrEqual(0);
-    });
+        pointsCost: 1,
+        discountAmount: 101,
+        discountType: 'percentage',
+      })
+    ).toThrow();
+    expect(() =>
+      validLoyaltyReward({
+        title: 'A',
+        titleAr: 'أ',
+        type: 'free_product',
+        pointsCost: 1,
+      })
+    ).toThrow();
   });
 });

@@ -1,3 +1,4 @@
+import {rewardAvailable} from './loyalty/sales-evidence';
 /**
  * Loyalty System Integration
  * 
@@ -6,7 +7,6 @@
 
 import * as loyaltyDb from './db_loyalty';
 import { getMerchantById, getOrderById } from './db';
-import { sendTextMessage } from './whatsapp';
 
 /**
  * Calculate points earned from an order
@@ -19,7 +19,9 @@ export async function calculatePointsFromOrder(merchantId: number, orderTotal: n
   }
 
   // حساب النقاط: (إجمالي الطلب) × (نقاط لكل وحدة عملة)
+  if(!Number.isFinite(orderTotal)||orderTotal<0||!Number.isSafeInteger(settings.pointsPerCurrency)||settings.pointsPerCurrency<0)return 0;
   const points = Math.floor(orderTotal * settings.pointsPerCurrency);
+  if(!Number.isSafeInteger(points)||points>10000000)return 0;
   return points;
 }
 
@@ -32,10 +34,9 @@ export async function awardPointsForOrder(params: {
   customerName?: string;
   orderId: number;
   orderTotal: number;
-}): Promise<{ points: number; newTier?: any; tierUpgraded: boolean } | null> {
+}): Promise<{ points: number; newBalance:number; newTier?: any; tierUpgraded: boolean } | null> {
   try {
-    // @ts-ignore
-    const settings = await loyaltyDb.getLoyaltySettings(merchantId);
+    const settings = await loyaltyDb.getLoyaltySettings(params.merchantId);
     
     if (!settings || !settings.isEnabled) {
       console.log('[Loyalty] System is disabled for merchant', params.merchantId);
@@ -50,7 +51,7 @@ export async function awardPointsForOrder(params: {
     }
 
     // إضافة النقاط للعميل
-    const result = await (loyaltyDb.addPointsToCustomer as any)(
+    const result = await loyaltyDb.addPointsToCustomer(
       params.merchantId,
       params.customerPhone,
       points,
@@ -59,10 +60,11 @@ export async function awardPointsForOrder(params: {
       params.orderId
     );
 
+    if(result.alreadyApplied)return null;
     console.log('[Loyalty] Awarded', points, 'points to', params.customerPhone, 'for order', params.orderId);
 
     return {
-      points,
+      points,newBalance:result.newBalance,
       newTier: result.newTier,
       tierUpgraded: result.tierUpgraded,
     };
@@ -83,29 +85,9 @@ export async function sendPointsEarnedNotification(params: {
   newBalance: number;
   orderId: number;
 }): Promise<void> {
-  try {
-    const merchant = await getMerchantById(params.merchantId);
-    if (!merchant) return;
-
-    const message = `🎉 مبروك ${params.customerName || 'عزيزي العميل'}!
-
-لقد حصلت على *${params.points} نقطة* من طلبك الأخير! ✨
-
-💰 رصيدك الحالي: *${params.newBalance} نقطة*
-
-يمكنك استبدال نقاطك بمكافآت رائعة! 🎁`;
-
-    await sendTextMessage(
-      merchant.id,
-      params.customerPhone,
-      // @ts-ignore
-      message
-    );
-
-    console.log('[Loyalty] Sent points earned notification to', params.customerPhone);
-  } catch (error) {
-    console.error('[Loyalty] Error sending points notification:', error);
-  }
+  // No current caller supplies a reviewed, tenant-scoped notification authorization.
+  // The previous global sender had an incompatible signature and still logged success.
+  throw new Error('loyalty:notification_authorization_required');
 }
 
 /**
@@ -117,41 +99,9 @@ export async function sendTierUpgradeNotification(params: {
   customerName?: string;
   newTier: any;
 }): Promise<void> {
-  try {
-    const merchant = await getMerchantById(params.merchantId);
-    if (!merchant) return;
-
-    const benefits = [];
-    if (params.newTier.discountPercentage > 0) {
-      benefits.push(`✨ خصم ${params.newTier.discountPercentage}% على جميع مشترياتك`);
-    }
-    if (params.newTier.freeShipping === 1) {
-      benefits.push(`🚚 شحن مجاني`);
-    }
-    if (params.newTier.priority > 0) {
-      benefits.push(`⭐ أولوية في الخدمة`);
-    }
-
-    const message = `🎊 تهانينا ${params.customerName || 'عزيزي العميل'}!
-
-لقد تمت ترقيتك إلى مستوى *${params.newTier.nameAr}* ${params.newTier.icon}!
-
-🎁 مزاياك الجديدة:
-${benefits.join('\n')}
-
-شكراً لولائك! نحن سعداء بخدمتك 💙`;
-
-    await sendTextMessage(
-      merchant.id,
-      params.customerPhone,
-      // @ts-ignore
-      message
-    );
-
-    console.log('[Loyalty] Sent tier upgrade notification to', params.customerPhone);
-  } catch (error) {
-    console.error('[Loyalty] Error sending tier upgrade notification:', error);
-  }
+  // No current caller supplies a reviewed, tenant-scoped notification authorization.
+  // The previous global sender had an incompatible signature and still logged success.
+  throw new Error('loyalty:notification_authorization_required');
 }
 
 /**
@@ -165,29 +115,9 @@ export async function sendRewardRedeemedNotification(params: {
   pointsSpent: number;
   newBalance: number;
 }): Promise<void> {
-  try {
-    const merchant = await getMerchantById(params.merchantId);
-    if (!merchant) return;
-
-    const message = `✅ تم استبدال المكافأة بنجاح!
-
-🎁 المكافأة: *${params.rewardTitle}*
-💎 النقاط المستخدمة: ${params.pointsSpent}
-💰 رصيدك الحالي: *${params.newBalance} نقطة*
-
-شكراً لك! نتمنى أن تستمتع بمكافأتك 🌟`;
-
-    await sendTextMessage(
-      merchant.id,
-      params.customerPhone,
-      // @ts-ignore
-      message
-    );
-
-    console.log('[Loyalty] Sent reward redeemed notification to', params.customerPhone);
-  } catch (error) {
-    console.error('[Loyalty] Error sending reward redeemed notification:', error);
-  }
+  // No current caller supplies a reviewed, tenant-scoped notification authorization.
+  // The previous global sender had an incompatible signature and still logged success.
+  throw new Error('loyalty:notification_authorization_required');
 }
 
 /**
@@ -227,7 +157,7 @@ export async function handleOrderCompleted(orderId: number): Promise<void> {
       customerPhone: order.customerPhone,
       customerName: order.customerName || undefined,
       points: result.points,
-      newBalance: result.points, // سيتم تحديثه من قاعدة البيانات
+      newBalance: result.newBalance,
       orderId: order.id,
     });
 
@@ -256,15 +186,12 @@ export async function getCustomerLoyaltyInfo(merchantId: number, customerPhone: 
       return 'عذراً، نظام الولاء غير مفعل حالياً.';
     }
 
-    let customerPoints = await loyaltyDb.getCustomerPoints(merchantId, customerPhone);
+    const customerPoints = await loyaltyDb.getCustomerPoints(merchantId, customerPhone);
     
-    if (!customerPoints) {
-      customerPoints = await loyaltyDb.initializeCustomerPoints(merchantId, customerPhone);
-    }
 
     let tier = null;
     if (customerPoints?.currentTierId) {
-      tier = await loyaltyDb.getLoyaltyTierById(customerPoints.currentTierId);
+      tier = await loyaltyDb.getLoyaltyTierById(customerPoints.currentTierId,merchantId);
     }
 
     const message = `💎 *معلومات نقاط الولاء*
@@ -298,7 +225,7 @@ export async function getAvailableRewardsInfo(merchantId: number, customerPhone:
     const customerPoints = await loyaltyDb.getCustomerPoints(merchantId, customerPhone);
     const currentPoints = customerPoints?.totalPoints || 0;
 
-    const rewards = await loyaltyDb.getLoyaltyRewards(merchantId, true);
+    const rewards = (await loyaltyDb.getLoyaltyRewards(merchantId, true)).filter(r=>rewardAvailable(r));
 
     if (rewards.length === 0) {
       return 'لا توجد مكافآت متاحة حالياً.';
@@ -308,7 +235,7 @@ export async function getAvailableRewardsInfo(merchantId: number, customerPhone:
 
     rewards.forEach((reward, index) => {
       const canRedeem = currentPoints >= reward.pointsCost;
-      const status = canRedeem ? '✅' : '🔒';
+      const status = canRedeem ? 'رصيد كافٍ؛ راجع شروط الاستبدال' : '🔒';
       
       message += `${index + 1}. ${status} *${reward.titleAr}*\n`;
       message += `   💎 ${reward.pointsCost} نقطة\n`;
