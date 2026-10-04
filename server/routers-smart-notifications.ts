@@ -1,220 +1,120 @@
 import { router, protectedProcedure } from "./_core/trpc";
-import { TRPCError } from '@trpc/server';
-import { z } from 'zod';
-import {
-  createNotification,
-  getAllMerchants,
-  getMerchantActiveSubscription,
-  getMerchantCurrentUsage,
-  getPlanById,
-} from './db';
-
-// Admin-only procedure
-const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
-  if (ctx.user.role !== 'admin') {
-    throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
+import { TRPCError } from "@trpc/server";
+import { z } from "zod";
+import { collectUsageAlertEvidence } from "./notifications/usage-alert-evidence";
+import { writeUsageAlert } from "./notifications/usage-alert-write";
+const adminProcedure = protectedProcedure
+  .use(({ ctx, next }) => {
+    if (ctx.user.role !== "admin")
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "Admin access required",
+      });
+    return next({ ctx });
+  })
+  .input(z.void());
+async function readEvidence() {
+  try {
+    return await collectUsageAlertEvidence();
+  } catch {
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Usage notification source unavailable",
+    });
   }
-  return next({ ctx });
-});
-
-// @ts-ignore
-export const smartNotificationsRouter = router({
-  // إرسال إشعارات نهاية الفترة التجريبية
-  sendTrialEndingNotifications: adminProcedure.mutation(async () => {
-    const merchants = await getAllMerchants();
-    const notifications = [];
-    const now = Date.now();
-    const threeDaysInMs = 3 * 24 * 60 * 60 * 1000;
-
-    for (const merchant of merchants) {
-      const subscription = await getMerchantActiveSubscription(merchant.id);
-      
-      if (!subscription || subscription.status !== 'trial') continue;
-
-      const trialEndsAt = new Date(subscription.trialEndsAt!).getTime();
-      const timeUntilEnd = trialEndsAt - now;
-
-      // إرسال إشعار قبل 3 أيام من نهاية التجربة
-      if (timeUntilEnd > 0 && timeUntilEnd <= threeDaysInMs) {
-        const daysLeft = Math.ceil(timeUntilEnd / (24 * 60 * 60 * 1000));
-        
-        const notification = await createNotification({
-          userId: merchant.userId,
-          type: 'warning',
-          title: 'انتهاء الفترة التجريبية قريباً',
-          message: `ستنتهي فترتك التجريبية خلال ${daysLeft} أيام. قم بالترقية الآن للاستمرار في استخدام جميع المزايا.`,
-          link: '/merchant/subscription-plans',
+}
+type Evidence = Awaited<ReturnType<typeof readEvidence>>;
+function coverage(evidence: Evidence) {
+  const incompleteMerchants = evidence.checked.filter(
+    row => !row.complete
+  ).length;
+  return {
+    totalMerchants: evidence.totalMerchants,
+    unavailableMerchants: evidence.unavailable,
+    incompleteMerchants,
+    complete: evidence.unavailable === 0 && incompleteMerchants === 0,
+  };
+}
+async function dispatch(evidence: Evidence, kind: "trial" | "usage" | "both") {
+  const notifications: number[] = [];
+  let trialNotifications = 0,
+    usageNotifications = 0;
+  for (const row of evidence.checked) {
+    const write = async (notice: Parameters<typeof writeUsageAlert>[2]) => {
+      try {
+        const id = await writeUsageAlert(row.ownerId, row.merchantId, notice);
+        if (!Number.isSafeInteger(id) || id < 1 || id > 2147483647)
+          throw Error("Invalid receipt");
+        notifications.push(id);
+      } catch {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            "Usage notification result unavailable; review before retrying",
         });
-        
-        notifications.push(notification);
       }
-    }
-
-    return {
-      success: true,
-      count: notifications.length,
-      notifications,
     };
-  }),
-
-  // إرسال إشعارات عند وصول 90% من الحدود
-  sendUsageLimitNotifications: adminProcedure.mutation(async () => {
-    const merchants = await getAllMerchants();
-    const notifications = [];
-
-    for (const merchant of merchants) {
-      const subscription = await getMerchantActiveSubscription(merchant.id);
-      if (!subscription) continue;
-
-      const plan = await getPlanById(subscription.planId) as any;
-      if (!plan) continue;
-
-      const usage = await getMerchantCurrentUsage(merchant.id) as any;
-      if (!usage) continue;
-
-      const limits = [
-        {
-          name: 'المحادثات',
-          current: usage.conversationsUsed,
-          limit: plan.conversationLimit,
-          link: '/merchant/conversations',
-        },
-        {
-          name: 'الرسائل الصوتية',
-          current: usage.voiceMessagesUsed,
-          limit: plan.voiceMessageLimit,
-          link: '/merchant/conversations',
-        },
-        {
-          name: 'الحملات',
-          current: usage.campaignsUsed,
-          limit: plan.campaignLimit,
-          link: '/merchant/campaigns',
-        },
-        {
-          name: 'المنتجات',
-          current: usage.productsUsed,
-          limit: plan.productLimit,
-          link: '/merchant/products',
-        },
-      ];
-
-      for (const item of limits) {
-        // تجاهل الحدود غير المحدودة
-        if (item.limit === -1) continue;
-
-        const percentage = (item.current / item.limit) * 100;
-
-        // إرسال إشعار عند الوصول إلى 90%
-        if (percentage >= 90 && percentage < 100) {
-          const notification = await createNotification({
-            userId: merchant.userId,
-            type: 'warning',
-            title: `اقتراب من حد ${item.name}`,
-            message: `لقد استخدمت ${percentage.toFixed(0)}% من حد ${item.name} الخاص بك (${item.current}/${item.limit}). قم بالترقية لزيادة الحد.`,
-            link: item.link,
-          });
-          
-          notifications.push(notification);
-        }
-        
-        // إرسال إشعار عند الوصول إلى 100%
-        if (percentage >= 100) {
-          const notification = await createNotification({
-            userId: merchant.userId,
-            type: 'error',
-            title: `وصلت إلى حد ${item.name}`,
-            message: `لقد وصلت إلى الحد الأقصى لـ ${item.name} (${item.limit}). قم بالترقية الآن للاستمرار.`,
-            link: '/merchant/subscription-plans',
-          });
-          
-          notifications.push(notification);
-        }
+    if (kind !== "usage" && row.trialDays !== null) {
+      await write({
+        type: "warning",
+        title: "انتهاء الفترة التجريبية قريباً",
+        message: `المتجر رقم ${row.merchantId}: تنتهي الفترة التجريبية المسجلة خلال ${row.trialDays} أيام. راجع حالة الاشتراك والباقات المتاحة.`,
+        link: "/merchant/subscription/plans",
+      });
+      trialNotifications++;
+    }
+    if (kind !== "trial")
+      for (const alert of row.alerts) {
+        const reached = alert.percentage >= 100;
+        await write({
+          type: reached ? "error" : "warning",
+          title: reached
+            ? `وصل العداد المسجل لحد ${alert.name}`
+            : `اقتراب من حد ${alert.name}`,
+          message: `المتجر رقم ${row.merchantId}: ${alert.name} ${alert.used}/${alert.limit}، بنسبة ${Math.round(alert.percentage)}% وفق قراءة الاشتراك. راجع الأرقام؛ هذا التنبيه ليس تفويضاً للتشغيل أو دليلاً على المبيعات.`,
+          link: "/merchant/usage",
+        });
+        usageNotifications++;
       }
-    }
-
-    return {
-      success: true,
-      count: notifications.length,
-      notifications,
-    };
-  }),
-
-  // جدولة الإشعارات التلقائية (يتم استدعاؤها من cron job)
-  // @ts-ignore
-  scheduleSmartNotifications: adminProcedure.mutation(async () => {
-    // إرسال إشعارات نهاية الفترة التجريبية
-    // @ts-ignore
-    const trialNotifications = await smartNotificationsRouter.createCaller({
-      user: { id: 1, role: 'admin' } as any,
-    }).sendTrialEndingNotifications();
-
-    // إرسال إشعارات حدود الاستخدام
-    const usageNotifications = await smartNotificationsRouter.createCaller({
-      user: { id: 1, role: 'admin' } as any,
-    }).sendUsageLimitNotifications();
-
-    return {
-      success: true,
-      trialNotifications: trialNotifications.count,
-      usageNotifications: usageNotifications.count,
-      total: trialNotifications.count + usageNotifications.count,
-    };
-  }),
-
-  // الحصول على إحصائيات الإشعارات
+  }
+  return {
+    success: true as const,
+    count: notifications.length,
+    notifications,
+    trialNotifications,
+    usageNotifications,
+    total: notifications.length,
+    ...coverage(evidence),
+  };
+}
+export const smartNotificationsRouter = router({
+  sendTrialEndingNotifications: adminProcedure.mutation(async () =>
+    dispatch(await readEvidence(), "trial")
+  ),
+  sendUsageLimitNotifications: adminProcedure.mutation(async () =>
+    dispatch(await readEvidence(), "usage")
+  ),
+  scheduleSmartNotifications: adminProcedure.mutation(async () =>
+    dispatch(await readEvidence(), "both")
+  ),
   getNotificationStats: adminProcedure.query(async () => {
-    const merchants = await getAllMerchants();
-    let trialEndingSoon = 0;
-    let usageAbove90 = 0;
-    let usageAt100 = 0;
-
-    for (const merchant of merchants) {
-      const subscription = await getMerchantActiveSubscription(merchant.id);
-      
-      if (subscription && subscription.status === 'trial' && subscription.trialEndsAt) {
-        const now = Date.now();
-        const trialEndsAt = new Date(subscription.trialEndsAt).getTime();
-        const timeUntilEnd = trialEndsAt - now;
-        const threeDaysInMs = 3 * 24 * 60 * 60 * 1000;
-
-        if (timeUntilEnd > 0 && timeUntilEnd <= threeDaysInMs) {
-          trialEndingSoon++;
-        }
-      }
-
-      if (subscription) {
-        const plan = await getPlanById(subscription.planId) as any;
-        const usage = await getMerchantCurrentUsage(merchant.id) as any;
-
-        if (plan && usage) {
-          const limits = [
-            { current: usage.conversationsUsed, limit: plan.conversationLimit },
-            { current: usage.voiceMessagesUsed, limit: plan.voiceMessageLimit },
-            { current: usage.campaignsUsed, limit: plan.campaignLimit },
-            { current: usage.productsUsed, limit: plan.productLimit },
-          ];
-
-          for (const item of limits) {
-            if (item.limit === -1) continue;
-            const percentage = (item.current / item.limit) * 100;
-            
-            if (percentage >= 90 && percentage < 100) {
-              usageAbove90++;
-            }
-            if (percentage >= 100) {
-              usageAt100++;
-            }
-          }
-        }
+    const evidence = await readEvidence();
+    let trialEndingSoon = 0,
+      usageAbove90 = 0,
+      usageAt100 = 0;
+    for (const row of evidence.checked) {
+      if (row.trialDays !== null) trialEndingSoon++;
+      for (const alert of row.alerts) {
+        if (alert.percentage >= 100) usageAt100++;
+        else usageAbove90++;
       }
     }
-
     return {
       trialEndingSoon,
       usageAbove90,
       usageAt100,
       totalPending: trialEndingSoon + usageAbove90 + usageAt100,
+      ...coverage(evidence),
     };
   }),
 });

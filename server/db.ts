@@ -11,7 +11,6 @@ import {
   eq, ne, and, or, desc, gte, lte, lt, gt, sql, like, isNull, inArray, notInArray, type InferSelectModel, type InferInsertModel
 } from "drizzle-orm";
 import { hashSessionId } from './_core/session-security';
-import { buildUsageMetric } from './usage-metrics';
 import {
   acquireWhatsAppInstanceLock,
   activeWhatsAppPhoneIdentityHash,
@@ -9778,75 +9777,6 @@ export async function getCouponUsageLogsByCoupon(couponId: number) {
     .from(schema.couponUsageLog)
     .where(eq(schema.couponUsageLog.couponId, couponId))
     .orderBy(desc(schema.couponUsageLog.usedAt));
-}
-
-// ============================================
-// Usage Statistics Functions
-// ============================================
-
-/**
- * Get current usage for a merchant
- */
-export async function getMerchantCurrentUsage(merchantId: number) {
-  const db = await getDb();
-  if (!db) throw new Error("Usage database unavailable");
-
-  // Get subscription and plan
-  const subscription = await getMerchantCurrentSubscription(merchantId);
-  if (!subscription || !subscription.planId) return null;
-
-  const plan = await getSubscriptionPlanById(subscription.planId);
-  if (!plan) return null;
-
-  // Get current counts
-  const customerCount = await getCustomerCountByMerchant(merchantId);
-  const whatsappNumbers = await getWhatsAppInstancesByMerchantId(merchantId);
-  const products = await getProductsByMerchantId(merchantId);
-
-  // Get campaigns this month
-  const startOfMonth = new Date();
-  startOfMonth.setDate(1);
-  startOfMonth.setHours(0, 0, 0, 0);
-
-  const campaigns = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(schema.campaigns)
-    .where(
-      and(
-        eq(schema.campaigns.merchantId, merchantId),
-        gte(schema.campaigns.createdAt, startOfMonth.toISOString())
-      )
-    );
-
-  const campaignCount = Number(campaigns[0]?.count || 0);
-
-  // Get AI messages this month (approximate from messages table)
-  const aiMessages = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(schema.messages)
-    .innerJoin(schema.conversations, eq(schema.messages.conversationId, schema.conversations.id))
-    .where(
-      and(
-        eq(schema.conversations.merchantId, merchantId),
-        eq(schema.messages.direction, 'outgoing'),
-        gte(schema.messages.createdAt, startOfMonth.toISOString())
-      )
-    );
-
-  const aiMessageCount = Number(aiMessages[0]?.count || 0);
-
-  return {
-    customers: buildUsageMetric(customerCount, plan.maxCustomers, 100),
-    whatsappNumbers: buildUsageMetric(whatsappNumbers.length, plan.maxWhatsAppNumbers, 1),
-    products: buildUsageMetric(products.length, (plan as any).maxProducts, 100),
-    campaigns: buildUsageMetric(campaignCount, (plan as any).maxCampaignsPerMonth, 10),
-    aiMessages: buildUsageMetric(aiMessageCount, (plan as any).aiMessagesPerMonth, 1000),
-    plan: {
-      id: plan.id,
-      name: plan.name,
-      billingCycle: (plan as any).billingCycle ?? 'monthly',
-    },
-  };
 }
 
 // ============================================
