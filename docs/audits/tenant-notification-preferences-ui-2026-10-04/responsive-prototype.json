@@ -1,0 +1,58 @@
+[
+  {
+    "target": 320,
+    "language": "ar",
+    "heading": "إشعارات تناسب يومك",
+    "scrollWidth": 320,
+    "width": 320
+  },
+  {
+    "target": 390,
+    "language": "ar",
+    "heading": "إشعارات تناسب يومك",
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "target": 768,
+    "language": "ar",
+    "heading": "إشعارات تناسب يومك",
+    "scrollWidth": 768,
+    "width": 798
+  },
+  {
+    "target": 1440,
+    "language": "ar",
+    "heading": "إشعارات تناسب يومك",
+    "scrollWidth": 1440,
+    "width": 1470
+  },
+  {
+    "target": 320,
+    "language": "en",
+    "heading": "Notifications that fit your day",
+    "scrollWidth": 320,
+    "width": 320
+  },
+  {
+    "target": 390,
+    "language": "en",
+    "heading": "Notifications that fit your day",
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "target": 768,
+    "language": "en",
+    "heading": "Notifications that fit your day",
+    "scrollWidth": 768,
+    "width": 798
+  },
+  {
+    "target": 1440,
+    "language": "en",
+    "heading": "Notifications that fit your day",
+    "scrollWidth": 1440,
+    "width": 1470
+  }
+]

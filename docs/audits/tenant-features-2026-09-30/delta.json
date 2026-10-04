@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-03T23:23:39.952Z",
+  "generatedAt": "2026-10-04T00:34:36.878Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 476,
-      "controls": 2703
+      "files": 479,
+      "controls": 2693
     }
   },
   "addedFiles": [
@@ -292,6 +292,9 @@
     "client/src/_core/hooks/useAuth.ts",
     "client/src/components/merchant/PlatformIntegrationsWorkspace.tsx",
     "client/src/components/merchant/CalendarConnectionCard.tsx",
+    "client/src/components/merchant/NotificationPreferenceWorkspace.tsx",
+    "client/src/lib/notification-preference-labels.ts",
+    "client/src/lib/notification-preference-workspace.ts",
     "client/src/components/merchant/ReportsWorkspace.tsx",
     "client/src/lib/report-export.ts",
     "client/src/lib/merchant-report-document.ts",
@@ -409,6 +412,7 @@
     "client/src/pages/SheetsSettings.tsx",
     "client/src/pages/SheetsInventory.tsx",
     "client/src/pages/PlatformIntegrations.tsx",
+    "client/src/pages/NotificationSettings.tsx",
     "client/src/pages/Reports.tsx",
     "client/src/pages/merchant/MySubscription.tsx",
     "client/src/pages/merchant/SubscriptionPlans.tsx",
@@ -2313,11 +2317,21 @@
     {
       "route": "/merchant/notification-settings",
       "controlsBefore": 17,
-      "controlsNow": 17,
-      "removedQueries": [],
-      "addedQueries": [],
-      "removedMutations": [],
-      "addedMutations": []
+      "controlsNow": 7,
+      "removedQueries": [
+        "notificationPreferences.get"
+      ],
+      "addedQueries": [
+        "auth.me",
+        "merchants.getCurrent",
+        "notificationPreferences.workspace"
+      ],
+      "removedMutations": [
+        "notificationPreferences.update"
+      ],
+      "addedMutations": [
+        "notificationPreferences.saveReviewed"
+      ]
     },
     {
       "route": "/merchant/currency-settings",

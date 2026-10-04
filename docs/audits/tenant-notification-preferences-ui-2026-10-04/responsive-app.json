@@ -1,0 +1,30 @@
+[
+  {
+    "target": 320,
+    "form": true,
+    "heading": "إشعارات تناسب يومك",
+    "scrollWidth": 290,
+    "width": 290
+  },
+  {
+    "target": 390,
+    "form": true,
+    "heading": "إشعارات تناسب يومك",
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "target": 768,
+    "form": true,
+    "heading": "إشعارات تناسب يومك",
+    "scrollWidth": 768,
+    "width": 768
+  },
+  {
+    "target": 1440,
+    "form": true,
+    "heading": "إشعارات تناسب يومك",
+    "scrollWidth": 1440,
+    "width": 1440
+  }
+]
