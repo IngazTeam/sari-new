@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-04T11:30:30.828Z",
+  "generatedAt": "2026-10-04T11:49:14.633Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,7 +10,7 @@
     },
     "after": {
       "routes": 126,
-      "files": 517,
+      "files": 518,
       "controls": 2768
     }
   },
@@ -36,6 +36,9 @@
     "client/src/components/merchant/DashboardSources.tsx",
     "client/src/components/merchant/DashboardAnalytics.tsx",
     "client/src/components/merchant/AssistantScheduleStatus.tsx",
+    "client/src/lib/subscription-notice.ts",
+    "client/src/lib/usage-workspace-view.ts",
+    "client/src/lib/subscription-billing-view.ts",
     "client/src/lib/learning-policy-review-version.ts",
     "client/src/lib/learning-policy-evaluation-state.ts",
     "client/src/lib/sales-experiment-form.ts",
@@ -324,8 +327,6 @@
     "client/src/lib/merchant-report-document.ts",
     "client/src/components/merchant/MerchantReportView.tsx",
     "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-    "client/src/lib/usage-workspace-view.ts",
-    "client/src/lib/subscription-billing-view.ts",
     "client/src/lib/subscription-billing-labels.ts",
     "client/src/components/merchant/UsageWorkspace.tsx",
     "client/src/components/merchant/UsageWorkspacePage.tsx",
@@ -473,7 +474,8 @@
     "client/src/pages/CustomerDetails.tsx",
     "client/src/components/merchant/MerchantShell.tsx",
     "client/src/components/MerchantSelector.tsx",
-    "client/src/components/NotificationBell.tsx"
+    "client/src/components/NotificationBell.tsx",
+    "client/src/components/SubscriptionBadge.tsx"
   ],
   "noLongerReachable": [
     {
@@ -574,12 +576,16 @@
       "controlsNow": 187,
       "removedQueries": [
         "dashboard.getSummary",
-        "sariBrain.getIntegrationSyncStatus"
+        "sariBrain.getIntegrationSyncStatus",
+        "merchantSubscription.getCurrentSubscription"
       ],
       "addedQueries": [
         "dashboard.workspace",
         "botSettings.shouldRespond",
-        "dashboard.sources"
+        "dashboard.sources",
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "merchantSubscription.workspace"
       ],
       "removedMutations": [],
       "addedMutations": []

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-04T11:30:30.828Z",
+  "generatedAt": "2026-10-04T11:49:14.633Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -1352,37 +1352,114 @@
     },
     {
       "file": "client/src/components/TrialBanner.tsx",
-      "hash": "6dfad53dfd19",
-      "queries": [
-        "merchantSubscription.getCurrentSubscription"
-      ],
+      "hash": "e6da56395c34",
+      "queries": [],
       "mutations": [],
       "imperativeReads": [],
       "browserRequests": [],
       "sections": [
         {
           "label": "",
-          "line": 87,
+          "line": 69,
           "tag": "h2"
         }
       ],
       "choices": [],
       "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [
+        "client/src/lib/dashboard-labels.ts",
+        "client/src/lib/subscription-notice.ts"
+      ],
+      "controlCount": 7
+    },
+    {
+      "file": "client/src/lib/subscription-notice.ts",
+      "hash": "3f9cc7755b2b",
+      "queries": [
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "merchantSubscription.workspace"
+      ],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
       "queryStates": [
         {
-          "query": "merchantSubscription.getCurrentSubscription",
-          "binding": "query",
-          "line": 14,
+          "query": "auth.me",
+          "binding": "user",
+          "line": 43,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
+        },
+        {
+          "query": "merchants.workspaceIdentity",
+          "binding": "identity",
+          "line": 44,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": "!!user.data?.id && !user.error && !user.isFetching"
+        },
+        {
+          "query": "merchantSubscription.workspace",
+          "binding": "query",
+          "line": 56,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": "ready"
         }
       ],
       "conditions": [],
       "imports": [
-        "client/src/lib/dashboard-labels.ts"
+        "client/src/lib/usage-workspace-view.ts",
+        "client/src/lib/subscription-billing-view.ts"
       ],
-      "controlCount": 7
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/lib/usage-workspace-view.ts",
+      "hash": "5e6588971922",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [
+        {
+          "name": "usageViews",
+          "line": 2,
+          "values": [
+            "subscription",
+            "resources",
+            "history"
+          ]
+        }
+      ],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/lib/subscription-billing-view.ts",
+      "hash": "fc0c939d9971",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 0
     },
     {
       "file": "client/src/components/LearningEvidenceCard.tsx",
@@ -20010,46 +20087,6 @@
       "controlCount": 19
     },
     {
-      "file": "client/src/lib/usage-workspace-view.ts",
-      "hash": "5e6588971922",
-      "queries": [],
-      "mutations": [],
-      "imperativeReads": [],
-      "browserRequests": [],
-      "sections": [],
-      "choices": [
-        {
-          "name": "usageViews",
-          "line": 2,
-          "values": [
-            "subscription",
-            "resources",
-            "history"
-          ]
-        }
-      ],
-      "handlers": [],
-      "queryStates": [],
-      "conditions": [],
-      "imports": [],
-      "controlCount": 0
-    },
-    {
-      "file": "client/src/lib/subscription-billing-view.ts",
-      "hash": "fc0c939d9971",
-      "queries": [],
-      "mutations": [],
-      "imperativeReads": [],
-      "browserRequests": [],
-      "sections": [],
-      "choices": [],
-      "handlers": [],
-      "queryStates": [],
-      "conditions": [],
-      "imports": [],
-      "controlCount": 0
-    },
-    {
       "file": "client/src/lib/subscription-billing-labels.ts",
       "hash": "7e0606badd0c",
       "queries": [],
@@ -21762,37 +21799,21 @@
     },
     {
       "file": "client/src/components/SubscriptionBadge.tsx",
-      "hash": "42595eb8aec8",
-      "queries": [
-        "merchantSubscription.getCurrentSubscription",
-        "merchantSubscription.getDaysRemaining"
-      ],
+      "hash": "a47c52964e7c",
+      "queries": [],
       "mutations": [],
       "imperativeReads": [],
       "browserRequests": [],
       "sections": [],
       "choices": [],
       "handlers": [],
-      "queryStates": [
-        {
-          "query": "merchantSubscription.getCurrentSubscription",
-          "binding": "{ data: subscription }",
-          "line": 10,
-          "errorSignal": false,
-          "loadingSignal": false,
-          "enabled": null
-        },
-        {
-          "query": "merchantSubscription.getDaysRemaining",
-          "binding": "{ data: daysData }",
-          "line": 11,
-          "errorSignal": false,
-          "loadingSignal": false,
-          "enabled": null
-        }
-      ],
+      "queryStates": [],
       "conditions": [],
-      "imports": [],
+      "imports": [
+        "client/src/lib/subscription-notice.ts",
+        "client/src/lib/subscription-billing-labels.ts",
+        "client/src/lib/dashboard-labels.ts"
+      ],
       "controlCount": 1
     },
     {
@@ -22042,6 +22063,9 @@
         "client/src/components/merchant/AssistantScheduleStatus.tsx",
         "client/src/components/DashboardSkeleton.tsx",
         "client/src/components/TrialBanner.tsx",
+        "client/src/lib/subscription-notice.ts",
+        "client/src/lib/usage-workspace-view.ts",
+        "client/src/lib/subscription-billing-view.ts",
         "client/src/components/LearningEvidenceCard.tsx",
         "client/src/components/LearningPolicyReview.tsx",
         "client/src/lib/learning-policy-review-version.ts",
@@ -22101,13 +22125,13 @@
         "4830a67f0e26",
         "50aaaa44424a",
         "60ae9ba351d1",
-        "c07997c72a49",
-        "9ad0ae38f581",
-        "cd61ff94e057",
-        "bdb5bb0eca50",
-        "17a09cc2ad1d",
-        "6f5e9f78d7b6",
-        "2b83b18069bb",
+        "a63b257d7fd1",
+        "6fc06d2f4e83",
+        "662f19555288",
+        "88b85822ae0f",
+        "c6ad8e7aa868",
+        "ffc027868aed",
+        "537bbdbbaff9",
         "876057155644",
         "d817bd30f9fb",
         "21ad31056530",
@@ -22262,7 +22286,9 @@
         "botSettings.shouldRespond",
         "dashboard.sources",
         "dashboard.getAiInsights",
-        "merchantSubscription.getCurrentSubscription",
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "merchantSubscription.workspace",
         "sariBrain.getLearningDashboard",
         "sariBrain.getLearningPolicyReview",
         "sariBrain.getLearningPolicyCandidate",
@@ -33664,15 +33690,15 @@
       "review": "source-inventoried"
     },
     {
-      "id": "c07997c72a49",
+      "id": "a63b257d7fd1",
       "file": "client/src/components/TrialBanner.tsx",
-      "line": 39,
+      "line": 21,
       "tag": "Button",
       "role": "",
       "kind": "action",
       "label": "retry",
       "section": "TrialBanner",
-      "binding": "() => void query.refetch()",
+      "binding": "refresh",
       "type": "text",
       "options": [],
       "min": "",
@@ -33685,9 +33711,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "9ad0ae38f581",
+      "id": "6fc06d2f4e83",
       "file": "client/src/components/TrialBanner.tsx",
-      "line": 42,
+      "line": 24,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -33706,9 +33732,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "cd61ff94e057",
+      "id": "662f19555288",
       "file": "client/src/components/TrialBanner.tsx",
-      "line": 88,
+      "line": 70,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -33727,9 +33753,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "bdb5bb0eca50",
+      "id": "88b85822ae0f",
       "file": "client/src/components/TrialBanner.tsx",
-      "line": 117,
+      "line": 100,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -33748,9 +33774,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "17a09cc2ad1d",
+      "id": "c6ad8e7aa868",
       "file": "client/src/components/TrialBanner.tsx",
-      "line": 118,
+      "line": 101,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -33769,9 +33795,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "6f5e9f78d7b6",
+      "id": "ffc027868aed",
       "file": "client/src/components/TrialBanner.tsx",
-      "line": 120,
+      "line": 103,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -33790,9 +33816,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "2b83b18069bb",
+      "id": "537bbdbbaff9",
       "file": "client/src/components/TrialBanner.tsx",
-      "line": 121,
+      "line": 104,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -94851,22 +94877,22 @@
       "review": "source-inventoried"
     },
     {
-      "id": "244f2514e759",
+      "id": "be80952e306e",
       "file": "client/src/components/SubscriptionBadge.tsx",
-      "line": 48,
-      "tag": "Calendar",
+      "line": 28,
+      "tag": "Link",
       "role": "",
-      "kind": "field",
+      "kind": "action",
       "label": "",
       "section": "SubscriptionBadge",
-      "binding": "",
+      "binding": "/merchant/my-subscription",
       "type": "text",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": false,
+      "conditional": true,
       "conditions": [],
       "disabled": "",
       "review": "source-inventoried"

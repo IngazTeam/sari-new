@@ -2,7 +2,7 @@
 
 هذا حصر مصدر قابل لإعادة التوليد، وليس ادعاءً بأن كل مسار عمل اختُبر أو أُعيد تصميمه. يشمل المكونات الفرعية المحلية، الحقول، الأزرار، النوافذ، التبويبات، واجهات القراءة والتعديل. العناصر الديناميكية تحتاج مراجعة إضافية.
 
-- 126 مسارًا مسجلًا، 517 ملف واجهة متصلًا، 2768 عنصر تحكم في المصدر.
+- 126 مسارًا مسجلًا، 518 ملف واجهة متصلًا، 2768 عنصر تحكم في المصدر.
 - 0 رابطًا حرفيًا غير مطابق، و0 ملف صفحة غير متصل بالمسارات المحصورة.
 
 | الصفحة | الملفات | عناصر التحكم | القراءة / التعديل | موك أب للصفحة |
@@ -10,7 +10,7 @@
 | /merchant/setup-wizard — الإعداد الأولي | 28 | 106 | 4 / 8 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant — مدخل لوحة التاجر | 0 | 0 | 0 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/ — مدخل لوحة التاجر | 0 | 0 | 0 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/dashboard — نظرة عامة | 26 | 187 | 29 / 12 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/dashboard — نظرة عامة | 29 | 187 | 31 / 12 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/ai-hub — مركز المساعد | 1 | 1 | 0 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/analytics-hub — مركز التحليلات | 1 | 3 | 0 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/campaigns — الحملات | 4 | 36 | 4 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -371,13 +371,13 @@
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 39 | Button | retry | TrialBanner |
-| 42 | Link | manage | TrialBanner |
-| 88 | Link | manage | TrialBanner |
-| 117 | Button | plans | TrialBanner |
-| 118 | Link | plans | TrialBanner |
-| 120 | Button | compare | TrialBanner |
-| 121 | Link | compare | TrialBanner |
+| 21 | Button | retry | TrialBanner |
+| 24 | Link | manage | TrialBanner |
+| 70 | Link | manage | TrialBanner |
+| 100 | Button | plans | TrialBanner |
+| 101 | Link | plans | TrialBanner |
+| 103 | Button | compare | TrialBanner |
+| 104 | Link | compare | TrialBanner |
 
 ## client/src/components/LearningEvidenceCard.tsx
 
@@ -4203,7 +4203,7 @@
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 48 | Calendar | تسمية ديناميكية / تحتاج مراجعة | SubscriptionBadge |
+| 28 | Link | تسمية ديناميكية / تحتاج مراجعة | SubscriptionBadge |
 
 ## client/src/components/ErrorBoundary.tsx
 

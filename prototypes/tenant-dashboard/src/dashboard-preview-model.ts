@@ -1,3 +1,4 @@
+import { SubscriptionBillingPreviewStore } from "./subscription-billing-preview-model";
 import {
   dashboardWorkspaceSchema,
   type DashboardWorkspace,
@@ -38,7 +39,9 @@ export const dashboardQueries = [
   "campaigns.getStats",
   "reviews.getStats",
   "botSettings.shouldRespond",
-  "merchantSubscription.getCurrentSubscription",
+  "auth.me",
+  "merchants.workspaceIdentity",
+  "merchantSubscription.workspace",
   "sariBrain.getLearningDashboard",
 ] as const;
 type Query = (typeof dashboardQueries)[number];
@@ -136,6 +139,7 @@ export class DashboardPreviewModel {
   private requested = new Set<string>();
   private failed = new Set<string>();
   private readonly startedAt = Date.now();
+  private billingSnapshots = new Map<string, ReturnType<SubscriptionBillingPreviewStore["summary"]>>();
   requests = 0;
   constructor(
     readonly merchantId = 198,
@@ -295,22 +299,22 @@ export class DashboardPreviewModel {
           checkedAt: "2026-10-01T12:00:00Z",
         };
         break;
-      case "merchantSubscription.getCurrentSubscription":
-        data = empty
-          ? null
-          : {
-              id: this.merchantId,
-              status: mode.startsWith("trial") ? "trial" : "active",
-              endDate:
-                mode === "trial-unknown"
-                  ? null
-                  : new Date(
-                      this.startedAt +
-                        (mode === "trial-expired" ? -1000 : 172800000)
-                    ).toISOString(),
-              trialEndsAt: null,
-            };
-        break;
+      case "auth.me": data = { id: this.merchantId + 1000 }; break;
+      case "merchants.workspaceIdentity": data = { id: this.merchantId, actorId: this.merchantId + 1000 }; break;
+      case "merchantSubscription.workspace": {
+        if (!this.billingSnapshots.has(mode)) {
+          const snapshot = new SubscriptionBillingPreviewStore(this.merchantId + 1000, mode === 'foreign' ? 999 : this.merchantId, new Date(this.startedAt).toISOString(), () => empty ? 'empty' : 'ready').summary();
+          if (snapshot.subscription) {
+            snapshot.subscription.endDate = new Date(this.startedAt + 172800000).toISOString();
+            snapshot.subscription.daysRemaining = 2;
+            if (mode.startsWith('trial')) { snapshot.state = 'trial'; snapshot.subscription.recordedStatus = 'trial'; }
+            if (mode === 'trial-expired') { snapshot.state = 'expired'; snapshot.subscription.endDate = new Date(this.startedAt - 1000).toISOString(); snapshot.subscription.daysRemaining = 0; }
+            if (mode === 'trial-unknown') { snapshot.state = 'unknown'; snapshot.subscription.endDate = null; snapshot.subscription.daysRemaining = null; }
+          }
+          this.billingSnapshots.set(mode, snapshot);
+        }
+        data = this.billingSnapshots.get(mode); break;
+      }
       case "sariBrain.getLearningDashboard":
         data = {
           totalConversations: empty ? 0 : 24,
@@ -349,7 +353,7 @@ export class DashboardPreviewModel {
       (!insights && mode === "failure" && name !== "merchants.getCurrent") ||
       (mode === "store-failure" && name === "merchants.getCurrent") ||
       (mode === "subscription-failed" &&
-        name === "merchantSubscription.getCurrentSubscription") ||
+        name === "merchantSubscription.workspace") ||
       (mode === "schedule-failed" && name === "botSettings.shouldRespond") ||
       (mode === "stale" && name !== "merchants.getCurrent" && !insights);
     return {
@@ -359,6 +363,8 @@ export class DashboardPreviewModel {
         this.pending.has(key) ||
         (mode === "loading" && name === "merchants.getCurrent"),
       isError: blocked || this.failed.has(key),
+      error: blocked || this.failed.has(key) ? Error("Local sample unavailable") : null,
+      dataUpdatedAt: this.startedAt,
     };
   }
   refetch(name: Query, input: any = {}) {

@@ -34,11 +34,8 @@ import {
   getMerchantAddonById,
   getMerchantByUserId,
   getMerchantCurrentSubscription,
-  getMerchantDaysRemaining,
-  getMerchantPaymentTransactions,
   getMerchantSubscriptionStats,
   getPaymentStats,
-  getPaymentTransactionById,
   getPaymentTransactionByTapChargeId,
   getSubscriptionAddonById,
   getSubscriptionPlanById,
@@ -51,7 +48,6 @@ import {
 } from '../db';
 import { calculateProration } from "../_core/subscriptionManager";
 import { cancelCurrentSubscription, SubscriptionCancellationConflictError } from '../subscriptions/cancel-subscription';
-import { subscriptionDaysRemaining } from '../../shared/subscription-usage';
 import {
   completeImmediateCanonicalPlanChange,
   startCanonicalTrial,
@@ -75,6 +71,10 @@ import { checkoutAttemptLookup } from '../../shared/subscription-checkout-attemp
 import { readCheckoutAttempt } from '../subscriptions/checkout-attempt';
 import { billingHistoryInput } from '../../shared/subscription-billing-workspace';
 import { readSubscriptionBilling, readBillingHistory } from '../subscriptions/billing-workspace';
+
+function retiredBillingRead(): never {
+  throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'subscription:workspace_required' });
+}
 
 async function billingRead<T>(read: () => Promise<T>) {
   try { return await read(); }
@@ -382,31 +382,8 @@ export const merchantSubscriptionRouter = router({
   }),
   reviewCheckout: merchantProcedure.input(checkoutReviewInput).query(({ ctx, input }) =>
     checkoutReview(ctx.user.id, ctx.merchantId!, input.planId, input.billingCycle)),
-  // Get current subscription
-  getCurrentSubscription: protectedProcedure.query(async ({ ctx }) => {
-    const merchant = await getMerchantByUserId(ctx.user.id);
-    if (!merchant) {
-      throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-    }
-
-    const subscription = await getMerchantCurrentSubscription(merchant.id);
-    
-    if (!subscription) {
-      return null;
-    }
-
-    // Get plan details
-    const plan = subscription.planId ? await getSubscriptionPlanById(subscription.planId) : null;
-
-    // Calculate days remaining
-    const daysRemaining = subscriptionDaysRemaining(subscription);
-
-    return {
-      ...subscription,
-      plan,
-      daysRemaining,
-    };
-  }),
+  // Compatibility stubs never read or mutate legacy subscription rows.
+  getCurrentSubscription: protectedProcedure.input(z.void()).query(retiredBillingRead),
 
   // Start trial
   startTrial: protectedProcedure.mutation(async ({ ctx }) => {
@@ -646,34 +623,8 @@ export const merchantSubscriptionRouter = router({
       return { success: true };
     }),
 
-  // Get days remaining
-  getDaysRemaining: protectedProcedure.query(async ({ ctx }) => {
-    const merchant = await getMerchantByUserId(ctx.user.id);
-    if (!merchant) {
-      throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-    }
-
-    const daysRemaining = await getMerchantDaysRemaining(merchant.id);
-    return { daysRemaining };
-  }),
-
-  // Check subscription status (including trial)
-  checkStatus: protectedProcedure.query(async ({ ctx }) => {
-    const merchant = await getMerchantByUserId(ctx.user.id);
-    if (!merchant) {
-      throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-    }
-
-    const subscription = await getMerchantCurrentSubscription(merchant.id);
-    const isActive = Boolean(subscription);
-    return {
-      isActive,
-      reason: isActive
-        ? subscription?.status === 'trial' ? 'الفترة التجريبية نشطة' : 'اشتراك نشط'
-        : 'لا يوجد اشتراك نشط. يرجى الاشتراك في باقة للوصول إلى هذه الميزة.',
-      isTrial: subscription?.status === 'trial',
-    };
-  }),
+  getDaysRemaining: protectedProcedure.input(z.void()).query(retiredBillingRead),
+  checkStatus: protectedProcedure.input(z.void()).query(retiredBillingRead),
 });
 
 // ============================================
@@ -814,32 +765,10 @@ export const paymentRouter = router({
       };
     }),
 
-  // List transactions (merchant)
-  listTransactions: protectedProcedure.query(async ({ ctx }) => {
-    const merchant = await getMerchantByUserId(ctx.user.id);
-    if (!merchant) {
-      throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-    }
-
-    return await getMerchantPaymentTransactions(merchant.id);
-  }),
-
-  // Get transaction details
+  listTransactions: protectedProcedure.input(z.void()).query(retiredBillingRead),
   getTransactionDetails: protectedProcedure
-    .input(z.object({ id: z.number() }))
-    .query(async ({ ctx, input }) => {
-      const merchant = await getMerchantByUserId(ctx.user.id);
-      if (!merchant) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-      }
-
-      const transaction = await getPaymentTransactionById(input.id);
-      if (!transaction || transaction.merchantId !== merchant.id) {
-        throw new TRPCError({ code: 'FORBIDDEN', message: 'Transaction not found or access denied' });
-      }
-
-      return transaction;
-    }),
+    .input(z.object({ id: z.number().int().positive().max(2147483647) }).strict())
+    .query(retiredBillingRead),
 });
 
 // ============================================

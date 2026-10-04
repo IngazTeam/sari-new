@@ -75,6 +75,7 @@ writeFileSync(
   compiler.build([...candidates]) +
     readFileSync("client/src/styles/merchant-workspace.css", "utf8") +
     readFileSync("client/src/styles/merchant-mobile.css", "utf8") +
+    readFileSync("client/src/styles/subscription-notice.css", "utf8") +
     "\nbody.merchant-surface{width:100%;max-width:none;margin:0;border:0;border-radius:0;box-shadow:none}"
 );
 console.log("Dashboard preview built from the actual page.");

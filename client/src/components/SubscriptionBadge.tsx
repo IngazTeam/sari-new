@@ -1,52 +1,41 @@
-import { trpc } from '@/lib/trpc';
-import { Badge } from '@/components/ui/badge';
-import { Calendar, AlertCircle } from 'lucide-react';
-import { useLocation } from 'wouter';
-import { useTranslation } from 'react-i18next';
-
+import { CalendarDays, CircleHelp } from "lucide-react";
+import { Link } from "wouter";
+import { useTranslation } from "react-i18next";
+import { useSubscriptionNotice } from "@/lib/subscription-notice";
+import { billingLabels } from "@/lib/subscription-billing-labels";
+import { trialNoticeLabels } from "@/lib/dashboard-labels";
+import "@/styles/subscription-notice.css";
 export function SubscriptionBadge() {
-  const { t } = useTranslation();
-  const [, setLocation] = useLocation();
-  const { data: subscription } = trpc.merchantSubscription.getCurrentSubscription.useQuery();
-  const { data: daysData } = trpc.merchantSubscription.getDaysRemaining.useQuery();
-  const daysRemaining = daysData?.daysRemaining;
-
-  if (!subscription || subscription.status === 'expired') {
+  const { t, i18n } = useTranslation(),
+    c = billingLabels(t),
+    label = trialNoticeLabels(t);
+  const { notice, loading, error } = useSubscriptionNotice();
+  if (loading)
     return (
-      <Badge 
-        variant="destructive" 
-        className="cursor-pointer hover:opacity-80 transition-opacity"
-        onClick={() => setLocation('/merchant/subscription/plans')}
-      >
-        <AlertCircle className="ml-1 h-3 w-3" />{t('subscriptionBadge.auto_0')}</Badge>
+      <p className="sn-badge" role="status">
+        {label("loading")}
+      </p>
     );
-  }
-
-  if (daysRemaining === null || daysRemaining === undefined) {
-    return null;
-  }
-
-  const getVariant = () => {
-    if (daysRemaining <= 3) return 'destructive';
-    if (daysRemaining <= 7) return 'secondary';
-    return 'default';
-  };
-
-  const getLabel = () => {
-    if (subscription?.status === 'trial') {
-      return `تجريبي: ${daysRemaining} يوم`;
-    }
-    return `${daysRemaining} يوم متبقي`;
-  };
-
+  const live = notice?.state === "active" || notice?.state === "trial";
+  const days = notice?.daysRemaining;
+  const value =
+    error || !notice
+      ? label("failed")
+      : live && days !== null && days !== undefined
+        ? `${c[notice.state]} · ${new Intl.NumberFormat(i18n.language.startsWith("ar") ? "ar-SA" : "en-US", { style: "unit", unit: "day", unitDisplay: "long" }).format(days)}`
+        : c[notice.state];
   return (
-    <Badge 
-      variant={getVariant()} 
-      className="cursor-pointer hover:opacity-80 transition-opacity"
-      onClick={() => setLocation('/merchant/subscription')}
+    <Link
+      href="/merchant/my-subscription"
+      className={`sn-badge${live ? "" : " sn-review"}`}
+      dir={i18n.language.startsWith("ar") ? "rtl" : "ltr"}
     >
-      <Calendar className="ml-1 h-3 w-3" />
-      {getLabel()}
-    </Badge>
+      {live ? (
+        <CalendarDays size={16} aria-hidden="true" />
+      ) : (
+        <CircleHelp size={16} aria-hidden="true" />
+      )}
+      <span>{value}</span>
+    </Link>
   );
 }

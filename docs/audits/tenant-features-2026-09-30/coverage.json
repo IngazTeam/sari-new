@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-04T11:30:30.828Z",
+  "generatedAt": "2026-10-04T11:49:14.633Z",
   "definition": "Every registered route is accounted for; source inventory and design completion are different statuses.",
   "routes": [
     {
@@ -2689,6 +2689,9 @@
         "client/src/components/merchant/AssistantScheduleStatus.tsx",
         "client/src/components/DashboardSkeleton.tsx",
         "client/src/components/TrialBanner.tsx",
+        "client/src/lib/subscription-notice.ts",
+        "client/src/lib/usage-workspace-view.ts",
+        "client/src/lib/subscription-billing-view.ts",
         "client/src/components/LearningEvidenceCard.tsx",
         "client/src/components/LearningPolicyReview.tsx",
         "client/src/lib/learning-policy-review-version.ts",
@@ -2748,13 +2751,13 @@
         "4830a67f0e26",
         "50aaaa44424a",
         "60ae9ba351d1",
-        "c07997c72a49",
-        "9ad0ae38f581",
-        "cd61ff94e057",
-        "bdb5bb0eca50",
-        "17a09cc2ad1d",
-        "6f5e9f78d7b6",
-        "2b83b18069bb",
+        "a63b257d7fd1",
+        "6fc06d2f4e83",
+        "662f19555288",
+        "88b85822ae0f",
+        "c6ad8e7aa868",
+        "ffc027868aed",
+        "537bbdbbaff9",
         "876057155644",
         "d817bd30f9fb",
         "21ad31056530",
@@ -2909,7 +2912,9 @@
         "botSettings.shouldRespond",
         "dashboard.sources",
         "dashboard.getAiInsights",
-        "merchantSubscription.getCurrentSubscription",
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "merchantSubscription.workspace",
         "sariBrain.getLearningDashboard",
         "sariBrain.getLearningPolicyReview",
         "sariBrain.getLearningPolicyCandidate",
@@ -3794,15 +3799,15 @@
           "review": "source-inventoried"
         },
         {
-          "id": "c07997c72a49",
+          "id": "a63b257d7fd1",
           "file": "client/src/components/TrialBanner.tsx",
-          "line": 39,
+          "line": 21,
           "tag": "Button",
           "role": "",
           "kind": "action",
           "label": "retry",
           "section": "TrialBanner",
-          "binding": "() => void query.refetch()",
+          "binding": "refresh",
           "type": "text",
           "options": [],
           "min": "",
@@ -3815,9 +3820,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "9ad0ae38f581",
+          "id": "6fc06d2f4e83",
           "file": "client/src/components/TrialBanner.tsx",
-          "line": 42,
+          "line": 24,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -3836,9 +3841,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "cd61ff94e057",
+          "id": "662f19555288",
           "file": "client/src/components/TrialBanner.tsx",
-          "line": 88,
+          "line": 70,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -3857,9 +3862,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "bdb5bb0eca50",
+          "id": "88b85822ae0f",
           "file": "client/src/components/TrialBanner.tsx",
-          "line": 117,
+          "line": 100,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -3878,9 +3883,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "17a09cc2ad1d",
+          "id": "c6ad8e7aa868",
           "file": "client/src/components/TrialBanner.tsx",
-          "line": 118,
+          "line": 101,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -3899,9 +3904,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "6f5e9f78d7b6",
+          "id": "ffc027868aed",
           "file": "client/src/components/TrialBanner.tsx",
-          "line": 120,
+          "line": 103,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -3920,9 +3925,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "2b83b18069bb",
+          "id": "537bbdbbaff9",
           "file": "client/src/components/TrialBanner.tsx",
-          "line": 121,
+          "line": 104,
           "tag": "Link",
           "role": "",
           "kind": "action",

@@ -9090,13 +9090,6 @@ export async function checkMerchantSubscriptionStatus(merchantId: number): Promi
   return false;
 }
 
-export async function getMerchantDaysRemaining(merchantId: number): Promise<number> {
-  const subscription = await getMerchantCurrentSubscription(merchantId);
-  if (!subscription) return 0;
-
-  const { subscriptionDaysRemaining } = await import('../shared/subscription-usage');
-  return subscriptionDaysRemaining(subscription);
-}
 
 // ============================================
 // Merchant Addons Functions
@@ -9178,13 +9171,6 @@ export async function getPaymentTransactionById(id: number) {
   return results[0];
 }
 
-export async function getMerchantPaymentTransactions(merchantId: number) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  return await requireDb().select().from(paymentTransactions)
-    .where(eq(paymentTransactions.merchantId, merchantId))
-    .orderBy(desc(paymentTransactions.createdAt));
-}
 
 export async function createPaymentTransaction(data: NewPaymentTransaction) {
   const db = await getDb();

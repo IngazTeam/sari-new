@@ -1,0 +1,46 @@
+.sn-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  max-width: 100%;
+  padding: 9px 12px;
+  border: 1px solid #d6e3d9;
+  border-radius: 12px;
+  background: #f1f6f2;
+  color: #315940;
+  font-size: 14px;
+  line-height: 1.7;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+.sn-badge svg {
+  flex: none;
+}
+.sn-badge:focus-visible {
+  outline: 3px solid #78ad88;
+  outline-offset: 3px;
+}
+.sn-review {
+  background: #fff7e9;
+  color: #795b2c;
+}
+.sn-banner {
+  padding: 22px;
+  border: 1px solid #d6e3d9;
+  border-radius: 20px;
+  background: #f7faf7;
+  color: #315940;
+  overflow-wrap: anywhere;
+}
+.sn-banner p {
+  line-height: 1.85;
+}
+.sn-banner a,
+.sn-banner button {
+  min-height: 44px;
+}
+.sn-banner .mw-link {
+  display: inline-flex;
+  align-items: center;
+}

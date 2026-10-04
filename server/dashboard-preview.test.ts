@@ -261,3 +261,7 @@ describe("bundled actual dashboard interactions", () => {
     expect(errors).toEqual([]);
   });
 });
+
+ it.each([['trial', 'You are in the trial'], ['trial-expired', 'recorded trial period has ended'], ['trial-unknown', 'reliable expiry time is unavailable'], ['subscription-failed', 'could not verify the subscription']])('retains the shared subscription notice for %s', async (mode, text) => {
+  await mount('lang=en&scenario=' + mode); await vi.waitFor(() => expect(w.document.querySelector('.sn-banner')?.textContent.toLowerCase()).toContain(text.toLowerCase())); expect(errors).toEqual([]);
+ });
