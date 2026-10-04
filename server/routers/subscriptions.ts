@@ -73,6 +73,17 @@ import { readCheckoutReview, CheckoutReviewError } from '../subscriptions/checko
 import { SubscriptionPlanChangeConflictError, assertPlanChangeSnapshot } from '../subscriptions/plan-change-snapshot';
 import { checkoutAttemptLookup } from '../../shared/subscription-checkout-attempt';
 import { readCheckoutAttempt } from '../subscriptions/checkout-attempt';
+import { billingHistoryInput } from '../../shared/subscription-billing-workspace';
+import { readSubscriptionBilling, readBillingHistory } from '../subscriptions/billing-workspace';
+
+async function billingRead<T>(read: () => Promise<T>) {
+  try { return await read(); }
+  catch (error) {
+    if (error instanceof MerchantSettingsAuthorityError && error.reason === 'forbidden')
+      throw new TRPCError({ code: 'FORBIDDEN', message: 'Subscription access denied' });
+    throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Subscription records unavailable' });
+  }
+}
 
 async function checkoutReview(actor: number, merchant: number, plan: number, cycle: 'monthly' | 'yearly', proof?: z.infer<typeof checkoutReviewProof>) {
   try { return await readCheckoutReview(actor, merchant, plan, cycle, proof); }
@@ -359,6 +370,8 @@ export const subscriptionAddonsRouter = router({
 // ============================================
 
 export const merchantSubscriptionRouter = router({
+  workspace: merchantProcedure.input(z.void()).query(({ ctx }) => billingRead(() => readSubscriptionBilling(ctx.user.id, ctx.merchantId!))),
+  paymentHistory: merchantProcedure.input(billingHistoryInput).query(({ ctx, input }) => billingRead(() => readBillingHistory(ctx.user.id, ctx.merchantId!, input))),
   checkoutAttempt: merchantProcedure.input(checkoutAttemptLookup).query(async ({ ctx, input }) => {
     try { return await readCheckoutAttempt(ctx.user.id, ctx.merchantId!, input.checkoutAttemptId); }
     catch (error) {
