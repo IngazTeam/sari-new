@@ -67,6 +67,7 @@
     "payment-links-reviewed-workspace-v1",
     "account-notifications-reviewed-workspace-v1",
     "usage-scoped-workspace-only-v1",
-    "usage-notifications-evidence-v1"
+    "usage-notifications-evidence-v1",
+    "subscription-plan-change-snapshot-v1"
   ]
 }

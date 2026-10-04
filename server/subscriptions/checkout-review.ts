@@ -54,6 +54,7 @@ export async function readCheckoutReview(actorId: number, merchantId: number, pl
     }
     const fields = { actorId, merchantId, planId, nameAr: plan.name, nameEn: plan.name_en, billingCycle: cycle,
       mode: current ? 'upgrade' as const : 'subscribe' as const, subscriptionId: current?.id ?? null,
+      previous: current ? { planId: current.plan_id, billingCycle: current.billing_cycle, status: current.status, startDate: date(current.start_date).toISOString(), endDate: date(current.end_date).toISOString() } : null,
       currency, priceMinor, creditMinor, chargeMinor: Math.max(0, priceMinor - creditMinor), daysRemaining,
       reviewedAt: reviewedAt.toISOString(), expiresAt: new Date(reviewedAt.getTime() + 300_000).toISOString() };
     const token = privacyHashExact(JSON.stringify({ purpose: 'subscription-checkout-review-v1', fields, plan, current: current ?? null, oldPlan }));

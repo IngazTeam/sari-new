@@ -1,4 +1,4 @@
-import { beforeEach, expect, it, vi } from 'vitest';
+import { beforeEach, afterEach, expect, it, vi } from 'vitest';
 import { billingPriceMinor, billingCurrency, assertProrationCharge } from './subscriptions/billing-price';
 const m = vi.hoisted(() => ({ merchant: vi.fn(), plan: vi.fn(), addon: vi.fn(), current: vi.fn(), prorate: vi.fn(), transaction: vi.fn(), charge: vi.fn(), complete: vi.fn(), review: vi.fn() }));
 vi.mock('./db', () => ({ getMerchantByUserId: m.merchant, getSubscriptionPlanById: m.plan, getSubscriptionAddonById: m.addon, getMerchantCurrentSubscription: m.current, createOrReusePaymentTransactionForCheckout: m.transaction }));
@@ -11,10 +11,11 @@ const context = { user: { id: 21, role: 'user', email: 'owner@example.test' } } 
 const attempt = 'da2e3e62-03dc-4ebf-9db9-0c3cb5ead2d6';
 beforeEach(() => {
   vi.resetAllMocks();
+  vi.useFakeTimers({ toFake: ['Date'] }); vi.setSystemTime(new Date('2026-10-16T00:00:00Z'));
   m.merchant.mockResolvedValue({ id: 73 });
   m.plan.mockResolvedValue({ id: 2, isActive: 1, monthlyPrice: '99.90', yearlyPrice: '999.00', currency: 'SAR' });
   m.addon.mockResolvedValue({ id: 3, isActive: 1, monthlyPrice: '9.99', yearlyPrice: '99.00', currency: 'SAR' });
-  m.current.mockResolvedValue({ id: 9, planId: 1 });
+  m.current.mockResolvedValue({ id: 9, planId: 1, billingCycle: 'monthly', status: 'active', startDate: '2026-10-01T00:00:00.000Z', endDate: '2026-10-31T00:00:00.000Z' });
   m.prorate.mockResolvedValue({ chargeAmount: 50 });
   m.transaction.mockResolvedValue({ transaction: { id: 44, status: 'pending' } });
   m.charge.mockResolvedValue({ paymentUrl: 'https://checkout.tap.company/test', chargeId: 'chg_test' });
@@ -77,7 +78,7 @@ it('uses reviewed credit and prevents a changed subscription from being upgraded
   m.review.mockResolvedValue({ mode: 'upgrade', subscriptionId: 10 });
   await expect(merchantSubscriptionRouter.createCaller(context).upgradePlan({ newPlanId: 2, newBillingCycle: 'monthly', checkoutAttemptId: attempt, review: proof })).rejects.toMatchObject({ code: 'CONFLICT' });
   expect(m.transaction).not.toHaveBeenCalled();
-  m.review.mockResolvedValue({ mode: 'upgrade', subscriptionId: 9, priceMinor: 9990, chargeMinor: 5990, creditMinor: 4000, daysRemaining: 15, currency: 'SAR' });
+  m.review.mockResolvedValue({ mode: 'upgrade', subscriptionId: 9, previous: {planId: 1, billingCycle: 'monthly', status: 'active', startDate: '2026-10-01T00:00:00.000Z', endDate: '2026-10-31T00:00:00.000Z'}, priceMinor: 9990, chargeMinor: 5990, creditMinor: 4000, daysRemaining: 15, currency: 'SAR' });
   await merchantSubscriptionRouter.createCaller(context).upgradePlan({ newPlanId: 2, newBillingCycle: 'monthly', checkoutAttemptId: attempt, review: proof });
   expect(m.prorate).not.toHaveBeenCalled();
   expect(m.transaction).toHaveBeenCalledWith(expect.objectContaining({ amount: '59.90' }));
@@ -87,3 +88,11 @@ it('does not create a transaction when review storage fails', async () => {
   await expect(merchantSubscriptionRouter.createCaller(context).subscribe({ planId: 2, billingCycle: 'monthly', checkoutAttemptId: attempt, review: proof })).rejects.toMatchObject({ code: 'BAD_REQUEST', message: 'Checkout review unavailable' });
   expect(m.transaction).not.toHaveBeenCalled();
 });
+
+it('rejects a subscription changed after review validation before creating a charge', async () => {
+  m.review.mockResolvedValue({ mode: 'upgrade', subscriptionId: 9, previous: { planId: 2, billingCycle: 'monthly', status: 'active', startDate: '2026-10-01T00:00:00.000Z', endDate: '2026-10-31T00:00:00.000Z' } });
+  await expect(merchantSubscriptionRouter.createCaller(context).upgradePlan({ newPlanId: 2, newBillingCycle: 'monthly', checkoutAttemptId: attempt, review: proof })).rejects.toMatchObject({ code: 'CONFLICT' });
+  expect(m.transaction).not.toHaveBeenCalled(); expect(m.charge).not.toHaveBeenCalled();
+});
+
+afterEach(() => vi.useRealTimers());

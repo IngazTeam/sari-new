@@ -1,5 +1,6 @@
 import type { PoolConnection, RowDataPacket } from 'mysql2/promise';
 import { getPool } from '../db';
+import { assertPlanChangeSnapshot, SubscriptionPlanChangeConflictError } from './plan-change-snapshot';
 
 type BillingCycle = 'monthly' | 'yearly';
 
@@ -210,6 +211,18 @@ async function applyPlanChange(
   const subscriptionId = positiveInteger(payment.subscription_id, 'subscription_id');
   const planId = positiveInteger(metadata.newPlanId, 'new_plan_id');
   const cycle = billingCycle(metadata.newBillingCycle, 'new_billing_cycle');
+  const [currentRows] = await connection.execute<RowDataPacket[]>(
+    `SELECT id, plan_id, billing_cycle, status, start_date, end_date
+       FROM merchant_subscriptions WHERE id = ? AND merchant_id = ? LIMIT 1 FOR UPDATE`,
+    [subscriptionId, payment.merchant_id],
+  );
+  assertPlanChangeSnapshot(currentRows[0], metadata, now);
+  const [activeRows] = await connection.execute<RowDataPacket[]>(
+    `SELECT id FROM merchant_subscriptions WHERE merchant_id = ? AND status IN ('active','trial')
+       ORDER BY id LIMIT 2 FOR UPDATE`,
+    [payment.merchant_id],
+  );
+  if (activeRows.length !== 1 || activeRows[0].id !== subscriptionId) throw new SubscriptionPlanChangeConflictError();
   const plan = await getPlan(connection, planId);
   const start = mysqlTimestamp(now);
   const end = periodEnd(now, cycle);

@@ -70,6 +70,7 @@ import { billingPriceMinor, billingCurrency, assertProrationCharge } from '../su
 
 import { checkoutReviewInput, checkoutReviewProof } from '../../shared/subscription-checkout-review';
 import { readCheckoutReview, CheckoutReviewError } from '../subscriptions/checkout-review';
+import { SubscriptionPlanChangeConflictError, assertPlanChangeSnapshot } from '../subscriptions/plan-change-snapshot';
 
 async function checkoutReview(actor: number, merchant: number, plan: number, cycle: 'monthly' | 'yearly', proof?: z.infer<typeof checkoutReviewProof>) {
   try { return await readCheckoutReview(actor, merchant, plan, cycle, proof); }
@@ -99,6 +100,9 @@ function assertBillableAmount(amount: number, currency: string): { amount: numbe
 }
 
 function subscriptionCheckoutError(error: unknown): TRPCError {
+  if (error instanceof SubscriptionPlanChangeConflictError) {
+    return new TRPCError({ code: 'CONFLICT', message: 'Subscription changed; review it again' });
+  }
   if (error instanceof Error && error.message === 'CHECKOUT_ATTEMPT_CONFLICT') {
     return new TRPCError({ code: 'CONFLICT', message: 'محاولة الدفع مرتبطة بطلب مختلف؛ أعد تحميل الصفحة' });
   }
@@ -493,6 +497,20 @@ export const merchantSubscriptionRouter = router({
 
       if (reviewed && reviewed.subscriptionId !== currentSubscription.id)
         throw new TRPCError({ code: 'CONFLICT', message: 'Checkout changed; review it again' });
+      const previous = reviewed?.previous;
+      const snapshot = {
+        previousPlanId: previous ? previous.planId : currentSubscription.planId,
+        previousBillingCycle: previous ? previous.billingCycle : currentSubscription.billingCycle,
+        previousStartDate: previous ? previous.startDate : currentSubscription.startDate,
+        previousEndDate: previous ? previous.endDate : currentSubscription.endDate,
+        previousStatus: previous ? previous.status : currentSubscription.status,
+      };
+      if (reviewed) {
+        try {
+          assertPlanChangeSnapshot({ plan_id: currentSubscription.planId, billing_cycle: currentSubscription.billingCycle,
+            status: currentSubscription.status, start_date: currentSubscription.startDate, end_date: currentSubscription.endDate }, snapshot, new Date());
+        } catch { throw new TRPCError({ code: 'CONFLICT', message: 'Checkout changed; review it again' }); }
+      }
       const newPlan = await getSubscriptionPlanById(input.newPlanId);
       if (!newPlan || newPlan.isActive !== 1) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Plan not found' });
@@ -544,11 +562,7 @@ export const merchantSubscriptionRouter = router({
             newPlanId: input.newPlanId,
             newBillingCycle: input.newBillingCycle,
             proration,
-            previousPlanId: currentSubscription.planId,
-            previousBillingCycle: currentSubscription.billingCycle,
-            previousStartDate: currentSubscription.startDate,
-            previousEndDate: currentSubscription.endDate,
-            previousStatus: currentSubscription.status,
+            ...snapshot,
           }),
         });
 
