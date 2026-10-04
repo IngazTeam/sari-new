@@ -13,6 +13,7 @@ import { privacyHash } from './privacy-hash';
 import { assertWhatsAppPrimarySchemaReady } from '../channels/whatsapp/schema-readiness';
 import { normalizeSignupPhone, type SignupFieldErrors } from '@shared/signup-validation';
 import { SignupConflictError } from './signup-errors';
+import {assertPrivacySession,readPrivacyWorkspace,privacyInsertId} from './privacy-workspace';
 
 type ConsentType = 'terms' | 'privacy' | 'marketing';
 export type AdminAccountDeletionReason =
@@ -135,7 +136,7 @@ async function insertConsentReceipt(
   },
 ): Promise<void> {
   const document = LEGAL_DOCUMENTS[input.consentType];
-  await connection.execute(
+  const [receipt] = await connection.execute(
     `INSERT INTO consent_receipts
       (user_id, subject_reference_hash, consent_type, granted, document_version, document_url,
        source, ip_hash, user_agent_hash, created_at)
@@ -152,6 +153,7 @@ async function insertConsentReceipt(
       input.userAgentHash,
     ],
   );
+  privacyInsertId(receipt);
 }
 
 async function lockUserAndVerifyPassword(
@@ -398,20 +400,23 @@ export async function registerMerchantAccount(input: {
   }
 }
 
-export async function exportPersonalAccountData(userId: number, password: string) {
+export async function exportPersonalAccountData(userId: number, password: string, sessionId: string) {
   const pool = await getPool();
   if (!pool) throw new Error('Database not available');
   const connection = await pool.getConnection();
+  let committing=false,reusable=true;
   try {
     await connection.beginTransaction();
     const user = await lockUserAndVerifyPassword(connection, userId, password);
-    if (user.accountStatus === 'anonymized') throw new Error('ACCOUNT_UNAVAILABLE');
+    await assertPrivacySession(connection, userId, sessionId);
+    if (user.accountStatus !== 'active') throw new Error('ACCOUNT_UNAVAILABLE');
     const subjectReferenceHash = privacyHash(user.email || String(user.id));
     const [merchants] = await connection.execute<MerchantRow[]>(
-      `SELECT id, businessName, phone, status, createdAt FROM merchants WHERE userId = ? ORDER BY id`,
+      `SELECT id, businessName, phone, status, createdAt FROM merchants WHERE userId = ? ORDER BY id LIMIT 101`,
       [userId],
     );
 
+    if (merchants.length > 100) throw Error('EXPORT_TOO_LARGE');
     const merchantIds = merchants.map(item => item.id);
     const placeholders = merchantIds.map(() => '?').join(',');
     let subscriptions: RowDataPacket[] = [];
@@ -423,20 +428,20 @@ export async function exportPersonalAccountData(userId: number, password: string
                 start_date AS startDate, end_date AS endDate, trial_ends_at AS trialEndsAt,
                 conversations_used AS conversationsUsed, messages_used AS messagesUsed,
                 voice_messages_used AS voiceMessagesUsed, created_at AS createdAt
-           FROM merchant_subscriptions WHERE merchant_id IN (${placeholders}) ORDER BY id`,
+           FROM merchant_subscriptions WHERE merchant_id IN (${placeholders}) ORDER BY id LIMIT 5001`,
         merchantIds,
       );
       [payments] = await connection.execute<RowDataPacket[]>(
         `SELECT id, merchant_id AS merchantId, subscription_id AS subscriptionId, type, amount, currency,
                 status, payment_method AS paymentMethod, paid_at AS paidAt, refunded_at AS refundedAt,
                 created_at AS createdAt
-           FROM payment_transactions WHERE merchant_id IN (${placeholders}) ORDER BY id`,
+           FROM payment_transactions WHERE merchant_id IN (${placeholders}) ORDER BY id LIMIT 5001`,
         merchantIds,
       );
       [whatsappConnections] = await connection.execute<RowDataPacket[]>(
         `SELECT id, merchant_id AS merchantId, phone_number AS phoneNumber, status, connected_at AS connectedAt,
                 created_at AS createdAt
-           FROM whatsapp_instances WHERE merchant_id IN (${placeholders}) ORDER BY id`,
+           FROM whatsapp_instances WHERE merchant_id IN (${placeholders}) ORDER BY id LIMIT 5001`,
         merchantIds,
       );
     }
@@ -444,7 +449,7 @@ export async function exportPersonalAccountData(userId: number, password: string
     const [consents] = await connection.execute<RowDataPacket[]>(
       `SELECT consent_type AS consentType, granted, document_version AS documentVersion,
               document_url AS documentUrl, source, created_at AS createdAt, withdrawn_at AS withdrawnAt
-         FROM consent_receipts WHERE user_id = ? ORDER BY created_at`,
+         FROM consent_receipts WHERE user_id = ? ORDER BY created_at LIMIT 5001`,
       [userId],
     );
     const [memberships] = await connection.execute<RowDataPacket[]>(
@@ -452,41 +457,23 @@ export async function exportPersonalAccountData(userId: number, password: string
               m.businessName
          FROM merchant_members mm
          JOIN merchants m ON m.id = mm.merchant_id
-        WHERE mm.user_id = ? ORDER BY mm.id`,
+        WHERE mm.user_id = ? ORDER BY mm.id LIMIT 5001`,
       [userId],
     );
     const [requests] = await connection.execute<RowDataPacket[]>(
       `SELECT id, request_type AS requestType, status, requested_at AS requestedAt, due_at AS dueAt,
               completed_at AS completedAt, rejection_reason AS rejectionReason
-         FROM data_subject_requests WHERE user_id = ? ORDER BY requested_at`,
+         FROM data_subject_requests WHERE user_id = ? ORDER BY requested_at LIMIT 5001`,
       [userId],
     );
 
     const now = new Date();
     const dueAt = plusDays(now, DATA_SUBJECT_RESPONSE_DAYS);
-    const [requestResult] = await connection.execute(
-      `INSERT INTO data_subject_requests
-        (user_id, subject_reference_hash, request_type, status, requested_at, due_at, completed_at,
-         request_metadata, created_at, updated_at)
-       VALUES (?, ?, 'export', 'completed', ?, ?, ?, ?, ?, ?)`,
-      [
-        userId,
-        subjectReferenceHash,
-        mysqlTimestamp(now),
-        mysqlTimestamp(dueAt),
-        mysqlTimestamp(now),
-        JSON.stringify({ formatVersion: PERSONAL_DATA_EXPORT_VERSION, delivery: 'self_service' }),
-        mysqlTimestamp(now),
-        mysqlTimestamp(now),
-      ],
-    );
-    const requestId = Number((requestResult as { insertId: number }).insertId);
-    await connection.commit();
-
-    return {
+    if ([subscriptions,payments,whatsappConnections,consents,memberships,requests].some(rows=>rows.length>5000)) throw Error('EXPORT_TOO_LARGE');
+    const payload = {
       formatVersion: PERSONAL_DATA_EXPORT_VERSION,
       generatedAt: now.toISOString(),
-      requestId,
+      requestId: 0,
       scope: 'account-holder personal data; customer conversation content is intentionally excluded',
       account: {
         id: user.id,
@@ -506,40 +493,43 @@ export async function exportPersonalAccountData(userId: number, password: string
       consentHistory: consents,
       requestHistory: requests,
     };
+    if (Buffer.byteLength(JSON.stringify(payload),'utf8')>8*1024*1024) throw Error('EXPORT_TOO_LARGE');
+    const [requestResult] = await connection.execute(
+      `INSERT INTO data_subject_requests
+        (user_id, subject_reference_hash, request_type, status, requested_at, due_at, completed_at,
+         request_metadata, created_at, updated_at)
+       VALUES (?, ?, 'export', 'completed', ?, ?, ?, ?, ?, ?)`,
+      [
+        userId,
+        subjectReferenceHash,
+        mysqlTimestamp(now),
+        mysqlTimestamp(dueAt),
+        mysqlTimestamp(now),
+        JSON.stringify({ formatVersion: PERSONAL_DATA_EXPORT_VERSION, delivery: 'self_service' }),
+        mysqlTimestamp(now),
+        mysqlTimestamp(now),
+      ],
+    );
+    const requestId = privacyInsertId(requestResult);
+    committing=true; await connection.commit();
+
+    return {...payload,requestId};
   } catch (error) {
-    await connection.rollback();
+    if(committing){reusable=false;connection.destroy();}
+    else try{await connection.rollback();}catch{reusable=false;connection.destroy();}
     throw error;
   } finally {
-    connection.release();
+    if(reusable)connection.release();
   }
 }
 
-export async function getPrivacyCenterState(userId: number) {
-  const pool = await getPool();
-  if (!pool) throw new Error('Database not available');
-  const [requests] = await pool.execute<RowDataPacket[]>(
-    `SELECT id, request_type AS requestType, status, requested_at AS requestedAt, due_at AS dueAt,
-            processing_scheduled_at AS processingScheduledAt, completed_at AS completedAt,
-            rejection_reason AS rejectionReason
-       FROM data_subject_requests WHERE user_id = ? ORDER BY requested_at DESC LIMIT 20`,
-    [userId],
-  );
-  const [marketing] = await pool.execute<RowDataPacket[]>(
-    `SELECT granted, created_at AS createdAt
-       FROM consent_receipts WHERE user_id = ? AND consent_type = 'marketing'
-       ORDER BY created_at DESC, id DESC LIMIT 1`,
-    [userId],
-  );
-  return {
-    marketingConsent: Boolean(marketing[0]?.granted),
-    requests,
-    responseDays: DATA_SUBJECT_RESPONSE_DAYS,
-    legalDocuments: LEGAL_DOCUMENTS,
-  };
+export async function getPrivacyCenterState(userId: number, sessionId: string) {
+  return readPrivacyWorkspace(userId, sessionId);
 }
 
 export async function setMarketingConsent(input: {
   userId: number;
+  sessionId: string;
   granted: boolean;
   ipAddress?: string | null;
   userAgent?: string | null;
@@ -547,6 +537,7 @@ export async function setMarketingConsent(input: {
   const pool = await getPool();
   if (!pool) throw new Error('Database not available');
   const connection = await pool.getConnection();
+  let committing=false,reusable=true;
   try {
     await connection.beginTransaction();
     const [users] = await connection.execute<UserRow[]>(
@@ -556,6 +547,7 @@ export async function setMarketingConsent(input: {
     );
     const user = users[0];
     if (!user || user.accountStatus !== 'active') throw new Error('ACCOUNT_UNAVAILABLE');
+    await assertPrivacySession(connection, input.userId, input.sessionId);
     await connection.execute(
       `UPDATE consent_receipts SET withdrawn_at = NOW()
         WHERE user_id = ? AND consent_type = 'marketing' AND withdrawn_at IS NULL`,
@@ -572,7 +564,7 @@ export async function setMarketingConsent(input: {
     });
     if (!input.granted) {
       const now = new Date();
-      await connection.execute(
+      const [receipt] = await connection.execute(
         `INSERT INTO data_subject_requests
           (user_id, subject_reference_hash, request_type, status, requested_at, due_at, completed_at,
            request_metadata, created_at, updated_at)
@@ -588,24 +580,28 @@ export async function setMarketingConsent(input: {
           mysqlTimestamp(now),
         ],
       );
+      privacyInsertId(receipt);
     }
-    await connection.commit();
+    committing=true; await connection.commit();
   } catch (error) {
-    await connection.rollback();
+    if(committing){reusable=false;connection.destroy();}
+    else try{await connection.rollback();}catch{reusable=false;connection.destroy();}
     throw error;
   } finally {
-    connection.release();
+    if(reusable)connection.release();
   }
 }
 
 export async function submitDataSubjectRequest(input: {
   userId: number;
+  sessionId: string;
   requestType: 'access' | 'correction' | 'objection';
   details: string;
 }) {
   const pool = await getPool();
   if (!pool) throw new Error('Database not available');
   const connection = await pool.getConnection();
+  let committing=false,reusable=true;
   try {
     await connection.beginTransaction();
     const [users] = await connection.execute<UserRow[]>(
@@ -615,6 +611,7 @@ export async function submitDataSubjectRequest(input: {
     );
     const user = users[0];
     if (!user || user.accountStatus !== 'active') throw new Error('ACCOUNT_UNAVAILABLE');
+    await assertPrivacySession(connection, input.userId, input.sessionId);
     const [existing] = await connection.execute<RowDataPacket[]>(
       `SELECT id, request_type AS requestType, status, requested_at AS requestedAt, due_at AS dueAt
          FROM data_subject_requests
@@ -623,8 +620,8 @@ export async function submitDataSubjectRequest(input: {
       [input.userId, input.requestType],
     );
     if (existing[0]) {
-      await connection.commit();
-      return existing[0];
+      committing=true; await connection.commit();
+      return {...existing[0], actorId: input.userId, created: false};
     }
 
     const now = new Date();
@@ -645,19 +642,21 @@ export async function submitDataSubjectRequest(input: {
         mysqlTimestamp(now),
       ],
     );
-    await connection.commit();
+    const id = privacyInsertId(result);
+    committing=true; await connection.commit();
     return {
-      id: Number((result as { insertId: number }).insertId),
+      id, actorId: input.userId, created: true,
       requestType: input.requestType,
       status: 'pending',
       requestedAt: mysqlTimestamp(now),
       dueAt: mysqlTimestamp(dueAt),
     };
   } catch (error) {
-    await connection.rollback();
+    if(committing){reusable=false;connection.destroy();}
+    else try{await connection.rollback();}catch{reusable=false;connection.destroy();}
     throw error;
   } finally {
-    connection.release();
+    if(reusable)connection.release();
   }
 }
 
@@ -781,14 +780,16 @@ export async function resolveDataSubjectRequest(input: {
   }
 }
 
-export async function requestAccountDeletion(userId: number, password: string) {
+export async function requestAccountDeletion(userId: number, password: string, sessionId: string) {
   await assertWhatsAppPrimarySchemaReady('account deletion channel suspension');
   const pool = await getPool();
   if (!pool) throw new Error('Database not available');
   const connection = await pool.getConnection();
+  let committing=false,reusable=true;
   try {
     await connection.beginTransaction();
     const user = await lockUserAndVerifyPassword(connection, userId, password);
+    await assertPrivacySession(connection, userId, sessionId);
     if (user.role === 'admin') throw new Error('ADMIN_DELETION_REQUIRES_REVIEW');
     const [existing] = await connection.execute<RowDataPacket[]>(
       `SELECT id, status, due_at AS dueAt, processing_scheduled_at AS processingScheduledAt
@@ -799,7 +800,7 @@ export async function requestAccountDeletion(userId: number, password: string) {
     );
     if (existing[0]) {
       if (user.accountStatus !== 'deletion_pending') throw new Error('DELETION_STATE_MISMATCH');
-      await connection.commit();
+      committing=true; await connection.commit();
       return existing[0];
     }
     if (user.accountStatus !== 'active') throw new Error('ACCOUNT_UNAVAILABLE');
@@ -826,9 +827,9 @@ export async function requestAccountDeletion(userId: number, password: string) {
         mysqlTimestamp(now),
       ],
     );
-    const requestId = Number((result as { insertId: number }).insertId);
+    const requestId = privacyInsertId(result);
     await suspendAccountForDeletion(connection, userId, now);
-    await connection.commit();
+    committing=true; await connection.commit();
     return {
       id: requestId,
       status: 'pending',
@@ -836,10 +837,11 @@ export async function requestAccountDeletion(userId: number, password: string) {
       processingScheduledAt: mysqlTimestamp(scheduledAt),
     };
   } catch (error) {
-    await connection.rollback();
+    if(committing){reusable=false;connection.destroy();}
+    else try{await connection.rollback();}catch{reusable=false;connection.destroy();}
     throw error;
   } finally {
-    connection.release();
+    if(reusable)connection.release();
   }
 }
 

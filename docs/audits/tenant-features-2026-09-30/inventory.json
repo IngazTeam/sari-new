@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-04T16:35:01.913Z",
+  "generatedAt": "2026-10-04T16:56:25.947Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -16520,94 +16520,163 @@
     },
     {
       "file": "client/src/pages/merchant/PrivacyCenter.tsx",
-      "hash": "c1a3d9e561fc",
-      "queries": [
-        "accountData.getState"
-      ],
-      "mutations": [
-        "accountData.setMarketingConsent",
-        "accountData.exportPersonalData",
-        "accountData.requestDeletion",
-        "accountData.submitRequest"
-      ],
-      "imperativeReads": [],
-      "browserRequests": [],
-      "sections": [
-        {
-          "label": "مركز الخصوصية",
-          "line": 96,
-          "tag": "h1"
-        },
-        {
-          "label": "التواصل التسويقي",
-          "line": 102,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "تنزيل بيانات الحساب",
-          "line": 118,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "طلب وصول أو تصحيح أو اعتراض",
-          "line": 148,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "سجل الطلبات",
-          "line": 189,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "حذف الحساب",
-          "line": 208,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "تأكيد حذف الحساب",
-          "line": 222,
-          "tag": "AlertDialogTitle"
-        }
-      ],
-      "choices": [],
-      "handlers": [],
-      "queryStates": [
-        {
-          "query": "accountData.getState",
-          "binding": "{ data, isLoading }",
-          "line": 38,
-          "errorSignal": false,
-          "loadingSignal": true,
-          "enabled": null
-        }
-      ],
-      "conditions": [],
-      "imports": [
-        "client/src/hooks/use-toast.ts"
-      ],
-      "controlCount": 12
-    },
-    {
-      "file": "client/src/hooks/use-toast.ts",
-      "hash": "f9bb878946fd",
+      "hash": "89fc3eb15709",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
       "browserRequests": [],
       "sections": [],
       "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [
+        "client/src/components/merchant/PrivacyWorkspace.tsx"
+      ],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/components/merchant/PrivacyWorkspace.tsx",
+      "hash": "5b8e3b4f92ef",
+      "queries": [
+        "auth.me",
+        "accountData.getState"
+      ],
+      "mutations": [
+        "accountData.setMarketingConsent",
+        "accountData.submitRequest",
+        "accountData.exportPersonalData",
+        "accountData.requestDeletion"
+      ],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [
+        {
+          "label": "",
+          "line": 239,
+          "tag": "h1"
+        },
+        {
+          "label": "",
+          "line": 270,
+          "tag": "h1"
+        },
+        {
+          "label": "",
+          "line": 303,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 346,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 408,
+          "tag": "DialogTitle"
+        },
+        {
+          "label": "",
+          "line": 469,
+          "tag": "h3"
+        }
+      ],
+      "choices": [
+        {
+          "name": "tiles",
+          "line": 255,
+          "values": [
+            [
+              "consent",
+              "ShieldCheck",
+              "c.consent",
+              "c.consentHelp"
+            ],
+            [
+              "request",
+              "MessageSquare",
+              "c.request",
+              "c.requestHelp"
+            ],
+            [
+              "export",
+              "Download",
+              "c.export",
+              "c.exportHelp"
+            ],
+            [
+              "delete",
+              "Trash2",
+              "c.delete",
+              "c.deleteHelp"
+            ]
+          ]
+        }
+      ],
       "handlers": [
         {
-          "name": "addToRemoveQueue",
-          "line": 56,
+          "name": "close",
+          "line": 96,
           "calls": []
         },
         {
-          "name": "update",
-          "line": 141,
+          "name": "open",
+          "line": 104,
           "calls": []
         }
       ],
+      "queryStates": [
+        {
+          "query": "auth.me",
+          "binding": "user",
+          "line": 31,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        },
+        {
+          "query": "accountData.getState",
+          "binding": "query",
+          "line": 63,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        }
+      ],
+      "conditions": [],
+      "imports": [
+        "client/src/lib/usage-workspace-view.ts",
+        "client/src/lib/privacy-workspace-labels.ts",
+        "client/src/lib/privacy-export.ts"
+      ],
+      "controlCount": 11
+    },
+    {
+      "file": "client/src/lib/privacy-workspace-labels.ts",
+      "hash": "70bb1986b0c5",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/lib/privacy-export.ts",
+      "hash": "c704a70676da",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
       "queryStates": [],
       "conditions": [],
       "imports": [],
@@ -20026,6 +20095,32 @@
         "client/src/hooks/use-toast.ts"
       ],
       "controlCount": 11
+    },
+    {
+      "file": "client/src/hooks/use-toast.ts",
+      "hash": "f9bb878946fd",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [
+        {
+          "name": "addToRemoveQueue",
+          "line": 56,
+          "calls": []
+        },
+        {
+          "name": "update",
+          "line": 141,
+          "calls": []
+        }
+      ],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 0
     },
     {
       "file": "client/src/pages/LoyaltyTiers.tsx",
@@ -28863,30 +28958,33 @@
       ],
       "files": [
         "client/src/pages/merchant/PrivacyCenter.tsx",
-        "client/src/hooks/use-toast.ts"
+        "client/src/components/merchant/PrivacyWorkspace.tsx",
+        "client/src/lib/usage-workspace-view.ts",
+        "client/src/lib/privacy-workspace-labels.ts",
+        "client/src/lib/privacy-export.ts"
       ],
       "controls": [
-        "b15bfde3cd5c",
-        "42fcf546c992",
-        "a3f8c1b2d513",
-        "32b1f8b66ac5",
-        "88c9be63a9a5",
-        "662bf3d0c492",
-        "8e8e34535f96",
-        "aa45c60a54b2",
-        "0b4b4cc64f10",
-        "d4709506774e",
-        "fa88030ea040",
-        "188b3812d1d0"
+        "b28c5ef3292f",
+        "269caa124102",
+        "940b42bc0388",
+        "f4f86f353264",
+        "abed3196664d",
+        "86ae67c434b7",
+        "09f92fa39302",
+        "c6b41ef79aaa",
+        "417a5da80b19",
+        "b7d4a563620a",
+        "2f82192e1409"
       ],
       "queries": [
+        "auth.me",
         "accountData.getState"
       ],
       "mutations": [
         "accountData.setMarketingConsent",
+        "accountData.submitRequest",
         "accountData.exportPersonalData",
-        "accountData.requestDeletion",
-        "accountData.submitRequest"
+        "accountData.requestDeletion"
       ],
       "imperativeReads": [],
       "browserRequests": []
@@ -78434,57 +78532,36 @@
       "review": "source-inventoried"
     },
     {
-      "id": "b15bfde3cd5c",
-      "file": "client/src/pages/merchant/PrivacyCenter.tsx",
-      "line": 107,
-      "tag": "Switch",
+      "id": "b28c5ef3292f",
+      "file": "client/src/components/merchant/PrivacyWorkspace.tsx",
+      "line": 273,
+      "tag": "button",
       "role": "",
-      "kind": "field",
-      "label": "استلام تحديثات وعروض ساري",
-      "section": "التواصل التسويقي",
-      "binding": "data?.marketingConsent ?? false",
-      "type": "checkbox",
+      "kind": "action",
+      "label": "",
+      "section": "PrivacyWorkspace",
+      "binding": "() => void query.refetch()",
+      "type": "text",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "marketingMutation.isPending",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "42fcf546c992",
-      "file": "client/src/pages/merchant/PrivacyCenter.tsx",
-      "line": 126,
-      "tag": "Input",
-      "role": "",
-      "kind": "field",
-      "label": "أكد هويتك بكلمة المرور",
-      "section": "تنزيل بيانات الحساب",
-      "binding": "exportPassword",
-      "type": "password",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "128",
-      "required": false,
       "conditional": false,
       "conditions": [],
-      "disabled": "",
+      "disabled": "running",
       "review": "source-inventoried"
     },
     {
-      "id": "a3f8c1b2d513",
-      "file": "client/src/pages/merchant/PrivacyCenter.tsx",
-      "line": 136,
-      "tag": "Button",
+      "id": "269caa124102",
+      "file": "client/src/components/merchant/PrivacyWorkspace.tsx",
+      "line": 326,
+      "tag": "button",
       "role": "",
       "kind": "action",
-      "label": "تنزيل نسخة البيانات",
-      "section": "تنزيل بيانات الحساب",
-      "binding": "() => exportMutation.mutate({ password: exportPassword })",
+      "label": "Action",
+      "section": "PrivacyWorkspace",
+      "binding": "e => open(panel, e.currentTarget)",
       "type": "text",
       "options": [],
       "min": "",
@@ -78493,180 +78570,224 @@
       "required": false,
       "conditional": true,
       "conditions": [],
-      "disabled": "exportMutation.isPending || exportPassword.length < 8",
+      "disabled": "running ||\n                (panel === 'delete' && deletionBlocked) ||\n                (panel === 'export' && !data.canVerifyPassword) ||\n                (panel === 'consent' && data.marketingConsent === null)",
       "review": "source-inventoried"
     },
     {
-      "id": "32b1f8b66ac5",
-      "file": "client/src/pages/merchant/PrivacyCenter.tsx",
-      "line": 154,
-      "tag": "Select",
+      "id": "940b42bc0388",
+      "file": "client/src/components/merchant/PrivacyWorkspace.tsx",
+      "line": 388,
+      "tag": "a",
       "role": "",
-      "kind": "field",
-      "label": "نوع الطلب",
-      "section": "طلب وصول أو تصحيح أو اعتراض",
-      "binding": "requestType",
-      "type": "select",
+      "kind": "action",
+      "label": "",
+      "section": "PrivacyWorkspace",
+      "binding": "/company/privacy",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "f4f86f353264",
+      "file": "client/src/components/merchant/PrivacyWorkspace.tsx",
+      "line": 397,
+      "tag": "DialogContent",
+      "role": "",
+      "kind": "dialog",
+      "label": "— Review consent request · /1000 delete {hours} export delete delete delete",
+      "section": "PrivacyWorkspace",
+      "binding": "",
+      "type": "text",
       "options": [
         {
           "value": "access",
-          "label": "الوصول إلى البيانات"
+          "label": ""
         },
         {
           "value": "correction",
-          "label": "تصحيح البيانات"
+          "label": ""
         },
         {
           "value": "objection",
-          "label": "الاعتراض على معالجة"
+          "label": ""
         }
       ],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "88c9be63a9a5",
-      "file": "client/src/pages/merchant/PrivacyCenter.tsx",
-      "line": 165,
-      "tag": "Textarea",
-      "role": "",
-      "kind": "field",
-      "label": "تفاصيل الطلب",
-      "section": "طلب وصول أو تصحيح أو اعتراض",
-      "binding": "requestDetails",
-      "type": "textarea",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "1_000",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "662bf3d0c492",
-      "file": "client/src/pages/merchant/PrivacyCenter.tsx",
-      "line": 175,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "إرسال الطلب",
-      "section": "طلب وصول أو تصحيح أو اعتراض",
-      "binding": "() => requestMutation.mutate({ requestType, details: requestDetails })",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "requestMutation.isPending || requestDetails.trim().length < 3",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "8e8e34535f96",
-      "file": "client/src/pages/merchant/PrivacyCenter.tsx",
-      "line": 219,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "طلب حذف الحساب",
-      "section": "حذف الحساب",
-      "binding": "",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "aa45c60a54b2",
-      "file": "client/src/pages/merchant/PrivacyCenter.tsx",
-      "line": 220,
-      "tag": "AlertDialogContent",
-      "role": "",
-      "kind": "dialog",
-      "label": "تأكيد حذف الحساب أكد هويتك، ثم اكتب العبارة الإنجليزية التالية حرفياً: كلمة المرور عبارة التأكيد تراجع إيقاف الحساب وتسجيل الطلب",
-      "section": "حذف الحساب",
-      "binding": "",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
       "conditional": true,
       "conditions": [],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "0b4b4cc64f10",
-      "file": "client/src/pages/merchant/PrivacyCenter.tsx",
-      "line": 230,
-      "tag": "Input",
+      "id": "abed3196664d",
+      "file": "client/src/components/merchant/PrivacyWorkspace.tsx",
+      "line": 422,
+      "tag": "input",
       "role": "",
       "kind": "field",
-      "label": "كلمة المرور",
-      "section": "تأكيد حذف الحساب",
-      "binding": "deletePassword",
+      "label": "",
+      "section": "PrivacyWorkspace",
+      "binding": "granted",
+      "type": "checkbox",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "review === 'consent'"
+      ],
+      "disabled": "running",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "86ae67c434b7",
+      "file": "client/src/components/merchant/PrivacyWorkspace.tsx",
+      "line": 434,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "PrivacyWorkspace",
+      "binding": "requestType",
+      "type": "text",
+      "options": [
+        {
+          "value": "access",
+          "label": ""
+        },
+        {
+          "value": "correction",
+          "label": ""
+        },
+        {
+          "value": "objection",
+          "label": ""
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "review === 'request'"
+      ],
+      "disabled": "running",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "09f92fa39302",
+      "file": "client/src/components/merchant/PrivacyWorkspace.tsx",
+      "line": 447,
+      "tag": "textarea",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "PrivacyWorkspace",
+      "binding": "details",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "1000",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "review === 'request'"
+      ],
+      "disabled": "running",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "c6b41ef79aaa",
+      "file": "client/src/components/merchant/PrivacyWorkspace.tsx",
+      "line": 484,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "PrivacyWorkspace",
+      "binding": "password",
       "type": "password",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "128",
       "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
+      "conditional": true,
+      "conditions": [
+        "(review === 'export' || review === 'delete')"
+      ],
+      "disabled": "running",
       "review": "source-inventoried"
     },
     {
-      "id": "d4709506774e",
-      "file": "client/src/pages/merchant/PrivacyCenter.tsx",
-      "line": 234,
-      "tag": "Input",
+      "id": "417a5da80b19",
+      "file": "client/src/components/merchant/PrivacyWorkspace.tsx",
+      "line": 505,
+      "tag": "input",
       "role": "",
       "kind": "field",
-      "label": "عبارة التأكيد",
-      "section": "تأكيد حذف الحساب",
-      "binding": "deleteConfirmation",
+      "label": "",
+      "section": "PrivacyWorkspace",
+      "binding": "confirmation",
       "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "40",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "review === 'delete'"
+      ],
+      "disabled": "running",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "b7d4a563620a",
+      "file": "client/src/components/merchant/PrivacyWorkspace.tsx",
+      "line": 532,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "PrivacyWorkspace",
+      "binding": "close",
+      "type": "button",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": false,
+      "conditional": true,
       "conditions": [],
-      "disabled": "",
+      "disabled": "running",
       "review": "source-inventoried"
     },
     {
-      "id": "fa88030ea040",
-      "file": "client/src/pages/merchant/PrivacyCenter.tsx",
-      "line": 238,
-      "tag": "AlertDialogCancel",
+      "id": "2f82192e1409",
+      "file": "client/src/components/merchant/PrivacyWorkspace.tsx",
+      "line": 540,
+      "tag": "button",
       "role": "",
       "kind": "action",
-      "label": "تراجع",
-      "section": "تأكيد حذف الحساب",
+      "label": "delete",
+      "section": "PrivacyWorkspace",
       "binding": "",
-      "type": "text",
+      "type": "submit",
       "options": [],
       "min": "",
       "max": "",
@@ -78674,28 +78795,7 @@
       "required": false,
       "conditional": true,
       "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "188b3812d1d0",
-      "file": "client/src/pages/merchant/PrivacyCenter.tsx",
-      "line": 239,
-      "tag": "AlertDialogAction",
-      "role": "",
-      "kind": "action",
-      "label": "إيقاف الحساب وتسجيل الطلب",
-      "section": "تأكيد حذف الحساب",
-      "binding": "event => {\r\n                    event.preventDefault();\r\n                    deletionMutation.mutate({ password: deletePassword, confirmation: DELETION_CONFIRMATION });\r\n                  }",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "deletionMutation.isPending || deletePassword.length < 8 || deleteConfirmation !== DELETION_CONFIRMATION",
+      "disabled": "running || (review === 'delete' && deletionLocked)",
       "review": "source-inventoried"
     },
     {

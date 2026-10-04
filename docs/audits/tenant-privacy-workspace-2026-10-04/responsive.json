@@ -1,0 +1,202 @@
+[
+  {
+    "language": "ar",
+    "frameWidth": 320,
+    "stage": "page",
+    "cards": 4,
+    "scrollWidth": 290,
+    "smallTargets": 0,
+    "width": 290
+  },
+  {
+    "language": "ar",
+    "frameWidth": 390,
+    "stage": "page",
+    "cards": 4,
+    "scrollWidth": 360,
+    "smallTargets": 0,
+    "width": 360
+  },
+  {
+    "language": "ar",
+    "frameWidth": 768,
+    "stage": "page",
+    "cards": 4,
+    "scrollWidth": 738,
+    "smallTargets": 0,
+    "width": 738
+  },
+  {
+    "language": "ar",
+    "frameWidth": 1440,
+    "stage": "page",
+    "cards": 4,
+    "scrollWidth": 1410,
+    "smallTargets": 0,
+    "width": 1410
+  },
+  {
+    "language": "en",
+    "frameWidth": 320,
+    "stage": "page",
+    "cards": 4,
+    "scrollWidth": 290,
+    "smallTargets": 0,
+    "width": 290
+  },
+  {
+    "language": "en",
+    "frameWidth": 390,
+    "stage": "page",
+    "cards": 4,
+    "scrollWidth": 360,
+    "smallTargets": 0,
+    "width": 360
+  },
+  {
+    "language": "en",
+    "frameWidth": 768,
+    "stage": "page",
+    "cards": 4,
+    "scrollWidth": 738,
+    "smallTargets": 0,
+    "width": 738
+  },
+  {
+    "language": "en",
+    "frameWidth": 1440,
+    "stage": "page",
+    "cards": 4,
+    "scrollWidth": 1410,
+    "smallTargets": 0,
+    "width": 1410
+  },
+  {
+    "language": "ar",
+    "frameWidth": 320,
+    "stage": "delete-review",
+    "dialogClientHeight": 810,
+    "dialogHeight": 812,
+    "dialogScrollHeight": 898,
+    "dialogWidth": 258,
+    "inputFonts": [
+      "16px",
+      "16px"
+    ],
+    "scrollWidth": 290,
+    "smallTargets": 0,
+    "width": 290
+  },
+  {
+    "language": "ar",
+    "frameWidth": 390,
+    "stage": "delete-review",
+    "dialogClientHeight": 762,
+    "dialogHeight": 764.03125,
+    "dialogScrollHeight": 762,
+    "dialogWidth": 328,
+    "inputFonts": [
+      "16px",
+      "16px"
+    ],
+    "scrollWidth": 360,
+    "smallTargets": 0,
+    "width": 360
+  },
+  {
+    "language": "ar",
+    "frameWidth": 768,
+    "stage": "delete-review",
+    "dialogClientHeight": 581,
+    "dialogHeight": 583.265625,
+    "dialogScrollHeight": 581,
+    "dialogWidth": 608,
+    "inputFonts": [
+      "16px",
+      "16px"
+    ],
+    "scrollWidth": 738,
+    "smallTargets": 0,
+    "width": 738
+  },
+  {
+    "language": "ar",
+    "frameWidth": 1440,
+    "stage": "delete-review",
+    "dialogClientHeight": 581,
+    "dialogHeight": 583.265625,
+    "dialogScrollHeight": 581,
+    "dialogWidth": 608,
+    "inputFonts": [
+      "16px",
+      "16px"
+    ],
+    "scrollWidth": 1410,
+    "smallTargets": 0,
+    "width": 1410
+  },
+  {
+    "language": "en",
+    "frameWidth": 320,
+    "stage": "delete-review",
+    "dialogClientHeight": 810,
+    "dialogHeight": 812,
+    "dialogScrollHeight": 1087,
+    "dialogWidth": 258,
+    "inputFonts": [
+      "16px",
+      "16px"
+    ],
+    "scrollWidth": 290,
+    "smallTargets": 0,
+    "width": 290
+  },
+  {
+    "language": "en",
+    "frameWidth": 390,
+    "stage": "delete-review",
+    "dialogClientHeight": 810,
+    "dialogHeight": 812,
+    "dialogScrollHeight": 923,
+    "dialogWidth": 328,
+    "inputFonts": [
+      "16px",
+      "16px"
+    ],
+    "scrollWidth": 360,
+    "smallTargets": 0,
+    "width": 360
+  },
+  {
+    "language": "en",
+    "frameWidth": 768,
+    "stage": "delete-review",
+    "dialogClientHeight": 664,
+    "dialogHeight": 666.046875,
+    "dialogScrollHeight": 664,
+    "dialogWidth": 608,
+    "inputFonts": [
+      "16px",
+      "16px"
+    ],
+    "scrollWidth": 738,
+    "smallTargets": 0,
+    "width": 738
+  },
+  {
+    "language": "en",
+    "frameWidth": 1440,
+    "stage": "delete-review",
+    "dialogClientHeight": 664,
+    "dialogHeight": 666.046875,
+    "dialogScrollHeight": 664,
+    "dialogWidth": 608,
+    "inputFonts": [
+      "16px",
+      "16px"
+    ],
+    "scrollWidth": 1410,
+    "smallTargets": 0,
+    "width": 1410
+  }
+]

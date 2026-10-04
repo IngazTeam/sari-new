@@ -10763,3 +10763,155 @@ body.merchant-surface{width:100%;max-width:none;margin:0;border:0;border-radius:
     width: 100%;
   }
 }
+.privacy-workspace {
+  overflow-wrap: anywhere;
+}
+.privacy-scope {
+  display: flex;
+  gap: 0.8rem;
+  align-items: flex-start;
+  background: #edf5ef;
+  border: 1px solid #d0e1d5;
+  border-radius: 1rem;
+  padding: 1.1rem;
+  margin-bottom: 1.25rem;
+}
+.privacy-scope svg,
+.privacy-tile > svg {
+  flex-shrink: 0;
+  color: #337449;
+}
+.privacy-scope p {
+  margin-top: 0.35rem;
+  line-height: 1.8;
+}
+.privacy-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+.privacy-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin-bottom: 0;
+}
+.privacy-tile .sd-button {
+  margin-top: auto;
+}
+.privacy-grid + .sd-card {
+  margin-top: 1.5rem;
+}
+.privacy-state {
+  font-weight: 700;
+}
+.privacy-danger {
+  color: #823b34;
+}
+.privacy-tile.privacy-danger {
+  border-color: #e6cfc9;
+}
+.privacy-danger-button {
+  background: #a23a32;
+  color: #fff;
+  border-color: #a23a32;
+}
+.privacy-history {
+  list-style: none;
+  padding: 0;
+}
+.privacy-history li {
+  padding: 1rem 0;
+  border-top: 1px solid #e0e8e2;
+}
+.privacy-history li > div {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem 1rem;
+}
+.privacy-badge {
+  border: 1px solid #d6e2d9;
+  border-radius: 1rem;
+  padding: 0.2rem 0.65rem;
+  font-size: 0.85rem;
+}
+.privacy-dialog {
+  width: calc(100% - 2rem);
+  max-width: 38rem;
+  max-height: calc(100dvh - 2rem);
+  max-height: calc(var(--merchant-viewport-height, 100dvh) - 2rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 1.5rem;
+  padding-top: 3rem;
+  overflow-wrap: anywhere;
+}
+.privacy-dialog label {
+  display: block;
+  font-weight: 650;
+  margin: 0.7rem 0 0.4rem;
+}
+.privacy-dialog input:not([type='checkbox']),
+.privacy-dialog select,
+.privacy-dialog textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  font-size: 16px;
+  padding: 0.6rem;
+  border: 1px solid #aebfb3;
+  border-radius: 0.65rem;
+  background: #fff;
+  color: #253d31;
+}
+.privacy-dialog .privacy-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  min-height: 44px;
+  padding: 0.5rem;
+}
+.privacy-checkbox input {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+.privacy-dialog p {
+  line-height: 1.8;
+  margin-block: 0.6rem;
+}
+.privacy-dialog [data-slot='dialog-close'] {
+  min-width: 44px;
+  min-height: 44px;
+  display: grid;
+  place-items: center;
+}
+.privacy-dialog code {
+  display: inline-block;
+  overflow-wrap: anywhere;
+}
+.privacy-error {
+  color: #a23028;
+}
+.privacy-dialog [aria-invalid='true'] {
+  border: 2px solid #a23028;
+}
+.privacy-workspace :focus-visible,
+.privacy-dialog :focus-visible {
+  outline: 3px solid #256647;
+  outline-offset: 3px;
+}
+@media (max-width: 640px) {
+  .privacy-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .privacy-tile .sd-button {
+    width: 100%;
+  }
+  .privacy-dialog {
+    padding: 1rem;
+    padding-top: 3rem;
+  }
+}

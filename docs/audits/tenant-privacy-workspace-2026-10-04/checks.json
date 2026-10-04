@@ -1,0 +1,37 @@
+{
+  "unit": {
+    "passed": 207,
+    "failed": 0
+  },
+  "mysqlPrivacy": {
+    "passed": 15,
+    "failed": 0
+  },
+  "mysqlSignupRegression": {
+    "passed": 4,
+    "failed": 0
+  },
+  "releasePassed": 72,
+  "types": "passed",
+  "build": "passed",
+  "translations": {
+    "advertisedLocale": "ar",
+    "callsChecked": 13983,
+    "dynamicKeysChecked": 852,
+    "unresolvedDynamicCalls": [],
+    "missing": [],
+    "interpolationErrors": []
+  },
+  "inventory": {
+    "routes": 126,
+    "files": 602,
+    "controls": 2808,
+    "browserRequests": 3,
+    "imperativeReads": 53,
+    "unresolvedReads": 0,
+    "queryCalls": 392,
+    "errorSignalMissing": 42,
+    "choices": 69,
+    "conditions": 1624
+  }
+}

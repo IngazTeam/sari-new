@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-04T16:35:01.913Z",
+  "generatedAt": "2026-10-04T16:56:25.947Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 599,
-      "controls": 2809
+      "files": 602,
+      "controls": 2808
     }
   },
   "addedFiles": [
@@ -339,7 +339,9 @@
     "client/src/lib/use-reviewed-settings-draft.ts",
     "client/src/lib/settings-workspace.ts",
     "client/src/lib/settings-workspace-labels.ts",
-    "client/src/hooks/use-toast.ts",
+    "client/src/components/merchant/PrivacyWorkspace.tsx",
+    "client/src/lib/privacy-workspace-labels.ts",
+    "client/src/lib/privacy-export.ts",
     "client/src/components/merchant/AccountNotificationsPage.tsx",
     "client/src/components/merchant/AccountNotificationsPrimitives.tsx",
     "client/src/lib/account-notifications-view.ts",
@@ -391,6 +393,7 @@
     "client/src/components/merchant/PaymentLinkCreate.tsx",
     "client/src/components/merchant/PaymentSettingsWorkspace.tsx",
     "client/src/lib/payment-settings-labels.ts",
+    "client/src/hooks/use-toast.ts",
     "client/src/_core/hooks/useAuth.ts",
     "client/src/components/merchant/PlatformIntegrationsWorkspace.tsx",
     "client/src/components/merchant/CalendarConnectionCard.tsx",
@@ -523,6 +526,7 @@
     "client/src/pages/merchant/OrderNotificationsSettings.tsx",
     "client/src/pages/merchant/Settings.tsx",
     "client/src/components/SetupWizardReset.tsx",
+    "client/src/pages/merchant/PrivacyCenter.tsx",
     "client/src/pages/merchant/NotificationsPage.tsx",
     "client/src/pages/merchant/LanguageSettings.tsx",
     "client/src/pages/CalendarSettings.tsx",
@@ -2089,9 +2093,11 @@
     {
       "route": "/merchant/privacy-center",
       "controlsBefore": 12,
-      "controlsNow": 12,
+      "controlsNow": 11,
       "removedQueries": [],
-      "addedQueries": [],
+      "addedQueries": [
+        "auth.me"
+      ],
       "removedMutations": [],
       "addedMutations": []
     },
