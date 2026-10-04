@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-04T05:51:22.202Z",
+  "generatedAt": "2026-10-04T06:49:35.709Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -15365,80 +15365,194 @@
     },
     {
       "file": "client/src/pages/merchant/NotificationsPage.tsx",
-      "hash": "a6cadb744e3b",
+      "hash": "b771aa94f6bc",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [
+        "client/src/components/merchant/AccountNotificationsPage.tsx"
+      ],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/components/merchant/AccountNotificationsPage.tsx",
+      "hash": "3dd621e9e9d4",
       "queries": [
-        "notifications.list",
-        "notifications.unreadCount"
+        "auth.me"
+      ],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [
+        {
+          "query": "auth.me",
+          "binding": "user",
+          "line": 8,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        }
+      ],
+      "conditions": [],
+      "imports": [
+        "client/src/components/merchant/AccountNotificationsPrimitives.tsx",
+        "client/src/components/merchant/AccountNotificationsList.tsx",
+        "client/src/components/merchant/AccountNotificationView.tsx"
+      ],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/components/merchant/AccountNotificationsPrimitives.tsx",
+      "hash": "7efb2f109568",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [
+        {
+          "label": "",
+          "line": 63,
+          "tag": "h1"
+        }
+      ],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [
+        "client/src/lib/account-notifications-view.ts",
+        "client/src/lib/knowledge-workspace-cache.ts",
+        "client/src/lib/payment-history-view.ts"
+      ],
+      "controlCount": 1
+    },
+    {
+      "file": "client/src/lib/account-notifications-view.ts",
+      "hash": "98164fff2aff",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/lib/payment-history-view.ts",
+      "hash": "454fcc80fd96",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/components/merchant/AccountNotificationsList.tsx",
+      "hash": "e933b54f6121",
+      "queries": [
+        "notifications.workspace.list"
       ],
       "mutations": [
-        "notifications.markAsRead",
-        "notifications.markAllAsRead",
-        "notifications.delete"
+        "notifications.workspace.readAllReviewed"
       ],
       "imperativeReads": [],
       "browserRequests": [],
       "sections": [
         {
-          "label": "الإشعارات",
-          "line": 118,
-          "tag": "h1"
+          "label": "·",
+          "line": 266,
+          "tag": "h2"
         },
         {
           "label": "",
-          "line": 171,
+          "line": 301,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 318,
+          "tag": "h2"
+        }
+      ],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [
+        {
+          "query": "notifications.workspace.list",
+          "binding": "query",
+          "line": 49,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": "!!filter"
+        }
+      ],
+      "conditions": [],
+      "imports": [
+        "client/src/lib/account-notifications-view.ts",
+        "client/src/components/merchant/AccountNotificationsPrimitives.tsx"
+      ],
+      "controlCount": 12
+    },
+    {
+      "file": "client/src/components/merchant/AccountNotificationView.tsx",
+      "hash": "506297ded58c",
+      "queries": [
+        "notifications.workspace.detail"
+      ],
+      "mutations": [
+        "notifications.workspace.applyReviewed"
+      ],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [
+        {
+          "label": "",
+          "line": 153,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 193,
           "tag": "h3"
         }
       ],
       "choices": [],
-      "handlers": [
-        {
-          "name": "handleMarkAsRead",
-          "line": 51,
-          "calls": [
-            "markAsReadMutation"
-          ]
-        },
-        {
-          "name": "handleMarkAllAsRead",
-          "line": 55,
-          "calls": [
-            "markAllAsReadMutation"
-          ]
-        },
-        {
-          "name": "handleDelete",
-          "line": 59,
-          "calls": [
-            "deleteMutation"
-          ]
-        },
-        {
-          "name": "handleNotificationClick",
-          "line": 65,
-          "calls": []
-        }
-      ],
+      "handlers": [],
       "queryStates": [
         {
-          "query": "notifications.list",
-          "binding": "{ data: notifications, isLoading }",
-          "line": 25,
-          "errorSignal": false,
+          "query": "notifications.workspace.detail",
+          "binding": "query",
+          "line": 29,
+          "errorSignal": true,
           "loadingSignal": true,
-          "enabled": null
-        },
-        {
-          "query": "notifications.unreadCount",
-          "binding": "{ data: unreadCount }",
-          "line": 26,
-          "errorSignal": false,
-          "loadingSignal": false,
           "enabled": null
         }
       ],
       "conditions": [],
-      "imports": [],
-      "controlCount": 4
+      "imports": [
+        "client/src/lib/account-notifications-view.ts",
+        "client/src/components/merchant/AccountNotificationsPrimitives.tsx"
+      ],
+      "controlCount": 6
     },
     {
       "file": "client/src/pages/merchant/LanguageSettings.tsx",
@@ -18083,21 +18197,6 @@
         "client/src/lib/payment-history-labels.ts"
       ],
       "controlCount": 23
-    },
-    {
-      "file": "client/src/lib/payment-history-view.ts",
-      "hash": "454fcc80fd96",
-      "queries": [],
-      "mutations": [],
-      "imperativeReads": [],
-      "browserRequests": [],
-      "sections": [],
-      "choices": [],
-      "handlers": [],
-      "queryStates": [],
-      "conditions": [],
-      "imports": [],
-      "controlCount": 0
     },
     {
       "file": "client/src/lib/payment-history-labels.ts",
@@ -21302,58 +21401,47 @@
     },
     {
       "file": "client/src/components/NotificationBell.tsx",
-      "hash": "af9e74b8381f",
+      "hash": "eca3e42b62a5",
       "queries": [
-        "notifications.list",
-        "notifications.unreadCount"
+        "auth.me",
+        "notifications.workspace.list"
       ],
-      "mutations": [
-        "notifications.markAsRead",
-        "notifications.markAllAsRead",
-        "notifications.delete"
-      ],
+      "mutations": [],
       "imperativeReads": [],
       "browserRequests": [],
       "sections": [
         {
-          "label": "الإشعارات",
-          "line": 106,
-          "tag": "h3"
+          "label": "",
+          "line": 64,
+          "tag": "h2"
         }
       ],
       "choices": [],
-      "handlers": [
-        {
-          "name": "handleNotificationClick",
-          "line": 62,
-          "calls": [
-            "markAsRead"
-          ]
-        }
-      ],
+      "handlers": [],
       "queryStates": [
         {
-          "query": "notifications.list",
-          "binding": "{ data: notifications = [] }",
-          "line": 29,
-          "errorSignal": false,
-          "loadingSignal": false,
-          "enabled": "isAuthenticated"
+          "query": "auth.me",
+          "binding": "user",
+          "line": 22,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
         },
         {
-          "query": "notifications.unreadCount",
-          "binding": "{ data: unreadCount = 0 }",
-          "line": 33,
-          "errorSignal": false,
-          "loadingSignal": false,
-          "enabled": "isAuthenticated"
+          "query": "notifications.workspace.list",
+          "binding": "query",
+          "line": 29,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
         }
       ],
       "conditions": [],
       "imports": [
-        "client/src/_core/hooks/useAuth.ts"
+        "client/src/lib/account-notifications-view.ts",
+        "client/src/components/merchant/AccountNotificationsPrimitives.tsx"
       ],
-      "controlCount": 3
+      "controlCount": 6
     },
     {
       "file": "client/src/components/ThemeSwitcher.tsx",
@@ -27156,22 +27244,47 @@
         "NotificationsPage"
       ],
       "files": [
-        "client/src/pages/merchant/NotificationsPage.tsx"
+        "client/src/pages/merchant/NotificationsPage.tsx",
+        "client/src/components/merchant/AccountNotificationsPage.tsx",
+        "client/src/components/merchant/AccountNotificationsPrimitives.tsx",
+        "client/src/lib/account-notifications-view.ts",
+        "client/src/lib/knowledge-workspace-cache.ts",
+        "client/src/lib/sales-policy-draft.ts",
+        "client/src/lib/conversation-draft.ts",
+        "client/src/lib/test-workspace-draft.ts",
+        "client/src/lib/payment-history-view.ts",
+        "client/src/components/merchant/AccountNotificationsList.tsx",
+        "client/src/components/merchant/AccountNotificationView.tsx"
       ],
       "controls": [
-        "d778e286e34f",
-        "2d691c0289a9",
-        "04aac804058f",
-        "6e6fa28ca294"
+        "fb1a72d07b7f",
+        "0c099516ee44",
+        "015c8e3484ea",
+        "4b58dfea4543",
+        "5a5832da4cf6",
+        "39b840240ca0",
+        "511f8b0b2ae9",
+        "0c5fb9116532",
+        "140153aad937",
+        "412f6ef9a5b4",
+        "c90c8a9af00a",
+        "42ed7c7ad3c6",
+        "195435dca851",
+        "b6429eb9a83e",
+        "a06f33c56214",
+        "42174bbd98b0",
+        "42b40c09acf6",
+        "582dd95a4619",
+        "732577268e91"
       ],
       "queries": [
-        "notifications.list",
-        "notifications.unreadCount"
+        "auth.me",
+        "notifications.workspace.list",
+        "notifications.workspace.detail"
       ],
       "mutations": [
-        "notifications.markAsRead",
-        "notifications.markAllAsRead",
-        "notifications.delete"
+        "notifications.workspace.readAllReviewed",
+        "notifications.workspace.applyReviewed"
       ],
       "imperativeReads": [],
       "browserRequests": []
@@ -76391,84 +76504,136 @@
       "review": "source-inventoried"
     },
     {
-      "id": "d778e286e34f",
-      "file": "client/src/pages/merchant/NotificationsPage.tsx",
-      "line": 128,
-      "tag": "Button",
+      "id": "fb1a72d07b7f",
+      "file": "client/src/components/merchant/AccountNotificationsPrimitives.tsx",
+      "line": 50,
+      "tag": "Link",
       "role": "",
       "kind": "action",
-      "label": "تحديد الكل كمقروء",
-      "section": "الإشعارات",
-      "binding": "handleMarkAllAsRead",
+      "label": "",
+      "section": "AccountNotificationsPrimitives",
+      "binding": "notificationHref(f.success ? f.data : {})",
       "type": "text",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": false,
+      "conditional": true,
       "conditions": [
-        "unreadCount && unreadCount > 0"
-      ],
-      "disabled": "markAllAsReadMutation.isPending",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "2d691c0289a9",
-      "file": "client/src/pages/merchant/NotificationsPage.tsx",
-      "line": 196,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "عرض",
-      "section": "NotificationsPage",
-      "binding": "() => handleNotificationClick(notification)",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [
-        "notification.link"
+        "detail"
       ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "04aac804058f",
-      "file": "client/src/pages/merchant/NotificationsPage.tsx",
-      "line": 207,
-      "tag": "Button",
+      "id": "0c099516ee44",
+      "file": "client/src/components/merchant/AccountNotificationsList.tsx",
+      "line": 165,
+      "tag": "input",
       "role": "",
-      "kind": "action",
-      "label": "",
-      "section": "NotificationsPage",
-      "binding": "() => handleMarkAsRead(notification.id)",
-      "type": "button",
+      "kind": "field",
+      "label": "c.searchHint",
+      "section": "AccountNotificationsList",
+      "binding": "draft.search",
+      "type": "text",
       "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "100",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "015c8e3484ea",
+      "file": "client/src/components/merchant/AccountNotificationsList.tsx",
+      "line": 178,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "all unread read unknown",
+      "section": "AccountNotificationsList",
+      "binding": "draft.state",
+      "type": "text",
+      "options": [
+        {
+          "value": "s",
+          "label": ""
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "4b58dfea4543",
+      "file": "client/src/components/merchant/AccountNotificationsList.tsx",
+      "line": 192,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "25 50",
+      "section": "AccountNotificationsList",
+      "binding": "draft.pageSize",
+      "type": "text",
+      "options": [
+        {
+          "value": "25",
+          "label": "25"
+        },
+        {
+          "value": "50",
+          "label": "50"
+        }
+      ],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
       "conditional": false,
-      "conditions": [
-        "!notification.isRead"
-      ],
-      "disabled": "markAsReadMutation.isPending",
+      "conditions": [],
+      "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "6e6fa28ca294",
-      "file": "client/src/pages/merchant/NotificationsPage.tsx",
-      "line": 219,
+      "id": "5a5832da4cf6",
+      "file": "client/src/components/merchant/AccountNotificationsList.tsx",
+      "line": 201,
       "tag": "Button",
       "role": "",
       "kind": "action",
       "label": "",
-      "section": "NotificationsPage",
-      "binding": "() => handleDelete(notification.id)",
+      "section": "AccountNotificationsList",
+      "binding": "",
+      "type": "submit",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "39b840240ca0",
+      "file": "client/src/components/merchant/AccountNotificationsList.tsx",
+      "line": 204,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "AccountNotificationsList",
+      "binding": "() => {\r\n            setDraft({ search: \"\", state: \"all\", pageSize: \"25\" });\r\n            setInvalid(false);\r\n            navigate(notificationHref());\r\n          }",
       "type": "button",
       "options": [],
       "min": "",
@@ -76477,7 +76642,338 @@
       "required": false,
       "conditional": true,
       "conditions": [],
-      "disabled": "deleteMutation.isPending",
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "511f8b0b2ae9",
+      "file": "client/src/components/merchant/AccountNotificationsList.tsx",
+      "line": 247,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "AccountNotificationsList",
+      "binding": "() => void refresh()",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "!snapshot",
+        "query.isLoading || query.isFetching",
+        "query.error",
+        "filter"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "0c5fb9116532",
+      "file": "client/src/components/merchant/AccountNotificationsList.tsx",
+      "line": 255,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "AccountNotificationsList",
+      "binding": "() => setReview(snapshot.markAll)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "!snapshot",
+        "query.isLoading || query.isFetching",
+        "query.error",
+        "filter"
+      ],
+      "disabled": "busy || blocked || !snapshot.markAll.unreadCount",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "140153aad937",
+      "file": "client/src/components/merchant/AccountNotificationsList.tsx",
+      "line": 274,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "·",
+      "binding": "() => void markAll()",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "review",
+        "!snapshot",
+        "query.isLoading || query.isFetching",
+        "query.error"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "412f6ef9a5b4",
+      "file": "client/src/components/merchant/AccountNotificationsList.tsx",
+      "line": 277,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "·",
+      "binding": "() => setReview(null)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "review",
+        "!snapshot",
+        "query.isLoading || query.isFetching",
+        "query.error"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "c90c8a9af00a",
+      "file": "client/src/components/merchant/AccountNotificationsList.tsx",
+      "line": 314,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "↗",
+      "section": "AccountNotificationsList",
+      "binding": "notificationHref(filter, row.id)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "snapshot.items.length === 0"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "42ed7c7ad3c6",
+      "file": "client/src/components/merchant/AccountNotificationsList.tsx",
+      "line": 329,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "AccountNotificationsList",
+      "binding": "() =>\r\n                    navigate(\r\n                      notificationHref({ ...filter, page: filter.page - 1 })\r\n                    )",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "!snapshot",
+        "query.isLoading || query.isFetching",
+        "query.error",
+        "filter"
+      ],
+      "disabled": "busy || filter.page <= 1",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "195435dca851",
+      "file": "client/src/components/merchant/AccountNotificationsList.tsx",
+      "line": 343,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "AccountNotificationsList",
+      "binding": "() =>\r\n                    navigate(\r\n                      notificationHref({ ...filter, page: filter.page + 1 })\r\n                    )",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "!snapshot",
+        "query.isLoading || query.isFetching",
+        "query.error",
+        "filter"
+      ],
+      "disabled": "busy || !snapshot.hasNext || filter.page >= 10000",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "b6429eb9a83e",
+      "file": "client/src/components/merchant/AccountNotificationView.tsx",
+      "line": 121,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "AccountNotificationView",
+      "binding": "() => void refresh()",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "a06f33c56214",
+      "file": "client/src/components/merchant/AccountNotificationView.tsx",
+      "line": 172,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "AccountNotificationView",
+      "binding": "row.link",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "row.link",
+        "!row",
+        "!snapshot",
+        "query.isLoading || query.isFetching",
+        "query.error"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "42174bbd98b0",
+      "file": "client/src/components/merchant/AccountNotificationView.tsx",
+      "line": 176,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "AccountNotificationView",
+      "binding": "() => void apply(\"read\")",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!row",
+        "!snapshot",
+        "query.isLoading || query.isFetching",
+        "query.error"
+      ],
+      "disabled": "busy || blocked || row.state === \"read\"",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "42b40c09acf6",
+      "file": "client/src/components/merchant/AccountNotificationView.tsx",
+      "line": 182,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "AccountNotificationView",
+      "binding": "() => setReview(row)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!row",
+        "!snapshot",
+        "query.isLoading || query.isFetching",
+        "query.error"
+      ],
+      "disabled": "busy || blocked",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "582dd95a4619",
+      "file": "client/src/components/merchant/AccountNotificationView.tsx",
+      "line": 197,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "AccountNotificationView",
+      "binding": "() => void apply(\"delete\")",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "review",
+        "!row",
+        "!snapshot",
+        "query.isLoading || query.isFetching"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "732577268e91",
+      "file": "client/src/components/merchant/AccountNotificationView.tsx",
+      "line": 204,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "AccountNotificationView",
+      "binding": "() => setReview(null)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "review",
+        "!row",
+        "!snapshot",
+        "query.isLoading || query.isFetching"
+      ],
+      "disabled": "busy",
       "review": "source-inventoried"
     },
     {
@@ -92928,13 +93424,13 @@
       "review": "source-inventoried"
     },
     {
-      "id": "a0f9b695586b",
+      "id": "02ca2e89f94d",
       "file": "client/src/components/NotificationBell.tsx",
-      "line": 92,
+      "line": 41,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "الإشعارات",
+      "label": "c.title + (count === undefined ? \"\" : ` · ${c.unread}: ${count}`)",
       "section": "NotificationBell",
       "binding": "",
       "type": "button",
@@ -92949,15 +93445,15 @@
       "review": "source-inventoried"
     },
     {
-      "id": "2d566351bcf9",
+      "id": "8f0d5164e8cc",
       "file": "client/src/components/NotificationBell.tsx",
-      "line": 108,
+      "line": 71,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "تحديد الكل كمقروء",
-      "section": "الإشعارات",
-      "binding": "() => markAllAsRead.mutate()",
+      "label": "",
+      "section": "NotificationBell",
+      "binding": "() => void query.refetch()",
       "type": "text",
       "options": [],
       "min": "",
@@ -92966,31 +93462,101 @@
       "required": false,
       "conditional": false,
       "conditions": [
-        "unreadCount > 0"
+        "!snapshot",
+        "query.isLoading || query.isFetching"
       ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "1f8191cb53c3",
+      "id": "2408b0e819e7",
       "file": "client/src/components/NotificationBell.tsx",
-      "line": 162,
-      "tag": "Button",
+      "line": 79,
+      "tag": "DropdownMenuItem",
       "role": "",
       "kind": "action",
       "label": "",
-      "section": "الإشعارات",
-      "binding": "(e) => {\r\n                      e.stopPropagation();\r\n                      deleteNotification.mutate({ id: notification.id });\r\n                    }",
+      "section": "NotificationBell",
+      "binding": "",
       "type": "text",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": true,
+      "conditional": false,
       "conditions": [
-        "notifications.length === 0"
+        "snapshot.items.length === 0",
+        "!snapshot",
+        "query.isLoading || query.isFetching"
       ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "7d6992c2247b",
+      "file": "client/src/components/NotificationBell.tsx",
+      "line": 80,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "NotificationBell",
+      "binding": "notificationHref({}, row.id)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "snapshot.items.length === 0",
+        "!snapshot",
+        "query.isLoading || query.isFetching"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "921388e7fbd2",
+      "file": "client/src/components/NotificationBell.tsx",
+      "line": 94,
+      "tag": "DropdownMenuItem",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "NotificationBell",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "c5c0a43ba133",
+      "file": "client/src/components/NotificationBell.tsx",
+      "line": 95,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "NotificationBell",
+      "binding": "notificationHref()",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
       "disabled": "",
       "review": "source-inventoried"
     },

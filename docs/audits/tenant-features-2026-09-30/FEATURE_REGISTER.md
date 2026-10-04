@@ -2,7 +2,7 @@
 
 هذا حصر مصدر قابل لإعادة التوليد، وليس ادعاءً بأن كل مسار عمل اختُبر أو أُعيد تصميمه. يشمل المكونات الفرعية المحلية، الحقول، الأزرار، النوافذ، التبويبات، واجهات القراءة والتعديل. العناصر الديناميكية تحتاج مراجعة إضافية.
 
-- 126 مسارًا مسجلًا، 498 ملف واجهة متصلًا، 2729 عنصر تحكم في المصدر.
+- 126 مسارًا مسجلًا، 503 ملف واجهة متصلًا، 2747 عنصر تحكم في المصدر.
 - 0 رابطًا حرفيًا غير مطابق، و0 ملف صفحة غير متصل بالمسارات المحصورة.
 
 | الصفحة | الملفات | عناصر التحكم | القراءة / التعديل | موك أب للصفحة |
@@ -76,7 +76,7 @@
 | /merchant/order-notifications — إشعارات الطلبات | 5 | 25 | 4 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/settings — الحساب والمتجر | 10 | 19 | 5 / 4 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/privacy-center — الخصوصية | 2 | 12 | 1 / 4 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/notifications — الإشعارات | 1 | 4 | 2 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/notifications — الإشعارات | 11 | 19 | 3 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/language-settings — لغة المساعد | 10 | 8 | 3 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/calendar/settings — ربط Google Calendar | 3 | 13 | 3 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/calendar — التقويم | 12 | 62 | 10 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -3072,14 +3072,39 @@
 | 238 | AlertDialogCancel | تراجع | تأكيد حذف الحساب |
 | 239 | AlertDialogAction | إيقاف الحساب وتسجيل الطلب | تأكيد حذف الحساب |
 
-## client/src/pages/merchant/NotificationsPage.tsx
+## client/src/components/merchant/AccountNotificationsPrimitives.tsx
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 128 | Button | تحديد الكل كمقروء | الإشعارات |
-| 196 | Button | عرض | NotificationsPage |
-| 207 | Button | تسمية ديناميكية / تحتاج مراجعة | NotificationsPage |
-| 219 | Button | تسمية ديناميكية / تحتاج مراجعة | NotificationsPage |
+| 50 | Link | تسمية ديناميكية / تحتاج مراجعة | AccountNotificationsPrimitives |
+
+## client/src/components/merchant/AccountNotificationsList.tsx
+
+| السطر | النوع | التسمية | القسم |
+|---:|---|---|---|
+| 165 | input | c.searchHint | AccountNotificationsList |
+| 178 | select | all unread read unknown | AccountNotificationsList |
+| 192 | select | 25 50 | AccountNotificationsList |
+| 201 | Button | تسمية ديناميكية / تحتاج مراجعة | AccountNotificationsList |
+| 204 | Button | تسمية ديناميكية / تحتاج مراجعة | AccountNotificationsList |
+| 247 | Button | تسمية ديناميكية / تحتاج مراجعة | AccountNotificationsList |
+| 255 | Button | تسمية ديناميكية / تحتاج مراجعة | AccountNotificationsList |
+| 274 | Button | تسمية ديناميكية / تحتاج مراجعة | · |
+| 277 | Button | تسمية ديناميكية / تحتاج مراجعة | · |
+| 314 | Link | ↗ | AccountNotificationsList |
+| 329 | Button | تسمية ديناميكية / تحتاج مراجعة | AccountNotificationsList |
+| 343 | Button | تسمية ديناميكية / تحتاج مراجعة | AccountNotificationsList |
+
+## client/src/components/merchant/AccountNotificationView.tsx
+
+| السطر | النوع | التسمية | القسم |
+|---:|---|---|---|
+| 121 | Button | تسمية ديناميكية / تحتاج مراجعة | AccountNotificationView |
+| 172 | Link | تسمية ديناميكية / تحتاج مراجعة | AccountNotificationView |
+| 176 | Button | تسمية ديناميكية / تحتاج مراجعة | AccountNotificationView |
+| 182 | Button | تسمية ديناميكية / تحتاج مراجعة | AccountNotificationView |
+| 197 | Button | تسمية ديناميكية / تحتاج مراجعة | AccountNotificationView |
+| 204 | Button | تسمية ديناميكية / تحتاج مراجعة | AccountNotificationView |
 
 ## client/src/pages/merchant/LanguageSettings.tsx
 
@@ -4135,9 +4160,12 @@
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 92 | Button | الإشعارات | NotificationBell |
-| 108 | Button | تحديد الكل كمقروء | الإشعارات |
-| 162 | Button | تسمية ديناميكية / تحتاج مراجعة | الإشعارات |
+| 41 | Button | c.title + (count === undefined ? "" : ` · ${c.unread}: ${count}`) | NotificationBell |
+| 71 | Button | تسمية ديناميكية / تحتاج مراجعة | NotificationBell |
+| 79 | DropdownMenuItem | تسمية ديناميكية / تحتاج مراجعة | NotificationBell |
+| 80 | Link | تسمية ديناميكية / تحتاج مراجعة | NotificationBell |
+| 94 | DropdownMenuItem | تسمية ديناميكية / تحتاج مراجعة | NotificationBell |
+| 95 | Link | تسمية ديناميكية / تحتاج مراجعة | NotificationBell |
 
 ## client/src/components/ThemeSwitcher.tsx
 

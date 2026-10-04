@@ -1,4 +1,5 @@
-import { Bell, Check, Trash2, X } from "lucide-react";
+import { Bell } from "lucide-react";
+import { Link } from "wouter";
 import { Button } from "./ui/button";
 import {
   DropdownMenu,
@@ -6,175 +7,96 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
-import { ScrollArea } from "./ui/scroll-area";
 import { trpc } from "@/lib/trpc";
-import { toast } from "sonner";
-import { Badge } from "./ui/badge";
-import { formatDistanceToNow } from "date-fns";
-import { ar } from "date-fns/locale";
-import { useLocation } from "wouter";
-import { useAuth } from "@/_core/hooks/useAuth";
-import { useTranslation } from 'react-i18next';
-
+import {
+  notificationHref,
+  notificationSnapshot,
+} from "@/lib/account-notifications-view";
+import {
+  useNotificationCopy,
+  notificationQueryOptions,
+  notificationDate,
+  NotificationState,
+} from "./merchant/AccountNotificationsPrimitives";
 export function NotificationBell() {
-  const { t } = useTranslation();
-  const [, setLocation] = useLocation();
-  const utils = trpc.useUtils();
-  const { user, loading: authLoading } = useAuth();
-
-  // Only fetch notifications if user is authenticated
-  const isAuthenticated = Boolean(user);
-
-  // Fetch notifications - only when authenticated
-  const { data: notifications = [] } = trpc.notifications.list.useQuery(undefined, {
-    enabled: isAuthenticated,
-    retry: false,
-  });
-  const { data: unreadCount = 0 } = trpc.notifications.unreadCount.useQuery(undefined, {
-    enabled: isAuthenticated,
-    retry: false,
-  });
-
-  // Mutations
-  const markAsRead = trpc.notifications.markAsRead.useMutation({
-    onSuccess: () => {
-      utils.notifications.list.invalidate();
-      utils.notifications.unreadCount.invalidate();
-    },
-  });
-
-  const markAllAsRead = trpc.notifications.markAllAsRead.useMutation({
-    onSuccess: () => {
-      utils.notifications.list.invalidate();
-      utils.notifications.unreadCount.invalidate();
-      toast.success(t('compNotificationBellPage.text0'));
-    },
-  });
-
-  const deleteNotification = trpc.notifications.delete.useMutation({
-    onSuccess: () => {
-      utils.notifications.list.invalidate();
-      utils.notifications.unreadCount.invalidate();
-      toast.success(t('compNotificationBellPage.text1'));
-    },
-  });
-
-  const handleNotificationClick = (notification: typeof notifications[0]) => {
-    if (!notification.isRead) {
-      markAsRead.mutate({ id: notification.id });
-    }
-    if (notification.link) {
-      setLocation(notification.link);
-    }
-  };
-
-  const getNotificationIcon = (type: string) => {
-    switch (type) {
-      case "success":
-        return "✅";
-      case "warning":
-        return "⚠️";
-      case "error":
-        return "❌";
-      default:
-        return "ℹ️";
-    }
-  };
-
-  // Don't render if not authenticated or still loading
-  if (authLoading || !isAuthenticated) {
+  const user = trpc.auth.me.useQuery(undefined, notificationQueryOptions);
+  if (user.error || user.isLoading || user.isFetching || !user.data?.id)
     return null;
-  }
-
+  return <AccountNotificationBell key={user.data.id} actorId={user.data.id} />;
+}
+export function AccountNotificationBell({ actorId }: { actorId: number }) {
+  const { c, locale } = useNotificationCopy(),
+    query = trpc.notifications.workspace.list.useQuery(
+      { search: '', state: 'all', page: 1, pageSize: 25 },
+      notificationQueryOptions
+    );
+  const snapshot =
+      query.error || query.isFetching
+        ? null
+        : notificationSnapshot(query.data, actorId, {}),
+    count = snapshot?.markAll.unreadCount;
   return (
-    <DropdownMenu modal={false}>
+    <DropdownMenu modal={false} dir={locale.startsWith("en") ? "ltr" : "rtl"} onOpenChange={open=>{if(open)void query.refetch();}}>
       <DropdownMenuTrigger asChild>
-        <Button type="button" variant="ghost" size="icon" className="relative" aria-label={t('compNotificationBellPage.text2')}>
-          <Bell className="h-5 w-5" />
-          {unreadCount > 0 && (
-            <Badge
-              variant="destructive"
-              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
-            >
-              {unreadCount > 9 ? "9+" : unreadCount}
-            </Badge>
+        <Button
+          className="an-bell-trigger"
+          type="button"
+          variant="ghost"
+          size="icon"
+          aria-label={
+            c.title + (count === undefined ? "" : ` · ${c.unread}: ${count}`)
+          }
+        >
+          <Bell aria-hidden="true" />
+          {count !== undefined && count > 0 && (
+            <span className="an-bell-count" aria-hidden="true">
+              {count > 99 ? "99+" : count}
+            </span>
+          )}
+          {!query.isFetching && !snapshot && (
+            <span className="an-bell-count" aria-hidden="true">
+              !
+            </span>
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-80">
-        <div className="flex items-center justify-between px-4 py-3 border-b">
-          <h3 className="font-semibold">{t('compNotificationBellPage.text2')}</h3>
-          {unreadCount > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => markAllAsRead.mutate()}
-              className="h-7 text-xs"
-            >
-              <Check className="h-3 w-3 mr-1" />{t('notificationBell.auto_0')}</Button>
-          )}
+      <DropdownMenuContent align="end" className="an-bell-panel">
+        <h2>{c.title}</h2>
+        <p>{c.bellHint}</p>
+        {query.isLoading || query.isFetching ? (
+          <p role="status">{c.loading}</p>
+        ) : !snapshot ? (
+          <div role="alert">
+            <p>{c.unavailable}</p>
+            <Button variant="outline" onClick={() => void query.refetch()}>
+              {c.refresh}
+            </Button>
+          </div>
+        ) : snapshot.items.length === 0 ? (
+          <p>{c.empty}</p>
+        ) : (
+          snapshot.items.slice(0, 5).map(row => (
+            <DropdownMenuItem asChild key={row.id}>
+              <Link
+                className="an-bell-item"
+                href={notificationHref({}, row.id)}
+              >
+                <NotificationState state={row.state} />
+                <strong>{row.title || c.unknownTitle}</strong>
+                <small>
+                  {notificationDate(row.createdAt, locale, c.unknown)}
+                </small>
+              </Link>
+            </DropdownMenuItem>
+          ))
+        )}
+        <div className="an-bell-footer">
+          <DropdownMenuItem asChild>
+            <Link className="an-link" href={notificationHref()}>
+              {c.viewAll}
+            </Link>
+          </DropdownMenuItem>
         </div>
-
-        <ScrollArea className="h-[400px]">
-          {notifications.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-              <Bell className="h-12 w-12 mb-3 opacity-20" />
-              <p className="text-sm">{t('compNotificationBellPage.text3')}</p>
-            </div>
-          ) : (
-            <div className="divide-y">
-              {notifications.map((notification) => (
-                <div
-                  key={notification.id}
-                  className={`group relative px-4 py-3 hover:bg-accent/50 transition-colors ${!notification.isRead ? "bg-accent/20" : ""
-                    }`}
-                >
-                  <div
-                    className="cursor-pointer"
-                    onClick={() => handleNotificationClick(notification)}
-                  >
-                    <div className="flex items-start gap-3">
-                      <span className="text-lg flex-shrink-0">
-                        {getNotificationIcon(notification.type)}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2">
-                          <h4 className="font-medium text-sm leading-tight">
-                            {notification.title}
-                          </h4>
-                          {!notification.isRead && (
-                            <div className="h-2 w-2 bg-primary rounded-full flex-shrink-0 mt-1" />
-                          )}
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                          {notification.message}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {formatDistanceToNow(new Date(notification.createdAt), {
-                            addSuffix: true,
-                            locale: ar,
-                          })}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute top-2 left-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      deleteNotification.mutate({ id: notification.id });
-                    }}
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          )}
-        </ScrollArea>
       </DropdownMenuContent>
     </DropdownMenu>
   );

@@ -310,3 +310,11 @@ it.each(['/merchant/reviews','/merchant/booking-reviews'])('preserves all review
  send(message,'https://evil.test');send(message,undefined,w);expect(w.location.hash).toBe('#/page'+path);send(message);
  expect(w.location.hash).toBe('#/page'+path+'?q=Customer&rating=3&reply=pending&visibility=private&integrity=linked&sort=lowest&page=2&tenant=270&lang=en');expect(w.syncServicePreviewContext).toHaveBeenCalledOnce();expect(frame.isConnected).toBe(true);
 });
+
+it('preserves account notification filters and detail while rejecting injected or foreign state',()=>{
+ const path='/merchant/notifications';frame.setAttribute('src','./service-workspace.html?embed=brain&path='+path);w.history.replaceState(null,'','#/page'+path);w.syncServicePreviewContext=vi.fn();
+ const message={type:'sary-brain-preview',action:'serviceState',search:`path=${path}&notification=52&state=unread&search=sample&page=2&pageSize=50&tenant=270&lang=en`};
+ for(const search of [message.search+'&actorId=999',message.search+'&notification=53',`path=${path}&notification=0`,`path=${path}&state=failed`,`path=${path}&pageSize=100`,`path=${path}&search=`+'x'.repeat(101),'path=/merchant/services&notification=52'])send({...message,search});
+ send(message,'https://evil.test');send(message,undefined,w);expect(w.location.hash).toBe('#/page'+path);
+ send(message);expect(w.location.hash).toBe('#/page'+path+'?notification=52&state=unread&search=sample&page=2&pageSize=50&tenant=270&lang=en');expect(w.syncServicePreviewContext).toHaveBeenCalledOnce();
+});
