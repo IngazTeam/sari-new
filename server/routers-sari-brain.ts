@@ -994,10 +994,10 @@ ${sanitizedContent}`
 
   /** Get all knowledge sections (hierarchical) */
   getKnowledgeSections: merchantProcedure.query(async ({ ctx }) => {
-    const merchant = await getMerchantById(ctx.merchantId);
-    if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-
     try {
+      const merchant = await getMerchantById(ctx.merchantId);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
       const knowledgeDb = await import('./db/knowledge');
       const sections = await knowledgeDb.getSectionsByMerchantId(merchant.id);
       
@@ -1033,8 +1033,8 @@ ${sanitizedContent}`
 
       return safe;
     } catch (err: any) {
-      console.error('[getKnowledgeSections] SERIALIZATION ERROR:', err.message, err.stack?.substring(0, 300));
-      return []; // Return empty array instead of crashing
+      if (err instanceof TRPCError && err.code === 'NOT_FOUND') throw err;
+      throw new TRPCError({code:'INTERNAL_SERVER_ERROR',message:'Knowledge sections unavailable'});
     }
   }),
 
@@ -1160,10 +1160,10 @@ ${sanitizedContent}`
 
   /** Get pending review sections (conflicts) */
   getPendingReviews: merchantProcedure.query(async ({ ctx }) => {
-    const merchant = await getMerchantById(ctx.merchantId);
-    if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-
     try {
+      const merchant = await getMerchantById(ctx.merchantId);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
       const knowledgeDb = await import('./db/knowledge');
       const sections = await knowledgeDb.getPendingReviewSections(merchant.id);
       return sections.map((s: any) => ({
@@ -1187,18 +1187,19 @@ ${sanitizedContent}`
         updatedAt: s.updated_at instanceof Date ? s.updated_at.toISOString() : String(s.updated_at ?? s.updatedAt ?? ''),
       }));
     } catch (err: any) {
+      if (err instanceof TRPCError && err.code === 'NOT_FOUND') throw err;
       throw new TRPCError({code:'INTERNAL_SERVER_ERROR',message:'Knowledge proposals unavailable'});
     }
   }),
 
   /** Get knowledge changelog */
   getChangelog: merchantProcedure
-    .input(z.object({ limit: z.number().min(1).max(200).optional() }))
+    .input(z.object({ limit: z.number().int().min(1).max(200).optional() }))
     .query(async ({ ctx, input }) => {
-      const merchant = await getMerchantById(ctx.merchantId);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-
       try {
+        const merchant = await getMerchantById(ctx.merchantId);
+        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
         const knowledgeDb = await import('./db/knowledge');
         const rows = await knowledgeDb.getChangelog(merchant.id, input.limit || 50);
         return rows.map((r: any) => ({
@@ -1214,8 +1215,8 @@ ${sanitizedContent}`
           createdAt: r.created_at instanceof Date ? r.created_at.toISOString() : String(r.created_at ?? r.createdAt ?? ''),
         }));
       } catch (err: any) {
-        console.error('[getChangelog] ERROR:', err.message);
-        return [];
+        if (err instanceof TRPCError && err.code === 'NOT_FOUND') throw err;
+        throw new TRPCError({code:'INTERNAL_SERVER_ERROR',message:'Knowledge history unavailable'});
       }
     }),
 

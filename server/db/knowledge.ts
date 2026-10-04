@@ -147,7 +147,7 @@ export async function getBotSectionsWithEmbedding(merchantId: number): Promise<K
 export async function getPendingReviewSections(merchantId: number): Promise<KnowledgeSection[]> {
   await ensureKnowledgeTables();
   const pool = await getPool();
-  if (!pool) return [];
+  if (!pool) throw new KnowledgeStorageError('unavailable');
 
   const [rows] = await pool.execute(
     `SELECT id, merchant_id, parent_id, section_type, title, content, summary, source, source_url, confidence, status, use_in_bot, inject_as, sort_order, merchant_edited, valid_until, provenance, created_at, updated_at
@@ -161,7 +161,7 @@ export async function getPendingReviewSections(merchantId: number): Promise<Know
 export async function getSectionById(sectionId: number, merchantId: number): Promise<KnowledgeSection | null> {
   await ensureKnowledgeTables();
   const pool = await getPool();
-  if (!pool) return null;
+  if (!pool) throw new KnowledgeStorageError('unavailable');
 
   const [rows] = await pool.execute(
     `SELECT id, merchant_id, parent_id, section_type, title, content, summary, source, source_url, confidence, status, use_in_bot, inject_as, sort_order, merchant_edited, valid_until, provenance, created_at, updated_at
@@ -452,11 +452,12 @@ export async function logChange(data: {
 export async function getChangelog(merchantId: number, limit: number = 50): Promise<KnowledgeChangelogEntry[]> {
   await ensureKnowledgeTables();
   const pool = await getPool();
-  if (!pool) return [];
+  if (!pool) throw new KnowledgeStorageError('unavailable');
 
+  if (!Number.isSafeInteger(limit)) throw new RangeError('knowledge_history:invalid_limit');
   const safeLimit = Math.min(Math.max(limit, 1), 200);
   const [rows] = await pool.execute(
-    `SELECT * FROM knowledge_changelog WHERE merchant_id = ? ORDER BY created_at DESC LIMIT ${safeLimit}`,
+    `SELECT id, merchant_id, section_id, action, reason, old_content, new_content, source, resolved, created_at FROM knowledge_changelog WHERE merchant_id = ? ORDER BY created_at DESC LIMIT ${safeLimit}`,
     [merchantId]
   );
   return rows as KnowledgeChangelogEntry[];
@@ -466,10 +467,10 @@ export async function getChangelog(merchantId: number, limit: number = 50): Prom
 export async function getUnresolvedConflicts(merchantId: number): Promise<KnowledgeChangelogEntry[]> {
   await ensureKnowledgeTables();
   const pool = await getPool();
-  if (!pool) return [];
+  if (!pool) throw new KnowledgeStorageError('unavailable');
 
   const [rows] = await pool.execute(
-    `SELECT * FROM knowledge_changelog 
+    `SELECT id, merchant_id, section_id, action, reason, old_content, new_content, source, resolved, created_at FROM knowledge_changelog
      WHERE merchant_id = ? AND action = 'conflict' AND resolved = 0 
      ORDER BY created_at DESC`,
     [merchantId]
