@@ -1,3 +1,4 @@
+import { notificationPreferenceReadProcedures } from './routers-notification-preference-workspace';
 import {scheduledMessagesRouter} from './routers-scheduled-messages';
 import { reviewsRouter } from './routers-reviews';
 import {abandonedCartsRouter} from './routers-abandoned-carts';
@@ -4373,6 +4374,7 @@ export const appRouter = router({
 
   // Notification Preferences APIs
   notificationPreferences: router({
+    ...notificationPreferenceReadProcedures,
     // Get merchant's notification preferences
     get: protectedProcedure
       .query(async ({ ctx }) => {
