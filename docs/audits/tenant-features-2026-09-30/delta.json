@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-04T09:50:19.972Z",
+  "generatedAt": "2026-10-04T10:38:08.781Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 510,
-      "controls": 2754
+      "files": 512,
+      "controls": 2763
     }
   },
   "addedFiles": [
@@ -328,8 +328,10 @@
     "client/src/lib/usage-workspace-view.ts",
     "client/src/components/merchant/PlanCatalogWorkspacePage.tsx",
     "client/src/components/merchant/PlanCatalogWorkspace.tsx",
+    "client/src/components/merchant/PlanCatalogCheckout.tsx",
     "client/src/lib/subscription-checkout-navigation.ts",
     "client/src/lib/plan-catalog-view.ts",
+    "client/src/lib/subscription-checkout-recovery.ts",
     "client/src/components/merchant/MerchantToolsDirectory.tsx",
     "client/src/components/merchant/navigation.ts",
     "client/src/components/merchant/tools.ts",
@@ -2545,7 +2547,7 @@
     {
       "route": "/merchant/subscription/plans",
       "controlsBefore": 3,
-      "controlsNow": 19,
+      "controlsNow": 28,
       "removedQueries": [
         "subscriptionPlans.listPlans",
         "merchantSubscription.getCurrentSubscription"
@@ -2555,6 +2557,7 @@
         "merchants.workspaceIdentity",
         "subscriptionPlans.workspace",
         "usage.workspace",
+        "merchantSubscription.checkoutAttempt",
         "merchantSubscription.reviewCheckout"
       ],
       "removedMutations": [],
@@ -2565,7 +2568,7 @@
     {
       "route": "/merchant/subscription/compare",
       "controlsBefore": 3,
-      "controlsNow": 19,
+      "controlsNow": 28,
       "removedQueries": [
         "subscriptionPlans.listPlans",
         "merchantSubscription.getCurrentSubscription"
@@ -2575,6 +2578,7 @@
         "merchants.workspaceIdentity",
         "subscriptionPlans.workspace",
         "usage.workspace",
+        "merchantSubscription.checkoutAttempt",
         "merchantSubscription.reviewCheckout"
       ],
       "removedMutations": [],
@@ -2596,7 +2600,7 @@
     {
       "route": "/merchant/checkout",
       "controlsBefore": 5,
-      "controlsNow": 19,
+      "controlsNow": 28,
       "removedQueries": [
         "subscriptionPlans.listPlans"
       ],
@@ -2605,6 +2609,7 @@
         "merchants.workspaceIdentity",
         "subscriptionPlans.workspace",
         "usage.workspace",
+        "merchantSubscription.checkoutAttempt",
         "merchantSubscription.reviewCheckout"
       ],
       "removedMutations": [],

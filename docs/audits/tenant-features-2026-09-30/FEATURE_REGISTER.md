@@ -2,7 +2,7 @@
 
 هذا حصر مصدر قابل لإعادة التوليد، وليس ادعاءً بأن كل مسار عمل اختُبر أو أُعيد تصميمه. يشمل المكونات الفرعية المحلية، الحقول، الأزرار، النوافذ، التبويبات، واجهات القراءة والتعديل. العناصر الديناميكية تحتاج مراجعة إضافية.
 
-- 126 مسارًا مسجلًا، 510 ملف واجهة متصلًا، 2754 عنصر تحكم في المصدر.
+- 126 مسارًا مسجلًا، 512 ملف واجهة متصلًا، 2763 عنصر تحكم في المصدر.
 - 0 رابطًا حرفيًا غير مطابق، و0 ملف صفحة غير متصل بالمسارات المحصورة.
 
 | الصفحة | الملفات | عناصر التحكم | القراءة / التعديل | موك أب للصفحة |
@@ -112,10 +112,10 @@
 | /merchant/subscriptions — الباقة والاستخدام | 1 | 10 | 2 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/usage — استهلاك الرسائل | 4 | 7 | 3 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/usage-dashboard — حدود الاستخدام | 4 | 7 | 3 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/subscription/plans — الباقات | 6 | 19 | 5 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/subscription/compare — مقارنة الباقات | 6 | 19 | 5 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/subscription/plans — الباقات | 8 | 28 | 6 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/subscription/compare — مقارنة الباقات | 8 | 28 | 6 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/subscription — الباقة والاستخدام | 1 | 10 | 2 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/checkout — بدء الاشتراك المدفوع | 6 | 19 | 5 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/checkout — بدء الاشتراك المدفوع | 8 | 28 | 6 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/payment/success — نتيجة دفع الاشتراك | 3 | 13 | 1 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/payment/cancel — إلغاء دفع الاشتراك | 3 | 12 | 0 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/tools — جميع الأدوات | 5 | 5 | 0 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -3895,25 +3895,39 @@
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 92 | button | تسمية ديناميكية / تحتاج مراجعة | checkout compare |
-| 98 | Link | تسمية ديناميكية / تحتاج مراجعة | checkout compare |
-| 104 | Link | تسمية ديناميكية / تحتاج مراجعة | checkout compare |
-| 111 | Link | تسمية ديناميكية / تحتاج مراجعة | checkout compare |
-| 116 | Link | تسمية ديناميكية / تحتاج مراجعة | checkout compare |
-| 161 | Link | تسمية ديناميكية / تحتاج مراجعة | checkout compare |
-| 169 | input | تسمية ديناميكية / تحتاج مراجعة | checkout compare |
-| 181 | input | تسمية ديناميكية / تحتاج مراجعة | checkout compare |
-| 198 | button | تسمية ديناميكية / تحتاج مراجعة | PlanCatalogWorkspace |
-| 271 | summary | ( ) | ( ) |
-| 287 | Link | تسمية ديناميكية / تحتاج مراجعة | ( ) |
-| 294 | button | تسمية ديناميكية / تحتاج مراجعة | ( ) |
-| 456 | Link | تسمية ديناميكية / تحتاج مراجعة | PlanCatalogWorkspace |
-| 492 | Link | تسمية ديناميكية / تحتاج مراجعة | PlanCatalogWorkspace |
-| 510 | button | تسمية ديناميكية / تحتاج مراجعة | PlanCatalogWorkspace |
-| 519 | button | تسمية ديناميكية / تحتاج مراجعة | PlanCatalogWorkspace |
-| 523 | Link | تسمية ديناميكية / تحتاج مراجعة | PlanCatalogWorkspace |
-| 527 | input | تسمية ديناميكية / تحتاج مراجعة | PlanCatalogWorkspace |
-| 535 | button | تسمية ديناميكية / تحتاج مراجعة | PlanCatalogWorkspace |
+| 89 | button | تسمية ديناميكية / تحتاج مراجعة | checkout compare |
+| 95 | Link | تسمية ديناميكية / تحتاج مراجعة | checkout compare |
+| 101 | Link | تسمية ديناميكية / تحتاج مراجعة | checkout compare |
+| 108 | Link | تسمية ديناميكية / تحتاج مراجعة | checkout compare |
+| 113 | Link | تسمية ديناميكية / تحتاج مراجعة | checkout compare |
+| 153 | Link | تسمية ديناميكية / تحتاج مراجعة | checkout compare |
+| 161 | input | تسمية ديناميكية / تحتاج مراجعة | checkout compare |
+| 173 | input | تسمية ديناميكية / تحتاج مراجعة | checkout compare |
+| 190 | button | تسمية ديناميكية / تحتاج مراجعة | PlanCatalogWorkspace |
+| 263 | summary | ( ) | ( ) |
+| 279 | Link | تسمية ديناميكية / تحتاج مراجعة | ( ) |
+| 286 | button | تسمية ديناميكية / تحتاج مراجعة | ( ) |
+
+## client/src/components/merchant/PlanCatalogCheckout.tsx
+
+| السطر | النوع | التسمية | القسم |
+|---:|---|---|---|
+| 111 | button | تسمية ديناميكية / تحتاج مراجعة | PlanCatalogCheckout |
+| 114 | Link | تسمية ديناميكية / تحتاج مراجعة | PlanCatalogCheckout |
+| 140 | button | تسمية ديناميكية / تحتاج مراجعة | PlanCatalogCheckout |
+| 143 | Link | تسمية ديناميكية / تحتاج مراجعة | PlanCatalogCheckout |
+| 203 | button | تسمية ديناميكية / تحتاج مراجعة | PlanCatalogCheckout |
+| 217 | button | تسمية ديناميكية / تحتاج مراجعة | PlanCatalogCheckout |
+| 221 | Link | تسمية ديناميكية / تحتاج مراجعة | PlanCatalogCheckout |
+| 223 | button | تسمية ديناميكية / تحتاج مراجعة | PlanCatalogCheckout |
+| 232 | Link | تسمية ديناميكية / تحتاج مراجعة | PlanCatalogCheckout |
+| 413 | Link | تسمية ديناميكية / تحتاج مراجعة | PlanCatalogCheckout |
+| 449 | Link | تسمية ديناميكية / تحتاج مراجعة | PlanCatalogCheckout |
+| 467 | button | تسمية ديناميكية / تحتاج مراجعة | PlanCatalogCheckout |
+| 476 | button | تسمية ديناميكية / تحتاج مراجعة | PlanCatalogCheckout |
+| 480 | Link | تسمية ديناميكية / تحتاج مراجعة | PlanCatalogCheckout |
+| 484 | input | تسمية ديناميكية / تحتاج مراجعة | PlanCatalogCheckout |
+| 492 | button | تسمية ديناميكية / تحتاج مراجعة | PlanCatalogCheckout |
 
 ## client/src/pages/merchant/PaymentSuccess.tsx
 

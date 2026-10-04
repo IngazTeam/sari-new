@@ -1,16 +1,13 @@
-import { useEffect, useRef, useState } from "react";
+import { PlanCatalogCheckout } from "./PlanCatalogCheckout";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation, useSearch } from "wouter";
-import { RefreshCw, Layers, ArrowRightLeft, CreditCard } from "lucide-react";
+import { RefreshCw, Layers, ArrowRightLeft } from "lucide-react";
 import { trpc } from "@/lib/trpc";
-import { openSubscriptionCheckout } from "@/lib/subscription-checkout-navigation";
 import { scopedUsage, usageQueryOptions } from "@/lib/usage-workspace-view";
 import {
   catalogSelection,
   scopedCatalog,
-  scopedCheckoutReview,
   annualSaving,
-  safeTapCheckoutUrl,
   planLabels,
   type PlanCycle,
 } from "@/lib/plan-catalog-view";
@@ -126,23 +123,18 @@ export function PlanCatalogWorkspace({ actorId, merchantId, view }: Props) {
       ) : !data || !current ? (
         <WorkspaceState inline kind="offline" onRetry={refresh} />
       ) : view === "checkout" ? (
-        !stable ? (
-          <section className="pc-notice" role="alert">
-            <p>{c.currentUnknown}</p>
-          </section>
-        ) : (
-          <CheckoutReview
-            key={`${actorId}:${merchantId}:${selection.planId}:${cycle}`}
-            actorId={actorId}
-            merchantId={merchantId}
-            planId={selection.planId!}
-            cycle={cycle}
-            canManage={data.canManage}
-            c={c}
-            ar={ar}
-            money={money}
-          />
-        )
+        <PlanCatalogCheckout
+          key={`${actorId}:${merchantId}:${selection.planId}:${cycle}`}
+          actorId={actorId}
+          merchantId={merchantId}
+          planId={selection.planId!}
+          cycle={cycle}
+          canManage={data.canManage}
+          canReview={stable}
+          c={c}
+          ar={ar}
+          money={money}
+        />
       ) : (
         <>
           <section className="pc-current">
@@ -319,230 +311,5 @@ export function PlanCatalogWorkspace({ actorId, merchantId, view }: Props) {
         </>
       )}
     </div>
-  );
-}
-
-function CheckoutReview({
-  actorId,
-  merchantId,
-  planId,
-  cycle,
-  canManage,
-  c,
-  ar,
-  money,
-}: {
-  actorId: number;
-  merchantId: number;
-  planId: number;
-  cycle: PlanCycle;
-  canManage: boolean;
-  c: Record<string, string>;
-  ar: boolean;
-  money: (value: number | null, currency: string | null) => string;
-}) {
-  const quote = trpc.merchantSubscription.reviewCheckout.useQuery(
-    { planId, billingCycle: cycle },
-    { ...usageQueryOptions, enabled: canManage }
-  );
-  const subscribe = trpc.merchantSubscription.subscribe.useMutation(),
-    upgrade = trpc.merchantSubscription.upgradePlan.useMutation();
-  const review = scopedCheckoutReview(
-    quote.data,
-    actorId,
-    merchantId,
-    planId,
-    cycle
-  );
-  const [accepted, setAccepted] = useState(false),
-    [failure, setFailure] = useState<"conflict" | "failed" | null>(null),
-    [done, setDone] = useState(false),
-    [now, setNow] = useState(Date.now());
-  const checkoutAttemptId = useRef(window.crypto.randomUUID()).current,
-    busy = useRef(false),
-    live = useRef(true);
-  useEffect(() => {
-    live.current = true;
-    return () => {
-      live.current = false;
-    };
-  }, []);
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(timer);
-  }, []);
-  useEffect(() => {
-    setAccepted(false);
-  }, [review?.token]);
-  const pending = subscribe.isPending || upgrade.isPending,
-    expired = !review || now >= Date.parse(review.expiresAt);
-  const refresh = () => {
-    setAccepted(false);
-    setFailure(null);
-    void quote.refetch();
-  };
-  const confirm = async () => {
-    if (
-      busy.current ||
-      pending ||
-      !review ||
-      !accepted ||
-      Date.now() >= Date.parse(review.expiresAt) ||
-      failure
-    )
-      return;
-    busy.current = true;
-    try {
-      const proof = { reviewedAt: review.reviewedAt, token: review.token };
-      const result =
-        review.mode === "subscribe"
-          ? await subscribe.mutateAsync({
-              planId,
-              billingCycle: cycle,
-              checkoutAttemptId,
-              review: proof,
-            })
-          : await upgrade.mutateAsync({
-              newPlanId: planId,
-              newBillingCycle: cycle,
-              checkoutAttemptId,
-              review: proof,
-            });
-      if (!live.current) return;
-      if (result.success !== true) {
-        setFailure("failed");
-        return;
-      }
-      if ("immediate" in result && result.immediate === true) {
-        setDone(true);
-        return;
-      }
-      const url =
-        "paymentUrl" in result ? safeTapCheckoutUrl(result.paymentUrl) : null;
-      if (!url) {
-        setFailure("failed");
-        return;
-      }
-      openSubscriptionCheckout(url);
-    } catch (error: any) {
-      if (live.current)
-        setFailure(error?.data?.code === "CONFLICT" ? "conflict" : "failed");
-    } finally {
-      busy.current = false;
-    }
-  };
-  if (!canManage)
-    return (
-      <section className="pc-notice">
-        <p>{c.readonly}</p>
-      </section>
-    );
-  if (quote.error)
-    return (
-      <WorkspaceState
-        inline
-        kind={workspaceFailureKind(quote.error)}
-        onRetry={refresh}
-      />
-    );
-  if (quote.isLoading || quote.isFetching)
-    return <WorkspaceState inline kind="loading" />;
-  if (!review)
-    return <WorkspaceState inline kind="missing" onRetry={refresh} />;
-  if (done)
-    return (
-      <section className="pc-empty" role="status">
-        <h2>{c.completed}</h2>
-        <Link className="pc-primary" href="/merchant/usage?tab=subscription">
-          {c.usage}
-        </Link>
-      </section>
-    );
-  return (
-    <section className="pc-checkout">
-      <div className="pc-review">
-        <span className="pc-eyebrow">
-          <CreditCard size={20} aria-hidden="true" />
-          {c.plan}
-        </span>
-        <h2>{ar ? review.nameAr : review.nameEn}</h2>
-        <p>{c[cycle]}</p>
-        <dl>
-          <div>
-            <dt>{c.price}</dt>
-            <dd>
-              <bdi>{money(review.priceMinor, review.currency)}</bdi>
-            </dd>
-          </div>
-          <div>
-            <dt>{c.credit}</dt>
-            <dd>
-              <bdi>{money(review.creditMinor, review.currency)}</bdi>
-            </dd>
-          </div>
-          <div className="pc-total">
-            <dt>{c.due}</dt>
-            <dd>
-              <bdi>{money(review.chargeMinor, review.currency)}</bdi>
-            </dd>
-          </div>
-        </dl>
-        {review.creditMinor > 0 && <p className="pc-note">{c.creditNote}</p>}
-        <p className="pc-note">{c.priceNote}</p>
-        <Link href={`/merchant/subscription/plans?cycle=${cycle}`}>
-          {c.changePlan}
-        </Link>
-      </div>
-      <div className="pc-confirm">
-        <h2>{c.reviewTitle}</h2>
-        <p>{c.gatewayNote}</p>
-        <p className="pc-note">
-          {c.expires}:{" "}
-          <bdi>
-            {new Date(review.expiresAt).toLocaleTimeString(
-              ar ? "ar-SA" : "en-US"
-            )}
-          </bdi>
-        </p>
-        {expired && (
-          <div className="pc-warning" role="alert">
-            <p>{c.expired}</p>
-            <button type="button" onClick={refresh} disabled={pending}>
-              {c.refresh}
-            </button>
-          </div>
-        )}
-        {failure && (
-          <div className="pc-warning" role="alert">
-            <p>{c[failure]}</p>
-            {failure === "conflict" && (
-              <button type="button" onClick={refresh}>
-                {c.refresh}
-              </button>
-            )}
-            <Link href="/merchant/payments">{c.history}</Link>
-          </div>
-        )}
-        <label className="pc-ack">
-          <input
-            type="checkbox"
-            checked={accepted}
-            disabled={expired || pending || !!failure}
-            onChange={e => setAccepted(e.target.checked)}
-          />
-          <span>{c.acknowledge}</span>
-        </label>
-        <button
-          type="button"
-          className="pc-primary"
-          onClick={() => {
-            void confirm();
-          }}
-          disabled={!accepted || expired || pending || !!failure}
-        >
-          {pending ? c.pending : review.chargeMinor === 0 ? c.apply : c.pay}
-        </button>
-      </div>
-    </section>
   );
 }

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-04T09:50:19.972Z",
+  "generatedAt": "2026-10-04T10:38:08.781Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -20206,10 +20206,80 @@
     },
     {
       "file": "client/src/components/merchant/PlanCatalogWorkspace.tsx",
-      "hash": "6178435e302a",
+      "hash": "aed4d26b9747",
       "queries": [
         "subscriptionPlans.workspace",
-        "usage.workspace",
+        "usage.workspace"
+      ],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [
+        {
+          "label": "checkout compare",
+          "line": 74,
+          "tag": "h1"
+        },
+        {
+          "label": "",
+          "line": 185,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 189,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 221,
+          "tag": "h2"
+        },
+        {
+          "label": "( )",
+          "line": 263,
+          "tag": "summary"
+        }
+      ],
+      "choices": [],
+      "handlers": [
+        {
+          "name": "update",
+          "line": 46,
+          "calls": []
+        }
+      ],
+      "queryStates": [
+        {
+          "query": "subscriptionPlans.workspace",
+          "binding": "catalog",
+          "line": 29,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        },
+        {
+          "query": "usage.workspace",
+          "binding": "usage",
+          "line": 33,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        }
+      ],
+      "conditions": [],
+      "imports": [
+        "client/src/components/merchant/PlanCatalogCheckout.tsx",
+        "client/src/lib/usage-workspace-view.ts",
+        "client/src/lib/plan-catalog-view.ts"
+      ],
+      "controlCount": 12
+    },
+    {
+      "file": "client/src/components/merchant/PlanCatalogCheckout.tsx",
+      "hash": "43d5f62821a8",
+      "queries": [
+        "merchantSubscription.checkoutAttempt",
         "merchantSubscription.reviewCheckout"
       ],
       "mutations": [
@@ -20220,56 +20290,41 @@
       "browserRequests": [],
       "sections": [
         {
-          "label": "checkout compare",
-          "line": 77,
-          "tag": "h1"
-        },
-        {
           "label": "",
-          "line": 193,
+          "line": 108,
           "tag": "h2"
         },
         {
           "label": "",
-          "line": 197,
+          "line": 137,
           "tag": "h2"
         },
         {
           "label": "",
-          "line": 229,
-          "tag": "h2"
-        },
-        {
-          "label": "( )",
-          "line": 271,
-          "tag": "summary"
-        },
-        {
-          "label": "",
-          "line": 455,
+          "line": 170,
           "tag": "h2"
         },
         {
           "label": "",
-          "line": 468,
+          "line": 412,
           "tag": "h2"
         },
         {
           "label": "",
-          "line": 497,
+          "line": 425,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 454,
           "tag": "h2"
         }
       ],
       "choices": [],
       "handlers": [
         {
-          "name": "update",
-          "line": 49,
-          "calls": []
-        },
-        {
           "name": "confirm",
-          "line": 384,
+          "line": 321,
           "calls": [
             "subscribe",
             "upgrade"
@@ -20278,25 +20333,17 @@
       ],
       "queryStates": [
         {
-          "query": "subscriptionPlans.workspace",
-          "binding": "catalog",
-          "line": 32,
+          "query": "merchantSubscription.checkoutAttempt",
+          "binding": "source",
+          "line": 44,
           "errorSignal": true,
           "loadingSignal": true,
-          "enabled": null
-        },
-        {
-          "query": "usage.workspace",
-          "binding": "usage",
-          "line": 36,
-          "errorSignal": true,
-          "loadingSignal": true,
-          "enabled": null
+          "enabled": "canManage && !!checkpoint "
         },
         {
           "query": "merchantSubscription.reviewCheckout",
           "binding": "quote",
-          "line": 344,
+          "line": 279,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": "canManage "
@@ -20306,9 +20353,10 @@
       "imports": [
         "client/src/lib/subscription-checkout-navigation.ts",
         "client/src/lib/usage-workspace-view.ts",
-        "client/src/lib/plan-catalog-view.ts"
+        "client/src/lib/plan-catalog-view.ts",
+        "client/src/lib/subscription-checkout-recovery.ts"
       ],
-      "controlCount": 19
+      "controlCount": 16
     },
     {
       "file": "client/src/lib/subscription-checkout-navigation.ts",
@@ -20327,7 +20375,22 @@
     },
     {
       "file": "client/src/lib/plan-catalog-view.ts",
-      "hash": "a2ff8d53bedb",
+      "hash": "7920abf88d6f",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/lib/subscription-checkout-recovery.ts",
+      "hash": "629a82235719",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
@@ -29090,35 +29153,47 @@
         "client/src/components/merchant/PlanCatalogWorkspacePage.tsx",
         "client/src/lib/usage-workspace-view.ts",
         "client/src/components/merchant/PlanCatalogWorkspace.tsx",
+        "client/src/components/merchant/PlanCatalogCheckout.tsx",
         "client/src/lib/subscription-checkout-navigation.ts",
-        "client/src/lib/plan-catalog-view.ts"
+        "client/src/lib/plan-catalog-view.ts",
+        "client/src/lib/subscription-checkout-recovery.ts"
       ],
       "controls": [
-        "7bce0fc541af",
-        "e0d848a75698",
-        "65d8bd7e4383",
-        "92e914b108d9",
-        "265983c25a22",
-        "7816401e39af",
-        "07267191e915",
-        "852102cdca38",
-        "a3db20d750db",
-        "c6d1777467b6",
-        "20360548bd0d",
-        "9f79b5cd8828",
-        "617419ef65e6",
-        "0c07e98072c7",
-        "4a896c7199ba",
-        "4f148608ff05",
-        "2a644b1dbcad",
-        "d2ca20ea1601",
-        "29c398a97dca"
+        "e49276dc20db",
+        "6f2c0b0f3d9c",
+        "9ff8c325ef79",
+        "d9bd3c5b0658",
+        "2a5df33d6e8d",
+        "20a50bd63e9b",
+        "223b72b666c7",
+        "fa6192cf2e4d",
+        "cfcf8da26d5c",
+        "6b4170192219",
+        "4dbe0f6d7196",
+        "fc29ae5d756c",
+        "8b4047cab345",
+        "5b4bd9ba2bcd",
+        "27e6de9d0313",
+        "89ed1b5f7c4b",
+        "062ccdb01d63",
+        "75ce8284545e",
+        "51ebac9c02f4",
+        "038d2bc7038d",
+        "f3a47faf2904",
+        "24640b8c260c",
+        "53681c266096",
+        "dc44324ce0f1",
+        "7e01732e128a",
+        "4c8b03fd13f8",
+        "cc270c40ca17",
+        "84d1089a902b"
       ],
       "queries": [
         "auth.me",
         "merchants.workspaceIdentity",
         "subscriptionPlans.workspace",
         "usage.workspace",
+        "merchantSubscription.checkoutAttempt",
         "merchantSubscription.reviewCheckout"
       ],
       "mutations": [
@@ -29140,35 +29215,47 @@
         "client/src/components/merchant/PlanCatalogWorkspacePage.tsx",
         "client/src/lib/usage-workspace-view.ts",
         "client/src/components/merchant/PlanCatalogWorkspace.tsx",
+        "client/src/components/merchant/PlanCatalogCheckout.tsx",
         "client/src/lib/subscription-checkout-navigation.ts",
-        "client/src/lib/plan-catalog-view.ts"
+        "client/src/lib/plan-catalog-view.ts",
+        "client/src/lib/subscription-checkout-recovery.ts"
       ],
       "controls": [
-        "7bce0fc541af",
-        "e0d848a75698",
-        "65d8bd7e4383",
-        "92e914b108d9",
-        "265983c25a22",
-        "7816401e39af",
-        "07267191e915",
-        "852102cdca38",
-        "a3db20d750db",
-        "c6d1777467b6",
-        "20360548bd0d",
-        "9f79b5cd8828",
-        "617419ef65e6",
-        "0c07e98072c7",
-        "4a896c7199ba",
-        "4f148608ff05",
-        "2a644b1dbcad",
-        "d2ca20ea1601",
-        "29c398a97dca"
+        "e49276dc20db",
+        "6f2c0b0f3d9c",
+        "9ff8c325ef79",
+        "d9bd3c5b0658",
+        "2a5df33d6e8d",
+        "20a50bd63e9b",
+        "223b72b666c7",
+        "fa6192cf2e4d",
+        "cfcf8da26d5c",
+        "6b4170192219",
+        "4dbe0f6d7196",
+        "fc29ae5d756c",
+        "8b4047cab345",
+        "5b4bd9ba2bcd",
+        "27e6de9d0313",
+        "89ed1b5f7c4b",
+        "062ccdb01d63",
+        "75ce8284545e",
+        "51ebac9c02f4",
+        "038d2bc7038d",
+        "f3a47faf2904",
+        "24640b8c260c",
+        "53681c266096",
+        "dc44324ce0f1",
+        "7e01732e128a",
+        "4c8b03fd13f8",
+        "cc270c40ca17",
+        "84d1089a902b"
       ],
       "queries": [
         "auth.me",
         "merchants.workspaceIdentity",
         "subscriptionPlans.workspace",
         "usage.workspace",
+        "merchantSubscription.checkoutAttempt",
         "merchantSubscription.reviewCheckout"
       ],
       "mutations": [
@@ -29222,35 +29309,47 @@
         "client/src/components/merchant/PlanCatalogWorkspacePage.tsx",
         "client/src/lib/usage-workspace-view.ts",
         "client/src/components/merchant/PlanCatalogWorkspace.tsx",
+        "client/src/components/merchant/PlanCatalogCheckout.tsx",
         "client/src/lib/subscription-checkout-navigation.ts",
-        "client/src/lib/plan-catalog-view.ts"
+        "client/src/lib/plan-catalog-view.ts",
+        "client/src/lib/subscription-checkout-recovery.ts"
       ],
       "controls": [
-        "7bce0fc541af",
-        "e0d848a75698",
-        "65d8bd7e4383",
-        "92e914b108d9",
-        "265983c25a22",
-        "7816401e39af",
-        "07267191e915",
-        "852102cdca38",
-        "a3db20d750db",
-        "c6d1777467b6",
-        "20360548bd0d",
-        "9f79b5cd8828",
-        "617419ef65e6",
-        "0c07e98072c7",
-        "4a896c7199ba",
-        "4f148608ff05",
-        "2a644b1dbcad",
-        "d2ca20ea1601",
-        "29c398a97dca"
+        "e49276dc20db",
+        "6f2c0b0f3d9c",
+        "9ff8c325ef79",
+        "d9bd3c5b0658",
+        "2a5df33d6e8d",
+        "20a50bd63e9b",
+        "223b72b666c7",
+        "fa6192cf2e4d",
+        "cfcf8da26d5c",
+        "6b4170192219",
+        "4dbe0f6d7196",
+        "fc29ae5d756c",
+        "8b4047cab345",
+        "5b4bd9ba2bcd",
+        "27e6de9d0313",
+        "89ed1b5f7c4b",
+        "062ccdb01d63",
+        "75ce8284545e",
+        "51ebac9c02f4",
+        "038d2bc7038d",
+        "f3a47faf2904",
+        "24640b8c260c",
+        "53681c266096",
+        "dc44324ce0f1",
+        "7e01732e128a",
+        "4c8b03fd13f8",
+        "cc270c40ca17",
+        "84d1089a902b"
       ],
       "queries": [
         "auth.me",
         "merchants.workspaceIdentity",
         "subscriptionPlans.workspace",
         "usage.workspace",
+        "merchantSubscription.checkoutAttempt",
         "merchantSubscription.reviewCheckout"
       ],
       "mutations": [
@@ -89586,9 +89685,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "7bce0fc541af",
+      "id": "e49276dc20db",
       "file": "client/src/components/merchant/PlanCatalogWorkspace.tsx",
-      "line": 92,
+      "line": 89,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -89607,9 +89706,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "e0d848a75698",
+      "id": "6f2c0b0f3d9c",
       "file": "client/src/components/merchant/PlanCatalogWorkspace.tsx",
-      "line": 98,
+      "line": 95,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -89628,9 +89727,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "65d8bd7e4383",
+      "id": "9ff8c325ef79",
       "file": "client/src/components/merchant/PlanCatalogWorkspace.tsx",
-      "line": 104,
+      "line": 101,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -89649,9 +89748,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "92e914b108d9",
+      "id": "d9bd3c5b0658",
       "file": "client/src/components/merchant/PlanCatalogWorkspace.tsx",
-      "line": 111,
+      "line": 108,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -89670,9 +89769,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "265983c25a22",
+      "id": "2a5df33d6e8d",
       "file": "client/src/components/merchant/PlanCatalogWorkspace.tsx",
-      "line": 116,
+      "line": 113,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -89693,9 +89792,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "7816401e39af",
+      "id": "20a50bd63e9b",
       "file": "client/src/components/merchant/PlanCatalogWorkspace.tsx",
-      "line": 161,
+      "line": 153,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -89720,9 +89819,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "07267191e915",
+      "id": "223b72b666c7",
       "file": "client/src/components/merchant/PlanCatalogWorkspace.tsx",
-      "line": 169,
+      "line": 161,
       "tag": "input",
       "role": "",
       "kind": "field",
@@ -89743,9 +89842,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "852102cdca38",
+      "id": "fa6192cf2e4d",
       "file": "client/src/components/merchant/PlanCatalogWorkspace.tsx",
-      "line": 181,
+      "line": 173,
       "tag": "input",
       "role": "",
       "kind": "field",
@@ -89770,9 +89869,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "a3db20d750db",
+      "id": "cfcf8da26d5c",
       "file": "client/src/components/merchant/PlanCatalogWorkspace.tsx",
-      "line": 198,
+      "line": 190,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -89797,9 +89896,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "c6d1777467b6",
+      "id": "6b4170192219",
       "file": "client/src/components/merchant/PlanCatalogWorkspace.tsx",
-      "line": 271,
+      "line": 263,
       "tag": "summary",
       "role": "",
       "kind": "action",
@@ -89820,9 +89919,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "20360548bd0d",
+      "id": "4dbe0f6d7196",
       "file": "client/src/components/merchant/PlanCatalogWorkspace.tsx",
-      "line": 287,
+      "line": 279,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -89843,9 +89942,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "9f79b5cd8828",
+      "id": "fc29ae5d756c",
       "file": "client/src/components/merchant/PlanCatalogWorkspace.tsx",
-      "line": 294,
+      "line": 286,
       "tag": "button",
       "role": "",
       "kind": "action",
@@ -89866,14 +89965,209 @@
       "review": "source-inventoried"
     },
     {
-      "id": "617419ef65e6",
-      "file": "client/src/components/merchant/PlanCatalogWorkspace.tsx",
-      "line": 456,
+      "id": "8b4047cab345",
+      "file": "client/src/components/merchant/PlanCatalogCheckout.tsx",
+      "line": 111,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "PlanCatalogCheckout",
+      "binding": "refresh",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "5b4bd9ba2bcd",
+      "file": "client/src/components/merchant/PlanCatalogCheckout.tsx",
+      "line": 114,
       "tag": "Link",
       "role": "",
       "kind": "action",
       "label": "",
-      "section": "PlanCatalogWorkspace",
+      "section": "PlanCatalogCheckout",
+      "binding": "/merchant/subscription",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "27e6de9d0313",
+      "file": "client/src/components/merchant/PlanCatalogCheckout.tsx",
+      "line": 140,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "PlanCatalogCheckout",
+      "binding": "refresh",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "89ed1b5f7c4b",
+      "file": "client/src/components/merchant/PlanCatalogCheckout.tsx",
+      "line": 143,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "PlanCatalogCheckout",
+      "binding": "/merchant/subscription",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "062ccdb01d63",
+      "file": "client/src/components/merchant/PlanCatalogCheckout.tsx",
+      "line": 203,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "PlanCatalogCheckout",
+      "binding": "() => {\n                if (\n                  attempt.linkExpiresAt &&\n                  Date.now() < Date.parse(attempt.linkExpiresAt)\n                )\n                  openSubscriptionCheckout(link);\n              }",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "link"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "75ce8284545e",
+      "file": "client/src/components/merchant/PlanCatalogCheckout.tsx",
+      "line": 217,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "PlanCatalogCheckout",
+      "binding": "refresh",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "working",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "51ebac9c02f4",
+      "file": "client/src/components/merchant/PlanCatalogCheckout.tsx",
+      "line": 221,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "PlanCatalogCheckout",
+      "binding": "/merchant/subscription",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "038d2bc7038d",
+      "file": "client/src/components/merchant/PlanCatalogCheckout.tsx",
+      "line": 223,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "PlanCatalogCheckout",
+      "binding": "() => void chooseAgain()",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "final"
+      ],
+      "disabled": "working",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "f3a47faf2904",
+      "file": "client/src/components/merchant/PlanCatalogCheckout.tsx",
+      "line": 232,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "PlanCatalogCheckout",
+      "binding": "\"/merchant/checkout?planId=\" +\n                checkpoint.planId +\n                \"&cycle=\" +\n                checkpoint.cycle",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!sameSelection && !final"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "24640b8c260c",
+      "file": "client/src/components/merchant/PlanCatalogCheckout.tsx",
+      "line": 413,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "PlanCatalogCheckout",
       "binding": "/merchant/usage?tab=subscription",
       "type": "text",
       "options": [],
@@ -89887,14 +90181,14 @@
       "review": "source-inventoried"
     },
     {
-      "id": "0c07e98072c7",
-      "file": "client/src/components/merchant/PlanCatalogWorkspace.tsx",
-      "line": 492,
+      "id": "53681c266096",
+      "file": "client/src/components/merchant/PlanCatalogCheckout.tsx",
+      "line": 449,
       "tag": "Link",
       "role": "",
       "kind": "action",
       "label": "",
-      "section": "PlanCatalogWorkspace",
+      "section": "PlanCatalogCheckout",
       "binding": "`/merchant/subscription/plans?cycle=${cycle}`",
       "type": "text",
       "options": [],
@@ -89908,14 +90202,14 @@
       "review": "source-inventoried"
     },
     {
-      "id": "4a896c7199ba",
-      "file": "client/src/components/merchant/PlanCatalogWorkspace.tsx",
-      "line": 510,
+      "id": "dc44324ce0f1",
+      "file": "client/src/components/merchant/PlanCatalogCheckout.tsx",
+      "line": 467,
       "tag": "button",
       "role": "",
       "kind": "action",
       "label": "",
-      "section": "PlanCatalogWorkspace",
+      "section": "PlanCatalogCheckout",
       "binding": "refresh",
       "type": "button",
       "options": [],
@@ -89931,14 +90225,14 @@
       "review": "source-inventoried"
     },
     {
-      "id": "4f148608ff05",
-      "file": "client/src/components/merchant/PlanCatalogWorkspace.tsx",
-      "line": 519,
+      "id": "7e01732e128a",
+      "file": "client/src/components/merchant/PlanCatalogCheckout.tsx",
+      "line": 476,
       "tag": "button",
       "role": "",
       "kind": "action",
       "label": "",
-      "section": "PlanCatalogWorkspace",
+      "section": "PlanCatalogCheckout",
       "binding": "refresh",
       "type": "button",
       "options": [],
@@ -89955,15 +90249,15 @@
       "review": "source-inventoried"
     },
     {
-      "id": "2a644b1dbcad",
-      "file": "client/src/components/merchant/PlanCatalogWorkspace.tsx",
-      "line": 523,
+      "id": "4c8b03fd13f8",
+      "file": "client/src/components/merchant/PlanCatalogCheckout.tsx",
+      "line": 480,
       "tag": "Link",
       "role": "",
       "kind": "action",
       "label": "",
-      "section": "PlanCatalogWorkspace",
-      "binding": "/merchant/payments",
+      "section": "PlanCatalogCheckout",
+      "binding": "/merchant/subscription",
       "type": "text",
       "options": [],
       "min": "",
@@ -89978,14 +90272,14 @@
       "review": "source-inventoried"
     },
     {
-      "id": "d2ca20ea1601",
-      "file": "client/src/components/merchant/PlanCatalogWorkspace.tsx",
-      "line": 527,
+      "id": "cc270c40ca17",
+      "file": "client/src/components/merchant/PlanCatalogCheckout.tsx",
+      "line": 484,
       "tag": "input",
       "role": "",
       "kind": "field",
       "label": "",
-      "section": "PlanCatalogWorkspace",
+      "section": "PlanCatalogCheckout",
       "binding": "accepted",
       "type": "checkbox",
       "options": [],
@@ -89999,14 +90293,14 @@
       "review": "source-inventoried"
     },
     {
-      "id": "29c398a97dca",
-      "file": "client/src/components/merchant/PlanCatalogWorkspace.tsx",
-      "line": 535,
+      "id": "84d1089a902b",
+      "file": "client/src/components/merchant/PlanCatalogCheckout.tsx",
+      "line": 492,
       "tag": "button",
       "role": "",
       "kind": "action",
       "label": "",
-      "section": "PlanCatalogWorkspace",
+      "section": "PlanCatalogCheckout",
       "binding": "() => {\n            void confirm();\n          }",
       "type": "button",
       "options": [],

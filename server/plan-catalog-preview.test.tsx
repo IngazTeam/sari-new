@@ -50,6 +50,8 @@ const c = () => (state.language === "ar" ? ar.planCatalogUx : en.planCatalogUx);
 beforeEach(() => {
   vi.stubGlobal("React", React);
   (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+  window.localStorage.clear();
+  Object.defineProperty(navigator, "locks", { configurable: true, value: { request: async (_key: string, action: () => unknown) => action() } });
   state.language = "en";
   state.navigate.mockReset();
   history.replaceState(null, "", "/?path=/merchant/subscription/plans");
@@ -188,7 +190,7 @@ it.each(["action-failure", "save-conflict", "uncertain-save"] as ServiceMode[])(
     await clickText(c().pay);
     expect(state.navigate).not.toHaveBeenCalled();
     expect(host.textContent).toContain(
-      mode === "save-conflict" ? c().conflict : c().failed
+      mode === "uncertain-save" ? c().attempt_pending : c().attempt_not_found
     );
     expect(host.textContent).not.toContain(c().completed);
   }
@@ -265,4 +267,94 @@ it("ignores a late successful payment handoff after the component unmounts", asy
   );
   expect(state.navigate).not.toHaveBeenCalled();
   expect(host.textContent).toBe("Another tenant");
+});
+
+
+it("keeps the same attempt across remount and checks it without making another payment", async () => {
+  await go("/merchant/checkout", "&planId=11&cycle=yearly"); await render("checkout");
+  await act(async () => (host.querySelector("input[type=checkbox]") as HTMLInputElement).click());
+  await clickText(c().pay);
+  const raw = window.localStorage.getItem("sari.subscription-checkout.v1:1269:269");
+  expect(raw).toBeTruthy(); expect(model.operations).toBe(1);
+  await act(async () => root.render(<div />)); await render("checkout");
+  expect(host.textContent).toContain(c().attempt_pending);
+  expect(host.querySelector<HTMLAnchorElement>('a[href="./#/page/merchant/subscription"]')).toBeTruthy();
+  expect(host.querySelector('a[href*="payments%2F"]')).toBeNull();
+  expect(host.querySelector("input[type=checkbox]")).toBeNull();
+  await clickText(c().checkAttempt); expect(model.operations).toBe(1);
+  expect(window.localStorage.getItem("sari.subscription-checkout.v1:1269:269")).toBe(raw);
+  expect(state.navigate).toHaveBeenCalledTimes(1);
+  await clickText(c().openAttempt); expect(state.navigate).toHaveBeenCalledTimes(2); expect(model.operations).toBe(1);
+});
+it("recovers the simulated server record when both the component and preview model restart", async () => {
+  await go("/merchant/checkout", "&planId=11"); await render("checkout");
+  await act(async () => (host.querySelector("input[type=checkbox]") as HTMLInputElement).click()); await clickText(c().pay);
+  await act(async () => root.render(<div />)); model.dispose(); model = new ServicePreviewModel(269); await render("checkout");
+  expect(host.textContent).toContain(c().attempt_pending); expect(model.operations).toBe(0);
+  expect(host.textContent).toContain(c().openAttempt);
+});
+it("does not create a different attempt when the URL plan or billing cycle changes", async () => {
+  await go("/merchant/checkout", "&planId=11"); await render("checkout");
+  await act(async () => (host.querySelector("input[type=checkbox]") as HTMLInputElement).click()); await clickText(c().pay);
+  await go("/merchant/checkout", "&planId=12&cycle=yearly");
+  expect(host.textContent).toContain(c().returnAttempt); expect(host.querySelector("input[type=checkbox]")).toBeNull(); expect(model.operations).toBe(1);
+  expect(host.querySelector<HTMLAnchorElement>('a[href*="planId=11"]')?.href).toContain("cycle=monthly");
+});
+it("blocks payment when writes are denied or browser locking is unavailable", async () => {
+  Object.defineProperty(navigator, "locks", { configurable: true, value: undefined });
+  await go("/merchant/checkout", "&planId=11"); await render("checkout");
+  await act(async () => (host.querySelector("input[type=checkbox]") as HTMLInputElement).click()); await clickText(c().pay);
+  expect(model.operations).toBe(0); expect(state.navigate).not.toHaveBeenCalled(); expect(host.textContent).toContain(c().storageBlocked);
+});
+it("shows a storage error before displaying a new payment form for a corrupt checkpoint", async () => {
+  window.localStorage.setItem("sari.subscription-checkout.v1:1269:269", "broken");
+  await go("/merchant/checkout", "&planId=11"); await render("checkout");
+  expect(host.textContent).toContain(c().storageBlocked); expect(host.querySelector("input[type=checkbox]")).toBeNull(); expect(model.operations).toBe(0);
+});
+it("retries only the original UUID after a request failed before recording", async () => {
+  model.dispose(); model = new ServicePreviewModel(269, "save-conflict");
+  const mutate = vi.spyOn(model, "mutate");
+  await go("/merchant/checkout", "&planId=11"); await render("checkout");
+  await act(async () => (host.querySelector("input[type=checkbox]") as HTMLInputElement).click()); await clickText(c().pay);
+  const first = mutate.mock.calls[0][1].checkoutAttemptId;
+  expect(host.textContent).toContain(c().attempt_not_found); expect(model.operations).toBe(0);
+  await act(async () => (host.querySelector("input[type=checkbox]") as HTMLInputElement).click()); await clickText(c().retryAttempt);
+  expect(mutate.mock.calls[1][1].checkoutAttemptId).toBe(first); expect(model.operations).toBe(1);
+});
+it.each(["failure", "foreign", "wrong-attempt", "wrong-account"])("blocks stale or mismatched recovery source: %s", async reason => {
+  await go("/merchant/checkout", "&planId=11"); await render("checkout");
+  await act(async () => (host.querySelector("input[type=checkbox]") as HTMLInputElement).click()); await clickText(c().pay);
+  await act(async () => root.render(<div />));
+  const read = model.read.bind(model);
+  vi.spyOn(model, "read").mockImplementation((name, input) => {
+    const result = read(name, input); if (name !== "merchantSubscription.checkoutAttempt") return result;
+    return reason === "failure" ? { ...result, error: Error("offline"), isError: true } : { ...result, data: { ...result.data, ...(reason === "foreign" ? { merchantId: 270 } : reason === "wrong-account" ? { actorId: 1270 } : { checkoutAttemptId: crypto.randomUUID() }) } };
+  });
+  await render("checkout"); expect(host.textContent).toContain(c().recoveryUnavailable); expect(host.querySelector("input[type=checkbox]")).toBeNull();
+  expect(host.textContent).not.toContain(c().openAttempt); expect(model.operations).toBe(1);
+});
+it.each(["completed", "failed", "refunded"])("allows a new plan selection only after explicit resolution of %s", async status => {
+  await go("/merchant/checkout", "&planId=11"); await render("checkout");
+  await act(async () => (host.querySelector("input[type=checkbox]") as HTMLInputElement).click()); await clickText(c().pay);
+  await act(async () => root.render(<div />));
+  const read = model.read.bind(model);
+  vi.spyOn(model, "read").mockImplementation((name, input) => { const result = read(name, input); return name === "merchantSubscription.checkoutAttempt" ? { ...result, data: { ...result.data, state: status, recordedCheckoutUrl: null, linkExpiresAt: null } } : result; });
+  await render("checkout"); expect(host.textContent).toContain((c() as any)["attempt_" + status]);
+  expect(host.querySelector("input[type=checkbox]")).toBeNull(); expect(window.localStorage.getItem("sari.subscription-checkout.v1:1269:269")).toBeTruthy();
+  await clickText(c().chooseAgain); expect(window.localStorage.getItem("sari.subscription-checkout.v1:1269:269")).toBeNull(); expect(model.operations).toBe(1);
+});
+it("hides a recorded checkout link whose expiry has passed", async () => {
+  await go("/merchant/checkout", "&planId=11"); await render("checkout");
+  await act(async () => (host.querySelector("input[type=checkbox]") as HTMLInputElement).click()); await clickText(c().pay);
+  await act(async () => root.render(<div />)); model.dispose(); model = new ServicePreviewModel(269);
+  const key = Object.keys(window.localStorage).find(k => k.startsWith("sari.preview.checkout-record"))!;
+  const raw = JSON.parse(window.localStorage.getItem(key)!); raw.linkExpiresAt = new Date(Date.now()-1).toISOString(); window.localStorage.setItem(key, JSON.stringify(raw));
+  await render("checkout"); expect(host.textContent).toContain(c().noRecordedLink); expect(host.textContent).not.toContain(c().openAttempt); expect(model.operations).toBe(0);
+});
+
+it("does not send a payment when browser storage rejects the write", async () => {
+  vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new DOMException("Denied", "QuotaExceededError"); });
+  await go("/merchant/checkout", "&planId=11"); await render("checkout");
+  await act(async () => (host.querySelector("input[type=checkbox]") as HTMLInputElement).click()); await clickText(c().pay);
+  expect(model.operations).toBe(0); expect(state.navigate).not.toHaveBeenCalled(); expect(host.textContent).toContain(c().storageBlocked);
 });
