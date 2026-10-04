@@ -1,5 +1,8 @@
+import { cancellationReview } from "../shared/subscription-cancellation";
+import { cancelCurrentSubscription } from "./subscriptions/cancel-subscription";
+import { readSubscriptionBilling } from "./subscriptions/billing-workspace";
 import { randomUUID } from 'node:crypto';
-import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getPool, closeDb } from './db/connection';
 import { completeImmediateCanonicalPlanChange, processCanonicalSubscriptionCharge } from './subscriptions/canonical-state';
 import { createDisposableMerchant, cleanupDisposableMerchants } from './tests/helpers/disposable-merchant';
@@ -20,6 +23,7 @@ describe.skipIf(!process.env.DATABASE_URL)('plan change snapshot on disposable M
     paymentId = Number((await q("INSERT INTO payment_transactions(merchant_id,subscription_id,type,amount,currency,status,payment_method,metadata) VALUES (?,?,'downgrade','0.00','SAR','pending','tap',?)", [a.merchantId, subscriptionId, JSON.stringify(metadata)])).insertId);
   });
   afterEach(async () => {
+    vi.restoreAllMocks();
     await cleanupDisposableMerchants([a?.userId].filter(Boolean));
     for (const id of planIds || []) await q('DELETE FROM subscription_plans WHERE id=? AND name=?', [id, prefix]);
   });
@@ -68,4 +72,44 @@ describe.skipIf(!process.env.DATABASE_URL)('plan change snapshot on disposable M
     const rows = await q('SELECT status FROM payment_transactions WHERE id IN (?,?)', [paymentId, second]);
     expect(rows.filter((r: any) => r.status === 'completed')).toHaveLength(1);
   });
+  it.each(['captured', 'immediate'])('uses the same merchant-first lock order as scoped payment readers for %s', async kind => {
+    const pool = (await getPool())!, reader = await pool.getConnection(), writer = await pool.getConnection();
+    const chargeId = 'chg_' + randomUUID().replaceAll('-', '');
+    if (kind === 'captured') await q("UPDATE payment_transactions SET type='upgrade',amount='50.00',tap_charge_id=? WHERE id=?", [chargeId,paymentId]);
+    let signal!: (sql:string) => void; const firstLock = new Promise<string>(resolve => { signal = resolve; });
+    const execute = writer.execute.bind(writer);
+    vi.spyOn(writer,'execute').mockImplementation(((sql:string,args:any[]) => { if(sql.includes('FOR UPDATE'))signal(sql); return execute(sql,args); }) as any);
+    vi.spyOn(pool,'getConnection').mockResolvedValueOnce(writer);
+    let pending: Promise<any> | undefined;
+    try {
+      await reader.beginTransaction(); await reader.execute('SELECT id FROM merchants WHERE id=? FOR SHARE',[a.merchantId]);
+      pending = (kind === 'captured' ? processCanonicalSubscriptionCharge({id:chargeId,status:'CAPTURED',amount:50,currency:'SAR'}) : completeImmediateCanonicalPlanChange(paymentId,a.merchantId)).then(value=>({value}),error=>({error}));
+      expect(await firstLock).toMatch(/FROM merchants/);
+      // A previous payment-first writer would hold this row while waiting for our merchant lock.
+      const [visible] = await reader.execute<any[]>('SELECT id FROM payment_transactions WHERE id=? FOR SHARE',[paymentId]);
+      expect(visible[0].id).toBe(paymentId);
+    } finally { await reader.rollback(); reader.release(); }
+    const result = await pending; expect(result.error).toBeUndefined(); expect(await payment()).toBe('completed');
+  });
+  it('serializes captured plan change against reviewed cancellation without a deadlock', async () => {
+    const expected = cancellationReview((await readSubscriptionBilling(a.userId,a.merchantId)).subscription)!;
+    const chargeId = 'chg_' + randomUUID().replaceAll('-', '');
+    await q("UPDATE payment_transactions SET type='upgrade',amount='50.00',tap_charge_id=? WHERE id=?",[chargeId,paymentId]);
+    const results = await Promise.allSettled([processCanonicalSubscriptionCharge({id:chargeId,status:'CAPTURED',amount:50,currency:'SAR'}),cancelCurrentSubscription(a.userId,a.merchantId,{expected})]);
+    expect(results.filter(r=>r.status==='fulfilled')).toHaveLength(1);
+    for (const r of results) if(r.status==='rejected')expect(r.reason).not.toMatchObject({code:'ER_LOCK_DEADLOCK'});
+    const [sub] = await state(), status = await payment();
+    expect(sub.status === 'active' && sub.plan_id === planIds[1] && status === 'completed' || sub.status === 'cancelled' && sub.plan_id === planIds[0] && status === 'pending').toBe(true);
+  });
+  it.each(['captured','immediate'])('rolls back %s application when the merchant update lacks an acknowledgement', async kind => {
+    const pool = (await getPool())!, tx = await pool.getConnection(), execute = tx.execute.bind(tx);
+    const chargeId='chg_'+randomUUID().replaceAll('-','');
+    if(kind==='captured')await q("UPDATE payment_transactions SET type='upgrade',amount='50.00',tap_charge_id=? WHERE id=?",[chargeId,paymentId]);
+    vi.spyOn(tx,'execute').mockImplementation((async (sql:string,args:any[])=>{const result=await execute(sql,args);return /UPDATE merchants/.test(sql)?[{affectedRows:0},[]]:result;}) as any);
+    vi.spyOn(pool,'getConnection').mockResolvedValueOnce(tx);
+    const before=await state();
+    await expect(kind==='captured'?processCanonicalSubscriptionCharge({id:chargeId,status:'CAPTURED',amount:50,currency:'SAR'}):completeImmediateCanonicalPlanChange(paymentId,a.merchantId)).rejects.toThrow('MERCHANT_ENTITLEMENT_WRITE_UNVERIFIED');
+    vi.restoreAllMocks();expect(await state()).toEqual(before);expect(await payment()).toBe('pending');
+  });
+
 });

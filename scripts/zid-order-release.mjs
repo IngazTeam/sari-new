@@ -7,7 +7,7 @@ import { pathToFileURL } from 'node:url';
 // Do not infer compatibility from its age, application name or current DB data.
 export const requiredReleaseCapabilities = Object.freeze([
   'website-analysis-durable-jobs-0200',
-  'website-analysis-request-links-0201','competitor-reviewed-workspace-v1','competitor-analysis-durable-0202','competitor-request-closure-0203','notification-preferences-unique-0204','notification-preferences-reviewed-tenant-only-v1','currency-reviewed-owner-only-v1','profile-reviewed-writes-only-v1','payment-settings-reviewed-only-v1','payment-history-scoped-read-only-v1','payment-link-availability-validated-v1','payment-links-reviewed-workspace-v1','account-notifications-reviewed-workspace-v1','usage-scoped-workspace-only-v1','usage-notifications-evidence-v1','subscription-plan-change-snapshot-v1','subscription-scoped-billing-only-v1','subscription-reviewed-cancellation-v1',
+  'website-analysis-request-links-0201','competitor-reviewed-workspace-v1','competitor-analysis-durable-0202','competitor-request-closure-0203','notification-preferences-unique-0204','notification-preferences-reviewed-tenant-only-v1','currency-reviewed-owner-only-v1','profile-reviewed-writes-only-v1','payment-settings-reviewed-only-v1','payment-history-scoped-read-only-v1','payment-link-availability-validated-v1','payment-links-reviewed-workspace-v1','account-notifications-reviewed-workspace-v1','usage-scoped-workspace-only-v1','usage-notifications-evidence-v1','subscription-plan-change-snapshot-v1','subscription-scoped-billing-only-v1','subscription-reviewed-cancellation-v1','subscription-canonical-merchant-lock-v1',
   'zid-order-store-identity-0127',
   'zid-catalog-store-identity-0129',
   'staff-voice-acceptance-0132',

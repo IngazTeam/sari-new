@@ -159,12 +159,21 @@ async function synchronizeMerchant(
   status: 'active' | 'trial' | 'expired',
   maxCustomers: number,
 ): Promise<void> {
-  await connection.execute(
+  const [result] = await connection.execute(
     `UPDATE merchants
        SET current_subscription_id = ?, subscription_status = ?, max_customers_allowed = ?
      WHERE id = ?`,
     [subscriptionId, status, maxCustomers, merchantId],
   );
+  if ((result as { affectedRows: number }).affectedRows !== 1) throw new Error('MERCHANT_ENTITLEMENT_WRITE_UNVERIFIED');
+}
+
+async function lockCanonicalMerchant(connection: PoolConnection, merchantId: number) {
+  positiveInteger(merchantId, 'merchant_id');
+  const [rows] = await connection.execute<RowDataPacket[]>(
+    'SELECT id FROM merchants WHERE id = ? LIMIT 1 FOR UPDATE', [merchantId],
+  );
+  if (rows.length !== 1 || rows[0].id !== merchantId) throw new Error('MERCHANT_NOT_FOUND');
 }
 
 async function activateNewSubscription(
@@ -428,6 +437,7 @@ export async function completeImmediateCanonicalPlanChange(
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
+    await lockCanonicalMerchant(connection, merchantId);
     const [rows] = await connection.execute<PaymentRow[]>(
       `SELECT id, merchant_id, subscription_id, type, amount, currency, status, metadata
          FROM payment_transactions WHERE id = ? LIMIT 1 FOR UPDATE`,
@@ -465,7 +475,15 @@ export async function processCanonicalSubscriptionCharge(
 
   const connection = await pool.getConnection();
   try {
+    // Resolve only the lock key here. The payment is reread and checked under
+    // locks below; all canonical writers and scoped readers lock merchant first.
+    const [identity] = await connection.execute<RowDataPacket[]>(
+      'SELECT merchant_id FROM payment_transactions WHERE tap_charge_id = ? LIMIT 1', [charge.id],
+    );
+    if (!identity.length) return { success: false, status: 'not_found', message: 'Transaction not found' };
+    const merchantId = positiveInteger(identity[0].merchant_id, 'merchant_id');
     await connection.beginTransaction();
+    await lockCanonicalMerchant(connection, merchantId);
     const [rows] = await connection.execute<PaymentRow[]>(
       `SELECT id, merchant_id, subscription_id, type, amount, currency, status, metadata
          FROM payment_transactions WHERE tap_charge_id = ? LIMIT 1 FOR UPDATE`,
@@ -476,6 +494,7 @@ export async function processCanonicalSubscriptionCharge(
       await connection.rollback();
       return { success: false, status: 'not_found', message: 'Transaction not found' };
     }
+    if (payment.merchant_id !== merchantId) throw new Error('PAYMENT_OWNERSHIP_MISMATCH');
 
     if (charge.status === 'REFUNDED') {
       if (payment.status === 'refunded') {
