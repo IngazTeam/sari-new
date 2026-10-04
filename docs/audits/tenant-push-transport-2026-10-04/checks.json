@@ -1,0 +1,18 @@
+{
+  "unit": {
+    "numTotalTests": 132,
+    "numPassedTests": 132,
+    "numFailedTests": 0
+  },
+  "mysql": {
+    "numTotalTests": 128,
+    "numPassedTests": 128,
+    "numFailedTests": 0
+  },
+  "types": "passed after removing unsupported regex flag",
+  "build": "passed",
+  "release": {
+    "passed": 70
+  },
+  "externalEffects": "No live push provider; mock transport, real encryption regression and disposable MySQL"
+}

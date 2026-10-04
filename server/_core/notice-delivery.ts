@@ -1,4 +1,4 @@
-import webpush from 'web-push';
+import {pushEndpoint,preparePushRequest,dispatchPushRequest} from './push-transport';
 import { z } from 'zod';
 import { getActivePushSubscriptions } from '../db_push';
 import { noticeHash,noticePlan,target,type NoticeTarget,type NoticeOutcome,type NoticeHooks } from '../integrations/notice-evidence';
@@ -48,14 +48,6 @@ export function prepareEmailNotice(input:{userId:number;to:string;subject:string
     return unknown(r.status);
   }};
 }
-function pushEndpoint(value:string) {
-  const u=new URL(value),host=u.hostname.toLowerCase();
-  // Browser push services only; no merchant-controlled URL, IP, proxy or redirect.
-  if(u.protocol!=='https:'||u.username||u.password||u.hash||u.port&&u.port!=='443'
-    ||!(['fcm.googleapis.com','android.googleapis.com','web.push.apple.com'].includes(host)
-      ||host==='updates.push.services.mozilla.com'||host.endsWith('.push.services.mozilla.com')||host.endsWith('.notify.windows.com')))throw Error('Unsupported push service');
-  return u;
-}
 export async function preparePushNotices(merchantId:number,payload:{title:string;body:string;url?:string},authorize:()=>Promise<void>):Promise<Prepared[]> {
   const publicKey=process.env.VAPID_PUBLIC_KEY,privateKey=process.env.VAPID_PRIVATE_KEY;
   if(!publicKey||!privateKey)return [suppressedNotice('push','unconfigured')];
@@ -66,22 +58,14 @@ export async function preparePushNotices(merchantId:number,payload:{title:string
   const body=JSON.stringify({...payload,icon:'/logo.png',badge:'/badge.png',url:payload.url||'/',tag:'sari-notification',requireInteraction:false,actions:[]});
   return subscriptions.map(s=>{
     const t=target('push',[s.id,s.endpoint,s.p256dh,s.auth],[noticeHash([publicKey,privateKey]),body]);
-    let details:ReturnType<typeof webpush.generateRequestDetails>;
-    try{pushEndpoint(s.endpoint);details=webpush.generateRequestDetails({endpoint:s.endpoint,keys:{p256dh:s.p256dh,auth:s.auth}},body,
-      {TTL:3600,vapidDetails:{subject:'mailto:support@sari.app',publicKey,privateKey}});
-      if(details.endpoint!==s.endpoint||details.method!=='POST'||!Buffer.isBuffer(details.body))throw Error('Invalid push request');
+    let details:ReturnType<typeof preparePushRequest>;
+    try{details=preparePushRequest(s,body,publicKey,privateKey);
     }catch{return {target:{...t,initial:'unavailable'}};}
     return {target:t,authorize:async()=>{
       const current=(await getActivePushSubscriptions(merchantId)).find(c=>c.id===s.id);
       if(!current||['endpoint','p256dh','auth'].some(k=>(current as any)[k]!==(s as any)[k])
         ||process.env.VAPID_PUBLIC_KEY!==publicKey||process.env.VAPID_PRIVATE_KEY!==privateKey)throw Error('Push subscription changed');await authorize();
-    },send:async()=>{
-      const r=await fetch(details.endpoint,{method:'POST',headers:Object.fromEntries(Object.entries(details.headers).map(([k,v])=>[k,String(v)])),body:new Uint8Array(details.body!),redirect:'error',signal:AbortSignal.timeout(20000)});
-      await bounded(r);
-      if(r.status===201){const location=r.headers.get('location');if(!location||location.length>4096)return unknown(201);
-        const ref=new URL(location,s.endpoint);if(ref.protocol!=='https:'||ref.username||ref.password)return unknown(201);return accepted(201,ref.href);}
-      return [400,401,403,404,410,413].includes(r.status)?rejected(r.status,['web-push',r.status]):unknown(r.status);
-    }};
+    },send:()=>dispatchPushRequest(details)};
   });
 }
 export function prepareOwnerNotice(endpoint:string,key:string,payload:{title:string;content:string},authorize:()=>Promise<void>):Prepared {

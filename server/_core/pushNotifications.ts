@@ -1,37 +1,13 @@
-// @ts-nocheck
-import webpush from "web-push";
 import {
   getActivePushSubscriptions,
   createPushNotificationLog,
   updatePushNotificationLogStatus,
-  deactivatePushSubscription,
 } from "../db_push";
-
-// VAPID keys - MUST be set via environment variables
-// Generate with: npx web-push generate-vapid-keys
-let pushEnabled = false;
-let _vapidInitialized = false;
-
-function ensureVapid() {
-  if (_vapidInitialized) return;
-  _vapidInitialized = true;
-
-  const pubKey = process.env.VAPID_PUBLIC_KEY || "";
-  const privKey = process.env.VAPID_PRIVATE_KEY || "";
-
-  if (!pubKey || !privKey) {
-    console.warn("[Push] ⚠️VAPID keys not set. Push notifications will not work. Set VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY in .env");
-    return;
-  }
-
-  try {
-    webpush.setVapidDetails("mailto:support@sari.app", pubKey, privKey);
-    pushEnabled = true;
-    console.log("[Push] ✅ VAPID keys configured successfully");
-  } catch (error) {
-    console.error("[Push] ❌ Failed to set VAPID details:", error);
-  }
-}
+import {
+  pushEndpoint,
+  preparePushRequest,
+  dispatchPushRequest,
+} from "./push-transport";
 
 export interface PushNotificationPayload {
   title: string;
@@ -49,22 +25,46 @@ export async function sendPushNotification(
   payload: PushNotificationPayload,
   beforeSend?: () => Promise<void>
 ): Promise<{ success: number; failed: number }> {
-  ensureVapid();
-  if (!pushEnabled) {
-    return { success: 0, failed: 0 };
-  }
-
+  const publicKey = process.env.VAPID_PUBLIC_KEY,
+    privateKey = process.env.VAPID_PRIVATE_KEY;
+  if (!publicKey || !privateKey) return { success: 0, failed: 0 };
+  if (!Number.isSafeInteger(merchantId) || merchantId <= 0)
+    throw Error("push:invalid_scope");
   const subscriptions = await getActivePushSubscriptions(merchantId);
-
-  if (subscriptions.length === 0) {
-    console.log("[Push] No active subscriptions for merchant:", merchantId);
-    return { success: 0, failed: 0 };
-  }
-
-  const results = await Promise.allSettled(
-    subscriptions.map(async (subscription) => {
-      // Create log entry
-      const [logResult] = await createPushNotificationLog({
+  // Do not fan out without bounds or duplicate a target recorded by a previous release.
+  if (subscriptions.length > 63)
+    return { success: 0, failed: subscriptions.length };
+  const endpoints = subscriptions.map(s => {
+    try {
+      return pushEndpoint(s.endpoint).href;
+    } catch {
+      return s.endpoint;
+    }
+  });
+  if (new Set(endpoints).size !== endpoints.length)
+    return { success: 0, failed: subscriptions.length };
+  const body = JSON.stringify({
+    ...payload,
+    icon: payload.icon || "/logo.png",
+    badge: payload.badge || "/badge.png",
+    url: payload.url || "/",
+    tag: payload.tag || "sari-notification",
+    requireInteraction: payload.requireInteraction || false,
+    actions: payload.actions || [],
+  });
+  let success = 0;
+  for (const subscription of subscriptions) {
+    let logId: number | undefined,
+      started = false,
+      accepted = false;
+    try {
+      const details = preparePushRequest(
+        subscription,
+        body,
+        publicKey,
+        privateKey
+      );
+      const [result] = await createPushNotificationLog({
         merchantId,
         subscriptionId: subscription.id,
         title: payload.title,
@@ -72,68 +72,52 @@ export async function sendPushNotification(
         url: payload.url,
         status: "pending",
       });
-
-      const logId = logResult.insertId;
-
-      try {
-        const pushSubscription = {
-          endpoint: subscription.endpoint,
-          keys: {
-            p256dh: subscription.p256dh,
-            auth: subscription.auth,
-          },
-        };
-
-        if (beforeSend) {
-          const current = (await getActivePushSubscriptions(merchantId)).find(row => row.id === subscription.id);
-          if (!current || ['endpoint','p256dh','auth'].some(key => current[key] !== subscription[key])) {
-            throw new Error('Push subscription changed');
-          }
-          await beforeSend();
-        }
-        await webpush.sendNotification(
-          pushSubscription,
-          JSON.stringify({
-            title: payload.title,
-            body: payload.body,
-            icon: payload.icon || "/logo.png",
-            badge: payload.badge || "/badge.png",
-            url: payload.url || "/",
-            tag: payload.tag || "sari-notification",
-            requireInteraction: payload.requireInteraction || false,
-            actions: payload.actions || [],
-          })
-        );
-
-        await updatePushNotificationLogStatus(logId, "sent");
-        return { success: true };
-      } catch (error: any) {
-        console.error("[Push] Failed to send notification:", error);
-
-        // If subscription is invalid (410 Gone), deactivate it
-        if (error.statusCode === 410) {
-          await deactivatePushSubscription(subscription.id);
-        }
-
+      if (!Number.isSafeInteger(result.insertId) || result.insertId <= 0)
+        throw Error("push:log_unconfirmed");
+      logId = result.insertId;
+      const current = (await getActivePushSubscriptions(merchantId)).find(
+        row => row.id === subscription.id
+      );
+      if (
+        !current ||
+        current.endpoint !== subscription.endpoint ||
+        current.p256dh !== subscription.p256dh ||
+        current.auth !== subscription.auth ||
+        process.env.VAPID_PUBLIC_KEY !== publicKey ||
+        process.env.VAPID_PRIVATE_KEY !== privateKey
+      )
+        throw Error("push:subscription_changed");
+      await beforeSend?.();
+      started = true;
+      const outcome = await dispatchPushRequest(details);
+      accepted = outcome.state === "accepted";
+      if (accepted) success++;
+      await updatePushNotificationLogStatus(
+        logId,
+        accepted ? "sent" : outcome.state === "rejected" ? "failed" : "unknown",
+        accepted
+          ? undefined
+          : outcome.state === "rejected"
+            ? "push:provider_rejected"
+            : "push:acceptance_unknown"
+      );
+    } catch {
+      // A receipt/log outage after acceptance does not invent a provider failure or retry.
+      // Provider exceptions may contain endpoint tokens: never store or print them.
+      if (logId && !accepted)
         await updatePushNotificationLogStatus(
           logId,
-          "failed",
-          error.message || "Unknown error"
-        );
-        return { success: false };
-      }
-    })
-  );
-
-  const success = results.filter(
-    (r) => r.status === "fulfilled" && r.value.success
-  ).length;
-  const failed = results.length - success;
-
-  return { success, failed };
+          started ? "unknown" : "failed",
+          started ? "push:acceptance_unknown" : "push:blocked_before_send"
+        ).catch(() => {});
+    }
+  }
+  // Legacy failed means "not confirmed accepted", not proof of provider rejection.
+  return { success, failed: subscriptions.length - success };
 }
 
 export function getVapidPublicKey(): string {
-  ensureVapid();
-  return process.env.VAPID_PUBLIC_KEY || "";
+  return process.env.VAPID_PRIVATE_KEY
+    ? process.env.VAPID_PUBLIC_KEY || ""
+    : "";
 }

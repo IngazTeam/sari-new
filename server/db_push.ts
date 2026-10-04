@@ -59,7 +59,7 @@ export async function getActivePushSubscriptions(merchantId: number) {
         eq(pushSubscriptions.merchantId, merchantId),
         eq(pushSubscriptions.isActive, true)
       )
-    );
+    ).limit(64);
 }
 
 // Deactivate subscription

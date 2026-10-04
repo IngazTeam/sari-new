@@ -1,9 +1,9 @@
 import { afterEach,beforeEach,describe,expect,it,vi } from 'vitest';
-const m=vi.hoisted(()=>({fetch:vi.fn(),log:vi.fn(),update:vi.fn(),push:vi.fn(),subscriptions:vi.fn(),
+const m=vi.hoisted(()=>({fetch:vi.fn(),log:vi.fn(),update:vi.fn(),push:vi.fn(),generate:vi.fn(),subscriptions:vi.fn(),
   integration:vi.fn(),oauth:vi.fn(),append:vi.fn(),order:vi.fn(),database:vi.fn()}));
 vi.mock('./_core/env',()=>({ENV:{forgeApiUrl:'https://synthetic.example.test',forgeApiKey:'synthetic'}}));
 vi.mock('./db_smtp',()=>({createEmailLog:m.log,updateEmailLogStatus:m.update}));
-vi.mock('web-push',()=>({default:{setVapidDetails:vi.fn(),sendNotification:m.push}}));
+vi.mock('web-push',()=>({default:{setVapidDetails:vi.fn(),sendNotification:m.push,generateRequestDetails:m.generate}}));
 vi.mock('./db_push',()=>({getActivePushSubscriptions:m.subscriptions,createPushNotificationLog:m.log,updatePushNotificationLogStatus:m.update,deactivatePushSubscription:vi.fn()}));
 vi.mock('./db',()=>({getDb:m.database,getOrderById:m.order,getGoogleIntegration:m.integration,getGoogleOAuthSettings:m.oauth,updateGoogleIntegration:m.update,
   createGoogleIntegration:vi.fn(),createProduct:vi.fn(),getConversationById:vi.fn(),getMerchantById:vi.fn(),getMessagesByConversationId:vi.fn(),getProductsByMerchantId:vi.fn(),updateProduct:vi.fn()}));
@@ -16,13 +16,13 @@ import { appendToSheet } from './_core/googleSheets';
 import { syncOrderToSheets } from './sheetsSync';
 import { merchants,notificationPreferences,notificationSettings } from '../drizzle/schema';
 import { formatMinorMoney } from '../shared/product-money';
-const subscription={id:1,merchantId:7,endpoint:'https://synthetic.example.test/push',p256dh:'synthetic',auth:'synthetic'};
+const subscription={id:1,merchantId:7,endpoint:'https://fcm.googleapis.com/push/synthetic',p256dh:'synthetic',auth:'synthetic'};
 const integration=()=>({id:1,merchantId:7,isActive:1,sheetId:'synthetic-sheet',credentials:JSON.stringify({refresh_token:'synthetic-account',access_token:'synthetic-access'})});
 const ownerData={merchantName:'Synthetic',businessName:'Synthetic',orderNumber:'1',customerName:'Synthetic',customerPhone:'966500000000',totalAmount:123.45,itemsCount:1,orderDate:new Date('2026-09-27T12:00:00Z')};
 let prefs:any,settings:any,inserted:any[],recipient:any;
 beforeEach(()=>{
   vi.clearAllMocks();vi.stubGlobal('fetch',m.fetch);vi.stubEnv('SMTP2GO_API_KEY','synthetic');vi.stubEnv('VAPID_PUBLIC_KEY','synthetic');vi.stubEnv('VAPID_PRIVATE_KEY','synthetic');
-  m.fetch.mockResolvedValue({ok:true,json:async()=>({data:{succeeded:1}})});m.push.mockResolvedValue(undefined);m.log.mockResolvedValue([{insertId:1}]);m.update.mockResolvedValue(undefined);
+  m.fetch.mockImplementation(async url=>String(url).includes('fcm.googleapis.com')?new Response('',{status:201,headers:{location:'/message/synthetic'}}):{ok:true,json:async()=>({data:{succeeded:1}})});m.generate.mockImplementation((s:any)=>({endpoint:s.endpoint,method:'POST',headers:{},body:Buffer.from('encrypted')}));m.push.mockResolvedValue(undefined);m.log.mockResolvedValue([{insertId:1}]);m.update.mockResolvedValue(undefined);
   m.subscriptions.mockReset().mockResolvedValue([subscription]);m.integration.mockReset().mockImplementation(async()=>integration());
   m.oauth.mockResolvedValue({clientId:'synthetic',clientSecret:'synthetic',isEnabled:1});m.append.mockReset().mockResolvedValue({data:{}});
   m.order.mockResolvedValue({id:4,merchantId:7,totalAmount:12345,customerName:'=HYPERLINK("x")',customerPhone:'+966500000000',items:'[{"name":"Synthetic","quantity":1}]',status:'pending',createdAt:'2026-09-27T12:00:00Z'});
@@ -48,10 +48,10 @@ describe('Salla effect last-mile guards through the real notification and Sheets
   });
   it.each(['deleted','endpoint','auth','p256dh'])('push subscription %s change cannot receive the notice',async mode=>{
     m.subscriptions.mockResolvedValueOnce([subscription]).mockResolvedValueOnce(mode==='deleted'?[]:[{...subscription,[mode]:'changed'}]);
-    const guard=vi.fn();expect(await sendPushNotification(7,{title:'Test',body:'Test'},guard)).toEqual({success:0,failed:1});expect(guard).not.toHaveBeenCalled();expect(m.push).not.toHaveBeenCalled();
+    const guard=vi.fn();expect(await sendPushNotification(7,{title:'Test',body:'Test'},guard)).toEqual({success:0,failed:1});expect(guard).not.toHaveBeenCalled();expect(m.fetch).not.toHaveBeenCalled();
   });
   it('a push guard rejection cannot reach its provider',async()=>{
-    expect(await sendPushNotification(7,{title:'Test',body:'Test'},async()=>{throw Error('guard rejected');})).toEqual({success:0,failed:1});expect(m.push).not.toHaveBeenCalled();
+    expect(await sendPushNotification(7,{title:'Test',body:'Test'},async()=>{throw Error('guard rejected');})).toEqual({success:0,failed:1});expect(m.fetch).not.toHaveBeenCalled();
   });
   it('merchant notice formats minor units and forwards the guard to the actual push call',async()=>{
     const guard=vi.fn().mockResolvedValue(undefined);expect(await merchantNotice(7,4,12345,guard)).toBe(true);expect(guard).toHaveBeenCalledTimes(1);
@@ -59,10 +59,10 @@ describe('Salla effect last-mile guards through the real notification and Sheets
   });
   it.each(['disabled','method'])('merchant %s preference change during preparation blocks transport',async mode=>{
     m.subscriptions.mockImplementation(async()=>{if(mode==='disabled')prefs.newOrdersEnabled=false;else prefs.preferredMethod='email';return [subscription];});
-    const guard=vi.fn();expect(await merchantNotice(7,4,12345,guard)).toBe(false);expect(guard).not.toHaveBeenCalled();expect(m.push).not.toHaveBeenCalled();
+    const guard=vi.fn();expect(await merchantNotice(7,4,12345,guard)).toBe(false);expect(guard).not.toHaveBeenCalled();expect(m.fetch).not.toHaveBeenCalled();
   });
   it('a disabled merchant preference never acquires a transport marker',async()=>{
-    prefs.newOrdersEnabled=false;const guard=vi.fn();expect(await merchantNotice(7,4,12345,guard)).toBe(false);expect(guard).not.toHaveBeenCalled();expect(m.push).not.toHaveBeenCalled();
+    prefs.newOrdersEnabled=false;const guard=vi.fn();expect(await merchantNotice(7,4,12345,guard)).toBe(false);expect(guard).not.toHaveBeenCalled();expect(m.fetch).not.toHaveBeenCalled();
   });
   it('merchant email reaches the verified owner with the transport guard',async()=>{
     vi.stubEnv('VITE_APP_URL','https://sary.live');prefs.preferredMethod='email';const guard=vi.fn().mockResolvedValue(undefined);expect(await merchantNotice(7,4,12345,guard)).toBe(true);

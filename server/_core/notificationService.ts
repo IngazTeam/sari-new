@@ -302,7 +302,7 @@ export async function sendNotification(payload: NotificationPayload, beforeSend?
           },
           authorize
         );
-        pushSuccess = pushResult.success > 0;
+        pushSuccess = pushResult.success > 0 && pushResult.failed === 0;
       } catch (error) {
         console.error('[Notification] Push failed:', error);
       }
