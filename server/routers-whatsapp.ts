@@ -543,21 +543,7 @@ export const whatsappRouter = router({
         }));
     }),
 
-    // Delete WhatsApp instance
-    deleteInstance: protectedProcedure
-        .input(z.object({ instanceId: z.number() }))
-        .mutation(async ({ input, ctx }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
-            if (!merchant) {
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-            }
+    // Legacy clients must reload and review the current scoped snapshot.
+    deleteInstance: protectedProcedure.input(z.unknown()).mutation(()=>{throw new TRPCError({code:'PRECONDITION_FAILED',message:'whatsapp_remove:review_required'});}),
 
-            const instance = await getWhatsAppInstanceById(input.instanceId);
-            if (!instance || instance.merchantId !== merchant.id) {
-                throw new TRPCError({ code: 'FORBIDDEN', message: 'Not authorized' });
-            }
-
-            await deleteWhatsAppInstance(input.instanceId);
-            return { success: true };
-        }),
 });

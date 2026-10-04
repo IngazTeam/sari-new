@@ -1,0 +1,49 @@
+{
+  "groups": [
+    {
+      "name": "unit",
+      "passed": 154,
+      "total": 154
+    },
+    {
+      "name": "primary",
+      "passed": 24,
+      "total": 24
+    },
+    {
+      "name": "unit-final",
+      "passed": 43,
+      "total": 43
+    },
+    {
+      "name": "preservation",
+      "passed": 161,
+      "total": 161
+    }
+  ],
+  "uniqueUnitAndInventoryCases": 322,
+  "files": {
+    "merchant-profile-workspace.test.ts": 18,
+    "notification-preferences-workspace.test.ts": 21,
+    "whatsapp-diagnostic-workspace-ui.test.tsx": 24,
+    "whatsapp-diagnostic-workspace.test.ts": 9,
+    "whatsapp-diagnostic.test.ts": 62,
+    "whatsapp-removal-retirement.test.ts": 3,
+    "whatsapp-reviewed-removal.test.ts": 20,
+    "whatsapp-lock-recovery-pentest.test.ts": 8,
+    "whatsapp-primary-failover-pentest.test.ts": 8,
+    "whatsapp-primary-invariant-pentest.test.ts": 8,
+    "merchant-feature-inventory.test.ts": 6,
+    "merchant-feature-preservation.test.ts": 127,
+    "tenant-source-analysis.test.ts": 8
+  },
+  "mysqlUnique": 43,
+  "mysqlRemovalFinal": {
+    "total": 14,
+    "passed": 14
+  },
+  "releaseGuard": 63,
+  "typecheck": "passed",
+  "productionBuild": "passed",
+  "providerCalls": "none; local fixtures only"
+}

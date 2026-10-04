@@ -3,13 +3,15 @@ import { permissionProcedure, router } from './_core/trpc';
 import { whatsappConnectionTestInput, whatsappImageTestInput, whatsappTextTestInput } from '../shared/whatsapp-test-input';
 import { runWhatsAppDiagnostic } from './whatsapp/diagnostic-tests';
 import { readWhatsAppDiagnosticWorkspace } from './whatsapp/diagnostic-workspace';
-import { whatsappDiagnosticWorkspaceInput } from '../shared/whatsapp-diagnostic-workspace';
+import { whatsappDiagnosticWorkspaceInput, whatsappRemovalInput } from '../shared/whatsapp-diagnostic-workspace';
+import { removeReviewedWhatsAppInstance } from './whatsapp/reviewed-removal';
 import { MerchantSettingsAuthorityError } from './accounts/merchant-settings-authority';
 const owner = permissionProcedure('whatsapp.manage').use(({ctx,next}) => {
   if (ctx.merchantRole !== 'owner') throw new TRPCError({code:'FORBIDDEN',message:'whatsapp_test:owner_required'});
   return next({ctx});
 });
 export const whatsappDiagnosticProcedures = {
+  deleteReviewedInstance: owner.input(whatsappRemovalInput).mutation(({ctx,input})=>removeReviewedWhatsAppInstance(ctx.user.id,ctx.merchantId,input)),
   diagnosticWorkspace: owner.input(whatsappDiagnosticWorkspaceInput).query(async({ctx,input})=>{
     if(input.merchantId!==ctx.merchantId)throw new TRPCError({code:'FORBIDDEN',message:'whatsapp_test:access_required'});
     try{return await readWhatsAppDiagnosticWorkspace(ctx.user.id,ctx.merchantId);}

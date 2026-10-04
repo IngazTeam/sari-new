@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-04T14:20:55.481Z",
+  "generatedAt": "2026-10-04T14:44:51.734Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -1506,8 +1506,12 @@
         "merchants.workspaceIdentity",
         "whatsapp.diagnosticWorkspace"
       ],
-      "removedMutations": [],
-      "addedMutations": []
+      "removedMutations": [
+        "whatsapp.deleteInstance"
+      ],
+      "addedMutations": [
+        "whatsapp.deleteReviewedInstance"
+      ]
     },
     {
       "route": "/merchant/greenapi-setup",

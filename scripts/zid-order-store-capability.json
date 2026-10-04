@@ -68,6 +68,11 @@
     "account-notifications-reviewed-workspace-v1",
     "usage-scoped-workspace-only-v1",
     "usage-notifications-evidence-v1",
-    "subscription-plan-change-snapshot-v1","subscription-scoped-billing-only-v1","subscription-reviewed-cancellation-v1","subscription-canonical-merchant-lock-v1","subscription-capture-review-0205"
+    "subscription-plan-change-snapshot-v1",
+    "subscription-scoped-billing-only-v1",
+    "subscription-reviewed-cancellation-v1",
+    "subscription-canonical-merchant-lock-v1",
+    "subscription-capture-review-0205",
+    "whatsapp-reviewed-removal-only-v1"
   ]
 }

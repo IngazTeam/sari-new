@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-04T14:20:55.481Z",
+  "generatedAt": "2026-10-04T14:44:51.734Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -10753,7 +10753,7 @@
     },
     {
       "file": "client/src/components/merchant/WhatsAppDiagnosticWorkspace.tsx",
-      "hash": "8e60e1de094e",
+      "hash": "cf2f396f82ba",
       "queries": [
         "auth.me",
         "merchants.workspaceIdentity",
@@ -10764,7 +10764,7 @@
         "whatsapp.sendTestMessage",
         "whatsapp.sendTestImage",
         "whatsapp.saveInstance",
-        "whatsapp.deleteInstance"
+        "whatsapp.deleteReviewedInstance"
       ],
       "imperativeReads": [],
       "browserRequests": [],
@@ -26457,7 +26457,7 @@
         "whatsapp.sendTestMessage",
         "whatsapp.sendTestImage",
         "whatsapp.saveInstance",
-        "whatsapp.deleteInstance"
+        "whatsapp.deleteReviewedInstance"
       ],
       "imperativeReads": [],
       "browserRequests": []
@@ -60551,7 +60551,7 @@
         "query.isLoading||query.isFetching",
         "query.error"
       ],
-      "disabled": "disabled||!selected||data.truncated",
+      "disabled": "disabled||!selected||data.truncated||!data.removalRevision",
       "review": "source-inventoried"
     },
     {

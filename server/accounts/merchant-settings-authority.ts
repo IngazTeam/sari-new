@@ -38,6 +38,34 @@ export async function withMerchantOwnerSettings<T>(
     tx = await pool.getConnection();
     await tx.query("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ");
     await tx.beginTransaction();
+    const {canManage,isOwner} = await lockMerchantSettingsAuthority(tx,actorId,merchantId,write);
+    const result = await work(tx, { canManage, isOwner });
+    committing = true;
+    await tx.commit();
+    committing = false;
+    return result;
+  } catch (error) {
+    if (tx) {
+      if (committing) {
+        reusable = false;
+        tx.destroy();
+        throw new MerchantSettingsAuthorityError("unknown");
+      }
+      try {
+        await tx.rollback();
+      } catch {
+        reusable = false;
+        tx.destroy();
+      }
+    }
+    throw error;
+  } finally {
+    if (tx && reusable) tx.release();
+  }
+}
+
+export async function lockMerchantSettingsAuthority(tx:PoolConnection,actorId:number,merchantId:number,write:boolean){
+  if(![actorId,merchantId].every(n=>Number.isSafeInteger(n)&&n>0&&n<=2147483647))throw new MerchantSettingsAuthorityError("forbidden");
     const [merchant] = await rows(
       tx,
       `SELECT id,userId,status FROM merchants WHERE id=? FOR ${write ? "UPDATE" : "SHARE"}`,
@@ -71,27 +99,5 @@ export async function withMerchantOwnerSettings<T>(
     const canManage = merchant.status === "active" && role === "owner";
     if (write && !canManage)
       throw new MerchantSettingsAuthorityError("forbidden");
-    const result = await work(tx, { canManage, isOwner: role === "owner" });
-    committing = true;
-    await tx.commit();
-    committing = false;
-    return result;
-  } catch (error) {
-    if (tx) {
-      if (committing) {
-        reusable = false;
-        tx.destroy();
-        throw new MerchantSettingsAuthorityError("unknown");
-      }
-      try {
-        await tx.rollback();
-      } catch {
-        reusable = false;
-        tx.destroy();
-      }
-    }
-    throw error;
-  } finally {
-    if (tx && reusable) tx.release();
-  }
+  return {canManage,isOwner:role==="owner"};
 }

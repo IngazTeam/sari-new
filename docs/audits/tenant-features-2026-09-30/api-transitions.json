@@ -2087,11 +2087,12 @@
         "whatsapp.sendTestMessage",
         "whatsapp.sendTestImage",
         "whatsapp.saveInstance",
-        "whatsapp.deleteInstance"
+        "whatsapp.deleteReviewedInstance"
       ],
-      "note": "The explicit, selected-tenant owner-only connection picker replaces implicit primary selection. Existing connection, text/image, save and delete actions remain present with reviewed content and no default recipient or returned token. Backend write hardening remains tracked separately.",
+      "note": "The explicit, selected-tenant owner-only connection picker replaces implicit primary selection. Existing connection, text/image, save and delete actions remain present with reviewed content and no default recipient or returned token. Backend write hardening remains tracked separately. Stage509 replaces direct deletion with actor/tenant/snapshot-reviewed transactional removal.",
       "evidence": [
-        "docs/audits/tenant-whatsapp-diagnostic-ui-2026-10-04/REPORT.md"
+        "docs/audits/tenant-whatsapp-diagnostic-ui-2026-10-04/REPORT.md",
+        "docs/audits/tenant-whatsapp-reviewed-removal-2026-10-04/REPORT.md"
       ],
       "checks": [
         {
@@ -3024,6 +3025,40 @@
           "after": [
             "websiteAnalysis.deleteReviewedCompetitor"
           ]
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/whatsapp-test"
+      ],
+      "removed": [
+        "whatsapp.deleteInstance"
+      ],
+      "required": [
+        "whatsapp.deleteReviewedInstance"
+      ],
+      "note": "The same reviewed delete UI now sends the frozen opaque snapshot. Authorization, exact target deletion and primary election are verified in one transaction; the legacy writer is closed before storage.",
+      "reviewedIn": 509,
+      "featureMappings": [
+        {
+          "before": "whatsapp.deleteInstance",
+          "after": [
+            "whatsapp.deleteReviewedInstance"
+          ]
+        }
+      ],
+      "evidence": [
+        "docs/audits/tenant-whatsapp-reviewed-removal-2026-10-04/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "server/whatsapp/reviewed-removal.ts",
+          "contains": "lockMerchantSettingsAuthority(tx,actorId,merchantId,true)"
+        },
+        {
+          "file": "client/src/components/merchant/WhatsAppDiagnosticWorkspace.tsx",
+          "contains": "expectedRevision:current.removalRevision"
         }
       ]
     }

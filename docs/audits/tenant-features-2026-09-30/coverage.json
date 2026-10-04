@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-04T14:20:55.481Z",
+  "generatedAt": "2026-10-04T14:44:51.734Z",
   "definition": "Every registered route is accounted for; source inventory and design completion are different statuses.",
   "routes": [
     {
@@ -41854,7 +41854,7 @@
         "whatsapp.sendTestMessage",
         "whatsapp.sendTestImage",
         "whatsapp.saveInstance",
-        "whatsapp.deleteInstance"
+        "whatsapp.deleteReviewedInstance"
       ],
       "imperativeReads": [],
       "browserRequests": [],
@@ -41868,7 +41868,7 @@
       "acceptancePlan": "حالة الاتصال والتفويض والأذونات؛ إعدادات المزود والمزامنة وسجلها؛ الحوادث وإعادة التحقق؛ الفصل وإعادة الربط مع توضيح الأثر.",
       "gaps": [
         "راجع المرحلتين506–507 وتقارير tenant-whatsapp-diagnostic-boundaries وtenant-whatsapp-diagnostic-ui بتاريخ2026-10-04. حُذف التصميم القديم وأصبح الموك أب يستخدم مكوّن التطبيق نفسه بمحاكاة محلية واضحة.",
-        "تبقى مراجعة ذرية لحفظ وحذف الربط القديم، وإيصال دائم لاستعادة الإرسال، والتحقق من مزود حي وSafari/iPhone فعلي؛ لا نشر ولا إثبات تسليم أو نسبة احتراف المبيعات."
+        "أُغلق حذف التشخيص القديم في509 ووُصل حذف مراجع ذري مع قفل المالك والسجل والتحقق من الأساسي. يبقى حفظ الربط القديم وإيصال دائم لاستعادة الإرسال، والتحقق من مزود حي وSafari/iPhone فعلي؛ لا نشر ولا إثبات تسليم أو نسبة احتراف المبيعات."
       ],
       "controlDetails": [
         {
@@ -42119,7 +42119,7 @@
             "query.isLoading||query.isFetching",
             "query.error"
           ],
-          "disabled": "disabled||!selected||data.truncated",
+          "disabled": "disabled||!selected||data.truncated||!data.removalRevision",
           "review": "source-inventoried"
         },
         {

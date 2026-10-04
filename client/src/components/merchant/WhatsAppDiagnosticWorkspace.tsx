@@ -21,7 +21,7 @@ export function WhatsAppDiagnosticPage(){
  return <DiagnosticWorkspace key={`${user.data.id}:${identity.data.id}`} actorId={user.data.id} merchantId={identity.data.id}/>;
 }
 type Fields={instanceId:string;token:string;phoneNumber:string;message:string;imageUrl:string;caption:string};
-type Review={kind:'text'|'image'|'save'|'delete';fields:Fields;recordId?:number;verifiedPhone?:string};
+type Review={kind:'text'|'image'|'save'|'delete';fields:Fields;recordId?:number;verifiedPhone?:string;removalRevision?:string};
 function DiagnosticWorkspace({actorId,merchantId}:{actorId:number;merchantId:number}){
  const {t,i18n}=useTranslation(),c=whatsappDiagnosticLabels(t),ar=i18n.language.startsWith('ar');
  const query=trpc.whatsapp.diagnosticWorkspace.useQuery({merchantId},usageQueryOptions);
@@ -31,7 +31,7 @@ function DiagnosticWorkspace({actorId,merchantId}:{actorId:number;merchantId:num
  const [health,setHealth]=useState<{success:boolean;phoneNumber?:string}|null>(null),[notice,setNotice]=useState<string|null>(null);
  const [receipt,setReceipt]=useState<string|null>(null),[sendLocked,setSendLocked]=useState(false),[review,setReview]=useState<Review|null>(null),[actionError,setActionError]=useState<string|null>(null);
  const busy=useRef(false),[running,setRunning]=useState(false),trigger=useRef<HTMLElement|null>(null);
- const probe=trpc.whatsapp.testConnection.useMutation(),sendText=trpc.whatsapp.sendTestMessage.useMutation(),sendImage=trpc.whatsapp.sendTestImage.useMutation(),save=trpc.whatsapp.saveInstance.useMutation(),remove=trpc.whatsapp.deleteInstance.useMutation();
+ const probe=trpc.whatsapp.testConnection.useMutation(),sendText=trpc.whatsapp.sendTestMessage.useMutation(),sendImage=trpc.whatsapp.sendTestImage.useMutation(),save=trpc.whatsapp.saveInstance.useMutation(),remove=trpc.whatsapp.deleteReviewedInstance.useMutation();
  const selected=data?.connections.find(row=>row.instanceId===fields.instanceId);
  const disabled=running||!!review;
  const edit=(key:keyof Fields,value:string)=>{setFields(prev=>({...prev,[key]:value}));setErrors(prev=>({...prev,[key]:''}));if(key==='instanceId'||key==='token'){setHealth(null);setNotice(null);} };
@@ -48,11 +48,11 @@ function DiagnosticWorkspace({actorId,merchantId}:{actorId:number;merchantId:num
  };
  const openReview=(kind:Review['kind'],element:HTMLElement)=>{
   if(busy.current||!data)return;
-  if(kind==='delete'){if(!selected||data.truncated)return;}
+  if(kind==='delete'){if(!selected||data.truncated||!data.removalRevision)return;}
   else if(!validate(kind==='save'?'connection':kind))return;
   if(kind==='save'&&(!health?.success||!health.phoneNumber))return;
   if((kind==='text'||kind==='image')&&(!selected||selected.provider!=='green_api'||selected.status!=='active'||sendLocked)){setNotice(c.savedRequired);return;}
-  trigger.current=element;setActionError(null);setReview({kind,fields:{...fields,instanceId:fields.instanceId.trim(),token:fields.token.trim(),phoneNumber:fields.phoneNumber.trim(),message:fields.message.trim(),imageUrl:fields.imageUrl.trim()},recordId:selected?.id,verifiedPhone:health?.phoneNumber});
+  trigger.current=element;setActionError(null);setReview({kind,fields:{...fields,instanceId:fields.instanceId.trim(),token:fields.token.trim(),phoneNumber:fields.phoneNumber.trim(),message:fields.message.trim(),imageUrl:fields.imageUrl.trim()},recordId:selected?.id,verifiedPhone:health?.phoneNumber,removalRevision:data.removalRevision??undefined});
  };
  const confirm=async()=>{
   if(!review||busy.current||!data)return;const current=review;busy.current=true;setRunning(true);setActionError(null);setNotice(null);setReceipt(null);
@@ -65,7 +65,7 @@ function DiagnosticWorkspace({actorId,merchantId}:{actorId:number;merchantId:num
    }else{
     let savedId:number|undefined;
     if(current.kind==='save'){const result=await save.mutateAsync({instanceId:f.instanceId,token:f.token,phoneNumber:current.verifiedPhone});savedId=result.instanceId;if(!result.success||!Number.isSafeInteger(savedId)||!savedId)throw Error();}
-    else{if(!current.recordId)throw Error();const result=await remove.mutateAsync({instanceId:current.recordId});if(!result.success)throw Error();}
+    else{if(!current.recordId||!current.removalRevision)throw Error();const result=await remove.mutateAsync({merchantId,instanceId:current.recordId,expectedRevision:current.removalRevision});if(!result.success||result.actorId!==actorId||result.merchantId!==merchantId||result.instanceId!==current.recordId)throw Error();}
     const refreshed=await query.refetch(),snapshot=whatsappDiagnosticWorkspace.safeParse(refreshed.data);
     if(refreshed.error||!snapshot.success||snapshot.data.actorId!==actorId||snapshot.data.merchantId!==merchantId)throw Error();
     if(current.kind==='save'?!snapshot.data.connections.some(row=>row.id===savedId&&row.instanceId===f.instanceId&&row.phoneNumber===current.verifiedPhone):snapshot.data.truncated||snapshot.data.connections.some(row=>row.id===current.recordId))throw Error();
@@ -91,7 +91,7 @@ function DiagnosticWorkspace({actorId,merchantId}:{actorId:number;merchantId:num
     <div className="wd-fields">{field('instanceId',c.instanceId,'text',30)}{field('token',c.token,'password',512)}</div><p className="wd-small">{c.secretHint}</p>
     <div className="wd-actions"><button type="button" className="wd-button wd-primary" disabled={disabled} onClick={()=>void check()}>{running?c.working:c.check}</button><Link className="wd-button" href="/merchant/whatsapp">{c.manage}</Link></div>
     {health&&<p className="wd-result" role="status">{health.success?c.connected:c.notConnected}{health.phoneNumber&&<> · <bdi>{health.phoneNumber}</bdi></>}</p>}
-    <details className="wd-advanced"><summary>{c.advanced}</summary><p>{c.advancedHint}</p><div className="wd-actions"><button type="button" className="wd-button" disabled={disabled||!health?.success||!health.phoneNumber} onClick={e=>openReview('save',e.currentTarget)}>{c.save}</button><button type="button" className="wd-button wd-danger" disabled={disabled||!selected||data.truncated} onClick={e=>openReview('delete',e.currentTarget)}>{c.delete}</button></div></details>
+    <details className="wd-advanced"><summary>{c.advanced}</summary><p>{c.advancedHint}</p><div className="wd-actions"><button type="button" className="wd-button" disabled={disabled||!health?.success||!health.phoneNumber} onClick={e=>openReview('save',e.currentTarget)}>{c.save}</button><button type="button" className="wd-button wd-danger" disabled={disabled||!selected||data.truncated||!data.removalRevision} onClick={e=>openReview('delete',e.currentTarget)}>{c.delete}</button></div></details>
    </section>
    <section className="wd-panel"><h2>{c.tryMessage}</h2><p>{c.sendHint}</p><div className="wd-tabs" role="group" aria-label={c.testKind}>{(['connection','text','image'] as const).map(value=><button type="button" key={value} aria-pressed={tab===value} disabled={disabled} onClick={()=>{setTab(value);setErrors({});}}>{c[`tab_${value}`]}</button>)}</div>
     {tab==='connection'?<p>{c.connectionOnly}</p>:<form noValidate onSubmit={e=>{e.preventDefault();openReview(tab,e.currentTarget.querySelector('button[type=submit]')!);}}>
