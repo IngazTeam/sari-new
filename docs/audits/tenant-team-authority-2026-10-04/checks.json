@@ -1,0 +1,14 @@
+{
+  "unit": {
+    "passed": 102,
+    "failed": 0
+  },
+  "mysql": {
+    "passed": 25,
+    "failed": 0
+  },
+  "types": "passed",
+  "build": "passed",
+  "releasePassed": 73,
+  "externalEmail": "mocked; no provider contacted"
+}

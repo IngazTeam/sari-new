@@ -4,6 +4,7 @@ import { getPool } from '../db';
 import { privacyHash } from './privacy-hash';
 import { isFutureDatabaseTime } from '../db/time';
 import { lockTeamManagement } from './team-members';
+import {assertTeamSession} from './team-session';
 
 export type TeamInvitationRole = 'manager' | 'sales_supervisor' | 'viewer';
 
@@ -63,6 +64,7 @@ export async function issueTeamInvitation(input: {
   email: string;
   role: TeamInvitationRole;
   invitedBy: number;
+  sessionId?: string;
 }): Promise<{ token: string; expiresAt: Date; email: string }> {
   const pool = await getPool();
   if (!pool) throw new Error('Database not initialized');
@@ -82,6 +84,11 @@ export async function issueTeamInvitation(input: {
 
     await connection.beginTransaction();
     await lockTeamManagement(connection, input.merchantId, input.invitedBy);
+    if(input.sessionId!==undefined)await assertTeamSession(connection,input.invitedBy,input.sessionId);
+    const [existingMembers]=await connection.execute<RowDataPacket[]>(
+      'SELECT mm.id FROM merchant_members mm JOIN users u ON u.id=mm.user_id WHERE mm.merchant_id=? AND mm.is_active=1 AND LOWER(TRIM(u.email))=? LIMIT 1',
+      [input.merchantId,email]);
+    if(input.sessionId!==undefined&&existingMembers[0])throw Error('TEAM_ALREADY_MEMBER');
     await connection.execute(
       `UPDATE merchant_invitations
           SET status = 'expired', recipient_hash = NULL
@@ -95,12 +102,13 @@ export async function issueTeamInvitation(input: {
     );
     if (pending[0]) throw new Error('TEAM_INVITATION_ALREADY_PENDING');
 
-    await connection.execute(
+    const [inserted] = await connection.execute(
       `INSERT INTO merchant_invitations
         (merchant_id, email, role, token, recipient_hash, invited_by, expires_at, status)
        VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')`,
       [input.merchantId, email, input.role, digest, recipientHash, input.invitedBy, mysqlTimestamp(expiresAt)],
     );
+    if((inserted as any).affectedRows!==1||!Number.isSafeInteger((inserted as any).insertId)||(inserted as any).insertId<1)throw Error('TEAM_INVITATION_UNCONFIRMED');
     await connection.commit();
     return { token, expiresAt, email };
   } catch (error) {

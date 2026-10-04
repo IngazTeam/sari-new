@@ -1,3 +1,4 @@
+import {createSessionId,hashSessionId} from './_core/session-security';
 import { afterAll, describe, expect, it } from 'vitest';
 import { getPool, closeDb } from './db/connection';
 import { teamRouter } from './routers-team';
@@ -6,16 +7,19 @@ import { createDisposableMerchant, cleanupDisposableMerchants } from './tests/he
 
 describe.skipIf(!process.env.DATABASE_URL)('team privilege escalation and concurrent owner protection (MySQL)', () => {
   const userIds: number[] = [];
+  const sessions=new Map<number,string>();
   async function account() {
     const result = await createDisposableMerchant('team-review');
     userIds.push(result.userId);
+    const sessionId=createSessionId();sessions.set(result.userId,sessionId);
+    await (await getPool())!.execute('INSERT INTO auth_sessions(user_id,token_id_hash,expires_at) VALUES (?,?,DATE_ADD(UTC_TIMESTAMP(),INTERVAL 1 DAY))',[result.userId,hashSessionId(sessionId)]);
     return result;
   }
   async function member(merchantId: number, userId: number, role: string) {
     const [row] = await (await getPool())!.execute<any>('INSERT INTO merchant_members (merchant_id,user_id,role,is_active) VALUES (?,?,?,1)', [merchantId, userId, role]);
     return Number(row.insertId);
   }
-  const caller = (id: number, merchantId?: number) => teamRouter.createCaller({ user: { id }, req: { headers: merchantId ? { 'x-merchant-id': String(merchantId) } : {} }, res: {} } as any);
+  const caller = (id: number, merchantId?: number) => teamRouter.createCaller({ user: { id },session:{sessionId:sessions.get(id)}, req: { headers: merchantId ? { 'x-merchant-id': String(merchantId) } : {} }, res: {} } as any);
   afterAll(async () => { await cleanupDisposableMerchants(userIds); await closeDb(); });
 
   it('allows manager membership without legacy ownership, but refuses elevation or changing an owner', async () => {

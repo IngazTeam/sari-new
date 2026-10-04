@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { randomUUID,randomInt } from 'node:crypto';
 import { afterAll, describe, expect, it } from 'vitest';
 import { registerMerchantAccount } from './accounts/lifecycle';
 import {
@@ -29,7 +29,7 @@ describe.skipIf(!process.env.DATABASE_URL)('team invitation security (database i
       email,
       passwordHash: '$2b$10$test.only.hash.not.used.for.login',
       businessName: `${label} Test Store`,
-      phone: '+966500000002',
+      phone: '+9665'+String(randomInt(10000000,99999999)),
       acceptedTerms: true,
       acceptedPrivacy: true,
       marketingConsent: false,
