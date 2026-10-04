@@ -71,6 +71,8 @@ import { billingPriceMinor, billingCurrency, assertProrationCharge } from '../su
 import { checkoutReviewInput, checkoutReviewProof } from '../../shared/subscription-checkout-review';
 import { readCheckoutReview, CheckoutReviewError } from '../subscriptions/checkout-review';
 import { SubscriptionPlanChangeConflictError, assertPlanChangeSnapshot } from '../subscriptions/plan-change-snapshot';
+import { checkoutAttemptLookup } from '../../shared/subscription-checkout-attempt';
+import { readCheckoutAttempt } from '../subscriptions/checkout-attempt';
 
 async function checkoutReview(actor: number, merchant: number, plan: number, cycle: 'monthly' | 'yearly', proof?: z.infer<typeof checkoutReviewProof>) {
   try { return await readCheckoutReview(actor, merchant, plan, cycle, proof); }
@@ -357,6 +359,14 @@ export const subscriptionAddonsRouter = router({
 // ============================================
 
 export const merchantSubscriptionRouter = router({
+  checkoutAttempt: merchantProcedure.input(checkoutAttemptLookup).query(async ({ ctx, input }) => {
+    try { return await readCheckoutAttempt(ctx.user.id, ctx.merchantId!, input.checkoutAttemptId); }
+    catch (error) {
+      if (error instanceof MerchantSettingsAuthorityError && error.reason === 'forbidden')
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Checkout requires owner access' });
+      throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Checkout attempt unavailable' });
+    }
+  }),
   reviewCheckout: merchantProcedure.input(checkoutReviewInput).query(({ ctx, input }) =>
     checkoutReview(ctx.user.id, ctx.merchantId!, input.planId, input.billingCycle)),
   // Get current subscription
