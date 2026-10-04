@@ -1,4 +1,5 @@
 import { merchantPaymentsRouter } from "./routers-merchant-payments";
+import { paymentHistoryWorkspaceRouter } from "./routers-payment-history-workspace";
 import {selfProfileProcedures} from "./routers-self-profile-workspace";
 import { notificationPreferenceProcedures } from './routers-notification-preference-workspace';
 import {scheduledMessagesRouter} from './routers-scheduled-messages';
@@ -3177,6 +3178,7 @@ export const appRouter = router({
   // Payment System - Tap Payments Integration
   // ============================================
   payments: router({
+    workspace: paymentHistoryWorkspaceRouter,
     // Public checkout data contains no merchant credentials or customer information.
     getPublicLink: publicProcedure
       .input(z.object({ linkId: z.string().regex(PAYMENT_LINK_ID_PATTERN) }).strict())
