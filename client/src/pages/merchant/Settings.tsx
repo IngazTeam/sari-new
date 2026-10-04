@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Settings as SettingsIcon, User, Store, CreditCard, Save, Bot, DollarSign, Trash2, CheckCircle2, Loader2, Image, Globe, MailCheck } from 'lucide-react';
+import { Settings as SettingsIcon, User, Store, CreditCard, Save, Bot, Trash2, CheckCircle2, Loader2, Image, Globe, MailCheck } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useState, useEffect } from 'react';
@@ -27,7 +27,6 @@ export default function MerchantSettings() {
   const [businessName, setBusinessName] = useState('');
   const [phone, setPhone] = useState('');
   const [autoReplyEnabled, setAutoReplyEnabled] = useState(true);
-  const [currency, setCurrency] = useState<'SAR' | 'USD'>('SAR');
   const [timezone, setTimezone] = useState('Asia/Riyadh');
   const [logoUrl, setLogoUrl] = useState('');
 
@@ -45,7 +44,6 @@ export default function MerchantSettings() {
       setPhone(merchant.phone || '');
       // @ts-ignore
       setAutoReplyEnabled((merchant as any).autoReplyEnabled != null ? !!(merchant as any).autoReplyEnabled : true);
-      setCurrency(merchant.currency || 'SAR');
       setTimezone((merchant as any).timezone || 'Asia/Riyadh');
       setLogoUrl((merchant as any).logoUrl || (merchant as any).logo_url || '');
     }
@@ -102,7 +100,6 @@ export default function MerchantSettings() {
       businessName,
       phone: phone || undefined,
       autoReplyEnabled,
-      currency,
       timezone,
       logoUrl: logoUrl.trim() || null,
     });
@@ -231,29 +228,11 @@ export default function MerchantSettings() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="currency">{t('settingsPage.currency')}</Label>
-              <Select value={currency} onValueChange={(value: 'SAR' | 'USD') => setCurrency(value)}>
-                <SelectTrigger id="currency">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="SAR">
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="w-4 h-4" />
-                      {t('settingsPage.sarLabel')}
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="USD">
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="w-4 h-4" />
-                      {t('settingsPage.usdLabel')}
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                {t('settingsPage.currencyDesc')}
-              </p>
+              <p className="text-sm font-medium">{t('currencyWorkspaceUx.title')}</p>
+              <p className="text-sm text-muted-foreground">{t('currencyWorkspaceUx.impactAmounts')}</p>
+              <Button asChild variant="outline" className="min-h-11 h-auto whitespace-normal">
+                <a href="/merchant/currency-settings">{t('currencyWorkspaceUx.manageLink')}</a>
+              </Button>
             </div>
 
             <div className="space-y-2">

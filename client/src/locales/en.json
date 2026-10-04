@@ -12850,6 +12850,7 @@
     "unsavedDefaults": "Defaults have not been saved yet"
   },
   "currencyWorkspaceUx": {
+    "manageLink": "Manage currency and review its effect",
     "needsCheck": "Check the result before saving again.",
   "eyebrow": "Settings · Store",
   "title": "Store currency",

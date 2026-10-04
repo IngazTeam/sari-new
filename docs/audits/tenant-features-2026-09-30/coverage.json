@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-04T01:21:43.807Z",
+  "generatedAt": "2026-10-04T01:28:03.611Z",
   "definition": "Every registered route is accounted for; source inventory and design completion are different statuses.",
   "routes": [
     {
@@ -67072,22 +67072,23 @@
         "client/src/components/SetupWizardReset.tsx"
       ],
       "controls": [
-        "758bb0b68fbe",
-        "a392fb54fbbf",
-        "0afb19cb8f37",
-        "4aca68fe18b8",
-        "b277de446062",
-        "74149f8eec1a",
-        "3faba95a8a9f",
-        "9010f9d1e8f3",
-        "9b176e5984ca",
-        "40f082688c2d",
-        "9bf3f9e9df42",
-        "f60035186392",
-        "4c7e96d26132",
-        "e8ba1d422573",
-        "17a95cfb3daf",
-        "d683224239df",
+        "a54815692e23",
+        "7b0df626955e",
+        "1668de312a96",
+        "b403c8e2e7ba",
+        "9d57931c2597",
+        "84c44e8a0ed6",
+        "fcd564711d46",
+        "28d7ee8ba8ea",
+        "a2612533bf5e",
+        "a36d7b795024",
+        "364a7f535161",
+        "a458d33be39c",
+        "0d26f06b3aa2",
+        "397cb72492a7",
+        "90c77221755b",
+        "1557fc0b70b0",
+        "8ec9e6892b41",
         "3a4064956ff2",
         "5e22301185ec",
         "0d7b6debf8e7",
@@ -67176,9 +67177,9 @@
       ],
       "controlDetails": [
         {
-          "id": "758bb0b68fbe",
+          "id": "a54815692e23",
           "file": "client/src/pages/merchant/Settings.tsx",
-          "line": 136,
+          "line": 133,
           "tag": "Input",
           "role": "",
           "kind": "field",
@@ -67197,9 +67198,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "a392fb54fbbf",
+          "id": "7b0df626955e",
           "file": "client/src/pages/merchant/Settings.tsx",
-          "line": 146,
+          "line": 143,
           "tag": "Input",
           "role": "",
           "kind": "field",
@@ -67218,9 +67219,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "0afb19cb8f37",
+          "id": "1668de312a96",
           "file": "client/src/pages/merchant/Settings.tsx",
-          "line": 163,
+          "line": 160,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -67241,9 +67242,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "4aca68fe18b8",
+          "id": "b403c8e2e7ba",
           "file": "client/src/pages/merchant/Settings.tsx",
-          "line": 187,
+          "line": 184,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -67262,9 +67263,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "b277de446062",
+          "id": "9d57931c2597",
           "file": "client/src/pages/merchant/Settings.tsx",
-          "line": 213,
+          "line": 210,
           "tag": "Input",
           "role": "",
           "kind": "field",
@@ -67283,9 +67284,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "74149f8eec1a",
+          "id": "84c44e8a0ed6",
           "file": "client/src/pages/merchant/Settings.tsx",
-          "line": 223,
+          "line": 220,
           "tag": "Input",
           "role": "",
           "kind": "field",
@@ -67304,26 +67305,17 @@
           "review": "source-inventoried"
         },
         {
-          "id": "3faba95a8a9f",
+          "id": "fcd564711d46",
           "file": "client/src/pages/merchant/Settings.tsx",
-          "line": 235,
-          "tag": "Select",
+          "line": 233,
+          "tag": "Button",
           "role": "",
-          "kind": "field",
-          "label": "العملة",
+          "kind": "action",
+          "label": "إدارة العملة ومراجعة أثرها",
           "section": "معلومات المتجر",
-          "binding": "currency",
-          "type": "select",
-          "options": [
-            {
-              "value": "SAR",
-              "label": "ريال سعودي (SAR)"
-            },
-            {
-              "value": "USD",
-              "label": "دولار أمريكي (USD)"
-            }
-          ],
+          "binding": "",
+          "type": "text",
+          "options": [],
           "min": "",
           "max": "",
           "maxLength": "",
@@ -67334,9 +67326,30 @@
           "review": "source-inventoried"
         },
         {
-          "id": "9010f9d1e8f3",
+          "id": "28d7ee8ba8ea",
           "file": "client/src/pages/merchant/Settings.tsx",
-          "line": 264,
+          "line": 234,
+          "tag": "a",
+          "role": "",
+          "kind": "action",
+          "label": "إدارة العملة ومراجعة أثرها",
+          "section": "معلومات المتجر",
+          "binding": "/merchant/currency-settings",
+          "type": "text",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": false,
+          "conditions": [],
+          "disabled": "",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "a2612533bf5e",
+          "file": "client/src/pages/merchant/Settings.tsx",
+          "line": 243,
           "tag": "Select",
           "role": "",
           "kind": "field",
@@ -67480,9 +67493,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "9b176e5984ca",
+          "id": "a36d7b795024",
           "file": "client/src/pages/merchant/Settings.tsx",
-          "line": 333,
+          "line": 312,
           "tag": "button",
           "role": "",
           "kind": "action",
@@ -67503,9 +67516,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "40f082688c2d",
+          "id": "364a7f535161",
           "file": "client/src/pages/merchant/Settings.tsx",
-          "line": 348,
+          "line": 327,
           "tag": "Input",
           "role": "",
           "kind": "field",
@@ -67524,9 +67537,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "9bf3f9e9df42",
+          "id": "a458d33be39c",
           "file": "client/src/pages/merchant/Settings.tsx",
-          "line": 360,
+          "line": 339,
           "tag": "a",
           "role": "",
           "kind": "action",
@@ -67545,9 +67558,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "f60035186392",
+          "id": "0d26f06b3aa2",
           "file": "client/src/pages/merchant/Settings.tsx",
-          "line": 368,
+          "line": 347,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -67566,9 +67579,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "4c7e96d26132",
+          "id": "397cb72492a7",
           "file": "client/src/pages/merchant/Settings.tsx",
-          "line": 400,
+          "line": 379,
           "tag": "Switch",
           "role": "",
           "kind": "field",
@@ -67587,9 +67600,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "e8ba1d422573",
+          "id": "90c77221755b",
           "file": "client/src/pages/merchant/Settings.tsx",
-          "line": 419,
+          "line": 398,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -67608,9 +67621,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "17a95cfb3daf",
+          "id": "1557fc0b70b0",
           "file": "client/src/pages/merchant/Settings.tsx",
-          "line": 448,
+          "line": 427,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -67629,9 +67642,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "d683224239df",
+          "id": "8ec9e6892b41",
           "file": "client/src/pages/merchant/Settings.tsx",
-          "line": 449,
+          "line": 428,
           "tag": "a",
           "role": "",
           "kind": "action",
@@ -83440,7 +83453,7 @@
       ],
       "acceptancePlan": "الإعدادات الحالية والمسودة والتحقق؛ الحفظ والصلاحيات؛ العواقب قبل الإجراءات الحساسة؛ حالات الفشل والسجلات والمراجعة.",
       "gaps": [
-        "راجع مرحلتي453–454. لا تحويل صرف أو إعادة تسعير. حقل العملة القديم في الحساب يحتاج الإغلاق بعد نقل واجهته. لا Safari/iPhone فعلي أو نشر."
+        "راجع مراحل453–455. لا تحويل صرف أو إعادة تسعير. أُغلق حقل العملة القديم في حفظ الملف ورُبط الحساب بالشاشة المخصصة؛ تهيئة العملة في الإعداد الأولي عقد منفصل. لا Safari/iPhone فعلي أو نشر."
       ],
       "controlDetails": [
         {

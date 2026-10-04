@@ -160,4 +160,9 @@ describe.skipIf(!process.env.DATABASE_URL)("reviewed tenant currency", () => {
     );
     expect(after).toEqual(before);
   });
+  it.each(["USD", null, undefined, "SAR"])("rejects legacy currency input %s before any mixed profile update", async currency => {
+    const [before] = await q("SELECT businessName,currency FROM merchants WHERE id=?", [owner.merchantId]);
+    await expect(caller().merchants.update({ businessName: "must not persist", currency } as any)).rejects.toMatchObject({code:"BAD_REQUEST"});
+    expect((await q("SELECT businessName,currency FROM merchants WHERE id=?", [owner.merchantId]))[0]).toEqual(before);
+  });
 });
