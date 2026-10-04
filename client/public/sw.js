@@ -1,104 +1,59 @@
-// Service Worker for Push Notifications
-const CACHE_NAME = 'sari-v1';
-
-// Install event
-self.addEventListener('install', (event) => {
-  console.log('[SW] Installing Service Worker...');
-  self.skipWaiting();
-});
-
-// Activate event
-self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating Service Worker...');
-  event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
-            console.log('[SW] Deleting old cache:', cacheName);
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
-  );
-  return self.clients.claim();
-});
-
-// Push event - Handle incoming push notifications
-self.addEventListener('push', (event) => {
-  console.log('[SW] Push received:', event);
-  
-  let data = {
-    title: 'ساري',
-    body: 'لديك إشعار جديد',
-    icon: '/logo.png',
-    badge: '/badge.png',
-    tag: 'sari-notification',
-    requireInteraction: false,
-  };
-
-  if (event.data) {
-    try {
-      data = { ...data, ...event.data.json() };
-    } catch (e) {
-      data.body = event.data.text();
-    }
+// Notification-only worker. It neither intercepts requests nor manages app caches.
+const dashboard = '/merchant/dashboard';
+function notificationUrl(raw) {
+  if (typeof raw !== 'string' || raw.length > 500 || /[\u0000-\u0020\u007f\\]/.test(raw)) return new URL(dashboard, self.location.origin).href;
+  try {
+    const url = new URL(raw, self.location.origin);
+    if (url.origin === self.location.origin && !url.username && !url.password && !url.hash
+      && /^\/merchant(?:\/[a-z0-9_-]+)*\/?$/.test(url.pathname)) return url.href;
+  } catch {}
+  return new URL(dashboard, self.location.origin).href;
+}
+const shortText = (value, fallback, limit) => typeof value === 'string' && value.trim()
+  ? value.slice(0, limit) : fallback;
+self.addEventListener('install', event => event.waitUntil(self.skipWaiting()));
+self.addEventListener('activate', event => event.waitUntil(self.clients.claim()));
+self.addEventListener('push', event => {
+  let data = {};
+  try {
+    const parsed = event.data?.json();
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) data = parsed;
+  } catch {
+    try { data.body = event.data.text(); } catch {}
   }
-
-  const options = {
-    body: data.body,
-    icon: data.icon,
-    badge: data.badge,
-    tag: data.tag,
-    requireInteraction: data.requireInteraction,
-    data: {
-      url: data.url || '/',
-      timestamp: Date.now(),
-    },
-    actions: data.actions || [],
-  };
-
-  event.waitUntil(
-    self.registration.showNotification(data.title, options)
-  );
+  const english = data.lang === 'en';
+  event.waitUntil(self.registration.showNotification(shortText(data.title, 'ساري | Sary', 150), {
+    body: shortText(data.body, english ? 'You have a new notification' : 'لديك إشعار جديد', 1000),
+    // Notification assets cannot make third-party requests using untrusted payload URLs.
+    icon: '/favicon.png', badge: '/favicon.png',
+    tag: shortText(data.tag, 'sari-notification', 100),
+    lang: english ? 'en' : 'ar', dir: english ? 'ltr' : 'rtl',
+    requireInteraction: data.requireInteraction === true,
+    data: { url: notificationUrl(data.url) },
+    actions: [
+      { action: 'open', title: english ? 'Open' : 'فتح' },
+      { action: 'close', title: english ? 'Dismiss' : 'إغلاق' },
+    ],
+  }));
 });
-
-// Notification click event
-self.addEventListener('notificationclick', (event) => {
-  console.log('[SW] Notification clicked:', event);
-  
+self.addEventListener('notificationclick', event => {
   event.notification.close();
-
-  const urlToOpen = event.notification.data?.url || '/';
-
-  event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      // Check if there's already a window open with the target URL
-      for (const client of clientList) {
-        if (client.url === urlToOpen && 'focus' in client) {
-          return client.focus();
-        }
+  if (event.action && event.action !== 'open') return;
+  const url = notificationUrl(event.notification.data?.url);
+  event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async list => {
+    for (const client of list) {
+      if (client.url === url && typeof client.focus === 'function') {
+        try { return await client.focus(); } catch { /* Try another window or open one. */ }
       }
-      
-      // If no window is open, open a new one
-      if (clients.openWindow) {
-        return clients.openWindow(urlToOpen);
-      }
-    })
-  );
+    }
+    if (self.clients.openWindow) return self.clients.openWindow(url);
+  }));
 });
-
-// Notification close event
-self.addEventListener('notificationclose', (event) => {
-  console.log('[SW] Notification closed:', event);
-});
-
-// Message event - Handle messages from the client
-self.addEventListener('message', (event) => {
-  console.log('[SW] Message received:', event.data);
-  
-  if (event.data && event.data.type === 'SKIP_WAITING') {
-    self.skipWaiting();
-  }
+self.addEventListener('message', event => {
+  // Ignore messages from a foreign client and never log notification contents.
+  try {
+    const source = new URL(event.source?.url);
+    if (source.origin === self.location.origin && /^\/merchant(?:\/|$)/.test(source.pathname)
+      && event.data?.type === 'SKIP_WAITING') event.waitUntil(self.skipWaiting());
+  } catch {}
 });

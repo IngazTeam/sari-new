@@ -1,0 +1,13 @@
+{
+  "unit": {
+    "numTotalTests": 135,
+    "numPassedTests": 135,
+    "numFailedTests": 0
+  },
+  "build": "passed",
+  "localHttp": {
+    "sw": 200,
+    "manifestContentType": "application/manifest+json"
+  },
+  "browser": "worker evaluated in isolated VM; not an actual Safari/iPhone test"
+}

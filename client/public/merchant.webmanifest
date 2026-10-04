@@ -1,0 +1,11 @@
+{
+  "id": "/merchant/",
+  "name": "ساري | Sary",
+  "short_name": "Sary",
+  "start_url": "/merchant/dashboard",
+  "scope": "/merchant/",
+  "display": "standalone",
+  "background_color": "#f5f7f6",
+  "theme_color": "#187957",
+  "icons": [{ "src": "/favicon.png", "type": "image/png", "purpose": "any" }]
+}
