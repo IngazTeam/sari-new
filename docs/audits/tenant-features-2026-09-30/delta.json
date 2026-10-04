@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-04T04:20:03.197Z",
+  "generatedAt": "2026-10-04T05:51:22.202Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 492,
-      "controls": 2706
+      "files": 498,
+      "controls": 2729
     }
   },
   "addedFiles": [
@@ -297,6 +297,12 @@
     "client/src/components/merchant/PaymentHistoryWorkspace.tsx",
     "client/src/lib/payment-history-view.ts",
     "client/src/lib/payment-history-labels.ts",
+    "client/src/components/merchant/PaymentLinksPage.tsx",
+    "client/src/components/merchant/PaymentLinksWorkspace.tsx",
+    "client/src/lib/payment-links-view.ts",
+    "client/src/components/merchant/PaymentLinksPrimitives.tsx",
+    "client/src/lib/payment-links-labels.ts",
+    "client/src/components/merchant/PaymentLinkCreate.tsx",
     "client/src/components/merchant/PaymentSettingsWorkspace.tsx",
     "client/src/lib/payment-settings-labels.ts",
     "client/src/_core/hooks/useAuth.ts",
@@ -2266,11 +2272,25 @@
     {
       "route": "/merchant/payment-links",
       "controlsBefore": 12,
-      "controlsNow": 12,
-      "removedQueries": [],
-      "addedQueries": [],
-      "removedMutations": [],
-      "addedMutations": []
+      "controlsNow": 35,
+      "removedQueries": [
+        "payments.listLinks"
+      ],
+      "addedQueries": [
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "payments.linksWorkspace.list",
+        "payments.linksWorkspace.detail",
+        "payments.linksWorkspace.creationRequest"
+      ],
+      "removedMutations": [
+        "payments.createLink",
+        "payments.disableLink"
+      ],
+      "addedMutations": [
+        "payments.linksWorkspace.disableReviewed",
+        "payments.linksWorkspace.createReviewed"
+      ]
     },
     {
       "route": "/merchant/payment-settings",

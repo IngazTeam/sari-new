@@ -2,7 +2,7 @@
 
 هذا حصر مصدر قابل لإعادة التوليد، وليس ادعاءً بأن كل مسار عمل اختُبر أو أُعيد تصميمه. يشمل المكونات الفرعية المحلية، الحقول، الأزرار، النوافذ، التبويبات، واجهات القراءة والتعديل. العناصر الديناميكية تحتاج مراجعة إضافية.
 
-- 126 مسارًا مسجلًا، 492 ملف واجهة متصلًا، 2706 عنصر تحكم في المصدر.
+- 126 مسارًا مسجلًا، 498 ملف واجهة متصلًا، 2729 عنصر تحكم في المصدر.
 - 0 رابطًا حرفيًا غير مطابق، و0 ملف صفحة غير متصل بالمسارات المحصورة.
 
 | الصفحة | الملفات | عناصر التحكم | القراءة / التعديل | موك أب للصفحة |
@@ -95,7 +95,7 @@
 | /merchant/sheets/inventory — مخزون Google Sheets | 9 | 30 | 6 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/payments — المدفوعات | 5 | 23 | 4 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/payments/:id — تفاصيل معاملة | 5 | 23 | 4 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/payment-links — روابط الدفع | 2 | 12 | 1 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/payment-links — روابط الدفع | 12 | 35 | 5 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/payment-settings — بوابة دفع العملاء | 7 | 17 | 3 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/loyalty/settings — إعدادات الولاء | 2 | 11 | 1 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/loyalty/tiers — مستويات الولاء | 2 | 8 | 1 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -3557,22 +3557,55 @@
 | 704 | Link | # | PaymentHistoryWorkspace |
 | 711 | Link | # | PaymentHistoryWorkspace |
 
-## client/src/pages/merchant/PaymentLinks.tsx
+## client/src/components/merchant/PaymentLinksWorkspace.tsx
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 214 | Button | إنشاء رابط جديد | روابط الدفع |
-| 219 | DialogContent | إنشاء رابط دفع جديد أنشئ رابط دفع سريع لمشاركته مع العملاء عبر واتساب أو أي قناة أخرى عنوان الرابط * الوصف المبلغ (ريال سعودي) * الحد الأقصى للاستخدام (اختياري) إلغاء جاري الإنشاء... إنشاء الرابط | روابط الدفع |
-| 229 | Input | عنوان الرابط * | إنشاء رابط دفع جديد |
-| 242 | Textarea | الوصف | إنشاء رابط دفع جديد |
-| 256 | Input | المبلغ (ريال سعودي) * | إنشاء رابط دفع جديد |
-| 271 | Input | الحد الأقصى للاستخدام (اختياري) | إنشاء رابط دفع جديد |
-| 286 | Button | إلغاء | إنشاء رابط دفع جديد |
-| 292 | Button | جاري الإنشاء... إنشاء الرابط | إنشاء رابط دفع جديد |
-| 362 | Button | t("merchantUx.actions.copyNamed", {                               name: link.title,                             }) | إنشاء رابط دفع جديد |
-| 373 | Button | t("merchantUx.actions.openNamed", {                               name: link.title,                             }) | إنشاء رابط دفع جديد |
-| 387 | Button | t("merchantUx.actions.disableNamed", {                                 name: link.title,                               }) | إنشاء رابط دفع جديد |
-| 418 | Button | إنشاء أول رابط | لا توجد روابط دفع |
+| 105 | input | c.searchHint | PaymentLinksWorkspace |
+| 116 | select | تسمية ديناميكية / تحتاج مراجعة | PaymentLinksWorkspace |
+| 132 | select | 25 50 | PaymentLinksWorkspace |
+| 142 | Button | تسمية ديناميكية / تحتاج مراجعة | PaymentLinksWorkspace |
+| 143 | Button | تسمية ديناميكية / تحتاج مراجعة | PaymentLinksWorkspace |
+| 183 | Button | تسمية ديناميكية / تحتاج مراجعة | PaymentLinksWorkspace |
+| 188 | Link | تسمية ديناميكية / تحتاج مراجعة | PaymentLinksWorkspace |
+| 274 | Link | `${c.details}: ${row.title ?? row.id}` | PaymentLinksWorkspace |
+| 288 | Button | تسمية ديناميكية / تحتاج مراجعة | PaymentLinksWorkspace |
+| 302 | Button | تسمية ديناميكية / تحتاج مراجعة | PaymentLinksWorkspace |
+| 468 | Button | تسمية ديناميكية / تحتاج مراجعة | PaymentLinksWorkspace |
+| 495 | input | تسمية ديناميكية / تحتاج مراجعة | PaymentLinksWorkspace |
+| 502 | Button | تسمية ديناميكية / تحتاج مراجعة | PaymentLinksWorkspace |
+| 527 | Link | تسمية ديناميكية / تحتاج مراجعة | PaymentLinksWorkspace |
+| 534 | Link | تسمية ديناميكية / تحتاج مراجعة | PaymentLinksWorkspace |
+| 552 | Button | تسمية ديناميكية / تحتاج مراجعة | PaymentLinksWorkspace |
+| 562 | input | تسمية ديناميكية / تحتاج مراجعة | PaymentLinksWorkspace |
+| 571 | Button | تسمية ديناميكية / تحتاج مراجعة | PaymentLinksWorkspace |
+| 577 | Button | تسمية ديناميكية / تحتاج مراجعة | PaymentLinksWorkspace |
+| 606 | Link | تسمية ديناميكية / تحتاج مراجعة | PaymentLinksWorkspace |
+| 622 | summary | تسمية ديناميكية / تحتاج مراجعة | PaymentLinksWorkspace |
+
+## client/src/components/merchant/PaymentLinksPrimitives.tsx
+
+| السطر | النوع | التسمية | القسم |
+|---:|---|---|---|
+| 55 | Link | تسمية ديناميكية / تحتاج مراجعة | PaymentLinksPrimitives |
+| 74 | Link | تسمية ديناميكية / تحتاج مراجعة | PaymentLinksPrimitives |
+| 75 | Link | تسمية ديناميكية / تحتاج مراجعة | PaymentLinksPrimitives |
+
+## client/src/components/merchant/PaymentLinkCreate.tsx
+
+| السطر | النوع | التسمية | القسم |
+|---:|---|---|---|
+| 261 | Button | تسمية ديناميكية / تحتاج مراجعة | PaymentLinkCreate |
+| 287 | Link | تسمية ديناميكية / تحتاج مراجعة | PaymentLinkCreate |
+| 319 | Button | تسمية ديناميكية / تحتاج مراجعة | PaymentLinkCreate |
+| 342 | input | title | PaymentLinkCreate |
+| 356 | input | (SAR) amountMinor | PaymentLinkCreate |
+| 371 | summary | تسمية ديناميكية / تحتاج مراجعة | PaymentLinkCreate |
+| 375 | textarea | description | PaymentLinkCreate |
+| 388 | input | maxUsageCount | PaymentLinkCreate |
+| 402 | input | expiresAt | PaymentLinkCreate |
+| 417 | input | تسمية ديناميكية / تحتاج مراجعة | PaymentLinkCreate |
+| 428 | Button | تسمية ديناميكية / تحتاج مراجعة | PaymentLinkCreate |
 
 ## client/src/components/merchant/PaymentSettingsWorkspace.tsx
 

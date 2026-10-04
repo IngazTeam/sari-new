@@ -185,7 +185,7 @@ function syncCampaignPreviewContext(route){
   if(standalone)standalone.setAttribute('href','./campaign-workspace.html?'+params.toString());
 }
 function syncServicePreviewContext(route){
-  if(location.hash!=='#/page'+route||!/^\/merchant\/(?:services|payments|merchant-payments|payment-settings|settings|currency-settings|notification-settings|competitor-analysis|order-notifications|reviews|booking-reviews|scheduled-messages|media-library|promotions|discounts|referrals|abandoned-carts|occasion-campaigns|service-categories|service-packages|staff|bookings|integrations\/(?:byaan|zid|calendly)|zid\/(?:settings|products|sync-logs|callback)|woocommerce\/(?:settings|products|orders|analytics)|byaan-dashboard|salla|platform-integrations|calendar(?:\/settings)?)(?:\/|\?|$)/.test(route))return;
+  if(location.hash!=='#/page'+route||!/^\/merchant\/(?:services|payments|payment-links|merchant-payments|payment-settings|settings|currency-settings|notification-settings|competitor-analysis|order-notifications|reviews|booking-reviews|scheduled-messages|media-library|promotions|discounts|referrals|abandoned-carts|occasion-campaigns|service-categories|service-packages|staff|bookings|integrations\/(?:byaan|zid|calendly)|zid\/(?:settings|products|sync-logs|callback)|woocommerce\/(?:settings|products|orders|analytics)|byaan-dashboard|salla|platform-integrations|calendar(?:\/settings)?)(?:\/|\?|$)/.test(route))return;
   const [path,search]=route.split('?'),page=TenantPages.find(path),frame=$('#main iframe[data-brain-preview]');
   if(!page||!frame)return;
   ui.page=page;ui.section=page.group;
