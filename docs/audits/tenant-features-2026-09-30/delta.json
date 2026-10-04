@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-04T15:10:59.827Z",
+  "generatedAt": "2026-10-04T15:20:43.410Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -528,6 +528,7 @@
     "client/src/pages/merchant/ServiceCategories.tsx",
     "client/src/pages/merchant/ServicePackages.tsx",
     "client/src/pages/SheetsSettings.tsx",
+    "client/src/pages/SheetsReports.tsx",
     "client/src/pages/SheetsInventory.tsx",
     "client/src/pages/merchant/Payments.tsx",
     "client/src/pages/PaymentDetails.tsx",

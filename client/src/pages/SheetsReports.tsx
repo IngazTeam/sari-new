@@ -94,7 +94,7 @@ export default function SheetsReports() {
   };
 
   const handleSendReport = (type: string) => {
-    sendMutation.mutate({ reportType: type });
+    if (type === 'يومي' || type === 'أسبوعي' || type === 'شهري') sendMutation.mutate({ reportType: type });
   };
 
   const reports = [

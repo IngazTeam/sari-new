@@ -1,0 +1,13 @@
+import {beforeEach,expect,it,vi} from 'vitest';
+const m=vi.hoisted(()=>({transaction:vi.fn(),authority:vi.fn(),execute:vi.fn(),limit:vi.fn()}));
+vi.mock('./sheets-oauth',async original=>({...await original<any>(),sheetsOAuthStore:{transaction:m.transaction,authority:m.authority}}));
+vi.mock('./api/distributed-rate-limit',()=>({reserveApiRateLimit:m.limit}));
+import {runSheetsUserOperation} from './sheets-user-operation';
+import {SheetsOAuthError} from './sheets-oauth';
+const scope={merchantId:7,userId:9,sessionId:'a'.repeat(64)},tx={execute:m.execute};
+beforeEach(()=>{vi.resetAllMocks();m.transaction.mockImplementation(async work=>work(tx));m.execute.mockResolvedValue([[{account_status:'active'}]]);m.limit.mockResolvedValue({allowed:true});});
+it('runs work only after live authority, owner-account and a shared database rate-limit check',async()=>{const work=vi.fn().mockResolvedValue('done');expect(await runSheetsUserOperation(scope,work)).toBe('done');expect(m.authority).toHaveBeenCalledWith(tx,scope);expect(m.limit).toHaveBeenCalledWith({namespace:'sheets:user-operation',identity:'7',maxRequests:10,windowMs:3600000});expect(work).toHaveBeenCalledWith(tx);});
+it.each(['forbidden','rate_limit','changed']as const)('redacts authority errors %s',async reason=>{m.authority.mockRejectedValue(new SheetsOAuthError(reason));const work=vi.fn();await expect(runSheetsUserOperation(scope,work)).rejects.toMatchObject({code:reason==='forbidden'?'FORBIDDEN':reason==='rate_limit'?'TOO_MANY_REQUESTS':'PRECONDITION_FAILED',message:'sheets_operation:'+reason});expect(work).not.toHaveBeenCalled();expect(m.limit).not.toHaveBeenCalled();});
+it.each([[],[{account_status:'deletion_pending'}],[{account_status:'active'},{account_status:'active'}]])('rejects unavailable owner authority %j',async rows=>{m.execute.mockResolvedValue([rows]);const work=vi.fn();await expect(runSheetsUserOperation(scope,work)).rejects.toMatchObject({code:'FORBIDDEN'});expect(work).not.toHaveBeenCalled();});
+it('does not run work after the shared operation quota',async()=>{m.limit.mockResolvedValue({allowed:false});const work=vi.fn();await expect(runSheetsUserOperation(scope,work)).rejects.toMatchObject({code:'TOO_MANY_REQUESTS'});expect(work).not.toHaveBeenCalled();});
+it('does not expose infrastructure or provider error text',async()=>{await expect(runSheetsUserOperation(scope,async()=>{throw Error('PRIVATE')})).rejects.toMatchObject({code:'PRECONDITION_FAILED',message:'sheets_operation:unconfirmed'});});

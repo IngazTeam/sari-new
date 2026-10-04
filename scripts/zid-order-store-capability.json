@@ -74,6 +74,7 @@
     "subscription-canonical-merchant-lock-v1",
     "subscription-capture-review-0205",
     "whatsapp-reviewed-removal-only-v1",
-    "whatsapp-reviewed-save-only-v1"
+    "whatsapp-reviewed-save-only-v1",
+    "sheets-scoped-user-operations-v1"
   ]
 }

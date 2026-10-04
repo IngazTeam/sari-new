@@ -4,9 +4,7 @@
  */
 
 import {
-  getConversationById,
   getGoogleIntegration,
-  getMessagesByConversationId,
   getOrderById,
   updateGoogleIntegration,
 } from './db';
@@ -163,77 +161,6 @@ export async function syncLeadToSheets(
     return {
       success: false,
       message: error.message || 'فشل مزامنة العميل المحتمل',
-    };
-  }
-}
-
-/**
- * تصدير المحادثات إلى Google Sheets
- */
-export async function exportConversationsToSheets(
-  merchantId: number,
-  conversationIds: number[]
-): Promise<{ success: boolean; message: string }> {
-  try {
-    const integration = await getGoogleIntegration(merchantId, 'sheets');
-
-    if (!integration || !integration.isActive || !integration.sheetId) {
-      return { success: false, message: 'Google Sheets غير مربوط' };
-    }
-
-    const spreadsheetId = integration.sheetId;
-
-    // جلب المحادثات والرسائل
-    const rows: any[][] = [];
-
-    for (const conversationId of conversationIds) {
-      const conversation = await getConversationById(conversationId);
-      if (!conversation) continue;
-
-      const messages = await getMessagesByConversationId(conversationId);
-
-      for (const message of messages) {
-        const messageDate = new Date(message.createdAt);
-        const dateStr = messageDate.toLocaleDateString('ar-SA');
-        const timeStr = messageDate.toLocaleTimeString('ar-SA', {
-          hour: '2-digit',
-          minute: '2-digit',
-        });
-
-        rows.push([
-          dateStr,
-          timeStr,
-          conversation.customerName || 'غير محدد',
-          conversation.customerPhone,
-          message.direction === 'incoming' ? 'وارد' : 'صادر',
-          message.content || '-'
-        ]);
-      }
-    }
-
-    if (rows.length === 0) {
-      return { success: false, message: 'لا توجد محادثات للتصدير' };
-    }
-
-    const result = await sheets.appendToSheet(
-      merchantId,
-      spreadsheetId,
-      'المحادثات!A:F',
-      rows
-    );
-
-    if (result.success) {
-      await updateGoogleIntegration(integration.id, {
-        lastSync: new Date().toISOString(),
-      });
-    }
-
-    return result;
-  } catch (error: any) {
-    console.error('[Sheets Sync] Error exporting conversations:', error);
-    return {
-      success: false,
-      message: error.message || 'فشل تصدير المحادثات',
     };
   }
 }

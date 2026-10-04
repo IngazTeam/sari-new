@@ -5,6 +5,9 @@
 
 import { z } from 'zod';
 import { router, protectedProcedure, permissionProcedure } from './_core/trpc';
+import { sheetsConversationExportInput } from '../shared/sheets-conversation-export';
+import { exportScopedConversationsToSheets } from './sheets-conversation-export';
+import { runSheetsUserOperation } from './sheets-user-operation';
 import { inventorySheetExportInput } from '../shared/inventory-sheet-export';
 import { exportInventoryToSheet, readInventoryExportStatus } from './inventory-sheet-export';
 import { guardInventoryExport } from './inventory-sheet-export-api';
@@ -91,18 +94,10 @@ export const sheetsRouter = router({
     }),
 
   // تصدير المحادثات
-  exportConversations: protectedProcedure
-    .input(z.object({
-      conversationIds: z.array(z.number()),
-    }))
-    .mutation(async ({ ctx, input }) => {
-      const merchant = await getMerchantByUserId(ctx.user.id);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-      return await sheetsSync.exportConversationsToSheets(
-        merchant.id,
-        input.conversationIds
-      );
-    }),
+  exportConversations: permissionProcedure('integrations.manage').input(sheetsConversationExportInput).mutation(({ctx,input})=>{
+    if(!ctx.session?.sessionId)throw new TRPCError({code:'UNAUTHORIZED',message:'sheets_operation:session'});
+    return exportScopedConversationsToSheets({merchantId:ctx.merchantId,userId:ctx.user.id,sessionId:ctx.session.sessionId},input);
+  }),
 
   inventoryStatus: permissionProcedure('products.manage').query(({ctx}) =>
     guardInventoryExport(() => readInventoryExportStatus(ctx.merchantId,ctx.user.id))),
@@ -113,77 +108,59 @@ export const sheetsRouter = router({
   }),
 
   // توليد تقرير يومي
-  generateDailyReport: protectedProcedure.mutation(async ({ ctx }) => {
-    const merchant = await getMerchantByUserId(ctx.user.id);
-    if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-    return await sheetsReports.generateDailyReport(merchant.id);
+  generateDailyReport: permissionProcedure('integrations.manage').mutation(async ({ ctx }) => {
+    if(!ctx.session?.sessionId)throw new TRPCError({code:'UNAUTHORIZED',message:'sheets_operation:session'});
+    return runSheetsUserOperation({merchantId:ctx.merchantId,userId:ctx.user.id,sessionId:ctx.session.sessionId},async()=>{
+      const result=await sheetsReports.generateDailyReport(ctx.merchantId);
+      if(result?.success!==true)throw new TRPCError({code:'PRECONDITION_FAILED',message:'sheets_operation:unconfirmed'});
+      return {success:true as const,data:result.data,message:'تم تجهيز التقرير'};
+    });
   }),
 
   // توليد تقرير أسبوعي
-  generateWeeklyReport: protectedProcedure.mutation(async ({ ctx }) => {
-    const merchant = await getMerchantByUserId(ctx.user.id);
-    if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-    return await sheetsReports.generateWeeklyReport(merchant.id);
+  generateWeeklyReport: permissionProcedure('integrations.manage').mutation(async ({ ctx }) => {
+    if(!ctx.session?.sessionId)throw new TRPCError({code:'UNAUTHORIZED',message:'sheets_operation:session'});
+    return runSheetsUserOperation({merchantId:ctx.merchantId,userId:ctx.user.id,sessionId:ctx.session.sessionId},async()=>{
+      const result=await sheetsReports.generateWeeklyReport(ctx.merchantId);
+      if(result?.success!==true)throw new TRPCError({code:'PRECONDITION_FAILED',message:'sheets_operation:unconfirmed'});
+      return {success:true as const,data:result.data,message:'تم تجهيز التقرير'};
+    });
   }),
 
   // توليد تقرير شهري
-  generateMonthlyReport: protectedProcedure.mutation(async ({ ctx }) => {
-    const merchant = await getMerchantByUserId(ctx.user.id);
-    if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-    return await sheetsReports.generateMonthlyReport(merchant.id);
+  generateMonthlyReport: permissionProcedure('integrations.manage').mutation(async ({ ctx }) => {
+    if(!ctx.session?.sessionId)throw new TRPCError({code:'UNAUTHORIZED',message:'sheets_operation:session'});
+    return runSheetsUserOperation({merchantId:ctx.merchantId,userId:ctx.user.id,sessionId:ctx.session.sessionId},async()=>{
+      const result=await sheetsReports.generateMonthlyReport(ctx.merchantId);
+      if(result?.success!==true)throw new TRPCError({code:'PRECONDITION_FAILED',message:'sheets_operation:unconfirmed'});
+      return {success:true as const,data:result.data,message:'تم تجهيز التقرير'};
+    });
   }),
 
   // توليد تقرير مخصص
-  generateCustomReport: protectedProcedure
-    .input(z.object({
-      startDate: z.date(),
-      endDate: z.date(),
-    }))
-    .mutation(async ({ ctx, input }) => {
-      const merchant = await getMerchantByUserId(ctx.user.id);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-      return await sheetsReports.generateCustomReport(
-        merchant.id,
-        input.startDate,
-        input.endDate
-      );
+  generateCustomReport: permissionProcedure('integrations.manage')
+    .input(z.object({startDate:z.date(),endDate:z.date()}).strict().refine(v=>v.endDate.getTime()>v.startDate.getTime()&&v.endDate.getTime()-v.startDate.getTime()<=366*86400000,'Invalid report period'))
+    .mutation(async({ctx,input})=>{
+      if(!ctx.session?.sessionId)throw new TRPCError({code:'UNAUTHORIZED',message:'sheets_operation:session'});
+      return runSheetsUserOperation({merchantId:ctx.merchantId,userId:ctx.user.id,sessionId:ctx.session.sessionId},async()=>{
+        const result=await sheetsReports.generateCustomReport(ctx.merchantId,input.startDate,input.endDate);
+        if(result?.success!==true)throw new TRPCError({code:'PRECONDITION_FAILED',message:'sheets_operation:unconfirmed'});
+        return {success:true as const,data:result.data,message:'تم تجهيز التقرير'};
+      });
     }),
 
-  // إرسال تقرير عبر WhatsApp
-  sendReportViaWhatsApp: protectedProcedure
-    .input(z.object({
-      reportType: z.string(),
-    }))
-    .mutation(async ({ ctx, input }) => {
-      const merchant = await getMerchantByUserId(ctx.user.id);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-
-      // توليد التقرير أولاً
-      let result;
-      switch (input.reportType) {
-        case 'يومي':
-          result = await sheetsReports.generateDailyReport(merchant.id);
-          break;
-        case 'أسبوعي':
-          result = await sheetsReports.generateWeeklyReport(merchant.id);
-          break;
-        case 'شهري':
-          result = await sheetsReports.generateMonthlyReport(merchant.id);
-          break;
-        default:
-          return { success: false, message: 'نوع التقرير غير صحيح' };
-      }
-
-      if (!result.success || !result.data) {
-        return result;
-      }
-
-      // إرسال التقرير
-      return await sheetsReports.sendReportViaWhatsApp(
-        merchant.id,
-        input.reportType,
-        result.data
-      );
+  sendReportViaWhatsApp: permissionProcedure('integrations.manage')
+    .input(z.object({reportType:z.enum(['يومي','أسبوعي','شهري'])}).strict())
+    .mutation(async({ctx,input})=>{
+      if(!ctx.session?.sessionId)throw new TRPCError({code:'UNAUTHORIZED',message:'sheets_operation:session'});
+      return runSheetsUserOperation({merchantId:ctx.merchantId,userId:ctx.user.id,sessionId:ctx.session.sessionId},async()=>{
+        const generate=input.reportType==='يومي'?sheetsReports.generateDailyReport:input.reportType==='أسبوعي'?sheetsReports.generateWeeklyReport:sheetsReports.generateMonthlyReport;
+        const result=await generate(ctx.merchantId);
+        if(result?.success!==true||!result.data)throw new TRPCError({code:'PRECONDITION_FAILED',message:'sheets_operation:unconfirmed'});
+        const sent=await sheetsReports.sendReportViaWhatsApp(ctx.merchantId,input.reportType,result.data);
+        if(sent?.success!==true)throw new TRPCError({code:'PRECONDITION_FAILED',message:'sheets_operation:unconfirmed'});
+        return {success:true as const,message:'قُبل إرسال التقرير'};
+      });
     }),
 
   // تحديث إعدادات التقارير التلقائية

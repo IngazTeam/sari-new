@@ -1,0 +1,69 @@
+{
+  "unit": {
+    "passed": 76,
+    "failed": 0,
+    "files": [
+      {
+        "file": "sheets-conversation-export.test.ts",
+        "tests": 14
+      },
+      {
+        "file": "sheets-cron-review-boundary.test.ts",
+        "tests": 13
+      },
+      {
+        "file": "sheets-selected-operations.test.ts",
+        "tests": 30
+      },
+      {
+        "file": "sheets-settings-api.test.ts",
+        "tests": 10
+      },
+      {
+        "file": "sheets-user-operation.test.ts",
+        "tests": 9
+      }
+    ]
+  },
+  "mysql": {
+    "passed": 19,
+    "failed": 0,
+    "files": [
+      {
+        "file": "sheets-conversation-export.mysql.test.ts",
+        "tests": 12
+      },
+      {
+        "file": "sheets-settings.mysql.test.ts",
+        "tests": 7
+      }
+    ]
+  },
+  "preservation": {
+    "passed": 141,
+    "failed": 0,
+    "files": [
+      {
+        "file": "merchant-feature-inventory.test.ts",
+        "tests": 6
+      },
+      {
+        "file": "merchant-feature-preservation.test.ts",
+        "tests": 127
+      },
+      {
+        "file": "tenant-source-analysis.test.ts",
+        "tests": 8
+      }
+    ]
+  },
+  "release": {
+    "passed": 65,
+    "failed": 0
+  },
+  "typescript": "passed",
+  "production_build": "passed",
+  "browser": "no UI changes other than report input type; no new visual proof",
+  "external_io": "provider mocked; none",
+  "deployment": false
+}

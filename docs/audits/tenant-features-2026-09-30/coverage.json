@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-04T15:10:59.827Z",
+  "generatedAt": "2026-10-04T15:20:43.410Z",
   "definition": "Every registered route is accounted for; source inventory and design completion are different statuses.",
   "routes": [
     {
@@ -79684,7 +79684,7 @@
           "kind": "action",
           "label": "توليد الآن",
           "section": "SheetsReports",
-          "binding": "() =>\n                      handleGenerateReport(\n                        report.id as \"daily\" | \"weekly\" | \"monthly\"\n                      )",
+          "binding": "() =>\r\n                      handleGenerateReport(\r\n                        report.id as \"daily\" | \"weekly\" | \"monthly\"\r\n                      )",
           "type": "text",
           "options": [],
           "min": "",
