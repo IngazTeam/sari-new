@@ -17,6 +17,8 @@ import {
   updateMerchantSubscriptionStatus,
 } from '../db';
 
+import { billingCurrency, billingPriceMinor } from '../subscriptions/billing-price';
+
 // ============================================
 // Types
 // ============================================
@@ -66,32 +68,30 @@ export async function calculateProration(
 		throw new Error('New plan not found');
 	}
 
-	// Calculate days used and remaining
-	const now = new Date();
-	const startDate = new Date(subscription.startDate);
-	const endDate = new Date(subscription.endDate);
-
-	const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-	const daysUsed = Math.ceil((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+	// Reject invalid periods before computing credit. A trial has no paid credit.
+	const now = Date.now();
+	const start = new Date(subscription.startDate).getTime();
+	const end = new Date(subscription.endDate).getTime();
+	if (![now, start, end].every(Number.isFinite) || end <= start || now < start || now >= end ||
+		!['active', 'trial'].includes(subscription.status) ||
+		!['monthly', 'yearly'].includes(subscription.billingCycle) ||
+		!['monthly', 'yearly'].includes(newBillingCycle)) throw new Error('INVALID_PRORATION_PERIOD');
+	if (billingCurrency(currentPlan.currency) !== billingCurrency(newPlan.currency))
+		throw new Error('PRORATION_CURRENCY_MISMATCH');
+	const oldMinor = billingPriceMinor(subscription.billingCycle === 'monthly'
+		? currentPlan.monthlyPrice : currentPlan.yearlyPrice, true);
+	const newMinor = billingPriceMinor(newBillingCycle === 'monthly'
+		? newPlan.monthlyPrice : newPlan.yearlyPrice);
+	const day = 86_400_000;
+	const totalDays = Math.ceil((end - start) / day);
+	const daysUsed = Math.min(totalDays, Math.max(0, Math.ceil((now - start) / day)));
 	const daysRemaining = totalDays - daysUsed;
-
-	// Calculate daily rates
-	const oldPlanPrice = subscription.billingCycle === 'monthly'
-		? parseFloat(currentPlan.monthlyPrice)
-		: parseFloat(currentPlan.yearlyPrice);
-	const oldPlanDailyRate = oldPlanPrice / totalDays;
-
-	const newPlanPrice = newBillingCycle === 'monthly'
-		? parseFloat(newPlan.monthlyPrice)
-		: parseFloat(newPlan.yearlyPrice);
-	const newPlanDays = newBillingCycle === 'monthly' ? 30 : 365;
-	const newPlanDailyRate = newPlanPrice / newPlanDays;
-
-	// Calculate credit for unused days
-	const creditAmount = oldPlanDailyRate * daysRemaining;
-
-	// Calculate charge for new plan
-	const chargeAmount = Math.max(0, newPlanPrice - creditAmount);
+	const oldPlanDailyRate = oldMinor / 100 / totalDays;
+	const newPlanDailyRate = newMinor / 100 / (newBillingCycle === 'monthly' ? 30 : 365);
+	// Round the credit once in minor units, then subtract integers.
+	const creditMinor = subscription.status === 'trial' ? 0 : Math.round(oldMinor * daysRemaining / totalDays);
+	const creditAmount = creditMinor / 100;
+	const chargeAmount = Math.max(0, newMinor - creditMinor) / 100;
 
 	return {
 		proratedAmount: chargeAmount,

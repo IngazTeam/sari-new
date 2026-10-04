@@ -66,6 +66,13 @@ import {
   SubscriptionTapCheckoutError,
 } from '../payment/subscription-tap-checkout';
 
+import { billingPriceMinor, billingCurrency, assertProrationCharge } from '../subscriptions/billing-price';
+
+function readBillablePrice(value: unknown): number {
+  try { return billingPriceMinor(value) / 100; }
+  catch { throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid billable price' }); }
+}
+
 function assertBillableAmount(amount: number, currency: string): { amount: number; currency: string } {
   const normalizedCurrency = currency.trim().toUpperCase();
   if (!Number.isFinite(amount) || amount <= 0 || amount > 1_000_000) {
@@ -397,8 +404,8 @@ export const merchantSubscriptionRouter = router({
 
       // Calculate amount
       const selectedAmount = input.billingCycle === 'monthly'
-        ? parseFloat(plan.monthlyPrice)
-        : parseFloat(plan.yearlyPrice);
+        ? readBillablePrice(plan.monthlyPrice)
+        : readBillablePrice(plan.yearlyPrice);
       const { amount, currency } = assertBillableAmount(selectedAmount, plan.currency);
 
       try {
@@ -465,9 +472,13 @@ export const merchantSubscriptionRouter = router({
 
       // Calculate proration
       const selectedPrice = input.newBillingCycle === 'monthly'
-        ? Number(newPlan.monthlyPrice)
-        : Number(newPlan.yearlyPrice);
-      const proration = currentSubscription.planId
+        ? readBillablePrice(newPlan.monthlyPrice)
+        : readBillablePrice(newPlan.yearlyPrice);
+      let proration: Awaited<ReturnType<typeof calculateProration>>;
+      let currency: string;
+      try {
+      currency = billingCurrency(newPlan.currency);
+      proration = currentSubscription.planId
         ? await calculateProration(currentSubscription.id, input.newPlanId, input.newBillingCycle)
         : {
             proratedAmount: selectedPrice,
@@ -478,9 +489,9 @@ export const merchantSubscriptionRouter = router({
             creditAmount: 0,
             chargeAmount: selectedPrice,
           };
-      const currency = newPlan.currency.trim().toUpperCase();
-      if (!['SAR', 'USD'].includes(currency)) {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Unsupported billing currency' });
+      assertProrationCharge(proration.chargeAmount);
+      } catch {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Could not calculate a valid plan change' });
       }
       const payable = proration.chargeAmount > 0
         ? assertBillableAmount(proration.chargeAmount, currency)
@@ -645,8 +656,8 @@ export const merchantAddonsRouter = router({
 
       // Calculate amount
       const unitPrice = input.billingCycle === 'monthly'
-        ? parseFloat(addon.monthlyPrice)
-        : parseFloat(addon.yearlyPrice);
+        ? readBillablePrice(addon.monthlyPrice)
+        : readBillablePrice(addon.yearlyPrice);
       const totalAmount = unitPrice * input.quantity;
       const billable = assertBillableAmount(totalAmount, addon.currency);
 
