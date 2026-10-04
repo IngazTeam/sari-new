@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-04T16:56:25.947Z",
+  "generatedAt": "2026-10-04T17:19:40.690Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -17683,12 +17683,32 @@
     },
     {
       "file": "client/src/pages/merchant/TeamManagement.tsx",
-      "hash": "3786f101f694",
+      "hash": "55e37fccea71",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [
+        "client/src/components/merchant/TeamWorkspace.tsx"
+      ],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/components/merchant/TeamWorkspace.tsx",
+      "hash": "8efb774153a8",
       "queries": [
-        "team.list"
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "team.workspace"
       ],
       "mutations": [
         "team.invite",
+        "team.updateRole",
         "team.remove",
         "team.revokeInvite"
       ],
@@ -17696,96 +17716,96 @@
       "browserRequests": [],
       "sections": [
         {
-          "label": "إدارة الفريق",
-          "line": 94,
+          "label": "",
+          "line": 286,
           "tag": "h1"
         },
         {
-          "label": "دعوة عضو جديد",
-          "line": 108,
+          "label": "·",
+          "line": 388,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 442,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 467,
+          "tag": "summary"
+        },
+        {
+          "label": "",
+          "line": 471,
+          "tag": "h2"
+        },
+        {
+          "label": "Title",
+          "line": 495,
           "tag": "DialogTitle"
-        },
-        {
-          "label": "أعضاء الفريق",
-          "line": 178,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "دعوات معلقة",
-          "line": 186,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "المالكون",
-          "line": 194,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "الأعضاء",
-          "line": 207,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "دعوات معلقة",
-          "line": 281,
-          "tag": "CardTitle"
         }
       ],
-      "choices": [
-        {
-          "name": "ROLE_OPTIONS",
-          "line": 16,
-          "values": [
-            {
-              "value": "manager",
-              "label": "مدير",
-              "description": "كل شيء عدا الاشتراك",
-              "color": "bg-blue-100 text-blue-800"
-            },
-            {
-              "value": "sales_supervisor",
-              "label": "مشرف مبيعات",
-              "description": "محادثات، عملاء، منتجات",
-              "color": "bg-green-100 text-green-800"
-            },
-            {
-              "value": "viewer",
-              "label": "مشاهد فقط",
-              "description": "عرض بدون تعديل",
-              "color": "bg-gray-100 text-gray-800"
-            }
-          ]
-        }
-      ],
+      "choices": [],
       "handlers": [
         {
-          "name": "handleInvite",
-          "line": 75,
-          "calls": [
-            "inviteMutation"
-          ]
+          "name": "open",
+          "line": 109,
+          "calls": []
         },
         {
-          "name": "handleRemove",
-          "line": 81,
-          "calls": [
-            "removeMutation"
-          ]
+          "name": "close",
+          "line": 118,
+          "calls": []
         }
       ],
       "queryStates": [
         {
-          "query": "team.list",
-          "binding": "{ data, isLoading }",
-          "line": 43,
-          "errorSignal": false,
+          "query": "auth.me",
+          "binding": "user",
+          "line": 30,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        },
+        {
+          "query": "merchants.workspaceIdentity",
+          "binding": "identity",
+          "line": 31,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": "!!user.data?.id && !user.error && !user.isFetching"
+        },
+        {
+          "query": "team.workspace",
+          "binding": "query",
+          "line": 77,
+          "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
         }
       ],
       "conditions": [],
+      "imports": [
+        "client/src/lib/usage-workspace-view.ts",
+        "client/src/lib/team-workspace-labels.ts"
+      ],
+      "controlCount": 15
+    },
+    {
+      "file": "client/src/lib/team-workspace-labels.ts",
+      "hash": "149edb96770b",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
       "imports": [],
-      "controlCount": 8
+      "controlCount": 0
     },
     {
       "file": "client/src/pages/merchant/ServicesManagement.tsx",
@@ -29303,23 +29323,36 @@
         "TeamManagement"
       ],
       "files": [
-        "client/src/pages/merchant/TeamManagement.tsx"
+        "client/src/pages/merchant/TeamManagement.tsx",
+        "client/src/components/merchant/TeamWorkspace.tsx",
+        "client/src/lib/usage-workspace-view.ts",
+        "client/src/lib/team-workspace-labels.ts"
       ],
       "controls": [
-        "ac1878a945dc",
-        "e99ffd3f819e",
-        "3a36092b011f",
-        "b3529bb833a7",
-        "821ce30a1ea4",
-        "c88f04c6bf14",
-        "b36d2ec5fbd8",
-        "9eba6d41e8b1"
+        "79b77cb82017",
+        "500367523632",
+        "deb37f9ead97",
+        "f96179dc3e07",
+        "2cc37b4b01e3",
+        "91aa031a1c54",
+        "b87890d8916c",
+        "8e305c590a78",
+        "4a504c011fd4",
+        "edf0622c8bd9",
+        "2945f03430e1",
+        "142f44399c32",
+        "8c8a994a0fdd",
+        "1da48ab75ee5",
+        "71390fe1b33d"
       ],
       "queries": [
-        "team.list"
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "team.workspace"
       ],
       "mutations": [
         "team.invite",
+        "team.updateRole",
         "team.remove",
         "team.revokeInvite"
       ],
@@ -81741,15 +81774,15 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ac1878a945dc",
-      "file": "client/src/pages/merchant/TeamManagement.tsx",
-      "line": 102,
-      "tag": "Button",
+      "id": "79b77cb82017",
+      "file": "client/src/components/merchant/TeamWorkspace.tsx",
+      "line": 290,
+      "tag": "button",
       "role": "",
       "kind": "action",
-      "label": "دعوة عضو جديد",
-      "section": "إدارة الفريق",
-      "binding": "",
+      "label": "",
+      "section": "TeamWorkspace",
+      "binding": "() => void query.refetch()",
       "type": "text",
       "options": [],
       "min": "",
@@ -81758,112 +81791,319 @@
       "required": false,
       "conditional": false,
       "conditions": [],
-      "disabled": "",
+      "disabled": "running",
       "review": "source-inventoried"
     },
     {
-      "id": "e99ffd3f819e",
-      "file": "client/src/pages/merchant/TeamManagement.tsx",
-      "line": 106,
-      "tag": "DialogContent",
+      "id": "500367523632",
+      "file": "client/src/components/merchant/TeamWorkspace.tsx",
+      "line": 297,
+      "tag": "button",
       "role": "",
-      "kind": "dialog",
-      "label": "دعوة عضو جديد أدخل البريد الإلكتروني واختر الصلاحية — سيستلم رابط دعوة صالح لمدة 7 أيام البريد الإلكتروني * الصلاحية * — إلغاء جاري الإرسال... إرسال الدعوة",
-      "section": "إدارة الفريق",
-      "binding": "",
+      "kind": "action",
+      "label": "",
+      "section": "TeamWorkspace",
+      "binding": "e => open({ kind: 'invite' }, e.currentTarget)",
       "type": "text",
-      "options": [
-        {
-          "value": "role.value",
-          "label": "—"
-        }
-      ],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "3a36092b011f",
-      "file": "client/src/pages/merchant/TeamManagement.tsx",
-      "line": 117,
-      "tag": "Input",
-      "role": "",
-      "kind": "field",
-      "label": "البريد الإلكتروني *",
-      "section": "دعوة عضو جديد",
-      "binding": "inviteEmail",
-      "type": "email",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
-      "required": true,
+      "required": false,
       "conditional": false,
       "conditions": [],
-      "disabled": "",
+      "disabled": "busyOrUnknown",
       "review": "source-inventoried"
     },
     {
-      "id": "b3529bb833a7",
-      "file": "client/src/pages/merchant/TeamManagement.tsx",
-      "line": 130,
-      "tag": "Select",
-      "role": "",
-      "kind": "field",
-      "label": "الصلاحية *",
-      "section": "دعوة عضو جديد",
-      "binding": "inviteRole",
-      "type": "select",
-      "options": [
-        {
-          "value": "role.value",
-          "label": "—"
-        }
-      ],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "821ce30a1ea4",
-      "file": "client/src/pages/merchant/TeamManagement.tsx",
-      "line": 158,
-      "tag": "Button",
+      "id": "deb37f9ead97",
+      "file": "client/src/components/merchant/TeamWorkspace.tsx",
+      "line": 326,
+      "tag": "button",
       "role": "",
       "kind": "action",
-      "label": "إلغاء",
-      "section": "دعوة عضو جديد",
-      "binding": "() => setIsDialogOpen(false)",
+      "label": "",
+      "section": "TeamWorkspace",
+      "binding": "() => {\n              setTab(k);\n              setFilter('all');\n              setSearch('');\n            }",
       "type": "button",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "f96179dc3e07",
+      "file": "client/src/components/merchant/TeamWorkspace.tsx",
+      "line": 345,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "TeamWorkspace",
+      "binding": "search",
+      "type": "search",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "320",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "2cc37b4b01e3",
+      "file": "client/src/components/merchant/TeamWorkspace.tsx",
+      "line": 354,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "members pending expired",
+      "section": "TeamWorkspace",
+      "binding": "filter",
+      "type": "text",
+      "options": [
+        {
+          "value": "all",
+          "label": ""
+        },
+        {
+          "value": "k",
+          "label": ""
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
       "conditional": true,
       "conditions": [],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "c88f04c6bf14",
-      "file": "client/src/pages/merchant/TeamManagement.tsx",
-      "line": 161,
-      "tag": "Button",
+      "id": "91aa031a1c54",
+      "file": "client/src/components/merchant/TeamWorkspace.tsx",
+      "line": 406,
+      "tag": "button",
       "role": "",
       "kind": "action",
-      "label": "جاري الإرسال... إرسال الدعوة",
-      "section": "دعوة عضو جديد",
+      "label": "",
+      "section": "·",
+      "binding": "e =>\n                        open({ kind: 'role', member: m }, e.currentTarget)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "busyOrUnknown || !editable",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "b87890d8916c",
+      "file": "client/src/components/merchant/TeamWorkspace.tsx",
+      "line": 415,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "·",
+      "binding": "e =>\n                        open({ kind: 'remove', member: m }, e.currentTarget)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "busyOrUnknown ||\n                        !editable ||\n                        m.userId === actorId ||\n                        (m.role === 'owner' && data.counts.owners <= 1)",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "8e305c590a78",
+      "file": "client/src/components/merchant/TeamWorkspace.tsx",
+      "line": 452,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "TeamWorkspace",
+      "binding": "e =>\n                    open({ kind: 'revoke', invitation: i }, e.currentTarget)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "tab === 'members'"
+      ],
+      "disabled": "busyOrUnknown",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "4a504c011fd4",
+      "file": "client/src/components/merchant/TeamWorkspace.tsx",
+      "line": 467,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "TeamWorkspace",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "edf0622c8bd9",
+      "file": "client/src/components/merchant/TeamWorkspace.tsx",
+      "line": 484,
+      "tag": "DialogContent",
+      "role": "",
+      "kind": "dialog",
+      "label": "Title # · edit invite owner role Help role : unknown  · : invite remove role invite Help invite review invite role edit",
+      "section": "TeamWorkspace",
+      "binding": "",
+      "type": "text",
+      "options": [
+        {
+          "value": "r",
+          "label": ""
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "2945f03430e1",
+      "file": "client/src/components/merchant/TeamWorkspace.tsx",
+      "line": 514,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "Title",
+      "binding": "email",
+      "type": "email",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "320",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "review?.kind === 'invite'",
+        "step === 'edit'"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "142f44399c32",
+      "file": "client/src/components/merchant/TeamWorkspace.tsx",
+      "line": 528,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "Title",
+      "binding": "selectedRole",
+      "type": "text",
+      "options": [
+        {
+          "value": "r",
+          "label": ""
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "step === 'edit'"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "8c8a994a0fdd",
+      "file": "client/src/components/merchant/TeamWorkspace.tsx",
+      "line": 580,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "Title",
+      "binding": "close",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "running",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "1da48ab75ee5",
+      "file": "client/src/components/merchant/TeamWorkspace.tsx",
+      "line": 585,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "Title",
+      "binding": "() => setStep('edit')",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "step === 'review' &&\n              (review?.kind === 'invite' || review?.kind === 'role')"
+      ],
+      "disabled": "running",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "71390fe1b33d",
+      "file": "client/src/components/merchant/TeamWorkspace.tsx",
+      "line": 593,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "edit",
+      "section": "Title",
       "binding": "",
       "type": "submit",
       "options": [],
@@ -81873,51 +82113,7 @@
       "required": false,
       "conditional": true,
       "conditions": [],
-      "disabled": "inviteMutation.isPending",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "b36d2ec5fbd8",
-      "file": "client/src/pages/merchant/TeamManagement.tsx",
-      "line": 256,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "",
-      "section": "الأعضاء",
-      "binding": "() => handleRemove(member.id, member.userName)",
-      "type": "button",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [
-        "member.role !== 'owner'"
-      ],
-      "disabled": "removeMutation.isPending",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "9eba6d41e8b1",
-      "file": "client/src/pages/merchant/TeamManagement.tsx",
-      "line": 309,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "",
-      "section": "دعوات معلقة",
-      "binding": "() => revokeInviteMutation.mutate({ invitationId: inv.id })",
-      "type": "button",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "revokeInviteMutation.isPending",
+      "disabled": "running || uncertain",
       "review": "source-inventoried"
     },
     {

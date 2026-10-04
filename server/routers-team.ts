@@ -31,6 +31,8 @@ import {reserveApiRateLimit} from './api/distributed-rate-limit';
 import {getPool} from './db/connection';
 import {assertTeamSession} from './accounts/team-session';
 
+import {teamInviteEmail} from '../shared/team-workspace';
+
 const TEAM_INVITATION_TOKEN_PATTERN = /^[a-f0-9]{64}$/i;
 
 function escapeHtml(value: string): string {
@@ -66,8 +68,9 @@ export const teamRouter = router({
    */
   invite: permissionProcedure('team.manage')
     .input(z.object({
-      email: z.string().trim().email("بريد إلكتروني غير صالح").max(320).transform(value => value.toLowerCase()),
+      email: teamInviteEmail,
       role: z.enum(['manager', 'sales_supervisor', 'viewer']),
+      reviewed:z.literal(true),
     }))
     .mutation(async ({ ctx, input }) => {
       await limitTeamInvitation(ctx);
@@ -192,12 +195,12 @@ export const teamRouter = router({
    * Update a member's role.
    */
   updateRole: permissionProcedure('team.manage')
-    .input(z.object({ memberId: z.number().int().positive(), role: z.enum(['owner', 'manager', 'sales_supervisor', 'viewer']), expectedRole:z.enum(['owner','manager','sales_supervisor','viewer']).optional() }).strict())
+    .input(z.object({ memberId: z.number().int().positive(), role: z.enum(['owner', 'manager', 'sales_supervisor', 'viewer']), expectedRole:z.enum(['owner','manager','sales_supervisor','viewer']),reviewed:z.literal(true) }).strict())
     .mutation(({ ctx, input }) => changeTeamMember({ merchantId: ctx.merchantId, actorId: ctx.user.id,
       memberId: input.memberId,sessionId:ctx.session?.sessionId||'',expectedRole:input.expectedRole, change: { kind: 'role', role: input.role } })),
 
   remove: permissionProcedure('team.manage')
-    .input(z.object({ memberId: z.number().int().positive(),expectedRole:z.enum(['owner','manager','sales_supervisor','viewer']).optional() }).strict())
+    .input(z.object({ memberId: z.number().int().positive(),expectedRole:z.enum(['owner','manager','sales_supervisor','viewer']),reviewed:z.literal(true) }).strict())
     .mutation(({ ctx, input }) => changeTeamMember({ merchantId: ctx.merchantId, actorId: ctx.user.id,
       memberId: input.memberId,sessionId:ctx.session?.sessionId||'',expectedRole:input.expectedRole, change: { kind: 'remove' } })),
 
@@ -205,7 +208,7 @@ export const teamRouter = router({
    * Revoke a pending invitation.
    */
   revokeInvite: permissionProcedure('team.manage')
-    .input(z.object({invitationId:z.number().int().positive()}).strict())
+    .input(z.object({invitationId:z.number().int().positive(),reviewed:z.literal(true)}).strict())
     .mutation(({ctx,input})=>revokeTeamInvitation(teamScope(ctx),input.invitationId)),
 
   /**

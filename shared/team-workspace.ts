@@ -1,4 +1,10 @@
 import { z } from 'zod';
+export const teamInviteEmail = z
+  .string()
+  .trim()
+  .email()
+  .max(320)
+  .transform(value => value.toLowerCase());
 export const teamRoles = [
   'owner',
   'manager',

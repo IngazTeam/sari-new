@@ -83,6 +83,7 @@
     "push-bounded-provider-transport-v1",
     "push-device-session-authority-0206",
     "privacy-account-session-workspace-v1",
-    "team-session-scoped-workspace-v1"
+    "team-session-scoped-workspace-v1",
+    "team-reviewed-workspace-v1"
   ]
 }

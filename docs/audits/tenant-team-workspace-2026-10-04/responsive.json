@@ -1,0 +1,258 @@
+[
+  {
+    "language": "ar",
+    "frameWidth": 320,
+    "stage": "page",
+    "scrollWidth": 290,
+    "smallTargets": 0,
+    "width": 290
+  },
+  {
+    "language": "ar",
+    "frameWidth": 390,
+    "stage": "page",
+    "scrollWidth": 360,
+    "smallTargets": 0,
+    "width": 360
+  },
+  {
+    "language": "ar",
+    "frameWidth": 768,
+    "stage": "page",
+    "scrollWidth": 738,
+    "smallTargets": 0,
+    "width": 738
+  },
+  {
+    "language": "ar",
+    "frameWidth": 1440,
+    "stage": "page",
+    "scrollWidth": 1410,
+    "smallTargets": 0,
+    "width": 1410
+  },
+  {
+    "language": "en",
+    "frameWidth": 320,
+    "stage": "page",
+    "scrollWidth": 290,
+    "smallTargets": 0,
+    "width": 290
+  },
+  {
+    "language": "en",
+    "frameWidth": 390,
+    "stage": "page",
+    "scrollWidth": 360,
+    "smallTargets": 0,
+    "width": 360
+  },
+  {
+    "language": "en",
+    "frameWidth": 768,
+    "stage": "page",
+    "scrollWidth": 738,
+    "smallTargets": 0,
+    "width": 738
+  },
+  {
+    "language": "en",
+    "frameWidth": 1440,
+    "stage": "page",
+    "scrollWidth": 1410,
+    "smallTargets": 0,
+    "width": 1410
+  },
+  {
+    "language": "ar",
+    "frameWidth": 320,
+    "stage": "invite-form",
+    "dialogHeight": 569.890625,
+    "dialogWidth": 258,
+    "inputFonts": [
+      "16px",
+      "16px"
+    ],
+    "scrollWidth": 290,
+    "smallTargets": 0,
+    "width": 290
+  },
+  {
+    "language": "ar",
+    "frameWidth": 390,
+    "stage": "invite-form",
+    "dialogHeight": 541.09375,
+    "dialogWidth": 328,
+    "inputFonts": [
+      "16px",
+      "16px"
+    ],
+    "scrollWidth": 360,
+    "smallTargets": 0,
+    "width": 360
+  },
+  {
+    "language": "ar",
+    "frameWidth": 768,
+    "stage": "invite-form",
+    "dialogHeight": 441.921875,
+    "dialogWidth": 576,
+    "inputFonts": [
+      "16px",
+      "16px"
+    ],
+    "scrollWidth": 738,
+    "smallTargets": 0,
+    "width": 738
+  },
+  {
+    "language": "ar",
+    "frameWidth": 1440,
+    "stage": "invite-form",
+    "dialogHeight": 441.921875,
+    "dialogWidth": 576,
+    "inputFonts": [
+      "16px",
+      "16px"
+    ],
+    "scrollWidth": 1410,
+    "smallTargets": 0,
+    "width": 1410
+  },
+  {
+    "language": "en",
+    "frameWidth": 320,
+    "stage": "invite-form",
+    "dialogHeight": 623.875,
+    "dialogWidth": 258,
+    "inputFonts": [
+      "16px",
+      "16px"
+    ],
+    "scrollWidth": 290,
+    "smallTargets": 0,
+    "width": 290
+  },
+  {
+    "language": "en",
+    "frameWidth": 390,
+    "stage": "invite-form",
+    "dialogHeight": 595.078125,
+    "dialogWidth": 328,
+    "inputFonts": [
+      "16px",
+      "16px"
+    ],
+    "scrollWidth": 360,
+    "smallTargets": 0,
+    "width": 360
+  },
+  {
+    "language": "en",
+    "frameWidth": 768,
+    "stage": "invite-form",
+    "dialogHeight": 495.90625,
+    "dialogWidth": 576,
+    "inputFonts": [
+      "16px",
+      "16px"
+    ],
+    "scrollWidth": 738,
+    "smallTargets": 0,
+    "width": 738
+  },
+  {
+    "language": "en",
+    "frameWidth": 1440,
+    "stage": "invite-form",
+    "dialogHeight": 495.90625,
+    "dialogWidth": 576,
+    "inputFonts": [
+      "16px",
+      "16px"
+    ],
+    "scrollWidth": 1410,
+    "smallTargets": 0,
+    "width": 1410
+  },
+  {
+    "language": "ar",
+    "frameWidth": 320,
+    "stage": "invite-review",
+    "dialogHeight": 669.109375,
+    "dialogWidth": 258,
+    "scrollWidth": 290,
+    "smallTargets": 0,
+    "width": 290
+  },
+  {
+    "language": "ar",
+    "frameWidth": 390,
+    "stage": "invite-review",
+    "dialogHeight": 611.515625,
+    "dialogWidth": 328,
+    "scrollWidth": 360,
+    "smallTargets": 0,
+    "width": 360
+  },
+  {
+    "language": "ar",
+    "frameWidth": 768,
+    "stage": "invite-review",
+    "dialogHeight": 430.359375,
+    "dialogWidth": 576,
+    "scrollWidth": 738,
+    "smallTargets": 0,
+    "width": 738
+  },
+  {
+    "language": "ar",
+    "frameWidth": 1440,
+    "stage": "invite-review",
+    "dialogHeight": 430.359375,
+    "dialogWidth": 576,
+    "scrollWidth": 1410,
+    "smallTargets": 0,
+    "width": 1410
+  },
+  {
+    "language": "en",
+    "frameWidth": 320,
+    "stage": "invite-review",
+    "dialogHeight": 751.890625,
+    "dialogWidth": 258,
+    "scrollWidth": 290,
+    "smallTargets": 0,
+    "width": 290
+  },
+  {
+    "language": "en",
+    "frameWidth": 390,
+    "stage": "invite-review",
+    "dialogHeight": 694.296875,
+    "dialogWidth": 328,
+    "scrollWidth": 360,
+    "smallTargets": 0,
+    "width": 360
+  },
+  {
+    "language": "en",
+    "frameWidth": 768,
+    "stage": "invite-review",
+    "dialogHeight": 484.34375,
+    "dialogWidth": 576,
+    "scrollWidth": 738,
+    "smallTargets": 0,
+    "width": 738
+  },
+  {
+    "language": "en",
+    "frameWidth": 1440,
+    "stage": "invite-review",
+    "dialogHeight": 484.34375,
+    "dialogWidth": 576,
+    "scrollWidth": 1410,
+    "smallTargets": 0,
+    "width": 1410
+  }
+]

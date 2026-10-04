@@ -3143,6 +3143,40 @@
           "contains": "trpc.push.workspace.useQuery"
         }
       ]
+    },
+    {
+      "routes": [
+        "/merchant/team"
+      ],
+      "removed": [
+        "team.list"
+      ],
+      "required": [
+        "team.workspace"
+      ],
+      "reviewedIn": 521,
+      "featureMappings": [
+        {
+          "before": "team.list",
+          "after": [
+            "team.workspace"
+          ]
+        }
+      ],
+      "note": "Session-scoped team workspace preserves members, role data, join dates, invitations and expiry, adding bounded totals, legacy owners and typed authority. Invite, role change, remove and revoke remain explicit reviewed actions.",
+      "evidence": [
+        "docs/audits/tenant-team-workspace-2026-10-04/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "client/src/components/merchant/TeamWorkspace.tsx",
+          "contains": "trpc.team.workspace.useQuery"
+        },
+        {
+          "file": "server/accounts/team-workspace.ts",
+          "contains": "teamWorkspaceSchema.parse"
+        }
+      ]
     }
   ]
 }
