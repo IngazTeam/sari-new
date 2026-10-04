@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-04T03:17:16.323Z",
+  "generatedAt": "2026-10-04T04:20:03.197Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -17938,146 +17938,202 @@
     },
     {
       "file": "client/src/pages/merchant/Payments.tsx",
-      "hash": "c14bf5092ec8",
+      "hash": "dbbc61fd837e",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [
+        "client/src/components/merchant/PaymentHistoryPage.tsx"
+      ],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/components/merchant/PaymentHistoryPage.tsx",
+      "hash": "471f7ef14fa0",
       "queries": [
-        "payments.list",
-        "payments.getStats"
+        "auth.me",
+        "merchants.workspaceIdentity"
+      ],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [
+        {
+          "query": "auth.me",
+          "binding": "user",
+          "line": 8,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        },
+        {
+          "query": "merchants.workspaceIdentity",
+          "binding": "merchant",
+          "line": 13,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": "!!user.data?.id && !user.error && !user.isFetching"
+        }
+      ],
+      "conditions": [],
+      "imports": [
+        "client/src/components/merchant/PaymentHistoryWorkspace.tsx"
+      ],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/components/merchant/PaymentHistoryWorkspace.tsx",
+      "hash": "421decc01cb7",
+      "queries": [
+        "payments.workspace.list",
+        "payments.workspace.detail"
       ],
       "mutations": [],
       "imperativeReads": [],
       "browserRequests": [],
       "sections": [
         {
-          "label": "معاملات الدفع",
-          "line": 160,
+          "label": "",
+          "line": 53,
           "tag": "h1"
         },
         {
-          "label": "إجمالي المعاملات",
-          "line": 167,
-          "tag": "CardTitle"
+          "label": "",
+          "line": 237,
+          "tag": "summary"
         },
         {
-          "label": "معاملات ناجحة",
-          "line": 184,
-          "tag": "CardTitle"
+          "label": "",
+          "line": 322,
+          "tag": "h2"
         },
         {
-          "label": "قيد الانتظار",
-          "line": 201,
-          "tag": "CardTitle"
+          "label": "",
+          "line": 347,
+          "tag": "summary"
         },
         {
-          "label": "فاشلة",
-          "line": 215,
-          "tag": "CardTitle"
+          "label": "",
+          "line": 362,
+          "tag": "h3"
         },
         {
-          "label": "معاملات الدفع",
-          "line": 233,
-          "tag": "CardTitle"
+          "label": "",
+          "line": 398,
+          "tag": "h2"
+        },
+        {
+          "label": "all",
+          "line": 412,
+          "tag": "h3"
+        },
+        {
+          "label": "#",
+          "line": 649,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 687,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 702,
+          "tag": "h3"
+        },
+        {
+          "label": "",
+          "line": 727,
+          "tag": "h2"
         }
       ],
       "choices": [],
       "handlers": [],
       "queryStates": [
         {
-          "query": "payments.list",
-          "binding": "{\n    data: payments,\n    isLoading,\n    refetch,\n    error: paymentsError,\n  }",
-          "line": 58,
+          "query": "payments.workspace.list",
+          "binding": "query",
+          "line": 115,
           "errorSignal": true,
           "loadingSignal": true,
-          "enabled": null
+          "enabled": "!!filter"
         },
         {
-          "query": "payments.getStats",
-          "binding": "{\n    data: stats,\n    error: statsError,\n    refetch: refetchStats,\n  }",
-          "line": 68,
+          "query": "payments.workspace.detail",
+          "binding": "query",
+          "line": 539,
           "errorSignal": true,
-          "loadingSignal": false,
+          "loadingSignal": true,
           "enabled": null
         }
       ],
       "conditions": [],
-      "imports": [],
-      "controlCount": 7
+      "imports": [
+        "client/src/lib/payment-history-view.ts",
+        "client/src/lib/payment-history-labels.ts"
+      ],
+      "controlCount": 23
     },
     {
-      "file": "client/src/pages/PaymentDetails.tsx",
-      "hash": "4469404f470a",
-      "queries": [
-        "payments.getById"
-      ],
+      "file": "client/src/lib/payment-history-view.ts",
+      "hash": "454fcc80fd96",
+      "queries": [],
       "mutations": [],
       "imperativeReads": [],
       "browserRequests": [],
-      "sections": [
-        {
-          "label": "تفاصيل المعاملة #",
-          "line": 116,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "مصرح",
-          "line": 143,
-          "tag": "h3"
-        },
-        {
-          "label": "مسترجع",
-          "line": 166,
-          "tag": "h3"
-        },
-        {
-          "label": "معلومات العميل",
-          "line": 191,
-          "tag": "h3"
-        },
-        {
-          "label": "طريقة الدفع",
-          "line": 263,
-          "tag": "h3"
-        }
-      ],
+      "sections": [],
       "choices": [],
-      "handlers": [
-        {
-          "name": "handlePrint",
-          "line": 66,
-          "calls": []
-        },
-        {
-          "name": "handleDownloadPDF",
-          "line": 70,
-          "calls": []
-        },
-        {
-          "name": "handleDownloadJSON",
-          "line": 75,
-          "calls": []
-        },
-        {
-          "name": "handleSendViaWhatsApp",
-          "line": 86,
-          "calls": []
-        }
-      ],
-      "queryStates": [
-        {
-          "query": "payments.getById",
-          "binding": "{ data: payment, isLoading, isError, error, refetch }",
-          "line": 31,
-          "errorSignal": true,
-          "loadingSignal": true,
-          "enabled": null
-        }
-      ],
+      "handlers": [],
+      "queryStates": [],
       "conditions": [],
       "imports": [],
-      "controlCount": 10
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/lib/payment-history-labels.ts",
+      "hash": "38361b513ed5",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/pages/PaymentDetails.tsx",
+      "hash": "a0c2b94c98ec",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [
+        "client/src/components/merchant/PaymentHistoryPage.tsx"
+      ],
+      "controlCount": 0
     },
     {
       "file": "client/src/pages/merchant/PaymentLinks.tsx",
-      "hash": "c73971a9cb27",
+      "hash": "33fe11ded97e",
       "queries": [
         "payments.listLinks"
       ],
@@ -18090,17 +18146,17 @@
       "sections": [
         {
           "label": "روابط الدفع",
-          "line": 203,
+          "line": 204,
           "tag": "h1"
         },
         {
           "label": "إنشاء رابط دفع جديد",
-          "line": 220,
+          "line": 221,
           "tag": "DialogTitle"
         },
         {
           "label": "لا توجد روابط دفع",
-          "line": 411,
+          "line": 412,
           "tag": "h3"
         }
       ],
@@ -18108,7 +18164,7 @@
       "handlers": [
         {
           "name": "handleCreateLink",
-          "line": 122,
+          "line": 123,
           "calls": [
             "createLinkMutation"
           ]
@@ -18118,7 +18174,7 @@
         {
           "query": "payments.listLinks",
           "binding": "{\n    data: links,\n    isLoading,\n    refetch,\n  }",
-          "line": 61,
+          "line": 62,
           "errorSignal": false,
           "loadingSignal": true,
           "enabled": null
@@ -27929,20 +27985,42 @@
         "Payments"
       ],
       "files": [
-        "client/src/pages/merchant/Payments.tsx"
+        "client/src/pages/merchant/Payments.tsx",
+        "client/src/components/merchant/PaymentHistoryPage.tsx",
+        "client/src/components/merchant/PaymentHistoryWorkspace.tsx",
+        "client/src/lib/payment-history-view.ts",
+        "client/src/lib/payment-history-labels.ts"
       ],
       "controls": [
-        "953a770272ac",
-        "17343e1db2ed",
-        "20d4c866cd3c",
-        "1a544a2b4954",
-        "14aed852da97",
-        "d8857f5b1b20",
-        "1ad2173cb7f1"
+        "20d8dd0e00d6",
+        "c19cda107652",
+        "9dc8eb2f4467",
+        "05b896f34efb",
+        "5afdbe9fa5eb",
+        "6a9c64ebbc23",
+        "e25b4dd89a71",
+        "bb0decd492fb",
+        "96250a87259c",
+        "6eb4c41ad8b4",
+        "eac9a30f8640",
+        "457f2a732409",
+        "fe2f3b06383f",
+        "b60737c576b9",
+        "0263070380ea",
+        "72f8b675675f",
+        "8ac97c517828",
+        "608d1106dcdc",
+        "6ce182c12cf9",
+        "bdf291e19c5b",
+        "01035c29f6b9",
+        "fede06a9ebe8",
+        "ee7aa21b18f7"
       ],
       "queries": [
-        "payments.list",
-        "payments.getStats"
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "payments.workspace.list",
+        "payments.workspace.detail"
       ],
       "mutations": [],
       "imperativeReads": [],
@@ -27956,22 +28034,42 @@
         "PaymentDetails"
       ],
       "files": [
-        "client/src/pages/PaymentDetails.tsx"
+        "client/src/pages/PaymentDetails.tsx",
+        "client/src/components/merchant/PaymentHistoryPage.tsx",
+        "client/src/components/merchant/PaymentHistoryWorkspace.tsx",
+        "client/src/lib/payment-history-view.ts",
+        "client/src/lib/payment-history-labels.ts"
       ],
       "controls": [
-        "441e0c640e19",
-        "aa9300b2b19b",
-        "1352c9ed4e2a",
-        "f13245482b60",
-        "1f7e99106c8e",
-        "ffe9b891a3ed",
-        "ec5aef08e2c2",
-        "46ff5fab35cc",
-        "69cb144f63bb",
-        "060e9b5e37d8"
+        "20d8dd0e00d6",
+        "c19cda107652",
+        "9dc8eb2f4467",
+        "05b896f34efb",
+        "5afdbe9fa5eb",
+        "6a9c64ebbc23",
+        "e25b4dd89a71",
+        "bb0decd492fb",
+        "96250a87259c",
+        "6eb4c41ad8b4",
+        "eac9a30f8640",
+        "457f2a732409",
+        "fe2f3b06383f",
+        "b60737c576b9",
+        "0263070380ea",
+        "72f8b675675f",
+        "8ac97c517828",
+        "608d1106dcdc",
+        "6ce182c12cf9",
+        "bdf291e19c5b",
+        "01035c29f6b9",
+        "fede06a9ebe8",
+        "ee7aa21b18f7"
       ],
       "queries": [
-        "payments.getById"
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "payments.workspace.list",
+        "payments.workspace.detail"
       ],
       "mutations": [],
       "imperativeReads": [],
@@ -27989,18 +28087,18 @@
         "client/src/hooks/use-toast.ts"
       ],
       "controls": [
-        "56f86e9e3ba8",
-        "0b53a02abb0c",
-        "26cfe1ef6a88",
-        "c008d2a691b8",
-        "b3e4a8e6b0e3",
-        "57fbc025e041",
-        "632c4265001b",
-        "ec49ad507fc0",
-        "d3a1acfcb83a",
-        "a2a32602fc7b",
-        "3cfb4de65f5f",
-        "229137686f13"
+        "7cb8615075c9",
+        "92c0b14d393b",
+        "faf671a409a4",
+        "142ace7377ac",
+        "e6f394aa253f",
+        "430c57c8d668",
+        "f6b8e66cb051",
+        "70d96d0fb32c",
+        "831caadf7931",
+        "a7cb65f9e5f7",
+        "ec3716d7725a",
+        "1f7a873d0f0e"
       ],
       "queries": [
         "payments.listLinks"
@@ -29478,20 +29576,42 @@
         "Payments"
       ],
       "files": [
-        "client/src/pages/merchant/Payments.tsx"
+        "client/src/pages/merchant/Payments.tsx",
+        "client/src/components/merchant/PaymentHistoryPage.tsx",
+        "client/src/components/merchant/PaymentHistoryWorkspace.tsx",
+        "client/src/lib/payment-history-view.ts",
+        "client/src/lib/payment-history-labels.ts"
       ],
       "controls": [
-        "953a770272ac",
-        "17343e1db2ed",
-        "20d4c866cd3c",
-        "1a544a2b4954",
-        "14aed852da97",
-        "d8857f5b1b20",
-        "1ad2173cb7f1"
+        "20d8dd0e00d6",
+        "c19cda107652",
+        "9dc8eb2f4467",
+        "05b896f34efb",
+        "5afdbe9fa5eb",
+        "6a9c64ebbc23",
+        "e25b4dd89a71",
+        "bb0decd492fb",
+        "96250a87259c",
+        "6eb4c41ad8b4",
+        "eac9a30f8640",
+        "457f2a732409",
+        "fe2f3b06383f",
+        "b60737c576b9",
+        "0263070380ea",
+        "72f8b675675f",
+        "8ac97c517828",
+        "608d1106dcdc",
+        "6ce182c12cf9",
+        "bdf291e19c5b",
+        "01035c29f6b9",
+        "fede06a9ebe8",
+        "ee7aa21b18f7"
       ],
       "queries": [
-        "payments.list",
-        "payments.getStats"
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "payments.workspace.list",
+        "payments.workspace.detail"
       ],
       "mutations": [],
       "imperativeReads": [],
@@ -83219,15 +83339,15 @@
       "review": "source-inventoried"
     },
     {
-      "id": "953a770272ac",
-      "file": "client/src/pages/merchant/Payments.tsx",
-      "line": 239,
-      "tag": "Button",
+      "id": "20d8dd0e00d6",
+      "file": "client/src/components/merchant/PaymentHistoryWorkspace.tsx",
+      "line": 64,
+      "tag": "Link",
       "role": "",
       "kind": "action",
-      "label": "تحديث",
-      "section": "معاملات الدفع",
-      "binding": "() => refetch()",
+      "label": "",
+      "section": "PaymentHistoryWorkspace",
+      "binding": "/merchant/payment-settings",
       "type": "text",
       "options": [],
       "min": "",
@@ -83240,14 +83360,14 @@
       "review": "source-inventoried"
     },
     {
-      "id": "17343e1db2ed",
-      "file": "client/src/pages/merchant/Payments.tsx",
-      "line": 243,
+      "id": "c19cda107652",
+      "file": "client/src/components/merchant/PaymentHistoryWorkspace.tsx",
+      "line": 65,
       "tag": "Link",
       "role": "",
       "kind": "action",
-      "label": "روابط الدفع",
-      "section": "معاملات الدفع",
+      "label": "",
+      "section": "PaymentHistoryWorkspace",
       "binding": "/merchant/payment-links",
       "type": "text",
       "options": [],
@@ -83261,107 +83381,255 @@
       "review": "source-inventoried"
     },
     {
-      "id": "20d4c866cd3c",
-      "file": "client/src/pages/merchant/Payments.tsx",
-      "line": 244,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "روابط الدفع",
-      "section": "معاملات الدفع",
-      "binding": "",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "1a544a2b4954",
-      "file": "client/src/pages/merchant/Payments.tsx",
-      "line": 256,
-      "tag": "Input",
+      "id": "9dc8eb2f4467",
+      "file": "client/src/components/merchant/PaymentHistoryWorkspace.tsx",
+      "line": 177,
+      "tag": "input",
       "role": "",
       "kind": "field",
-      "label": "البحث بالاسم، الهاتف، أو معرف المعاملة...",
-      "section": "معاملات الدفع",
-      "binding": "searchQuery",
+      "label": "c.searchHint",
+      "section": "PaymentHistoryWorkspace",
+      "binding": "draft.search",
       "type": "text",
       "options": [],
       "min": "",
       "max": "",
-      "maxLength": "",
+      "maxLength": "100",
       "required": false,
-      "conditional": false,
+      "conditional": true,
       "conditions": [],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "14aed852da97",
-      "file": "client/src/pages/merchant/Payments.tsx",
-      "line": 263,
-      "tag": "Select",
+      "id": "05b896f34efb",
+      "file": "client/src/components/merchant/PaymentHistoryWorkspace.tsx",
+      "line": 195,
+      "tag": "select",
       "role": "",
       "kind": "field",
       "label": "",
-      "section": "معاملات الدفع",
-      "binding": "statusFilter",
-      "type": "select",
+      "section": "PaymentHistoryWorkspace",
+      "binding": "draft.status",
+      "type": "text",
       "options": [
         {
           "value": "all",
-          "label": "جميع الحالات"
+          "label": ""
         },
         {
-          "value": "pending",
-          "label": "قيد الانتظار"
-        },
-        {
-          "value": "captured",
-          "label": "مكتمل"
-        },
-        {
-          "value": "authorized",
-          "label": "مصرح"
-        },
-        {
-          "value": "failed",
-          "label": "فشل"
-        },
-        {
-          "value": "cancelled",
-          "label": "ملغي"
-        },
-        {
-          "value": "refunded",
-          "label": "مسترجع"
+          "value": "s",
+          "label": ""
         }
       ],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": false,
+      "conditional": true,
       "conditions": [],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "d8857f5b1b20",
-      "file": "client/src/pages/merchant/Payments.tsx",
-      "line": 341,
+      "id": "5afdbe9fa5eb",
+      "file": "client/src/components/merchant/PaymentHistoryWorkspace.tsx",
+      "line": 216,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "PaymentHistoryWorkspace",
+      "binding": "",
+      "type": "submit",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "6a9c64ebbc23",
+      "file": "client/src/components/merchant/PaymentHistoryWorkspace.tsx",
+      "line": 217,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "PaymentHistoryWorkspace",
+      "binding": "() => {\n              setDraft({\n                search: \"\",\n                status: \"all\",\n                from: \"\",\n                to: \"\",\n                pageSize: \"25\",\n              });\n              setInvalid(false);\n              setInvalidFields([]);\n              navigate(\"/merchant/payments\");\n            }",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "e25b4dd89a71",
+      "file": "client/src/components/merchant/PaymentHistoryWorkspace.tsx",
+      "line": 237,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "PaymentHistoryWorkspace",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "bb0decd492fb",
+      "file": "client/src/components/merchant/PaymentHistoryWorkspace.tsx",
+      "line": 241,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "PaymentHistoryWorkspace",
+      "binding": "draft.from",
+      "type": "date",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "96250a87259c",
+      "file": "client/src/components/merchant/PaymentHistoryWorkspace.tsx",
+      "line": 258,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "PaymentHistoryWorkspace",
+      "binding": "draft.to",
+      "type": "date",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "6eb4c41ad8b4",
+      "file": "client/src/components/merchant/PaymentHistoryWorkspace.tsx",
+      "line": 275,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "25 50",
+      "section": "PaymentHistoryWorkspace",
+      "binding": "draft.pageSize",
+      "type": "text",
+      "options": [
+        {
+          "value": "25",
+          "label": "25"
+        },
+        {
+          "value": "50",
+          "label": "50"
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "eac9a30f8640",
+      "file": "client/src/components/merchant/PaymentHistoryWorkspace.tsx",
+      "line": 325,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "PaymentHistoryWorkspace",
+      "binding": "() => void query.refetch()",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "!snapshot.canView",
+        "!snapshot",
+        "query.isLoading || query.isFetching",
+        "query.error",
+        "!filter"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "457f2a732409",
+      "file": "client/src/components/merchant/PaymentHistoryWorkspace.tsx",
+      "line": 347,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "PaymentHistoryWorkspace",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!snapshot.canView",
+        "!snapshot",
+        "query.isLoading || query.isFetching",
+        "query.error",
+        "!filter"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "fe2f3b06383f",
+      "file": "client/src/components/merchant/PaymentHistoryWorkspace.tsx",
+      "line": 485,
       "tag": "Link",
       "role": "",
       "kind": "action",
-      "label": "التفاصيل",
-      "section": "معاملات الدفع",
-      "binding": "`/merchant/payments/${payment.id}`",
+      "label": "`${c.details} #${item.id}`",
+      "section": "all",
+      "binding": "`/merchant/payments/${item.id}${paymentHistorySearch(filter)}`",
       "type": "text",
       "options": [],
       "min": "",
@@ -83369,19 +83637,96 @@
       "maxLength": "",
       "required": false,
       "conditional": false,
+      "conditions": [
+        "snapshot.items.length === 0"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "b60737c576b9",
+      "file": "client/src/components/merchant/PaymentHistoryWorkspace.tsx",
+      "line": 500,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "all",
+      "binding": "() => page(filter.page - 1)",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "!snapshot.canView",
+        "!snapshot",
+        "query.isLoading || query.isFetching",
+        "query.error",
+        "!filter"
+      ],
+      "disabled": "filter.page === 1",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "0263070380ea",
+      "file": "client/src/components/merchant/PaymentHistoryWorkspace.tsx",
+      "line": 511,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "all",
+      "binding": "() => page(filter.page + 1)",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "!snapshot.canView",
+        "!snapshot",
+        "query.isLoading || query.isFetching",
+        "query.error",
+        "!filter"
+      ],
+      "disabled": "!snapshot.hasNext || filter.page >= 10000",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "72f8b675675f",
+      "file": "client/src/components/merchant/PaymentHistoryWorkspace.tsx",
+      "line": 562,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "all",
+      "binding": "back",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
       "conditions": [],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "1ad2173cb7f1",
-      "file": "client/src/pages/merchant/Payments.tsx",
-      "line": 342,
+      "id": "8ac97c517828",
+      "file": "client/src/components/merchant/PaymentHistoryWorkspace.tsx",
+      "line": 589,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "التفاصيل",
-      "section": "معاملات الدفع",
+      "label": "",
+      "section": "all",
       "binding": "",
       "type": "text",
       "options": [],
@@ -83390,20 +83735,26 @@
       "maxLength": "",
       "required": false,
       "conditional": false,
-      "conditions": [],
+      "conditions": [
+        "!p",
+        "!snapshot.canView",
+        "!snapshot",
+        "query.isLoading || query.isFetching",
+        "query.error"
+      ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "441e0c640e19",
-      "file": "client/src/pages/PaymentDetails.tsx",
-      "line": 36,
-      "tag": "Button",
+      "id": "608d1106dcdc",
+      "file": "client/src/components/merchant/PaymentHistoryWorkspace.tsx",
+      "line": 590,
+      "tag": "Link",
       "role": "",
       "kind": "action",
-      "label": "العودة للمعاملات",
-      "section": "PaymentDetails",
-      "binding": "() => navigate('/merchant/payments')",
+      "label": "",
+      "section": "all",
+      "binding": "back",
       "type": "text",
       "options": [],
       "min": "",
@@ -83411,125 +83762,106 @@
       "maxLength": "",
       "required": false,
       "conditional": false,
-      "conditions": [],
+      "conditions": [
+        "!p",
+        "!snapshot.canView",
+        "!snapshot",
+        "query.isLoading || query.isFetching"
+      ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "aa9300b2b19b",
-      "file": "client/src/pages/PaymentDetails.tsx",
-      "line": 95,
+      "id": "6ce182c12cf9",
+      "file": "client/src/components/merchant/PaymentHistoryWorkspace.tsx",
+      "line": 597,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "العودة للمعاملات",
-      "section": "PaymentDetails",
-      "binding": "() => navigate('/merchant/payments')",
-      "type": "text",
+      "label": "",
+      "section": "all",
+      "binding": "() => {\n                setNotice(null);\n                void query.refetch();\n              }",
+      "type": "button",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
       "conditional": false,
-      "conditions": [],
+      "conditions": [
+        "!p",
+        "!snapshot.canView",
+        "!snapshot",
+        "query.isLoading || query.isFetching",
+        "query.error"
+      ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "1352c9ed4e2a",
-      "file": "client/src/pages/PaymentDetails.tsx",
-      "line": 101,
+      "id": "bdf291e19c5b",
+      "file": "client/src/components/merchant/PaymentHistoryWorkspace.tsx",
+      "line": 608,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "طباعة",
-      "section": "PaymentDetails",
-      "binding": "handlePrint",
-      "type": "text",
+      "label": "",
+      "section": "all",
+      "binding": "() => {\n                try {\n                  window.print();\n                } catch {\n                  setNotice(\"actionFailed\");\n                }\n              }",
+      "type": "button",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
       "conditional": false,
-      "conditions": [],
+      "conditions": [
+        "!p",
+        "!snapshot.canView",
+        "!snapshot",
+        "query.isLoading || query.isFetching",
+        "query.error"
+      ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "f13245482b60",
-      "file": "client/src/pages/PaymentDetails.tsx",
-      "line": 103,
+      "id": "01035c29f6b9",
+      "file": "client/src/components/merchant/PaymentHistoryWorkspace.tsx",
+      "line": 622,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "تصدير PDF",
-      "section": "PaymentDetails",
-      "binding": "handleDownloadPDF",
-      "type": "text",
+      "label": "",
+      "section": "all",
+      "binding": "() => {\n                try {\n                  downloadPaymentHistory(snapshot);\n                  setNotice(\"downloadStarted\");\n                } catch {\n                  setNotice(\"actionFailed\");\n                }\n              }",
+      "type": "button",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
       "conditional": false,
-      "conditions": [],
+      "conditions": [
+        "!p",
+        "!snapshot.canView",
+        "!snapshot",
+        "query.isLoading || query.isFetching",
+        "query.error"
+      ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "1f7e99106c8e",
-      "file": "client/src/pages/PaymentDetails.tsx",
-      "line": 105,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "تصدير JSON",
-      "section": "PaymentDetails",
-      "binding": "handleDownloadJSON",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "ffe9b891a3ed",
-      "file": "client/src/pages/PaymentDetails.tsx",
-      "line": 107,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "إرسال عبر واتساب",
-      "section": "PaymentDetails",
-      "binding": "handleSendViaWhatsApp",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "ec5aef08e2c2",
-      "file": "client/src/pages/PaymentDetails.tsx",
-      "line": 268,
+      "id": "fede06a9ebe8",
+      "file": "client/src/components/merchant/PaymentHistoryWorkspace.tsx",
+      "line": 704,
       "tag": "Link",
       "role": "",
       "kind": "action",
       "label": "#",
-      "section": "طريقة الدفع",
-      "binding": "`/merchant/orders/${payment.orderId}`",
+      "section": "PaymentHistoryWorkspace",
+      "binding": "`/merchant/orders/${p.related.id}`",
       "type": "text",
       "options": [],
       "min": "",
@@ -83538,88 +83870,44 @@
       "required": false,
       "conditional": false,
       "conditions": [
-        "payment.orderId",
-        "(payment.orderId || payment.bookingId)"
+        "p.related.kind === \"order\"",
+        "!p",
+        "!snapshot.canView",
+        "!snapshot"
       ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "46ff5fab35cc",
-      "file": "client/src/pages/PaymentDetails.tsx",
-      "line": 269,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "#",
-      "section": "طريقة الدفع",
-      "binding": "",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [
-        "payment.orderId",
-        "(payment.orderId || payment.bookingId)"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "69cb144f63bb",
-      "file": "client/src/pages/PaymentDetails.tsx",
-      "line": 278,
+      "id": "ee7aa21b18f7",
+      "file": "client/src/components/merchant/PaymentHistoryWorkspace.tsx",
+      "line": 711,
       "tag": "Link",
       "role": "",
       "kind": "action",
       "label": "#",
-      "section": "طريقة الدفع",
-      "binding": "`/merchant/bookings/${payment.bookingId}`",
+      "section": "PaymentHistoryWorkspace",
+      "binding": "`/merchant/bookings?booking=${p.related.id}`",
       "type": "text",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": false,
+      "conditional": true,
       "conditions": [
-        "payment.bookingId",
-        "(payment.orderId || payment.bookingId)"
+        "p.related.kind === \"booking\"",
+        "p.related.kind === \"order\"",
+        "!p",
+        "!snapshot.canView"
       ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "060e9b5e37d8",
-      "file": "client/src/pages/PaymentDetails.tsx",
-      "line": 279,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "#",
-      "section": "طريقة الدفع",
-      "binding": "",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [
-        "payment.bookingId",
-        "(payment.orderId || payment.bookingId)"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "56f86e9e3ba8",
+      "id": "7cb8615075c9",
       "file": "client/src/pages/merchant/PaymentLinks.tsx",
-      "line": 213,
+      "line": 214,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -83638,9 +83926,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "0b53a02abb0c",
+      "id": "92c0b14d393b",
       "file": "client/src/pages/merchant/PaymentLinks.tsx",
-      "line": 218,
+      "line": 219,
       "tag": "DialogContent",
       "role": "",
       "kind": "dialog",
@@ -83659,9 +83947,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "26cfe1ef6a88",
+      "id": "faf671a409a4",
       "file": "client/src/pages/merchant/PaymentLinks.tsx",
-      "line": 228,
+      "line": 229,
       "tag": "Input",
       "role": "",
       "kind": "field",
@@ -83680,9 +83968,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "c008d2a691b8",
+      "id": "142ace7377ac",
       "file": "client/src/pages/merchant/PaymentLinks.tsx",
-      "line": 241,
+      "line": 242,
       "tag": "Textarea",
       "role": "",
       "kind": "field",
@@ -83701,9 +83989,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "b3e4a8e6b0e3",
+      "id": "e6f394aa253f",
       "file": "client/src/pages/merchant/PaymentLinks.tsx",
-      "line": 255,
+      "line": 256,
       "tag": "Input",
       "role": "",
       "kind": "field",
@@ -83722,9 +84010,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "57fbc025e041",
+      "id": "430c57c8d668",
       "file": "client/src/pages/merchant/PaymentLinks.tsx",
-      "line": 270,
+      "line": 271,
       "tag": "Input",
       "role": "",
       "kind": "field",
@@ -83743,9 +84031,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "632c4265001b",
+      "id": "f6b8e66cb051",
       "file": "client/src/pages/merchant/PaymentLinks.tsx",
-      "line": 285,
+      "line": 286,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -83764,9 +84052,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ec49ad507fc0",
+      "id": "70d96d0fb32c",
       "file": "client/src/pages/merchant/PaymentLinks.tsx",
-      "line": 291,
+      "line": 292,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -83785,9 +84073,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "d3a1acfcb83a",
+      "id": "831caadf7931",
       "file": "client/src/pages/merchant/PaymentLinks.tsx",
-      "line": 361,
+      "line": 362,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -83806,9 +84094,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "a2a32602fc7b",
+      "id": "a7cb65f9e5f7",
       "file": "client/src/pages/merchant/PaymentLinks.tsx",
-      "line": 372,
+      "line": 373,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -83827,9 +84115,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "3cfb4de65f5f",
+      "id": "ec3716d7725a",
       "file": "client/src/pages/merchant/PaymentLinks.tsx",
-      "line": 386,
+      "line": 387,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -83850,9 +84138,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "229137686f13",
+      "id": "1f7a873d0f0e",
       "file": "client/src/pages/merchant/PaymentLinks.tsx",
-      "line": 417,
+      "line": 418,
       "tag": "Button",
       "role": "",
       "kind": "action",

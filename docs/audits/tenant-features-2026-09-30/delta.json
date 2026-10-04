@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-04T03:17:16.323Z",
+  "generatedAt": "2026-10-04T04:20:03.197Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 488,
-      "controls": 2700
+      "files": 492,
+      "controls": 2706
     }
   },
   "addedFiles": [
@@ -293,6 +293,10 @@
     "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
     "client/src/components/merchant/InventorySheetWorkspace.tsx",
     "client/src/lib/inventory-sheet-workspace.ts",
+    "client/src/components/merchant/PaymentHistoryPage.tsx",
+    "client/src/components/merchant/PaymentHistoryWorkspace.tsx",
+    "client/src/lib/payment-history-view.ts",
+    "client/src/lib/payment-history-labels.ts",
     "client/src/components/merchant/PaymentSettingsWorkspace.tsx",
     "client/src/lib/payment-settings-labels.ts",
     "client/src/_core/hooks/useAuth.ts",
@@ -420,6 +424,9 @@
     "client/src/pages/merchant/ServicePackages.tsx",
     "client/src/pages/SheetsSettings.tsx",
     "client/src/pages/SheetsInventory.tsx",
+    "client/src/pages/merchant/Payments.tsx",
+    "client/src/pages/PaymentDetails.tsx",
+    "client/src/pages/merchant/PaymentLinks.tsx",
     "client/src/pages/merchant/PaymentSettings.tsx",
     "client/src/pages/PlatformIntegrations.tsx",
     "client/src/pages/NotificationSettings.tsx",
@@ -2226,18 +2233,33 @@
     {
       "route": "/merchant/payments",
       "controlsBefore": 7,
-      "controlsNow": 7,
-      "removedQueries": [],
-      "addedQueries": [],
+      "controlsNow": 23,
+      "removedQueries": [
+        "payments.list",
+        "payments.getStats"
+      ],
+      "addedQueries": [
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "payments.workspace.list",
+        "payments.workspace.detail"
+      ],
       "removedMutations": [],
       "addedMutations": []
     },
     {
       "route": "/merchant/payments/:id",
       "controlsBefore": 10,
-      "controlsNow": 10,
-      "removedQueries": [],
-      "addedQueries": [],
+      "controlsNow": 23,
+      "removedQueries": [
+        "payments.getById"
+      ],
+      "addedQueries": [
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "payments.workspace.list",
+        "payments.workspace.detail"
+      ],
       "removedMutations": [],
       "addedMutations": []
     },
@@ -2764,9 +2786,17 @@
     {
       "route": "/merchant/merchant-payments",
       "controlsBefore": 7,
-      "controlsNow": 7,
-      "removedQueries": [],
-      "addedQueries": [],
+      "controlsNow": 23,
+      "removedQueries": [
+        "payments.list",
+        "payments.getStats"
+      ],
+      "addedQueries": [
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "payments.workspace.list",
+        "payments.workspace.detail"
+      ],
       "removedMutations": [],
       "addedMutations": []
     },

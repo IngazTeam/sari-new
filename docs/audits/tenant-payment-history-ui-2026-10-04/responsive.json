@@ -1,0 +1,422 @@
+{
+  "actualList": [
+    {
+      "bodyWidth": 320,
+      "dir": "rtl",
+      "fonts": [
+        "16px"
+      ],
+      "lang": "ar",
+      "minButton": 44,
+      "overflow": [],
+      "title": "سجل المدفوعات",
+      "width": 320
+    },
+    {
+      "bodyWidth": 390,
+      "dir": "rtl",
+      "fonts": [
+        "16px"
+      ],
+      "lang": "ar",
+      "minButton": 44,
+      "overflow": [],
+      "title": "سجل المدفوعات",
+      "width": 390
+    },
+    {
+      "bodyWidth": 768,
+      "dir": "rtl",
+      "fonts": [
+        "16px"
+      ],
+      "lang": "ar",
+      "minButton": 44,
+      "overflow": [],
+      "title": "سجل المدفوعات",
+      "width": 768
+    },
+    {
+      "bodyWidth": 1440,
+      "dir": "rtl",
+      "fonts": [
+        "16px"
+      ],
+      "lang": "ar",
+      "minButton": 44,
+      "overflow": [],
+      "title": "سجل المدفوعات",
+      "width": 1440
+    }
+  ],
+  "actualDetail": [
+    {
+      "bodyWidth": 320,
+      "dir": "rtl",
+      "fonts": [],
+      "lang": "ar",
+      "minButton": 44,
+      "overflow": [],
+      "title": "تفاصيل المعاملة",
+      "width": 320
+    },
+    {
+      "bodyWidth": 390,
+      "dir": "rtl",
+      "fonts": [],
+      "lang": "ar",
+      "minButton": 44,
+      "overflow": [],
+      "title": "تفاصيل المعاملة",
+      "width": 390
+    },
+    {
+      "bodyWidth": 768,
+      "dir": "rtl",
+      "fonts": [],
+      "lang": "ar",
+      "minButton": 44,
+      "overflow": [],
+      "title": "تفاصيل المعاملة",
+      "width": 768
+    },
+    {
+      "bodyWidth": 1440,
+      "dir": "rtl",
+      "fonts": [],
+      "lang": "ar",
+      "minButton": 44,
+      "overflow": [],
+      "title": "تفاصيل المعاملة",
+      "width": 1440
+    }
+  ],
+  "previewList": [
+    {
+      "bodyWidth": 320,
+      "dir": "rtl",
+      "fonts": [
+        "16px"
+      ],
+      "lang": "ar",
+      "minButton": 44,
+      "overflow": [],
+      "title": "سجل المدفوعات",
+      "width": 320
+    },
+    {
+      "bodyWidth": 390,
+      "dir": "rtl",
+      "fonts": [
+        "16px"
+      ],
+      "lang": "ar",
+      "minButton": 44,
+      "overflow": [],
+      "title": "سجل المدفوعات",
+      "width": 390
+    },
+    {
+      "bodyWidth": 768,
+      "dir": "rtl",
+      "fonts": [
+        "16px"
+      ],
+      "lang": "ar",
+      "minButton": 44,
+      "overflow": [],
+      "title": "سجل المدفوعات",
+      "width": 768
+    },
+    {
+      "bodyWidth": 1440,
+      "dir": "rtl",
+      "fonts": [
+        "16px"
+      ],
+      "lang": "ar",
+      "minButton": 44,
+      "overflow": [],
+      "title": "سجل المدفوعات",
+      "width": 1440
+    },
+    {
+      "bodyWidth": 320,
+      "dir": "ltr",
+      "fonts": [
+        "16px"
+      ],
+      "lang": "en",
+      "minButton": 44,
+      "overflow": [],
+      "title": "Payment history",
+      "width": 320
+    },
+    {
+      "bodyWidth": 390,
+      "dir": "ltr",
+      "fonts": [
+        "16px"
+      ],
+      "lang": "en",
+      "minButton": 44,
+      "overflow": [],
+      "title": "Payment history",
+      "width": 390
+    },
+    {
+      "bodyWidth": 768,
+      "dir": "ltr",
+      "fonts": [
+        "16px"
+      ],
+      "lang": "en",
+      "minButton": 44,
+      "overflow": [],
+      "title": "Payment history",
+      "width": 768
+    },
+    {
+      "bodyWidth": 1440,
+      "dir": "ltr",
+      "fonts": [
+        "16px"
+      ],
+      "lang": "en",
+      "minButton": 44,
+      "overflow": [],
+      "title": "Payment history",
+      "width": 1440
+    }
+  ],
+  "previewDetail": [
+    {
+      "bodyWidth": 320,
+      "dir": "rtl",
+      "fonts": [],
+      "lang": "ar",
+      "minButton": 44,
+      "overflow": [],
+      "title": "تفاصيل المعاملة",
+      "width": 320
+    },
+    {
+      "bodyWidth": 390,
+      "dir": "rtl",
+      "fonts": [],
+      "lang": "ar",
+      "minButton": 44,
+      "overflow": [],
+      "title": "تفاصيل المعاملة",
+      "width": 390
+    },
+    {
+      "bodyWidth": 768,
+      "dir": "rtl",
+      "fonts": [],
+      "lang": "ar",
+      "minButton": 44,
+      "overflow": [],
+      "title": "تفاصيل المعاملة",
+      "width": 768
+    },
+    {
+      "bodyWidth": 1440,
+      "dir": "rtl",
+      "fonts": [],
+      "lang": "ar",
+      "minButton": 44,
+      "overflow": [],
+      "title": "تفاصيل المعاملة",
+      "width": 1440
+    },
+    {
+      "bodyWidth": 320,
+      "dir": "ltr",
+      "fonts": [],
+      "lang": "en",
+      "minButton": 44,
+      "overflow": [],
+      "title": "Payment details",
+      "width": 320
+    },
+    {
+      "bodyWidth": 390,
+      "dir": "ltr",
+      "fonts": [],
+      "lang": "en",
+      "minButton": 44,
+      "overflow": [],
+      "title": "Payment details",
+      "width": 390
+    },
+    {
+      "bodyWidth": 768,
+      "dir": "ltr",
+      "fonts": [],
+      "lang": "en",
+      "minButton": 44,
+      "overflow": [],
+      "title": "Payment details",
+      "width": 768
+    },
+    {
+      "bodyWidth": 1440,
+      "dir": "ltr",
+      "fonts": [],
+      "lang": "en",
+      "minButton": 44,
+      "overflow": [],
+      "title": "Payment details",
+      "width": 1440
+    }
+  ],
+  "actualListExpanded": [
+    {
+      "bodyWidth": 290,
+      "dir": "rtl",
+      "fonts": [
+        "16px"
+      ],
+      "lang": "ar",
+      "minButton": 44,
+      "overflow": [],
+      "title": "سجل المدفوعات",
+      "width": 320
+    },
+    {
+      "bodyWidth": 360,
+      "dir": "rtl",
+      "fonts": [
+        "16px"
+      ],
+      "lang": "ar",
+      "minButton": 44,
+      "overflow": [],
+      "title": "سجل المدفوعات",
+      "width": 390
+    },
+    {
+      "bodyWidth": 768,
+      "dir": "rtl",
+      "fonts": [
+        "16px"
+      ],
+      "lang": "ar",
+      "minButton": 44,
+      "overflow": [],
+      "title": "سجل المدفوعات",
+      "width": 768
+    },
+    {
+      "bodyWidth": 1440,
+      "dir": "rtl",
+      "fonts": [
+        "16px"
+      ],
+      "lang": "ar",
+      "minButton": 44,
+      "overflow": [],
+      "title": "سجل المدفوعات",
+      "width": 1440
+    }
+  ],
+  "previewListExpanded": [
+    {
+      "bodyWidth": 320,
+      "dir": "rtl",
+      "fonts": [
+        "16px"
+      ],
+      "lang": "ar",
+      "minButton": 44,
+      "overflow": [],
+      "title": "سجل المدفوعات",
+      "width": 320
+    },
+    {
+      "bodyWidth": 390,
+      "dir": "rtl",
+      "fonts": [
+        "16px"
+      ],
+      "lang": "ar",
+      "minButton": 44,
+      "overflow": [],
+      "title": "سجل المدفوعات",
+      "width": 390
+    },
+    {
+      "bodyWidth": 768,
+      "dir": "rtl",
+      "fonts": [
+        "16px"
+      ],
+      "lang": "ar",
+      "minButton": 44,
+      "overflow": [],
+      "title": "سجل المدفوعات",
+      "width": 768
+    },
+    {
+      "bodyWidth": 1440,
+      "dir": "rtl",
+      "fonts": [
+        "16px"
+      ],
+      "lang": "ar",
+      "minButton": 44,
+      "overflow": [],
+      "title": "سجل المدفوعات",
+      "width": 1440
+    },
+    {
+      "bodyWidth": 320,
+      "dir": "ltr",
+      "fonts": [
+        "16px"
+      ],
+      "lang": "en",
+      "minButton": 44,
+      "overflow": [],
+      "title": "Payment history",
+      "width": 320
+    },
+    {
+      "bodyWidth": 390,
+      "dir": "ltr",
+      "fonts": [
+        "16px"
+      ],
+      "lang": "en",
+      "minButton": 44,
+      "overflow": [],
+      "title": "Payment history",
+      "width": 390
+    },
+    {
+      "bodyWidth": 768,
+      "dir": "ltr",
+      "fonts": [
+        "16px"
+      ],
+      "lang": "en",
+      "minButton": 44,
+      "overflow": [],
+      "title": "Payment history",
+      "width": 768
+    },
+    {
+      "bodyWidth": 1440,
+      "dir": "ltr",
+      "fonts": [
+        "16px"
+      ],
+      "lang": "en",
+      "minButton": 44,
+      "overflow": [],
+      "title": "Payment history",
+      "width": 1440
+    }
+  ]
+}

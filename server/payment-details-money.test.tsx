@@ -9,25 +9,42 @@ const state = vi.hoisted(() => ({
 }));
 vi.mock("@/lib/trpc", () => ({
   trpc: {
+    auth: { me: { useQuery: () => ({ data: { id: 1 } }) } },
+    merchants: {
+      workspaceIdentity: { useQuery: () => ({ data: { id: 2, actorId: 1 } }) },
+    },
     payments: {
-      getById: {
-        useQuery: () => ({
-          data: {
-            id: 1,
-            amount: state.amount,
-            currency: state.currency,
-            status: "captured",
-            createdAt: "2026-10-04T00:00:00Z",
-            customerPhone: "synthetic",
-          },
-          isLoading: false,
-        }),
+      workspace: {
+        detail: {
+          useQuery: () => ({
+            data: {
+              actorId: 1,
+              merchantId: 2,
+              canView: true,
+              state: "found",
+              checkedAt: "2026-10-04T00:00:00Z",
+              source: "local_payment_records",
+              payment: projectPaymentHistoryDetail({
+                id: 1,
+                amount: state.amount,
+                currency: state.currency,
+                status: "captured",
+                created_at: "2026-10-04 00:00:00",
+                customer_phone: "synthetic",
+                order_id: null,
+                booking_id: null,
+              }),
+            },
+            isLoading: false,
+          }),
+        },
       },
     },
   },
 }));
 vi.mock("wouter", () => ({
   useParams: () => ({ id: "1" }),
+  useSearch: () => "",
   useLocation: () => ["/merchant/payments/1", vi.fn()],
   Link: ({ children }: any) => <span>{children}</span>,
 }));
@@ -37,6 +54,7 @@ vi.mock("react-i18next", () => ({
     i18n: { language: state.language },
   }),
 }));
+import { projectPaymentHistoryDetail } from "./payment/payment-history-workspace";
 import PaymentDetails from "../client/src/pages/PaymentDetails";
 let root: Root, host: HTMLDivElement;
 beforeEach(() => {
@@ -77,14 +95,14 @@ it.each([null, undefined, NaN, -100, 1.5, "12550", Number.MAX_SAFE_INTEGER])(
   "never turns an invalid amount %s into a plausible payment",
   async amount => {
     state.amount = amount;
-    expect(await read()).toBe("paymentMoneyUx.unavailable");
+    expect(await read()).toBe("paymentHistoryUx.moneyUnknown");
   }
 );
 it.each([null, "", "KWD", "ZZZ", "sar"])(
   "does not assume SAR or a minor-unit scale for %s",
   async currency => {
     state.currency = currency;
-    expect(await read()).toBe("paymentMoneyUx.unavailable");
+    expect(await read()).toBe("paymentHistoryUx.moneyUnknown");
   }
 );
 it("preserves a known zero and displays cents accurately", async () => {

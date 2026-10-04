@@ -9,14 +9,31 @@ export function formatStoredPaymentMoney(
 ): string | null {
   try {
     if (currency !== "SAR" && currency !== "USD") return null;
-    const minor = requireMinor(amount);
+    return formatPaymentTotalMoney(requireMinor(amount), currency, locale);
+  } catch {
+    return null;
+  }
+}
+export function formatPaymentTotalMoney(
+  amount: unknown,
+  currency: unknown,
+  locale: string
+): string | null {
+  try {
+    if (
+      (currency !== "SAR" && currency !== "USD") ||
+      typeof amount !== "number" ||
+      !Number.isSafeInteger(amount) ||
+      amount < 0
+    )
+      return null;
     return new Intl.NumberFormat(locale, {
       style: "currency",
       currency,
       currencyDisplay: "code",
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    }).format(minor / 100);
+    }).format(amount / 100);
   } catch {
     return null;
   }
