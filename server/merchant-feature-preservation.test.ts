@@ -14,6 +14,18 @@ const transitions = JSON.parse(
   )
 ).transitions;
 describe("no registered tenant feature API disappears during the redesign", () => {
+  it('requires explicit API mappings and evidence for newly reconciled transitions', () => {
+    const reviewed = transitions.filter((change: any) => change.reviewedIn >= 508);
+    expect(reviewed.length).toBeGreaterThan(0);
+    for (const change of reviewed) {
+      expect(change.evidence.length, change.routes.join(', ')).toBeGreaterThan(0);
+      expect(change.featureMappings.map((entry: any) => entry.before).sort()).toEqual([...change.removed].sort());
+      const replacements = [...new Set(change.featureMappings.flatMap((entry: any) => entry.after))].sort();
+      expect(replacements).toEqual([...change.required].sort());
+      if (change.featureMappings.some((entry: any) => entry.after.length === 0))
+        expect(change.checks.length, 'Relocation or static guidance must have a checked destination/source').toBeGreaterThan(0);
+    }
+  });
   it.each(baseline.routes)(
     "preserves reads and actions for $route",
     (before: any) => {

@@ -4,6 +4,7 @@ import {
   browserRequests,
   imperativeReads,
   routeComponentImports,
+  runtimeModuleReferences,
 } from "../scripts/testing/tenant-source-analysis.mjs";
 const parse = (source: string) =>
   ts.createSourceFile(
@@ -15,6 +16,21 @@ const parse = (source: string) =>
   );
 
 describe("tenant source audit blind spots", () => {
+  it('follows runtime barrel exports, renamed defaults, namespace exports and literal lazy imports', () => {
+    expect(runtimeModuleReferences(parse(`
+      import { type Shape, Page } from './Mixed'; import './effects';
+      export { Page as default } from './Actual'; export * from './More';
+      export * as widgets from './Widgets'; const Lazy=lazy(()=>import('./Lazy'));
+      export { Page } from './Actual';
+    `))).toEqual(['./Mixed','./effects','./Actual','./More','./Widgets','./Lazy']);
+  });
+  it('excludes type-only module edges, local exports and unproved dynamic module names', () => {
+    expect(runtimeModuleReferences(parse(`
+      import type P from './Type'; import { type Shape } from './OnlyTypes';
+      export type { P } from './Types'; export { type P } from './Again';
+      export type * from './Other'; export { local }; import(variable);
+    `))).toEqual([]);
+  });
   it("resolves direct utilities, ref aliases and nested operation holders", () => {
     const calls = imperativeReads(
       parse(`const utils=trpc.useUtils(); const api=useRef(utils); const operations=useRef({utils});

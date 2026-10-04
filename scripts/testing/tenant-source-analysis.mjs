@@ -5,6 +5,30 @@ export function walkSource(node, visit) {
   ts.forEachChild(node, child => walkSource(child, visit));
 }
 
+// Follow runtime module edges, including barrel re-exports. Never execute imports.
+export function runtimeModuleReferences(ast) {
+  const modules = new Set();
+  walkSource(ast, node => {
+    if (ts.isImportDeclaration(node) && ts.isStringLiteral(node.moduleSpecifier)) {
+      const clause = node.importClause;
+      if (clause?.isTypeOnly) return;
+      const bindings = clause?.namedBindings;
+      if (clause && !clause.name && bindings && ts.isNamedImports(bindings) &&
+          bindings.elements.every(entry => entry.isTypeOnly)) return;
+      modules.add(node.moduleSpecifier.text);
+    } else if (ts.isExportDeclaration(node) && !node.isTypeOnly &&
+               node.moduleSpecifier && ts.isStringLiteral(node.moduleSpecifier)) {
+      if (node.exportClause && ts.isNamedExports(node.exportClause) &&
+          node.exportClause.elements.every(entry => entry.isTypeOnly)) return;
+      modules.add(node.moduleSpecifier.text);
+    } else if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword &&
+               node.arguments.length && ts.isStringLiteral(node.arguments[0])) {
+      modules.add(node.arguments[0].text);
+    }
+  });
+  return [...modules];
+}
+
 // Static provenance only: resolve utility aliases/ref holders, never execute source.
 // Calls which cannot be traced to useUtils remain visible as unresolved candidates.
 export function imperativeReads(ast) {

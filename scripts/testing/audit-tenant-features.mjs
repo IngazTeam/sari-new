@@ -8,6 +8,7 @@ import {
   browserRequests,
   imperativeReads,
   routeComponentImports,
+  runtimeModuleReferences,
 } from "./tenant-source-analysis.mjs";
 
 const output = process.argv[2] || "docs/audits/tenant-features-2026-09-30";
@@ -66,7 +67,9 @@ function analyze(file) {
   const result = {
     file,
     hash: hash(source),
-    imports: [],
+    imports: runtimeModuleReferences(ast).map(specifier => resolve(file, specifier)).filter(target =>
+      target?.startsWith(`${sourceRoot}/`) && /\.tsx?$/.test(target) &&
+      !/\/ui\/|DashboardLayout|WorkspaceState|QueryStateCard|\/lib\/trpc\.ts$/.test(target)),
     controls: [],
     queries: [],
     mutations: [],
@@ -145,18 +148,6 @@ function analyze(file) {
     }
   });
   walk(ast, node => {
-    if (ts.isImportDeclaration(node)) {
-      const target = resolve(file, node.moduleSpecifier.text);
-      if (
-        !node.importClause?.isTypeOnly &&
-        target?.startsWith(`${sourceRoot}/`) &&
-        /\.tsx?$/.test(target) &&
-        !/\/ui\/|DashboardLayout|WorkspaceState|QueryStateCard|\/lib\/trpc\.ts$/.test(
-          target
-        )
-      )
-        result.imports.push(target);
-    }
     if (ts.isVariableDeclaration(node) && node.initializer) {
       const init = ts.isAsExpression(node.initializer)
         ? node.initializer.expression

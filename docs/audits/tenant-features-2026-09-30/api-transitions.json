@@ -530,18 +530,24 @@
         "knowledgeDocs.getCurrent",
         "knowledgeDocs.delete"
       ],
-      "required": [
-        "knowledgeDocs.reviewSource",
-        "sariBrain.getIntakeReceipt"
-      ],
-      "note": "Upload with receipt, move complete file library and group deletion to linked knowledge sources; avoid ambiguous delete-all button on settings.",
+      "required": [],
+      "note": "Upload with receipt, move complete file library and group deletion to linked knowledge sources; avoid ambiguous delete-all button on settings. Stage459 moved the remaining upload editor and recovery to brain sources; stage508 verifies those APIs at their new route plus the settings link.",
       "evidence": [
-        "docs/audits/tenant-knowledge-library-2026-09-29/REPORT.md"
+        "docs/audits/tenant-knowledge-library-2026-09-29/REPORT.md",
+        "docs/audits/tenant-settings-ui-2026-10-04/REPORT.md"
       ],
       "checks": [
         {
-          "file": "client/src/components/KnowledgeDocumentUpload.tsx",
+          "file": "client/src/components/merchant/SettingsWorkspace.tsx",
           "contains": "/merchant/sari-brain?view=sources"
+        },
+        {
+          "route": "/merchant/sari-brain",
+          "api": "knowledgeDocs.reviewSource"
+        },
+        {
+          "route": "/merchant/sari-brain",
+          "api": "sariBrain.getIntakeReceipt"
         },
         {
           "route": "/merchant/sari-brain",
@@ -583,16 +589,17 @@
         "merchantSubscription.getDaysRemaining"
       ],
       "required": [
-        "merchantSubscription.getCurrentSubscription"
+        "merchantSubscription.workspace"
       ],
-      "note": "Remaining days come from current subscription snapshot.",
+      "note": "Remaining days come from the scoped billing snapshot, with unknown values preserved. Stage497 replaced the older current-subscription source and stage508 verifies the current component.",
       "evidence": [
-        "docs/audits/tenant-subscription-workspace-2026-09-28/REPORT.md"
+        "docs/audits/tenant-subscription-workspace-2026-09-28/REPORT.md",
+        "docs/audits/tenant-subscription-billing-ui-2026-10-04/REPORT.md"
       ],
       "checks": [
         {
-          "file": "client/src/pages/merchant/MySubscription.tsx",
-          "contains": "subscription.daysRemaining"
+          "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
+          "contains": "s.daysRemaining"
         }
       ]
     },
@@ -2094,6 +2101,929 @@
         {
           "file": "server/whatsapp/diagnostic-workspace.ts",
           "contains": "LIMIT 101"
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/dashboard"
+      ],
+      "removed": [
+        "merchantSubscription.getCurrentSubscription"
+      ],
+      "required": [
+        "merchantSubscription.workspace"
+      ],
+      "note": "The trial notice uses the same scoped billing snapshot as the subscription page; unavailable data no longer becomes an expired or healthy plan.",
+      "evidence": [
+        "docs/audits/tenant-subscription-notices-retirement-2026-10-04/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "client/src/components/TrialBanner.tsx",
+          "contains": "useSubscriptionNotice"
+        }
+      ],
+      "reviewedIn": 508,
+      "featureMappings": [
+        {
+          "before": "merchantSubscription.getCurrentSubscription",
+          "after": [
+            "merchantSubscription.workspace"
+          ]
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/abandoned-carts"
+      ],
+      "removed": [
+        "merchants.getCurrent"
+      ],
+      "required": [
+        "auth.me",
+        "merchants.workspaceIdentity"
+      ],
+      "note": "Selected actor/store identity replaces implicit current merchant selection; cart recovery and reminders remain in the previously registered workspace transition.",
+      "evidence": [
+        "docs/audits/tenant-abandoned-cart-workspace-2026-10-03/REPORT.md"
+      ],
+      "checks": [],
+      "reviewedIn": 508,
+      "featureMappings": [
+        {
+          "before": "merchants.getCurrent",
+          "after": [
+            "auth.me",
+            "merchants.workspaceIdentity"
+          ]
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/promotions"
+      ],
+      "removed": [
+        "promotions.list",
+        "promotions.getStats",
+        "promotions.create",
+        "promotions.update",
+        "promotions.toggleActive",
+        "promotions.delete"
+      ],
+      "required": [
+        "promotions.workspace",
+        "promotions.reviewAction",
+        "promotions.applyAction"
+      ],
+      "note": "List, stored counts, creation, editing, enable/disable and deletion remain. Writes require explicit review and have receipt recovery; stored counters are not fabricated sales conversion.",
+      "evidence": [
+        "docs/audits/tenant-promotion-workspace-2026-10-03/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "client/src/components/merchant/PromotionWorkspace.tsx",
+          "contains": "action:'delete'"
+        }
+      ],
+      "reviewedIn": 508,
+      "featureMappings": [
+        {
+          "before": "promotions.list",
+          "after": [
+            "promotions.workspace"
+          ]
+        },
+        {
+          "before": "promotions.getStats",
+          "after": [
+            "promotions.workspace"
+          ]
+        },
+        {
+          "before": "promotions.create",
+          "after": [
+            "promotions.reviewAction",
+            "promotions.applyAction"
+          ]
+        },
+        {
+          "before": "promotions.update",
+          "after": [
+            "promotions.reviewAction",
+            "promotions.applyAction"
+          ]
+        },
+        {
+          "before": "promotions.toggleActive",
+          "after": [
+            "promotions.reviewAction",
+            "promotions.applyAction"
+          ]
+        },
+        {
+          "before": "promotions.delete",
+          "after": [
+            "promotions.reviewAction",
+            "promotions.applyAction"
+          ]
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/whatsapp-webhook-setup"
+      ],
+      "removed": [
+        "auth.me"
+      ],
+      "required": [],
+      "note": "The static reception guide does not need a duplicate user query or personalize a fake health indicator. The merchant route guard remains; account-specific connection evidence is in number management and diagnostics.",
+      "evidence": [
+        "docs/audits/tenant-whatsapp-setup-guide-2026-10-04/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "client/src/pages/merchant/WhatsAppWebhookSetup.tsx",
+          "contains": "view=\"receive\""
+        },
+        {
+          "file": "client/src/components/merchant/WhatsAppSetupWorkspace.tsx",
+          "contains": "/merchant/whatsapp"
+        }
+      ],
+      "reviewedIn": 508,
+      "featureMappings": [
+        {
+          "before": "auth.me",
+          "after": []
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/acquisition-report"
+      ],
+      "removed": [
+        "merchants.getCurrent",
+        "analytics.getAcquisitionSources"
+      ],
+      "required": [
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "analytics.acquisitionWorkspace"
+      ],
+      "note": "Full scoped source totals, period, coverage, stored tags and proportions replace the legacy query; missing source data is explicitly unassigned rather than organic sales.",
+      "evidence": [
+        "docs/audits/tenant-acquisition-workspace-ui-2026-10-04/REPORT.md"
+      ],
+      "checks": [],
+      "reviewedIn": 508,
+      "featureMappings": [
+        {
+          "before": "merchants.getCurrent",
+          "after": [
+            "auth.me",
+            "merchants.workspaceIdentity"
+          ]
+        },
+        {
+          "before": "analytics.getAcquisitionSources",
+          "after": [
+            "analytics.acquisitionWorkspace"
+          ]
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/media-library"
+      ],
+      "removed": [
+        "media.list",
+        "media.getStats",
+        "media.upload",
+        "media.delete"
+      ],
+      "required": [
+        "media.workspace",
+        "media.uploadReviewed",
+        "media.requestReceipt",
+        "media.removeReviewed"
+      ],
+      "note": "Search, grid/list, counts, complete pages, details and upload remain. Remove deletes the library record only, not a storage object or its external uses; pending uploads have receipt lookup and closure.",
+      "evidence": [
+        "docs/audits/tenant-media-workspace-2026-10-03/REPORT.md"
+      ],
+      "checks": [],
+      "reviewedIn": 508,
+      "featureMappings": [
+        {
+          "before": "media.list",
+          "after": [
+            "media.workspace"
+          ]
+        },
+        {
+          "before": "media.getStats",
+          "after": [
+            "media.workspace"
+          ]
+        },
+        {
+          "before": "media.upload",
+          "after": [
+            "media.uploadReviewed",
+            "media.requestReceipt"
+          ]
+        },
+        {
+          "before": "media.delete",
+          "after": [
+            "media.removeReviewed",
+            "media.requestReceipt"
+          ]
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/scheduled-messages"
+      ],
+      "removed": [
+        "scheduledMessages.list",
+        "scheduledMessages.create",
+        "scheduledMessages.update",
+        "scheduledMessages.delete",
+        "scheduledMessages.toggle"
+      ],
+      "required": [
+        "scheduledMessages.workspace",
+        "scheduledMessages.history",
+        "scheduledMessages.reviewAction",
+        "scheduledMessages.applyAction"
+      ],
+      "note": "Creation and editing save paused. Activation, pause and deletion are reviewed actions; deletion is inside details. Full execution history distinguishes acceptance from delivery.",
+      "evidence": [
+        "docs/audits/tenant-scheduled-message-workspace-2026-10-03/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "client/src/components/merchant/ScheduledMessageWorkspace.tsx",
+          "contains": "action: 'delete'"
+        }
+      ],
+      "reviewedIn": 508,
+      "featureMappings": [
+        {
+          "before": "scheduledMessages.list",
+          "after": [
+            "scheduledMessages.workspace",
+            "scheduledMessages.history"
+          ]
+        },
+        {
+          "before": "scheduledMessages.create",
+          "after": [
+            "scheduledMessages.reviewAction",
+            "scheduledMessages.applyAction"
+          ]
+        },
+        {
+          "before": "scheduledMessages.update",
+          "after": [
+            "scheduledMessages.reviewAction",
+            "scheduledMessages.applyAction"
+          ]
+        },
+        {
+          "before": "scheduledMessages.delete",
+          "after": [
+            "scheduledMessages.reviewAction",
+            "scheduledMessages.applyAction"
+          ]
+        },
+        {
+          "before": "scheduledMessages.toggle",
+          "after": [
+            "scheduledMessages.reviewAction",
+            "scheduledMessages.applyAction"
+          ]
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/reviews"
+      ],
+      "removed": [
+        "merchants.getCurrent",
+        "reviews.list",
+        "reviews.getStats",
+        "reviews.reply"
+      ],
+      "required": [
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "reviews.workspace",
+        "reviews.detail",
+        "reviews.saveReply"
+      ],
+      "note": "Full review list, verified aggregate, star filters, details and scoped revision-checked merchantReply remain. Saving a reply is local and does not claim external delivery.",
+      "evidence": [
+        "docs/audits/tenant-review-workspace-ui-2026-10-03/REPORT.md"
+      ],
+      "checks": [],
+      "reviewedIn": 508,
+      "featureMappings": [
+        {
+          "before": "merchants.getCurrent",
+          "after": [
+            "auth.me",
+            "merchants.workspaceIdentity"
+          ]
+        },
+        {
+          "before": "reviews.list",
+          "after": [
+            "reviews.workspace",
+            "reviews.detail"
+          ]
+        },
+        {
+          "before": "reviews.getStats",
+          "after": [
+            "reviews.workspace"
+          ]
+        },
+        {
+          "before": "reviews.reply",
+          "after": [
+            "reviews.saveReply"
+          ]
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/booking-reviews"
+      ],
+      "removed": [
+        "bookingReviews.list",
+        "bookingReviews.reply"
+      ],
+      "required": [
+        "bookingReviews.workspace",
+        "bookingReviews.detail",
+        "bookingReviews.saveReply"
+      ],
+      "note": "Booking review list, detail, service/staff and quality dimensions and stored reply use the same reviewed workspace; no synthetic customer reviews.",
+      "evidence": [
+        "docs/audits/tenant-review-workspace-ui-2026-10-03/REPORT.md"
+      ],
+      "checks": [],
+      "reviewedIn": 508,
+      "featureMappings": [
+        {
+          "before": "bookingReviews.list",
+          "after": [
+            "bookingReviews.workspace",
+            "bookingReviews.detail"
+          ]
+        },
+        {
+          "before": "bookingReviews.reply",
+          "after": [
+            "bookingReviews.saveReply"
+          ]
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/order-notifications"
+      ],
+      "removed": [
+        "orderNotifications.getTemplates",
+        "orderNotifications.getHealth",
+        "orderNotifications.updateTemplate",
+        "orderNotifications.acknowledgeIncidents"
+      ],
+      "required": [
+        "orderNotifications.workspace",
+        "orderNotifications.detail",
+        "orderNotifications.saveTemplate",
+        "orderNotifications.acknowledgeReviewed"
+      ],
+      "note": "Templates and full delivery/incident history remain, with reviewed template saves and selected incident acknowledgements instead of an unscoped bulk write.",
+      "evidence": [
+        "docs/audits/tenant-order-notification-ui-2026-10-03/REPORT.md"
+      ],
+      "checks": [],
+      "reviewedIn": 508,
+      "featureMappings": [
+        {
+          "before": "orderNotifications.getTemplates",
+          "after": [
+            "orderNotifications.workspace"
+          ]
+        },
+        {
+          "before": "orderNotifications.getHealth",
+          "after": [
+            "orderNotifications.workspace",
+            "orderNotifications.detail"
+          ]
+        },
+        {
+          "before": "orderNotifications.updateTemplate",
+          "after": [
+            "orderNotifications.saveTemplate"
+          ]
+        },
+        {
+          "before": "orderNotifications.acknowledgeIncidents",
+          "after": [
+            "orderNotifications.acknowledgeReviewed"
+          ]
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/settings"
+      ],
+      "removed": [
+        "merchants.getCurrent",
+        "auth.updateProfile",
+        "merchants.update",
+        "knowledgeDocs.reprocess"
+      ],
+      "required": [
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "merchants.profileWorkspace",
+        "auth.selfProfileWorkspace",
+        "auth.renameReviewed",
+        "merchants.profileSaveReviewed"
+      ],
+      "note": "Store and personal profile writes are separately scoped and reviewed. Knowledge files and reprocessing moved to Sary brain sources; settings retain a direct link rather than duplicate the editor.",
+      "evidence": [
+        "docs/audits/tenant-settings-ui-2026-10-04/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "client/src/components/merchant/SettingsWorkspace.tsx",
+          "contains": "/merchant/sari-brain?view=sources"
+        },
+        {
+          "route": "/merchant/sari-brain",
+          "api": "knowledgeDocs.reprocess"
+        }
+      ],
+      "reviewedIn": 508,
+      "featureMappings": [
+        {
+          "before": "merchants.getCurrent",
+          "after": [
+            "auth.me",
+            "merchants.workspaceIdentity",
+            "merchants.profileWorkspace"
+          ]
+        },
+        {
+          "before": "auth.updateProfile",
+          "after": [
+            "auth.selfProfileWorkspace",
+            "auth.renameReviewed"
+          ]
+        },
+        {
+          "before": "merchants.update",
+          "after": [
+            "merchants.profileSaveReviewed"
+          ]
+        },
+        {
+          "before": "knowledgeDocs.reprocess",
+          "after": []
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/notifications"
+      ],
+      "removed": [
+        "notifications.list",
+        "notifications.unreadCount",
+        "notifications.markAsRead",
+        "notifications.markAllAsRead",
+        "notifications.delete"
+      ],
+      "required": [
+        "notifications.workspace.list",
+        "notifications.workspace.detail",
+        "notifications.workspace.applyReviewed",
+        "notifications.workspace.readAllReviewed"
+      ],
+      "note": "Account-scoped list/count and full details remain; read is explicit, delete is reviewed, and mark-all reviews an account-wide snapshot. The bell links to full management.",
+      "evidence": [
+        "docs/audits/tenant-account-notifications-ui-2026-10-04/REPORT.md"
+      ],
+      "checks": [],
+      "reviewedIn": 508,
+      "featureMappings": [
+        {
+          "before": "notifications.list",
+          "after": [
+            "notifications.workspace.list",
+            "notifications.workspace.detail"
+          ]
+        },
+        {
+          "before": "notifications.unreadCount",
+          "after": [
+            "notifications.workspace.list"
+          ]
+        },
+        {
+          "before": "notifications.markAsRead",
+          "after": [
+            "notifications.workspace.applyReviewed"
+          ]
+        },
+        {
+          "before": "notifications.markAllAsRead",
+          "after": [
+            "notifications.workspace.readAllReviewed"
+          ]
+        },
+        {
+          "before": "notifications.delete",
+          "after": [
+            "notifications.workspace.applyReviewed"
+          ]
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/payments",
+        "/merchant/merchant-payments"
+      ],
+      "removed": [
+        "payments.list",
+        "payments.getStats"
+      ],
+      "required": [
+        "payments.workspace.list"
+      ],
+      "note": "Complete paginated payment history, filters and status counts remain with currency-separated amounts; paid records are not a claim of provider settlement.",
+      "evidence": [
+        "docs/audits/tenant-payment-history-ui-2026-10-04/REPORT.md"
+      ],
+      "checks": [],
+      "reviewedIn": 508,
+      "featureMappings": [
+        {
+          "before": "payments.list",
+          "after": [
+            "payments.workspace.list"
+          ]
+        },
+        {
+          "before": "payments.getStats",
+          "after": [
+            "payments.workspace.list"
+          ]
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/payments/:id"
+      ],
+      "removed": [
+        "payments.getById"
+      ],
+      "required": [
+        "payments.workspace.detail"
+      ],
+      "note": "Payment details retain verified amounts, references and timestamps with safe export/print; the unimplemented WhatsApp button was removed, not represented as working delivery.",
+      "evidence": [
+        "docs/audits/tenant-payment-history-ui-2026-10-04/REPORT.md"
+      ],
+      "checks": [],
+      "reviewedIn": 508,
+      "featureMappings": [
+        {
+          "before": "payments.getById",
+          "after": [
+            "payments.workspace.detail"
+          ]
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/payment-links"
+      ],
+      "removed": [
+        "payments.listLinks",
+        "payments.createLink",
+        "payments.disableLink"
+      ],
+      "required": [
+        "payments.linksWorkspace.list",
+        "payments.linksWorkspace.detail",
+        "payments.linksWorkspace.createReviewed",
+        "payments.linksWorkspace.creationRequest",
+        "payments.linksWorkspace.disableReviewed"
+      ],
+      "note": "Complete link list/detail, reviewed precise-amount creation with durable request recovery, and reviewed disable replace old endpoints; counters are stored values, not settlement evidence.",
+      "evidence": [
+        "docs/audits/tenant-payment-links-ui-2026-10-04/REPORT.md"
+      ],
+      "checks": [],
+      "reviewedIn": 508,
+      "featureMappings": [
+        {
+          "before": "payments.listLinks",
+          "after": [
+            "payments.linksWorkspace.list",
+            "payments.linksWorkspace.detail"
+          ]
+        },
+        {
+          "before": "payments.createLink",
+          "after": [
+            "payments.linksWorkspace.createReviewed",
+            "payments.linksWorkspace.creationRequest"
+          ]
+        },
+        {
+          "before": "payments.disableLink",
+          "after": [
+            "payments.linksWorkspace.disableReviewed"
+          ]
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/payment-settings"
+      ],
+      "removed": [
+        "merchantPayments.getSettings",
+        "merchantPayments.saveSettings",
+        "merchantPayments.testConnection"
+      ],
+      "required": [
+        "merchantPayments.workspace",
+        "merchantPayments.saveReviewed",
+        "merchantPayments.probeReviewed"
+      ],
+      "note": "Scoped saved settings and masked credentials, independent draft, revision-reviewed save and explicit connection probe replace raw settings access.",
+      "evidence": [
+        "docs/audits/tenant-payment-settings-ui-2026-10-04/REPORT.md"
+      ],
+      "checks": [],
+      "reviewedIn": 508,
+      "featureMappings": [
+        {
+          "before": "merchantPayments.getSettings",
+          "after": [
+            "merchantPayments.workspace"
+          ]
+        },
+        {
+          "before": "merchantPayments.saveSettings",
+          "after": [
+            "merchantPayments.saveReviewed"
+          ]
+        },
+        {
+          "before": "merchantPayments.testConnection",
+          "after": [
+            "merchantPayments.probeReviewed"
+          ]
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/notification-settings"
+      ],
+      "removed": [
+        "notificationPreferences.get",
+        "notificationPreferences.update"
+      ],
+      "required": [
+        "notificationPreferences.workspace",
+        "notificationPreferences.saveReviewed"
+      ],
+      "note": "Account notification preference source, all current choices and revision-reviewed save remain; preferences do not claim delivery or change another owner profile.",
+      "evidence": [
+        "docs/audits/tenant-notification-preferences-ui-2026-10-04/REPORT.md"
+      ],
+      "checks": [],
+      "reviewedIn": 508,
+      "featureMappings": [
+        {
+          "before": "notificationPreferences.get",
+          "after": [
+            "notificationPreferences.workspace"
+          ]
+        },
+        {
+          "before": "notificationPreferences.update",
+          "after": [
+            "notificationPreferences.saveReviewed"
+          ]
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/subscriptions",
+        "/merchant/subscription",
+        "/merchant/my-subscription"
+      ],
+      "removed": [
+        "merchantSubscription.getCurrentSubscription",
+        "payment.listTransactions"
+      ],
+      "required": [
+        "merchantSubscription.workspace",
+        "usage.workspace",
+        "merchantSubscription.paymentHistory"
+      ],
+      "note": "Shared subscription summary and full payment-history tabs replace duplicate pages. Plan/state/cycle/dates/limits/usage and reviewed cancellation remain, with conflict and unconfirmed capture states.",
+      "evidence": [
+        "docs/audits/tenant-subscription-billing-ui-2026-10-04/REPORT.md"
+      ],
+      "checks": [],
+      "reviewedIn": 508,
+      "featureMappings": [
+        {
+          "before": "merchantSubscription.getCurrentSubscription",
+          "after": [
+            "merchantSubscription.workspace",
+            "usage.workspace"
+          ]
+        },
+        {
+          "before": "payment.listTransactions",
+          "after": [
+            "merchantSubscription.paymentHistory"
+          ]
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/usage"
+      ],
+      "removed": [
+        "subscriptions.getUsage"
+      ],
+      "required": [
+        "usage.workspace"
+      ],
+      "note": "Three shared tabs retain subscription consumption, resources and six-month history with explicit unlimited/zero/unknown semantics; reads do not reset quotas.",
+      "evidence": [
+        "docs/audits/tenant-usage-workspace-ui-2026-10-04/REPORT.md"
+      ],
+      "checks": [],
+      "reviewedIn": 508,
+      "featureMappings": [
+        {
+          "before": "subscriptions.getUsage",
+          "after": [
+            "usage.workspace"
+          ]
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/usage-dashboard"
+      ],
+      "removed": [
+        "usage.getCurrentUsage"
+      ],
+      "required": [
+        "usage.workspace"
+      ],
+      "note": "Resource landing tab shares the complete usage source and history with the subscription consumption page rather than the old partial counters.",
+      "evidence": [
+        "docs/audits/tenant-usage-workspace-ui-2026-10-04/REPORT.md"
+      ],
+      "checks": [],
+      "reviewedIn": 508,
+      "featureMappings": [
+        {
+          "before": "usage.getCurrentUsage",
+          "after": [
+            "usage.workspace"
+          ]
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/subscription/plans",
+        "/merchant/subscription/compare"
+      ],
+      "removed": [
+        "subscriptionPlans.listPlans",
+        "merchantSubscription.getCurrentSubscription"
+      ],
+      "required": [
+        "subscriptionPlans.workspace",
+        "usage.workspace"
+      ],
+      "note": "All plans and features, current scoped plan, monthly/annual pricing, actual savings and checkout review remain. Unverified tax and provider readiness claims are removed.",
+      "evidence": [
+        "docs/audits/tenant-plan-catalog-ui-2026-10-04/REPORT.md"
+      ],
+      "checks": [],
+      "reviewedIn": 508,
+      "featureMappings": [
+        {
+          "before": "subscriptionPlans.listPlans",
+          "after": [
+            "subscriptionPlans.workspace"
+          ]
+        },
+        {
+          "before": "merchantSubscription.getCurrentSubscription",
+          "after": [
+            "usage.workspace"
+          ]
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/checkout"
+      ],
+      "removed": [
+        "subscriptionPlans.listPlans"
+      ],
+      "required": [
+        "subscriptionPlans.workspace"
+      ],
+      "note": "The same complete catalog feeds selected plan/cycle checkout, exact price review and durable attempt recovery; legacy catalog lists are no longer required.",
+      "evidence": [
+        "docs/audits/tenant-plan-catalog-ui-2026-10-04/REPORT.md"
+      ],
+      "checks": [],
+      "reviewedIn": 508,
+      "featureMappings": [
+        {
+          "before": "subscriptionPlans.listPlans",
+          "after": [
+            "subscriptionPlans.workspace"
+          ]
+        }
+      ]
+    },
+    {
+      "routes": [
+        "/merchant/competitor-analysis"
+      ],
+      "removed": [
+        "websiteAnalysis.listCompetitors",
+        "websiteAnalysis.deleteCompetitor"
+      ],
+      "required": [
+        "websiteAnalysis.competitorWorkspace",
+        "websiteAnalysis.competitorDetail",
+        "websiteAnalysis.deleteReviewedCompetitor"
+      ],
+      "note": "Complete reports, stats, products, estimates and scoped detail replace the old cards; deletion requires the reviewed version and refuses active analysis. Comparison and recovery sources remain independently registered.",
+      "evidence": [
+        "docs/audits/tenant-competitor-workspace-ui-2026-10-04/REPORT.md"
+      ],
+      "checks": [],
+      "reviewedIn": 508,
+      "featureMappings": [
+        {
+          "before": "websiteAnalysis.listCompetitors",
+          "after": [
+            "websiteAnalysis.competitorWorkspace",
+            "websiteAnalysis.competitorDetail"
+          ]
+        },
+        {
+          "before": "websiteAnalysis.deleteCompetitor",
+          "after": [
+            "websiteAnalysis.deleteReviewedCompetitor"
+          ]
         }
       ]
     }
