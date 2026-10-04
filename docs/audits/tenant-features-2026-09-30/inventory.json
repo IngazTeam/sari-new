@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-04T00:44:25.576Z",
+  "generatedAt": "2026-10-04T00:53:17.869Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -4966,10 +4966,10 @@
     },
     {
       "file": "client/src/pages/SallaIntegration.tsx",
-      "hash": "5593c5ddd79a",
+      "hash": "c3eb35a77455",
       "queries": [
         "auth.me",
-        "merchants.getCurrent"
+        "merchants.workspaceIdentity"
       ],
       "mutations": [],
       "imperativeReads": [],
@@ -4987,7 +4987,7 @@
           "enabled": null
         },
         {
-          "query": "merchants.getCurrent",
+          "query": "merchants.workspaceIdentity",
           "binding": "merchant",
           "line": 6,
           "errorSignal": true,
@@ -5268,10 +5268,10 @@
     },
     {
       "file": "client/src/pages/merchant/ByaanIntegration.tsx",
-      "hash": "800de92d1fa0",
+      "hash": "d5a8027ee250",
       "queries": [
         "auth.me",
-        "merchants.getCurrent"
+        "merchants.workspaceIdentity"
       ],
       "mutations": [],
       "imperativeReads": [],
@@ -5289,7 +5289,7 @@
           "enabled": null
         },
         {
-          "query": "merchants.getCurrent",
+          "query": "merchants.workspaceIdentity",
           "binding": "merchant",
           "line": 14,
           "errorSignal": true,
@@ -5409,10 +5409,10 @@
     },
     {
       "file": "client/src/pages/ByaanDashboard.tsx",
-      "hash": "88cd4c6e9ea9",
+      "hash": "8f83c4fd489c",
       "queries": [
         "auth.me",
-        "merchants.getCurrent"
+        "merchants.workspaceIdentity"
       ],
       "mutations": [],
       "imperativeReads": [],
@@ -5430,7 +5430,7 @@
           "enabled": null
         },
         {
-          "query": "merchants.getCurrent",
+          "query": "merchants.workspaceIdentity",
           "binding": "merchant",
           "line": 14,
           "errorSignal": true,
@@ -5655,10 +5655,10 @@
     },
     {
       "file": "client/src/components/merchant/ZidWorkspacePage.tsx",
-      "hash": "1fd9aebec339",
+      "hash": "f760996f5dfa",
       "queries": [
         "auth.me",
-        "merchants.getCurrent"
+        "merchants.workspaceIdentity"
       ],
       "mutations": [],
       "imperativeReads": [],
@@ -5676,7 +5676,7 @@
           "enabled": null
         },
         {
-          "query": "merchants.getCurrent",
+          "query": "merchants.workspaceIdentity",
           "binding": "merchant",
           "line": 6,
           "errorSignal": true,
@@ -6003,10 +6003,10 @@
     },
     {
       "file": "client/src/pages/ZidCallback.tsx",
-      "hash": "63909406d98e",
+      "hash": "ea2125bfe41d",
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "zid.workspace"
       ],
       "mutations": [
@@ -6041,7 +6041,7 @@
           "enabled": null
         },
         {
-          "query": "merchants.getCurrent",
+          "query": "merchants.workspaceIdentity",
           "binding": "merchant",
           "line": 16,
           "errorSignal": true,
@@ -6110,10 +6110,10 @@
     },
     {
       "file": "client/src/components/merchant/WooWorkspacePage.tsx",
-      "hash": "19604815fb02",
+      "hash": "4fb0de460055",
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "woocommerce.getAccess"
       ],
       "mutations": [],
@@ -6132,7 +6132,7 @@
           "enabled": null
         },
         {
-          "query": "merchants.getCurrent",
+          "query": "merchants.workspaceIdentity",
           "binding": "merchant",
           "line": 10,
           "errorSignal": true,
@@ -6751,10 +6751,10 @@
     },
     {
       "file": "client/src/pages/merchant/CalendlyIntegration.tsx",
-      "hash": "6fdeda5dde53",
+      "hash": "d24dcda539be",
       "queries": [
         "auth.me",
-        "merchants.getCurrent"
+        "merchants.workspaceIdentity"
       ],
       "mutations": [],
       "imperativeReads": [],
@@ -6772,7 +6772,7 @@
           "enabled": null
         },
         {
-          "query": "merchants.getCurrent",
+          "query": "merchants.workspaceIdentity",
           "binding": "merchant",
           "line": 6,
           "errorSignal": true,
@@ -7081,10 +7081,10 @@
     },
     {
       "file": "client/src/pages/DiscountCodes.tsx",
-      "hash": "854cdd9c0442",
+      "hash": "828bc347b80d",
       "queries": [
         "auth.me",
-        "merchants.getCurrent"
+        "merchants.workspaceIdentity"
       ],
       "mutations": [],
       "imperativeReads": [],
@@ -7102,7 +7102,7 @@
           "enabled": null
         },
         {
-          "query": "merchants.getCurrent",
+          "query": "merchants.workspaceIdentity",
           "binding": "merchant",
           "line": 6,
           "errorSignal": true,
@@ -7285,10 +7285,10 @@
     },
     {
       "file": "client/src/pages/merchant/Referrals.tsx",
-      "hash": "e9f7b0932c2e",
+      "hash": "6e35081875c3",
       "queries": [
         "auth.me",
-        "merchants.getCurrent"
+        "merchants.workspaceIdentity"
       ],
       "mutations": [],
       "imperativeReads": [],
@@ -7306,7 +7306,7 @@
           "enabled": null
         },
         {
-          "query": "merchants.getCurrent",
+          "query": "merchants.workspaceIdentity",
           "binding": "merchant",
           "line": 6,
           "errorSignal": true,
@@ -7459,10 +7459,10 @@
     },
     {
       "file": "client/src/pages/merchant/AbandonedCartsPage.tsx",
-      "hash": "14b63405246a",
+      "hash": "8f44cc2e6860",
       "queries": [
         "auth.me",
-        "merchants.getCurrent"
+        "merchants.workspaceIdentity"
       ],
       "mutations": [],
       "imperativeReads": [],
@@ -7480,7 +7480,7 @@
           "enabled": null
         },
         {
-          "query": "merchants.getCurrent",
+          "query": "merchants.workspaceIdentity",
           "binding": "merchant",
           "line": 6,
           "errorSignal": true,
@@ -7754,10 +7754,10 @@
     },
     {
       "file": "client/src/pages/merchant/OccasionCampaignsPage.tsx",
-      "hash": "d517313b3b3b",
+      "hash": "49fc9901adfa",
       "queries": [
         "auth.me",
-        "merchants.getCurrent"
+        "merchants.workspaceIdentity"
       ],
       "mutations": [],
       "imperativeReads": [],
@@ -7775,7 +7775,7 @@
           "enabled": null
         },
         {
-          "query": "merchants.getCurrent",
+          "query": "merchants.workspaceIdentity",
           "binding": "merchant",
           "line": 6,
           "errorSignal": true,
@@ -8014,10 +8014,10 @@
     },
     {
       "file": "client/src/pages/merchant/Promotions.tsx",
-      "hash": "65abc3f3003d",
+      "hash": "1985579bd12e",
       "queries": [
         "auth.me",
-        "merchants.getCurrent"
+        "merchants.workspaceIdentity"
       ],
       "mutations": [],
       "imperativeReads": [],
@@ -8035,7 +8035,7 @@
           "enabled": null
         },
         {
-          "query": "merchants.getCurrent",
+          "query": "merchants.workspaceIdentity",
           "binding": "merchant",
           "line": 6,
           "errorSignal": true,
@@ -13604,10 +13604,10 @@
     },
     {
       "file": "client/src/pages/merchant/MediaLibrary.tsx",
-      "hash": "f1983f10b940",
+      "hash": "090af629c653",
       "queries": [
         "auth.me",
-        "merchants.getCurrent"
+        "merchants.workspaceIdentity"
       ],
       "mutations": [],
       "imperativeReads": [],
@@ -13625,7 +13625,7 @@
           "enabled": null
         },
         {
-          "query": "merchants.getCurrent",
+          "query": "merchants.workspaceIdentity",
           "binding": "merchant",
           "line": 6,
           "errorSignal": true,
@@ -13771,10 +13771,10 @@
     },
     {
       "file": "client/src/pages/merchant/ScheduledMessages.tsx",
-      "hash": "b341e48f23e1",
+      "hash": "35b4e1150c8a",
       "queries": [
         "auth.me",
-        "merchants.getCurrent"
+        "merchants.workspaceIdentity"
       ],
       "mutations": [],
       "imperativeReads": [],
@@ -13792,7 +13792,7 @@
           "enabled": null
         },
         {
-          "query": "merchants.getCurrent",
+          "query": "merchants.workspaceIdentity",
           "binding": "merchant",
           "line": 6,
           "errorSignal": true,
@@ -14645,10 +14645,10 @@
     },
     {
       "file": "client/src/components/merchant/ReviewPage.tsx",
-      "hash": "d7a181348a84",
+      "hash": "c1b1e71f673a",
       "queries": [
         "auth.me",
-        "merchants.getCurrent"
+        "merchants.workspaceIdentity"
       ],
       "mutations": [],
       "imperativeReads": [],
@@ -14666,7 +14666,7 @@
           "enabled": null
         },
         {
-          "query": "merchants.getCurrent",
+          "query": "merchants.workspaceIdentity",
           "binding": "merchant",
           "line": 7,
           "errorSignal": true,
@@ -14830,10 +14830,10 @@
     },
     {
       "file": "client/src/pages/merchant/OrderNotificationsSettings.tsx",
-      "hash": "721e00718aae",
+      "hash": "857b2cfc5265",
       "queries": [
         "auth.me",
-        "merchants.getCurrent"
+        "merchants.workspaceIdentity"
       ],
       "mutations": [],
       "imperativeReads": [],
@@ -14851,7 +14851,7 @@
           "enabled": null
         },
         {
-          "query": "merchants.getCurrent",
+          "query": "merchants.workspaceIdentity",
           "binding": "merchant",
           "line": 6,
           "errorSignal": true,
@@ -15383,10 +15383,10 @@
     },
     {
       "file": "client/src/pages/CalendarSettings.tsx",
-      "hash": "373335bbcaf3",
+      "hash": "11494175ecf6",
       "queries": [
         "auth.me",
-        "merchants.getCurrent"
+        "merchants.workspaceIdentity"
       ],
       "mutations": [],
       "imperativeReads": [],
@@ -15404,7 +15404,7 @@
           "enabled": null
         },
         {
-          "query": "merchants.getCurrent",
+          "query": "merchants.workspaceIdentity",
           "binding": "merchant",
           "line": 14,
           "errorSignal": true,
@@ -15492,10 +15492,10 @@
     },
     {
       "file": "client/src/pages/CalendarPage.tsx",
-      "hash": "bea55347e2f1",
+      "hash": "025d786d6f2f",
       "queries": [
         "auth.me",
-        "merchants.getCurrent"
+        "merchants.workspaceIdentity"
       ],
       "mutations": [],
       "imperativeReads": [],
@@ -15513,7 +15513,7 @@
           "enabled": null
         },
         {
-          "query": "merchants.getCurrent",
+          "query": "merchants.workspaceIdentity",
           "binding": "merchant",
           "line": 14,
           "errorSignal": true,
@@ -15930,10 +15930,10 @@
     },
     {
       "file": "client/src/pages/StaffManagement.tsx",
-      "hash": "b9bded84ebe5",
+      "hash": "02e3729291bd",
       "queries": [
         "auth.me",
-        "merchants.getCurrent"
+        "merchants.workspaceIdentity"
       ],
       "mutations": [],
       "imperativeReads": [],
@@ -15951,7 +15951,7 @@
           "enabled": null
         },
         {
-          "query": "merchants.getCurrent",
+          "query": "merchants.workspaceIdentity",
           "binding": "merchant",
           "line": 6,
           "errorSignal": true,
@@ -16214,10 +16214,10 @@
     },
     {
       "file": "client/src/pages/merchant/ServicesManagement.tsx",
-      "hash": "559b03975ad5",
+      "hash": "f5de535ff3b1",
       "queries": [
         "auth.me",
-        "merchants.getCurrent"
+        "merchants.workspaceIdentity"
       ],
       "mutations": [],
       "imperativeReads": [],
@@ -16235,7 +16235,7 @@
           "enabled": null
         },
         {
-          "query": "merchants.getCurrent",
+          "query": "merchants.workspaceIdentity",
           "binding": "merchant",
           "line": 6,
           "errorSignal": true,
@@ -16347,10 +16347,10 @@
     },
     {
       "file": "client/src/pages/merchant/ServiceForm.tsx",
-      "hash": "322949cd924d",
+      "hash": "c6338c14f9ae",
       "queries": [
         "auth.me",
-        "merchants.getCurrent"
+        "merchants.workspaceIdentity"
       ],
       "mutations": [],
       "imperativeReads": [],
@@ -16368,7 +16368,7 @@
           "enabled": null
         },
         {
-          "query": "merchants.getCurrent",
+          "query": "merchants.workspaceIdentity",
           "binding": "merchant",
           "line": 8,
           "errorSignal": true,
@@ -16501,10 +16501,10 @@
     },
     {
       "file": "client/src/pages/ServiceDetails.tsx",
-      "hash": "22348c403bf8",
+      "hash": "35265cf25793",
       "queries": [
         "auth.me",
-        "merchants.getCurrent"
+        "merchants.workspaceIdentity"
       ],
       "mutations": [],
       "imperativeReads": [],
@@ -16522,7 +16522,7 @@
           "enabled": null
         },
         {
-          "query": "merchants.getCurrent",
+          "query": "merchants.workspaceIdentity",
           "binding": "merchant",
           "line": 8,
           "errorSignal": true,
@@ -16651,10 +16651,10 @@
     },
     {
       "file": "client/src/pages/BookingsManagement.tsx",
-      "hash": "46abcf4e0cf3",
+      "hash": "47aec98b8660",
       "queries": [
         "auth.me",
-        "merchants.getCurrent"
+        "merchants.workspaceIdentity"
       ],
       "mutations": [],
       "imperativeReads": [],
@@ -16672,7 +16672,7 @@
           "enabled": null
         },
         {
-          "query": "merchants.getCurrent",
+          "query": "merchants.workspaceIdentity",
           "binding": "merchant",
           "line": 6,
           "errorSignal": true,
@@ -17215,10 +17215,10 @@
     },
     {
       "file": "client/src/components/merchant/ServiceCollectionPage.tsx",
-      "hash": "543b8fe38de7",
+      "hash": "a03d52239359",
       "queries": [
         "auth.me",
-        "merchants.getCurrent"
+        "merchants.workspaceIdentity"
       ],
       "mutations": [],
       "imperativeReads": [],
@@ -17236,7 +17236,7 @@
           "enabled": null
         },
         {
-          "query": "merchants.getCurrent",
+          "query": "merchants.workspaceIdentity",
           "binding": "merchant",
           "line": 12,
           "errorSignal": true,
@@ -18490,10 +18490,10 @@
     },
     {
       "file": "client/src/pages/PlatformIntegrations.tsx",
-      "hash": "677bbd5e1da5",
+      "hash": "519c260d6e13",
       "queries": [
         "auth.me",
-        "merchants.getCurrent"
+        "merchants.workspaceIdentity"
       ],
       "mutations": [],
       "imperativeReads": [],
@@ -18511,7 +18511,7 @@
           "enabled": null
         },
         {
-          "query": "merchants.getCurrent",
+          "query": "merchants.workspaceIdentity",
           "binding": "merchant",
           "line": 14,
           "errorSignal": true,
@@ -18603,10 +18603,10 @@
     },
     {
       "file": "client/src/components/merchant/CalendarConnectionCard.tsx",
-      "hash": "bb676cc155e6",
+      "hash": "d2809e2f89a8",
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "calendar.settings"
       ],
       "mutations": [],
@@ -18615,7 +18615,7 @@
       "sections": [
         {
           "label": "",
-          "line": 55,
+          "line": 56,
           "tag": "h3"
         }
       ],
@@ -18631,7 +18631,7 @@
           "enabled": null
         },
         {
-          "query": "merchants.getCurrent",
+          "query": "merchants.workspaceIdentity",
           "binding": "merchant",
           "line": 17,
           "errorSignal": true,
@@ -18644,7 +18644,7 @@
           "line": 21,
           "errorSignal": true,
           "loadingSignal": true,
-          "enabled": "!!user.data?.id &&"
+          "enabled": "!!user.data?.id &&\r"
         }
       ],
       "conditions": [],
@@ -22457,7 +22457,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "salla.workspace",
         "salla.listEffects",
         "salla.listEffectReviews",
@@ -22519,7 +22519,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "integrations.byaanConnectionWorkspace"
       ],
       "mutations": [
@@ -22583,7 +22583,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "byaan.dataWorkspace",
         "byaan.dashboardOverview",
         "byaan.resyncAttempt",
@@ -22669,7 +22669,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "zid.workspace",
         "zid.latestSyncRequest",
         "zid.syncRequest",
@@ -22758,7 +22758,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "zid.workspace",
         "zid.latestSyncRequest",
         "zid.syncRequest",
@@ -22816,7 +22816,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "zid.workspace"
       ],
       "mutations": [
@@ -22896,7 +22896,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "zid.workspace",
         "zid.latestSyncRequest",
         "zid.syncRequest",
@@ -22985,7 +22985,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "zid.workspace",
         "zid.latestSyncRequest",
         "zid.syncRequest",
@@ -23116,7 +23116,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "woocommerce.getAccess",
         "woocommerce.getBlockingOperation",
         "woocommerce.getOperation",
@@ -23253,7 +23253,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "woocommerce.getAccess",
         "woocommerce.getBlockingOperation",
         "woocommerce.getOperation",
@@ -23390,7 +23390,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "woocommerce.getAccess",
         "woocommerce.getBlockingOperation",
         "woocommerce.getOperation",
@@ -23527,7 +23527,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "woocommerce.getAccess",
         "woocommerce.getBlockingOperation",
         "woocommerce.getOperation",
@@ -23626,7 +23626,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "calendly.getBlockingOperation",
         "calendly.getOperation",
         "calendly.getWorkspace",
@@ -23714,7 +23714,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "discounts.workspace"
       ],
       "mutations": [
@@ -23765,7 +23765,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "referrals.workspace"
       ],
       "mutations": [
@@ -23837,7 +23837,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "abandonedCarts.workspace",
         "abandonedCarts.reminderHistory",
         "abandonedCarts.reminderReceipt",
@@ -23894,7 +23894,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "occasionCampaigns.workspace",
         "occasionCampaigns.reviewAction"
       ],
@@ -23982,7 +23982,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "promotions.workspace",
         "promotions.actionReceipt",
         "promotions.targetNames",
@@ -25927,7 +25927,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "media.workspace",
         "media.requestReceipt"
       ],
@@ -26003,7 +26003,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "scheduledMessages.workspace",
         "scheduledMessages.actionReceipt",
         "scheduledMessages.history"
@@ -26396,7 +26396,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "reviews.workspace",
         "bookingReviews.workspace",
         "reviews.detail",
@@ -26464,7 +26464,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "reviews.workspace",
         "bookingReviews.workspace",
         "reviews.detail",
@@ -26537,7 +26537,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "orderNotifications.workspace",
         "orderNotifications.detail"
       ],
@@ -26820,7 +26820,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "calendar.settings"
       ],
       "mutations": [
@@ -26917,7 +26917,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "calendar.workspace",
         "calendar.details",
         "calendar.getSyncReview",
@@ -26993,7 +26993,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "staff.list"
       ],
       "mutations": [
@@ -27080,7 +27080,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "services.catalogWorkspace"
       ],
       "mutations": [
@@ -27131,7 +27131,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "services.catalogEditor",
         "services.catalogChoices"
       ],
@@ -27182,7 +27182,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "services.catalogEditor",
         "services.catalogChoices"
       ],
@@ -27219,7 +27219,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "services.detailsWorkspace"
       ],
       "mutations": [],
@@ -27336,7 +27336,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "bookings.workspace",
         "bookings.details",
         "bookings.getCalendarReview",
@@ -27435,7 +27435,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "services.catalogWorkspace",
         "services.catalogEditor",
         "services.catalogChoices"
@@ -27524,7 +27524,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "services.catalogWorkspace",
         "services.catalogEditor",
         "services.catalogChoices"
@@ -28070,13 +28070,13 @@
         "157724b03941",
         "98d4af0057c4",
         "91a213b8b479",
-        "cd13479e62ad",
-        "ce9fd2db7255",
-        "7f2f5df92f27"
+        "fc05476ff1e3",
+        "d86b483c380e",
+        "e96d434b4f5c"
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "integrations.workspace",
         "sheets.getStatus",
         "calendar.settings"
@@ -85613,9 +85613,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "cd13479e62ad",
+      "id": "fc05476ff1e3",
       "file": "client/src/components/merchant/CalendarConnectionCard.tsx",
-      "line": 70,
+      "line": 71,
       "tag": "Button",
       "role": "",
       "kind": "action",
@@ -85636,9 +85636,9 @@
       "review": "source-inventoried"
     },
     {
-      "id": "ce9fd2db7255",
+      "id": "d86b483c380e",
       "file": "client/src/components/merchant/CalendarConnectionCard.tsx",
-      "line": 71,
+      "line": 72,
       "tag": "Link",
       "role": "",
       "kind": "action",
@@ -85659,15 +85659,15 @@
       "review": "source-inventoried"
     },
     {
-      "id": "7f2f5df92f27",
+      "id": "e96d434b4f5c",
       "file": "client/src/components/merchant/CalendarConnectionCard.tsx",
-      "line": 77,
+      "line": 78,
       "tag": "Button",
       "role": "",
       "kind": "action",
       "label": "",
       "section": "CalendarConnectionCard",
-      "binding": "() => {\n              void user.refetch();\n              void merchant.refetch();\n              void query.refetch();\n            }",
+      "binding": "() => {\r\n              void user.refetch();\r\n              void merchant.refetch();\r\n              void query.refetch();\r\n            }",
       "type": "text",
       "options": [],
       "min": "",

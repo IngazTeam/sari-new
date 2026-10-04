@@ -8,7 +8,7 @@ import en from '../client/src/locales/merchant-ux.en';
 import ar from '../client/src/locales/merchant-ux.ar';
 import {platformIds} from '../shared/platform-workspace';
 const m=vi.hoisted(()=>({actor:7,merchant:20,language:'en',query:{} as any,sheets:{} as any,calendar:{} as any,health:vi.fn(),refresh:vi.fn()}));
-vi.mock('@/lib/trpc',()=>({trpc:{auth:{me:{useQuery:()=>({data:{id:m.actor}})}},merchants:{getCurrent:{useQuery:()=>({data:{id:m.merchant}})}},integrations:{workspace:{useQuery:()=>m.query},testByaanConnection:{useMutation:()=>({mutateAsync:m.health})}},sheets:{getStatus:{useQuery:()=>m.sheets}},calendar:{settings:{useQuery:()=>m.calendar}}}}));
+vi.mock('@/lib/trpc',()=>({trpc:{auth:{me:{useQuery:()=>({data:{id:m.actor}})}},merchants:{workspaceIdentity:{useQuery:()=>({data:{id:m.merchant, actorId:m.actor}})}},integrations:{workspace:{useQuery:()=>m.query},testByaanConnection:{useMutation:()=>({mutateAsync:m.health})}},sheets:{getStatus:{useQuery:()=>m.sheets}},calendar:{settings:{useQuery:()=>m.calendar}}}}));
 vi.mock('react-i18next',()=>({useTranslation:()=>({i18n:{language:m.language},t:(key:string)=>{let value:any=m.language==='ar'?ar:en;for(const k of key.split('.').slice(1))value=value?.[k];return typeof value==='string'?value:key;}})}));
 import PlatformIntegrations from '../client/src/pages/PlatformIntegrations';
 let root:Root,container:HTMLDivElement;

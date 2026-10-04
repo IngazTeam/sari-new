@@ -14,7 +14,7 @@ export function CalendarConnectionCard() {
     refetchOnWindowFocus: false,
   };
   const user = trpc.auth.me.useQuery(undefined, fresh);
-  const merchant = trpc.merchants.getCurrent.useQuery(undefined, {
+  const merchant = trpc.merchants.workspaceIdentity.useQuery(undefined, {
     ...fresh,
     enabled: !!user.data?.id && !user.error && !user.isFetching,
   });
@@ -23,6 +23,7 @@ export function CalendarConnectionCard() {
     enabled:
       !!user.data?.id &&
       !!merchant.data?.id &&
+      merchant.data.actorId === user.data?.id &&
       !user.error &&
       !merchant.error &&
       !user.isFetching &&
@@ -30,7 +31,7 @@ export function CalendarConnectionCard() {
   });
   const error = user.error || merchant.error || query.error;
   const data =
-    !error && user.data?.id && merchant.data?.id
+    !error && user.data?.id && merchant.data?.id && merchant.data.actorId === user.data.id
       ? scopedCalendarSettings(query.data, user.data.id, merchant.data.id)
       : null;
   const loading =

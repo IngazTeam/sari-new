@@ -7,7 +7,7 @@ import {beforeEach,afterEach,it,expect,vi} from 'vitest';
 import en from '../client/src/locales/merchant-ux.en';
 import ar from '../client/src/locales/merchant-ux.ar';
 const m=vi.hoisted(()=>({actor:7,merchant:20,language:'en',query:{} as any,refresh:vi.fn(),register:vi.fn(),remove:vi.fn(),health:vi.fn()}));
-vi.mock('@/lib/trpc',()=>({trpc:{auth:{me:{useQuery:()=>({data:{id:m.actor}})}},merchants:{getCurrent:{useQuery:()=>({data:{id:m.merchant}})}},integrations:{byaanConnectionWorkspace:{useQuery:()=>m.query},connectByaan:{useMutation:()=>({mutateAsync:m.register})},disconnectByaan:{useMutation:()=>({mutateAsync:m.remove})},testByaanConnection:{useMutation:()=>({mutateAsync:m.health})}}}}));
+vi.mock('@/lib/trpc',()=>({trpc:{auth:{me:{useQuery:()=>({data:{id:m.actor}})}},merchants:{workspaceIdentity:{useQuery:()=>({data:{id:m.merchant, actorId:m.actor}})}},integrations:{byaanConnectionWorkspace:{useQuery:()=>m.query},connectByaan:{useMutation:()=>({mutateAsync:m.register})},disconnectByaan:{useMutation:()=>({mutateAsync:m.remove})},testByaanConnection:{useMutation:()=>({mutateAsync:m.health})}}}}));
 vi.mock('react-i18next',()=>({useTranslation:()=>({i18n:{language:m.language},t:(key:string)=>{let value:any=m.language==='ar'?ar:en;for(const k of key.split('.').slice(1))value=value?.[k];return typeof value==='string'?value:key;}})}));
 import ByaanIntegration from '../client/src/pages/merchant/ByaanIntegration';
 let root:Root,container:HTMLDivElement;

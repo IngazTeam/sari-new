@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-04T00:44:25.576Z",
+  "generatedAt": "2026-10-04T00:53:17.869Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -757,7 +757,7 @@
       ],
       "addedQueries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "salla.workspace",
         "salla.latestSyncRequest",
         "salla.syncRequest",
@@ -781,7 +781,7 @@
       ],
       "addedQueries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "integrations.byaanConnectionWorkspace"
       ],
       "removedMutations": [],
@@ -800,7 +800,7 @@
       ],
       "addedQueries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "byaan.dataWorkspace",
         "byaan.dashboardOverview",
         "byaan.resyncAttempt",
@@ -829,7 +829,7 @@
       ],
       "addedQueries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "zid.workspace",
         "zid.latestSyncRequest",
         "zid.syncRequest",
@@ -863,7 +863,7 @@
       ],
       "addedQueries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "zid.workspace",
         "zid.latestSyncRequest",
         "zid.syncRequest",
@@ -892,7 +892,7 @@
       "removedQueries": [],
       "addedQueries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "zid.workspace"
       ],
       "removedMutations": [],
@@ -907,7 +907,7 @@
       ],
       "addedQueries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "zid.workspace",
         "zid.latestSyncRequest",
         "zid.syncRequest",
@@ -936,7 +936,7 @@
       ],
       "addedQueries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "zid.workspace",
         "zid.latestSyncRequest",
         "zid.syncRequest",
@@ -962,7 +962,7 @@
       ],
       "addedQueries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "woocommerce.getAccess",
         "woocommerce.getBlockingOperation",
         "woocommerce.getOperation",
@@ -1002,7 +1002,7 @@
       ],
       "addedQueries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "woocommerce.getAccess",
         "woocommerce.getBlockingOperation",
         "woocommerce.getOperation",
@@ -1036,7 +1036,7 @@
       ],
       "addedQueries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "woocommerce.getAccess",
         "woocommerce.getBlockingOperation",
         "woocommerce.getOperation",
@@ -1075,7 +1075,7 @@
       ],
       "addedQueries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "woocommerce.getAccess",
         "woocommerce.getBlockingOperation",
         "woocommerce.getOperation",
@@ -1110,7 +1110,7 @@
       ],
       "addedQueries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "calendly.getBlockingOperation",
         "calendly.getOperation",
         "calendly.getWorkspace",
@@ -1151,7 +1151,7 @@
       ],
       "addedQueries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "discounts.workspace"
       ],
       "removedMutations": [],
@@ -1169,7 +1169,7 @@
       ],
       "addedQueries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "referrals.workspace"
       ],
       "removedMutations": [],
@@ -1184,11 +1184,13 @@
       "controlsBefore": 2,
       "controlsNow": 39,
       "removedQueries": [
+        "merchants.getCurrent",
         "abandonedCarts.list",
         "abandonedCarts.getStats"
       ],
       "addedQueries": [
         "auth.me",
+        "merchants.workspaceIdentity",
         "abandonedCarts.workspace",
         "abandonedCarts.reminderHistory",
         "abandonedCarts.reminderReceipt",
@@ -1216,7 +1218,7 @@
       ],
       "addedQueries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "occasionCampaigns.workspace",
         "occasionCampaigns.reviewAction"
       ],
@@ -1238,7 +1240,7 @@
       ],
       "addedQueries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "promotions.workspace",
         "promotions.actionReceipt",
         "promotions.targetNames",
@@ -1658,7 +1660,7 @@
       ],
       "addedQueries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "media.workspace",
         "media.requestReceipt"
       ],
@@ -1681,7 +1683,7 @@
       ],
       "addedQueries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "scheduledMessages.workspace",
         "scheduledMessages.actionReceipt",
         "scheduledMessages.history"
@@ -1827,11 +1829,13 @@
       "controlsBefore": 7,
       "controlsNow": 19,
       "removedQueries": [
+        "merchants.getCurrent",
         "reviews.list",
         "reviews.getStats"
       ],
       "addedQueries": [
         "auth.me",
+        "merchants.workspaceIdentity",
         "reviews.workspace",
         "bookingReviews.workspace",
         "reviews.detail",
@@ -1854,7 +1858,7 @@
       ],
       "addedQueries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "reviews.workspace",
         "bookingReviews.workspace",
         "reviews.detail",
@@ -1878,7 +1882,7 @@
       ],
       "addedQueries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "orderNotifications.workspace",
         "orderNotifications.detail"
       ],
@@ -1955,7 +1959,7 @@
       ],
       "addedQueries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "calendar.settings"
       ],
       "removedMutations": [],
@@ -1973,7 +1977,7 @@
       ],
       "addedQueries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "calendar.workspace",
         "calendar.details",
         "calendar.getBookingRequest",
@@ -1993,7 +1997,7 @@
       "removedQueries": [],
       "addedQueries": [
         "auth.me",
-        "merchants.getCurrent"
+        "merchants.workspaceIdentity"
       ],
       "removedMutations": [],
       "addedMutations": []
@@ -2017,7 +2021,7 @@
       ],
       "addedQueries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "services.catalogWorkspace"
       ],
       "removedMutations": [],
@@ -2036,7 +2040,7 @@
       ],
       "addedQueries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "services.catalogEditor",
         "services.catalogChoices"
       ],
@@ -2053,7 +2057,7 @@
       ],
       "addedQueries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "services.catalogEditor",
         "services.catalogChoices"
       ],
@@ -2069,7 +2073,7 @@
       ],
       "addedQueries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "services.detailsWorkspace"
       ],
       "removedMutations": [],
@@ -2086,7 +2090,7 @@
       ],
       "addedQueries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "bookings.workspace",
         "bookings.details",
         "services.catalogEditor",
@@ -2104,7 +2108,7 @@
       ],
       "addedQueries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "services.catalogWorkspace",
         "services.catalogEditor",
         "services.catalogChoices"
@@ -2127,7 +2131,7 @@
       ],
       "addedQueries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "services.catalogWorkspace",
         "services.catalogEditor",
         "services.catalogChoices"
@@ -2303,7 +2307,7 @@
       ],
       "addedQueries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "integrations.workspace",
         "calendar.settings"
       ],

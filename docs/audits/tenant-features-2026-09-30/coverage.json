@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-04T00:44:25.576Z",
+  "generatedAt": "2026-10-04T00:53:17.869Z",
   "definition": "Every registered route is accounted for; source inventory and design completion are different statuses.",
   "routes": [
     {
@@ -18069,7 +18069,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "salla.workspace",
         "salla.listEffects",
         "salla.listEffectReviews",
@@ -19158,7 +19158,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "integrations.byaanConnectionWorkspace"
       ],
       "mutations": [
@@ -19631,7 +19631,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "byaan.dataWorkspace",
         "byaan.dashboardOverview",
         "byaan.resyncAttempt",
@@ -20486,7 +20486,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "zid.workspace",
         "zid.latestSyncRequest",
         "zid.syncRequest",
@@ -21511,7 +21511,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "zid.workspace",
         "zid.latestSyncRequest",
         "zid.syncRequest",
@@ -22505,7 +22505,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "zid.workspace"
       ],
       "mutations": [
@@ -22856,7 +22856,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "zid.workspace",
         "zid.latestSyncRequest",
         "zid.syncRequest",
@@ -23881,7 +23881,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "zid.workspace",
         "zid.latestSyncRequest",
         "zid.syncRequest",
@@ -24948,7 +24948,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "woocommerce.getAccess",
         "woocommerce.getBlockingOperation",
         "woocommerce.getOperation",
@@ -26904,7 +26904,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "woocommerce.getAccess",
         "woocommerce.getBlockingOperation",
         "woocommerce.getOperation",
@@ -28860,7 +28860,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "woocommerce.getAccess",
         "woocommerce.getBlockingOperation",
         "woocommerce.getOperation",
@@ -30816,7 +30816,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "woocommerce.getAccess",
         "woocommerce.getBlockingOperation",
         "woocommerce.getOperation",
@@ -32734,7 +32734,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "calendly.getBlockingOperation",
         "calendly.getOperation",
         "calendly.getWorkspace",
@@ -33901,7 +33901,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "discounts.workspace"
       ],
       "mutations": [
@@ -34623,7 +34623,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "referrals.workspace"
       ],
       "mutations": [
@@ -35188,7 +35188,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "abandonedCarts.workspace",
         "abandonedCarts.reminderHistory",
         "abandonedCarts.reminderReceipt",
@@ -36216,7 +36216,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "occasionCampaigns.workspace",
         "occasionCampaigns.reviewAction"
       ],
@@ -36881,7 +36881,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "promotions.workspace",
         "promotions.actionReceipt",
         "promotions.targetNames",
@@ -60244,7 +60244,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "media.workspace",
         "media.requestReceipt"
       ],
@@ -61230,7 +61230,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "scheduledMessages.workspace",
         "scheduledMessages.actionReceipt",
         "scheduledMessages.history"
@@ -65145,7 +65145,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "reviews.workspace",
         "bookingReviews.workspace",
         "reviews.detail",
@@ -65745,7 +65745,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "reviews.workspace",
         "bookingReviews.workspace",
         "reviews.detail",
@@ -66350,7 +66350,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "orderNotifications.workspace",
         "orderNotifications.detail"
       ],
@@ -69095,7 +69095,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "calendar.settings"
       ],
       "mutations": [
@@ -69481,7 +69481,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "calendar.workspace",
         "calendar.details",
         "calendar.getSyncReview",
@@ -70979,7 +70979,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "staff.list"
       ],
       "mutations": [
@@ -71989,7 +71989,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "services.catalogWorkspace"
       ],
       "mutations": [
@@ -72671,7 +72671,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "services.catalogEditor",
         "services.catalogChoices"
       ],
@@ -73249,7 +73249,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "services.catalogEditor",
         "services.catalogChoices"
       ],
@@ -73813,7 +73813,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "services.detailsWorkspace"
       ],
       "mutations": [],
@@ -74116,7 +74116,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "bookings.workspace",
         "bookings.details",
         "bookings.getCalendarReview",
@@ -76074,7 +76074,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "services.catalogWorkspace",
         "services.catalogEditor",
         "services.catalogChoices"
@@ -77279,7 +77279,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "services.catalogWorkspace",
         "services.catalogEditor",
         "services.catalogChoices"
@@ -82830,13 +82830,13 @@
         "157724b03941",
         "98d4af0057c4",
         "91a213b8b479",
-        "cd13479e62ad",
-        "ce9fd2db7255",
-        "7f2f5df92f27"
+        "fc05476ff1e3",
+        "d86b483c380e",
+        "e96d434b4f5c"
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "integrations.workspace",
         "sheets.getStatus",
         "calendar.settings"
@@ -83125,9 +83125,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "cd13479e62ad",
+          "id": "fc05476ff1e3",
           "file": "client/src/components/merchant/CalendarConnectionCard.tsx",
-          "line": 70,
+          "line": 71,
           "tag": "Button",
           "role": "",
           "kind": "action",
@@ -83148,9 +83148,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "ce9fd2db7255",
+          "id": "d86b483c380e",
           "file": "client/src/components/merchant/CalendarConnectionCard.tsx",
-          "line": 71,
+          "line": 72,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -83171,15 +83171,15 @@
           "review": "source-inventoried"
         },
         {
-          "id": "7f2f5df92f27",
+          "id": "e96d434b4f5c",
           "file": "client/src/components/merchant/CalendarConnectionCard.tsx",
-          "line": 77,
+          "line": 78,
           "tag": "Button",
           "role": "",
           "kind": "action",
           "label": "",
           "section": "CalendarConnectionCard",
-          "binding": "() => {\n              void user.refetch();\n              void merchant.refetch();\n              void query.refetch();\n            }",
+          "binding": "() => {\r\n              void user.refetch();\r\n              void merchant.refetch();\r\n              void query.refetch();\r\n            }",
           "type": "text",
           "options": [],
           "min": "",

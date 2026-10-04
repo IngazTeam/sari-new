@@ -22,7 +22,7 @@ vi.mock("@/lib/trpc", () => ({
   trpc: {
     auth: { me: { useQuery: () => ({ data: { id: m.actor } }) } },
     merchants: {
-      getCurrent: { useQuery: () => ({ data: { id: m.merchant } }) },
+      workspaceIdentity: { useQuery: () => ({ data: { id: m.merchant, actorId:m.actor } }) },
     },
     calendar: {
       settings: { useQuery: () => m.query },

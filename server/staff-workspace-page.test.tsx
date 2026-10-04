@@ -6,7 +6,7 @@ import {memoryLocation} from 'wouter/memory-location';
 import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
 import {staffWorkspaceAr as ar,staffWorkspaceEn as en} from '../client/src/locales/staff-workspace';
 const m=vi.hoisted(()=>({language:'en',actor:7,merchant:20,query:{} as any,create:vi.fn(),update:vi.fn(),archive:vi.fn(),refresh:vi.fn()}));
-vi.mock('@/lib/trpc',()=>({trpc:{auth:{me:{useQuery:()=>({data:{id:m.actor},isFetching:false})}},merchants:{getCurrent:{useQuery:()=>({data:{id:m.merchant},isFetching:false})}},staff:{list:{useQuery:()=>m.query},create:{useMutation:()=>({mutateAsync:m.create})},update:{useMutation:()=>({mutateAsync:m.update})},delete:{useMutation:()=>({mutateAsync:m.archive})}}}}));
+vi.mock('@/lib/trpc',()=>({trpc:{auth:{me:{useQuery:()=>({data:{id:m.actor},isFetching:false})}},merchants:{workspaceIdentity:{useQuery:()=>({data:{id:m.merchant, actorId:m.actor},isFetching:false})}},staff:{list:{useQuery:()=>m.query},create:{useMutation:()=>({mutateAsync:m.create})},update:{useMutation:()=>({mutateAsync:m.update})},delete:{useMutation:()=>({mutateAsync:m.archive})}}}}));
 vi.mock('react-i18next',()=>({useTranslation:()=>({i18n:{language:m.language},t:(key:string,vars:any={})=>{let value=(m.language==='ar'?ar:en)[key.split('.').at(-1) as keyof typeof en]??key;for(const[k,v]of Object.entries(vars))value=value.replaceAll(`{{${k}}}`,String(v));return value;}})}));
 vi.mock('@/components/merchant/WorkspaceState',()=>({WorkspaceState:({kind,onRetry}:any)=><div data-state={kind}>{kind}<button onClick={onRetry}>retry</button></div>,workspaceFailureKind:(error:any)=>error?.data?.code==='FORBIDDEN'?'forbidden':'error'}));
 import StaffManagement from '../client/src/pages/StaffManagement';

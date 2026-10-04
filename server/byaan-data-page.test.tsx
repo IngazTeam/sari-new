@@ -7,7 +7,7 @@ import { beforeEach, afterEach, expect, it, vi } from 'vitest';
 import en from '../client/src/locales/merchant-ux.en';
 import ar from '../client/src/locales/merchant-ux.ar';
 const m = vi.hoisted(() => ({ actor: 7, merchant: 20, language: 'en', overview: {} as any, data: {} as any, input: {} as any, refresh: vi.fn(), dataRefresh: vi.fn(), change: vi.fn(), request: vi.fn(), lookup: vi.fn() }));
-vi.mock('@/lib/trpc', () => ({ trpc: { useUtils: () => ({ byaan: { resyncAttempt: { fetch: m.lookup } } }), auth: { me: { useQuery: () => ({ data: { id: m.actor } }) } }, merchants: { getCurrent: { useQuery: () => ({ data: { id: m.merchant } }) } }, byaan: {
+vi.mock('@/lib/trpc', () => ({ trpc: { useUtils: () => ({ byaan: { resyncAttempt: { fetch: m.lookup } } }), auth: { me: { useQuery: () => ({ data: { id: m.actor } }) } }, merchants: { workspaceIdentity: { useQuery: () => ({ data: { id: m.merchant, actorId:m.actor } }) } }, byaan: {
   dashboardOverview: { useQuery: () => m.overview }, dataWorkspace: { useQuery: (input: any) => { m.input = input; return m.data; } }, changeFaq: { useMutation: () => ({ mutateAsync: m.change }) }, requestResync: { useMutation: () => ({ mutateAsync: m.request }) },
 } } }));
 vi.mock('@/components/ByaanSalesReview', () => ({ ByaanSalesReview: () => <section data-sales-review>Existing sales review and recovery</section> }));

@@ -3696,9 +3696,9 @@
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 70 | Button | تسمية ديناميكية / تحتاج مراجعة | CalendarConnectionCard |
-| 71 | Link | تسمية ديناميكية / تحتاج مراجعة | CalendarConnectionCard |
-| 77 | Button | تسمية ديناميكية / تحتاج مراجعة | CalendarConnectionCard |
+| 71 | Button | تسمية ديناميكية / تحتاج مراجعة | CalendarConnectionCard |
+| 72 | Link | تسمية ديناميكية / تحتاج مراجعة | CalendarConnectionCard |
+| 78 | Button | تسمية ديناميكية / تحتاج مراجعة | CalendarConnectionCard |
 
 ## client/src/components/merchant/NotificationPreferenceWorkspace.tsx
 

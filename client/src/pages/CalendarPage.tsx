@@ -11,7 +11,7 @@ export default function CalendarPage() {
     refetchOnMount: "always",
     refetchOnWindowFocus: false,
   });
-  const merchant = trpc.merchants.getCurrent.useQuery(undefined, {
+  const merchant = trpc.merchants.workspaceIdentity.useQuery(undefined, {
     retry: false,
     staleTime: 0,
     refetchOnMount: "always",
@@ -34,7 +34,7 @@ export default function CalendarPage() {
     (merchant.isFetching && !merchant.data)
   )
     return <WorkspaceState kind="loading" />;
-  if (!user.data?.id || !merchant.data?.id)
+  if (!user.data?.id || !merchant.data?.id || merchant.data.actorId !== user.data.id)
     return (
       <WorkspaceState
         kind={!user.data?.id ? "session" : "missing"}

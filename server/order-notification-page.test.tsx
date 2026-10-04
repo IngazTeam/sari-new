@@ -8,7 +8,7 @@ import { orderNoticeWorkspaceEn as en, orderNoticeWorkspaceAr as ar } from '../c
 import { orderNoticeSelection, orderNoticeStatus, orderNoticeState, orderNoticeEvidence } from '../shared/order-notification-workspace';
 const m=vi.hoisted(()=>({actor:7,merchant:20,language:'en',templates:[] as any[],rows:[] as any[],selection:{} as any,override:{} as any,writable:true,error:null as any,fetching:false,
   refresh:vi.fn(),fetch:vi.fn(),detail:vi.fn(),save:vi.fn(),ack:vi.fn()}));
-vi.mock('@/lib/trpc',()=>({trpc:{auth:{me:{useQuery:()=>({data:{id:m.actor}})}},merchants:{getCurrent:{useQuery:()=>({data:{id:m.merchant}})}},orderNotifications:{
+vi.mock('@/lib/trpc',()=>({trpc:{auth:{me:{useQuery:()=>({data:{id:m.actor}})}},merchants:{workspaceIdentity:{useQuery:()=>({data:{id:m.merchant, actorId:m.actor}})}},orderNotifications:{
   workspace:{useQuery:(selection:any)=>{m.selection=selection;return{data:snapshot(),error:m.error,isFetching:m.fetching,refetch:m.refresh};}},
   saveTemplate:{useMutation:()=>({mutateAsync:m.save})},acknowledgeReviewed:{useMutation:()=>({mutateAsync:m.ack})}},
   useUtils:()=>({orderNotifications:{workspace:{fetch:m.fetch},detail:{fetch:m.detail}}})}}));

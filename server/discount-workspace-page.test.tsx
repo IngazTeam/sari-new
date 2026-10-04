@@ -7,7 +7,7 @@ import { beforeEach, afterEach, expect, it, vi } from 'vitest';
 import { discountWorkspaceEn as en, discountWorkspaceAr as ar } from '../client/src/locales/discount-workspace';
 import { projectDiscountWorkspace } from './discount-workspace-source';
 const m = vi.hoisted(() => ({ actor: 7, merchant: 20, language: 'en', source: [] as any[], override: {} as any, selection: {} as any, error: null as any, fetching: false, manage: true, refresh: vi.fn(), create: vi.fn(), update: vi.fn(), remove: vi.fn() }));
-vi.mock('@/lib/trpc', () => ({ trpc: { auth: { me: { useQuery: () => ({ data: { id: m.actor } }) } }, merchants: { getCurrent: { useQuery: () => ({ data: { id: m.merchant } }) } }, discounts: {
+vi.mock('@/lib/trpc', () => ({ trpc: { auth: { me: { useQuery: () => ({ data: { id: m.actor } }) } }, merchants: { workspaceIdentity: { useQuery: () => ({ data: { id: m.merchant, actorId:m.actor } }) } }, discounts: {
   workspace: { useQuery: (input: any) => { m.selection = input; return { data: snapshot(), error: m.error, isFetching: m.fetching, refetch: m.refresh }; } },
   create: { useMutation: () => ({ mutateAsync: m.create }) }, update: { useMutation: () => ({ mutateAsync: m.update }) }, delete: { useMutation: () => ({ mutateAsync: m.remove }) },
 } } }));

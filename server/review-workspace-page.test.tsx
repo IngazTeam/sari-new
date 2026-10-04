@@ -10,7 +10,7 @@ const m = vi.hoisted(() => ({ actor: 7, merchant: 20, language: 'en', kind: 'ord
   selection: {} as any, error: null as any, fetching: false, writable: true, refresh: vi.fn(), detail: vi.fn(), save: vi.fn() }));
 vi.mock('@/lib/trpc', () => {
   const api = (kind: string) => ({ workspace: { useQuery: (selection: any, options: any) => { if (options?.enabled === false) return { data: undefined, refetch: m.refresh }; m.kind = kind; m.selection = selection; return { data: snapshot(), error: m.error, isFetching: m.fetching, refetch: m.refresh }; } }, saveReply: { useMutation: () => ({ mutateAsync: m.save }) } });
-  return { trpc: { auth: { me: { useQuery: () => ({ data: { id: m.actor } }) } }, merchants: { getCurrent: { useQuery: () => ({ data: { id: m.merchant } }) } },
+  return { trpc: { auth: { me: { useQuery: () => ({ data: { id: m.actor } }) } }, merchants: { workspaceIdentity: { useQuery: () => ({ data: { id: m.merchant, actorId:m.actor } }) } },
     reviews: api('order'), bookingReviews: api('booking'), useUtils: () => ({ reviews: { detail: { fetch: m.detail } }, bookingReviews: { detail: { fetch: m.detail } } }) } };
 });
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ i18n: { language: m.language }, t: (key: string) => (m.language === 'ar' ? ar : en)[key.split('.').pop() as keyof typeof en] ?? key }) }));
