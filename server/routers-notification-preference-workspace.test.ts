@@ -9,10 +9,10 @@ vi.mock("./notification-preferences-workspace", async original => ({
   saveNotificationPreferences: m.save,
 }));
 import { router } from "./_core/trpc";
-import { notificationPreferenceReadProcedures } from "./routers-notification-preference-workspace";
+import { notificationPreferenceProcedures } from "./routers-notification-preference-workspace";
 import { NotificationPreferenceError } from "./notification-preferences-workspace";
 const caller = () =>
-  router(notificationPreferenceReadProcedures).createCaller({
+  router(notificationPreferenceProcedures).createCaller({
     user: { id: 7, role: "user" },
     req: { headers: {} },
     res: {},
@@ -86,5 +86,44 @@ it.each([
   await expect(
     caller().saveReviewed({ ...write(), ...extra } as any)
   ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  expect(m.save).not.toHaveBeenCalled();
+});
+
+it.each(["user", "admin"])(
+  "retires both old tenant endpoints for %s without reading or writing preferences",
+  async role => {
+    const old = router(notificationPreferenceProcedures).createCaller({
+      user: { id: 7, role },
+      req: { headers: {} },
+      res: {},
+    } as any);
+    await expect(old.get()).rejects.toMatchObject({
+      code: "PRECONDITION_FAILED",
+      message: "notification_preferences:review_required",
+    });
+    await expect(
+      old.update({
+        merchantId: 999,
+        instantNotifications: false,
+        batchNotifications: true,
+        quietHoursStart: "99:99",
+      })
+    ).rejects.toMatchObject({
+      code: "PRECONDITION_FAILED",
+      message: "notification_preferences:review_required",
+    });
+    expect(m.read).not.toHaveBeenCalled();
+    expect(m.save).not.toHaveBeenCalled();
+    expect(m.access).not.toHaveBeenCalled();
+  }
+);
+it("keeps authentication on retired endpoints", async () => {
+  const old = router(notificationPreferenceProcedures).createCaller({
+    user: null,
+    req: { headers: {} },
+    res: {},
+  } as any);
+  await expect(old.get()).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+  await expect(old.update({})).rejects.toMatchObject({ code: "UNAUTHORIZED" });
   expect(m.save).not.toHaveBeenCalled();
 });

@@ -1,12 +1,22 @@
 import { TRPCError } from "@trpc/server";
-import { merchantProcedure } from "./_core/trpc";
+import { z } from "zod";
+import { merchantProcedure, protectedProcedure } from "./_core/trpc";
 import { notificationPreferenceSave } from "../shared/notification-preferences-workspace";
 import {
   readNotificationPreferences,
   saveNotificationPreferences,
   NotificationPreferenceError,
 } from "./notification-preferences-workspace";
-export const notificationPreferenceReadProcedures = {
+const retired = () => {
+  throw new TRPCError({
+    code: "PRECONDITION_FAILED",
+    message: "notification_preferences:review_required",
+  });
+};
+export const notificationPreferenceProcedures = {
+  // A stale client must reload rather than bypass reviewed saves or receive fake defaults.
+  get: protectedProcedure.query(retired),
+  update: protectedProcedure.input(z.unknown()).mutation(retired),
   saveReviewed: merchantProcedure
     .input(notificationPreferenceSave)
     .mutation(async ({ ctx, input }) => {

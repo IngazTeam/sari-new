@@ -1,4 +1,4 @@
-import { notificationPreferenceReadProcedures } from './routers-notification-preference-workspace';
+import { notificationPreferenceProcedures } from './routers-notification-preference-workspace';
 import {scheduledMessagesRouter} from './routers-scheduled-messages';
 import { reviewsRouter } from './routers-reviews';
 import {abandonedCartsRouter} from './routers-abandoned-carts';
@@ -125,7 +125,6 @@ import { publicProcedure, protectedProcedure, merchantProcedure, permissionProce
 import { TRPCError } from '@trpc/server';
 import type { WhatsAppRequest } from '../drizzle/schema';
 import { eq } from 'drizzle-orm';
-import { notificationPreferences } from '../drizzle/schema';
 import { decodeValidatedAudio } from './utils/audio';
 import { completeMetaEmbeddedSignup as completeMetaEmbeddedSignupService } from './channels/whatsapp/meta-embedded-signup';
 import {
@@ -4373,113 +4372,7 @@ export const appRouter = router({
   }),
 
   // Notification Preferences APIs
-  notificationPreferences: router({
-    ...notificationPreferenceReadProcedures,
-    // Get merchant's notification preferences
-    get: protectedProcedure
-      .query(async ({ ctx }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        }
-
-        const dbConn = await getDb();
-        if (!dbConn) {
-          // Return default preferences if DB not available
-          return {
-            merchantId: merchant.id,
-            newOrdersEnabled: true,
-            newMessagesEnabled: true,
-            appointmentsEnabled: true,
-            orderStatusEnabled: true,
-            missedMessagesEnabled: true,
-            whatsappDisconnectEnabled: true,
-            preferredMethod: 'both' as const,
-            quietHoursEnabled: false,
-            quietHoursStart: '22:00',
-            quietHoursEnd: '08:00',
-            instantNotifications: true,
-            batchNotifications: false,
-            batchInterval: 30,
-          };
-        }
-
-        const result = await dbConn.select().from(notificationPreferences)
-          .where(eq(notificationPreferences.merchantId, merchant.id))
-          .limit(1);
-
-        // Return default preferences if not found
-        if (result.length === 0) {
-          return {
-            merchantId: merchant.id,
-            newOrdersEnabled: true,
-            newMessagesEnabled: true,
-            appointmentsEnabled: true,
-            orderStatusEnabled: true,
-            missedMessagesEnabled: true,
-            whatsappDisconnectEnabled: true,
-            preferredMethod: 'both' as const,
-            quietHoursEnabled: false,
-            quietHoursStart: '22:00',
-            quietHoursEnd: '08:00',
-            instantNotifications: true,
-            batchNotifications: false,
-            batchInterval: 30,
-          };
-        }
-
-        return result[0];
-      }),
-
-    // Update notification preferences
-    update: protectedProcedure
-      .input(z.object({
-        newOrdersEnabled: z.boolean().optional(),
-        newMessagesEnabled: z.boolean().optional(),
-        appointmentsEnabled: z.boolean().optional(),
-        orderStatusEnabled: z.boolean().optional(),
-        missedMessagesEnabled: z.boolean().optional(),
-        whatsappDisconnectEnabled: z.boolean().optional(),
-        preferredMethod: z.enum(['push', 'email', 'both']).optional(),
-        quietHoursEnabled: z.boolean().optional(),
-        quietHoursStart: z.string().optional(),
-        quietHoursEnd: z.string().optional(),
-        instantNotifications: z.boolean().optional(),
-        batchNotifications: z.boolean().optional(),
-        batchInterval: z.number().optional(),
-      }))
-      .mutation(async ({ input, ctx }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        }
-
-        const dbConn = await getDb();
-        if (!dbConn) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database unavailable' });
-
-        const updateData = input;
-
-        // Check if preferences exist
-        const existing = await dbConn.select().from(notificationPreferences)
-          .where(eq(notificationPreferences.merchantId, merchant.id))
-          .limit(1);
-
-        if (existing.length > 0) {
-          // Update existing preferences
-          await dbConn.update(notificationPreferences)
-            .set(updateData)
-            .where(eq(notificationPreferences.merchantId, merchant.id));
-        } else {
-          // Create new preferences
-          await dbConn.insert(notificationPreferences).values({
-            merchantId: merchant.id,
-            ...updateData,
-          });
-        }
-
-        return { success: true };
-      }),
-  }),
+  notificationPreferences: router(notificationPreferenceProcedures),
 
   // Email Templates APIs — MIGRATED to routers-email-templates.ts (registered below as emailTemplates: emailTemplatesRouter)
 

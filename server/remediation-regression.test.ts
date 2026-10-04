@@ -18,7 +18,8 @@ describe('10/10 remediation regression guards', () => {
     const routers = read('./server/routers.ts');
     const discounts = read('./server/routers-discounts.ts');
     expect(routers).toContain('discounts: discountsRouter');
-    const preferences = section(routers, 'notificationPreferences: router({', '// Email Templates APIs');
+    const preferences = read('./server/routers-notification-preference-workspace.ts');
+    expect(routers).toContain('notificationPreferences: router(notificationPreferenceProcedures)');
 
     expect(discountClient).not.toMatch(/merchantId\s*=\s*1/);
     expect(discountClient).not.toMatch(/merchantId\s*:/);
@@ -26,7 +27,9 @@ describe('10/10 remediation regression guards', () => {
     expect(discounts).toContain('merchantProcedure.input');
     expect(discounts).toContain('ctx.user.id, ctx.merchantId');
     expect(discounts).not.toContain('getMerchantByUserId');
-    expect(preferences).toContain('getMerchantByUserId(ctx.user.id)');
+    expect(preferences).not.toContain('getMerchantByUserId');
+    expect(preferences).toContain('ctx.user.id, ctx.merchantId');
+    expect(preferences).toContain('notification_preferences:review_required');
   });
 
   it('keeps quick-response updates tenant-scoped and blocks unverified action claims', () => {
