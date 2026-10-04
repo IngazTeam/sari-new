@@ -11,7 +11,9 @@ import {
   TAP_CHARGE_ID_PATTERN,
   toPublicSubscriptionPaymentStatus,
 } from '@shared/subscription-payment-status';
-import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
+import { publicProcedure, protectedProcedure, merchantProcedure, router } from "../_core/trpc";
+import { readPlanCatalogWorkspace } from '../subscriptions/plan-catalog-workspace';
+import { MerchantSettingsAuthorityError } from '../accounts/merchant-settings-authority';
 import {
   cancelMerchantAddon,
   cancelMerchantSubscription,
@@ -96,6 +98,13 @@ function subscriptionCheckoutError(error: unknown): TRPCError {
 // ============================================
 
 export const subscriptionPlansRouter = router({
+  workspace: merchantProcedure.input(z.void()).query(async ({ctx})=>{
+    try{return await readPlanCatalogWorkspace(ctx.user.id,ctx.merchantId);}
+    catch(error){
+      if(error instanceof MerchantSettingsAuthorityError && error.reason==='forbidden')throw new TRPCError({code:'FORBIDDEN',message:'Plan catalog access unavailable'});
+      throw new TRPCError({code:'INTERNAL_SERVER_ERROR',message:'Plan catalog unavailable'});
+    }
+  }),
   // List all plans (public - for display)
   listPlans: publicProcedure.query(async () => {
     return await getActiveSubscriptionPlans();
