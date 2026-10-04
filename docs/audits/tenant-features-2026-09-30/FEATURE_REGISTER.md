@@ -2,7 +2,7 @@
 
 هذا حصر مصدر قابل لإعادة التوليد، وليس ادعاءً بأن كل مسار عمل اختُبر أو أُعيد تصميمه. يشمل المكونات الفرعية المحلية، الحقول، الأزرار، النوافذ، التبويبات، واجهات القراءة والتعديل. العناصر الديناميكية تحتاج مراجعة إضافية.
 
-- 126 مسارًا مسجلًا، 479 ملف واجهة متصلًا، 2693 عنصر تحكم في المصدر.
+- 126 مسارًا مسجلًا، 482 ملف واجهة متصلًا، 2695 عنصر تحكم في المصدر.
 - 0 رابطًا حرفيًا غير مطابق، و0 ملف صفحة غير متصل بالمسارات المحصورة.
 
 | الصفحة | الملفات | عناصر التحكم | القراءة / التعديل | موك أب للصفحة |
@@ -104,7 +104,7 @@
 | /merchant/integrations-dashboard — صحة التكاملات | 7 | 8 | 3 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/platform-integrations — التكاملات | 5 | 15 | 5 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/notification-settings — تفضيلات الإشعارات | 8 | 7 | 3 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/currency-settings — عملة المتجر | 1 | 2 | 1 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/currency-settings — عملة المتجر | 8 | 4 | 3 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/push-notifications — إشعارات المتصفح | 1 | 3 | 3 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/scheduled-reports — التقارير المجدولة | 1 | 24 | 2 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/whatsapp-auto-notifications — أتمتة رسائل العملاء | 1 | 20 | 3 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -3712,12 +3712,14 @@
 | 433 | Button | تسمية ديناميكية / تحتاج مراجعة | NotificationPreferenceWorkspace |
 | 445 | summary | تسمية ديناميكية / تحتاج مراجعة | NotificationPreferenceWorkspace |
 
-## client/src/pages/CurrencySettings.tsx
+## client/src/components/merchant/CurrencyWorkspace.tsx
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 118 | Select | اختر العملة | العملة الأساسية |
-| 182 | Button | جاري الحفظ... حفظ التغييرات | العملة الأساسية |
+| 228 | input | SAR ﷼ $ | title |
+| 270 | Button | check | title |
+| 280 | Button | discard refresh | title |
+| 290 | Button | saving save | title |
 
 ## client/src/pages/merchant/PushNotificationsSettings.tsx
 

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-04T00:53:17.869Z",
+  "generatedAt": "2026-10-04T01:21:43.807Z",
   "definition": "Every registered route is accounted for; source inventory and design completion are different statuses.",
   "routes": [
     {
@@ -83406,73 +83406,54 @@
         "CurrencySettings"
       ],
       "files": [
-        "client/src/pages/CurrencySettings.tsx"
+        "client/src/pages/CurrencySettings.tsx",
+        "client/src/components/merchant/CurrencyWorkspace.tsx",
+        "client/src/lib/currency-workspace-labels.ts",
+        "client/src/lib/currency-workspace.ts",
+        "client/src/lib/knowledge-workspace-cache.ts",
+        "client/src/lib/sales-policy-draft.ts",
+        "client/src/lib/conversation-draft.ts",
+        "client/src/lib/test-workspace-draft.ts"
       ],
       "controls": [
-        "75a0ddec7b47",
-        "a54baf8cd8a9"
+        "a14ea8c0fbb4",
+        "348287b67078",
+        "2e73091e02a8",
+        "758e181c649b"
       ],
       "queries": [
-        "merchants.getCurrent"
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "merchants.currencyWorkspace"
       ],
       "mutations": [
-        "merchants.update"
+        "merchants.currencySaveReviewed"
       ],
       "imperativeReads": [],
       "browserRequests": [],
-      "design": "موك أب عام",
+      "design": "تفصيلي جزئي",
       "productionChanged": true,
       "designSections": [
-        "قراءة العملة الفعلية من واجهة merchants المسجلة",
-        "حفظ العملة وإعادة تحميلها",
-        "الحالات المعلقة والفشل وعدم التغيير"
+        "مكوّن التطبيق الفعلي بخيارين واضحين ومعاينة وإيضاح عدم تحويل المبالغ أو إعادة التسعير",
+        "قراءة معزولة وحفظ مراجع للمالك، مع تعارض النسخة وفشل الاتصال والتحقق من النتيجة المجهولة دون تكرار",
+        "موك أب بلغتين وتيننتين وحالات الجلسة والفشل والقراءة فقط والقيمة غير المعروفة"
       ],
       "acceptancePlan": "الإعدادات الحالية والمسودة والتحقق؛ الحفظ والصلاحيات؛ العواقب قبل الإجراءات الحساسة؛ حالات الفشل والسجلات والمراجعة.",
       "gaps": [
-        "حفظ SAR وUSD تحقق محليًا؛ الموك أب المستقل ما زال عامًا."
+        "راجع مرحلتي453–454. لا تحويل صرف أو إعادة تسعير. حقل العملة القديم في الحساب يحتاج الإغلاق بعد نقل واجهته. لا Safari/iPhone فعلي أو نشر."
       ],
       "controlDetails": [
         {
-          "id": "75a0ddec7b47",
-          "file": "client/src/pages/CurrencySettings.tsx",
-          "line": 118,
-          "tag": "Select",
+          "id": "a14ea8c0fbb4",
+          "file": "client/src/components/merchant/CurrencyWorkspace.tsx",
+          "line": 228,
+          "tag": "input",
           "role": "",
           "kind": "field",
-          "label": "اختر العملة",
-          "section": "العملة الأساسية",
-          "binding": "selectedCurrency",
-          "type": "select",
-          "options": [
-            {
-              "value": "SAR",
-              "label": "﷼ ريال سعودي (SAR)"
-            },
-            {
-              "value": "USD",
-              "label": "$ دولار أمريكي (USD)"
-            }
-          ],
-          "min": "",
-          "max": "",
-          "maxLength": "",
-          "required": false,
-          "conditional": false,
-          "conditions": [],
-          "disabled": "",
-          "review": "source-inventoried"
-        },
-        {
-          "id": "a54baf8cd8a9",
-          "file": "client/src/pages/CurrencySettings.tsx",
-          "line": 182,
-          "tag": "Button",
-          "role": "",
-          "kind": "action",
-          "label": "جاري الحفظ... حفظ التغييرات",
-          "section": "العملة الأساسية",
-          "binding": "handleSave",
-          "type": "text",
+          "label": "SAR ﷼ $",
+          "section": "title",
+          "binding": "currency",
+          "type": "radio",
           "options": [],
           "min": "",
           "max": "",
@@ -83480,7 +83461,74 @@
           "required": false,
           "conditional": true,
           "conditions": [],
-          "disabled": "!merchant ||\n                updateMutation.isPending ||\n                selectedCurrency === merchant?.currency",
+          "disabled": "",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "348287b67078",
+          "file": "client/src/components/merchant/CurrencyWorkspace.tsx",
+          "line": 270,
+          "tag": "Button",
+          "role": "",
+          "kind": "action",
+          "label": "check",
+          "section": "title",
+          "binding": "() => void reload(true)",
+          "type": "button",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": false,
+          "conditions": [
+            "blocked"
+          ],
+          "disabled": "busy",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "2e73091e02a8",
+          "file": "client/src/components/merchant/CurrencyWorkspace.tsx",
+          "line": 280,
+          "tag": "Button",
+          "role": "",
+          "kind": "action",
+          "label": "discard refresh",
+          "section": "title",
+          "binding": "() => void reload()",
+          "type": "button",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": true,
+          "conditions": [],
+          "disabled": "busy",
+          "review": "source-inventoried"
+        },
+        {
+          "id": "758e181c649b",
+          "file": "client/src/components/merchant/CurrencyWorkspace.tsx",
+          "line": 290,
+          "tag": "Button",
+          "role": "",
+          "kind": "action",
+          "label": "saving save",
+          "section": "title",
+          "binding": "",
+          "type": "submit",
+          "options": [],
+          "min": "",
+          "max": "",
+          "maxLength": "",
+          "required": false,
+          "conditional": true,
+          "conditions": [
+            "data.canManage"
+          ],
+          "disabled": "disabled || !draft || !dirty",
           "review": "source-inventoried"
         }
       ]

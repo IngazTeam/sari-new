@@ -1,0 +1,74 @@
+[
+  {
+    "buttons": [
+      {
+        "height": 44,
+        "text": "تحديث من المحفوظ",
+        "width": 242
+      },
+      {
+        "height": 44,
+        "text": "حفظ العملة",
+        "width": 242
+      }
+    ],
+    "form": true,
+    "overflow": [],
+    "scrollWidth": 320,
+    "width": 320
+  },
+  {
+    "buttons": [
+      {
+        "height": 44,
+        "text": "تحديث من المحفوظ",
+        "width": 312
+      },
+      {
+        "height": 44,
+        "text": "حفظ العملة",
+        "width": 312
+      }
+    ],
+    "form": true,
+    "overflow": [],
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "buttons": [
+      {
+        "height": 44,
+        "text": "تحديث من المحفوظ",
+        "width": 171.59375
+      },
+      {
+        "height": 44,
+        "text": "حفظ العملة",
+        "width": 98.5
+      }
+    ],
+    "form": true,
+    "overflow": [],
+    "scrollWidth": 768,
+    "width": 768
+  },
+  {
+    "buttons": [
+      {
+        "height": 44,
+        "text": "تحديث من المحفوظ",
+        "width": 171.59375
+      },
+      {
+        "height": 44,
+        "text": "حفظ العملة",
+        "width": 98.5
+      }
+    ],
+    "form": true,
+    "overflow": [],
+    "scrollWidth": 1440,
+    "width": 1440
+  }
+]

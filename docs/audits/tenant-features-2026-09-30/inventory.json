@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-04T00:53:17.869Z",
+  "generatedAt": "2026-10-04T01:21:43.807Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -18801,55 +18801,121 @@
     },
     {
       "file": "client/src/pages/CurrencySettings.tsx",
-      "hash": "347b9e833bb1",
+      "hash": "842a06d21952",
       "queries": [
-        "merchants.getCurrent"
+        "auth.me",
+        "merchants.workspaceIdentity"
+      ],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [
+        {
+          "query": "auth.me",
+          "binding": "user",
+          "line": 8,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        },
+        {
+          "query": "merchants.workspaceIdentity",
+          "binding": "merchant",
+          "line": 13,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": "!!user.data?.id && !user.error && !user.isFetching"
+        }
+      ],
+      "conditions": [],
+      "imports": [
+        "client/src/components/merchant/CurrencyWorkspace.tsx"
+      ],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/components/merchant/CurrencyWorkspace.tsx",
+      "hash": "f041fefb3e66",
+      "queries": [
+        "merchants.currencyWorkspace"
       ],
       "mutations": [
-        "merchants.update"
+        "merchants.currencySaveReviewed"
       ],
       "imperativeReads": [],
       "browserRequests": [],
       "sections": [
         {
-          "label": "إعدادات العملة",
-          "line": 82,
+          "label": "title",
+          "line": 182,
           "tag": "h1"
         },
         {
-          "label": "العملة الأساسية",
-          "line": 92,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "ملاحظات هامة",
-          "line": 208,
-          "tag": "CardTitle"
+          "label": "impactTitle",
+          "line": 299,
+          "tag": "h2"
         }
       ],
       "choices": [],
       "handlers": [
         {
-          "name": "handleSave",
-          "line": 58,
+          "name": "save",
+          "line": 108,
           "calls": [
-            "updateMutation"
+            "mutation"
           ]
         }
       ],
       "queryStates": [
         {
-          "query": "merchants.getCurrent",
-          "binding": "{\n    data: merchant,\n    isLoading: merchantLoading,\n    isError,\n    refetch,\n  }",
-          "line": 37,
+          "query": "merchants.currencyWorkspace",
+          "binding": "query",
+          "line": 24,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
         }
       ],
       "conditions": [],
+      "imports": [
+        "client/src/lib/currency-workspace-labels.ts",
+        "client/src/lib/currency-workspace.ts",
+        "client/src/lib/knowledge-workspace-cache.ts"
+      ],
+      "controlCount": 4
+    },
+    {
+      "file": "client/src/lib/currency-workspace-labels.ts",
+      "hash": "7c5709ce7e14",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
       "imports": [],
-      "controlCount": 2
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/lib/currency-workspace.ts",
+      "hash": "23a89b2534b6",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 0
     },
     {
       "file": "client/src/pages/merchant/PushNotificationsSettings.tsx",
@@ -28132,17 +28198,28 @@
         "CurrencySettings"
       ],
       "files": [
-        "client/src/pages/CurrencySettings.tsx"
+        "client/src/pages/CurrencySettings.tsx",
+        "client/src/components/merchant/CurrencyWorkspace.tsx",
+        "client/src/lib/currency-workspace-labels.ts",
+        "client/src/lib/currency-workspace.ts",
+        "client/src/lib/knowledge-workspace-cache.ts",
+        "client/src/lib/sales-policy-draft.ts",
+        "client/src/lib/conversation-draft.ts",
+        "client/src/lib/test-workspace-draft.ts"
       ],
       "controls": [
-        "75a0ddec7b47",
-        "a54baf8cd8a9"
+        "a14ea8c0fbb4",
+        "348287b67078",
+        "2e73091e02a8",
+        "758e181c649b"
       ],
       "queries": [
-        "merchants.getCurrent"
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "merchants.currencyWorkspace"
       ],
       "mutations": [
-        "merchants.update"
+        "merchants.currencySaveReviewed"
       ],
       "imperativeReads": [],
       "browserRequests": []
@@ -85834,46 +85911,16 @@
       "review": "source-inventoried"
     },
     {
-      "id": "75a0ddec7b47",
-      "file": "client/src/pages/CurrencySettings.tsx",
-      "line": 118,
-      "tag": "Select",
+      "id": "a14ea8c0fbb4",
+      "file": "client/src/components/merchant/CurrencyWorkspace.tsx",
+      "line": 228,
+      "tag": "input",
       "role": "",
       "kind": "field",
-      "label": "اختر العملة",
-      "section": "العملة الأساسية",
-      "binding": "selectedCurrency",
-      "type": "select",
-      "options": [
-        {
-          "value": "SAR",
-          "label": "﷼ ريال سعودي (SAR)"
-        },
-        {
-          "value": "USD",
-          "label": "$ دولار أمريكي (USD)"
-        }
-      ],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "a54baf8cd8a9",
-      "file": "client/src/pages/CurrencySettings.tsx",
-      "line": 182,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "جاري الحفظ... حفظ التغييرات",
-      "section": "العملة الأساسية",
-      "binding": "handleSave",
-      "type": "text",
+      "label": "SAR ﷼ $",
+      "section": "title",
+      "binding": "currency",
+      "type": "radio",
       "options": [],
       "min": "",
       "max": "",
@@ -85881,7 +85928,74 @@
       "required": false,
       "conditional": true,
       "conditions": [],
-      "disabled": "!merchant ||\n                updateMutation.isPending ||\n                selectedCurrency === merchant?.currency",
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "348287b67078",
+      "file": "client/src/components/merchant/CurrencyWorkspace.tsx",
+      "line": 270,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "check",
+      "section": "title",
+      "binding": "() => void reload(true)",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "blocked"
+      ],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "2e73091e02a8",
+      "file": "client/src/components/merchant/CurrencyWorkspace.tsx",
+      "line": 280,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "discard refresh",
+      "section": "title",
+      "binding": "() => void reload()",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "busy",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "758e181c649b",
+      "file": "client/src/components/merchant/CurrencyWorkspace.tsx",
+      "line": 290,
+      "tag": "Button",
+      "role": "",
+      "kind": "action",
+      "label": "saving save",
+      "section": "title",
+      "binding": "",
+      "type": "submit",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "data.canManage"
+      ],
+      "disabled": "disabled || !draft || !dirty",
       "review": "source-inventoried"
     },
     {

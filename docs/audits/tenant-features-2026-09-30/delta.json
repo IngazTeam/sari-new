@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-04T00:53:17.869Z",
+  "generatedAt": "2026-10-04T01:21:43.807Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 479,
-      "controls": 2693
+      "files": 482,
+      "controls": 2695
     }
   },
   "addedFiles": [
@@ -295,6 +295,9 @@
     "client/src/components/merchant/NotificationPreferenceWorkspace.tsx",
     "client/src/lib/notification-preference-labels.ts",
     "client/src/lib/notification-preference-workspace.ts",
+    "client/src/components/merchant/CurrencyWorkspace.tsx",
+    "client/src/lib/currency-workspace-labels.ts",
+    "client/src/lib/currency-workspace.ts",
     "client/src/components/merchant/ReportsWorkspace.tsx",
     "client/src/lib/report-export.ts",
     "client/src/lib/merchant-report-document.ts",
@@ -413,6 +416,7 @@
     "client/src/pages/SheetsInventory.tsx",
     "client/src/pages/PlatformIntegrations.tsx",
     "client/src/pages/NotificationSettings.tsx",
+    "client/src/pages/CurrencySettings.tsx",
     "client/src/pages/Reports.tsx",
     "client/src/pages/merchant/MySubscription.tsx",
     "client/src/pages/merchant/SubscriptionPlans.tsx",
@@ -2340,11 +2344,21 @@
     {
       "route": "/merchant/currency-settings",
       "controlsBefore": 2,
-      "controlsNow": 2,
-      "removedQueries": [],
-      "addedQueries": [],
-      "removedMutations": [],
-      "addedMutations": []
+      "controlsNow": 4,
+      "removedQueries": [
+        "merchants.getCurrent"
+      ],
+      "addedQueries": [
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "merchants.currencyWorkspace"
+      ],
+      "removedMutations": [
+        "merchants.update"
+      ],
+      "addedMutations": [
+        "merchants.currencySaveReviewed"
+      ]
     },
     {
       "route": "/merchant/push-notifications",

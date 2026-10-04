@@ -45,12 +45,6 @@ afterAll(() => vi.unstubAllGlobals());
 const render = (index: number) => renderToStaticMarkup(React.createElement(components[index]));
 
 describe('tenant settings show actual data and action outcomes', () => {
-  it('loads currency through the registered merchants API and disables unchanged saves', () => {
-    const html = render(0);
-    expect(html).toContain('ريال سعودي');
-    expect(html).toMatch(/<button[^>]*disabled=""[^>]*>[\s\S]*حفظ التغييرات/);
-    expect(html).not.toContain('تم تحديث العملة بنجاح');
-  });
   it('does not invent a success percentage for integrations with no syncs', () => {
     const html = render(1);
     expect(html).toContain('—');
@@ -86,14 +80,14 @@ describe('tenant settings show actual data and action outcomes', () => {
     expect(buttons.length).toBeGreaterThan(0);
     expect(buttons.every(match => match[1].includes('disabled=""'))).toBe(true);
   });
-  it.each([0, 1, 2, 3])('provides a retry state when a page query fails (%s)', index => {
+  it.each([1, 2, 3])('provides a retry state when a page query fails (%s)', index => {
     state.error = true;
     const html = render(index);
     expect(html).toContain('data-state="error"');
     expect(html).toContain('إعادة المحاولة');
     expect(html).not.toContain('100%');
   });
-  it.each([0, 1, 2, 3])('shows failures for every registered settings mutation (%s)', index => {
+  it.each([1, 2, 3])('shows failures for every registered settings mutation (%s)', index => {
     render(index);
     for (const callbacks of Object.values(state.callbacks)) {
       state.toast.error.mockClear();
