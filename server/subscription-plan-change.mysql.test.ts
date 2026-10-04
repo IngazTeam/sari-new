@@ -62,8 +62,8 @@ describe.skipIf(!process.env.DATABASE_URL)('plan change snapshot on disposable M
     await q("UPDATE payment_transactions SET type='upgrade',amount='50.00',tap_charge_id=? WHERE id=?", [chargeId, paymentId]);
     await q('UPDATE merchant_subscriptions SET plan_id=? WHERE id=?', [planIds[2], subscriptionId]);
     const before = await state();
-    await expect(processCanonicalSubscriptionCharge({ id: chargeId, status: 'CAPTURED', amount: 50, currency: 'SAR' })).rejects.toThrow();
-    expect(await state()).toEqual(before); expect(await payment()).toBe('pending');
+    await expect(processCanonicalSubscriptionCharge({ id: chargeId, status: 'CAPTURED', amount: 50, currency: 'SAR' })).resolves.toMatchObject({ success: true, status: 'requires_review' });
+    expect(await state()).toEqual(before); expect(await payment()).toBe('requires_review');
   });
   it('allows only one of two simultaneous changes that reviewed the same subscription', async () => {
     const second = Number((await q("INSERT INTO payment_transactions(merchant_id,subscription_id,type,amount,currency,status,payment_method,metadata) VALUES (?,?,'downgrade','0.00','SAR','pending','tap',?)", [a.merchantId, subscriptionId, JSON.stringify({ ...metadata, newPlanId: planIds[2] })])).insertId);
@@ -96,10 +96,10 @@ describe.skipIf(!process.env.DATABASE_URL)('plan change snapshot on disposable M
     const chargeId = 'chg_' + randomUUID().replaceAll('-', '');
     await q("UPDATE payment_transactions SET type='upgrade',amount='50.00',tap_charge_id=? WHERE id=?",[chargeId,paymentId]);
     const results = await Promise.allSettled([processCanonicalSubscriptionCharge({id:chargeId,status:'CAPTURED',amount:50,currency:'SAR'}),cancelCurrentSubscription(a.userId,a.merchantId,{expected})]);
-    expect(results.filter(r=>r.status==='fulfilled')).toHaveLength(1);
+    expect(results.filter(r=>r.status==='fulfilled').length).toBeGreaterThanOrEqual(1);
     for (const r of results) if(r.status==='rejected')expect(r.reason).not.toMatchObject({code:'ER_LOCK_DEADLOCK'});
     const [sub] = await state(), status = await payment();
-    expect(sub.status === 'active' && sub.plan_id === planIds[1] && status === 'completed' || sub.status === 'cancelled' && sub.plan_id === planIds[0] && status === 'pending').toBe(true);
+    expect(sub.status === 'active' && sub.plan_id === planIds[1] && status === 'completed' || sub.status === 'cancelled' && sub.plan_id === planIds[0] && status === 'requires_review').toBe(true);
   });
   it.each(['captured','immediate'])('rolls back %s application when the merchant update lacks an acknowledgement', async kind => {
     const pool = (await getPool())!, tx = await pool.getConnection(), execute = tx.execute.bind(tx);
@@ -110,6 +110,56 @@ describe.skipIf(!process.env.DATABASE_URL)('plan change snapshot on disposable M
     const before=await state();
     await expect(kind==='captured'?processCanonicalSubscriptionCharge({id:chargeId,status:'CAPTURED',amount:50,currency:'SAR'}):completeImmediateCanonicalPlanChange(paymentId,a.merchantId)).rejects.toThrow('MERCHANT_ENTITLEMENT_WRITE_UNVERIFIED');
     vi.restoreAllMocks();expect(await state()).toEqual(before);expect(await payment()).toBe('pending');
+  });
+
+  const capturedConflict = async () => {
+    const id='chg_'+randomUUID().replaceAll('-','');
+    await q("UPDATE payment_transactions SET type='upgrade',amount='50.00',tap_charge_id=? WHERE id=?",[id,paymentId]);
+    await q('UPDATE merchant_subscriptions SET plan_id=? WHERE id=?',[planIds[2],subscriptionId]);
+    return {id,status:'CAPTURED',amount:50,currency:'SAR',live_mode:false};
+  };
+  it('durably records a verified capture conflict without provider PII or replacing the newer plan', async () => {
+    const charge=await capturedConflict(),before=await state();
+    await processCanonicalSubscriptionCharge({...charge,customer:{email:'PRIVATE_EMAIL'}} as any);
+    const [saved]=await q('SELECT status,paid_at,tap_response,metadata FROM payment_transactions WHERE id=?',[paymentId]);
+    expect(saved.status).toBe('requires_review');expect(saved.paid_at).toBeTruthy();expect(JSON.parse(saved.tap_response)).toEqual({id:charge.id,status:'CAPTURED',amount:50,currency:'SAR',liveMode:false,application:'subscription_changed'});expect(saved.tap_response).not.toContain('PRIVATE');expect(JSON.parse(saved.metadata)).toEqual(JSON.parse(JSON.stringify(metadata)));expect(await state()).toEqual(before);
+  });
+  it.each(['CAPTURED','FAILED','CANCELLED','AUTHORIZED'])('never reapplies or erases a held capture after %s', async status => {
+    const charge=await capturedConflict();await processCanonicalSubscriptionCharge(charge);const before=await state();const saved=await q('SELECT status,paid_at,tap_response FROM payment_transactions WHERE id=?',[paymentId]);
+    await expect(processCanonicalSubscriptionCharge({...charge,status})).resolves.toMatchObject({success:true,status:'requires_review'});
+    expect(await state()).toEqual(before);expect(await q('SELECT status,paid_at,tap_response FROM payment_transactions WHERE id=?',[paymentId])).toEqual(saved);
+  });
+  it('records a verified full refund of a held capture without compensating a plan it never applied', async () => {
+    const charge=await capturedConflict();await processCanonicalSubscriptionCharge(charge);const before=await state();
+    await expect(processCanonicalSubscriptionCharge({...charge,status:'REFUNDED'})).resolves.toMatchObject({success:true,status:'refunded'});
+    expect(await state()).toEqual(before);expect(await payment()).toBe('refunded');
+    await expect(processCanonicalSubscriptionCharge({...charge,status:'REFUNDED'})).resolves.toMatchObject({success:true,status:'refunded'});
+    expect(await state()).toEqual(before);
+  });
+  it('rejects a partial or mismatched refund without clearing the held capture', async () => {
+    const charge=await capturedConflict();await processCanonicalSubscriptionCharge(charge);const before=await state();
+    for(const changed of [{amount:25},{currency:'USD'}]) await expect(processCanonicalSubscriptionCharge({...charge,...changed,status:'REFUNDED'})).resolves.toMatchObject({success:false,status:'verification_failed'});
+    expect(await state()).toEqual(before);expect(await payment()).toBe('requires_review');
+  });
+  it('does not create review evidence for an unverified capture', async () => {
+    const charge=await capturedConflict(),before=await state();await processCanonicalSubscriptionCharge({...charge,amount:49});
+    const [saved]=await q('SELECT status,paid_at,tap_response FROM payment_transactions WHERE id=?',[paymentId]);expect(saved).toMatchObject({status:'failed',paid_at:null,tap_response:null});expect(await state()).toEqual(before);
+  });
+  it.each(['failed','unacknowledged'])('does not acknowledge a %s review write', async kind => {
+    const charge=await capturedConflict(),before=await state(),pool=(await getPool())!,tx=await pool.getConnection(),execute=tx.execute.bind(tx);
+    vi.spyOn(tx,'execute').mockImplementation((async(sql:string,args:any[])=>{if(sql.includes("SET status = 'requires_review'")){if(kind==='failed')throw Error('fixture write failed');await execute(sql,args);return [{affectedRows:0},[]];}return execute(sql,args);}) as any);vi.spyOn(pool,'getConnection').mockResolvedValueOnce(tx);
+    await expect(processCanonicalSubscriptionCharge(charge)).rejects.toThrow();vi.restoreAllMocks();expect(await state()).toEqual(before);expect(await payment()).toBe('pending');
+  });
+  it('recovers the same held result after losing the commit response', async () => {
+    const charge=await capturedConflict(),pool=(await getPool())!,tx=await pool.getConnection(),commit=tx.commit.bind(tx);
+    vi.spyOn(tx,'commit').mockImplementationOnce(async()=>{await commit();throw Error('lost acknowledgement');});vi.spyOn(pool,'getConnection').mockResolvedValueOnce(tx);
+    await expect(processCanonicalSubscriptionCharge(charge)).rejects.toThrow('lost acknowledgement');vi.restoreAllMocks();expect(await payment()).toBe('requires_review');
+    await expect(processCanonicalSubscriptionCharge(charge)).resolves.toMatchObject({success:true,status:'requires_review'});
+  });
+
+  it.each(['AUTHORIZED','INITIATED'])('never records review or paid evidence for %s alone', async status => {
+    const charge=await capturedConflict(),before=await state();await expect(processCanonicalSubscriptionCharge({...charge,status})).resolves.toMatchObject({success:true,status:'pending'});
+    expect((await q('SELECT status,paid_at,tap_response FROM payment_transactions WHERE id=?',[paymentId]))[0]).toMatchObject({status:'pending',paid_at:null,tap_response:null});expect(await state()).toEqual(before);
   });
 
 });

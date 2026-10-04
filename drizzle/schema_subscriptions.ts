@@ -150,7 +150,7 @@ export const paymentTransactions = mysqlTable("payment_transactions", {
 	currency: varchar({ length: 10 }).default('SAR').notNull(),
 
 	// Status
-	status: mysqlEnum(['pending', 'completed', 'failed', 'refunded']).default('pending').notNull(),
+	status: mysqlEnum(['pending', 'completed', 'failed', 'refunded', 'requires_review']).default('pending').notNull(),
 
 	// Payment Method
 	paymentMethod: varchar("payment_method", { length: 50 }).default('tap').notNull(),

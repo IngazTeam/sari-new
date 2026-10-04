@@ -19,7 +19,7 @@ interface PaymentRow extends RowDataPacket {
   type: 'subscription' | 'addon' | 'renewal' | 'upgrade' | 'downgrade';
   amount: string;
   currency: string;
-  status: 'pending' | 'completed' | 'failed' | 'refunded';
+  status: 'pending' | 'completed' | 'failed' | 'refunded' | 'requires_review';
   metadata: string | null;
 }
 
@@ -501,7 +501,7 @@ export async function processCanonicalSubscriptionCharge(
         await connection.commit();
         return { success: true, status: 'refunded', message: 'Transaction already refunded' };
       }
-      if (payment.status !== 'completed') throw new Error('INVALID_REFUND_STATE');
+      if (payment.status !== 'completed' && payment.status !== 'requires_review') throw new Error('INVALID_REFUND_STATE');
 
       const validation = validateCanonicalCharge(payment, charge);
       if (!validation.valid) {
@@ -510,8 +510,12 @@ export async function processCanonicalSubscriptionCharge(
       }
 
       const now = new Date();
-      const metadata = parseMetadata(payment.metadata);
-      await compensateRefund(connection, payment, metadata, now);
+      // A held capture never granted entitlement, so its verified full refund
+      // must not roll back a newer subscription or restore the reviewed plan.
+      if (payment.status === 'completed') {
+        const metadata = parseMetadata(payment.metadata);
+        await compensateRefund(connection, payment, metadata, now);
+      }
       const [refunded] = await connection.execute(
         `UPDATE payment_transactions SET status = 'refunded', refunded_at = ?, refund_reason = 'tap_refund', updated_at = ? WHERE id = ?`,
         [mysqlTimestamp(now), mysqlTimestamp(now), payment.id],
@@ -557,7 +561,23 @@ export async function processCanonicalSubscriptionCharge(
     if (payment.type === 'subscription') {
       subscriptionId = await activateNewSubscription(connection, payment, metadata, now);
     } else if (payment.type === 'upgrade' || payment.type === 'downgrade') {
-      subscriptionId = await applyPlanChange(connection, payment, metadata, now);
+      try {
+        subscriptionId = await applyPlanChange(connection, payment, metadata, now);
+      } catch (error) {
+        // This conflict is raised before any entitlement write. Storage failures
+        // and other exceptions must still roll back and remain retryable.
+        if (!(error instanceof SubscriptionPlanChangeConflictError)) throw error;
+        const [held] = await connection.execute(
+          `UPDATE payment_transactions SET status = 'requires_review', paid_at = ?, tap_response = ?, updated_at = ?
+             WHERE id = ? AND status = 'pending'`,
+          [mysqlTimestamp(now), JSON.stringify({ id: charge.id, status: charge.status, amount: charge.amount,
+            currency: charge.currency, liveMode: charge.live_mode ?? null, application: 'subscription_changed' }),
+            mysqlTimestamp(now), payment.id],
+        );
+        if ((held as { affectedRows: number }).affectedRows !== 1) throw new Error('CAPTURE_REVIEW_WRITE_UNVERIFIED');
+        await connection.commit();
+        return { success: true, status: 'requires_review', message: 'Capture recorded; subscription requires review' };
+      }
     } else if (payment.type === 'renewal') {
       subscriptionId = await applyRenewal(connection, payment, metadata, now);
     } else if (payment.type === 'addon') {

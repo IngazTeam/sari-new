@@ -1436,6 +1436,13 @@
       "when": 1795392000066,
       "tag": "0204_notification_preferences_unique",
       "breakpoints": true
+    },
+    {
+      "idx": 205,
+      "version": "5",
+      "when": 1795392000067,
+      "tag": "0205_subscription_capture_review",
+      "breakpoints": true
     }
   ]
 }
