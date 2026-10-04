@@ -9849,56 +9849,6 @@ export async function getMerchantCurrentUsage(merchantId: number) {
   };
 }
 
-/**
- * Get usage history for a merchant (last 6 months)
- */
-export async function getMerchantUsageHistory(merchantId: number) {
-  const db = await getDb();
-  if (!db) throw new Error("Usage database unavailable");
-
-  const history = [];
-  const now = new Date();
-
-  for (let i = 5; i >= 0; i--) {
-    const monthDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const nextMonthDate = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
-
-    // Get campaigns for this month
-    const campaigns = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(schema.campaigns)
-      .where(
-        and(
-          eq(schema.campaigns.merchantId, merchantId),
-          gte(schema.campaigns.createdAt, monthDate.toISOString()),
-          lt(schema.campaigns.createdAt, nextMonthDate.toISOString())
-        )
-      );
-
-    // Get messages for this month
-    const msgs = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(schema.messages)
-      .innerJoin(schema.conversations, eq(schema.messages.conversationId, schema.conversations.id))
-      .where(
-        and(
-          eq(schema.conversations.merchantId, merchantId),
-          eq(schema.messages.direction, 'outgoing'),
-          gte(schema.messages.createdAt, monthDate.toISOString()),
-          lt(schema.messages.createdAt, nextMonthDate.toISOString())
-        )
-      );
-
-    history.push({
-      month: monthDate.toISOString().substring(0, 7), // YYYY-MM
-      campaigns: Number(campaigns[0]?.count || 0),
-      messages: Number(msgs[0]?.count || 0),
-    });
-  }
-
-  return history;
-}
-
 // ============================================
 // Subscription Reports Functions (Admin)
 // ============================================

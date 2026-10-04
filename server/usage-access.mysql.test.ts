@@ -43,12 +43,12 @@ describe.skipIf(!process.env.DATABASE_URL)(
     afterEach(() => cleanupDisposableMerchants([owner.userId, other.userId]));
     afterAll(closeDb);
     it("returns the selected member tenant instead of the actor-owned tenant", async () => {
-      expect(
-        await caller(other.merchantId).subscriptions.getUsage()
-      ).toMatchObject({ conversations: { used: 47 }, messages: { used: 94 } });
-      expect(
-        await caller(owner.merchantId).subscriptions.getUsage()
-      ).toMatchObject({ conversations: { used: 11 }, messages: { used: 22 } });
+      expect(await caller(other.merchantId).usage.workspace()).toMatchObject({
+        quotas: { conversations: { used: 47 }, messages: { used: 94 } },
+      });
+      expect(await caller(owner.merchantId).usage.workspace()).toMatchObject({
+        quotas: { conversations: { used: 11 }, messages: { used: 22 } },
+      });
     });
     it("scopes historical messages to the selected tenant", async () => {
       for (const [fixture, count] of [
@@ -66,42 +66,34 @@ describe.skipIf(!process.env.DATABASE_URL)(
           );
       }
       expect(
-        (await caller(other.merchantId).usage.getUsageHistory()).reduce(
-          (total, row) => total + row.messages,
+        (await caller(other.merchantId).usage.workspace()).history.reduce(
+          (total, row) => total + row.outgoingMessages,
           0
         )
       ).toBe(3);
       expect(
-        (await caller(owner.merchantId).usage.getUsageHistory()).reduce(
-          (total, row) => total + row.messages,
+        (await caller(owner.merchantId).usage.workspace()).history.reduce(
+          (total, row) => total + row.outgoingMessages,
           0
         )
       ).toBe(1);
     });
-    it.each(["current", "history", "subscription"] as const)(
-      "rejects a revoked %s read without falling back to the owner store",
-      async kind => {
-        await q(
-          "UPDATE merchant_members SET is_active=0 WHERE merchant_id=? AND user_id=?",
-          [other.merchantId, owner.userId]
-        );
-        const c = caller(other.merchantId);
-        await expect(
-          kind === "current"
-            ? c.usage.getCurrentUsage()
-            : kind === "history"
-              ? c.usage.getUsageHistory()
-              : c.subscriptions.getUsage()
-        ).rejects.toMatchObject({ code: "FORBIDDEN" });
-      }
-    );
+    it("rejects revoked workspace access without falling back to the owner store", async () => {
+      await q(
+        "UPDATE merchant_members SET is_active=0 WHERE merchant_id=? AND user_id=?",
+        [other.merchantId, owner.userId]
+      );
+      await expect(
+        caller(other.merchantId).usage.workspace()
+      ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    });
     it("honours an explicit revoked owner membership", async () => {
       await q(
         "INSERT INTO merchant_members(merchant_id,user_id,role,is_active) VALUES (?,?,'owner',0)",
         [owner.merchantId, owner.userId]
       );
       await expect(
-        caller(owner.merchantId).subscriptions.getUsage()
+        caller(owner.merchantId).usage.workspace()
       ).rejects.toMatchObject({ code: "FORBIDDEN" });
     });
   }

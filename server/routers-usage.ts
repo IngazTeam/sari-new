@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { merchantProcedure, router } from "./_core/trpc";
-import { getMerchantCurrentUsage, getMerchantUsageHistory } from "./db";
+import { merchantProcedure, protectedProcedure, router } from "./_core/trpc";
 import { readUsageWorkspace } from "./accounts/usage-workspace";
 import { MerchantSettingsAuthorityError } from "./accounts/merchant-settings-authority";
 
@@ -11,25 +10,16 @@ const unavailable = () =>
     message: "Usage data unavailable",
   });
 
-// Shared by the mounted subscription router and the legacy module, so their
-// tenant selection and error boundary cannot silently diverge again.
-export const subscriptionUsageProcedure = merchantProcedure
-  .input(z.void())
-  .query(async ({ ctx }) => {
-    let stats;
-    try {
-      const { getUsageStats } = await import("./usage-tracking");
-      stats = await getUsageStats(ctx.merchantId);
-    } catch {
-      throw unavailable();
-    }
-    if (!stats)
-      throw new TRPCError({
-        code: "NOT_FOUND",
-        message: "No active subscription found",
-      });
-    return stats;
+// Keep old clients explicit: no selected-tenant resolution or legacy data reads.
+const retiredUsage = () => {
+  throw new TRPCError({
+    code: "PRECONDITION_FAILED",
+    message: "usage:workspace_required",
   });
+};
+export const subscriptionUsageProcedure = protectedProcedure
+  .input(z.void())
+  .query(retiredUsage);
 
 export const usageRouter = router({
   workspace: merchantProcedure.input(z.void()).query(async ({ ctx }) => {
@@ -47,26 +37,7 @@ export const usageRouter = router({
       throw unavailable();
     }
   }),
-  getCurrentUsage: merchantProcedure.input(z.void()).query(async ({ ctx }) => {
-    let usage;
-    try {
-      usage = await getMerchantCurrentUsage(ctx.merchantId);
-    } catch {
-      throw unavailable();
-    }
-    if (!usage)
-      throw new TRPCError({
-        code: "NOT_FOUND",
-        message: "No usage subscription found",
-      });
-    return usage;
-  }),
-  getUsageHistory: merchantProcedure.input(z.void()).query(async ({ ctx }) => {
-    try {
-      return await getMerchantUsageHistory(ctx.merchantId);
-    } catch {
-      throw unavailable();
-    }
-  }),
+  getCurrentUsage: protectedProcedure.input(z.void()).query(retiredUsage),
+  getUsageHistory: protectedProcedure.input(z.void()).query(retiredUsage),
 });
 export type UsageRouter = typeof usageRouter;
