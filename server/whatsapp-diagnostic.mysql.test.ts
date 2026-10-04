@@ -7,6 +7,7 @@ import { runWhatsAppDiagnostic } from './whatsapp/diagnostic-tests';
 import { whatsappDiagnosticRouter } from './routers-whatsapp-diagnostic';
 import { apiRateLimitBucketHash } from './api/distributed-rate-limit';
 import { encryptSecret } from './security/secrets';
+import { readWhatsAppDiagnosticWorkspace } from './whatsapp/diagnostic-workspace';
 describe.skipIf(!process.env.DATABASE_URL)('scoped WhatsApp diagnostics with disposable MySQL and mocked provider',()=>{
  let a:Awaited<ReturnType<typeof createDisposableMerchant>>,b:typeof a,instanceId:string;
  const token='local_test_credential_506';
@@ -27,6 +28,18 @@ describe.skipIf(!process.env.DATABASE_URL)('scoped WhatsApp diagnostics with dis
   const storedBefore=await q('SELECT token,status FROM whatsapp_instances WHERE instance_id=?',[instanceId]);
   expect(await caller().testConnection(input())).toEqual({success:true,status:'authorized',phoneNumber:'99900000001'});expect(await caller().sendTestMessage(text())).toEqual({accepted:true,idMessage:'local_receipt_506'});expect(http.get).toHaveBeenCalledTimes(2);expect(http.post).toHaveBeenCalledOnce();
   expect(await q('SELECT token,status FROM whatsapp_instances WHERE instance_id=?',[instanceId])).toEqual(storedBefore);
+ });
+ it('reads connection choices without returning tokens, private metadata or inventing live connectivity',async()=>{
+  await q('UPDATE whatsapp_instances SET metadata=?,webhook_url=? WHERE instance_id=?',['PRIVATE_METADATA','https://example.test/PRIVATE_WEBHOOK',instanceId]);
+  const result=await caller().diagnosticWorkspace({merchantId:a.merchantId});expect(result).toMatchObject({actorId:a.userId,merchantId:a.merchantId,truncated:false,connections:[{instanceId,status:'active',provider:'green_api'}]});expect(JSON.stringify(result)).not.toMatch(/PRIVATE|local_test_credential|token|webhook|connected/);expect(http.get).not.toHaveBeenCalled();
+  await expect(caller().diagnosticWorkspace({merchantId:b.merchantId})).rejects.toMatchObject({code:'FORBIDDEN'});
+ });
+ it('returns an honestly empty owned store and rejects another owner at the source boundary',async()=>{
+  expect((await readWhatsAppDiagnosticWorkspace(b.userId,b.merchantId)).connections).toEqual([]);await expect(readWhatsAppDiagnosticWorkspace(b.userId,a.merchantId)).rejects.toThrow('forbidden');
+ });
+ it('caps choices at 100 and explicitly marks the incomplete list',async()=>{
+  for(let i=0;i<100;i++)await q("INSERT INTO whatsapp_instances(merchant_id,provider,instance_id,token,status,is_primary) VALUES (?,'green_api',?,?,'inactive',0)",[a.merchantId,instanceId+'900'+i,encryptSecret(token)]);
+  const result=await readWhatsAppDiagnosticWorkspace(a.userId,a.merchantId);expect(result.connections).toHaveLength(100);expect(result.truncated).toBe(true);expect(result.connections[0].instanceId).toBe(instanceId);expect(http.get).not.toHaveBeenCalled();
  });
  it('blocks a foreign instance before even consuming a request',async()=>{
   await expect(caller(b.userId,b.merchantId).testConnection(input())).rejects.toMatchObject({code:'FORBIDDEN'});await expect(caller(b.userId,b.merchantId).sendTestMessage(text())).rejects.toMatchObject({code:'FORBIDDEN'});

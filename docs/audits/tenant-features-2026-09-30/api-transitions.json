@@ -2064,6 +2064,38 @@
           "contains": "reviewRevision!==value.reviewRevision"
         }
       ]
+    },
+    {
+      "routes": [
+        "/merchant/whatsapp-test"
+      ],
+      "removed": [
+        "whatsapp.getPrimaryInstance"
+      ],
+      "required": [
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "whatsapp.diagnosticWorkspace",
+        "whatsapp.testConnection",
+        "whatsapp.sendTestMessage",
+        "whatsapp.sendTestImage",
+        "whatsapp.saveInstance",
+        "whatsapp.deleteInstance"
+      ],
+      "note": "The explicit, selected-tenant owner-only connection picker replaces implicit primary selection. Existing connection, text/image, save and delete actions remain present with reviewed content and no default recipient or returned token. Backend write hardening remains tracked separately.",
+      "evidence": [
+        "docs/audits/tenant-whatsapp-diagnostic-ui-2026-10-04/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "client/src/pages/merchant/WhatsAppTest.tsx",
+          "contains": "<WhatsAppDiagnosticPage/>"
+        },
+        {
+          "file": "server/whatsapp/diagnostic-workspace.ts",
+          "contains": "LIMIT 101"
+        }
+      ]
     }
   ]
 }

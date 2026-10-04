@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-04T13:30:29.059Z",
+  "generatedAt": "2026-10-04T14:16:51.422Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -9627,117 +9627,140 @@
     },
     {
       "file": "client/src/pages/merchant/WhatsAppTest.tsx",
-      "hash": "949f1848f9c7",
+      "hash": "a8bf06b253de",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [
+        "client/src/components/merchant/WhatsAppDiagnosticWorkspace.tsx"
+      ],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/components/merchant/WhatsAppDiagnosticWorkspace.tsx",
+      "hash": "8e60e1de094e",
       "queries": [
-        "whatsapp.getPrimaryInstance"
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "whatsapp.diagnosticWorkspace"
       ],
       "mutations": [
-        "whatsapp.saveInstance",
-        "whatsapp.deleteInstance",
+        "whatsapp.testConnection",
         "whatsapp.sendTestMessage",
         "whatsapp.sendTestImage",
-        "whatsapp.testConnection"
+        "whatsapp.saveInstance",
+        "whatsapp.deleteInstance"
       ],
       "imperativeReads": [],
       "browserRequests": [],
       "sections": [
         {
-          "label": "اختبار WhatsApp",
-          "line": 293,
+          "label": "",
+          "line": 84,
           "tag": "h1"
         },
         {
-          "label": "بيانات Green API",
-          "line": 314,
-          "tag": "CardTitle"
+          "label": "",
+          "line": 88,
+          "tag": "h2"
         },
         {
-          "label": "إرسال رسالة نصية",
-          "line": 399,
-          "tag": "CardTitle"
+          "label": "",
+          "line": 94,
+          "tag": "summary"
         },
         {
-          "label": "إرسال صورة",
-          "line": 444,
-          "tag": "CardTitle"
+          "label": "",
+          "line": 96,
+          "tag": "h2"
         },
         {
-          "label": "نتائج الاختبار",
-          "line": 488,
-          "tag": "CardTitle"
+          "label": "",
+          "line": 104,
+          "tag": "h2"
         },
         {
-          "label": "اختبار الاتصال",
-          "line": 501,
-          "tag": "h3"
-        },
-        {
-          "label": "إرسال رسالة نصية",
-          "line": 550,
-          "tag": "h3"
-        },
-        {
-          "label": "إرسال صورة",
-          "line": 599,
-          "tag": "h3"
-        },
-        {
-          "label": "نصائح سريعة",
-          "line": 656,
-          "tag": "CardTitle"
+          "label": "save delete",
+          "line": 107,
+          "tag": "DialogTitle"
         }
       ],
       "choices": [],
       "handlers": [
         {
-          "name": "handleTestConnection",
-          "line": 197,
-          "calls": [
-            "testConnectionMutation"
-          ]
+          "name": "edit",
+          "line": 37,
+          "calls": []
         },
         {
-          "name": "handleSaveInstance",
-          "line": 213,
-          "calls": [
-            "saveInstanceMutation"
-          ]
+          "name": "openReview",
+          "line": 49,
+          "calls": []
         },
         {
-          "name": "handleDeleteInstance",
-          "line": 230,
+          "name": "confirm",
+          "line": 57,
           "calls": [
-            "deleteInstanceMutation"
-          ]
-        },
-        {
-          "name": "handleSendMessage",
-          "line": 238,
-          "calls": [
-            "sendMessageMutation"
-          ]
-        },
-        {
-          "name": "handleSendImage",
-          "line": 260,
-          "calls": [
-            "sendImageMutation"
+            "sendText",
+            "sendImage",
+            "save",
+            "remove"
           ]
         }
       ],
       "queryStates": [
         {
-          "query": "whatsapp.getPrimaryInstance",
-          "binding": "{ data: savedInstance, refetch: refetchInstance }",
-          "line": 64,
-          "errorSignal": false,
-          "loadingSignal": false,
+          "query": "auth.me",
+          "binding": "user",
+          "line": 15,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        },
+        {
+          "query": "merchants.workspaceIdentity",
+          "binding": "identity",
+          "line": 16,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": "!!user.data?.id&&!user.error&&!user.isFetching"
+        },
+        {
+          "query": "whatsapp.diagnosticWorkspace",
+          "binding": "query",
+          "line": 27,
+          "errorSignal": true,
+          "loadingSignal": true,
           "enabled": null
         }
       ],
       "conditions": [],
+      "imports": [
+        "client/src/lib/usage-workspace-view.ts",
+        "client/src/lib/whatsapp-diagnostic-labels.ts"
+      ],
+      "controlCount": 16
+    },
+    {
+      "file": "client/src/lib/whatsapp-diagnostic-labels.ts",
+      "hash": "cde8010c0b36",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
       "imports": [],
-      "controlCount": 15
+      "controlCount": 0
     },
     {
       "file": "client/src/pages/merchant/GreenAPISetupGuide.tsx",
@@ -20734,7 +20757,7 @@
     },
     {
       "file": "client/src/components/merchant/tools.ts",
-      "hash": "7c922d4ca66d",
+      "hash": "13e3cab8d86d",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
@@ -25223,34 +25246,40 @@
         "WhatsAppTest"
       ],
       "files": [
-        "client/src/pages/merchant/WhatsAppTest.tsx"
+        "client/src/pages/merchant/WhatsAppTest.tsx",
+        "client/src/components/merchant/WhatsAppDiagnosticWorkspace.tsx",
+        "client/src/lib/usage-workspace-view.ts",
+        "client/src/lib/whatsapp-diagnostic-labels.ts"
       ],
       "controls": [
-        "2a855d59d91c",
-        "014f57d3dc49",
-        "8ee4aded0d04",
-        "71f035d4ae10",
-        "28bf4ec61bbc",
-        "5166cd009e7d",
-        "06b1f2c35072",
-        "f38c7b28c76e",
-        "53ed270abcf9",
-        "8f618fe6e4dc",
-        "eed44454c99d",
-        "624e72cc9fc7",
-        "32de1cbdd68c",
-        "1c5e8fcb1d45",
-        "5bed3dce2085"
+        "d775662d227a",
+        "d775662d227a",
+        "ebe7a24fb4bd",
+        "01bcd9905f15",
+        "411dd58bc86d",
+        "e05e13b1c5b8",
+        "fd6620f3513b",
+        "23693449ad30",
+        "379c3fc43011",
+        "3f6f9b38bc98",
+        "0f9f8839c92c",
+        "263063c3c9a6",
+        "a762f137490a",
+        "6a09cb3bbce1",
+        "142693d24560",
+        "16ad1852f3bd"
       ],
       "queries": [
-        "whatsapp.getPrimaryInstance"
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "whatsapp.diagnosticWorkspace"
       ],
       "mutations": [
-        "whatsapp.saveInstance",
-        "whatsapp.deleteInstance",
+        "whatsapp.testConnection",
         "whatsapp.sendTestMessage",
         "whatsapp.sendTestImage",
-        "whatsapp.testConnection"
+        "whatsapp.saveInstance",
+        "whatsapp.deleteInstance"
       ],
       "imperativeReads": [],
       "browserRequests": []
@@ -59097,271 +59126,82 @@
       "review": "source-inventoried"
     },
     {
-      "id": "2a855d59d91c",
-      "file": "client/src/pages/merchant/WhatsAppTest.tsx",
-      "line": 298,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "دليل الإعداد",
-      "section": "اختبار WhatsApp",
-      "binding": "() => window.location.href = \"/merchant/greenapi-setup\"",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "014f57d3dc49",
-      "file": "client/src/pages/merchant/WhatsAppTest.tsx",
-      "line": 336,
-      "tag": "Input",
+      "id": "d775662d227a",
+      "file": "client/src/components/merchant/WhatsAppDiagnosticWorkspace.tsx",
+      "line": 82,
+      "tag": "textarea",
       "role": "",
       "kind": "field",
-      "label": "Instance ID",
-      "section": "بيانات Green API",
-      "binding": "instanceId",
+      "label": "textarea",
+      "section": "WhatsAppDiagnosticWorkspace",
+      "binding": "fields[key]",
       "type": "text",
       "options": [],
       "min": "",
       "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "isSaved",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "8ee4aded0d04",
-      "file": "client/src/pages/merchant/WhatsAppTest.tsx",
-      "line": 347,
-      "tag": "Input",
-      "role": "",
-      "kind": "field",
-      "label": "API Token",
-      "section": "بيانات Green API",
-      "binding": "apiToken",
-      "type": "password",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "isSaved",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "71f035d4ae10",
-      "file": "client/src/pages/merchant/WhatsAppTest.tsx",
-      "line": 359,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "اختبار الاتصال",
-      "section": "بيانات Green API",
-      "binding": "handleTestConnection",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "testConnectionMutation.isPending || !instanceId || !apiToken",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "28bf4ec61bbc",
-      "file": "client/src/pages/merchant/WhatsAppTest.tsx",
-      "line": 369,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "حفظ البيانات",
-      "section": "بيانات Green API",
-      "binding": "handleSaveInstance",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
+      "maxLength": "limit",
       "required": false,
       "conditional": true,
       "conditions": [
-        "!isSaved && connectionStatus?.success"
+        "kind==='textarea'"
       ],
-      "disabled": "saveInstanceMutation.isPending",
+      "disabled": "disabled",
       "review": "source-inventoried"
     },
     {
-      "id": "5166cd009e7d",
-      "file": "client/src/pages/merchant/WhatsAppTest.tsx",
-      "line": 382,
-      "tag": "Button",
+      "id": "d775662d227a",
+      "file": "client/src/components/merchant/WhatsAppDiagnosticWorkspace.tsx",
+      "line": 82,
+      "tag": "input",
       "role": "",
-      "kind": "action",
-      "label": "حذف",
-      "section": "بيانات Green API",
-      "binding": "handleDeleteInstance",
-      "type": "text",
+      "kind": "field",
+      "label": "textarea",
+      "section": "WhatsAppDiagnosticWorkspace",
+      "binding": "fields[key]",
+      "type": "kind",
       "options": [],
       "min": "",
       "max": "",
-      "maxLength": "",
+      "maxLength": "limit",
       "required": false,
       "conditional": true,
       "conditions": [
-        "isSaved"
+        "kind==='textarea'"
       ],
-      "disabled": "deleteInstanceMutation.isPending",
+      "disabled": "disabled",
       "review": "source-inventoried"
     },
     {
-      "id": "06b1f2c35072",
-      "file": "client/src/pages/merchant/WhatsAppTest.tsx",
-      "line": 407,
-      "tag": "Input",
-      "role": "",
-      "kind": "field",
-      "label": "رقم الجوال (مع رمز الدولة)",
-      "section": "إرسال رسالة نصية",
-      "binding": "phoneNumber",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "f38c7b28c76e",
-      "file": "client/src/pages/merchant/WhatsAppTest.tsx",
-      "line": 420,
-      "tag": "Textarea",
-      "role": "",
-      "kind": "field",
-      "label": "نص الرسالة",
-      "section": "إرسال رسالة نصية",
-      "binding": "message",
-      "type": "textarea",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "53ed270abcf9",
-      "file": "client/src/pages/merchant/WhatsAppTest.tsx",
-      "line": 429,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "إرسال الرسالة",
-      "section": "إرسال رسالة نصية",
-      "binding": "handleSendMessage",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "sendMessageMutation.isPending || !instanceId || !apiToken",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "8f618fe6e4dc",
-      "file": "client/src/pages/merchant/WhatsAppTest.tsx",
-      "line": 452,
-      "tag": "Input",
-      "role": "",
-      "kind": "field",
-      "label": "رابط الصورة",
-      "section": "إرسال صورة",
-      "binding": "imageUrl",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "eed44454c99d",
-      "file": "client/src/pages/merchant/WhatsAppTest.tsx",
-      "line": 462,
-      "tag": "Textarea",
-      "role": "",
-      "kind": "field",
-      "label": "نص مرفق (اختياري)",
-      "section": "إرسال صورة",
-      "binding": "imageCaption",
-      "type": "textarea",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "624e72cc9fc7",
-      "file": "client/src/pages/merchant/WhatsAppTest.tsx",
-      "line": 471,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "إرسال الصورة",
-      "section": "إرسال صورة",
-      "binding": "handleSendImage",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "sendImageMutation.isPending || !instanceId || !apiToken",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "32de1cbdd68c",
-      "file": "client/src/pages/merchant/WhatsAppTest.tsx",
-      "line": 519,
-      "tag": "Button",
+      "id": "ebe7a24fb4bd",
+      "file": "client/src/components/merchant/WhatsAppDiagnosticWorkspace.tsx",
+      "line": 84,
+      "tag": "Link",
       "role": "",
       "kind": "action",
       "label": "",
-      "section": "اختبار الاتصال",
-      "binding": "() => copyToClipboard(testResults.connection!.phoneNumber!)",
+      "section": "WhatsAppDiagnosticWorkspace",
+      "binding": "/merchant/greenapi-setup",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "01bcd9905f15",
+      "file": "client/src/components/merchant/WhatsAppDiagnosticWorkspace.tsx",
+      "line": 88,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "· green_api meta_cloud Meta Cloud",
+      "section": "WhatsAppDiagnosticWorkspace",
+      "binding": "()=>{setHealth(null);void query.refetch();}",
       "type": "button",
       "options": [],
       "min": "",
@@ -59370,22 +59210,182 @@
       "required": false,
       "conditional": false,
       "conditions": [
-        "testResults.connection.phoneNumber",
-        "testResults.connection"
+        "!data",
+        "query.isLoading||query.isFetching",
+        "query.error"
+      ],
+      "disabled": "disabled",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "411dd58bc86d",
+      "file": "client/src/components/merchant/WhatsAppDiagnosticWorkspace.tsx",
+      "line": 89,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "· green_api meta_cloud Meta Cloud",
+      "section": "WhatsAppDiagnosticWorkspace",
+      "binding": "selected?.id??''",
+      "type": "text",
+      "options": [
+        {
+          "value": "",
+          "label": ""
+        },
+        {
+          "value": "row.id",
+          "label": "· green_api meta_cloud Meta Cloud"
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!data",
+        "query.isLoading||query.isFetching",
+        "query.error"
+      ],
+      "disabled": "disabled",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "e05e13b1c5b8",
+      "file": "client/src/components/merchant/WhatsAppDiagnosticWorkspace.tsx",
+      "line": 92,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "· green_api meta_cloud Meta Cloud",
+      "section": "WhatsAppDiagnosticWorkspace",
+      "binding": "()=>void check()",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!data",
+        "query.isLoading||query.isFetching",
+        "query.error"
+      ],
+      "disabled": "disabled",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "fd6620f3513b",
+      "file": "client/src/components/merchant/WhatsAppDiagnosticWorkspace.tsx",
+      "line": 92,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "· green_api meta_cloud Meta Cloud",
+      "section": "WhatsAppDiagnosticWorkspace",
+      "binding": "/merchant/whatsapp",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!data",
+        "query.isLoading||query.isFetching",
+        "query.error"
       ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "1c5e8fcb1d45",
-      "file": "client/src/pages/merchant/WhatsAppTest.tsx",
-      "line": 568,
-      "tag": "Button",
+      "id": "23693449ad30",
+      "file": "client/src/components/merchant/WhatsAppDiagnosticWorkspace.tsx",
+      "line": 94,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "· green_api meta_cloud Meta Cloud",
+      "section": "WhatsAppDiagnosticWorkspace",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!data",
+        "query.isLoading||query.isFetching",
+        "query.error"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "379c3fc43011",
+      "file": "client/src/components/merchant/WhatsAppDiagnosticWorkspace.tsx",
+      "line": 94,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "· green_api meta_cloud Meta Cloud",
+      "section": "WhatsAppDiagnosticWorkspace",
+      "binding": "e=>openReview('save',e.currentTarget)",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!data",
+        "query.isLoading||query.isFetching",
+        "query.error"
+      ],
+      "disabled": "disabled||!health?.success||!health.phoneNumber",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "3f6f9b38bc98",
+      "file": "client/src/components/merchant/WhatsAppDiagnosticWorkspace.tsx",
+      "line": 94,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "· green_api meta_cloud Meta Cloud",
+      "section": "WhatsAppDiagnosticWorkspace",
+      "binding": "e=>openReview('delete',e.currentTarget)",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!data",
+        "query.isLoading||query.isFetching",
+        "query.error"
+      ],
+      "disabled": "disabled||!selected||data.truncated",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "0f9f8839c92c",
+      "file": "client/src/components/merchant/WhatsAppDiagnosticWorkspace.tsx",
+      "line": 96,
+      "tag": "button",
       "role": "",
       "kind": "action",
       "label": "",
-      "section": "إرسال رسالة نصية",
-      "binding": "() => copyToClipboard(testResults.textMessage!.messageId!)",
+      "section": "WhatsAppDiagnosticWorkspace",
+      "binding": "()=>{setTab(value);setErrors({});}",
       "type": "button",
       "options": [],
       "min": "",
@@ -59394,22 +59394,49 @@
       "required": false,
       "conditional": false,
       "conditions": [
-        "testResults.textMessage.messageId",
-        "testResults.textMessage"
+        "!data",
+        "query.isLoading||query.isFetching",
+        "query.error"
       ],
-      "disabled": "",
+      "disabled": "disabled",
       "review": "source-inventoried"
     },
     {
-      "id": "5bed3dce2085",
-      "file": "client/src/pages/merchant/WhatsAppTest.tsx",
-      "line": 617,
-      "tag": "Button",
+      "id": "263063c3c9a6",
+      "file": "client/src/components/merchant/WhatsAppDiagnosticWorkspace.tsx",
+      "line": 101,
+      "tag": "button",
       "role": "",
       "kind": "action",
       "label": "",
-      "section": "إرسال صورة",
-      "binding": "() => copyToClipboard(testResults.imageMessage!.messageId!)",
+      "section": "WhatsAppDiagnosticWorkspace",
+      "binding": "",
+      "type": "submit",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "tab==='connection'",
+        "!data",
+        "query.isLoading||query.isFetching",
+        "query.error"
+      ],
+      "disabled": "disabled||sendLocked",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "a762f137490a",
+      "file": "client/src/components/merchant/WhatsAppDiagnosticWorkspace.tsx",
+      "line": 104,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "WhatsAppDiagnosticWorkspace",
+      "binding": "()=>{setSendLocked(false);setReceipt(null);setNotice(null);}",
       "type": "button",
       "options": [],
       "min": "",
@@ -59418,10 +59445,76 @@
       "required": false,
       "conditional": false,
       "conditions": [
-        "testResults.imageMessage.messageId",
-        "testResults.imageMessage"
+        "sendLocked",
+        "notice",
+        "!data",
+        "query.isLoading||query.isFetching",
+        "query.error"
       ],
+      "disabled": "running",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "6a09cb3bbce1",
+      "file": "client/src/components/merchant/WhatsAppDiagnosticWorkspace.tsx",
+      "line": 106,
+      "tag": "DialogContent",
+      "role": "",
+      "kind": "dialog",
+      "label": "save delete delete save : text image : image : text : save",
+      "section": "WhatsAppDiagnosticWorkspace",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
       "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "142693d24560",
+      "file": "client/src/components/merchant/WhatsAppDiagnosticWorkspace.tsx",
+      "line": 109,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "save delete",
+      "binding": "()=>setReview(null)",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "running",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "16ad1852f3bd",
+      "file": "client/src/components/merchant/WhatsAppDiagnosticWorkspace.tsx",
+      "line": 109,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "save delete",
+      "binding": "()=>void confirm()",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "running||!!actionError",
       "review": "source-inventoried"
     },
     {

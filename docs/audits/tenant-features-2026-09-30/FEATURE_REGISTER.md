@@ -2,7 +2,7 @@
 
 هذا حصر مصدر قابل لإعادة التوليد، وليس ادعاءً بأن كل مسار عمل اختُبر أو أُعيد تصميمه. يشمل المكونات الفرعية المحلية، الحقول، الأزرار، النوافذ، التبويبات، واجهات القراءة والتعديل. العناصر الديناميكية تحتاج مراجعة إضافية.
 
-- 126 مسارًا مسجلًا، 521 ملف واجهة متصلًا، 2779 عنصر تحكم في المصدر.
+- 126 مسارًا مسجلًا، 523 ملف واجهة متصلًا، 2780 عنصر تحكم في المصدر.
 - 0 رابطًا حرفيًا غير مطابق، و0 ملف صفحة غير متصل بالمسارات المحصورة.
 
 | الصفحة | الملفات | عناصر التحكم | القراءة / التعديل | موك أب للصفحة |
@@ -47,7 +47,7 @@
 | /merchant/orders — الطلبات | 22 | 86 | 17 / 5 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/whatsapp-instances — أرقام واتساب | 2 | 23 | 8 / 6 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/whatsapp-setup — مدخل لوحة التاجر | 0 | 0 | 0 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/whatsapp-test — تشخيص واتساب | 1 | 15 | 1 / 5 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/whatsapp-test — تشخيص واتساب | 4 | 16 | 3 / 5 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/greenapi-setup — دليل QR القديم | 2 | 17 | 0 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/test-sari — تجربة المساعد | 9 | 30 | 5 / 5 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/metrics-dashboard — مقاييس المساعد | 11 | 7 | 3 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -1964,25 +1964,26 @@
 | 53 | Button | review preparing dispatching rejected | SallaCartRecovery |
 | 54 | Button | تسمية ديناميكية / تحتاج مراجعة | SallaCartRecovery |
 
-## client/src/pages/merchant/WhatsAppTest.tsx
+## client/src/components/merchant/WhatsAppDiagnosticWorkspace.tsx
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 298 | Button | دليل الإعداد | اختبار WhatsApp |
-| 336 | Input | Instance ID | بيانات Green API |
-| 347 | Input | API Token | بيانات Green API |
-| 359 | Button | اختبار الاتصال | بيانات Green API |
-| 369 | Button | حفظ البيانات | بيانات Green API |
-| 382 | Button | حذف | بيانات Green API |
-| 407 | Input | رقم الجوال (مع رمز الدولة) | إرسال رسالة نصية |
-| 420 | Textarea | نص الرسالة | إرسال رسالة نصية |
-| 429 | Button | إرسال الرسالة | إرسال رسالة نصية |
-| 452 | Input | رابط الصورة | إرسال صورة |
-| 462 | Textarea | نص مرفق (اختياري) | إرسال صورة |
-| 471 | Button | إرسال الصورة | إرسال صورة |
-| 519 | Button | تسمية ديناميكية / تحتاج مراجعة | اختبار الاتصال |
-| 568 | Button | تسمية ديناميكية / تحتاج مراجعة | إرسال رسالة نصية |
-| 617 | Button | تسمية ديناميكية / تحتاج مراجعة | إرسال صورة |
+| 82 | textarea | textarea | WhatsAppDiagnosticWorkspace |
+| 82 | input | textarea | WhatsAppDiagnosticWorkspace |
+| 84 | Link | تسمية ديناميكية / تحتاج مراجعة | WhatsAppDiagnosticWorkspace |
+| 88 | button | · green_api meta_cloud Meta Cloud | WhatsAppDiagnosticWorkspace |
+| 89 | select | · green_api meta_cloud Meta Cloud | WhatsAppDiagnosticWorkspace |
+| 92 | button | · green_api meta_cloud Meta Cloud | WhatsAppDiagnosticWorkspace |
+| 92 | Link | · green_api meta_cloud Meta Cloud | WhatsAppDiagnosticWorkspace |
+| 94 | summary | · green_api meta_cloud Meta Cloud | WhatsAppDiagnosticWorkspace |
+| 94 | button | · green_api meta_cloud Meta Cloud | WhatsAppDiagnosticWorkspace |
+| 94 | button | · green_api meta_cloud Meta Cloud | WhatsAppDiagnosticWorkspace |
+| 96 | button | تسمية ديناميكية / تحتاج مراجعة | WhatsAppDiagnosticWorkspace |
+| 101 | button | تسمية ديناميكية / تحتاج مراجعة | WhatsAppDiagnosticWorkspace |
+| 104 | button | تسمية ديناميكية / تحتاج مراجعة | WhatsAppDiagnosticWorkspace |
+| 106 | DialogContent | save delete delete save : text image : image : text : save | WhatsAppDiagnosticWorkspace |
+| 109 | button | تسمية ديناميكية / تحتاج مراجعة | save delete |
+| 109 | button | تسمية ديناميكية / تحتاج مراجعة | save delete |
 
 ## client/src/components/merchant/WhatsAppSetupWorkspace.tsx
 

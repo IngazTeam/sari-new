@@ -1,0 +1,1269 @@
+{
+  "engine": "Chromium in-app browser, local same-origin frames; not Safari/iPhone",
+  "widths": [
+    320,
+    390,
+    768,
+    1440
+  ],
+  "initialFindings": [
+    {
+      "view": "text-review-844h",
+      "frame": 0,
+      "overflow": [],
+      "scroll": 256,
+      "smallFonts": 0,
+      "smallTargets": [
+        {
+          "tag": "BUTTON",
+          "text": "إغلاق"
+        }
+      ],
+      "viewport": 320,
+      "width": 258
+    },
+    {
+      "view": "text-review-844h",
+      "frame": 1,
+      "overflow": [],
+      "scroll": 326,
+      "smallFonts": 0,
+      "smallTargets": [
+        {
+          "tag": "BUTTON",
+          "text": "إغلاق"
+        }
+      ],
+      "viewport": 390,
+      "width": 328
+    },
+    {
+      "view": "text-review-844h",
+      "frame": 2,
+      "overflow": [],
+      "scroll": 558,
+      "smallFonts": 0,
+      "smallTargets": [
+        {
+          "tag": "BUTTON",
+          "text": "إغلاق"
+        }
+      ],
+      "viewport": 768,
+      "width": 560
+    },
+    {
+      "view": "text-review-844h",
+      "frame": 3,
+      "overflow": [],
+      "scroll": 558,
+      "smallFonts": 0,
+      "smallTargets": [
+        {
+          "tag": "BUTTON",
+          "text": "إغلاق"
+        }
+      ],
+      "viewport": 1440,
+      "width": 560
+    },
+    {
+      "view": "text-review-844h",
+      "frame": 4,
+      "overflow": [],
+      "scroll": 256,
+      "smallFonts": 0,
+      "smallTargets": [
+        {
+          "tag": "BUTTON",
+          "text": "Close"
+        }
+      ],
+      "viewport": 320,
+      "width": 258
+    },
+    {
+      "view": "text-review-844h",
+      "frame": 5,
+      "overflow": [],
+      "scroll": 326,
+      "smallFonts": 0,
+      "smallTargets": [
+        {
+          "tag": "BUTTON",
+          "text": "Close"
+        }
+      ],
+      "viewport": 390,
+      "width": 328
+    },
+    {
+      "view": "text-review-844h",
+      "frame": 6,
+      "overflow": [],
+      "scroll": 558,
+      "smallFonts": 0,
+      "smallTargets": [
+        {
+          "tag": "BUTTON",
+          "text": "Close"
+        }
+      ],
+      "viewport": 768,
+      "width": 560
+    },
+    {
+      "view": "text-review-844h",
+      "frame": 7,
+      "overflow": [],
+      "scroll": 558,
+      "smallFonts": 0,
+      "smallTargets": [
+        {
+          "tag": "BUTTON",
+          "text": "Close"
+        }
+      ],
+      "viewport": 1440,
+      "width": 560
+    }
+  ],
+  "preview": [
+    {
+      "view": "normal",
+      "frame": 0,
+      "overflow": [],
+      "scroll": 266,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "اختبر الاتصال والرسائل",
+      "viewport": 320,
+      "width": 266
+    },
+    {
+      "view": "normal",
+      "frame": 1,
+      "overflow": [],
+      "scroll": 336,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "اختبر الاتصال والرسائل",
+      "viewport": 390,
+      "width": 336
+    },
+    {
+      "view": "normal",
+      "frame": 2,
+      "overflow": [],
+      "scroll": 714,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "اختبر الاتصال والرسائل",
+      "viewport": 768,
+      "width": 714
+    },
+    {
+      "view": "normal",
+      "frame": 3,
+      "overflow": [],
+      "scroll": 1120,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "اختبر الاتصال والرسائل",
+      "viewport": 1440,
+      "width": 1120
+    },
+    {
+      "view": "normal",
+      "frame": 4,
+      "overflow": [],
+      "scroll": 266,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Test the connection and messages",
+      "viewport": 320,
+      "width": 266
+    },
+    {
+      "view": "normal",
+      "frame": 5,
+      "overflow": [],
+      "scroll": 336,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Test the connection and messages",
+      "viewport": 390,
+      "width": 336
+    },
+    {
+      "view": "normal",
+      "frame": 6,
+      "overflow": [],
+      "scroll": 714,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Test the connection and messages",
+      "viewport": 768,
+      "width": 714
+    },
+    {
+      "view": "normal",
+      "frame": 7,
+      "overflow": [],
+      "scroll": 1120,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Test the connection and messages",
+      "viewport": 1440,
+      "width": 1120
+    },
+    {
+      "view": "text",
+      "frame": 0,
+      "overflow": [],
+      "scroll": 266,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "اختبر الاتصال والرسائل",
+      "viewport": 320,
+      "width": 266
+    },
+    {
+      "view": "text",
+      "frame": 1,
+      "overflow": [],
+      "scroll": 336,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "اختبر الاتصال والرسائل",
+      "viewport": 390,
+      "width": 336
+    },
+    {
+      "view": "text",
+      "frame": 2,
+      "overflow": [],
+      "scroll": 714,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "اختبر الاتصال والرسائل",
+      "viewport": 768,
+      "width": 714
+    },
+    {
+      "view": "text",
+      "frame": 3,
+      "overflow": [],
+      "scroll": 1120,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "اختبر الاتصال والرسائل",
+      "viewport": 1440,
+      "width": 1120
+    },
+    {
+      "view": "text",
+      "frame": 4,
+      "overflow": [],
+      "scroll": 266,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Test the connection and messages",
+      "viewport": 320,
+      "width": 266
+    },
+    {
+      "view": "text",
+      "frame": 5,
+      "overflow": [],
+      "scroll": 336,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Test the connection and messages",
+      "viewport": 390,
+      "width": 336
+    },
+    {
+      "view": "text",
+      "frame": 6,
+      "overflow": [],
+      "scroll": 714,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Test the connection and messages",
+      "viewport": 768,
+      "width": 714
+    },
+    {
+      "view": "text",
+      "frame": 7,
+      "overflow": [],
+      "scroll": 1120,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Test the connection and messages",
+      "viewport": 1440,
+      "width": 1120
+    },
+    {
+      "view": "text-review-fixed",
+      "frame": 0,
+      "overflow": [],
+      "scroll": 256,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "viewport": 320,
+      "width": 258
+    },
+    {
+      "view": "text-review-fixed",
+      "frame": 1,
+      "overflow": [],
+      "scroll": 326,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "viewport": 390,
+      "width": 328
+    },
+    {
+      "view": "text-review-fixed",
+      "frame": 2,
+      "overflow": [],
+      "scroll": 558,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "viewport": 768,
+      "width": 560
+    },
+    {
+      "view": "text-review-fixed",
+      "frame": 3,
+      "overflow": [],
+      "scroll": 558,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "viewport": 1440,
+      "width": 560
+    },
+    {
+      "view": "text-review-fixed",
+      "frame": 4,
+      "overflow": [],
+      "scroll": 256,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "viewport": 320,
+      "width": 258
+    },
+    {
+      "view": "text-review-fixed",
+      "frame": 5,
+      "overflow": [],
+      "scroll": 326,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "viewport": 390,
+      "width": 328
+    },
+    {
+      "view": "text-review-fixed",
+      "frame": 6,
+      "overflow": [],
+      "scroll": 558,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "viewport": 768,
+      "width": 560
+    },
+    {
+      "view": "text-review-fixed",
+      "frame": 7,
+      "overflow": [],
+      "scroll": 558,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "viewport": 1440,
+      "width": 560
+    },
+    {
+      "view": "image",
+      "frame": 0,
+      "overflow": [],
+      "scroll": 266,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "اختبر الاتصال والرسائل",
+      "viewport": 320,
+      "width": 266
+    },
+    {
+      "view": "image",
+      "frame": 1,
+      "overflow": [],
+      "scroll": 336,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "اختبر الاتصال والرسائل",
+      "viewport": 390,
+      "width": 336
+    },
+    {
+      "view": "image",
+      "frame": 2,
+      "overflow": [],
+      "scroll": 714,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "اختبر الاتصال والرسائل",
+      "viewport": 768,
+      "width": 714
+    },
+    {
+      "view": "image",
+      "frame": 3,
+      "overflow": [],
+      "scroll": 1120,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "اختبر الاتصال والرسائل",
+      "viewport": 1440,
+      "width": 1120
+    },
+    {
+      "view": "image",
+      "frame": 4,
+      "overflow": [],
+      "scroll": 266,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Test the connection and messages",
+      "viewport": 320,
+      "width": 266
+    },
+    {
+      "view": "image",
+      "frame": 5,
+      "overflow": [],
+      "scroll": 336,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Test the connection and messages",
+      "viewport": 390,
+      "width": 336
+    },
+    {
+      "view": "image",
+      "frame": 6,
+      "overflow": [],
+      "scroll": 714,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Test the connection and messages",
+      "viewport": 768,
+      "width": 714
+    },
+    {
+      "view": "image",
+      "frame": 7,
+      "overflow": [],
+      "scroll": 1120,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Test the connection and messages",
+      "viewport": 1440,
+      "width": 1120
+    },
+    {
+      "view": "image-review",
+      "frame": 0,
+      "overflow": [],
+      "scroll": 256,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "viewport": 320,
+      "width": 258
+    },
+    {
+      "view": "image-review",
+      "frame": 1,
+      "overflow": [],
+      "scroll": 326,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "viewport": 390,
+      "width": 328
+    },
+    {
+      "view": "image-review",
+      "frame": 2,
+      "overflow": [],
+      "scroll": 558,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "viewport": 768,
+      "width": 560
+    },
+    {
+      "view": "image-review",
+      "frame": 3,
+      "overflow": [],
+      "scroll": 558,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "viewport": 1440,
+      "width": 560
+    },
+    {
+      "view": "image-review",
+      "frame": 4,
+      "overflow": [],
+      "scroll": 256,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "viewport": 320,
+      "width": 258
+    },
+    {
+      "view": "image-review",
+      "frame": 5,
+      "overflow": [],
+      "scroll": 326,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "viewport": 390,
+      "width": 328
+    },
+    {
+      "view": "image-review",
+      "frame": 6,
+      "overflow": [],
+      "scroll": 558,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "viewport": 768,
+      "width": 560
+    },
+    {
+      "view": "image-review",
+      "frame": 7,
+      "overflow": [],
+      "scroll": 558,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "viewport": 1440,
+      "width": 560
+    },
+    {
+      "view": "advanced-verified",
+      "frame": 0,
+      "overflow": [],
+      "scroll": 266,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "اختبر الاتصال والرسائل",
+      "viewport": 320,
+      "width": 266
+    },
+    {
+      "view": "advanced-verified",
+      "frame": 1,
+      "overflow": [],
+      "scroll": 336,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "اختبر الاتصال والرسائل",
+      "viewport": 390,
+      "width": 336
+    },
+    {
+      "view": "advanced-verified",
+      "frame": 2,
+      "overflow": [],
+      "scroll": 714,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "اختبر الاتصال والرسائل",
+      "viewport": 768,
+      "width": 714
+    },
+    {
+      "view": "advanced-verified",
+      "frame": 3,
+      "overflow": [],
+      "scroll": 1120,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "اختبر الاتصال والرسائل",
+      "viewport": 1440,
+      "width": 1120
+    },
+    {
+      "view": "advanced-verified",
+      "frame": 4,
+      "overflow": [],
+      "scroll": 266,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Test the connection and messages",
+      "viewport": 320,
+      "width": 266
+    },
+    {
+      "view": "advanced-verified",
+      "frame": 5,
+      "overflow": [],
+      "scroll": 336,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Test the connection and messages",
+      "viewport": 390,
+      "width": 336
+    },
+    {
+      "view": "advanced-verified",
+      "frame": 6,
+      "overflow": [],
+      "scroll": 714,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Test the connection and messages",
+      "viewport": 768,
+      "width": 714
+    },
+    {
+      "view": "advanced-verified",
+      "frame": 7,
+      "overflow": [],
+      "scroll": 1120,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Test the connection and messages",
+      "viewport": 1440,
+      "width": 1120
+    },
+    {
+      "view": "save-review",
+      "frame": 0,
+      "overflow": [],
+      "scroll": 256,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "viewport": 320,
+      "width": 258
+    },
+    {
+      "view": "save-review",
+      "frame": 1,
+      "overflow": [],
+      "scroll": 326,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "viewport": 390,
+      "width": 328
+    },
+    {
+      "view": "save-review",
+      "frame": 2,
+      "overflow": [],
+      "scroll": 558,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "viewport": 768,
+      "width": 560
+    },
+    {
+      "view": "save-review",
+      "frame": 3,
+      "overflow": [],
+      "scroll": 558,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "viewport": 1440,
+      "width": 560
+    },
+    {
+      "view": "save-review",
+      "frame": 4,
+      "overflow": [],
+      "scroll": 256,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "viewport": 320,
+      "width": 258
+    },
+    {
+      "view": "save-review",
+      "frame": 5,
+      "overflow": [],
+      "scroll": 326,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "viewport": 390,
+      "width": 328
+    },
+    {
+      "view": "save-review",
+      "frame": 6,
+      "overflow": [],
+      "scroll": 558,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "viewport": 768,
+      "width": 560
+    },
+    {
+      "view": "save-review",
+      "frame": 7,
+      "overflow": [],
+      "scroll": 558,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "viewport": 1440,
+      "width": 560
+    },
+    {
+      "view": "delete-review",
+      "frame": 0,
+      "overflow": [],
+      "scroll": 256,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "viewport": 320,
+      "width": 258
+    },
+    {
+      "view": "delete-review",
+      "frame": 1,
+      "overflow": [],
+      "scroll": 326,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "viewport": 390,
+      "width": 328
+    },
+    {
+      "view": "delete-review",
+      "frame": 2,
+      "overflow": [],
+      "scroll": 558,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "viewport": 768,
+      "width": 560
+    },
+    {
+      "view": "delete-review",
+      "frame": 3,
+      "overflow": [],
+      "scroll": 558,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "viewport": 1440,
+      "width": 560
+    },
+    {
+      "view": "delete-review",
+      "frame": 4,
+      "overflow": [],
+      "scroll": 256,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "viewport": 320,
+      "width": 258
+    },
+    {
+      "view": "delete-review",
+      "frame": 5,
+      "overflow": [],
+      "scroll": 326,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "viewport": 390,
+      "width": 328
+    },
+    {
+      "view": "delete-review",
+      "frame": 6,
+      "overflow": [],
+      "scroll": 558,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "viewport": 768,
+      "width": 560
+    },
+    {
+      "view": "delete-review",
+      "frame": 7,
+      "overflow": [],
+      "scroll": 558,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "viewport": 1440,
+      "width": 560
+    },
+    {
+      "view": "empty",
+      "frame": 0,
+      "overflow": [],
+      "scroll": 266,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "اختبر الاتصال والرسائل",
+      "viewport": 320,
+      "width": 266
+    },
+    {
+      "view": "empty",
+      "frame": 1,
+      "overflow": [],
+      "scroll": 336,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "اختبر الاتصال والرسائل",
+      "viewport": 390,
+      "width": 336
+    },
+    {
+      "view": "empty",
+      "frame": 2,
+      "overflow": [],
+      "scroll": 714,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "اختبر الاتصال والرسائل",
+      "viewport": 768,
+      "width": 714
+    },
+    {
+      "view": "empty",
+      "frame": 3,
+      "overflow": [],
+      "scroll": 1120,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "اختبر الاتصال والرسائل",
+      "viewport": 1440,
+      "width": 1120
+    },
+    {
+      "view": "empty",
+      "frame": 4,
+      "overflow": [],
+      "scroll": 266,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Test the connection and messages",
+      "viewport": 320,
+      "width": 266
+    },
+    {
+      "view": "empty",
+      "frame": 5,
+      "overflow": [],
+      "scroll": 336,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Test the connection and messages",
+      "viewport": 390,
+      "width": 336
+    },
+    {
+      "view": "empty",
+      "frame": 6,
+      "overflow": [],
+      "scroll": 714,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Test the connection and messages",
+      "viewport": 768,
+      "width": 714
+    },
+    {
+      "view": "empty",
+      "frame": 7,
+      "overflow": [],
+      "scroll": 1120,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Test the connection and messages",
+      "viewport": 1440,
+      "width": 1120
+    },
+    {
+      "view": "failure",
+      "frame": 0,
+      "overflow": [],
+      "scroll": 266,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "اختبر الاتصال والرسائل",
+      "viewport": 320,
+      "width": 266
+    },
+    {
+      "view": "failure",
+      "frame": 1,
+      "overflow": [],
+      "scroll": 336,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "اختبر الاتصال والرسائل",
+      "viewport": 390,
+      "width": 336
+    },
+    {
+      "view": "failure",
+      "frame": 2,
+      "overflow": [],
+      "scroll": 714,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "اختبر الاتصال والرسائل",
+      "viewport": 768,
+      "width": 714
+    },
+    {
+      "view": "failure",
+      "frame": 3,
+      "overflow": [],
+      "scroll": 1120,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "اختبر الاتصال والرسائل",
+      "viewport": 1440,
+      "width": 1120
+    },
+    {
+      "view": "failure",
+      "frame": 4,
+      "overflow": [],
+      "scroll": 266,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Test the connection and messages",
+      "viewport": 320,
+      "width": 266
+    },
+    {
+      "view": "failure",
+      "frame": 5,
+      "overflow": [],
+      "scroll": 336,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Test the connection and messages",
+      "viewport": 390,
+      "width": 336
+    },
+    {
+      "view": "failure",
+      "frame": 6,
+      "overflow": [],
+      "scroll": 714,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Test the connection and messages",
+      "viewport": 768,
+      "width": 714
+    },
+    {
+      "view": "failure",
+      "frame": 7,
+      "overflow": [],
+      "scroll": 1120,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Test the connection and messages",
+      "viewport": 1440,
+      "width": 1120
+    },
+    {
+      "view": "loading",
+      "frame": 0,
+      "overflow": [],
+      "scroll": 266,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "اختبر الاتصال والرسائل",
+      "viewport": 320,
+      "width": 266
+    },
+    {
+      "view": "loading",
+      "frame": 1,
+      "overflow": [],
+      "scroll": 336,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "اختبر الاتصال والرسائل",
+      "viewport": 390,
+      "width": 336
+    },
+    {
+      "view": "loading",
+      "frame": 2,
+      "overflow": [],
+      "scroll": 714,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "اختبر الاتصال والرسائل",
+      "viewport": 768,
+      "width": 714
+    },
+    {
+      "view": "loading",
+      "frame": 3,
+      "overflow": [],
+      "scroll": 1120,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "اختبر الاتصال والرسائل",
+      "viewport": 1440,
+      "width": 1120
+    },
+    {
+      "view": "loading",
+      "frame": 4,
+      "overflow": [],
+      "scroll": 266,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Test the connection and messages",
+      "viewport": 320,
+      "width": 266
+    },
+    {
+      "view": "loading",
+      "frame": 5,
+      "overflow": [],
+      "scroll": 336,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Test the connection and messages",
+      "viewport": 390,
+      "width": 336
+    },
+    {
+      "view": "loading",
+      "frame": 6,
+      "overflow": [],
+      "scroll": 714,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Test the connection and messages",
+      "viewport": 768,
+      "width": 714
+    },
+    {
+      "view": "loading",
+      "frame": 7,
+      "overflow": [],
+      "scroll": 1120,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Test the connection and messages",
+      "viewport": 1440,
+      "width": 1120
+    },
+    {
+      "view": "readonly",
+      "frame": 0,
+      "overflow": [],
+      "scroll": 266,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "اختبر الاتصال والرسائل",
+      "viewport": 320,
+      "width": 266
+    },
+    {
+      "view": "readonly",
+      "frame": 1,
+      "overflow": [],
+      "scroll": 336,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "اختبر الاتصال والرسائل",
+      "viewport": 390,
+      "width": 336
+    },
+    {
+      "view": "readonly",
+      "frame": 2,
+      "overflow": [],
+      "scroll": 714,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "اختبر الاتصال والرسائل",
+      "viewport": 768,
+      "width": 714
+    },
+    {
+      "view": "readonly",
+      "frame": 3,
+      "overflow": [],
+      "scroll": 1120,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "اختبر الاتصال والرسائل",
+      "viewport": 1440,
+      "width": 1120
+    },
+    {
+      "view": "readonly",
+      "frame": 4,
+      "overflow": [],
+      "scroll": 266,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Test the connection and messages",
+      "viewport": 320,
+      "width": 266
+    },
+    {
+      "view": "readonly",
+      "frame": 5,
+      "overflow": [],
+      "scroll": 336,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Test the connection and messages",
+      "viewport": 390,
+      "width": 336
+    },
+    {
+      "view": "readonly",
+      "frame": 6,
+      "overflow": [],
+      "scroll": 714,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Test the connection and messages",
+      "viewport": 768,
+      "width": 714
+    },
+    {
+      "view": "readonly",
+      "frame": 7,
+      "overflow": [],
+      "scroll": 1120,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Test the connection and messages",
+      "viewport": 1440,
+      "width": 1120
+    },
+    {
+      "view": "uncertain-send",
+      "frame": 0,
+      "overflow": [],
+      "scroll": 266,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "اختبر الاتصال والرسائل",
+      "viewport": 320,
+      "width": 266
+    },
+    {
+      "view": "uncertain-send",
+      "frame": 1,
+      "overflow": [],
+      "scroll": 336,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "اختبر الاتصال والرسائل",
+      "viewport": 390,
+      "width": 336
+    },
+    {
+      "view": "uncertain-send",
+      "frame": 2,
+      "overflow": [],
+      "scroll": 714,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "اختبر الاتصال والرسائل",
+      "viewport": 768,
+      "width": 714
+    },
+    {
+      "view": "uncertain-send",
+      "frame": 3,
+      "overflow": [],
+      "scroll": 1120,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "اختبر الاتصال والرسائل",
+      "viewport": 1440,
+      "width": 1120
+    },
+    {
+      "view": "uncertain-send",
+      "frame": 4,
+      "overflow": [],
+      "scroll": 266,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Test the connection and messages",
+      "viewport": 320,
+      "width": 266
+    },
+    {
+      "view": "uncertain-send",
+      "frame": 5,
+      "overflow": [],
+      "scroll": 336,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Test the connection and messages",
+      "viewport": 390,
+      "width": 336
+    },
+    {
+      "view": "uncertain-send",
+      "frame": 6,
+      "overflow": [],
+      "scroll": 714,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Test the connection and messages",
+      "viewport": 768,
+      "width": 714
+    },
+    {
+      "view": "uncertain-send",
+      "frame": 7,
+      "overflow": [],
+      "scroll": 1120,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "Test the connection and messages",
+      "viewport": 1440,
+      "width": 1120
+    }
+  ],
+  "actual": [
+    {
+      "view": "actual-empty",
+      "frame": 0,
+      "overflow": [],
+      "scroll": 292,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "اختبر الاتصال والرسائل",
+      "viewport": 320,
+      "width": 292
+    },
+    {
+      "view": "actual-empty",
+      "frame": 1,
+      "overflow": [],
+      "scroll": 362,
+      "smallFonts": 0,
+      "smallTargets": [],
+      "title": "اختبر الاتصال والرسائل",
+      "viewport": 390,
+      "width": 362
+    }
+  ]
+}

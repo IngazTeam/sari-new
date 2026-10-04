@@ -1,0 +1,82 @@
+{
+  "unitGroups": [
+    {
+      "name": "unit",
+      "total": 205,
+      "passed": 205,
+      "failed": 0,
+      "files": [
+        {
+          "name": "merchant-brain-embedded-prototype.test.ts",
+          "cases": 115
+        },
+        {
+          "name": "whatsapp-diagnostic-workspace-ui.test.tsx",
+          "cases": 20
+        },
+        {
+          "name": "whatsapp-diagnostic.test.ts",
+          "cases": 62
+        },
+        {
+          "name": "whatsapp-setup-workspace-ui.test.tsx",
+          "cases": 8
+        }
+      ]
+    },
+    {
+      "name": "unit-final",
+      "total": 92,
+      "passed": 92,
+      "failed": 0,
+      "files": [
+        {
+          "name": "whatsapp-diagnostic-workspace-ui.test.tsx",
+          "cases": 21
+        },
+        {
+          "name": "whatsapp-diagnostic-workspace.test.ts",
+          "cases": 9
+        },
+        {
+          "name": "whatsapp-diagnostic.test.ts",
+          "cases": 62
+        }
+      ]
+    },
+    {
+      "name": "ui-complete",
+      "total": 22,
+      "passed": 22,
+      "failed": 0,
+      "files": [
+        {
+          "name": "whatsapp-diagnostic-workspace-ui.test.tsx",
+          "cases": 22
+        }
+      ]
+    },
+    {
+      "name": "mysql",
+      "total": 18,
+      "passed": 18,
+      "failed": 0,
+      "files": [
+        {
+          "name": "whatsapp-diagnostic.mysql.test.ts",
+          "cases": 18
+        }
+      ]
+    }
+  ],
+  "translation": {
+    "advertisedLocale": "ar",
+    "callsChecked": 13811,
+    "dynamicKeysChecked": 852,
+    "unresolvedDynamicCalls": [],
+    "missing": [],
+    "interpolationErrors": []
+  },
+  "productionBuild": "passed; main 425440 bytes raw / 127154 bytes gzip; existing chunk warnings",
+  "typecheck": "passed"
+}
