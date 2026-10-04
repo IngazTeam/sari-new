@@ -12,7 +12,21 @@ import {
 } from './db';
 import { TRPCError } from "@trpc/server";
 
+import { acquisitionInput } from "../shared/acquisition-workspace";
+import { readAcquisitionWorkspace } from "./analytics/acquisition-workspace";
+import { MerchantSettingsAuthorityError } from "./accounts/merchant-settings-authority";
+
+async function acquisitionRead(actorId: number, merchantId: number, input: unknown) {
+  try { return await readAcquisitionWorkspace(actorId, merchantId, input); }
+  catch (error) {
+    throw new TRPCError({ code: error instanceof MerchantSettingsAuthorityError && error.reason === "forbidden" ? "FORBIDDEN" : "INTERNAL_SERVER_ERROR", message: "acquisition:unavailable" });
+  }
+}
+
 export const analyticsRouter = router({
+  acquisitionWorkspace: permissionProcedure('analytics.read')
+    .input(acquisitionInput)
+    .query(({ ctx, input }) => acquisitionRead(ctx.user.id, ctx.merchantId, input)),
   // Get analytics summary
   getSummary: permissionProcedure('analytics.read')
     .input(z.object({
@@ -209,58 +223,13 @@ export const analyticsRouter = router({
       }
     }),
 
-  // Get customer acquisition sources
+  // Compatibility read; the tenant is still selected by the authenticated request.
   getAcquisitionSources: permissionProcedure('analytics.read')
-    .input(z.object({
-      merchantId: z.number().int().positive(),
-    }))
+    .input(z.object({ merchantId: z.number().int().positive().max(2147483647) }).strict())
     .query(async ({ input, ctx }) => {
-      const merchant = await getMerchantById(input.merchantId);
-      if (!merchant || merchant.id !== ctx.merchantId) {
-        throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
-      }
-
-      const pool = await getPool();
-      if (!pool) return { sources: [], totalCustomers: 0 };
-
-      const [rows] = await pool.execute(
-        `SELECT preferences FROM customer_profiles WHERE merchant_id = ?`,
-        [input.merchantId]
-      );
-
-      const sourceCounts: Record<string, number> = {};
-      let totalWithSource = 0;
-      let totalCustomers = 0;
-
-      for (const row of rows as any[]) {
-        totalCustomers++;
-        try {
-          const prefs = typeof row.preferences === 'string'
-            ? JSON.parse(row.preferences)
-            : row.preferences;
-          const source = prefs?.acquisitionSource;
-          if (source) {
-            sourceCounts[source] = (sourceCounts[source] || 0) + 1;
-            totalWithSource++;
-          } else {
-            sourceCounts['direct'] = (sourceCounts['direct'] || 0) + 1;
-          }
-        } catch {
-          sourceCounts['direct'] = (sourceCounts['direct'] || 0) + 1;
-        }
-      }
-
-      const sources = Object.entries(sourceCounts)
-        .map(([source, count]) => ({
-          source,
-          count,
-          percentage: totalCustomers > 0
-            ? Number(((count / totalCustomers) * 100).toFixed(1))
-            : 0,
-        }))
-        .sort((a, b) => b.count - a.count);
-
-      return { sources, totalCustomers };
+      if (input.merchantId !== ctx.merchantId) throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+      const data = await acquisitionRead(ctx.user.id, ctx.merchantId, { period: "all" });
+      return { totalCustomers: data.totalProfiles, sources: data.sources.map(r => ({ source: r.source, count: r.count, percentage: r.sharePermille / 10 })) };
     }),
 
   // Supervisor Recovery statistics
