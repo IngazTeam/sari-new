@@ -1,109 +1,70 @@
-/**
- * Push Notifications Router Module
- * Handles push notification subscriptions and sending
- * 
- * This is a standalone module following the "Parallel Coexistence" pattern.
- */
-
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
-import { getMerchantByUserId } from './db';
-
+import { router, permissionProcedure, publicProcedure } from "./_core/trpc";
+import { getVapidPublicKey } from "./_core/pushNotifications";
+import {
+  pushDeviceInput,
+  pushSubscriptionInput,
+  pushUnsubscribeInput,
+  pushTestInput,
+} from "../shared/push-workspace";
+import {
+  readPushWorkspace,
+  subscribePushDevice,
+  unsubscribePushDevice,
+  testPushDevice,
+} from "./push-workspace";
+const procedure = permissionProcedure("settings.manage");
+function scope(ctx: any) {
+  if (!ctx.session?.sessionId)
+    throw new TRPCError({ code: "UNAUTHORIZED", message: "push:session" });
+  return {
+    actorId: ctx.user.id,
+    merchantId: ctx.merchantId,
+    sessionId: ctx.session.sessionId,
+  };
+}
 export const pushRouter = router({
-    // Get VAPID public key
-    getVapidPublicKey: publicProcedure.query(async () => {
-        const { getVapidPublicKey } = await import('./_core/pushNotifications');
-        return { publicKey: getVapidPublicKey() };
-    }),
-
-    // Subscribe to push notifications
-    subscribe: protectedProcedure
-        .input(
-            z.object({
-                endpoint: z.string(),
-                p256dh: z.string(),
-                auth: z.string(),
-                userAgent: z.string().optional(),
-            })
-        )
-        .mutation(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
-            if (!merchant) {
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-            }
-            const { createPushSubscription } = await import('./db_push');
-            await createPushSubscription({
-                merchantId: merchant.id,
-                endpoint: input.endpoint,
-                p256dh: input.p256dh,
-                auth: input.auth,
-                userAgent: input.userAgent,
-            });
-            return { success: true };
-        }),
-
-    // Unsubscribe from push notifications
-    unsubscribe: protectedProcedure
-        .input(
-            z.object({
-                endpoint: z.string(),
-            })
-        )
-        .mutation(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
-            if (!merchant) {
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-            }
-            const { getActivePushSubscriptions, deactivatePushSubscription } = await import('./db_push');
-            const subscriptions = await getActivePushSubscriptions(merchant.id);
-            const subscription = subscriptions.find((s) => s.endpoint === input.endpoint);
-            if (subscription) {
-                await deactivatePushSubscription(subscription.id);
-            }
-            return { success: true };
-        }),
-
-    // Send test notification
-    sendTest: protectedProcedure.mutation(async ({ ctx }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) {
-            throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        }
-        const { sendPushNotification } = await import('./_core/pushNotifications');
-        const result = await sendPushNotification(merchant.id, {
-            title: 'اختبار الإشعارات - ساري',
-            body: 'هذا إشعار تجريبي للتحقق من عمل الإشعارات الفورية',
-            url: '/merchant/dashboard',
+  getVapidPublicKey: publicProcedure.query(() => ({
+    publicKey: getVapidPublicKey(),
+  })),
+  workspace: procedure
+    .input(pushDeviceInput)
+    .query(({ ctx, input }) => readPushWorkspace(scope(ctx), input.deviceHash)),
+  subscribe: procedure
+    .input(pushSubscriptionInput)
+    .mutation(({ ctx, input }) => subscribePushDevice(scope(ctx), input)),
+  unsubscribe: procedure
+    .input(pushUnsubscribeInput)
+    .mutation(({ ctx, input }) => unsubscribePushDevice(scope(ctx), input)),
+  sendTest: procedure
+    .input(pushTestInput.optional())
+    .mutation(({ ctx, input }) => {
+      if (!input)
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "push:review_device_required",
         });
-        return result;
+      return testPushDevice(scope(ctx), input);
     }),
-
-    // Get notification logs
-    getLogs: protectedProcedure
-        .input(
-            z.object({
-                limit: z.number().default(50),
-            })
-        )
-        .query(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
-            if (!merchant) {
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-            }
-            const { getPushNotificationLogs } = await import('./db_push');
-            return await getPushNotificationLogs(merchant.id, input.limit);
-        }),
-
-    // Get notification stats
-    getStats: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) {
-            throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        }
-        const { getPushNotificationStats } = await import('./db_push');
-        return await getPushNotificationStats(merchant.id);
+  getLogs: procedure
+    .input(
+      z.object({ limit: z.number().int().min(1).max(20).default(20) }).strict()
+    )
+    .query(async ({ ctx, input }) => {
+      const data = await readPushWorkspace(scope(ctx), null);
+      return data.logs
+        .slice(0, input.limit)
+        .map(l => ({ ...l, status: l.state, error: null }));
     }),
+  getStats: procedure.query(async ({ ctx }) => {
+    const d = await readPushWorkspace(scope(ctx), null);
+    return {
+      totalNotifications: d.counts.total,
+      sentNotifications: d.counts.accepted,
+      failedNotifications: d.counts.rejected,
+      pendingNotifications: d.counts.unconfirmed,
+    };
+  }),
 });
-
 export type PushRouter = typeof pushRouter;

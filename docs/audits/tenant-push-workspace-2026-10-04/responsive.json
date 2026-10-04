@@ -1,0 +1,162 @@
+[
+  {
+    "language": "ar",
+    "width": 320,
+    "state": "page",
+    "missingKeys": false,
+    "scroll": 290,
+    "smallTargets": [],
+    "title": "إشعارات هذا الجهاز",
+    "viewport": 290
+  },
+  {
+    "language": "ar",
+    "width": 390,
+    "state": "page",
+    "missingKeys": false,
+    "scroll": 360,
+    "smallTargets": [],
+    "title": "إشعارات هذا الجهاز",
+    "viewport": 360
+  },
+  {
+    "language": "ar",
+    "width": 768,
+    "state": "page",
+    "missingKeys": false,
+    "scroll": 738,
+    "smallTargets": [],
+    "title": "إشعارات هذا الجهاز",
+    "viewport": 738
+  },
+  {
+    "language": "ar",
+    "width": 1440,
+    "state": "page",
+    "missingKeys": false,
+    "scroll": 1410,
+    "smallTargets": [],
+    "title": "إشعارات هذا الجهاز",
+    "viewport": 1410
+  },
+  {
+    "language": "en",
+    "width": 320,
+    "state": "page",
+    "missingKeys": false,
+    "scroll": 290,
+    "smallTargets": [],
+    "title": "Notifications on this device",
+    "viewport": 290
+  },
+  {
+    "language": "en",
+    "width": 390,
+    "state": "page",
+    "missingKeys": false,
+    "scroll": 360,
+    "smallTargets": [],
+    "title": "Notifications on this device",
+    "viewport": 360
+  },
+  {
+    "language": "en",
+    "width": 768,
+    "state": "page",
+    "missingKeys": false,
+    "scroll": 738,
+    "smallTargets": [],
+    "title": "Notifications on this device",
+    "viewport": 738
+  },
+  {
+    "language": "en",
+    "width": 1440,
+    "state": "page",
+    "missingKeys": false,
+    "scroll": 1410,
+    "smallTargets": [],
+    "title": "Notifications on this device",
+    "viewport": 1410
+  },
+  {
+    "language": "ar",
+    "width": 320,
+    "state": "review",
+    "dialogWidth": 258,
+    "scroll": 256,
+    "smallTargets": [],
+    "title": "إرسال إشعار تجريبي واحد؟",
+    "viewport": 290
+  },
+  {
+    "language": "ar",
+    "width": 390,
+    "state": "review",
+    "dialogWidth": 328,
+    "scroll": 326,
+    "smallTargets": [],
+    "title": "إرسال إشعار تجريبي واحد؟",
+    "viewport": 360
+  },
+  {
+    "language": "ar",
+    "width": 768,
+    "state": "review",
+    "dialogWidth": 706,
+    "scroll": 704,
+    "smallTargets": [],
+    "title": "إرسال إشعار تجريبي واحد؟",
+    "viewport": 738
+  },
+  {
+    "language": "ar",
+    "width": 1440,
+    "state": "review",
+    "dialogWidth": 672,
+    "scroll": 670,
+    "smallTargets": [],
+    "title": "إرسال إشعار تجريبي واحد؟",
+    "viewport": 1410
+  },
+  {
+    "language": "en",
+    "width": 320,
+    "state": "review",
+    "dialogWidth": 258,
+    "scroll": 256,
+    "smallTargets": [],
+    "title": "Send one test notification?",
+    "viewport": 290
+  },
+  {
+    "language": "en",
+    "width": 390,
+    "state": "review",
+    "dialogWidth": 328,
+    "scroll": 326,
+    "smallTargets": [],
+    "title": "Send one test notification?",
+    "viewport": 360
+  },
+  {
+    "language": "en",
+    "width": 768,
+    "state": "review",
+    "dialogWidth": 706,
+    "scroll": 704,
+    "smallTargets": [],
+    "title": "Send one test notification?",
+    "viewport": 738
+  },
+  {
+    "language": "en",
+    "width": 1440,
+    "state": "review",
+    "dialogWidth": 672,
+    "scroll": 670,
+    "smallTargets": [],
+    "title": "Send one test notification?",
+    "viewport": 1410
+  }
+]

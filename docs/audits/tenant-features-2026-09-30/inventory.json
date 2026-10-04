@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-04T15:52:46.636Z",
+  "generatedAt": "2026-10-04T16:35:01.913Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -20824,11 +20824,28 @@
     },
     {
       "file": "client/src/pages/merchant/PushNotificationsSettings.tsx",
-      "hash": "963e7926ac14",
+      "hash": "dcc1f041ee81",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [
+        "client/src/components/merchant/PushNotificationsWorkspace.tsx"
+      ],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/components/merchant/PushNotificationsWorkspace.tsx",
+      "hash": "f25a57ec6ba3",
       "queries": [
-        "push.getVapidPublicKey",
-        "push.getStats",
-        "push.getLogs"
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "push.workspace"
       ],
       "mutations": [
         "push.subscribe",
@@ -20839,94 +20856,96 @@
       "browserRequests": [],
       "sections": [
         {
-          "label": "إعدادات الإشعارات الفورية",
-          "line": 122,
+          "label": "title",
+          "line": 245,
           "tag": "h1"
         },
         {
-          "label": "إجمالي الإشعارات",
-          "line": 132,
-          "tag": "CardTitle"
+          "label": "deviceTitle",
+          "line": 266,
+          "tag": "h2"
         },
         {
-          "label": "تم الإرسال",
-          "line": 141,
-          "tag": "CardTitle"
+          "label": "helpTitle",
+          "line": 342,
+          "tag": "h2"
         },
         {
-          "label": "فشل",
-          "line": 150,
-          "tag": "CardTitle"
+          "label": "history",
+          "line": 352,
+          "tag": "h2"
         },
         {
-          "label": "معلق",
-          "line": 159,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "حالة الاشتراك",
-          "line": 172,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "سجل الإشعارات",
-          "line": 275,
-          "tag": "CardTitle"
+          "label": "enable reviewEnable disable reviewDisable reviewTest",
+          "line": 415,
+          "tag": "DialogTitle"
         }
       ],
       "choices": [],
-      "handlers": [
-        {
-          "name": "handleSubscribe",
-          "line": 38,
-          "calls": [
-            "subscribe"
-          ]
-        },
-        {
-          "name": "handleUnsubscribe",
-          "line": 87,
-          "calls": [
-            "unsubscribe"
-          ]
-        },
-        {
-          "name": "handleSendTest",
-          "line": 104,
-          "calls": [
-            "sendTest"
-          ]
-        }
-      ],
+      "handlers": [],
       "queryStates": [
         {
-          "query": "push.getVapidPublicKey",
-          "binding": "{ data: vapidKey }",
-          "line": 16,
-          "errorSignal": false,
-          "loadingSignal": false,
+          "query": "auth.me",
+          "binding": "user",
+          "line": 30,
+          "errorSignal": true,
+          "loadingSignal": true,
           "enabled": null
         },
         {
-          "query": "push.getStats",
-          "binding": "{ data: stats }",
-          "line": 20,
-          "errorSignal": false,
-          "loadingSignal": false,
-          "enabled": null
+          "query": "merchants.workspaceIdentity",
+          "binding": "identity",
+          "line": 31,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": "!!user.data?.id && !user.error && !user.isFetching"
         },
         {
-          "query": "push.getLogs",
-          "binding": "{ data: logs }",
-          "line": 21,
-          "errorSignal": false,
-          "loadingSignal": false,
-          "enabled": null
+          "query": "push.workspace",
+          "binding": "query",
+          "line": 90,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": "!!local && !localError "
         }
       ],
       "conditions": [],
+      "imports": [
+        "client/src/lib/usage-workspace-view.ts",
+        "client/src/lib/push-device.ts",
+        "client/src/lib/push-workspace-labels.ts"
+      ],
+      "controlCount": 8
+    },
+    {
+      "file": "client/src/lib/push-device.ts",
+      "hash": "60972fdd1f47",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
       "imports": [],
-      "controlCount": 3
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/lib/push-workspace-labels.ts",
+      "hash": "6afeeb8243cf",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 0
     },
     {
       "file": "client/src/pages/ScheduledReports.tsx",
@@ -30473,17 +30492,26 @@
         "PushNotificationsSettings"
       ],
       "files": [
-        "client/src/pages/merchant/PushNotificationsSettings.tsx"
+        "client/src/pages/merchant/PushNotificationsSettings.tsx",
+        "client/src/components/merchant/PushNotificationsWorkspace.tsx",
+        "client/src/lib/usage-workspace-view.ts",
+        "client/src/lib/push-device.ts",
+        "client/src/lib/push-workspace-labels.ts"
       ],
       "controls": [
-        "6fb55ef23a78",
-        "ed27b7d8df46",
-        "3b6b89321bb6"
+        "1bd09256513f",
+        "b9253abc03b9",
+        "c3964ee99c4d",
+        "6d44ff67c229",
+        "71adfabf2777",
+        "360579cfada0",
+        "e7e0be35ec5e",
+        "4c67d0677b03"
       ],
       "queries": [
-        "push.getVapidPublicKey",
-        "push.getStats",
-        "push.getLogs"
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "push.workspace"
       ],
       "mutations": [
         "push.subscribe",
@@ -90553,61 +90581,126 @@
       "review": "source-inventoried"
     },
     {
-      "id": "6fb55ef23a78",
-      "file": "client/src/pages/merchant/PushNotificationsSettings.tsx",
-      "line": 200,
-      "tag": "Button",
+      "id": "1bd09256513f",
+      "file": "client/src/components/merchant/PushNotificationsWorkspace.tsx",
+      "line": 248,
+      "tag": "button",
       "role": "",
       "kind": "action",
-      "label": "جاري الإرسال... إرسال إشعار تجريبي",
-      "section": "حالة الاشتراك",
-      "binding": "handleSendTest",
+      "label": "refresh",
+      "section": "title",
+      "binding": "refresh",
       "type": "text",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": true,
-      "conditions": [
-        "isSubscribed"
-      ],
-      "disabled": "sendTest.isPending",
+      "conditional": false,
+      "conditions": [],
+      "disabled": "running",
       "review": "source-inventoried"
     },
     {
-      "id": "ed27b7d8df46",
-      "file": "client/src/pages/merchant/PushNotificationsSettings.tsx",
-      "line": 217,
-      "tag": "Button",
+      "id": "b9253abc03b9",
+      "file": "client/src/components/merchant/PushNotificationsWorkspace.tsx",
+      "line": 300,
+      "tag": "button",
       "role": "",
       "kind": "action",
-      "label": "جاري الإلغاء... إلغاء الاشتراك",
-      "section": "حالة الاشتراك",
-      "binding": "handleUnsubscribe",
+      "label": "enable",
+      "section": "deviceTitle",
+      "binding": "e => {\n                  trigger.current = e.currentTarget;\n                  setReview(\"enable\");\n                }",
       "type": "text",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": true,
+      "conditional": false,
       "conditions": [
-        "isSubscribed"
+        "!enabled"
       ],
-      "disabled": "unsubscribe.isPending",
+      "disabled": "!canEnable",
       "review": "source-inventoried"
     },
     {
-      "id": "3b6b89321bb6",
-      "file": "client/src/pages/merchant/PushNotificationsSettings.tsx",
-      "line": 236,
-      "tag": "Button",
+      "id": "c3964ee99c4d",
+      "file": "client/src/components/merchant/PushNotificationsWorkspace.tsx",
+      "line": 312,
+      "tag": "button",
       "role": "",
       "kind": "action",
-      "label": "جاري التفعيل... تفعيل الإشعارات",
-      "section": "حالة الاشتراك",
-      "binding": "handleSubscribe",
+      "label": "disable",
+      "section": "deviceTitle",
+      "binding": "e => {\n                  trigger.current = e.currentTarget;\n                  setReview(\"disable\");\n                }",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "local.deviceHash"
+      ],
+      "disabled": "!data.canManage || running",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "6d44ff67c229",
+      "file": "client/src/components/merchant/PushNotificationsWorkspace.tsx",
+      "line": 324,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "test",
+      "section": "deviceTitle",
+      "binding": "e => {\n                  trigger.current = e.currentTarget;\n                  setReview(\"test\");\n                }",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "enabled"
+      ],
+      "disabled": "running || testLocked || !data.publicKey || !data.canManage",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "71adfabf2777",
+      "file": "client/src/components/merchant/PushNotificationsWorkspace.tsx",
+      "line": 346,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "preferences",
+      "section": "helpTitle",
+      "binding": "/merchant/notification-settings",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "360579cfada0",
+      "file": "client/src/components/merchant/PushNotificationsWorkspace.tsx",
+      "line": 395,
+      "tag": "DialogContent",
+      "role": "",
+      "kind": "dialog",
+      "label": "enable reviewEnable disable reviewDisable reviewTest enable enableReviewHelp disable disableReviewHelp testReviewHelp deviceScope cancel working confirm",
+      "section": "history",
+      "binding": "",
       "type": "text",
       "options": [],
       "min": "",
@@ -90615,10 +90708,50 @@
       "maxLength": "",
       "required": false,
       "conditional": true,
-      "conditions": [
-        "isSubscribed"
-      ],
-      "disabled": "!isSupported || subscribe.isPending",
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "e7e0be35ec5e",
+      "file": "client/src/components/merchant/PushNotificationsWorkspace.tsx",
+      "line": 436,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "cancel",
+      "section": "enable reviewEnable disable reviewDisable reviewTest",
+      "binding": "() => setReview(null)",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "running",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "4c67d0677b03",
+      "file": "client/src/components/merchant/PushNotificationsWorkspace.tsx",
+      "line": 443,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "working confirm",
+      "section": "enable reviewEnable disable reviewDisable reviewTest",
+      "binding": "() => void act()",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "running",
       "review": "source-inventoried"
     },
     {

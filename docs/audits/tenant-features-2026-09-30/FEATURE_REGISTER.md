@@ -2,7 +2,7 @@
 
 هذا حصر مصدر قابل لإعادة التوليد، وليس ادعاءً بأن كل مسار عمل اختُبر أو أُعيد تصميمه. يشمل المكونات الفرعية المحلية، الحقول، الأزرار، النوافذ، التبويبات، واجهات القراءة والتعديل. العناصر الديناميكية تحتاج مراجعة إضافية.
 
-- 126 مسارًا مسجلًا، 596 ملف واجهة متصلًا، 2804 عنصر تحكم في المصدر.
+- 126 مسارًا مسجلًا، 599 ملف واجهة متصلًا، 2809 عنصر تحكم في المصدر.
 - 0 رابطًا حرفيًا غير مطابق، و0 ملف صفحة غير متصل بالمسارات المحصورة.
 
 | الصفحة | الملفات | عناصر التحكم | القراءة / التعديل | موك أب للصفحة |
@@ -105,7 +105,7 @@
 | /merchant/platform-integrations — التكاملات | 5 | 15 | 5 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/notification-settings — تفضيلات الإشعارات | 8 | 7 | 3 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/currency-settings — عملة المتجر | 8 | 4 | 3 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/push-notifications — إشعارات المتصفح | 1 | 3 | 3 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/push-notifications — إشعارات المتصفح | 5 | 8 | 3 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/scheduled-reports — التقارير المجدولة | 1 | 24 | 2 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/whatsapp-auto-notifications — أتمتة رسائل العملاء | 1 | 20 | 3 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/reports — التقارير | 10 | 8 | 3 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -3819,13 +3819,18 @@
 | 280 | Button | discard refresh | title |
 | 290 | Button | saving save | title |
 
-## client/src/pages/merchant/PushNotificationsSettings.tsx
+## client/src/components/merchant/PushNotificationsWorkspace.tsx
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 200 | Button | جاري الإرسال... إرسال إشعار تجريبي | حالة الاشتراك |
-| 217 | Button | جاري الإلغاء... إلغاء الاشتراك | حالة الاشتراك |
-| 236 | Button | جاري التفعيل... تفعيل الإشعارات | حالة الاشتراك |
+| 248 | button | refresh | title |
+| 300 | button | enable | deviceTitle |
+| 312 | button | disable | deviceTitle |
+| 324 | button | test | deviceTitle |
+| 346 | Link | preferences | helpTitle |
+| 395 | DialogContent | enable reviewEnable disable reviewDisable reviewTest enable enableReviewHelp disable disableReviewHelp testReviewHelp deviceScope cancel working confirm | history |
+| 436 | button | cancel | enable reviewEnable disable reviewDisable reviewTest |
+| 443 | button | working confirm | enable reviewEnable disable reviewDisable reviewTest |
 
 ## client/src/pages/ScheduledReports.tsx
 

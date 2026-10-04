@@ -94,7 +94,7 @@ export async function sendPushNotification(
       if (accepted) success++;
       await updatePushNotificationLogStatus(
         logId,
-        accepted ? "sent" : outcome.state === "rejected" ? "failed" : "unknown",
+        accepted ? "accepted" : outcome.state === "rejected" ? "rejected" : "unknown",
         accepted
           ? undefined
           : outcome.state === "rejected"
@@ -107,7 +107,7 @@ export async function sendPushNotification(
       if (logId && !accepted)
         await updatePushNotificationLogStatus(
           logId,
-          started ? "unknown" : "failed",
+          started ? "unknown" : "blocked",
           started ? "push:acceptance_unknown" : "push:blocked_before_send"
         ).catch(() => {});
     }

@@ -80,6 +80,7 @@
     "sheets-export-reviewed-destination-v1",
     "sheets-reports-reviewed-destinations-v1",
     "sheets-unreviewed-sync-retired-v1",
-    "push-bounded-provider-transport-v1"
+    "push-bounded-provider-transport-v1",
+    "push-device-session-authority-0206"
   ]
 }

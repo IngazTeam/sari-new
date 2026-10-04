@@ -24,7 +24,7 @@ describe('Every browser push transport has the same bounded service policy',()=>
   it('requires exact provider acceptance and prevents redirect following',async()=>{
     expect(await run()).toEqual({success:1,failed:0});
     expect(m.fetch).toHaveBeenCalledOnce();expect(m.fetch.mock.calls[0][1]).toMatchObject({method:'POST',redirect:'error',body:new Uint8Array(Buffer.from('encrypted'))});
-    expect(m.fetch.mock.calls[0][1].signal).toBeInstanceOf(AbortSignal);expect(m.update).toHaveBeenCalledWith(3,'sent',undefined);
+    expect(m.fetch.mock.calls[0][1].signal).toBeInstanceOf(AbortSignal);expect(m.update).toHaveBeenCalledWith(3,'accepted',undefined);
   });
   it.each([200,202,204,301,429,500])('HTTP %s is not a delivery/acceptance claim',async status=>{
     m.fetch.mockResolvedValue(new Response(status===204?null:'private',{status}));
@@ -32,7 +32,7 @@ describe('Every browser push transport has the same bounded service policy',()=>
   });
   it.each([400,401,403,404,410,413])('records explicit HTTP %s rejection without provider details',async status=>{
     m.fetch.mockResolvedValue(new Response('private-token',{status}));expect(await run()).toEqual({success:0,failed:1});
-    expect(m.update).toHaveBeenCalledWith(3,'failed','push:provider_rejected');expect(JSON.stringify(m.update.mock.calls)).not.toContain('private-token');
+    expect(m.update).toHaveBeenCalledWith(3,'rejected','push:provider_rejected');expect(JSON.stringify(m.update.mock.calls)).not.toContain('private-token');
   });
   it.each(['','http://evil.test/t','https://u:p@evil.test/t','/x#private','x'.repeat(4097)])('does not accept an invalid receipt reference',async location=>{
     m.fetch.mockResolvedValue(new Response('',{status:201,headers:{location}}));expect((await run()).success).toBe(0);

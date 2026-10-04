@@ -3095,6 +3095,54 @@
           "contains": "await capacity(tx,merchantId)"
         }
       ]
+    },
+    {
+      "routes": [
+        "/merchant/push-notifications"
+      ],
+      "removed": [
+        "push.getVapidPublicKey",
+        "push.getStats",
+        "push.getLogs"
+      ],
+      "required": [
+        "push.workspace"
+      ],
+      "reviewedIn": 518,
+      "featureMappings": [
+        {
+          "before": "push.getVapidPublicKey",
+          "after": [
+            "push.workspace"
+          ]
+        },
+        {
+          "before": "push.getStats",
+          "after": [
+            "push.workspace"
+          ]
+        },
+        {
+          "before": "push.getLogs",
+          "after": [
+            "push.workspace"
+          ]
+        }
+      ],
+      "note": "The tenant/session-scoped workspace combines provider configuration, device registration, all-history counts and the latest 20 redacted logs. Subscribe/unsubscribe/test remain available with reviewed, typed inputs and a single device test.",
+      "evidence": [
+        "docs/audits/tenant-push-workspace-2026-10-04/REPORT.md"
+      ],
+      "checks": [
+        {
+          "file": "server/push-workspace.ts",
+          "contains": "pushWorkspace.parse"
+        },
+        {
+          "file": "client/src/components/merchant/PushNotificationsWorkspace.tsx",
+          "contains": "trpc.push.workspace.useQuery"
+        }
+      ]
     }
   ]
 }

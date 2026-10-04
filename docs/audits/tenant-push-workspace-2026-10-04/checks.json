@@ -1,0 +1,43 @@
+{
+  "unit": {
+    "uniquePassedTests": 352,
+    "evidenceRuns": [
+      "phase518-final-unit",
+      "phase518-inventory-ui-final"
+    ]
+  },
+  "mysql": {
+    "uniquePassedTests": 151,
+    "evidenceRuns": [
+      "phase518-mysql-final",
+      "phase518-mysql-extra"
+    ]
+  },
+  "releasePassed": 71,
+  "types": "passed",
+  "build": "passed",
+  "translations": {
+    "advertisedLocale": "ar",
+    "callsChecked": 13909,
+    "dynamicKeysChecked": 852,
+    "unresolvedDynamicCalls": [],
+    "missing": [],
+    "interpolationErrors": []
+  },
+  "inventory": {
+    "routes": 126,
+    "files": 599,
+    "controls": 2809,
+    "browserRequests": 3,
+    "imperativeReads": 53,
+    "unresolvedReads": 0,
+    "queryCalls": 391,
+    "errorSignalMissing": 43,
+    "choices": 68,
+    "conditions": 1619
+  },
+  "localApp": "Authenticated local fixture 17070 read only; VAPID absent displayed truthfully",
+  "responsive": "16 AR/EN page and dialog states; iframe outer widths320/390/768/1440; inner measurements recorded separately",
+  "externalEffects": "Mock provider only; no browser permission granted or real notification sent",
+  "migration": "0206 applied to disposable local fixture only"
+}

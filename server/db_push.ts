@@ -1,52 +1,13 @@
-﻿import { getDb as _getDb } from './db';
+﻿import { getDb as _getDb } from "./db";
 
 /** Non-nullable wrapper */
 async function getDb() {
   const db = await _getDb();
-  if (!db) throw new Error('Database not initialized');
+  if (!db) throw new Error("Database not initialized");
   return db;
 }
 import { pushSubscriptions, pushNotificationLogs } from "../drizzle/schema";
-import { eq, and, desc } from "drizzle-orm";
-
-// Create push subscription
-export async function createPushSubscription(data: {
-  merchantId: number;
-  endpoint: string;
-  p256dh: string;
-  auth: string;
-  userAgent?: string;
-}) {
-  const db = await getDb();
-  // Check if subscription already exists
-  const existing = await db
-    .select()
-    .from(pushSubscriptions)
-    .where(
-      and(
-        eq(pushSubscriptions.merchantId, data.merchantId),
-        eq(pushSubscriptions.endpoint, data.endpoint)
-      )
-    )
-    .limit(1);
-
-  if (existing.length > 0) {
-    // Update existing subscription
-    return await db
-      .update(pushSubscriptions)
-      .set({
-        p256dh: data.p256dh,
-        auth: data.auth,
-        userAgent: data.userAgent,
-        isActive: true,
-        updatedAt: new Date(),
-      })
-      .where(eq(pushSubscriptions.id, existing[0].id));
-  }
-
-  // Create new subscription
-  return await db.insert(pushSubscriptions).values(data);
-}
+import { eq, and, sql } from "drizzle-orm";
 
 // Get active subscriptions for merchant
 export async function getActivePushSubscriptions(merchantId: number) {
@@ -57,24 +18,17 @@ export async function getActivePushSubscriptions(merchantId: number) {
     .where(
       and(
         eq(pushSubscriptions.merchantId, merchantId),
-        eq(pushSubscriptions.isActive, true)
+        eq(pushSubscriptions.isActive, true),
+        sql`EXISTS (SELECT 1 FROM auth_sessions a JOIN users u ON u.id=a.user_id
+          JOIN merchants m ON m.id=${pushSubscriptions.merchantId} JOIN users owner ON owner.id=m.userId
+          LEFT JOIN merchant_members mm ON mm.merchant_id=m.id AND mm.user_id=u.id
+          WHERE a.user_id=${pushSubscriptions.actorUserId} AND a.token_id_hash=${pushSubscriptions.sessionHash}
+          AND a.revoked_at IS NULL AND a.expires_at>UTC_TIMESTAMP() AND u.account_status='active'
+          AND owner.account_status='active' AND m.status='active' AND ${pushSubscriptions.endpointHash} IS NOT NULL
+          AND ((mm.is_active=1 AND mm.role IN ('owner','manager')) OR (mm.id IS NULL AND m.userId=u.id)))`
       )
-    ).limit(64);
-}
-
-// Deactivate subscription
-export async function deactivatePushSubscription(id: number) {
-  const db = await getDb();
-  return await db
-    .update(pushSubscriptions)
-    .set({ isActive: false })
-    .where(eq(pushSubscriptions.id, id));
-}
-
-// Delete subscription
-export async function deletePushSubscription(id: number) {
-  const db = await getDb();
-  return await db.delete(pushSubscriptions).where(eq(pushSubscriptions.id, id));
+    )
+    .limit(64);
 }
 
 // Create notification log
@@ -111,34 +65,7 @@ export async function updatePushNotificationLogStatus(
     .set({
       status,
       error,
-      sentAt: status === "sent" ? new Date() : undefined,
+      sentAt: status === "accepted" ? new Date() : undefined,
     })
     .where(eq(pushNotificationLogs.id, id));
-}
-
-// Get notification logs
-export async function getPushNotificationLogs(merchantId: number, limit: number = 50) {
-  const db = await getDb();
-  return await db
-    .select()
-    .from(pushNotificationLogs)
-    .where(eq(pushNotificationLogs.merchantId, merchantId))
-    .orderBy(desc(pushNotificationLogs.createdAt))
-    .limit(limit);
-}
-
-// Get notification stats
-export async function getPushNotificationStats(merchantId: number) {
-  const db = await getDb();
-  const logs = await db
-    .select()
-    .from(pushNotificationLogs)
-    .where(eq(pushNotificationLogs.merchantId, merchantId));
-
-  return {
-    totalNotifications: logs.length,
-    sentNotifications: logs.filter((log) => log.status === "sent").length,
-    failedNotifications: logs.filter((log) => log.status === "failed").length,
-    pendingNotifications: logs.filter((log) => log.status === "pending").length,
-  };
 }

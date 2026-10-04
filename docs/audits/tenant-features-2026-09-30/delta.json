@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-04T15:52:46.636Z",
+  "generatedAt": "2026-10-04T16:35:01.913Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 596,
-      "controls": 2804
+      "files": 599,
+      "controls": 2809
     }
   },
   "addedFiles": [
@@ -400,6 +400,9 @@
     "client/src/components/merchant/CurrencyWorkspace.tsx",
     "client/src/lib/currency-workspace-labels.ts",
     "client/src/lib/currency-workspace.ts",
+    "client/src/components/merchant/PushNotificationsWorkspace.tsx",
+    "client/src/lib/push-device.ts",
+    "client/src/lib/push-workspace-labels.ts",
     "client/src/components/merchant/ReportsWorkspace.tsx",
     "client/src/lib/report-export.ts",
     "client/src/lib/merchant-report-document.ts",
@@ -542,6 +545,7 @@
     "client/src/pages/PlatformIntegrations.tsx",
     "client/src/pages/NotificationSettings.tsx",
     "client/src/pages/CurrencySettings.tsx",
+    "client/src/pages/merchant/PushNotificationsSettings.tsx",
     "client/src/pages/Reports.tsx",
     "client/src/pages/merchant/MySubscription.tsx",
     "client/src/pages/merchant/Usage.tsx",
@@ -2591,9 +2595,17 @@
     {
       "route": "/merchant/push-notifications",
       "controlsBefore": 3,
-      "controlsNow": 3,
-      "removedQueries": [],
-      "addedQueries": [],
+      "controlsNow": 8,
+      "removedQueries": [
+        "push.getVapidPublicKey",
+        "push.getStats",
+        "push.getLogs"
+      ],
+      "addedQueries": [
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "push.workspace"
+      ],
       "removedMutations": [],
       "addedMutations": []
     },
