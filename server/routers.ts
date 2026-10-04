@@ -1,3 +1,4 @@
+import { paymentLinksWorkspaceRouter } from "./routers-payment-links-workspace";
 import { merchantPaymentsRouter } from "./routers-merchant-payments";
 import { paymentHistoryWorkspaceRouter, retiredPaymentHistoryProcedures } from "./routers-payment-history-workspace";
 import {selfProfileProcedures} from "./routers-self-profile-workspace";
@@ -3178,6 +3179,7 @@ export const appRouter = router({
   // Payment System - Tap Payments Integration
   // ============================================
   payments: router({
+    linksWorkspace: paymentLinksWorkspaceRouter,
     workspace: paymentHistoryWorkspaceRouter,
     // Public checkout data contains no merchant credentials or customer information.
     getPublicLink: publicProcedure
