@@ -100,18 +100,18 @@ function assertBillableAmount(amount: number, currency: string): { amount: numbe
 
 function subscriptionCheckoutError(error: unknown): TRPCError {
   if (error instanceof Error && error.message === 'CHECKOUT_ATTEMPT_CONFLICT') {
-    return new TRPCError({ code: 'CONFLICT', message: 'ط¸â€¦ط·آ­ط·آ§ط¸ث†ط¸â€‍ط·آ© ط·آ§ط¸â€‍ط·آ¯ط¸ظ¾ط·آ¹ ط¸â€¦ط·آ±ط·ع¾ط·آ¨ط·آ·ط·آ© ط·آ¨ط·آ·ط¸â€‍ط·آ¨ ط¸â€¦ط·آ®ط·ع¾ط¸â€‍ط¸ظ¾ط·â€؛ ط·آ£ط·آ¹ط·آ¯ ط·ع¾ط·آ­ط¸â€¦ط¸ظ¹ط¸â€‍ ط·آ§ط¸â€‍ط·آµط¸ظ¾ط·آ­ط·آ©' });
+    return new TRPCError({ code: 'CONFLICT', message: 'محاولة الدفع مرتبطة بطلب مختلف؛ أعد تحميل الصفحة' });
   }
   if (error instanceof SubscriptionTapCheckoutError) {
     if (error.failure === 'gateway_not_ready') {
-      return new TRPCError({ code: 'BAD_REQUEST', message: 'ط·آ¨ط¸ث†ط·آ§ط·آ¨ط·آ© ط·آ§ط¸â€‍ط·آ¯ط¸ظ¾ط·آ¹ ط·ط›ط¸ظ¹ط·آ± ط·آ¬ط·آ§ط¸â€،ط·آ²ط·آ© ط·آ­ط·آ§ط¸â€‍ط¸ظ¹ط·آ§ط¸â€¹' });
+      return new TRPCError({ code: 'BAD_REQUEST', message: 'بوابة الدفع غير جاهزة حالياً' });
     }
     if (error.failure === 'attempt_already_finished' || error.failure === 'charge_identity_conflict') {
-      return new TRPCError({ code: 'CONFLICT', message: 'ط·ع¾ط·آ¹ط·آ°ط·آ± ط·آ¥ط·آ¹ط·آ§ط·آ¯ط·آ© ط·آ§ط·آ³ط·ع¾ط·آ®ط·آ¯ط·آ§ط¸â€¦ ط¸â€¦ط·آ­ط·آ§ط¸ث†ط¸â€‍ط·آ© ط·آ§ط¸â€‍ط·آ¯ط¸ظ¾ط·آ¹ط·â€؛ ط·آ£ط·آ¹ط·آ¯ ط·ع¾ط·آ­ط¸â€¦ط¸ظ¹ط¸â€‍ ط·آ§ط¸â€‍ط·آµط¸ظ¾ط·آ­ط·آ©' });
+      return new TRPCError({ code: 'CONFLICT', message: 'تعذر إعادة استخدام محاولة الدفع؛ أعد تحميل الصفحة' });
     }
-    return new TRPCError({ code: 'BAD_GATEWAY', message: 'ط·ع¾ط·آ¹ط·آ°ط·آ± ط·آ¥ط¸â€ ط·آ´ط·آ§ط·طŒ ط·آ¬ط¸â€‍ط·آ³ط·آ© ط·آ§ط¸â€‍ط·آ¯ط¸ظ¾ط·آ¹ط·â€؛ ط·آ­ط·آ§ط¸ث†ط¸â€‍ ط¸â€¦ط·آ±ط·آ© ط·آ£ط·آ®ط·آ±ط¸â€°' });
+    return new TRPCError({ code: 'BAD_GATEWAY', message: 'تعذر إنشاء جلسة الدفع؛ حاول مرة أخرى' });
   }
-  return new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'ط·ع¾ط·آ¹ط·آ°ط·آ± ط·آ¨ط·آ¯ط·طŒ ط·آ¹ط¸â€¦ط¸â€‍ط¸ظ¹ط·آ© ط·آ§ط¸â€‍ط·آ¯ط¸ظ¾ط·آ¹' });
+  return new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'تعذر بدء عملية الدفع' });
 }
 
 // ============================================
@@ -632,8 +632,8 @@ export const merchantSubscriptionRouter = router({
     return {
       isActive,
       reason: isActive
-        ? subscription?.status === 'trial' ? 'ط·آ§ط¸â€‍ط¸ظ¾ط·ع¾ط·آ±ط·آ© ط·آ§ط¸â€‍ط·ع¾ط·آ¬ط·آ±ط¸ظ¹ط·آ¨ط¸ظ¹ط·آ© ط¸â€ ط·آ´ط·آ·ط·آ©' : 'ط·آ§ط·آ´ط·ع¾ط·آ±ط·آ§ط¸ئ’ ط¸â€ ط·آ´ط·آ·'
-        : 'ط¸â€‍ط·آ§ ط¸ظ¹ط¸ث†ط·آ¬ط·آ¯ ط·آ§ط·آ´ط·ع¾ط·آ±ط·آ§ط¸ئ’ ط¸â€ ط·آ´ط·آ·. ط¸ظ¹ط·آ±ط·آ¬ط¸â€° ط·آ§ط¸â€‍ط·آ§ط·آ´ط·ع¾ط·آ±ط·آ§ط¸ئ’ ط¸ظ¾ط¸ظ¹ ط·آ¨ط·آ§ط¸â€ڑط·آ© ط¸â€‍ط¸â€‍ط¸ث†ط·آµط¸ث†ط¸â€‍ ط·آ¥ط¸â€‍ط¸â€° ط¸â€،ط·آ°ط¸â€، ط·آ§ط¸â€‍ط¸â€¦ط¸ظ¹ط·آ²ط·آ©.',
+        ? subscription?.status === 'trial' ? 'الفترة التجريبية نشطة' : 'اشتراك نشط'
+        : 'لا يوجد اشتراك نشط. يرجى الاشتراك في باقة للوصول إلى هذه الميزة.',
       isTrial: subscription?.status === 'trial',
     };
   }),
@@ -844,7 +844,7 @@ export const tapSettingsRouter = router({
       const testMode = !Boolean(input.isLive);
       if (!tapKeyMatchesMode(effectiveSecret, testMode)
         || !tapPublicKeyMatchesMode(input.publicKey, testMode)) {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'ط¸â€ ط¸ث†ط·آ¹ ط·آ§ط¸â€‍ط¸â€¦ط¸ظ¾ط·ع¾ط·آ§ط·آ­ ط¸â€‍ط·آ§ ط¸ظ¹ط·آ·ط·آ§ط·آ¨ط¸â€ڑ ط¸ث†ط·آ¶ط·آ¹ Tap ط·آ§ط¸â€‍ط¸â€¦ط·آ­ط·آ¯ط·آ¯' });
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'نوع المفتاح لا يطابق وضع Tap المحدد' });
       }
 
       const credentialsChanged = !existingSettings
@@ -868,7 +868,7 @@ export const tapSettingsRouter = router({
         await updateTapSettings(existingSettings.id, update);
       } else {
         if (!input.secretKey) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'ط¸â€¦ط¸ظ¾ط·ع¾ط·آ§ط·آ­ Tap ط·آ§ط¸â€‍ط·آ³ط·آ±ط¸ظ¹ ط¸â€¦ط·آ·ط¸â€‍ط¸ث†ط·آ¨ ط·آ¹ط¸â€ ط·آ¯ ط·آ§ط¸â€‍ط·آ¥ط·آ¹ط·آ¯ط·آ§ط·آ¯ ط·آ§ط¸â€‍ط·آ£ط¸ث†ط¸â€‍' });
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'مفتاح Tap السري مطلوب عند الإعداد الأول' });
         }
         await createTapSettings({ ...update, secretKey: input.secretKey });
       }
@@ -888,12 +888,12 @@ export const tapSettingsRouter = router({
     .mutation(async () => {
       const settings = await getTapSettings();
       if (!settings) {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'ط·آ¥ط·آ¹ط·آ¯ط·آ§ط·آ¯ط·آ§ط·ع¾ Tap ط·ط›ط¸ظ¹ط·آ± ط¸â€¦ط¸ئ’ط·ع¾ط¸â€¦ط¸â€‍ط·آ©' });
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'إعدادات Tap غير مكتملة' });
       }
       const testMode = !Boolean(settings.isLive);
       if (!tapKeyMatchesMode(settings.secretKey, testMode)
         || !tapPublicKeyMatchesMode(settings.publicKey, testMode)) {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'ط¸â€ ط¸ث†ط·آ¹ ط·آ§ط¸â€‍ط¸â€¦ط¸ظ¾ط·ع¾ط·آ§ط·آ­ ط¸â€‍ط·آ§ ط¸ظ¹ط·آ·ط·آ§ط·آ¨ط¸â€ڑ ط¸ث†ط·آ¶ط·آ¹ Tap ط·آ§ط¸â€‍ط¸â€¦ط·آ­ط·آ¯ط·آ¯' });
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'نوع المفتاح لا يطابق وضع Tap المحدد' });
       }
 
       const result = await verifyPlatformTapCredentialsSnapshot({
@@ -904,11 +904,11 @@ export const tapSettingsRouter = router({
       });
       if (result.outcome === 'verified') return { success: true, message: 'verified' };
       if (result.outcome === 'changed') {
-        throw new TRPCError({ code: 'CONFLICT', message: 'ط·ع¾ط·ط›ط¸ظ¹ط·آ±ط·ع¾ ط·آ¥ط·آ¹ط·آ¯ط·آ§ط·آ¯ط·آ§ط·ع¾ Tap ط·آ£ط·آ«ط¸â€ ط·آ§ط·طŒ ط·آ§ط¸â€‍ط·آ§ط·آ®ط·ع¾ط·آ¨ط·آ§ط·آ±ط·â€؛ ط·آ£ط·آ¹ط·آ¯ ط·آ§ط¸â€‍ط¸â€¦ط·آ­ط·آ§ط¸ث†ط¸â€‍ط·آ©' });
+        throw new TRPCError({ code: 'CONFLICT', message: 'تغيرت إعدادات Tap أثناء الاختبار؛ أعد المحاولة' });
       }
       if (result.outcome === 'rejected') return { success: false, message: 'rejected' };
       console.warn('[PlatformTapCredentials] Credential probe unavailable', { failure: result.failure });
-      throw new TRPCError({ code: 'BAD_GATEWAY', message: 'ط·ع¾ط·آ¹ط·آ°ط·آ± ط·آ§ط¸â€‍ط·آ§ط·ع¾ط·آµط·آ§ط¸â€‍ ط·آ¨ط¸â‚¬ Tapط·â€؛ ط·آ­ط·آ§ط¸ث†ط¸â€‍ ط¸â€‍ط·آ§ط·آ­ط¸â€ڑط·آ§ط¸â€¹' });
+      throw new TRPCError({ code: 'BAD_GATEWAY', message: 'تعذر الاتصال بـ Tap؛ حاول لاحقاً' });
     }),
 });
 
