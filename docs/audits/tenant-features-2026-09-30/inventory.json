@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-04T11:07:09.191Z",
+  "generatedAt": "2026-10-04T11:30:30.828Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -19880,102 +19880,7 @@
     },
     {
       "file": "client/src/pages/merchant/MySubscription.tsx",
-      "hash": "9a75e7084781",
-      "queries": [
-        "merchantSubscription.getCurrentSubscription",
-        "payment.listTransactions"
-      ],
-      "mutations": [
-        "merchantSubscription.cancelSubscription"
-      ],
-      "imperativeReads": [],
-      "browserRequests": [],
-      "sections": [
-        {
-          "label": "",
-          "line": 51,
-          "tag": "h1"
-        },
-        {
-          "label": "ar",
-          "line": 63,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "",
-          "line": 87,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "",
-          "line": 93,
-          "tag": "h3"
-        },
-        {
-          "label": "",
-          "line": 106,
-          "tag": "summary"
-        },
-        {
-          "label": "",
-          "line": 113,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "",
-          "line": 131,
-          "tag": "AlertDialogTitle"
-        }
-      ],
-      "choices": [
-        {
-          "name": "quotas",
-          "line": 40,
-          "values": [
-            {
-              "label": "merchantUx.subscriptionWorkspace.conversations",
-              "used": "subscription?.conversationsUsed",
-              "limit": "trialWithoutPlan ? TRIAL_USAGE_LIMITS.maxConversations : plan?.conversationLimit"
-            },
-            {
-              "label": "merchantUx.subscriptionWorkspace.messages",
-              "used": "subscription?.messagesUsed",
-              "limit": "trialWithoutPlan ? TRIAL_USAGE_LIMITS.maxMessages : plan?.messageLimit"
-            },
-            {
-              "label": "merchantUx.subscriptionWorkspace.voice",
-              "used": "subscription?.voiceMessagesUsed",
-              "limit": "trialWithoutPlan ? TRIAL_USAGE_LIMITS.maxVoiceMessages : plan?.voiceMessageLimit"
-            }
-          ]
-        }
-      ],
-      "handlers": [],
-      "queryStates": [
-        {
-          "query": "merchantSubscription.getCurrentSubscription",
-          "binding": "current",
-          "line": 17,
-          "errorSignal": true,
-          "loadingSignal": true,
-          "enabled": null
-        },
-        {
-          "query": "payment.listTransactions",
-          "binding": "transactions",
-          "line": 18,
-          "errorSignal": true,
-          "loadingSignal": true,
-          "enabled": null
-        }
-      ],
-      "conditions": [],
-      "imports": [],
-      "controlCount": 10
-    },
-    {
-      "file": "client/src/pages/merchant/Usage.tsx",
-      "hash": "d012191e1558",
+      "hash": "d2460452949a",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
@@ -19986,28 +19891,86 @@
       "queryStates": [],
       "conditions": [],
       "imports": [
-        "client/src/components/merchant/UsageWorkspacePage.tsx"
+        "client/src/components/merchant/SubscriptionBillingWorkspace.tsx"
       ],
       "controlCount": 0
     },
     {
-      "file": "client/src/components/merchant/UsageWorkspacePage.tsx",
-      "hash": "19dac72924b9",
+      "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
+      "hash": "291a4763cd35",
       "queries": [
         "auth.me",
-        "merchants.workspaceIdentity"
+        "merchants.workspaceIdentity",
+        "merchantSubscription.workspace",
+        "merchantSubscription.paymentHistory"
       ],
-      "mutations": [],
+      "mutations": [
+        "merchantSubscription.cancelSubscription"
+      ],
       "imperativeReads": [],
       "browserRequests": [],
-      "sections": [],
+      "sections": [
+        {
+          "label": "",
+          "line": 160,
+          "tag": "h1"
+        },
+        {
+          "label": "",
+          "line": 188,
+          "tag": "h2"
+        },
+        {
+          "label": "trial ar",
+          "line": 232,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 310,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 349,
+          "tag": "summary"
+        },
+        {
+          "label": "",
+          "line": 391,
+          "tag": "AlertDialogTitle"
+        },
+        {
+          "label": "",
+          "line": 477,
+          "tag": "h2"
+        },
+        {
+          "label": "#",
+          "line": 562,
+          "tag": "h3"
+        },
+        {
+          "label": "",
+          "line": 593,
+          "tag": "summary"
+        }
+      ],
       "choices": [],
-      "handlers": [],
+      "handlers": [
+        {
+          "name": "confirm",
+          "line": 128,
+          "calls": [
+            "cancel"
+          ]
+        }
+      ],
       "queryStates": [
         {
           "query": "auth.me",
           "binding": "user",
-          "line": 10,
+          "line": 33,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
@@ -20015,22 +19978,95 @@
         {
           "query": "merchants.workspaceIdentity",
           "binding": "merchant",
-          "line": 11,
+          "line": 34,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": "!!user.data?.id && !user.error && !user.isFetching"
+        },
+        {
+          "query": "merchantSubscription.workspace",
+          "binding": "query",
+          "line": 86,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        },
+        {
+          "query": "merchantSubscription.paymentHistory",
+          "binding": "query",
+          "line": 456,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
         }
       ],
       "conditions": [],
       "imports": [
-        "client/src/components/merchant/UsageWorkspace.tsx",
-        "client/src/lib/usage-workspace-view.ts"
+        "client/src/lib/usage-workspace-view.ts",
+        "client/src/lib/subscription-billing-view.ts",
+        "client/src/lib/subscription-billing-labels.ts",
+        "client/src/components/merchant/UsageWorkspace.tsx"
       ],
+      "controlCount": 19
+    },
+    {
+      "file": "client/src/lib/usage-workspace-view.ts",
+      "hash": "5e6588971922",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [
+        {
+          "name": "usageViews",
+          "line": 2,
+          "values": [
+            "subscription",
+            "resources",
+            "history"
+          ]
+        }
+      ],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/lib/subscription-billing-view.ts",
+      "hash": "fc0c939d9971",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/lib/subscription-billing-labels.ts",
+      "hash": "7e0606badd0c",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [],
       "controlCount": 0
     },
     {
       "file": "client/src/components/merchant/UsageWorkspace.tsx",
-      "hash": "d2d532dfb03f",
+      "hash": "998c7ff8898f",
       "queries": [
         "usage.workspace"
       ],
@@ -20108,28 +20144,58 @@
       "controlCount": 7
     },
     {
-      "file": "client/src/lib/usage-workspace-view.ts",
-      "hash": "5e6588971922",
+      "file": "client/src/pages/merchant/Usage.tsx",
+      "hash": "d012191e1558",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
       "browserRequests": [],
       "sections": [],
-      "choices": [
-        {
-          "name": "usageViews",
-          "line": 2,
-          "values": [
-            "subscription",
-            "resources",
-            "history"
-          ]
-        }
-      ],
+      "choices": [],
       "handlers": [],
       "queryStates": [],
       "conditions": [],
-      "imports": [],
+      "imports": [
+        "client/src/components/merchant/UsageWorkspacePage.tsx"
+      ],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/components/merchant/UsageWorkspacePage.tsx",
+      "hash": "19dac72924b9",
+      "queries": [
+        "auth.me",
+        "merchants.workspaceIdentity"
+      ],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [
+        {
+          "query": "auth.me",
+          "binding": "user",
+          "line": 10,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        },
+        {
+          "query": "merchants.workspaceIdentity",
+          "binding": "merchant",
+          "line": 11,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": "!!user.data?.id && !user.error && !user.isFetching"
+        }
+      ],
+      "conditions": [],
+      "imports": [
+        "client/src/components/merchant/UsageWorkspace.tsx",
+        "client/src/lib/usage-workspace-view.ts"
+      ],
       "controlCount": 0
     },
     {
@@ -20277,7 +20343,7 @@
     },
     {
       "file": "client/src/components/merchant/PlanCatalogCheckout.tsx",
-      "hash": "43d5f62821a8",
+      "hash": "0ed84ddfcb57",
       "queries": [
         "merchantSubscription.checkoutAttempt",
         "merchantSubscription.reviewCheckout"
@@ -20456,7 +20522,7 @@
     },
     {
       "file": "client/src/components/merchant/PaymentReturnWorkspace.tsx",
-      "hash": "1d7e27c3b16e",
+      "hash": "a778b25cb794",
       "queries": [
         "payment.getPaymentCallbackStatus",
         "subscriptionPayments.verifyPayment"
@@ -29090,23 +29156,47 @@
         "MySubscription"
       ],
       "files": [
-        "client/src/pages/merchant/MySubscription.tsx"
+        "client/src/pages/merchant/MySubscription.tsx",
+        "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
+        "client/src/lib/usage-workspace-view.ts",
+        "client/src/lib/subscription-billing-view.ts",
+        "client/src/lib/subscription-billing-labels.ts",
+        "client/src/components/merchant/UsageWorkspace.tsx"
       ],
       "controls": [
-        "17fbd1ed6cf8",
-        "3955cf4b6c01",
-        "705400793616",
-        "eb9c01456d94",
-        "0802fbe319d7",
-        "0cdec063f0ea",
-        "88211ce5f542",
-        "1ccc6264aa49",
-        "fa46327a0a20",
-        "f795d4f77e5e"
+        "716f2a061f01",
+        "0bfa99abdad2",
+        "bc2363764665",
+        "0d0497b459f2",
+        "db727304cc23",
+        "160021567e1f",
+        "ef6bb805a5ae",
+        "2ab7669551c9",
+        "bde1e763a4c6",
+        "87c008067021",
+        "aaf47a3e862c",
+        "8868a6d00708",
+        "9b26c3cff8d0",
+        "c3707370f065",
+        "ec6b69f00eb7",
+        "91ac5552e4a2",
+        "23d38550de22",
+        "eaf71d8e0ce9",
+        "00bac397c542",
+        "3269b64c5c07",
+        "0c172d0246af",
+        "79cd8fac476e",
+        "0df6dc8ce2eb",
+        "4b265e08c65e",
+        "4b27ea09ca76",
+        "68f11913fc15"
       ],
       "queries": [
-        "merchantSubscription.getCurrentSubscription",
-        "payment.listTransactions"
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "merchantSubscription.workspace",
+        "merchantSubscription.paymentHistory",
+        "usage.workspace"
       ],
       "mutations": [
         "merchantSubscription.cancelSubscription"
@@ -29207,19 +29297,19 @@
         "4dbe0f6d7196",
         "fc29ae5d756c",
         "8b4047cab345",
-        "5b4bd9ba2bcd",
+        "6638fc8653ee",
         "27e6de9d0313",
-        "89ed1b5f7c4b",
+        "ebd6694a7eff",
         "062ccdb01d63",
         "75ce8284545e",
-        "51ebac9c02f4",
+        "0740dd6cce25",
         "038d2bc7038d",
         "f3a47faf2904",
         "24640b8c260c",
         "53681c266096",
         "dc44324ce0f1",
         "7e01732e128a",
-        "4c8b03fd13f8",
+        "833fd6d673b0",
         "cc270c40ca17",
         "84d1089a902b"
       ],
@@ -29269,19 +29359,19 @@
         "4dbe0f6d7196",
         "fc29ae5d756c",
         "8b4047cab345",
-        "5b4bd9ba2bcd",
+        "6638fc8653ee",
         "27e6de9d0313",
-        "89ed1b5f7c4b",
+        "ebd6694a7eff",
         "062ccdb01d63",
         "75ce8284545e",
-        "51ebac9c02f4",
+        "0740dd6cce25",
         "038d2bc7038d",
         "f3a47faf2904",
         "24640b8c260c",
         "53681c266096",
         "dc44324ce0f1",
         "7e01732e128a",
-        "4c8b03fd13f8",
+        "833fd6d673b0",
         "cc270c40ca17",
         "84d1089a902b"
       ],
@@ -29308,23 +29398,47 @@
         "MySubscription"
       ],
       "files": [
-        "client/src/pages/merchant/MySubscription.tsx"
+        "client/src/pages/merchant/MySubscription.tsx",
+        "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
+        "client/src/lib/usage-workspace-view.ts",
+        "client/src/lib/subscription-billing-view.ts",
+        "client/src/lib/subscription-billing-labels.ts",
+        "client/src/components/merchant/UsageWorkspace.tsx"
       ],
       "controls": [
-        "17fbd1ed6cf8",
-        "3955cf4b6c01",
-        "705400793616",
-        "eb9c01456d94",
-        "0802fbe319d7",
-        "0cdec063f0ea",
-        "88211ce5f542",
-        "1ccc6264aa49",
-        "fa46327a0a20",
-        "f795d4f77e5e"
+        "716f2a061f01",
+        "0bfa99abdad2",
+        "bc2363764665",
+        "0d0497b459f2",
+        "db727304cc23",
+        "160021567e1f",
+        "ef6bb805a5ae",
+        "2ab7669551c9",
+        "bde1e763a4c6",
+        "87c008067021",
+        "aaf47a3e862c",
+        "8868a6d00708",
+        "9b26c3cff8d0",
+        "c3707370f065",
+        "ec6b69f00eb7",
+        "91ac5552e4a2",
+        "23d38550de22",
+        "eaf71d8e0ce9",
+        "00bac397c542",
+        "3269b64c5c07",
+        "0c172d0246af",
+        "79cd8fac476e",
+        "0df6dc8ce2eb",
+        "4b265e08c65e",
+        "4b27ea09ca76",
+        "68f11913fc15"
       ],
       "queries": [
-        "merchantSubscription.getCurrentSubscription",
-        "payment.listTransactions"
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "merchantSubscription.workspace",
+        "merchantSubscription.paymentHistory",
+        "usage.workspace"
       ],
       "mutations": [
         "merchantSubscription.cancelSubscription"
@@ -29363,19 +29477,19 @@
         "4dbe0f6d7196",
         "fc29ae5d756c",
         "8b4047cab345",
-        "5b4bd9ba2bcd",
+        "6638fc8653ee",
         "27e6de9d0313",
-        "89ed1b5f7c4b",
+        "ebd6694a7eff",
         "062ccdb01d63",
         "75ce8284545e",
-        "51ebac9c02f4",
+        "0740dd6cce25",
         "038d2bc7038d",
         "f3a47faf2904",
         "24640b8c260c",
         "53681c266096",
         "dc44324ce0f1",
         "7e01732e128a",
-        "4c8b03fd13f8",
+        "833fd6d673b0",
         "cc270c40ca17",
         "84d1089a902b"
       ],
@@ -30227,23 +30341,47 @@
         "MySubscription"
       ],
       "files": [
-        "client/src/pages/merchant/MySubscription.tsx"
+        "client/src/pages/merchant/MySubscription.tsx",
+        "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
+        "client/src/lib/usage-workspace-view.ts",
+        "client/src/lib/subscription-billing-view.ts",
+        "client/src/lib/subscription-billing-labels.ts",
+        "client/src/components/merchant/UsageWorkspace.tsx"
       ],
       "controls": [
-        "17fbd1ed6cf8",
-        "3955cf4b6c01",
-        "705400793616",
-        "eb9c01456d94",
-        "0802fbe319d7",
-        "0cdec063f0ea",
-        "88211ce5f542",
-        "1ccc6264aa49",
-        "fa46327a0a20",
-        "f795d4f77e5e"
+        "716f2a061f01",
+        "0bfa99abdad2",
+        "bc2363764665",
+        "0d0497b459f2",
+        "db727304cc23",
+        "160021567e1f",
+        "ef6bb805a5ae",
+        "2ab7669551c9",
+        "bde1e763a4c6",
+        "87c008067021",
+        "aaf47a3e862c",
+        "8868a6d00708",
+        "9b26c3cff8d0",
+        "c3707370f065",
+        "ec6b69f00eb7",
+        "91ac5552e4a2",
+        "23d38550de22",
+        "eaf71d8e0ce9",
+        "00bac397c542",
+        "3269b64c5c07",
+        "0c172d0246af",
+        "79cd8fac476e",
+        "0df6dc8ce2eb",
+        "4b265e08c65e",
+        "4b27ea09ca76",
+        "68f11913fc15"
       ],
       "queries": [
-        "merchantSubscription.getCurrentSubscription",
-        "payment.listTransactions"
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "merchantSubscription.workspace",
+        "merchantSubscription.paymentHistory",
+        "usage.workspace"
       ],
       "mutations": [
         "merchantSubscription.cancelSubscription"
@@ -89322,15 +89460,59 @@
       "review": "source-inventoried"
     },
     {
-      "id": "17fbd1ed6cf8",
-      "file": "client/src/pages/merchant/MySubscription.tsx",
-      "line": 52,
-      "tag": "Button",
+      "id": "716f2a061f01",
+      "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
+      "line": 166,
+      "tag": "Link",
       "role": "",
       "kind": "action",
       "label": "",
-      "section": "MySubscription",
-      "binding": "() => { void current.refetch(); void transactions.refetch(); }",
+      "section": "SubscriptionBillingWorkspace",
+      "binding": "`${path}?tab=${v}`",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "0bfa99abdad2",
+      "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
+      "line": 180,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "SubscriptionBillingWorkspace",
+      "binding": "`${path}?tab=overview`",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "![\"overview\", \"payments\"].includes(tab)"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "bc2363764665",
+      "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
+      "line": 217,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "SubscriptionBillingWorkspace",
+      "binding": "() => void query.refetch()",
       "type": "button",
       "options": [],
       "min": "",
@@ -89338,20 +89520,26 @@
       "maxLength": "",
       "required": false,
       "conditional": false,
-      "conditions": [],
-      "disabled": "current.isFetching || transactions.isFetching",
+      "conditions": [
+        "!data",
+        "query.isLoading || query.isFetching",
+        "query.error",
+        "tab === \"payments\"",
+        "![\"overview\", \"payments\"].includes(tab)"
+      ],
+      "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "3955cf4b6c01",
-      "file": "client/src/pages/merchant/MySubscription.tsx",
-      "line": 57,
-      "tag": "Button",
+      "id": "0d0497b459f2",
+      "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
+      "line": 290,
+      "tag": "Link",
       "role": "",
       "kind": "action",
       "label": "",
-      "section": "MySubscription",
-      "binding": "() => navigate('/merchant/subscription/plans')",
+      "section": "trial ar",
+      "binding": "/merchant/subscription/plans",
       "type": "text",
       "options": [],
       "min": "",
@@ -89360,23 +89548,24 @@
       "required": false,
       "conditional": false,
       "conditions": [
-        "!subscription",
-        "current.isLoading",
-        "current.isError"
+        "!data",
+        "query.isLoading || query.isFetching",
+        "query.error",
+        "tab === \"payments\""
       ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "705400793616",
-      "file": "client/src/pages/merchant/MySubscription.tsx",
-      "line": 80,
-      "tag": "Button",
+      "id": "db727304cc23",
+      "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
+      "line": 297,
+      "tag": "Link",
       "role": "",
       "kind": "action",
       "label": "",
-      "section": "ar",
-      "binding": "() => navigate('/merchant/subscription/plans')",
+      "section": "trial ar",
+      "binding": "/merchant/subscription/compare",
       "type": "text",
       "options": [],
       "min": "",
@@ -89385,23 +89574,24 @@
       "required": false,
       "conditional": false,
       "conditions": [
-        "!subscription",
-        "current.isLoading",
-        "current.isError"
+        "!data",
+        "query.isLoading || query.isFetching",
+        "query.error",
+        "tab === \"payments\""
       ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "eb9c01456d94",
-      "file": "client/src/pages/merchant/MySubscription.tsx",
-      "line": 81,
-      "tag": "Button",
+      "id": "160021567e1f",
+      "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
+      "line": 303,
+      "tag": "Link",
       "role": "",
       "kind": "action",
       "label": "",
-      "section": "ar",
-      "binding": "() => navigate('/merchant/subscription/compare')",
+      "section": "trial ar",
+      "binding": "/merchant/usage-dashboard",
       "type": "text",
       "options": [],
       "min": "",
@@ -89410,47 +89600,23 @@
       "required": false,
       "conditional": false,
       "conditions": [
-        "!subscription",
-        "current.isLoading",
-        "current.isError"
+        "!data",
+        "query.isLoading || query.isFetching",
+        "query.error",
+        "tab === \"payments\""
       ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "0802fbe319d7",
-      "file": "client/src/pages/merchant/MySubscription.tsx",
-      "line": 82,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "",
-      "section": "ar",
-      "binding": "() => navigate('/merchant/usage-dashboard')",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [
-        "!subscription",
-        "current.isLoading",
-        "current.isError"
-      ],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "0cdec063f0ea",
-      "file": "client/src/pages/merchant/MySubscription.tsx",
-      "line": 106,
+      "id": "ef6bb805a5ae",
+      "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
+      "line": 349,
       "tag": "summary",
       "role": "",
       "kind": "action",
       "label": "",
-      "section": "MySubscription",
+      "section": "SubscriptionBillingWorkspace",
       "binding": "",
       "type": "text",
       "options": [],
@@ -89460,24 +89626,23 @@
       "required": false,
       "conditional": false,
       "conditions": [
-        "subscription.status === 'active'",
-        "!subscription",
-        "current.isLoading",
-        "current.isError"
+        "canCancel",
+        "!data",
+        "query.isLoading || query.isFetching"
       ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "88211ce5f542",
-      "file": "client/src/pages/merchant/MySubscription.tsx",
-      "line": 108,
-      "tag": "Button",
+      "id": "2ab7669551c9",
+      "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
+      "line": 351,
+      "tag": "button",
       "role": "",
       "kind": "action",
       "label": "",
-      "section": "MySubscription",
-      "binding": "() => { setCancelError(''); setCancelId(subscription.id); }",
+      "section": "SubscriptionBillingWorkspace",
+      "binding": "() => {\n                      if (s) {\n                        setReview({\n                          id: s.id,\n                          identity: subscriptionReviewIdentity(s)!,\n                        });\n                        setOutcome(\"review\");\n                      }\n                    }",
       "type": "button",
       "options": [],
       "min": "",
@@ -89486,23 +89651,22 @@
       "required": false,
       "conditional": false,
       "conditions": [
-        "subscription.status === 'active'",
-        "!subscription",
-        "current.isLoading",
-        "current.isError"
+        "canCancel",
+        "!data",
+        "query.isLoading || query.isFetching"
       ],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "1ccc6264aa49",
-      "file": "client/src/pages/merchant/MySubscription.tsx",
-      "line": 131,
+      "id": "bde1e763a4c6",
+      "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
+      "line": 380,
       "tag": "AlertDialogContent",
       "role": "",
       "kind": "dialog",
-      "label": "",
-      "section": "MySubscription",
+      "label": "review cancel_ review review unknown",
+      "section": "SubscriptionBillingWorkspace",
       "binding": "",
       "type": "text",
       "options": [],
@@ -89516,14 +89680,192 @@
       "review": "source-inventoried"
     },
     {
-      "id": "fa46327a0a20",
-      "file": "client/src/pages/merchant/MySubscription.tsx",
-      "line": 135,
-      "tag": "AlertDialogCancel",
+      "id": "87c008067021",
+      "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
+      "line": 403,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "review",
+      "section": "SubscriptionBillingWorkspace",
+      "binding": "() => setReview(null)",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "outcome === \"sending\"",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "aaf47a3e862c",
+      "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
+      "line": 412,
+      "tag": "button",
       "role": "",
       "kind": "action",
       "label": "",
-      "section": "MySubscription",
+      "section": "SubscriptionBillingWorkspace",
+      "binding": "() => void confirm()",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "outcome === \"review\""
+      ],
+      "disabled": "!sameReview",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "8868a6d00708",
+      "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
+      "line": 422,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "SubscriptionBillingWorkspace",
+      "binding": "() => {\n                  if (review) void verifyCancellation(review.id);\n                }",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "outcome === \"unknown\""
+      ],
+      "disabled": "query.isFetching",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "9b26c3cff8d0",
+      "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
+      "line": 480,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "SubscriptionBillingWorkspace",
+      "binding": "() => void query.refetch()",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "query.isFetching",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "c3707370f065",
+      "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
+      "line": 492,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "payment_",
+      "section": "SubscriptionBillingWorkspace",
+      "binding": "input.status",
+      "type": "text",
+      "options": [
+        {
+          "value": "all",
+          "label": ""
+        },
+        {
+          "value": "v",
+          "label": "payment_"
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "ec6b69f00eb7",
+      "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
+      "line": 510,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "type_",
+      "section": "SubscriptionBillingWorkspace",
+      "binding": "input.type",
+      "type": "text",
+      "options": [
+        {
+          "value": "all",
+          "label": ""
+        },
+        {
+          "value": "v",
+          "label": "type_"
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "91ac5552e4a2",
+      "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
+      "line": 526,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "25 50",
+      "section": "SubscriptionBillingWorkspace",
+      "binding": "input.pageSize",
+      "type": "text",
+      "options": [
+        {
+          "value": "25",
+          "label": "25"
+        },
+        {
+          "value": "50",
+          "label": "50"
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "23d38550de22",
+      "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
+      "line": 593,
+      "tag": "summary",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "SubscriptionBillingWorkspace",
       "binding": "",
       "type": "text",
       "options": [],
@@ -89531,30 +89873,61 @@
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "cancel.isPending",
+      "conditional": false,
+      "conditions": [
+        "!data.rows.length"
+      ],
+      "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "f795d4f77e5e",
-      "file": "client/src/pages/merchant/MySubscription.tsx",
-      "line": 136,
-      "tag": "AlertDialogAction",
+      "id": "eaf71d8e0ce9",
+      "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
+      "line": 611,
+      "tag": "button",
       "role": "",
       "kind": "action",
       "label": "",
-      "section": "MySubscription",
-      "binding": "event => {\n            event.preventDefault();\n            if (cancelId !== null) { setCancelError(''); cancel.mutate({ expectedSubscriptionId: cancelId }); }\n          }",
-      "type": "text",
+      "section": "SubscriptionBillingWorkspace",
+      "binding": "() => {\n                setInput({ ...input, beforeId: previous[previous.length - 1] });\n                setPrevious(previous.slice(0, -1));\n              }",
+      "type": "button",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "cancel.isPending || current.isError || subscription?.id !== cancelId",
+      "conditional": false,
+      "conditions": [
+        "!data",
+        "query.isLoading || query.isFetching",
+        "query.error"
+      ],
+      "disabled": "!previous.length",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "00bac397c542",
+      "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
+      "line": 626,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "SubscriptionBillingWorkspace",
+      "binding": "() => {\n                setPrevious([...previous, input.beforeId]);\n                setInput({ ...input, beforeId: data.nextBeforeId });\n              }",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "!data",
+        "query.isLoading || query.isFetching",
+        "query.error"
+      ],
+      "disabled": "data.nextBeforeId === null",
       "review": "source-inventoried"
     },
     {
@@ -90022,13 +90395,13 @@
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": false,
+      "conditional": true,
       "conditions": [],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "5b4bd9ba2bcd",
+      "id": "6638fc8653ee",
       "file": "client/src/components/merchant/PlanCatalogCheckout.tsx",
       "line": 114,
       "tag": "Link",
@@ -90036,14 +90409,14 @@
       "kind": "action",
       "label": "",
       "section": "PlanCatalogCheckout",
-      "binding": "/merchant/subscription",
+      "binding": "/merchant/subscription?tab=payments",
       "type": "text",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": false,
+      "conditional": true,
       "conditions": [],
       "disabled": "",
       "review": "source-inventoried"
@@ -90064,13 +90437,13 @@
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": false,
+      "conditional": true,
       "conditions": [],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "89ed1b5f7c4b",
+      "id": "ebd6694a7eff",
       "file": "client/src/components/merchant/PlanCatalogCheckout.tsx",
       "line": 143,
       "tag": "Link",
@@ -90078,14 +90451,14 @@
       "kind": "action",
       "label": "",
       "section": "PlanCatalogCheckout",
-      "binding": "/merchant/subscription",
+      "binding": "/merchant/subscription?tab=payments",
       "type": "text",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": false,
+      "conditional": true,
       "conditions": [],
       "disabled": "",
       "review": "source-inventoried"
@@ -90099,7 +90472,7 @@
       "kind": "action",
       "label": "",
       "section": "PlanCatalogCheckout",
-      "binding": "() => {\n                if (\n                  attempt.linkExpiresAt &&\n                  Date.now() < Date.parse(attempt.linkExpiresAt)\n                )\n                  openSubscriptionCheckout(link);\n              }",
+      "binding": "() => {\r\n                if (\r\n                  attempt.linkExpiresAt &&\r\n                  Date.now() < Date.parse(attempt.linkExpiresAt)\r\n                )\r\n                  openSubscriptionCheckout(link);\r\n              }",
       "type": "button",
       "options": [],
       "min": "",
@@ -90135,7 +90508,7 @@
       "review": "source-inventoried"
     },
     {
-      "id": "51ebac9c02f4",
+      "id": "0740dd6cce25",
       "file": "client/src/components/merchant/PlanCatalogCheckout.tsx",
       "line": 221,
       "tag": "Link",
@@ -90143,7 +90516,7 @@
       "kind": "action",
       "label": "",
       "section": "PlanCatalogCheckout",
-      "binding": "/merchant/subscription",
+      "binding": "/merchant/subscription?tab=payments",
       "type": "text",
       "options": [],
       "min": "",
@@ -90187,7 +90560,7 @@
       "kind": "action",
       "label": "",
       "section": "PlanCatalogCheckout",
-      "binding": "\"/merchant/checkout?planId=\" +\n                checkpoint.planId +\n                \"&cycle=\" +\n                checkpoint.cycle",
+      "binding": "\"/merchant/checkout?planId=\" +\r\n                checkpoint.planId +\r\n                \"&cycle=\" +\r\n                checkpoint.cycle",
       "type": "text",
       "options": [],
       "min": "",
@@ -90291,7 +90664,7 @@
       "review": "source-inventoried"
     },
     {
-      "id": "4c8b03fd13f8",
+      "id": "833fd6d673b0",
       "file": "client/src/components/merchant/PlanCatalogCheckout.tsx",
       "line": 480,
       "tag": "Link",
@@ -90299,7 +90672,7 @@
       "kind": "action",
       "label": "",
       "section": "PlanCatalogCheckout",
-      "binding": "/merchant/subscription",
+      "binding": "/merchant/subscription?tab=payments",
       "type": "text",
       "options": [],
       "min": "",
@@ -90343,7 +90716,7 @@
       "kind": "action",
       "label": "",
       "section": "PlanCatalogCheckout",
-      "binding": "() => {\n            void confirm();\n          }",
+      "binding": "() => {\r\n            void confirm();\r\n          }",
       "type": "button",
       "options": [],
       "min": "",

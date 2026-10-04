@@ -111,7 +111,7 @@ export function PlanCatalogCheckout(props: Props) {
           <button type="button" onClick={refresh}>
             {c.refresh}
           </button>
-          <Link href="/merchant/subscription">{c.subscriptionHistory}</Link>
+          <Link href="/merchant/subscription?tab=payments">{c.subscriptionHistory}</Link>
         </div>
       </section>
     );
@@ -140,7 +140,7 @@ export function PlanCatalogCheckout(props: Props) {
           <button type="button" onClick={refresh}>
             {c.checkAttempt}
           </button>
-          <Link href="/merchant/subscription">{c.subscriptionHistory}</Link>
+          <Link href="/merchant/subscription?tab=payments">{c.subscriptionHistory}</Link>
         </div>
       </section>
     );
@@ -218,7 +218,7 @@ export function PlanCatalogCheckout(props: Props) {
             <RefreshCw size={18} aria-hidden="true" />
             {c.checkAttempt}
           </button>
-          <Link href="/merchant/subscription">{c.subscriptionHistory}</Link>
+          <Link href="/merchant/subscription?tab=payments">{c.subscriptionHistory}</Link>
           {final && (
             <button
               type="button"
@@ -477,7 +477,7 @@ function CheckoutReview({
                 {c.refresh}
               </button>
             )}
-            <Link href="/merchant/subscription">{c.subscriptionHistory}</Link>
+            <Link href="/merchant/subscription?tab=payments">{c.subscriptionHistory}</Link>
           </div>
         )}
         <label className="pc-ack">

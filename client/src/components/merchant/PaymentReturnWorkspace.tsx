@@ -162,7 +162,7 @@ function PaymentReturn({
         {source.error?.data?.code === "UNAUTHORIZED" && valid && (
           <NavigationLink href="/login">{c.signIn}</NavigationLink>
         )}
-        <NavigationLink href="/merchant/subscription">
+        <NavigationLink href="/merchant/subscription?tab=payments">
           {c.history}
         </NavigationLink>
         <NavigationLink href="/merchant/dashboard">

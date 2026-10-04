@@ -1,96 +1,55 @@
 // @vitest-environment jsdom
 import React, { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { subscriptionWorkspaceEn } from '../client/src/locales/subscription-workspace';
-const api = vi.hoisted(() => ({ current: {} as any, payments: {} as any, plans: {} as any, callbacks: {} as any, pending: false, cancel: vi.fn(), subscribe: vi.fn(), refresh: vi.fn(), refreshPayments: vi.fn(), invalidate: vi.fn() }));
-vi.mock('react-i18next', () => ({ useTranslation: () => ({ i18n: { language: 'en' }, t: (key: string, values: Record<string, unknown> = {}) => {
-  const text = key.startsWith('merchantUx.subscriptionWorkspace.') ? subscriptionWorkspaceEn[key.split('.').at(-1) as keyof typeof subscriptionWorkspaceEn] : key;
-  return text.replace(/{{(\w+)}}/g, (_, name) => String(values[name] ?? ''));
-} }) }));
-vi.mock('@/lib/trpc', () => ({ trpc: {
-  useUtils: () => ({ merchantSubscription: { invalidate: api.invalidate } }),
-  merchantSubscription: { getCurrentSubscription: { useQuery: () => ({ ...api.current, refetch: api.refresh }) }, cancelSubscription: { useMutation: (callbacks: any) => { api.callbacks = callbacks; return { mutate: api.cancel, isPending: api.pending }; } }, subscribe: { useMutation: () => ({ mutateAsync: api.subscribe }) } },
-  payment: { listTransactions: { useQuery: () => ({ ...api.payments, refetch: api.refreshPayments }) } },
-  subscriptionPlans: { listPlans: { useQuery: () => ({ ...api.plans, refetch: api.refresh }) } },
-} }));
+import { beforeEach, afterEach, expect, it, vi } from 'vitest';
+import ar from '../client/src/locales/ar.json';
+import en from '../client/src/locales/en.json';
+const state = vi.hoisted(() => ({ language: 'en' }));
+vi.mock('@/lib/trpc', () => import('../prototypes/tenant-dashboard/src/service-preview-api'));
+vi.mock('wouter', () => import('../prototypes/tenant-dashboard/src/service-preview-router'));
+vi.mock('react-i18next', () => ({ useTranslation: () => ({ i18n: { language: state.language }, t: (key: string) => key.split('.').reduce((o: any, k) => o?.[k], state.language === 'ar' ? ar : en) || key }) }));
 import MySubscription from '../client/src/pages/merchant/MySubscription';
-import SubscriptionPlans from '../client/src/pages/merchant/SubscriptionPlans';
-let root: Root, container: HTMLDivElement;
-beforeEach(() => {
-  vi.clearAllMocks(); vi.stubGlobal('React', React); vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true); api.pending = false;
-  api.current = { data: { id: 91, status: 'active', planId: 2, billingCycle: 'monthly', daysRemaining: 20, startDate: '2026-09-01', endDate: '2026-10-01', lastResetAt: '2026-09-01', conversationsUsed: 720, messagesUsed: 1300, voiceMessagesUsed: 25, plan: { id: 2, name: 'النمو', nameEn: 'Growth', maxCustomers: 2000, maxWhatsAppNumbers: 3, conversationLimit: 2000, messageLimit: -1, voiceMessageLimit: 100, monthlyPrice: '249', yearlyPrice: '2490', currency: 'SAR', features: '[]' } } };
-  api.payments = { data: [{ id: 17, type: 'renewal', status: 'refunded', amount: '249.00', currency: 'SAR', createdAt: '2026-09-01' }] };
-  api.plans = { data: [api.current.data.plan] };
-  container = document.createElement('div'); document.body.append(container); root = createRoot(container);
+import { ServicePreviewContext } from '../prototypes/tenant-dashboard/src/service-preview-api';
+import { ServicePreviewModel, type ServiceMode } from '../prototypes/tenant-dashboard/src/service-preview-model';
+import { scopedBilling, scopedBillingHistory } from '../client/src/lib/subscription-billing-view';
+let root: Root, host: HTMLDivElement, model: ServicePreviewModel;
+const c = () => state.language === 'ar' ? ar.subscriptionBillingUx : en.subscriptionBillingUx;
+beforeEach(() => { vi.stubGlobal('React', React); vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true); state.language = 'en'; history.replaceState(null, '', '/?path=/merchant/subscription'); host = document.createElement('div'); document.body.append(host); root = createRoot(host); model = new ServicePreviewModel(269); });
+afterEach(async () => { await act(async () => root.unmount()); model.dispose(); host.remove(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
+const render = () => act(async () => root.render(React.createElement(ServicePreviewContext.Provider, { value: model }, React.createElement(MySubscription))));
+const click = (text: string) => act(async () => { const el = Array.from((document.querySelector('[role="alertdialog"]') ?? document).querySelectorAll<HTMLButtonElement>('button')).find(n => n.textContent === text); expect(el).toBeTruthy(); el!.click(); });
+const navigate = (tab: string) => act(async () => { history.replaceState(null, '', '/?path=/merchant/subscription&tab=' + tab); window.dispatchEvent(new PopStateEvent('popstate')); });
+const mode = (value: ServiceMode) => { model.dispose(); model = new ServicePreviewModel(269, value); };
+it.each(['ar','en'])('shows canonical quotas and translated navigation in %s', async lang => { state.language = lang; await render(); expect(host.textContent).toContain(c().title); expect(host.textContent).toContain(c().unlimited); expect(host.querySelectorAll('progress')).toHaveLength(1); expect(host.textContent).not.toMatch(/subscriptionBillingUx\.|usageWorkspaceUx\./); expect(model.operations).toBe(0); });
+it.each(['loading','failure','stale-error','foreign','session','forbidden'] as ServiceMode[])('hides stale quotas and cancellation for %s', async value => { mode(value); await render(); expect(host.querySelector('progress')).toBeNull(); expect(host.querySelector('.sbw-management')).toBeNull(); expect(model.operations).toBe(0); });
+it.each(['empty','legacy','unavailable-reference','readonly'] as ServiceMode[])('keeps %s honest and hides cancellation', async value => { mode(value); await render(); expect(host.textContent).toContain(value === 'empty' ? c().noneBody : value === 'legacy' ? c().unknownBody : value === 'unavailable-reference' ? c().ambiguousBody : c().readonly); expect(host.querySelector('.sbw-management')).toBeNull(); });
+it('shows filtered paged payment history with exact zero, amounts and no sales-payment links', async () => {
+ await navigate('payments'); await render(); expect(host.querySelectorAll('.sbw-record')).toHaveLength(25); expect(host.textContent).toContain(c().payment_refunded); expect(host.textContent).toContain('SAR'); expect(host.textContent).not.toContain('NaN');
+ await click(c().next); expect(host.querySelectorAll('.sbw-record')).toHaveLength(6); await click(c().previous); expect(host.querySelectorAll('.sbw-record')).toHaveLength(25);
+ const select = host.querySelector<HTMLSelectElement>('select')!; await act(async () => { select.value = 'refunded'; select.dispatchEvent(new Event('change', { bubbles: true })); });
+ expect(host.querySelectorAll('.sbw-record')).toHaveLength(7); expect(Array.from(host.querySelectorAll('.sbw-record .sbw-status')).every(n => n.textContent === c().payment_refunded)).toBe(true);
+ expect(host.querySelector('a[href*="/merchant/payments/"]')).toBeNull(); expect(model.operations).toBe(0);
 });
-afterEach(async () => { await act(async () => root.unmount()); container.remove(); vi.unstubAllGlobals(); });
-const render = () => act(async () => root.render(React.createElement(MySubscription)));
-const click = (label: string) => act(async () => {
-  const element = Array.from(document.querySelectorAll('button')).find(el => el.textContent === label); expect(element).toBeTruthy(); element!.click();
+it('keeps history independent of summary availability', async () => {
+ const read = model.read.bind(model); vi.spyOn(model, 'read').mockImplementation((name,input) => name === 'merchantSubscription.workspace' ? { data: undefined, error: Error('PRIVATE'), isLoading: false, isFetching: false } as any : read(name,input));
+ await navigate('payments'); await render(); expect(host.querySelectorAll('.sbw-record')).toHaveLength(25); expect(host.textContent).not.toContain('PRIVATE');
 });
-it('shows canonical conversation, message and voice quotas and refunded transactions', async () => {
-  await render();
-  expect(container.querySelector('[aria-label="Conversations"]')?.textContent).toContain('720');
-  expect(container.querySelector('[aria-label="Messages"]')?.textContent).toContain('Unlimited');
-  expect(container.querySelector('[aria-label="Voice messages"]')?.textContent).toContain('Remaining: 75');
-  expect(container.textContent).toContain('Refunded'); expect(container.textContent).toContain('Renewal');
-  expect(container.textContent).not.toContain('@ts-ignore');
+it('does not load owner payment history for a known read-only member', async () => { mode('readonly'); const read = vi.spyOn(model,'read'); await navigate('payments'); await render(); expect(host.textContent).toContain(c().ownerHistoryBody); expect(read.mock.calls.some(([name]) => name === 'merchantSubscription.paymentHistory')).toBe(false); });
+it('keeps unavailable history distinct from empty history', async () => { mode('stale-error'); await navigate('payments'); await render(); expect(host.querySelectorAll('.sbw-record')).toHaveLength(0); expect(host.textContent).not.toContain(c().noPayments); });
+it('requires a separate cancellation review and confirms the fresh local record', async () => {
+ const mutate = vi.spyOn(model,'mutate'); await render(); await click(c().cancel); expect(document.querySelector('[role="alertdialog"]')?.textContent).toContain(c().cancelImpact); expect(mutate).not.toHaveBeenCalled();
+ await click(c().cancelConfirm); expect(mutate).toHaveBeenCalledWith('merchantSubscription.cancelSubscription', { expectedSubscriptionId: 41 }); expect(document.body.textContent).toContain(c().cancel_done); expect(model.operations).toBe(1);
 });
-it('supports trials without a plan and hides cancellation for them', async () => {
-  api.current.data = { ...api.current.data, status: 'trial', planId: null, plan: null, conversationsUsed: 12, voiceMessagesUsed: 3 };
-  await render();
-  expect(container.querySelector('[aria-label="Conversations"]')?.textContent).toContain('Remaining: 88');
-  expect(container.querySelector('[aria-label="Voice messages"]')?.textContent).toContain('Remaining: 17');
-  expect(container.textContent).not.toContain('Cancel subscription');
+it('dismisses review and restores focus without changing the subscription', async () => { await render(); await click(c().cancel); await click(c().keep); expect(model.operations).toBe(0); expect(document.querySelector('[role="alertdialog"]')).toBeNull(); await vi.waitFor(() => expect(document.activeElement?.textContent).toBe(c().cancel)); });
+it('prevents cancellation after the reviewed subscription or plan changed', async () => {
+ await render(); await click(c().cancel); const read = model.read.bind(model); vi.spyOn(model,'read').mockImplementation((name,input) => { const r=read(name,input); return name === 'merchantSubscription.workspace' ? {...r,data:{...r.data,subscription:{...r.data.subscription,planId:99}}} : r; }); await render();
+ expect(document.querySelector('[role="alertdialog"]')?.textContent).toContain(c().cancel_conflict); await click(c().cancelConfirm); expect(model.operations).toBe(0);
 });
-it('keeps payment history visible without an active subscription', async () => {
-  api.current.data = null; await render();
-  expect(container.textContent).toContain('No current subscription'); expect(container.textContent).toContain('Refunded');
-});
-it('does not replace failed or loading data with empty history or stale quotas', async () => {
-  api.current.isError = true; api.payments.isError = true; await render();
-  expect(container.textContent).toContain('Could not load your subscription'); expect(container.textContent).toContain('Could not load payments');
-  expect(container.querySelector('progress')).toBeNull(); expect(container.textContent).not.toContain('No recorded transactions');
-  api.current = { isLoading: true }; api.payments = { isLoading: true }; await render();
-  expect(container.textContent).toContain('Loading payments'); expect(container.textContent).not.toContain('No current subscription');
-});
-it('opens an explicit immediate-cancellation review and sends only the reviewed subscription id', async () => {
-  await render(); await click('Cancel subscription');
-  expect(document.querySelector('[role="alertdialog"]')?.textContent).toContain('ends access immediately');
-  expect(api.cancel).not.toHaveBeenCalled();
-  await click('Yes, cancel now'); expect(api.cancel).toHaveBeenCalledWith({ expectedSubscriptionId: 91 });
-});
-it('keeps the subscription when confirmation is dismissed', async () => {
-  await render(); await click('Cancel subscription'); await click('Keep subscription');
-  expect(api.cancel).not.toHaveBeenCalled(); expect(document.querySelector('[role="alertdialog"]')).toBeNull();
-  await vi.waitFor(() => expect(document.activeElement?.textContent).toBe('Cancel subscription'));
-});
-it('prevents cancellation when the subscription changed after opening the review', async () => {
-  await render(); await click('Cancel subscription'); api.current.data = { ...api.current.data, id: 92 }; await render();
-  expect(document.querySelector('[role="alertdialog"]')?.textContent).toContain('changed during review');
-  await click('Yes, cancel now'); expect(api.cancel).not.toHaveBeenCalled();
-});
-it('keeps failed cancellation review open and invalidates billing after success', async () => {
-  await render(); await click('Cancel subscription');
-  await act(async () => api.callbacks.onError({ data: { code: 'CONFLICT' }, message: 'private SQL' }));
-  expect(document.querySelector('[role="alertdialog"]')?.textContent).toContain('changed during review');
-  expect(document.body.textContent).not.toContain('private SQL');
-  await act(async () => api.callbacks.onSuccess()); expect(api.invalidate).toHaveBeenCalledOnce();
-  expect(document.querySelector('[role="alertdialog"]')).toBeNull();
-});
-it('blocks duplicate confirmation and dismissal during a pending request', async () => {
-  await render(); await click('Cancel subscription'); api.pending = true; await render();
-  await click('Cancelling…'); await click('Keep subscription');
-  expect(api.cancel).not.toHaveBeenCalled(); expect(document.querySelector('[role="alertdialog"]')).toBeTruthy();
-});
-it('keeps malformed plan features from crashing the plan picker', async () => {
-  api.plans.data[0].features = '{"not":"an array"}';
-  await act(async () => root.render(React.createElement(SubscriptionPlans)));
-  expect(container.textContent).toContain('249'); expect(api.subscribe).not.toHaveBeenCalled();
-});
-it('does not offer checkout when subscription state failed to load', async () => {
-  api.current.isError = true;
-  await act(async () => root.render(React.createElement(SubscriptionPlans)));
-  expect(container.textContent).toContain('Could not load plans'); expect(container.textContent).not.toContain('249');
+it('blocks duplicate confirmation and dismissal while the request is pending', async () => { mode('pending-save'); await render(); await click(c().cancel); await click(c().cancelConfirm); expect(document.body.textContent).toContain(c().cancel_sending); await click(c().close); expect(document.querySelector('[role="alertdialog"]')).toBeTruthy(); expect(model.pending).toBe(1); await act(async () => model.finishPending()); expect(model.operations).toBe(1); });
+it('does not claim cancellation after a lost response, and rereads without sending it twice', async () => { mode('uncertain-save'); await render(); await click(c().cancel); await click(c().cancelConfirm); expect(document.body.textContent).toContain(c().cancel_unknown); expect(model.operations).toBe(1); await click(c().refresh); expect(model.operations).toBe(1); expect(document.body.textContent).toContain(c().cancel_done); });
+it('shows conflict without exposing raw errors', async () => { mode('save-conflict'); await render(); await click(c().cancel); await click(c().cancelConfirm); expect(document.body.textContent).toContain(c().cancel_conflict); expect(model.operations).toBe(0); });
+it('rejects cross-account, cross-tenant, extra and mismatched query snapshots', () => {
+ const data = model.read('merchantSubscription.workspace').data;
+ expect(scopedBilling(data,1269,269)).toBeTruthy(); expect(scopedBilling(data,1270,269)).toBeNull(); expect(scopedBilling({...data,merchantId:270},1269,269)).toBeNull(); expect(scopedBilling({...data,secret:'x'},1269,269)).toBeNull();
+ const history = model.read('merchantSubscription.paymentHistory',{}).data; expect(scopedBillingHistory(history,1269,269,history.input)).toBeTruthy(); expect(scopedBillingHistory(history,1269,269,{...history.input,status:'failed'})).toBeNull();
 });

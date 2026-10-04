@@ -16,7 +16,7 @@ import "@/styles/settings-workspace.css";
 import "@/styles/usage-workspace.css";
 
 type Copy = ReturnType<typeof usageLabels>;
-function Meter({
+export function UsageMeter({
   name,
   value,
   note,
@@ -269,7 +269,7 @@ export function UsageWorkspace({
               <div className="uw-grid">
                 {(["conversations", "messages", "voiceMessages"] as const).map(
                   key => (
-                    <Meter
+                    <UsageMeter
                       key={key}
                       name={c[key]}
                       value={data.quotas[key]}
@@ -290,7 +290,7 @@ export function UsageWorkspace({
               <div className="uw-grid">
                 {(["customers", "whatsappNumbers", "products"] as const).map(
                   (key, i) => (
-                    <Meter
+                    <UsageMeter
                       key={key}
                       name={c[key]}
                       value={data.resources[key]}

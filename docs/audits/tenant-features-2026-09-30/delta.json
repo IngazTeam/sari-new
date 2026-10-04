@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-04T11:07:09.191Z",
+  "generatedAt": "2026-10-04T11:30:30.828Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 514,
-      "controls": 2759
+      "files": 517,
+      "controls": 2768
     }
   },
   "addedFiles": [
@@ -323,9 +323,12 @@
     "client/src/lib/report-export.ts",
     "client/src/lib/merchant-report-document.ts",
     "client/src/components/merchant/MerchantReportView.tsx",
-    "client/src/components/merchant/UsageWorkspacePage.tsx",
-    "client/src/components/merchant/UsageWorkspace.tsx",
+    "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
     "client/src/lib/usage-workspace-view.ts",
+    "client/src/lib/subscription-billing-view.ts",
+    "client/src/lib/subscription-billing-labels.ts",
+    "client/src/components/merchant/UsageWorkspace.tsx",
+    "client/src/components/merchant/UsageWorkspacePage.tsx",
     "client/src/components/merchant/PlanCatalogWorkspacePage.tsx",
     "client/src/components/merchant/PlanCatalogWorkspace.tsx",
     "client/src/components/merchant/PlanCatalogCheckout.tsx",
@@ -2510,11 +2513,19 @@
     {
       "route": "/merchant/subscriptions",
       "controlsBefore": 7,
-      "controlsNow": 10,
+      "controlsNow": 26,
       "removedQueries": [
-        "merchantSubscription.getDaysRemaining"
+        "merchantSubscription.getCurrentSubscription",
+        "merchantSubscription.getDaysRemaining",
+        "payment.listTransactions"
       ],
-      "addedQueries": [],
+      "addedQueries": [
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "merchantSubscription.workspace",
+        "merchantSubscription.paymentHistory",
+        "usage.workspace"
+      ],
       "removedMutations": [],
       "addedMutations": []
     },
@@ -2593,11 +2604,19 @@
     {
       "route": "/merchant/subscription",
       "controlsBefore": 7,
-      "controlsNow": 10,
+      "controlsNow": 26,
       "removedQueries": [
-        "merchantSubscription.getDaysRemaining"
+        "merchantSubscription.getCurrentSubscription",
+        "merchantSubscription.getDaysRemaining",
+        "payment.listTransactions"
       ],
-      "addedQueries": [],
+      "addedQueries": [
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "merchantSubscription.workspace",
+        "merchantSubscription.paymentHistory",
+        "usage.workspace"
+      ],
       "removedMutations": [],
       "addedMutations": []
     },
@@ -2913,11 +2932,19 @@
     {
       "route": "/merchant/my-subscription",
       "controlsBefore": 7,
-      "controlsNow": 10,
+      "controlsNow": 26,
       "removedQueries": [
-        "merchantSubscription.getDaysRemaining"
+        "merchantSubscription.getCurrentSubscription",
+        "merchantSubscription.getDaysRemaining",
+        "payment.listTransactions"
       ],
-      "addedQueries": [],
+      "addedQueries": [
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "merchantSubscription.workspace",
+        "merchantSubscription.paymentHistory",
+        "usage.workspace"
+      ],
       "removedMutations": [],
       "addedMutations": []
     }

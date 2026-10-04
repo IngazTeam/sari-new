@@ -278,7 +278,7 @@ it("keeps the same attempt across remount and checks it without making another p
   expect(raw).toBeTruthy(); expect(model.operations).toBe(1);
   await act(async () => root.render(<div />)); await render("checkout");
   expect(host.textContent).toContain(c().attempt_pending);
-  expect(host.querySelector<HTMLAnchorElement>('a[href="./#/page/merchant/subscription"]')).toBeTruthy();
+  expect(host.querySelector<HTMLAnchorElement>('a[href*="tab=payments"]')).toBeTruthy();
   expect(host.querySelector('a[href*="payments%2F"]')).toBeNull();
   expect(host.querySelector("input[type=checkbox]")).toBeNull();
   await clickText(c().checkAttempt); expect(model.operations).toBe(1);

@@ -2,7 +2,7 @@
 
 هذا حصر مصدر قابل لإعادة التوليد، وليس ادعاءً بأن كل مسار عمل اختُبر أو أُعيد تصميمه. يشمل المكونات الفرعية المحلية، الحقول، الأزرار، النوافذ، التبويبات، واجهات القراءة والتعديل. العناصر الديناميكية تحتاج مراجعة إضافية.
 
-- 126 مسارًا مسجلًا، 514 ملف واجهة متصلًا، 2759 عنصر تحكم في المصدر.
+- 126 مسارًا مسجلًا، 517 ملف واجهة متصلًا، 2768 عنصر تحكم في المصدر.
 - 0 رابطًا حرفيًا غير مطابق، و0 ملف صفحة غير متصل بالمسارات المحصورة.
 
 | الصفحة | الملفات | عناصر التحكم | القراءة / التعديل | موك أب للصفحة |
@@ -109,12 +109,12 @@
 | /merchant/scheduled-reports — التقارير المجدولة | 1 | 24 | 2 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/whatsapp-auto-notifications — أتمتة رسائل العملاء | 1 | 20 | 3 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/reports — التقارير | 10 | 8 | 3 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/subscriptions — الباقة والاستخدام | 1 | 10 | 2 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/subscriptions — الباقة والاستخدام | 6 | 26 | 5 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/usage — استهلاك الرسائل | 4 | 7 | 3 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/usage-dashboard — حدود الاستخدام | 4 | 7 | 3 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/subscription/plans — الباقات | 8 | 28 | 6 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/subscription/compare — مقارنة الباقات | 8 | 28 | 6 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/subscription — الباقة والاستخدام | 1 | 10 | 2 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/subscription — الباقة والاستخدام | 6 | 26 | 5 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/checkout — بدء الاشتراك المدفوع | 8 | 28 | 6 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/payment/success — نتيجة دفع الاشتراك | 6 | 11 | 2 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/payment/cancel — إلغاء دفع الاشتراك | 6 | 11 | 2 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -132,7 +132,7 @@
 | /merchant/ab-tests — الرؤى والاقتراحات وA/B | 9 | 31 | 5 / 2 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/try-sari-analytics — مقاييس المساعد | 11 | 7 | 3 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/merchant-payments — المدفوعات | 5 | 23 | 4 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/my-subscription — الباقة والاستخدام | 1 | 10 | 2 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/my-subscription — الباقة والاستخدام | 6 | 26 | 5 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
 
 ## روابط تحتاج مراجعة
 
@@ -3864,20 +3864,29 @@
 |---:|---|---|---|
 | 40 | summary | تسمية ديناميكية / تحتاج مراجعة | MerchantReportView |
 
-## client/src/pages/merchant/MySubscription.tsx
+## client/src/components/merchant/SubscriptionBillingWorkspace.tsx
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 52 | Button | تسمية ديناميكية / تحتاج مراجعة | MySubscription |
-| 57 | Button | تسمية ديناميكية / تحتاج مراجعة | MySubscription |
-| 80 | Button | تسمية ديناميكية / تحتاج مراجعة | ar |
-| 81 | Button | تسمية ديناميكية / تحتاج مراجعة | ar |
-| 82 | Button | تسمية ديناميكية / تحتاج مراجعة | ar |
-| 106 | summary | تسمية ديناميكية / تحتاج مراجعة | MySubscription |
-| 108 | Button | تسمية ديناميكية / تحتاج مراجعة | MySubscription |
-| 131 | AlertDialogContent | تسمية ديناميكية / تحتاج مراجعة | MySubscription |
-| 135 | AlertDialogCancel | تسمية ديناميكية / تحتاج مراجعة | MySubscription |
-| 136 | AlertDialogAction | تسمية ديناميكية / تحتاج مراجعة | MySubscription |
+| 166 | Link | تسمية ديناميكية / تحتاج مراجعة | SubscriptionBillingWorkspace |
+| 180 | Link | تسمية ديناميكية / تحتاج مراجعة | SubscriptionBillingWorkspace |
+| 217 | button | تسمية ديناميكية / تحتاج مراجعة | SubscriptionBillingWorkspace |
+| 290 | Link | تسمية ديناميكية / تحتاج مراجعة | trial ar |
+| 297 | Link | تسمية ديناميكية / تحتاج مراجعة | trial ar |
+| 303 | Link | تسمية ديناميكية / تحتاج مراجعة | trial ar |
+| 349 | summary | تسمية ديناميكية / تحتاج مراجعة | SubscriptionBillingWorkspace |
+| 351 | button | تسمية ديناميكية / تحتاج مراجعة | SubscriptionBillingWorkspace |
+| 380 | AlertDialogContent | review cancel_ review review unknown | SubscriptionBillingWorkspace |
+| 403 | button | review | SubscriptionBillingWorkspace |
+| 412 | button | تسمية ديناميكية / تحتاج مراجعة | SubscriptionBillingWorkspace |
+| 422 | button | تسمية ديناميكية / تحتاج مراجعة | SubscriptionBillingWorkspace |
+| 480 | button | تسمية ديناميكية / تحتاج مراجعة | SubscriptionBillingWorkspace |
+| 492 | select | payment_ | SubscriptionBillingWorkspace |
+| 510 | select | type_ | SubscriptionBillingWorkspace |
+| 526 | select | 25 50 | SubscriptionBillingWorkspace |
+| 593 | summary | تسمية ديناميكية / تحتاج مراجعة | SubscriptionBillingWorkspace |
+| 611 | button | تسمية ديناميكية / تحتاج مراجعة | SubscriptionBillingWorkspace |
+| 626 | button | تسمية ديناميكية / تحتاج مراجعة | SubscriptionBillingWorkspace |
 
 ## client/src/components/merchant/UsageWorkspace.tsx
 
