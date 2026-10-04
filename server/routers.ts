@@ -1,3 +1,4 @@
+import {selfProfileProcedures} from "./routers-self-profile-workspace";
 import { notificationPreferenceProcedures } from './routers-notification-preference-workspace';
 import {scheduledMessagesRouter} from './routers-scheduled-messages';
 import { reviewsRouter } from './routers-reviews';
@@ -338,6 +339,7 @@ export const appRouter = router({
   integrations: integrationsRouter,
 
   auth: router({
+    ...selfProfileProcedures,
     me: protectedProcedure.query(opts => {
       const { password, openId, ...safeUser } = opts.ctx.user as any;
       return safeUser;
