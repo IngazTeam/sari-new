@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-04T00:34:36.878Z",
+  "generatedAt": "2026-10-04T00:44:25.576Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -2323,7 +2323,7 @@
       ],
       "addedQueries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "notificationPreferences.workspace"
       ],
       "removedMutations": [
@@ -2563,7 +2563,7 @@
       ],
       "addedQueries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "websiteAnalysis.competitorWorkspace",
         "websiteAnalysis.competitorAnalysisAttempt",
         "websiteAnalysis.competitorDetail",

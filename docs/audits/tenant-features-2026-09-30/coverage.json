@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-04T00:34:36.878Z",
+  "generatedAt": "2026-10-04T00:44:25.576Z",
   "definition": "Every registered route is accounted for; source inventory and design completion are different statuses.",
   "routes": [
     {
@@ -83223,7 +83223,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "notificationPreferences.workspace"
       ],
       "mutations": [
@@ -89537,7 +89537,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "websiteAnalysis.competitorWorkspace",
         "websiteAnalysis.competitorAnalysisAttempt",
         "websiteAnalysis.competitorDetail",

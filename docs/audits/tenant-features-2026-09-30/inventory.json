@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-04T00:34:36.878Z",
+  "generatedAt": "2026-10-04T00:44:25.576Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -18655,10 +18655,10 @@
     },
     {
       "file": "client/src/pages/NotificationSettings.tsx",
-      "hash": "cbb3250613fb",
+      "hash": "48220989e8a2",
       "queries": [
         "auth.me",
-        "merchants.getCurrent"
+        "merchants.workspaceIdentity"
       ],
       "mutations": [],
       "imperativeReads": [],
@@ -18676,7 +18676,7 @@
           "enabled": null
         },
         {
-          "query": "merchants.getCurrent",
+          "query": "merchants.workspaceIdentity",
           "binding": "merchant",
           "line": 13,
           "errorSignal": true,
@@ -20276,10 +20276,10 @@
     },
     {
       "file": "client/src/pages/CompetitorAnalysis.tsx",
-      "hash": "b68e8ba1fbf1",
+      "hash": "891177b578f3",
       "queries": [
         "auth.me",
-        "merchants.getCurrent"
+        "merchants.workspaceIdentity"
       ],
       "mutations": [],
       "imperativeReads": [],
@@ -20297,7 +20297,7 @@
           "enabled": null
         },
         {
-          "query": "merchants.getCurrent",
+          "query": "merchants.workspaceIdentity",
           "binding": "merchant",
           "line": 13,
           "errorSignal": true,
@@ -28115,7 +28115,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "notificationPreferences.workspace"
       ],
       "mutations": [
@@ -28872,7 +28872,7 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
+        "merchants.workspaceIdentity",
         "websiteAnalysis.competitorWorkspace",
         "websiteAnalysis.competitorAnalysisAttempt",
         "websiteAnalysis.competitorDetail",

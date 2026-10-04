@@ -422,3 +422,11 @@ it("keeps products expanded when paging and restores the selected report in the 
     (document.querySelector(".cmp-product-section") as HTMLDetailsElement).open
   ).toBe(true);
 });
+
+it('opens a member workspace without using the owner-only merchant profile',async()=>{
+ model=new ServicePreviewModel(269,'readonly');const original=model.read.bind(model);const reads=vi.spyOn(model,'read').mockImplementation((name,input)=>name==='merchants.getCurrent'?{data:undefined,isLoading:false,isFetching:false,error:null}:original(name,input));
+ await render();expect(host.querySelector('h1')).not.toBeNull();expect(host.querySelector('section[data-state="missing"]')).toBeNull();expect(reads.mock.calls.some(([name])=>name==='merchants.getCurrent')).toBe(false);expect(reads.mock.calls.some(([name])=>name==='merchants.workspaceIdentity')).toBe(true);
+});
+it('does not accept an identity response for another actor',async()=>{
+ const original=model.read.bind(model);vi.spyOn(model,'read').mockImplementation((name,input)=>name==='merchants.workspaceIdentity'?{...original(name,input),data:{id:269,actorId:1270}}:original(name,input));await render();expect(host.querySelector('section[data-state="missing"]')).not.toBeNull();expect(model.operations).toBe(0);
+});

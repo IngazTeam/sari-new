@@ -10,7 +10,7 @@ export default function NotificationSettings() {
     staleTime: 0,
     refetchOnMount: "always",
   });
-  const merchant = trpc.merchants.getCurrent.useQuery(undefined, {
+  const merchant = trpc.merchants.workspaceIdentity.useQuery(undefined, {
     retry: false,
     staleTime: 0,
     refetchOnMount: "always",
@@ -32,7 +32,11 @@ export default function NotificationSettings() {
     merchant.isFetching
   )
     return <WorkspaceState kind="loading" />;
-  if (!user.data?.id || !merchant.data?.id)
+  if (
+    !user.data?.id ||
+    !merchant.data?.id ||
+    merchant.data.actorId !== user.data.id
+  )
     return (
       <WorkspaceState
         kind={!user.data?.id ? "session" : "missing"}
