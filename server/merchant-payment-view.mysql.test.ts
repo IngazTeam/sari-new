@@ -1,0 +1,66 @@
+import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest";
+import { appRouter } from "./routers";
+import { merchantPaymentsRouter } from "./routers-merchant-payments";
+import {
+  upsertMerchantPaymentSettings,
+  getMerchantPaymentSettings,
+} from "./db";
+import { closeDb } from "./db/connection";
+import {
+  createDisposableMerchant,
+  cleanupDisposableMerchants,
+} from "./tests/helpers/disposable-merchant";
+describe.skipIf(!process.env.DATABASE_URL)(
+  "bounded merchant payment view with MySQL",
+  () => {
+    let fixture: Awaited<ReturnType<typeof createDisposableMerchant>>;
+    beforeEach(async () => {
+      fixture = await createDisposableMerchant("payment-view461");
+    });
+    afterEach(() => cleanupDisposableMerchants([fixture.userId]));
+    afterAll(closeDb);
+    it("does not serialize decrypted Tap or webhook secrets from either route", async () => {
+      await upsertMerchantPaymentSettings(fixture.merchantId, {
+        tapPublicKey: "pk_test_fixture",
+        tapSecretKey: "sk_test_private-fixture",
+        tapWebhookSecret: "whsec_private-fixture",
+        webhookUrl: "https://private.example.test/callback",
+        tapEnabled: 0,
+        tapTestMode: 1,
+        autoSendPaymentLink: 0,
+        paymentLinkMessage: "Saved fixture",
+        defaultCurrency: "SAR",
+      });
+      const raw = await getMerchantPaymentSettings(fixture.merchantId);
+      expect(raw).toMatchObject({
+        tapSecretKey: "sk_test_private-fixture",
+        tapWebhookSecret: "whsec_private-fixture",
+      });
+      const ctx = {
+        user: { id: fixture.userId, role: "user" },
+        req: { headers: { "x-merchant-id": String(fixture.merchantId) } },
+        res: {},
+      } as any;
+      for (const view of [
+        await appRouter.createCaller(ctx).merchantPayments.getSettings(),
+        await merchantPaymentsRouter.createCaller(ctx).getSettings(),
+      ]) {
+        expect(view).toMatchObject({
+          hasTapSecretKey: true,
+          tapPublicKey: "pk_test_fixture",
+          paymentLinkMessage: "Saved fixture",
+          isReadyForPayments: false,
+        });
+        expect(JSON.stringify(view)).not.toContain("private");
+        for (const field of [
+          "tapSecretKey",
+          "tapWebhookSecret",
+          "webhookUrl",
+          "id",
+          "merchantId",
+        ])
+          expect(view).not.toHaveProperty(field);
+      }
+    });
+  }
+);

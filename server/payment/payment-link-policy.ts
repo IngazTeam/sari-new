@@ -178,15 +178,25 @@ export function isTapPaymentReady(settings: TapPaymentSettingsState): boolean {
   return Boolean(settings.tapEnabled) && hasVerifiedTapCredentials(settings);
 }
 
-export function toMerchantPaymentSettingsView<T extends TapPaymentSettingsState>(settings: T) {
-  const { tapSecretKey, ...publicSettings } = settings;
+export function toMerchantPaymentSettingsView<T extends TapPaymentSettingsState & {
+  autoSendPaymentLink?: number | boolean | null;
+  paymentLinkMessage?: string | null;
+  defaultCurrency?: string | null;
+}>(settings: T) {
   const credentialsVerified = hasVerifiedTapCredentials(settings);
 
   return {
-    ...publicSettings,
+    // Never spread a stored record here: it includes a decrypted webhook secret,
+    // and future columns must not become public without an explicit decision.
+    tapEnabled: settings.tapEnabled,
+    tapPublicKey: settings.tapPublicKey,
+    tapTestMode: settings.tapTestMode,
+    autoSendPaymentLink: settings.autoSendPaymentLink,
+    paymentLinkMessage: settings.paymentLinkMessage,
+    defaultCurrency: settings.defaultCurrency,
     // A presence bit lets the UI preserve an existing secret without receiving
     // even a masked fragment that could be mistaken for a writable credential.
-    hasTapSecretKey: Boolean(tapSecretKey?.trim()),
+    hasTapSecretKey: Boolean(settings.tapSecretKey?.trim()),
     isVerified: credentialsVerified ? 1 : 0,
     credentialsVerified,
     isReadyForPayments: Boolean(settings.tapEnabled) && credentialsVerified,
