@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-04T01:28:03.611Z",
+  "generatedAt": "2026-10-04T02:20:47.154Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -14993,91 +14993,180 @@
     },
     {
       "file": "client/src/pages/merchant/Settings.tsx",
-      "hash": "e3e40064c350",
+      "hash": "c078ba557dfc",
       "queries": [
         "auth.me",
-        "merchants.getCurrent"
+        "merchants.workspaceIdentity"
+      ],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [
+        {
+          "query": "auth.me",
+          "binding": "user",
+          "line": 8,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        },
+        {
+          "query": "merchants.workspaceIdentity",
+          "binding": "merchant",
+          "line": 13,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": "!!user.data?.id && !user.error && !user.isFetching"
+        }
+      ],
+      "conditions": [],
+      "imports": [
+        "client/src/components/merchant/SettingsWorkspace.tsx"
+      ],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/components/merchant/SettingsWorkspace.tsx",
+      "hash": "8c42f5d67c0e",
+      "queries": [
+        "auth.selfProfileWorkspace",
+        "merchants.profileWorkspace"
       ],
       "mutations": [
-        "auth.updateProfile",
-        "auth.emailVerification.sendVerificationEmail",
-        "merchants.update"
+        "merchants.profileSaveReviewed",
+        "auth.renameReviewed",
+        "auth.emailVerification.sendVerificationEmail"
       ],
       "imperativeReads": [],
       "browserRequests": [],
       "sections": [
         {
-          "label": "الإعدادات",
-          "line": 113,
+          "label": "",
+          "line": 235,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 292,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 501,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 596,
           "tag": "h1"
-        },
-        {
-          "label": "معلومات الحساب",
-          "line": 121,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "معلومات المتجر",
-          "line": 198,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "إعدادات الرد الآلي",
-          "line": 363,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "طرق الدفع",
-          "line": 412,
-          "tag": "CardTitle"
-        },
-        {
-          "label": "Tap Payments",
-          "line": 423,
-          "tag": "h3"
         }
       ],
-      "choices": [],
-      "handlers": [
+      "choices": [
         {
-          "name": "handleUpdateProfile",
-          "line": 82,
-          "calls": [
-            "updateProfileMutation"
+          "name": "fallbackZones",
+          "line": 73,
+          "values": [
+            "UTC",
+            "Asia/Riyadh",
+            "Asia/Dubai",
+            "Asia/Kuwait",
+            "Asia/Qatar",
+            "Asia/Bahrain",
+            "Asia/Muscat",
+            "Asia/Amman",
+            "Asia/Baghdad",
+            "Asia/Beirut",
+            "Africa/Cairo",
+            "Africa/Casablanca",
+            "Africa/Lagos",
+            "Africa/Nairobi",
+            "Africa/Johannesburg",
+            "Europe/London",
+            "Europe/Paris",
+            "Europe/Berlin",
+            "Europe/Istanbul",
+            "Europe/Moscow",
+            "America/New_York",
+            "America/Chicago",
+            "America/Los_Angeles",
+            "America/Sao_Paulo",
+            "America/Argentina/Buenos_Aires",
+            "America/Bogota",
+            "Asia/Karachi",
+            "Asia/Kolkata",
+            "Asia/Jakarta",
+            "Asia/Kuala_Lumpur",
+            "Asia/Tokyo",
+            "Australia/Sydney"
           ]
         },
         {
-          "name": "handleUpdateMerchant",
-          "line": 93,
-          "calls": [
-            "updateMerchantMutation"
+          "name": "links",
+          "line": 579,
+          "values": [
+            [
+              "/merchant/sari-brain?view=sources",
+              "c.knowledgeTitle",
+              "c.knowledgeHint"
+            ],
+            [
+              "/merchant/payment-settings",
+              "c.paymentTitle",
+              "c.paymentHint"
+            ],
+            [
+              "/merchant/team",
+              "c.teamTitle",
+              "c.teamHint"
+            ],
+            [
+              "/merchant/privacy-center",
+              "c.privacyTitle",
+              "c.privacyHint"
+            ]
+          ]
+        },
+        {
+          "name": "keys",
+          "line": 621,
+          "values": [
+            "store",
+            "account",
+            "tools"
           ]
         }
       ],
+      "handlers": [],
       "queryStates": [
         {
-          "query": "auth.me",
-          "binding": "{ data: user, refetch: refetchUser }",
-          "line": 19,
-          "errorSignal": false,
+          "query": "auth.selfProfileWorkspace",
+          "binding": "query",
+          "line": 399,
+          "errorSignal": true,
           "loadingSignal": false,
           "enabled": null
         },
         {
-          "query": "merchants.getCurrent",
-          "binding": "{ data: merchant, refetch: refetchMerchant }",
-          "line": 20,
-          "errorSignal": false,
+          "query": "merchants.profileWorkspace",
+          "binding": "query",
+          "line": 578,
+          "errorSignal": true,
           "loadingSignal": false,
           "enabled": null
         }
       ],
       "conditions": [],
       "imports": [
-        "client/src/components/KnowledgeDocumentUpload.tsx",
-        "client/src/components/SetupWizardReset.tsx"
+        "client/src/components/SetupWizardReset.tsx",
+        "client/src/lib/use-reviewed-settings-draft.ts",
+        "client/src/lib/settings-workspace.ts",
+        "client/src/lib/settings-workspace-labels.ts",
+        "client/src/lib/knowledge-workspace-cache.ts"
       ],
-      "controlCount": 17
+      "controlCount": 14
     },
     {
       "file": "client/src/components/SetupWizardReset.tsx",
@@ -15125,6 +15214,59 @@
       "conditions": [],
       "imports": [],
       "controlCount": 5
+    },
+    {
+      "file": "client/src/lib/use-reviewed-settings-draft.ts",
+      "hash": "a4942f82b3b3",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [
+        {
+          "name": "save",
+          "line": 109,
+          "calls": []
+        }
+      ],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [
+        "client/src/lib/knowledge-workspace-cache.ts"
+      ],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/lib/settings-workspace.ts",
+      "hash": "12d72e427608",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/lib/settings-workspace-labels.ts",
+      "hash": "fa71797f2c24",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [],
+      "controlCount": 0
     },
     {
       "file": "client/src/pages/merchant/PrivacyCenter.tsx",
@@ -26640,67 +26782,31 @@
       ],
       "files": [
         "client/src/pages/merchant/Settings.tsx",
-        "client/src/components/KnowledgeDocumentUpload.tsx",
-        "client/src/components/KnowledgeWorkspaceScope.tsx",
+        "client/src/components/merchant/SettingsWorkspace.tsx",
+        "client/src/components/SetupWizardReset.tsx",
+        "client/src/lib/use-reviewed-settings-draft.ts",
         "client/src/lib/knowledge-workspace-cache.ts",
         "client/src/lib/sales-policy-draft.ts",
         "client/src/lib/conversation-draft.ts",
         "client/src/lib/test-workspace-draft.ts",
-        "client/src/lib/merchant-selection.ts",
-        "client/src/components/KnowledgeReceiptView.tsx",
-        "client/src/lib/merchant-date.ts",
-        "client/src/components/KnowledgeAnalysisReport.tsx",
-        "client/src/components/KnowledgePlanView.tsx",
-        "client/src/components/KnowledgeDocumentReview.tsx",
-        "client/src/components/KnowledgeIntake.tsx",
-        "client/src/components/SetupWizardReset.tsx"
+        "client/src/lib/settings-workspace.ts",
+        "client/src/lib/settings-workspace-labels.ts"
       ],
       "controls": [
-        "a54815692e23",
-        "7b0df626955e",
-        "1668de312a96",
-        "b403c8e2e7ba",
-        "9d57931c2597",
-        "84c44e8a0ed6",
-        "fcd564711d46",
-        "28d7ee8ba8ea",
-        "a2612533bf5e",
-        "a36d7b795024",
-        "364a7f535161",
-        "a458d33be39c",
-        "0d26f06b3aa2",
-        "397cb72492a7",
-        "90c77221755b",
-        "1557fc0b70b0",
-        "8ec9e6892b41",
-        "3a4064956ff2",
-        "5e22301185ec",
-        "0d7b6debf8e7",
-        "d1f3b894929e",
-        "614645315e5d",
-        "434be5b996f0",
-        "77ce5300e6f7",
-        "17fb4bae960b",
-        "b0b0cf38f2a0",
-        "c0a26f1d831b",
-        "9d2889cc1528",
-        "a99f66fc5335",
-        "106a4d3f63b2",
-        "0ca0b9a86cb6",
-        "e9d6669e71db",
-        "5e0f08520516",
-        "73dc78a664b3",
-        "17a30e36ce98",
-        "d42a05405854",
-        "f8b00deda952",
-        "129b47d2efc9",
-        "83273a51c5aa",
-        "92ec676a8ce5",
-        "2b3304ff2221",
-        "14a68d65c1a5",
-        "b1591fb0d490",
-        "a631315867d2",
-        "68182e62c2a1",
+        "1f1fa9eabcc1",
+        "f45debe0a355",
+        "aad5dc079b08",
+        "8d57f2419882",
+        "35a709768b78",
+        "4cc2a38fa5f8",
+        "1457e68194a7",
+        "fd74b40c42f8",
+        "dda49a1ceedb",
+        "0c556c9b4f8a",
+        "ac346260f334",
+        "6d10cc887b8f",
+        "40dc633c8b4a",
+        "40811c331663",
         "7a416c3cbd5e",
         "f14a767f9175",
         "8fe4a67ffc76",
@@ -26709,49 +26815,19 @@
       ],
       "queries": [
         "auth.me",
-        "merchants.getCurrent",
-        "sariBrain.getIntakeReceipt",
-        "knowledgeDocs.reviewSource",
+        "merchants.workspaceIdentity",
+        "auth.selfProfileWorkspace",
+        "merchants.profileWorkspace",
         "setupWizard.getProgress"
       ],
       "mutations": [
-        "auth.updateProfile",
+        "merchants.profileSaveReviewed",
+        "auth.renameReviewed",
         "auth.emailVerification.sendVerificationEmail",
-        "merchants.update",
-        "knowledgeDocs.reprocess",
-        "sariBrain.recoverIntakeReceipt",
-        "sariBrain.analyzeContent",
-        "sariBrain.ingestAnalyzedContent",
         "setupWizard.resetWizard"
       ],
-      "imperativeReads": [
-        {
-          "file": "client/src/components/KnowledgeDocumentUpload.tsx",
-          "procedure": "sariBrain.getIntakeReceipt",
-          "method": "fetch",
-          "expression": "utils.sariBrain.getIntakeReceipt.fetch",
-          "line": 44,
-          "provenance": "trpc-utility-static"
-        },
-        {
-          "file": "client/src/components/KnowledgeIntake.tsx",
-          "procedure": "sariBrain.getIntakeReceipt",
-          "method": "fetch",
-          "expression": "utils.sariBrain.getIntakeReceipt.fetch",
-          "line": 127,
-          "provenance": "trpc-utility-static"
-        }
-      ],
-      "browserRequests": [
-        {
-          "file": "client/src/components/KnowledgeDocumentUpload.tsx",
-          "line": 65,
-          "target": "/api/knowledge-docs/upload",
-          "targetExpression": "'/api/knowledge-docs/upload'",
-          "method": "POST",
-          "provenance": "browser-fetch-static"
-        }
-      ]
+      "imperativeReads": [],
+      "browserRequests": []
     },
     {
       "route": "/merchant/privacy-center",
@@ -75234,57 +75310,38 @@
       "review": "source-inventoried"
     },
     {
-      "id": "a54815692e23",
-      "file": "client/src/pages/merchant/Settings.tsx",
-      "line": 133,
-      "tag": "Input",
+      "id": "1f1fa9eabcc1",
+      "file": "client/src/components/merchant/SettingsWorkspace.tsx",
+      "line": 137,
+      "tag": "Button",
       "role": "",
-      "kind": "field",
-      "label": "الاسم",
-      "section": "معلومات الحساب",
-      "binding": "userName",
-      "type": "text",
+      "kind": "action",
+      "label": "",
+      "section": "SettingsWorkspace",
+      "binding": "() => void draft.reload(true)",
+      "type": "button",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
       "conditional": false,
-      "conditions": [],
-      "disabled": "",
+      "conditions": [
+        "draft.blocked"
+      ],
+      "disabled": "draft.busy",
       "review": "source-inventoried"
     },
     {
-      "id": "7b0df626955e",
-      "file": "client/src/pages/merchant/Settings.tsx",
-      "line": 143,
-      "tag": "Input",
-      "role": "",
-      "kind": "field",
-      "label": "البريد الإلكتروني",
-      "section": "معلومات الحساب",
-      "binding": "userEmail",
-      "type": "email",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "1668de312a96",
-      "file": "client/src/pages/merchant/Settings.tsx",
-      "line": 160,
+      "id": "f45debe0a355",
+      "file": "client/src/components/merchant/SettingsWorkspace.tsx",
+      "line": 147,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "إرسال رابط التحقق",
-      "section": "معلومات الحساب",
-      "binding": "() => sendVerificationMutation.mutate()",
+      "label": "",
+      "section": "SettingsWorkspace",
+      "binding": "() => void draft.reload()",
       "type": "button",
       "options": [],
       "min": "",
@@ -75292,22 +75349,94 @@
       "maxLength": "",
       "required": false,
       "conditional": true,
-      "conditions": [
-        "user?.emailVerifiedAt"
-      ],
-      "disabled": "sendVerificationMutation.isPending || !userEmail",
+      "conditions": [],
+      "disabled": "draft.busy",
       "review": "source-inventoried"
     },
     {
-      "id": "b403c8e2e7ba",
-      "file": "client/src/pages/merchant/Settings.tsx",
-      "line": 184,
+      "id": "aad5dc079b08",
+      "file": "client/src/components/merchant/SettingsWorkspace.tsx",
+      "line": 157,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "جاري الحفظ... حفظ التغييرات",
-      "section": "معلومات الحساب",
-      "binding": "handleUpdateProfile",
+      "label": "",
+      "section": "SettingsWorkspace",
+      "binding": "",
+      "type": "submit",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "draft.data?.canManage"
+      ],
+      "disabled": "draft.disabled || !draft.dirty",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "8d57f2419882",
+      "file": "client/src/components/merchant/SettingsWorkspace.tsx",
+      "line": 255,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "SettingsWorkspace",
+      "binding": "value(key)",
+      "type": "type",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "key === \"businessName\" ? 255 : key === \"phone\" ? 20 : 500",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "draft.disabled",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "35a709768b78",
+      "file": "client/src/components/merchant/SettingsWorkspace.tsx",
+      "line": 309,
+      "tag": "select",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "SettingsWorkspace",
+      "binding": "value(\"timezone\")",
+      "type": "text",
+      "options": [
+        {
+          "value": "",
+          "label": ""
+        },
+        {
+          "value": "zone",
+          "label": ""
+        }
+      ],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "draft.disabled",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "4cc2a38fa5f8",
+      "file": "client/src/components/merchant/SettingsWorkspace.tsx",
+      "line": 336,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "SettingsWorkspace",
+      "binding": "/merchant/media-library",
       "type": "text",
       "options": [],
       "min": "",
@@ -75316,81 +75445,62 @@
       "required": false,
       "conditional": true,
       "conditions": [],
-      "disabled": "updateProfileMutation.isPending",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "9d57931c2597",
-      "file": "client/src/pages/merchant/Settings.tsx",
-      "line": 210,
-      "tag": "Input",
-      "role": "",
-      "kind": "field",
-      "label": "اسم المتجر",
-      "section": "معلومات المتجر",
-      "binding": "businessName",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "84c44e8a0ed6",
-      "file": "client/src/pages/merchant/Settings.tsx",
-      "line": 220,
-      "tag": "Input",
-      "role": "",
-      "kind": "field",
-      "label": "رقم الهاتف",
-      "section": "معلومات المتجر",
-      "binding": "phone",
-      "type": "tel",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "fcd564711d46",
-      "file": "client/src/pages/merchant/Settings.tsx",
-      "line": 233,
+      "id": "1457e68194a7",
+      "file": "client/src/components/merchant/SettingsWorkspace.tsx",
+      "line": 338,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "إدارة العملة ومراجعة أثرها",
-      "section": "معلومات المتجر",
-      "binding": "",
-      "type": "text",
+      "label": "",
+      "section": "SettingsWorkspace",
+      "binding": "() => draft.change(\"logoUrl\", null)",
+      "type": "button",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
       "conditional": false,
-      "conditions": [],
-      "disabled": "",
+      "conditions": [
+        "value(\"logoUrl\")"
+      ],
+      "disabled": "draft.disabled",
       "review": "source-inventoried"
     },
     {
-      "id": "28d7ee8ba8ea",
-      "file": "client/src/pages/merchant/Settings.tsx",
-      "line": 234,
-      "tag": "a",
+      "id": "fd74b40c42f8",
+      "file": "client/src/components/merchant/SettingsWorkspace.tsx",
+      "line": 369,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "autoReplyEnabled",
+      "section": "SettingsWorkspace",
+      "binding": "draft.draft.autoReplyEnabled === true",
+      "type": "checkbox",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "draft.disabled",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "dda49a1ceedb",
+      "file": "client/src/components/merchant/SettingsWorkspace.tsx",
+      "line": 385,
+      "tag": "Link",
       "role": "",
       "kind": "action",
-      "label": "إدارة العملة ومراجعة أثرها",
-      "section": "معلومات المتجر",
+      "label": "",
+      "section": "SettingsWorkspace",
       "binding": "/merchant/currency-settings",
       "type": "text",
       "options": [],
@@ -75404,269 +75514,60 @@
       "review": "source-inventoried"
     },
     {
-      "id": "a2612533bf5e",
-      "file": "client/src/pages/merchant/Settings.tsx",
-      "line": 243,
-      "tag": "Select",
+      "id": "0c556c9b4f8a",
+      "file": "client/src/components/merchant/SettingsWorkspace.tsx",
+      "line": 508,
+      "tag": "input",
       "role": "",
       "kind": "field",
-      "label": "المنطقة الزمنية",
-      "section": "معلومات المتجر",
-      "binding": "timezone",
-      "type": "select",
-      "options": [
-        {
-          "value": "Asia/Riyadh",
-          "label": "🇸🇦 السعودية (UTC+3)"
-        },
-        {
-          "value": "Asia/Dubai",
-          "label": "🇦🇪 الإمارات (UTC+4)"
-        },
-        {
-          "value": "Asia/Kuwait",
-          "label": "🇰🇼 الكويت (UTC+3)"
-        },
-        {
-          "value": "Asia/Qatar",
-          "label": "🇶🇦 قطر (UTC+3)"
-        },
-        {
-          "value": "Asia/Bahrain",
-          "label": "🇧🇭 البحرين (UTC+3)"
-        },
-        {
-          "value": "Asia/Muscat",
-          "label": "🇴🇲 عُمان (UTC+4)"
-        },
-        {
-          "value": "Asia/Amman",
-          "label": "🇯🇴 الأردن (UTC+3)"
-        },
-        {
-          "value": "Asia/Baghdad",
-          "label": "🇮🇶 العراق (UTC+3)"
-        },
-        {
-          "value": "Asia/Beirut",
-          "label": "🇱🇧 لبنان (UTC+2)"
-        },
-        {
-          "value": "Africa/Cairo",
-          "label": "🇪🇬 مصر (UTC+2)"
-        },
-        {
-          "value": "Africa/Casablanca",
-          "label": "🇲🇦 المغرب (UTC+1)"
-        },
-        {
-          "value": "Africa/Lagos",
-          "label": "🇳🇬 نيجيريا (UTC+1)"
-        },
-        {
-          "value": "Africa/Nairobi",
-          "label": "🇰🇪 كينيا (UTC+3)"
-        },
-        {
-          "value": "Africa/Johannesburg",
-          "label": "🇿🇦 جنوب أفريقيا (UTC+2)"
-        },
-        {
-          "value": "Europe/London",
-          "label": "🇬🇧 لندن (UTC+0)"
-        },
-        {
-          "value": "Europe/Paris",
-          "label": "🇫🇷 باريس (UTC+1)"
-        },
-        {
-          "value": "Europe/Berlin",
-          "label": "🇩🇪 برلين (UTC+1)"
-        },
-        {
-          "value": "Europe/Istanbul",
-          "label": "🇹🇷 تركيا (UTC+3)"
-        },
-        {
-          "value": "Europe/Moscow",
-          "label": "🇷🇺 موسكو (UTC+3)"
-        },
-        {
-          "value": "America/New_York",
-          "label": "🇺🇸 نيويورك (UTC-5)"
-        },
-        {
-          "value": "America/Chicago",
-          "label": "🇺🇸 شيكاغو (UTC-6)"
-        },
-        {
-          "value": "America/Los_Angeles",
-          "label": "🇺🇸 لوس أنجلوس (UTC-8)"
-        },
-        {
-          "value": "America/Sao_Paulo",
-          "label": "🇧🇷 ساو باولو (UTC-3)"
-        },
-        {
-          "value": "America/Argentina/Buenos_Aires",
-          "label": "🇦🇷 الأرجنتين (UTC-3)"
-        },
-        {
-          "value": "America/Bogota",
-          "label": "🇨🇴 كولومبيا (UTC-5)"
-        },
-        {
-          "value": "Asia/Karachi",
-          "label": "🇵🇰 باكستان (UTC+5)"
-        },
-        {
-          "value": "Asia/Kolkata",
-          "label": "🇮🇳 الهند (UTC+5:30)"
-        },
-        {
-          "value": "Asia/Jakarta",
-          "label": "🇮🇩 إندونيسيا (UTC+7)"
-        },
-        {
-          "value": "Asia/Kuala_Lumpur",
-          "label": "🇲🇾 ماليزيا (UTC+8)"
-        },
-        {
-          "value": "Asia/Tokyo",
-          "label": "🇯🇵 اليابان (UTC+9)"
-        },
-        {
-          "value": "Australia/Sydney",
-          "label": "🇦🇺 أستراليا (UTC+10)"
-        }
-      ],
+      "label": "",
+      "section": "SettingsWorkspace",
+      "binding": "typeof draft.draft.name === \"string\" ? draft.draft.name : \"\"",
+      "type": "text",
+      "options": [],
       "min": "",
       "max": "",
-      "maxLength": "",
+      "maxLength": "120",
       "required": false,
-      "conditional": false,
+      "conditional": true,
       "conditions": [],
-      "disabled": "",
+      "disabled": "draft.disabled",
       "review": "source-inventoried"
     },
     {
-      "id": "a36d7b795024",
-      "file": "client/src/pages/merchant/Settings.tsx",
-      "line": 312,
-      "tag": "button",
+      "id": "ac346260f334",
+      "file": "client/src/components/merchant/SettingsWorkspace.tsx",
+      "line": 545,
+      "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "×",
-      "section": "معلومات المتجر",
-      "binding": "() => setLogoUrl('')",
+      "label": "",
+      "section": "SettingsWorkspace",
+      "binding": "() => void sendEmail()",
       "type": "button",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": false,
+      "conditional": true,
       "conditions": [
-        "logoUrl"
+        "draft.data.email && draft.data.emailVerified !== true"
       ],
-      "disabled": "",
+      "disabled": "sending || query.isFetching",
       "review": "source-inventoried"
     },
     {
-      "id": "364a7f535161",
-      "file": "client/src/pages/merchant/Settings.tsx",
-      "line": 327,
-      "tag": "Input",
-      "role": "",
-      "kind": "field",
-      "label": "شعار المتجر (لعروض الأسعار PDF)",
-      "section": "معلومات المتجر",
-      "binding": "logoUrl",
-      "type": "url",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "a458d33be39c",
-      "file": "client/src/pages/merchant/Settings.tsx",
-      "line": 339,
-      "tag": "a",
-      "role": "",
-      "kind": "action",
-      "label": "مكتبة الوسائط",
-      "section": "معلومات المتجر",
-      "binding": "/merchant/media-library",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "0d26f06b3aa2",
-      "file": "client/src/pages/merchant/Settings.tsx",
-      "line": 347,
+      "id": "6d10cc887b8f",
+      "file": "client/src/components/merchant/SettingsWorkspace.tsx",
+      "line": 554,
       "tag": "Button",
       "role": "",
       "kind": "action",
-      "label": "جاري الحفظ... حفظ التغييرات",
-      "section": "معلومات المتجر",
-      "binding": "handleUpdateMerchant",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "updateMerchantMutation.isPending",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "397cb72492a7",
-      "file": "client/src/pages/merchant/Settings.tsx",
-      "line": 379,
-      "tag": "Switch",
-      "role": "",
-      "kind": "field",
       "label": "",
-      "section": "إعدادات الرد الآلي",
-      "binding": "autoReplyEnabled",
-      "type": "checkbox",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "90c77221755b",
-      "file": "client/src/pages/merchant/Settings.tsx",
-      "line": 398,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "جاري الحفظ... حفظ التغييرات",
-      "section": "إعدادات الرد الآلي",
-      "binding": "handleUpdateMerchant",
-      "type": "text",
+      "section": "SettingsWorkspace",
+      "binding": "() => void query.refetch()",
+      "type": "button",
       "options": [],
       "min": "",
       "max": "",
@@ -75674,40 +75575,40 @@
       "required": false,
       "conditional": true,
       "conditions": [],
-      "disabled": "updateMerchantMutation.isPending",
+      "disabled": "sending || draft.busy",
       "review": "source-inventoried"
     },
     {
-      "id": "1557fc0b70b0",
-      "file": "client/src/pages/merchant/Settings.tsx",
-      "line": 427,
-      "tag": "Button",
-      "role": "",
+      "id": "40dc633c8b4a",
+      "file": "client/src/components/merchant/SettingsWorkspace.tsx",
+      "line": 606,
+      "tag": "button",
+      "role": "tab",
       "kind": "action",
-      "label": "إعدادات الدفع",
-      "section": "Tap Payments",
-      "binding": "",
-      "type": "text",
+      "label": "",
+      "section": "SettingsWorkspace",
+      "binding": "() => setTab(id)",
+      "type": "button",
       "options": [],
       "min": "",
       "max": "",
       "maxLength": "",
       "required": false,
-      "conditional": false,
+      "conditional": true,
       "conditions": [],
       "disabled": "",
       "review": "source-inventoried"
     },
     {
-      "id": "8ec9e6892b41",
-      "file": "client/src/pages/merchant/Settings.tsx",
-      "line": 428,
-      "tag": "a",
+      "id": "40811c331663",
+      "file": "client/src/components/merchant/SettingsWorkspace.tsx",
+      "line": 669,
+      "tag": "Link",
       "role": "",
       "kind": "action",
-      "label": "إعدادات الدفع",
-      "section": "Tap Payments",
-      "binding": "/merchant/payment-settings",
+      "label": "",
+      "section": "SettingsWorkspace",
+      "binding": "href",
       "type": "text",
       "options": [],
       "min": "",

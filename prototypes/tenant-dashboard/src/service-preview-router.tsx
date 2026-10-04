@@ -1,7 +1,7 @@
 import React, { useSyncExternalStore } from 'react';
 const reserved=['path','lang','tenant','scenario','embed','connection'];
 const subscribe=(fn:()=>void)=>{window.addEventListener('popstate',fn);return()=>window.removeEventListener('popstate',fn);};
-export const validServicePath=(path:string)=>/^\/merchant\/(?:services(?:\/new|\/[1-9]\d*(?:\/edit)?)?|currency-settings|notification-settings|competitor-analysis|order-notifications|reviews|booking-reviews|scheduled-messages|media-library|promotions|discounts|referrals|abandoned-carts|occasion-campaigns|service-categories|service-packages|staff|bookings|integrations\/(?:byaan|zid|calendly)|zid\/(?:settings|products|sync-logs|callback)|woocommerce\/(?:settings|products|orders|analytics)|byaan-dashboard|salla|platform-integrations|calendar(?:\/settings)?)$/.test(path)&&path.length<=100&&(!/\/services\/\d/.test(path)||Number(path.split('/')[3])<=2147483647);
+export const validServicePath=(path:string)=>/^\/merchant\/(?:services(?:\/new|\/[1-9]\d*(?:\/edit)?)?|settings|currency-settings|notification-settings|competitor-analysis|order-notifications|reviews|booking-reviews|scheduled-messages|media-library|promotions|discounts|referrals|abandoned-carts|occasion-campaigns|service-categories|service-packages|staff|bookings|integrations\/(?:byaan|zid|calendly)|zid\/(?:settings|products|sync-logs|callback)|woocommerce\/(?:settings|products|orders|analytics)|byaan-dashboard|salla|platform-integrations|calendar(?:\/settings)?)$/.test(path)&&path.length<=100&&(!/\/services\/\d/.test(path)||Number(path.split('/')[3])<=2147483647);
 export function previewNavigation(search:string){const params=new URLSearchParams(search),path=params.get('path')??'/merchant/services',app=new URLSearchParams(params);for(const key of reserved)app.delete(key);return {path,search:app.toString(),params};}
 export function servicePreviewHref(href:string,current:string){
   const [path,query='']=href.split('?');if(!validServicePath(path))return null;
@@ -11,7 +11,7 @@ export function servicePreviewHref(href:string,current:string){
 }
 export function usePreviewSearch(){return useSyncExternalStore(subscribe,()=>location.search);}
 export function updateServiceSearch(params:URLSearchParams){history.pushState(null,'',location.pathname+'?'+params.toString());window.dispatchEvent(new PopStateEvent('popstate'));}
-export function navigate(path:string){const href=servicePreviewHref(path,location.search);if(href){history.pushState(null,'',location.pathname+href);window.dispatchEvent(new PopStateEvent('popstate'));}}
+export function navigate(path:string){if(path==='/merchant/setup-wizard'){window.location.assign('./#/page/merchant/setup-wizard');return;}const href=servicePreviewHref(path,location.search);if(href){history.pushState(null,'',location.pathname+href);window.dispatchEvent(new PopStateEvent('popstate'));}}
 export function useSearch(){return previewNavigation(usePreviewSearch()).search;}
 export function useLocation():[string,typeof navigate]{return [previewNavigation(usePreviewSearch()).path,navigate];}
 export function useParams(){const [path]=useLocation();return {id:path.endsWith('/new')?undefined:/^\/merchant\/services\/([^/]+)/.exec(path)?.[1]};}

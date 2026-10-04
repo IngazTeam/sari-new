@@ -1,0 +1,242 @@
+[
+  {
+    "buttonHeights": [
+      67.1875,
+      67.1875,
+      67.1875,
+      46,
+      44
+    ],
+    "contentLeft": 30,
+    "contentRight": 350,
+    "contentWidth": 320,
+    "inputFonts": [
+      "16px",
+      "16px",
+      "16px",
+      "16px",
+      "16px"
+    ],
+    "overflow": [],
+    "scrollWidth": 320,
+    "tab": "المتجر",
+    "viewport": 350
+  },
+  {
+    "buttonHeights": [
+      67.1875,
+      67.1875,
+      67.1875,
+      46,
+      46,
+      46,
+      44
+    ],
+    "contentLeft": 30,
+    "contentRight": 350,
+    "contentWidth": 320,
+    "inputFonts": [
+      "16px"
+    ],
+    "overflow": [],
+    "scrollWidth": 320,
+    "tab": "حسابي",
+    "viewport": 350
+  },
+  {
+    "buttonHeights": [
+      67.1875,
+      67.1875,
+      67.1875,
+      46
+    ],
+    "contentLeft": 30,
+    "contentRight": 350,
+    "contentWidth": 320,
+    "inputFonts": [],
+    "overflow": [],
+    "scrollWidth": 320,
+    "tab": "أدوات إضافية",
+    "viewport": 350
+  },
+  {
+    "buttonHeights": [
+      44,
+      44,
+      44,
+      46,
+      44
+    ],
+    "contentLeft": 30,
+    "contentRight": 420,
+    "contentWidth": 390,
+    "inputFonts": [
+      "16px",
+      "16px",
+      "16px",
+      "16px",
+      "16px"
+    ],
+    "overflow": [],
+    "scrollWidth": 390,
+    "tab": "المتجر",
+    "viewport": 420
+  },
+  {
+    "buttonHeights": [
+      44,
+      44,
+      44,
+      46,
+      46,
+      46,
+      44
+    ],
+    "contentLeft": 30,
+    "contentRight": 420,
+    "contentWidth": 390,
+    "inputFonts": [
+      "16px"
+    ],
+    "overflow": [],
+    "scrollWidth": 390,
+    "tab": "حسابي",
+    "viewport": 420
+  },
+  {
+    "buttonHeights": [
+      44,
+      44,
+      44,
+      46
+    ],
+    "contentLeft": 30,
+    "contentRight": 420,
+    "contentWidth": 390,
+    "inputFonts": [],
+    "overflow": [],
+    "scrollWidth": 390,
+    "tab": "أدوات إضافية",
+    "viewport": 420
+  },
+  {
+    "buttonHeights": [
+      45.59375,
+      45.59375,
+      45.59375,
+      46,
+      46
+    ],
+    "contentLeft": 30,
+    "contentRight": 798,
+    "contentWidth": 768,
+    "inputFonts": [
+      "16px",
+      "16px",
+      "16px",
+      "16px",
+      "16px"
+    ],
+    "overflow": [],
+    "scrollWidth": 768,
+    "tab": "المتجر",
+    "viewport": 798
+  },
+  {
+    "buttonHeights": [
+      45.59375,
+      45.59375,
+      45.59375,
+      46,
+      46,
+      46,
+      46
+    ],
+    "contentLeft": 30,
+    "contentRight": 798,
+    "contentWidth": 768,
+    "inputFonts": [
+      "16px"
+    ],
+    "overflow": [],
+    "scrollWidth": 768,
+    "tab": "حسابي",
+    "viewport": 798
+  },
+  {
+    "buttonHeights": [
+      45.59375,
+      45.59375,
+      45.59375,
+      46
+    ],
+    "contentLeft": 30,
+    "contentRight": 798,
+    "contentWidth": 768,
+    "inputFonts": [],
+    "overflow": [],
+    "scrollWidth": 768,
+    "tab": "أدوات إضافية",
+    "viewport": 798
+  },
+  {
+    "buttonHeights": [
+      45.59375,
+      45.59375,
+      45.59375,
+      46,
+      46
+    ],
+    "contentLeft": 30,
+    "contentRight": 1470,
+    "contentWidth": 1440,
+    "inputFonts": [
+      "16px",
+      "16px",
+      "16px",
+      "16px",
+      "16px"
+    ],
+    "overflow": [],
+    "scrollWidth": 1440,
+    "tab": "المتجر",
+    "viewport": 1470
+  },
+  {
+    "buttonHeights": [
+      45.59375,
+      45.59375,
+      45.59375,
+      46,
+      46,
+      46,
+      46
+    ],
+    "contentLeft": 30,
+    "contentRight": 1470,
+    "contentWidth": 1440,
+    "inputFonts": [
+      "16px"
+    ],
+    "overflow": [],
+    "scrollWidth": 1440,
+    "tab": "حسابي",
+    "viewport": 1470
+  },
+  {
+    "buttonHeights": [
+      45.59375,
+      45.59375,
+      45.59375,
+      46
+    ],
+    "contentLeft": 30,
+    "contentRight": 1470,
+    "contentWidth": 1440,
+    "inputFonts": [],
+    "overflow": [],
+    "scrollWidth": 1440,
+    "tab": "أدوات إضافية",
+    "viewport": 1470
+  }
+]
