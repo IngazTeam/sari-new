@@ -66,8 +66,8 @@ function assertBounded(view: any) {
 }
 it("serializes an allowlist rather than dropping only the main Tap secret", () =>
   assertBounded(toMerchantPaymentSettingsView(record)));
-it.each(["owner", "manager"])(
-  "does not expose webhook or future secrets on either router for %s",
+it.each(["owner", "manager", "viewer", "sales_supervisor"])(
+  "retired readers expose no stored secrets for %s",
   async role => {
     m.access.mockResolvedValue({ merchantId: 31, role });
     const ctx = {
@@ -75,24 +75,15 @@ it.each(["owner", "manager"])(
       req: { headers: { "x-merchant-id": "31" } },
       res: {},
     } as any;
-    assertBounded(
-      await appRouter.createCaller(ctx).merchantPayments.getSettings()
-    );
-    assertBounded(await merchantPaymentsRouter.createCaller(ctx).getSettings());
-  }
-);
-it.each(["viewer", "sales_supervisor"])(
-  "does not read settings for %s",
-  async role => {
-    m.access.mockResolvedValue({ merchantId: 31, role });
-    const ctx = {
-      user: { id: 21, role: "user" },
-      req: { headers: { "x-merchant-id": "31" } },
-      res: {},
-    } as any;
-    await expect(
-      appRouter.createCaller(ctx).merchantPayments.getSettings()
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
-    expect(m.settings).not.toHaveBeenCalled();
+    for (const api of [
+      appRouter.createCaller(ctx).merchantPayments,
+      merchantPaymentsRouter.createCaller(ctx),
+    ])
+      await expect(api.getSettings()).rejects.toMatchObject({
+        code: "PRECONDITION_FAILED",
+        message: "payment_settings:reviewed_workspace_required",
+      });
+    for (const effect of Object.values(m))
+      expect(effect).not.toHaveBeenCalled();
   }
 );

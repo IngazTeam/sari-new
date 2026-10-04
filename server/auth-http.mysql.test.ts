@@ -71,7 +71,7 @@ describe.skipIf(!process.env.DATABASE_URL)('HTTP session, tenant and privilege p
     expect((await rpc('products.list', undefined, viewerToken)).status).toBe(200);
   });
   it('blocks viewer role escalation, payment secrets and order mutation over HTTP', async () => {
-    expect((await rpc('merchantPayments.getSettings', undefined, viewerToken)).status).toBe(403);
+    expect((await rpc('merchantPayments.getSettings', undefined, viewerToken)).status).toBe(412);
     expect((await rpc('team.updateRole', { memberId: 1, role: 'owner' }, viewerToken, true)).status).toBe(403);
     expect((await rpc('orders.workspace.statusWrite', { requestId:'00000000-0000-4000-8000-000000000001',intent:{id:1,status:'processing',notify:false},expectedDigest:'a'.repeat(64),reviewed:true }, viewerToken, true)).status).toBe(403);
   });
@@ -88,7 +88,7 @@ describe.skipIf(!process.env.DATABASE_URL)('HTTP session, tenant and privilege p
   });
   it('does not trust a role claim even with a valid signature and live session', async () => {
     const forgedRoleToken = jwt.sign({ ...jwt.decode(viewerToken) as object, role: 'admin' }, process.env.JWT_SECRET!, { algorithm: 'HS256' });
-    expect((await rpc('merchantPayments.getSettings', undefined, forgedRoleToken)).status).toBe(403);
+    expect((await rpc('team.updateRole', { memberId: 1, role: 'owner' }, forgedRoleToken, true)).status).toBe(403);
   });
   it('revokes access immediately after logout', async () => {
     const token = await createSessionToken(String(owner.userId));

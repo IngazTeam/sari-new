@@ -41,15 +41,37 @@ describe.skipIf(!process.env.DATABASE_URL)(
         req: { headers: { "x-merchant-id": String(fixture.merchantId) } },
         res: {},
       } as any;
+      for (const api of [
+        appRouter.createCaller(ctx).merchantPayments,
+        merchantPaymentsRouter.createCaller(ctx),
+      ]) {
+        for (const request of [
+          () => api.getSettings(),
+          () => api.testConnection(),
+          () =>
+            api.saveSettings({
+              tapEnabled: true,
+              tapSecretKey: "sk_test_replacement",
+            }),
+        ])
+          await expect(request()).rejects.toMatchObject({
+            code: "PRECONDITION_FAILED",
+          });
+      }
+      expect(await getMerchantPaymentSettings(fixture.merchantId)).toEqual(raw);
       for (const view of [
-        await appRouter.createCaller(ctx).merchantPayments.getSettings(),
-        await merchantPaymentsRouter.createCaller(ctx).getSettings(),
+        await appRouter.createCaller(ctx).merchantPayments.workspace(),
+        await merchantPaymentsRouter.createCaller(ctx).workspace(),
       ]) {
         expect(view).toMatchObject({
-          hasTapSecretKey: true,
-          tapPublicKey: "pk_test_fixture",
-          paymentLinkMessage: "Saved fixture",
-          isReadyForPayments: false,
+          actorId: fixture.userId,
+          merchantId: fixture.merchantId,
+          secretState: "stored",
+          ready: false,
+          values: {
+            tapPublicKey: "pk_test_fixture",
+            paymentLinkMessage: "Saved fixture",
+          },
         });
         expect(JSON.stringify(view)).not.toContain("private");
         for (const field of [
@@ -57,7 +79,6 @@ describe.skipIf(!process.env.DATABASE_URL)(
           "tapWebhookSecret",
           "webhookUrl",
           "id",
-          "merchantId",
         ])
           expect(view).not.toHaveProperty(field);
       }

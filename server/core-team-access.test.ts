@@ -419,9 +419,9 @@ describe('real app router team boundaries', () => {
     await expect(caller().conversations.list()).rejects.toMatchObject({ code: 'INTERNAL_SERVER_ERROR' });
     expect(mocks.merchant).not.toHaveBeenCalled();
   });
-  it('blocks viewer payment configuration in the mounted router', async () => {
-    await expect(caller().merchantPayments.getSettings()).rejects.toMatchObject({ code: 'FORBIDDEN' });
-    await expect(caller().merchantPayments.testConnection()).rejects.toMatchObject({ code: 'FORBIDDEN' });
+  it('retires legacy payment configuration in the mounted router', async () => {
+    await expect(caller().merchantPayments.getSettings()).rejects.toMatchObject({ code: 'PRECONDITION_FAILED' });
+    await expect(caller().merchantPayments.testConnection()).rejects.toMatchObject({ code: 'PRECONDITION_FAILED' });
     expect(mocks.merchant).not.toHaveBeenCalled();
   });
   it.each(['manager', 'viewer'])('refuses analytics tenant substitution by a %s', async role => {

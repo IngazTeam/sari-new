@@ -7,7 +7,7 @@ import { spawnSync } from 'node:child_process';
 import { assertZidOrderReleaseCompatible, assertManagedWritersStopped, assertManagedWriterCompatibility } from './zid-order-release.mjs';
 import { managedRelease } from './sary-update-ops.mjs';
 
-for (const capability of ['website-analysis-durable-jobs-0200','website-analysis-request-links-0201','competitor-reviewed-workspace-v1','competitor-analysis-durable-0202','competitor-request-closure-0203','notification-preferences-unique-0204','notification-preferences-reviewed-tenant-only-v1','currency-reviewed-owner-only-v1','profile-reviewed-writes-only-v1']) test(`refuses a website analysis worker without ${capability}`,()=>{
+for (const capability of ['website-analysis-durable-jobs-0200','website-analysis-request-links-0201','competitor-reviewed-workspace-v1','competitor-analysis-durable-0202','competitor-request-closure-0203','notification-preferences-unique-0204','notification-preferences-reviewed-tenant-only-v1','currency-reviewed-owner-only-v1','profile-reviewed-writes-only-v1','payment-settings-reviewed-only-v1']) test(`refuses a website analysis worker without ${capability}`,()=>{
   const root=fs.mkdtempSync(path.join(os.tmpdir(),'sari-website-release-test-'));fs.mkdirSync(path.join(root,'scripts'));
   const file=path.join(root,'scripts/zid-order-store-capability.json');
   try {const marker=JSON.parse(fs.readFileSync('scripts/zid-order-store-capability.json','utf8'));marker.capabilities=marker.capabilities.filter(c=>c!==capability);fs.writeFileSync(file,JSON.stringify(marker));assert.throws(()=>assertZidOrderReleaseCompatible(root));}
