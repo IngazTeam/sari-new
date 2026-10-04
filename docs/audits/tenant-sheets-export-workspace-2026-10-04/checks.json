@@ -1,0 +1,33 @@
+{
+  "unit": {
+    "numTotalTests": 81,
+    "numPassedTests": 81,
+    "numFailedTests": 0
+  },
+  "mysql": {
+    "numTotalTests": 12,
+    "numPassedTests": 12,
+    "numFailedTests": 0
+  },
+  "preservation": {
+    "numTotalTests": 133,
+    "numPassedTests": 133,
+    "numFailedTests": 0
+  },
+  "types": "passed",
+  "build": "passed",
+  "translations": "no missing keys or interpolation errors",
+  "release": {
+    "passed": 67
+  },
+  "browser": "Local Chromium; no external Google API; same actual React component",
+  "responsive": "8 language/width combinations + 8 review dialogs; 44px targets; 16px inputs; no horizontal overflow",
+  "inventory": {
+    "routes": 126,
+    "files": 594,
+    "controls": 2792,
+    "removedRoutes": 0,
+    "invalidLinks": 0,
+    "orphanFiles": 0
+  }
+}

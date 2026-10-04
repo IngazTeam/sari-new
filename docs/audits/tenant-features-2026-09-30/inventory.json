@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-04T15:20:43.410Z",
+  "generatedAt": "2026-10-04T15:41:38.320Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -18984,8 +18984,28 @@
     },
     {
       "file": "client/src/pages/SheetsExport.tsx",
-      "hash": "7fb5e24dc6b5",
+      "hash": "7258c3dc0b10",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [
+        "client/src/components/merchant/SheetsExportWorkspace.tsx"
+      ],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/components/merchant/SheetsExportWorkspace.tsx",
+      "hash": "8e16864ec8b6",
       "queries": [
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "sheets.getStatus",
         "conversations.list"
       ],
       "mutations": [
@@ -18995,54 +19015,106 @@
       "browserRequests": [],
       "sections": [
         {
-          "label": "تصدير المحادثات",
-          "line": 93,
+          "label": "",
+          "line": 232,
           "tag": "h1"
         },
         {
-          "label": "المحادثات",
-          "line": 134,
+          "label": "",
+          "line": 253,
           "tag": "h2"
         },
         {
-          "label": "عميل غير محدد",
-          "line": 171,
-          "tag": "h3"
+          "label": "",
+          "line": 268,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 297,
+          "tag": "h2"
+        },
+        {
+          "label": "( /100)",
+          "line": 410,
+          "tag": "h2"
+        },
+        {
+          "label": "",
+          "line": 488,
+          "tag": "DialogTitle"
         }
       ],
       "choices": [],
       "handlers": [
         {
-          "name": "handleSelectAll",
-          "line": 39,
+          "name": "toggle",
+          "line": 151,
           "calls": []
         },
         {
-          "name": "handleSelectConversation",
-          "line": 48,
-          "calls": []
-        },
-        {
-          "name": "handleExport",
-          "line": 57,
+          "name": "confirm",
+          "line": 164,
           "calls": [
-            "exportMutation"
+            "mutation"
           ]
         }
       ],
       "queryStates": [
         {
-          "query": "conversations.list",
-          "binding": "{\r\n    data: conversationsData,\r\n    isLoading,\r\n    error,\r\n    refetch,\r\n  }",
+          "query": "auth.me",
+          "binding": "user",
+          "line": 21,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        },
+        {
+          "query": "merchants.workspaceIdentity",
+          "binding": "identity",
           "line": 22,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": "!!user.data?.id && !user.error && !user.isFetching"
+        },
+        {
+          "query": "sheets.getStatus",
+          "binding": "connection",
+          "line": 97,
+          "errorSignal": true,
+          "loadingSignal": true,
+          "enabled": null
+        },
+        {
+          "query": "conversations.list",
+          "binding": "inbox",
+          "line": 101,
           "errorSignal": true,
           "loadingSignal": true,
           "enabled": null
         }
       ],
       "conditions": [],
+      "imports": [
+        "client/src/lib/usage-workspace-view.ts",
+        "client/src/lib/sheets-export-labels.ts"
+      ],
+      "controlCount": 15
+    },
+    {
+      "file": "client/src/lib/sheets-export-labels.ts",
+      "hash": "2b9bbb47ab38",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
       "imports": [],
-      "controlCount": 3
+      "controlCount": 0
     },
     {
       "file": "client/src/pages/SheetsReports.tsx",
@@ -29657,14 +29729,32 @@
         "SheetsExport"
       ],
       "files": [
-        "client/src/pages/SheetsExport.tsx"
+        "client/src/pages/SheetsExport.tsx",
+        "client/src/components/merchant/SheetsExportWorkspace.tsx",
+        "client/src/lib/usage-workspace-view.ts",
+        "client/src/lib/sheets-export-labels.ts"
       ],
       "controls": [
-        "d1c4945186b8",
-        "ecd94bf8487f",
-        "eec69d258c21"
+        "83d2977286cc",
+        "9e9a04a1450d",
+        "b7e0f2dfeab2",
+        "f0fa03df5fc5",
+        "d3da5b723672",
+        "c53f7c84a236",
+        "1d581fcde91a",
+        "737bc043068a",
+        "058c577af4f7",
+        "b715c5224a1f",
+        "42f98d77da69",
+        "c93e90fd39ac",
+        "4c50dc96bce4",
+        "1cedfa13b361",
+        "579df6cc58ca"
       ],
       "queries": [
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "sheets.getStatus",
         "conversations.list"
       ],
       "mutations": [
@@ -85311,37 +85401,16 @@
       "review": "source-inventoried"
     },
     {
-      "id": "d1c4945186b8",
-      "file": "client/src/pages/SheetsExport.tsx",
-      "line": 120,
-      "tag": "Button",
+      "id": "83d2977286cc",
+      "file": "client/src/components/merchant/SheetsExportWorkspace.tsx",
+      "line": 235,
+      "tag": "Link",
       "role": "",
       "kind": "action",
-      "label": "تصدير المحادثات المحددة",
-      "section": "تصدير المحادثات",
-      "binding": "handleExport",
+      "label": "",
+      "section": "SheetsExportWorkspace",
+      "binding": "/merchant/sheets/reports",
       "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": true,
-      "conditions": [],
-      "disabled": "exportMutation.isPending || selectedConversations.length === 0",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "ecd94bf8487f",
-      "file": "client/src/pages/SheetsExport.tsx",
-      "line": 136,
-      "tag": "Checkbox",
-      "role": "",
-      "kind": "field",
-      "label": "تحديد الكل",
-      "section": "المحادثات",
-      "binding": "selectAll",
-      "type": "checkbox",
       "options": [],
       "min": "",
       "max": "",
@@ -85353,15 +85422,114 @@
       "review": "source-inventoried"
     },
     {
-      "id": "eec69d258c21",
-      "file": "client/src/pages/SheetsExport.tsx",
-      "line": 161,
-      "tag": "Checkbox",
+      "id": "9e9a04a1450d",
+      "file": "client/src/components/merchant/SheetsExportWorkspace.tsx",
+      "line": 254,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "SheetsExportWorkspace",
+      "binding": "/merchant/sheets/settings",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "!ready",
+        "loading",
+        "error"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "b7e0f2dfeab2",
+      "file": "client/src/components/merchant/SheetsExportWorkspace.tsx",
+      "line": 279,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "SheetsExportWorkspace",
+      "binding": "() => {\n                      setLocked(false);\n                      setNotice(null);\n                      setSelected([]);\n                    }",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "locked",
+        "notice"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "f0fa03df5fc5",
+      "file": "client/src/components/merchant/SheetsExportWorkspace.tsx",
+      "line": 312,
+      "tag": "input",
       "role": "",
       "kind": "field",
+      "label": "c.searchHint",
+      "section": "SheetsExportWorkspace",
+      "binding": "draft",
+      "type": "search",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "200",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "!ready",
+        "loading",
+        "error"
+      ],
+      "disabled": "running || !!review",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "d3da5b723672",
+      "file": "client/src/components/merchant/SheetsExportWorkspace.tsx",
+      "line": 322,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
       "label": "",
-      "section": "المحادثات",
-      "binding": "selectedConversations.includes(conversation.id)",
+      "section": "SheetsExportWorkspace",
+      "binding": "",
+      "type": "submit",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "!ready",
+        "loading",
+        "error"
+      ],
+      "disabled": "running || !!review",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "c53f7c84a236",
+      "file": "client/src/components/merchant/SheetsExportWorkspace.tsx",
+      "line": 333,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "( )",
+      "section": "SheetsExportWorkspace",
+      "binding": "allPage",
       "type": "checkbox",
       "options": [],
       "min": "",
@@ -85370,9 +85538,217 @@
       "required": false,
       "conditional": true,
       "conditions": [
-        "conversations.length === 0"
+        "rows!.items.length",
+        "!ready"
       ],
+      "disabled": "disabled ||\n                        (!allPage && selected.length + pageAdds.length > 100)",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "1d581fcde91a",
+      "file": "client/src/components/merchant/SheetsExportWorkspace.tsx",
+      "line": 360,
+      "tag": "input",
+      "role": "",
+      "kind": "field",
+      "label": "",
+      "section": "SheetsExportWorkspace",
+      "binding": "selected.some(item => item.id === row.id)",
+      "type": "checkbox",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "rows!.items.length"
+      ],
+      "disabled": "disabled ||\n                              (selected.length >= 100 &&\n                                !selected.some(item => item.id === row.id))",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "737bc043068a",
+      "file": "client/src/components/merchant/SheetsExportWorkspace.tsx",
+      "line": 387,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "SheetsExportWorkspace",
+      "binding": "() => setPage(value => value - 1)",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "!ready",
+        "loading",
+        "error"
+      ],
+      "disabled": "page === 1 || running || !!review",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "058c577af4f7",
+      "file": "client/src/components/merchant/SheetsExportWorkspace.tsx",
+      "line": 398,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "SheetsExportWorkspace",
+      "binding": "() => setPage(value => value + 1)",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "!ready",
+        "loading",
+        "error"
+      ],
+      "disabled": "page >= rows!.totalPages || running || !!review",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "b715c5224a1f",
+      "file": "client/src/components/merchant/SheetsExportWorkspace.tsx",
+      "line": 413,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "( /100)",
+      "binding": "() => setSelected([])",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "!ready",
+        "loading",
+        "error"
+      ],
+      "disabled": "disabled || !selected.length",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "42f98d77da69",
+      "file": "client/src/components/merchant/SheetsExportWorkspace.tsx",
+      "line": 430,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "c.remove + \" \" + (row.customerName || row.customerPhone)",
+      "section": "( /100)",
+      "binding": "() => toggle(row, false)",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [],
+      "disabled": "disabled",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "c93e90fd39ac",
+      "file": "client/src/components/merchant/SheetsExportWorkspace.tsx",
+      "line": 445,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "( /100)",
+      "binding": "event => {\n                  trigger.current = event.currentTarget;\n                  setReview({\n                    rows: selected.map(row => ({ ...row })),\n                    sheetId: destination!.spreadsheetId!,\n                  });\n                }",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [
+        "!ready",
+        "loading",
+        "error"
+      ],
+      "disabled": "disabled || !selected.length || !linked",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "4c50dc96bce4",
+      "file": "client/src/components/merchant/SheetsExportWorkspace.tsx",
+      "line": 469,
+      "tag": "DialogContent",
+      "role": "",
+      "kind": "dialog",
+      "label": ":",
+      "section": "( /100)",
+      "binding": "",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
       "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "1cedfa13b361",
+      "file": "client/src/components/merchant/SheetsExportWorkspace.tsx",
+      "line": 511,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "SheetsExportWorkspace",
+      "binding": "() => setReview(null)",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "running || !ready",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "579df6cc58ca",
+      "file": "client/src/components/merchant/SheetsExportWorkspace.tsx",
+      "line": 519,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "SheetsExportWorkspace",
+      "binding": "() => void confirm()",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "running ||\n                !linked ||\n                review?.sheetId !== destination?.spreadsheetId",
       "review": "source-inventoried"
     },
     {

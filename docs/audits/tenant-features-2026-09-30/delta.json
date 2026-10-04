@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-04T15:20:43.410Z",
+  "generatedAt": "2026-10-04T15:41:38.320Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,8 +10,8 @@
     },
     "after": {
       "routes": 126,
-      "files": 592,
-      "controls": 2780
+      "files": 594,
+      "controls": 2792
     }
   },
   "addedFiles": [
@@ -374,6 +374,8 @@
     "client/src/components/merchant/ServiceCollectionEditor.tsx",
     "client/src/lib/service-collection-form.ts",
     "client/src/components/merchant/SheetsSettingsWorkspace.tsx",
+    "client/src/components/merchant/SheetsExportWorkspace.tsx",
+    "client/src/lib/sheets-export-labels.ts",
     "client/src/components/merchant/InventorySheetWorkspace.tsx",
     "client/src/lib/inventory-sheet-workspace.ts",
     "client/src/components/merchant/PaymentHistoryPage.tsx",
@@ -528,6 +530,7 @@
     "client/src/pages/merchant/ServiceCategories.tsx",
     "client/src/pages/merchant/ServicePackages.tsx",
     "client/src/pages/SheetsSettings.tsx",
+    "client/src/pages/SheetsExport.tsx",
     "client/src/pages/SheetsReports.tsx",
     "client/src/pages/SheetsInventory.tsx",
     "client/src/pages/merchant/Payments.tsx",
@@ -2345,9 +2348,13 @@
     {
       "route": "/merchant/sheets/export",
       "controlsBefore": 3,
-      "controlsNow": 3,
+      "controlsNow": 15,
       "removedQueries": [],
-      "addedQueries": [],
+      "addedQueries": [
+        "auth.me",
+        "merchants.workspaceIdentity",
+        "sheets.getStatus"
+      ],
       "removedMutations": [],
       "addedMutations": []
     },

@@ -2,7 +2,7 @@
 
 هذا حصر مصدر قابل لإعادة التوليد، وليس ادعاءً بأن كل مسار عمل اختُبر أو أُعيد تصميمه. يشمل المكونات الفرعية المحلية، الحقول، الأزرار، النوافذ، التبويبات، واجهات القراءة والتعديل. العناصر الديناميكية تحتاج مراجعة إضافية.
 
-- 126 مسارًا مسجلًا، 592 ملف واجهة متصلًا، 2780 عنصر تحكم في المصدر.
+- 126 مسارًا مسجلًا، 594 ملف واجهة متصلًا، 2792 عنصر تحكم في المصدر.
 - 0 رابطًا حرفيًا غير مطابق، و0 ملف صفحة غير متصل بالمسارات المحصورة.
 
 | الصفحة | الملفات | عناصر التحكم | القراءة / التعديل | موك أب للصفحة |
@@ -90,7 +90,7 @@
 | /merchant/service-categories — تصنيفات الخدمات | 11 | 48 | 5 / 7 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/service-packages — حزم الخدمات | 11 | 48 | 5 / 7 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/sheets/settings — ربط Google Sheets | 8 | 30 | 4 / 6 | موجود؛ عمق الخصائص يحتاج مطابقة |
-| /merchant/sheets/export — تصدير المحادثات | 1 | 3 | 1 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
+| /merchant/sheets/export — تصدير المحادثات | 4 | 15 | 4 / 1 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/sheets/reports — تقارير Google Sheets | 1 | 2 | 0 / 4 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/sheets/inventory — مخزون Google Sheets | 9 | 30 | 6 / 3 | موجود؛ عمق الخصائص يحتاج مطابقة |
 | /merchant/payments — المدفوعات | 5 | 23 | 4 / 0 | موجود؛ عمق الخصائص يحتاج مطابقة |
@@ -3519,13 +3519,25 @@
 | 687 | a | تصدير المخزون | المنتجات والمخزون والتقارير |
 | 690 | a | التقارير اليدوية | المنتجات والمخزون والتقارير |
 
-## client/src/pages/SheetsExport.tsx
+## client/src/components/merchant/SheetsExportWorkspace.tsx
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 120 | Button | تصدير المحادثات المحددة | تصدير المحادثات |
-| 136 | Checkbox | تحديد الكل | المحادثات |
-| 161 | Checkbox | تسمية ديناميكية / تحتاج مراجعة | المحادثات |
+| 235 | Link | تسمية ديناميكية / تحتاج مراجعة | SheetsExportWorkspace |
+| 254 | Link | تسمية ديناميكية / تحتاج مراجعة | SheetsExportWorkspace |
+| 279 | button | تسمية ديناميكية / تحتاج مراجعة | SheetsExportWorkspace |
+| 312 | input | c.searchHint | SheetsExportWorkspace |
+| 322 | button | تسمية ديناميكية / تحتاج مراجعة | SheetsExportWorkspace |
+| 333 | input | ( ) | SheetsExportWorkspace |
+| 360 | input | تسمية ديناميكية / تحتاج مراجعة | SheetsExportWorkspace |
+| 387 | button | تسمية ديناميكية / تحتاج مراجعة | SheetsExportWorkspace |
+| 398 | button | تسمية ديناميكية / تحتاج مراجعة | SheetsExportWorkspace |
+| 413 | button | تسمية ديناميكية / تحتاج مراجعة | ( /100) |
+| 430 | button | c.remove + " " + (row.customerName \|\| row.customerPhone) | ( /100) |
+| 445 | button | تسمية ديناميكية / تحتاج مراجعة | ( /100) |
+| 469 | DialogContent | : | ( /100) |
+| 511 | button | تسمية ديناميكية / تحتاج مراجعة | SheetsExportWorkspace |
+| 519 | button | تسمية ديناميكية / تحتاج مراجعة | SheetsExportWorkspace |
 
 ## client/src/pages/SheetsReports.tsx
 

@@ -1,0 +1,174 @@
+{
+  "screens": [
+    {
+      "lang": "ar",
+      "requested": 320,
+      "font": "16px",
+      "scrollWidth": 290,
+      "smallTargets": [],
+      "title": "تصدير المحادثات",
+      "width": 320
+    },
+    {
+      "lang": "ar",
+      "requested": 390,
+      "font": "16px",
+      "scrollWidth": 360,
+      "smallTargets": [],
+      "title": "تصدير المحادثات",
+      "width": 390
+    },
+    {
+      "lang": "ar",
+      "requested": 768,
+      "font": "16px",
+      "scrollWidth": 738,
+      "smallTargets": [],
+      "title": "تصدير المحادثات",
+      "width": 768
+    },
+    {
+      "lang": "ar",
+      "requested": 1440,
+      "font": "16px",
+      "scrollWidth": 1410,
+      "smallTargets": [],
+      "title": "تصدير المحادثات",
+      "width": 1440
+    },
+    {
+      "lang": "en",
+      "requested": 320,
+      "font": "16px",
+      "scrollWidth": 290,
+      "smallTargets": [],
+      "title": "Export conversations",
+      "width": 320
+    },
+    {
+      "lang": "en",
+      "requested": 390,
+      "font": "16px",
+      "scrollWidth": 360,
+      "smallTargets": [],
+      "title": "Export conversations",
+      "width": 390
+    },
+    {
+      "lang": "en",
+      "requested": 768,
+      "font": "16px",
+      "scrollWidth": 738,
+      "smallTargets": [],
+      "title": "Export conversations",
+      "width": 768
+    },
+    {
+      "lang": "en",
+      "requested": 1440,
+      "font": "16px",
+      "scrollWidth": 1410,
+      "smallTargets": [],
+      "title": "Export conversations",
+      "width": 1440
+    }
+  ],
+  "dialogs": [
+    {
+      "lang": "ar",
+      "width": 320,
+      "bottom": 763.953125,
+      "clientWidth": 256,
+      "left": 46,
+      "right": 304,
+      "scrollWidth": 256,
+      "smallTargets": [],
+      "top": 80.046875,
+      "viewportHeight": 844
+    },
+    {
+      "lang": "ar",
+      "width": 390,
+      "bottom": 708.1640625,
+      "clientWidth": 326,
+      "left": 46,
+      "right": 374,
+      "scrollWidth": 326,
+      "smallTargets": [],
+      "top": 135.8359375,
+      "viewportHeight": 844
+    },
+    {
+      "lang": "ar",
+      "width": 768,
+      "bottom": 648.1796875,
+      "clientWidth": 704,
+      "left": 46,
+      "right": 752,
+      "scrollWidth": 704,
+      "smallTargets": [],
+      "top": 195.8203125,
+      "viewportHeight": 844
+    },
+    {
+      "lang": "ar",
+      "width": 1440,
+      "bottom": 648.1796875,
+      "clientWidth": 670,
+      "left": 399,
+      "right": 1071,
+      "scrollWidth": 670,
+      "smallTargets": [],
+      "top": 195.8203125,
+      "viewportHeight": 844
+    },
+    {
+      "lang": "en",
+      "width": 320,
+      "bottom": 790.9453125,
+      "clientWidth": 256,
+      "left": 16,
+      "right": 274,
+      "scrollWidth": 256,
+      "smallTargets": [],
+      "top": 53.0546875,
+      "viewportHeight": 844
+    },
+    {
+      "lang": "en",
+      "width": 390,
+      "bottom": 749.5546875,
+      "clientWidth": 326,
+      "left": 16,
+      "right": 344,
+      "scrollWidth": 326,
+      "smallTargets": [],
+      "top": 94.4453125,
+      "viewportHeight": 844
+    },
+    {
+      "lang": "en",
+      "width": 768,
+      "bottom": 660.7734375,
+      "clientWidth": 704,
+      "left": 16,
+      "right": 722,
+      "scrollWidth": 704,
+      "smallTargets": [],
+      "top": 183.2265625,
+      "viewportHeight": 844
+    },
+    {
+      "lang": "en",
+      "width": 1440,
+      "bottom": 675.171875,
+      "clientWidth": 670,
+      "left": 369,
+      "right": 1041,
+      "scrollWidth": 670,
+      "smallTargets": [],
+      "top": 168.828125,
+      "viewportHeight": 844
+    }
+  ]
+}

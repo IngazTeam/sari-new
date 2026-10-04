@@ -76,6 +76,7 @@
     "whatsapp-reviewed-removal-only-v1",
     "whatsapp-reviewed-save-only-v1",
     "sheets-scoped-user-operations-v1",
-    "sheets-report-evidence-v1"
+    "sheets-report-evidence-v1",
+    "sheets-export-reviewed-destination-v1"
   ]
 }

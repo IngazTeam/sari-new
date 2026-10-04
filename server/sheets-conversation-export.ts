@@ -28,6 +28,7 @@ export async function exportScopedConversationsToSheets(scope:SheetsUserScope,ra
   if(!rows.length)return {success:false as const,message:'لا توجد رسائل في المحادثات المحددة'};
   const integration=await getGoogleIntegration(scope.merchantId,'sheets');
   if(!integration||!integration.isActive||!integration.sheetId)throw new TRPCError({code:'PRECONDITION_FAILED',message:'sheets_export:connection_required'});
+  if(integration.sheetId!==input.expectedSpreadsheetId)throw new TRPCError({code:'PRECONDITION_FAILED',message:'sheets_export:destination_changed'});
   const result=await appendToSheet(scope.merchantId,integration.sheetId,'المحادثات!A:F',rows,{raw:true,beforeSend:async()=>{
    // Read locks retain selected conversations; the authority lock also fences disconnect.
    const current=await getGoogleIntegration(scope.merchantId,'sheets');
@@ -36,6 +37,6 @@ export async function exportScopedConversationsToSheets(scope:SheetsUserScope,ra
   if(result?.success!==true)throw new TRPCError({code:'PRECONDITION_FAILED',message:'sheets_export:unconfirmed'});
   const [updated]=await tx.execute<any>("UPDATE google_integrations SET last_sync=UTC_TIMESTAMP() WHERE id=? AND merchant_id=? AND integration_type='sheets' AND is_active=1 AND sheet_id=?",[integration.id,scope.merchantId,integration.sheetId]);
   if(updated?.affectedRows!==1)throw new TRPCError({code:'PRECONDITION_FAILED',message:'sheets_export:unconfirmed'});
-  return {success:true as const,message:'قُبل تصدير الرسائل المحددة إلى Google Sheets'};
+  return {success:true as const,actorId:scope.userId,merchantId:scope.merchantId,spreadsheetId:integration.sheetId,conversationCount:input.conversationIds.length,messageCount:rows.length,message:'قُبل تصدير الرسائل المحددة إلى Google Sheets'};
  });
 }
