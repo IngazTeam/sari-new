@@ -1698,65 +1698,6 @@ export async function getAnalyticsByMerchantId(
 
 
 // Notifications functions
-export async function getNotificationsByUserId(userId: number) {
-  const db = await getDb();
-  if (!db) return [];
-
-  return await db
-    .select()
-    .from(notifications)
-    .where(eq(notifications.userId, userId))
-    .orderBy(desc(notifications.createdAt))
-    .limit(50);
-}
-
-export async function getUnreadNotificationsCount(userId: number) {
-  const db = await getDb();
-  if (!db) return 0;
-
-  const result = await db
-    .select()
-    .from(notifications)
-    .where(and(eq(notifications.userId, userId), eq(notifications.isRead, 0)));
-
-  return result.length;
-}
-
-export async function markNotificationAsRead(notificationId: number, userId: number) {
-  const db = await getDb();
-  if (!db) return false;
-
-  await db
-    .update(notifications)
-    .set({ isRead: 1 })
-    .where(and(eq(notifications.id, notificationId), eq(notifications.userId, userId)));
-
-  return true;
-}
-
-export async function markAllNotificationsAsRead(userId: number) {
-  const db = await getDb();
-  if (!db) return false;
-
-  await db
-    .update(notifications)
-    .set({ isRead: 1 })
-    .where(eq(notifications.userId, userId));
-
-  return true;
-}
-
-export async function deleteNotification(notificationId: number, userId: number) {
-  const db = await getDb();
-  if (!db) return false;
-
-  await db
-    .delete(notifications)
-    .where(and(eq(notifications.id, notificationId), eq(notifications.userId, userId)));
-
-  return true;
-}
-
 export async function createNotification(data: InsertNotification) {
   const db = await getDb();
   if (!db) return null;

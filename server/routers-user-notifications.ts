@@ -1,47 +1,23 @@
-/**
- * User Notifications Router Module
- * Handles basic user notification CRUD (list, unread count, mark as read, delete)
- * 
- * NOTE: This is separate from routers-notifications.ts which handles
- * push notifications, scheduled reports, and WhatsApp auto-notifications.
- */
-
+/** Account inbox; distinct from push delivery and tenant notification preferences. */
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "./_core/trpc";
 import { accountNotificationsWorkspaceRouter } from "./routers-account-notifications-workspace";
-import {
-  deleteNotification,
-  getNotificationsByUserId,
-  getUnreadNotificationsCount,
-  markAllNotificationsAsRead,
-  markNotificationAsRead,
-} from './db';
-
+const retired = (): never => {
+  throw new TRPCError({
+    code: "PRECONDITION_FAILED",
+    message: "account_notifications:workspace_required",
+  });
+};
+const legacyId = z
+  .object({ id: z.number().int().positive().max(2147483647) })
+  .strict();
 export const userNotificationsRouter = router({
-    workspace: accountNotificationsWorkspaceRouter,
-    list: protectedProcedure.query(async ({ ctx }) => {
-        return await getNotificationsByUserId(ctx.user.id);
-    }),
-
-    unreadCount: protectedProcedure.query(async ({ ctx }) => {
-        return await getUnreadNotificationsCount(ctx.user.id);
-    }),
-
-    markAsRead: protectedProcedure
-        .input(z.object({ id: z.number() }))
-        .mutation(async ({ ctx, input }) => {
-            return await markNotificationAsRead(input.id, ctx.user.id);
-        }),
-
-    markAllAsRead: protectedProcedure.mutation(async ({ ctx }) => {
-        return await markAllNotificationsAsRead(ctx.user.id);
-    }),
-
-    delete: protectedProcedure
-        .input(z.object({ id: z.number() }))
-        .mutation(async ({ ctx, input }) => {
-            return await deleteNotification(input.id, ctx.user.id);
-        }),
+  workspace: accountNotificationsWorkspaceRouter,
+  list: protectedProcedure.input(z.void()).query(retired),
+  unreadCount: protectedProcedure.input(z.void()).query(retired),
+  markAsRead: protectedProcedure.input(legacyId).mutation(retired),
+  markAllAsRead: protectedProcedure.input(z.void()).mutation(retired),
+  delete: protectedProcedure.input(legacyId).mutation(retired),
 });
-
 export type UserNotificationsRouter = typeof userNotificationsRouter;

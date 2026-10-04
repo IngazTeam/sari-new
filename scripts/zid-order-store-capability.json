@@ -64,6 +64,7 @@
     "payment-settings-reviewed-only-v1",
     "payment-history-scoped-read-only-v1",
     "payment-link-availability-validated-v1",
-    "payment-links-reviewed-workspace-v1"
+    "payment-links-reviewed-workspace-v1",
+    "account-notifications-reviewed-workspace-v1"
   ]
 }
