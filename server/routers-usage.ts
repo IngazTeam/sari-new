@@ -2,6 +2,8 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { merchantProcedure, router } from "./_core/trpc";
 import { getMerchantCurrentUsage, getMerchantUsageHistory } from "./db";
+import { readUsageWorkspace } from "./accounts/usage-workspace";
+import { MerchantSettingsAuthorityError } from "./accounts/merchant-settings-authority";
 
 const unavailable = () =>
   new TRPCError({
@@ -30,6 +32,21 @@ export const subscriptionUsageProcedure = merchantProcedure
   });
 
 export const usageRouter = router({
+  workspace: merchantProcedure.input(z.void()).query(async ({ ctx }) => {
+    try {
+      return await readUsageWorkspace(ctx.user.id, ctx.merchantId);
+    } catch (error) {
+      if (
+        error instanceof MerchantSettingsAuthorityError &&
+        error.reason === "forbidden"
+      )
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Usage access unavailable",
+        });
+      throw unavailable();
+    }
+  }),
   getCurrentUsage: merchantProcedure.input(z.void()).query(async ({ ctx }) => {
     let usage;
     try {
