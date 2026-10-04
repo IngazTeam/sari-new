@@ -1,3 +1,4 @@
+import { whatsappDiagnosticProcedures } from './routers-whatsapp-diagnostic';
 import { acquisitionProcedures } from './routers-acquisition-workspace';
 import { paymentLinksWorkspaceRouter, retiredPaymentLinksProcedures } from "./routers-payment-links-workspace";
 import { merchantPaymentsRouter } from "./routers-merchant-payments";
@@ -1172,106 +1173,7 @@ export const appRouter = router({
         return await whatsapp.sendImageMessage(input.phoneNumber, input.imageUrl, input.caption);
       }),
 
-    // Test APIs for WhatsApp (with custom credentials)
-    testConnection: protectedProcedure
-      .input(
-        z.object({
-          instanceId: z.string(),
-          token: z.string(),
-        })
-      )
-      .mutation(async ({ input }) => {
-        const axios = await import('axios');
-        // Green API format: https://{instancePrefix}.api.greenapi.com/waInstance{instanceId}/method/{token}
-        // Extract first 4 digits from instanceId for subdomain
-        const instancePrefix = input.instanceId.substring(0, 4);
-        const url = `https://${instancePrefix}.api.greenapi.com/waInstance${input.instanceId}/getStateInstance/${input.token}`;
-
-        console.log('[Green API Test] Connection test started');
-
-        try {
-          const response = await axios.default.get(url, {
-            timeout: 15000,
-          });
-
-          const isConnected = response.data.stateInstance === 'authorized';
-          return {
-            success: isConnected,
-            status: response.data.stateInstance || 'unknown',
-            phoneNumber: response.data.phoneNumber,
-          };
-        } catch (error: any) {
-          console.warn('[Green API Test] Connection test failed', {
-            errorCode: error.code,
-            responseStatus: error.response?.status,
-          });
-
-          let errorMessage = 'فشل الاتصال';
-          if (error.response?.status === 401 || error.response?.status === 403) {
-            errorMessage = 'Instance ID أو Token غير صحيح';
-          } else if (error.response?.status === 404) {
-            errorMessage = 'Instance غير موجود';
-          } else if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
-            errorMessage = 'انتهى وقت الاتصال';
-          }
-
-          // Return error with debug info instead of throwing
-          return {
-            success: false,
-            status: 'error',
-            error: errorMessage,
-          };
-        }
-      }),
-
-    sendTestMessage: protectedProcedure
-      .input(
-        z.object({
-          instanceId: z.string(),
-          token: z.string(),
-          phoneNumber: z.string(),
-          message: z.string(),
-        })
-      )
-      .mutation(async ({ input }) => {
-        const axios = await import('axios');
-        // Extract first 4 digits from instanceId for subdomain
-        const instancePrefix = input.instanceId.substring(0, 4);
-        const baseURL = `https://${instancePrefix}.api.greenapi.com/waInstance${input.instanceId}`;
-
-        const response = await axios.default.post(`${baseURL}/sendMessage/${input.token}`, {
-          chatId: `${input.phoneNumber}@c.us`,
-          message: input.message,
-        });
-
-        return response.data;
-      }),
-
-    sendTestImage: protectedProcedure
-      .input(
-        z.object({
-          instanceId: z.string(),
-          token: z.string(),
-          phoneNumber: z.string(),
-          imageUrl: z.string(),
-          caption: z.string().optional(),
-        })
-      )
-      .mutation(async ({ input }) => {
-        const axios = await import('axios');
-        // Extract first 4 digits from instanceId for subdomain
-        const instancePrefix = input.instanceId.substring(0, 4);
-        const baseURL = `https://${instancePrefix}.api.greenapi.com/waInstance${input.instanceId}`;
-
-        const response = await axios.default.post(`${baseURL}/sendFileByUrl/${input.token}`, {
-          chatId: `${input.phoneNumber}@c.us`,
-          urlFile: input.imageUrl,
-          fileName: 'image.jpg',
-          caption: input.caption || '',
-        });
-
-        return response.data;
-      }),
+    ...whatsappDiagnosticProcedures,
 
     // Save WhatsApp instance
     saveInstance: protectedProcedure

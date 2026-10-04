@@ -1,3 +1,4 @@
+import { whatsappDiagnosticProcedures } from './routers-whatsapp-diagnostic';
 /**
  * WhatsApp Integration Router
  * Extracted from routers.ts for better maintainability
@@ -35,32 +36,6 @@ const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
     }
     return next({ ctx });
 });
-
-// VULN-7 FIX: Rate limiter for test messages (10 per merchant per day)
-const TEST_MSG_LIMIT = 10;
-const testMessageCounts = new Map<number, { count: number; resetAt: number }>();
-
-function checkTestMessageLimit(merchantId: number): void {
-    const now = Date.now();
-    const entry = testMessageCounts.get(merchantId);
-
-    if (!entry || now > entry.resetAt) {
-        // Reset: new day
-        const tomorrow = new Date();
-        tomorrow.setHours(24, 0, 0, 0);
-        testMessageCounts.set(merchantId, { count: 1, resetAt: tomorrow.getTime() });
-        return;
-    }
-
-    if (entry.count >= TEST_MSG_LIMIT) {
-        throw new TRPCError({
-            code: 'TOO_MANY_REQUESTS',
-            message: `تجاوزت الحد الأقصى للرسائل التجريبية (${TEST_MSG_LIMIT} يومياً)`,
-        });
-    }
-
-    entry.count++;
-}
 
 export const whatsappRouter = router({
     // Request WhatsApp connection
@@ -471,100 +446,7 @@ export const whatsappRouter = router({
             return await whatsapp.sendImageMessage(input.phoneNumber, input.imageUrl, input.caption);
         }),
 
-    // Test connection with custom credentials
-    testConnection: protectedProcedure
-        .input(z.object({
-            instanceId: z.string(),
-            token: z.string(),
-        }))
-        .mutation(async ({ input }) => {
-            const axios = await import('axios');
-            const instancePrefix = input.instanceId.substring(0, 4);
-            const url = `https://${instancePrefix}.api.greenapi.com/waInstance${input.instanceId}/getStateInstance/${input.token}`;
-
-            console.log('[Green API Test] Connection test started');
-
-            try {
-                const response = await axios.default.get(url, { timeout: 15000 });
-                const isConnected = response.data.stateInstance === 'authorized';
-                return {
-                    success: isConnected,
-                    status: response.data.stateInstance || 'unknown',
-                    phoneNumber: response.data.phoneNumber,
-                };
-            } catch (error: any) {
-                console.warn('[Green API Test] Connection test failed', {
-                    errorCode: error.code,
-                    responseStatus: error.response?.status,
-                });
-
-                let errorMessage = 'فشل الاتصال';
-                if (error.response?.status === 401 || error.response?.status === 403) {
-                    errorMessage = 'Instance ID أو Token غير صحيح';
-                } else if (error.response?.status === 404) {
-                    errorMessage = 'Instance غير موجود';
-                } else if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
-                    errorMessage = 'انتهى وقت الاتصال';
-                }
-
-                return {
-                    success: false,
-                    status: 'error',
-                    error: errorMessage,
-                };
-            }
-        }),
-
-    // Send test message (VULN-7 FIX: rate limited)
-    sendTestMessage: protectedProcedure
-        .input(z.object({
-            instanceId: z.string(),
-            token: z.string(),
-            phoneNumber: z.string(),
-            message: z.string(),
-        }))
-        .mutation(async ({ input, ctx }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
-            if (!merchant) {
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-            }
-            checkTestMessageLimit(merchant.id);
-
-            const axios = await import('axios');
-            const instancePrefix = input.instanceId.substring(0, 4);
-            const baseURL = `https://${instancePrefix}.api.greenapi.com/waInstance${input.instanceId}`;
-
-            const response = await axios.default.post(`${baseURL}/sendMessage/${input.token}`, {
-                chatId: `${input.phoneNumber}@c.us`,
-                message: input.message,
-            });
-
-            return response.data;
-        }),
-
-    // Send test image
-    sendTestImage: protectedProcedure
-        .input(z.object({
-            instanceId: z.string(),
-            token: z.string(),
-            phoneNumber: z.string(),
-            imageUrl: z.string(),
-            caption: z.string().optional(),
-        }))
-        .mutation(async ({ input }) => {
-            const axios = await import('axios');
-            const instancePrefix = input.instanceId.substring(0, 4);
-            const baseURL = `https://${instancePrefix}.api.greenapi.com/waInstance${input.instanceId}`;
-
-            const response = await axios.default.post(`${baseURL}/sendFileByUrl/${input.token}`, {
-                chatId: `${input.phoneNumber}@c.us`,
-                urlFile: input.imageUrl,
-                fileName: 'image.jpg',
-                caption: input.caption || '',
-            });
-
-            return response.data;
-        }),
+    ...whatsappDiagnosticProcedures,
 
     // Save WhatsApp instance
     saveInstance: protectedProcedure
