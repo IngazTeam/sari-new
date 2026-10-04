@@ -111,37 +111,6 @@ export async function getPaymentLinkByLinkId(linkId: string): Promise<PaymentLin
 }
 
 /**
- * ط§ظ„ط­طµظˆظ„ ط¹ظ„ظ‰ ط±ظˆط§ط¨ط· ط§ظ„ط¯ظپط¹ ظ„طھط§ط¬ط±
- */
-export async function getPaymentLinksByMerchant(
-  merchantId: number,
-  filters?: {
-    status?: string;
-    isActive?: boolean;
-    limit?: number;
-  }
-): Promise<PaymentLink[]> {
-  const db = await getDb();
-  
-  const conditions = [eq(paymentLinks.merchantId, merchantId)];
-  
-  if (filters?.status) {
-    conditions.push(eq(paymentLinks.status, filters.status as any));
-  }
-  
-  if (filters?.isActive !== undefined) {
-    conditions.push(eq(paymentLinks.isActive, filters.isActive ? 1 : 0));
-  }
-
-  return await db
-    .select()
-    .from(paymentLinks)
-    .where(and(...conditions))
-    .orderBy(desc(paymentLinks.createdAt))
-    .limit(filters?.limit || 50);
-}
-
-/**
  * ط§ظ„ط­طµظˆظ„ ط¹ظ„ظ‰ ط±ط§ط¨ط· ط¯ظپط¹ ظ„ط·ظ„ط¨
  */
 export async function getPaymentLinkByOrderId(orderId: number): Promise<PaymentLink | null> {
@@ -190,19 +159,4 @@ export async function createOrderPaymentIdempotent(
   const raced = await getOrderPaymentByTapChargeId(data.tapChargeId);
   if (!raced) throw new Error('Tap payment idempotency conflict could not be resolved');
   return raced;
-}
-
-/**
- * طھط¹ط·ظٹظ„ ط±ط§ط¨ط· ط¯ظپط¹
- */
-export async function disablePaymentLink(id: number): Promise<void> {
-  const db = await getDb();
-  await db
-    .update(paymentLinks)
-    .set({
-      isActive: 0,
-      status: 'disabled',
-      updatedAt: new Date().toISOString(),
-    })
-    .where(eq(paymentLinks.id, id));
 }

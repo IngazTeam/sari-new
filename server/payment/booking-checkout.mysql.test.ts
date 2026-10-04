@@ -173,13 +173,14 @@ describe.skipIf(!process.env.DATABASE_URL)('durable booking checkout on MySQL',(
     await query("UPDATE booking_checkout_attempts SET state='unknown' WHERE booking_id=?",[bookingId]);
     await expect(caller.payments.checkoutLink(input)).rejects.toMatchObject({code:'CONFLICT'});
   });
-  it('uses stored booking authority at the real merchant route',async()=>{
-    const caller=appRouter.createCaller({user:{id:owner.userId,role:'user'},req:{},res:{}} as any);
-    await expect(caller.payments.createLink({bookingId,title:'Booking checkout',amount:1_000,isFixedAmount:true,currency:'SAR'})).rejects.toMatchObject({code:'PRECONDITION_FAILED'});
-    await expect(caller.payments.createLink({bookingId,title:'Booking checkout',amount:26998,isFixedAmount:false,currency:'SAR'})).rejects.toMatchObject({code:'BAD_REQUEST'});
-    const result=await caller.payments.createLink({bookingId,title:'Booking checkout',amount:26998,isFixedAmount:true,currency:'SAR'});expect(result.linkId).toBe(input.linkId);
-    const outsider=appRouter.createCaller({user:{id:other.userId,role:'user'},req:{},res:{}} as any);
-    await expect(outsider.payments.createLink({bookingId,title:'Booking checkout',amount:26998,isFixedAmount:true,currency:'SAR'})).rejects.toMatchObject({code:'NOT_FOUND'});
+  it('rejects stale merchant link creation while preserving the canonical booking issuer',async()=>{
+    for(const user of [owner,other]){
+      const caller=appRouter.createCaller({user:{id:user.userId,role:'user'},req:{},res:{}} as any);
+      for(const patch of [{amount:1000},{isFixedAmount:false},{}]) await expect(caller.payments.createLink({bookingId,title:'Booking checkout',amount:26998,isFixedAmount:true,currency:'SAR',...patch})).rejects.toMatchObject({code:'PRECONDITION_FAILED',message:'payment_links:workspace_required'});
+    }
+    await expect(issueCanonicalBookingPaymentLink({merchantId:owner.merchantId,bookingId,amount:1000,title:'Booking checkout'})).rejects.toThrow();
+    await expect(issueCanonicalBookingPaymentLink({merchantId:other.merchantId,bookingId,amount:26998,title:'Booking checkout'})).rejects.toThrow();
+    expect((await issue()).linkId).toBe(input.linkId);
     expect(tap.postTapCharge).not.toHaveBeenCalled();
   });
   it.each(['tapEnabled','isVerified'])('refuses an unready %s gateway before reserving',async field=>{
