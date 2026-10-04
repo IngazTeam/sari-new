@@ -7,7 +7,7 @@ vi.mock('web-push',()=>({default:{setVapidDetails:vi.fn(),sendNotification:m.pus
 vi.mock('./db_push',()=>({getActivePushSubscriptions:m.subscriptions,createPushNotificationLog:m.log,updatePushNotificationLogStatus:m.update,deactivatePushSubscription:vi.fn()}));
 vi.mock('./db',()=>({getDb:m.database,getOrderById:m.order,getGoogleIntegration:m.integration,getGoogleOAuthSettings:m.oauth,updateGoogleIntegration:m.update,
   createGoogleIntegration:vi.fn(),createProduct:vi.fn(),getConversationById:vi.fn(),getMerchantById:vi.fn(),getMessagesByConversationId:vi.fn(),getProductsByMerchantId:vi.fn(),updateProduct:vi.fn()}));
-vi.mock('googleapis',()=>({google:{auth:{OAuth2:class {setCredentials(){} }},sheets:()=>({spreadsheets:{values:{append:m.append}}})}}));
+vi.mock('./_core/google-api-clients',()=>({google:{auth:{OAuth2:class {setCredentials(){} }},sheets:()=>({spreadsheets:{values:{append:m.append}}})}}));
 import { notifyNewOrder as ownerNotice } from './_core/emailNotifications';
 import { notifyNewOrder as merchantNotice, sendNotification } from './_core/notificationService';
 import { sendEmail } from './_core/emailService';

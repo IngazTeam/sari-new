@@ -3,7 +3,7 @@
  * Handles OAuth2 authentication and calendar operations
  */
 
-import { google } from 'googleapis';
+import { google } from './google-api-clients';
 import { getGoogleOAuthSettings } from '../db';
 import { calendarTimestamp } from '../calendar-evidence';
 

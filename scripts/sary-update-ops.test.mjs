@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { spawnSync } from 'node:child_process';
-import { managedRelease, migrationTasks, runMigrationTasks, assertReady, probe, verifyPublic } from './sary-update-ops.mjs';
+import { buildHeapMiB, managedRelease, migrationTasks, runMigrationTasks, assertReady, probe, verifyPublic } from './sary-update-ops.mjs';
 
 const directory = '/var/www/sari-release-12345678-aBc123';
 const processes = () => ['sari', 'sari-inbound'].map(name => ({ name, pm2_env: {
@@ -10,6 +10,18 @@ const processes = () => ['sari', 'sari-inbound'].map(name => ({ name, pm2_env: {
 } }));
 const manifest = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
 const deployment = fs.readFileSync(new URL('./deploy-production.sh', import.meta.url), 'utf8');
+
+test('budgets a 6 GiB build heap only after the server memory upgrade', () => {
+  const GiB = 1024 ** 3;
+  assert.equal(buildHeapMiB(16 * GiB), 6144);
+  assert.equal(buildHeapMiB(16 * GiB, 12 * GiB), 6144);
+  for (const [total, limit] of [[4 * GiB, 0], [16 * GiB, 4 * GiB], [8 * GiB - 1, 0]]) {
+    assert.throws(() => buildHeapMiB(total, limit), /BUILD_MEMORY_TOO_SMALL_COMPLETE_SERVER_UPGRADE/);
+  }
+  for (const [total, limit] of [[NaN, 0], [0, 0], [16 * GiB, -1], [16 * GiB, NaN]]) {
+    assert.throws(() => buildHeapMiB(total, limit), /BUILD_MEMORY_UNAVAILABLE/);
+  }
+});
 
 test('selects only the Sary pair and permits multiple web workers', () => {
   assert.equal(managedRelease([...processes(), processes()[0], { name: 'another-service' }]), directory);
@@ -133,5 +145,7 @@ test('shipped shell entry points parse and refuse destructive in-place deploymen
   assert.ok(updater.indexOf('phase=ENCRYPTED_BACKUP') < updater.indexOf('phase=MIGRATIONS_AND_CHECKS'));
   assert.ok(updater.indexOf('phase=MIGRATIONS_AND_CHECKS') < updater.indexOf('phase=ACTIVATE'));
   assert.ok(updater.indexOf('phase=PUBLIC_CHECK') < updater.indexOf('DEPLOY_OK'));
-  assert.match(updater, /NODE_OPTIONS=--max-old-space-size=4096/);
+  assert.match(updater, /build_heap_mb="\$\("\$node_bin" "\$ops" build-heap\)"/);
+  assert.match(updater, /NODE_OPTIONS="--max-old-space-size=\$build_heap_mb"/);
+  assert.ok(updater.indexOf('phase=BUILD_MEMORY_CHECK') < updater.indexOf('phase=PREPARE_RELEASE'));
 });

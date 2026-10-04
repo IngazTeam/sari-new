@@ -3,6 +3,19 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { setTimeout as delay } from 'node:timers/promises';
+import { totalmem } from 'node:os';
+
+export function buildHeapMiB(totalBytes, constrainedBytes = 0) {
+  if (!Number.isFinite(totalBytes) || totalBytes <= 0
+    || !Number.isFinite(constrainedBytes) || constrainedBytes < 0) {
+    throw new Error('BUILD_MEMORY_UNAVAILABLE');
+  }
+  // A 6 GiB V8 heap also needs native memory and room for the running release.
+  // Honour container/service limits instead of relying on host RAM alone.
+  const capacity = Math.min(totalBytes, constrainedBytes || totalBytes);
+  if (capacity < 8 * 1024 ** 3) throw new Error('BUILD_MEMORY_TOO_SMALL_COMPLETE_SERVER_UPGRADE');
+  return 6144;
+}
 
 export function managedRelease(processes, expected, allowStopped = false) {
   const apps = processes.filter(app => ['sari', 'sari-inbound'].includes(app.name));
@@ -84,7 +97,9 @@ export async function verifyPublic(sha, token, options) {
 }
 
 async function main([action, ...args]) {
-  if (action === 'pm2-current' || action === 'pm2-match') {
+  if (action === 'build-heap') {
+    process.stdout.write(String(buildHeapMiB(totalmem(), process.constrainedMemory())));
+  } else if (action === 'pm2-current' || action === 'pm2-match') {
     let input = '';
     for await (const chunk of process.stdin) input += chunk;
     const directory = managedRelease(JSON.parse(input), args[0], action === 'pm2-current');

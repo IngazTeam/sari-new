@@ -11,7 +11,7 @@ const mocks = vi.hoisted(() => ({
   settings: vi.fn(),
   free: vi.fn(),
 }));
-vi.mock("googleapis", () => ({
+vi.mock("./_core/google-api-clients", () => ({
   google: {
     auth: {
       OAuth2: class {

@@ -5,7 +5,7 @@ vi.mock("./sheets-setup-attempts", () => ({
   startSheetsSetup: calls.setup, readSheetsSetup: calls.setup,
   recoverSheetsSetup: calls.setup, acknowledgeSheetsSetup: calls.setup,
 }));
-vi.mock("googleapis", () => ({ google: { sheets: calls.provider } }));
+vi.mock("./_core/google-api-clients", () => ({ google: { sheets: calls.provider } }));
 import { sheetsRouter } from "./routers-sheets";
 import * as sync from "./sheetsSync";
 import * as provider from "./_core/googleSheets";

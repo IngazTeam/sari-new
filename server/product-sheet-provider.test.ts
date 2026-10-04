@@ -7,7 +7,7 @@ const m = vi.hoisted(() => ({
   fetch: vi.fn(),
   check: vi.fn(),
 }));
-vi.mock("googleapis", () => ({
+vi.mock("./_core/google-api-clients", () => ({
   google: {
     auth: {
       OAuth2: class {

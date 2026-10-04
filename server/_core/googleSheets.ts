@@ -3,7 +3,7 @@
  * يوفر دوال للتعامل مع Google Sheets API
  */
 
-import { google } from 'googleapis';
+import { google } from './google-api-clients';
 import { makeSheetIntent, verifySheetAppend, type SheetEvidenceHooks } from '../integrations/salla-sheet-evidence';
 import {
   getGoogleIntegration,

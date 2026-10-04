@@ -1,4 +1,4 @@
-import { google } from "googleapis";
+import { google } from "./_core/google-api-clients";
 import { z } from "zod";
 import { inventoryExportRows } from "../shared/inventory-sheet-export";
 import { productSpreadsheetId } from "../shared/product-sheet-import";

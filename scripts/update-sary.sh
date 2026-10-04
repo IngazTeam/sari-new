@@ -92,6 +92,9 @@ test -f "$previous_release/ecosystem.config.cjs"
 previous_sha="$(git -c safe.directory="$previous_release" -C "$previous_release" rev-parse HEAD)"
 git merge-base --is-ancestor "$previous_sha" "$release_sha" || die REFUSING_APPLICATION_DOWNGRADE
 
+phase=BUILD_MEMORY_CHECK
+build_heap_mb="$("$node_bin" "$ops" build-heap)"
+
 phase=PREPARE_RELEASE
 release_dir="$(mktemp -d "/var/www/sari-release-${release_sha:0:8}-XXXXXX")"
 git worktree add --detach "$release_dir" "$release_sha"
@@ -101,8 +104,10 @@ ops="$release_dir/scripts/sary-update-ops.mjs"
 build_task() {
   local environment="$1"
   shift
+  # Cold TypeScript checks exceed the former 4 GiB heap. The upgraded droplet
+  # has 16 GiB RAM; keep a bounded build heap and leave room for live services.
   env -i HOME=/root PATH="$runtime_path" CI=true NODE_ENV="$environment" \
-    SARI_ENV_FILE=/dev/null NODE_OPTIONS=--max-old-space-size=4096 \
+    SARI_ENV_FILE=/dev/null NODE_OPTIONS="--max-old-space-size=$build_heap_mb" \
     corepack pnpm@10.4.1 "$@"
 }
 phase=INSTALL_AND_BUILD
