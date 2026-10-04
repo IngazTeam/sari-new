@@ -3868,25 +3868,25 @@
 
 | السطر | النوع | التسمية | القسم |
 |---:|---|---|---|
-| 166 | Link | تسمية ديناميكية / تحتاج مراجعة | SubscriptionBillingWorkspace |
-| 180 | Link | تسمية ديناميكية / تحتاج مراجعة | SubscriptionBillingWorkspace |
-| 217 | button | تسمية ديناميكية / تحتاج مراجعة | SubscriptionBillingWorkspace |
-| 290 | Link | تسمية ديناميكية / تحتاج مراجعة | trial ar |
-| 297 | Link | تسمية ديناميكية / تحتاج مراجعة | trial ar |
+| 172 | Link | تسمية ديناميكية / تحتاج مراجعة | SubscriptionBillingWorkspace |
+| 186 | Link | تسمية ديناميكية / تحتاج مراجعة | SubscriptionBillingWorkspace |
+| 223 | button | تسمية ديناميكية / تحتاج مراجعة | SubscriptionBillingWorkspace |
+| 296 | Link | تسمية ديناميكية / تحتاج مراجعة | trial ar |
 | 303 | Link | تسمية ديناميكية / تحتاج مراجعة | trial ar |
-| 349 | summary | تسمية ديناميكية / تحتاج مراجعة | SubscriptionBillingWorkspace |
-| 351 | button | تسمية ديناميكية / تحتاج مراجعة | SubscriptionBillingWorkspace |
-| 380 | AlertDialogContent | review cancel_ review review unknown | SubscriptionBillingWorkspace |
-| 403 | button | review | SubscriptionBillingWorkspace |
-| 412 | button | تسمية ديناميكية / تحتاج مراجعة | SubscriptionBillingWorkspace |
-| 422 | button | تسمية ديناميكية / تحتاج مراجعة | SubscriptionBillingWorkspace |
-| 480 | button | تسمية ديناميكية / تحتاج مراجعة | SubscriptionBillingWorkspace |
-| 492 | select | payment_ | SubscriptionBillingWorkspace |
-| 510 | select | type_ | SubscriptionBillingWorkspace |
-| 526 | select | 25 50 | SubscriptionBillingWorkspace |
-| 593 | summary | تسمية ديناميكية / تحتاج مراجعة | SubscriptionBillingWorkspace |
-| 611 | button | تسمية ديناميكية / تحتاج مراجعة | SubscriptionBillingWorkspace |
-| 626 | button | تسمية ديناميكية / تحتاج مراجعة | SubscriptionBillingWorkspace |
+| 309 | Link | تسمية ديناميكية / تحتاج مراجعة | trial ar |
+| 355 | summary | تسمية ديناميكية / تحتاج مراجعة | SubscriptionBillingWorkspace |
+| 357 | button | تسمية ديناميكية / تحتاج مراجعة | SubscriptionBillingWorkspace |
+| 387 | AlertDialogContent | review cancel_ review review unknown | SubscriptionBillingWorkspace |
+| 410 | button | review | SubscriptionBillingWorkspace |
+| 419 | button | تسمية ديناميكية / تحتاج مراجعة | SubscriptionBillingWorkspace |
+| 429 | button | تسمية ديناميكية / تحتاج مراجعة | SubscriptionBillingWorkspace |
+| 487 | button | تسمية ديناميكية / تحتاج مراجعة | SubscriptionBillingWorkspace |
+| 499 | select | payment_ | SubscriptionBillingWorkspace |
+| 517 | select | type_ | SubscriptionBillingWorkspace |
+| 533 | select | 25 50 | SubscriptionBillingWorkspace |
+| 600 | summary | تسمية ديناميكية / تحتاج مراجعة | SubscriptionBillingWorkspace |
+| 618 | button | تسمية ديناميكية / تحتاج مراجعة | SubscriptionBillingWorkspace |
+| 633 | button | تسمية ديناميكية / تحتاج مراجعة | SubscriptionBillingWorkspace |
 
 ## client/src/components/merchant/UsageWorkspace.tsx
 

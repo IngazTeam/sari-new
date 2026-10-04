@@ -1,3 +1,7 @@
+import {
+  cancellationReview,
+  type SubscriptionCancellationInput,
+} from "@shared/subscription-cancellation";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation, useSearch } from "wouter";
@@ -88,9 +92,11 @@ export function SubscriptionBillingWorkspace({
       usageQueryOptions
     ),
     data = scopedBilling(query.data, actorId, merchantId);
-  const [review, setReview] = useState<{ id: number; identity: string } | null>(
-      null
-    ),
+  const [review, setReview] = useState<{
+      id: number;
+      identity: string;
+      expected: SubscriptionCancellationInput["expected"];
+    } | null>(null),
     [outcome, setOutcome] = useState<
       "review" | "sending" | "conflict" | "unknown" | "done"
     >("review");
@@ -109,7 +115,7 @@ export function SubscriptionBillingWorkspace({
   const canCancel =
     !!data?.canManage &&
     data.state === "active" &&
-    !!s &&
+    !!cancellationReview(s ?? null) &&
     !query.isFetching &&
     !query.error;
   const sameReview =
@@ -131,9 +137,9 @@ export function SubscriptionBillingWorkspace({
     setOutcome("sending");
     try {
       const result = await cancel.mutateAsync({
-        expectedSubscriptionId: review.id,
+        expected: review.expected,
       });
-      if (result?.success !== true) {
+      if (result?.success !== true || result.subscriptionId !== review.id) {
         setOutcome("unknown");
         return;
       }
@@ -355,6 +361,7 @@ export function SubscriptionBillingWorkspace({
                     onClick={() => {
                       if (s) {
                         setReview({
+                          expected: cancellationReview(s)!,
                           id: s.id,
                           identity: subscriptionReviewIdentity(s)!,
                         });

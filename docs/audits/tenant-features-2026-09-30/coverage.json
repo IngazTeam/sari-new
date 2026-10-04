@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-04T11:49:14.633Z",
+  "generatedAt": "2026-10-04T12:09:16.476Z",
   "definition": "Every registered route is accounted for; source inventory and design completion are different statuses.",
   "routes": [
     {
@@ -86271,25 +86271,25 @@
         "client/src/components/merchant/UsageWorkspace.tsx"
       ],
       "controls": [
-        "716f2a061f01",
-        "0bfa99abdad2",
-        "bc2363764665",
-        "0d0497b459f2",
-        "db727304cc23",
-        "160021567e1f",
-        "ef6bb805a5ae",
-        "2ab7669551c9",
-        "bde1e763a4c6",
-        "87c008067021",
-        "aaf47a3e862c",
-        "8868a6d00708",
-        "9b26c3cff8d0",
-        "c3707370f065",
-        "ec6b69f00eb7",
-        "91ac5552e4a2",
-        "23d38550de22",
-        "eaf71d8e0ce9",
-        "00bac397c542",
+        "dcc8f24d3867",
+        "1ad20b936103",
+        "6b7552ab0ccb",
+        "c977ffc4f23f",
+        "93454b2421cc",
+        "5177a8c72b92",
+        "24200c0fdf72",
+        "308f5ec78bc4",
+        "c790d3ef5e7b",
+        "5969c7c95b69",
+        "9928c0dd52e1",
+        "5966b43f68ea",
+        "a5f31a89a097",
+        "1254c9f1590d",
+        "460da1ff9025",
+        "80c70ada1c36",
+        "b3c92c6a3c83",
+        "037ea3810faa",
+        "13f66ef074f2",
         "3269b64c5c07",
         "0c172d0246af",
         "79cd8fac476e",
@@ -86315,13 +86315,13 @@
       "designSections": [],
       "acceptancePlan": "المقارنة والأسعار والمزايا؛ اختيار المدة؛ مراجعة الفاتورة؛ الترقية والإلغاء والاستخدام والحالة المؤكدة.",
       "gaps": [
-        "راجع المرحلتين496–497: مصدر معزول دون تعديل أثناء القراءة، ومكوّن فعلي مشترك للمسارات الثلاثة مع الموك أب بتبويبي الاشتراك والسجل وفلاتر وصفحات وتفاصيل ومراجعة الإلغاء وإعادة قراءة النتيجة. أزيل النموذج القديم. تبقى شارة الاشتراك وشريط التجربة والمداخل القديمة، وتقوية نسخة الإلغاء على الخادم وتسوية التعارض المالي وSafari/iPhone والمزود الحقيقي؛ لا نشر."
+        "راجع المراحل496–499: مصدر معزول ومكوّن مشترك للمسارات الثلاثة والموك أب، بتبويبي الاشتراك والسجل وفلاتر وصفحات وتفاصيل. وُحدت الشارة وشريط التجربة وأُغلقت القراءات القديمة. صار الإلغاء بمراجعة إلزامية وصلاحية حية وقفل الاشتراك وإقرار حفظ متحقق وإعادة قراءة للنتيجة. تبقى تسوية التعارض المالي والمزود الحقيقي وSafari/iPhone؛ لا نشر."
       ],
       "controlDetails": [
         {
-          "id": "716f2a061f01",
+          "id": "dcc8f24d3867",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 166,
+          "line": 172,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -86340,9 +86340,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "0bfa99abdad2",
+          "id": "1ad20b936103",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 180,
+          "line": 186,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -86363,9 +86363,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "bc2363764665",
+          "id": "6b7552ab0ccb",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 217,
+          "line": 223,
           "tag": "button",
           "role": "",
           "kind": "action",
@@ -86390,9 +86390,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "0d0497b459f2",
+          "id": "c977ffc4f23f",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 290,
+          "line": 296,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -86416,9 +86416,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "db727304cc23",
+          "id": "93454b2421cc",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 297,
+          "line": 303,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -86442,9 +86442,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "160021567e1f",
+          "id": "5177a8c72b92",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 303,
+          "line": 309,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -86468,9 +86468,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "ef6bb805a5ae",
+          "id": "24200c0fdf72",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 349,
+          "line": 355,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -86493,15 +86493,15 @@
           "review": "source-inventoried"
         },
         {
-          "id": "2ab7669551c9",
+          "id": "308f5ec78bc4",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 351,
+          "line": 357,
           "tag": "button",
           "role": "",
           "kind": "action",
           "label": "",
           "section": "SubscriptionBillingWorkspace",
-          "binding": "() => {\n                      if (s) {\n                        setReview({\n                          id: s.id,\n                          identity: subscriptionReviewIdentity(s)!,\n                        });\n                        setOutcome(\"review\");\n                      }\n                    }",
+          "binding": "() => {\n                      if (s) {\n                        setReview({\n                          expected: cancellationReview(s)!,\n                          id: s.id,\n                          identity: subscriptionReviewIdentity(s)!,\n                        });\n                        setOutcome(\"review\");\n                      }\n                    }",
           "type": "button",
           "options": [],
           "min": "",
@@ -86518,9 +86518,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "bde1e763a4c6",
+          "id": "c790d3ef5e7b",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 380,
+          "line": 387,
           "tag": "AlertDialogContent",
           "role": "",
           "kind": "dialog",
@@ -86539,9 +86539,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "87c008067021",
+          "id": "5969c7c95b69",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 403,
+          "line": 410,
           "tag": "button",
           "role": "",
           "kind": "action",
@@ -86560,9 +86560,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "aaf47a3e862c",
+          "id": "9928c0dd52e1",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 412,
+          "line": 419,
           "tag": "button",
           "role": "",
           "kind": "action",
@@ -86583,9 +86583,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "8868a6d00708",
+          "id": "5966b43f68ea",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 422,
+          "line": 429,
           "tag": "button",
           "role": "",
           "kind": "action",
@@ -86606,9 +86606,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "9b26c3cff8d0",
+          "id": "a5f31a89a097",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 480,
+          "line": 487,
           "tag": "button",
           "role": "",
           "kind": "action",
@@ -86627,9 +86627,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "c3707370f065",
+          "id": "1254c9f1590d",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 492,
+          "line": 499,
           "tag": "select",
           "role": "",
           "kind": "field",
@@ -86657,9 +86657,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "ec6b69f00eb7",
+          "id": "460da1ff9025",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 510,
+          "line": 517,
           "tag": "select",
           "role": "",
           "kind": "field",
@@ -86687,9 +86687,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "91ac5552e4a2",
+          "id": "80c70ada1c36",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 526,
+          "line": 533,
           "tag": "select",
           "role": "",
           "kind": "field",
@@ -86717,9 +86717,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "23d38550de22",
+          "id": "b3c92c6a3c83",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 593,
+          "line": 600,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -86740,9 +86740,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "eaf71d8e0ce9",
+          "id": "037ea3810faa",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 611,
+          "line": 618,
           "tag": "button",
           "role": "",
           "kind": "action",
@@ -86765,9 +86765,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "00bac397c542",
+          "id": "13f66ef074f2",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 626,
+          "line": 633,
           "tag": "button",
           "role": "",
           "kind": "action",
@@ -88814,25 +88814,25 @@
         "client/src/components/merchant/UsageWorkspace.tsx"
       ],
       "controls": [
-        "716f2a061f01",
-        "0bfa99abdad2",
-        "bc2363764665",
-        "0d0497b459f2",
-        "db727304cc23",
-        "160021567e1f",
-        "ef6bb805a5ae",
-        "2ab7669551c9",
-        "bde1e763a4c6",
-        "87c008067021",
-        "aaf47a3e862c",
-        "8868a6d00708",
-        "9b26c3cff8d0",
-        "c3707370f065",
-        "ec6b69f00eb7",
-        "91ac5552e4a2",
-        "23d38550de22",
-        "eaf71d8e0ce9",
-        "00bac397c542",
+        "dcc8f24d3867",
+        "1ad20b936103",
+        "6b7552ab0ccb",
+        "c977ffc4f23f",
+        "93454b2421cc",
+        "5177a8c72b92",
+        "24200c0fdf72",
+        "308f5ec78bc4",
+        "c790d3ef5e7b",
+        "5969c7c95b69",
+        "9928c0dd52e1",
+        "5966b43f68ea",
+        "a5f31a89a097",
+        "1254c9f1590d",
+        "460da1ff9025",
+        "80c70ada1c36",
+        "b3c92c6a3c83",
+        "037ea3810faa",
+        "13f66ef074f2",
         "3269b64c5c07",
         "0c172d0246af",
         "79cd8fac476e",
@@ -88858,13 +88858,13 @@
       "designSections": [],
       "acceptancePlan": "المقارنة والأسعار والمزايا؛ اختيار المدة؛ مراجعة الفاتورة؛ الترقية والإلغاء والاستخدام والحالة المؤكدة.",
       "gaps": [
-        "راجع المرحلتين496–497: مصدر معزول دون تعديل أثناء القراءة، ومكوّن فعلي مشترك للمسارات الثلاثة مع الموك أب بتبويبي الاشتراك والسجل وفلاتر وصفحات وتفاصيل ومراجعة الإلغاء وإعادة قراءة النتيجة. أزيل النموذج القديم. تبقى شارة الاشتراك وشريط التجربة والمداخل القديمة، وتقوية نسخة الإلغاء على الخادم وتسوية التعارض المالي وSafari/iPhone والمزود الحقيقي؛ لا نشر."
+        "راجع المراحل496–499: مصدر معزول ومكوّن مشترك للمسارات الثلاثة والموك أب، بتبويبي الاشتراك والسجل وفلاتر وصفحات وتفاصيل. وُحدت الشارة وشريط التجربة وأُغلقت القراءات القديمة. صار الإلغاء بمراجعة إلزامية وصلاحية حية وقفل الاشتراك وإقرار حفظ متحقق وإعادة قراءة للنتيجة. تبقى تسوية التعارض المالي والمزود الحقيقي وSafari/iPhone؛ لا نشر."
       ],
       "controlDetails": [
         {
-          "id": "716f2a061f01",
+          "id": "dcc8f24d3867",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 166,
+          "line": 172,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -88883,9 +88883,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "0bfa99abdad2",
+          "id": "1ad20b936103",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 180,
+          "line": 186,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -88906,9 +88906,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "bc2363764665",
+          "id": "6b7552ab0ccb",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 217,
+          "line": 223,
           "tag": "button",
           "role": "",
           "kind": "action",
@@ -88933,9 +88933,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "0d0497b459f2",
+          "id": "c977ffc4f23f",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 290,
+          "line": 296,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -88959,9 +88959,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "db727304cc23",
+          "id": "93454b2421cc",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 297,
+          "line": 303,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -88985,9 +88985,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "160021567e1f",
+          "id": "5177a8c72b92",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 303,
+          "line": 309,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -89011,9 +89011,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "ef6bb805a5ae",
+          "id": "24200c0fdf72",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 349,
+          "line": 355,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -89036,15 +89036,15 @@
           "review": "source-inventoried"
         },
         {
-          "id": "2ab7669551c9",
+          "id": "308f5ec78bc4",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 351,
+          "line": 357,
           "tag": "button",
           "role": "",
           "kind": "action",
           "label": "",
           "section": "SubscriptionBillingWorkspace",
-          "binding": "() => {\n                      if (s) {\n                        setReview({\n                          id: s.id,\n                          identity: subscriptionReviewIdentity(s)!,\n                        });\n                        setOutcome(\"review\");\n                      }\n                    }",
+          "binding": "() => {\n                      if (s) {\n                        setReview({\n                          expected: cancellationReview(s)!,\n                          id: s.id,\n                          identity: subscriptionReviewIdentity(s)!,\n                        });\n                        setOutcome(\"review\");\n                      }\n                    }",
           "type": "button",
           "options": [],
           "min": "",
@@ -89061,9 +89061,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "bde1e763a4c6",
+          "id": "c790d3ef5e7b",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 380,
+          "line": 387,
           "tag": "AlertDialogContent",
           "role": "",
           "kind": "dialog",
@@ -89082,9 +89082,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "87c008067021",
+          "id": "5969c7c95b69",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 403,
+          "line": 410,
           "tag": "button",
           "role": "",
           "kind": "action",
@@ -89103,9 +89103,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "aaf47a3e862c",
+          "id": "9928c0dd52e1",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 412,
+          "line": 419,
           "tag": "button",
           "role": "",
           "kind": "action",
@@ -89126,9 +89126,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "8868a6d00708",
+          "id": "5966b43f68ea",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 422,
+          "line": 429,
           "tag": "button",
           "role": "",
           "kind": "action",
@@ -89149,9 +89149,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "9b26c3cff8d0",
+          "id": "a5f31a89a097",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 480,
+          "line": 487,
           "tag": "button",
           "role": "",
           "kind": "action",
@@ -89170,9 +89170,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "c3707370f065",
+          "id": "1254c9f1590d",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 492,
+          "line": 499,
           "tag": "select",
           "role": "",
           "kind": "field",
@@ -89200,9 +89200,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "ec6b69f00eb7",
+          "id": "460da1ff9025",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 510,
+          "line": 517,
           "tag": "select",
           "role": "",
           "kind": "field",
@@ -89230,9 +89230,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "91ac5552e4a2",
+          "id": "80c70ada1c36",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 526,
+          "line": 533,
           "tag": "select",
           "role": "",
           "kind": "field",
@@ -89260,9 +89260,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "23d38550de22",
+          "id": "b3c92c6a3c83",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 593,
+          "line": 600,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -89283,9 +89283,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "eaf71d8e0ce9",
+          "id": "037ea3810faa",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 611,
+          "line": 618,
           "tag": "button",
           "role": "",
           "kind": "action",
@@ -89308,9 +89308,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "00bac397c542",
+          "id": "13f66ef074f2",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 626,
+          "line": 633,
           "tag": "button",
           "role": "",
           "kind": "action",
@@ -98453,25 +98453,25 @@
         "client/src/components/merchant/UsageWorkspace.tsx"
       ],
       "controls": [
-        "716f2a061f01",
-        "0bfa99abdad2",
-        "bc2363764665",
-        "0d0497b459f2",
-        "db727304cc23",
-        "160021567e1f",
-        "ef6bb805a5ae",
-        "2ab7669551c9",
-        "bde1e763a4c6",
-        "87c008067021",
-        "aaf47a3e862c",
-        "8868a6d00708",
-        "9b26c3cff8d0",
-        "c3707370f065",
-        "ec6b69f00eb7",
-        "91ac5552e4a2",
-        "23d38550de22",
-        "eaf71d8e0ce9",
-        "00bac397c542",
+        "dcc8f24d3867",
+        "1ad20b936103",
+        "6b7552ab0ccb",
+        "c977ffc4f23f",
+        "93454b2421cc",
+        "5177a8c72b92",
+        "24200c0fdf72",
+        "308f5ec78bc4",
+        "c790d3ef5e7b",
+        "5969c7c95b69",
+        "9928c0dd52e1",
+        "5966b43f68ea",
+        "a5f31a89a097",
+        "1254c9f1590d",
+        "460da1ff9025",
+        "80c70ada1c36",
+        "b3c92c6a3c83",
+        "037ea3810faa",
+        "13f66ef074f2",
         "3269b64c5c07",
         "0c172d0246af",
         "79cd8fac476e",
@@ -98497,13 +98497,13 @@
       "designSections": [],
       "acceptancePlan": "المقارنة والأسعار والمزايا؛ اختيار المدة؛ مراجعة الفاتورة؛ الترقية والإلغاء والاستخدام والحالة المؤكدة.",
       "gaps": [
-        "راجع المرحلتين496–497: مصدر معزول دون تعديل أثناء القراءة، ومكوّن فعلي مشترك للمسارات الثلاثة مع الموك أب بتبويبي الاشتراك والسجل وفلاتر وصفحات وتفاصيل ومراجعة الإلغاء وإعادة قراءة النتيجة. أزيل النموذج القديم. تبقى شارة الاشتراك وشريط التجربة والمداخل القديمة، وتقوية نسخة الإلغاء على الخادم وتسوية التعارض المالي وSafari/iPhone والمزود الحقيقي؛ لا نشر."
+        "راجع المراحل496–499: مصدر معزول ومكوّن مشترك للمسارات الثلاثة والموك أب، بتبويبي الاشتراك والسجل وفلاتر وصفحات وتفاصيل. وُحدت الشارة وشريط التجربة وأُغلقت القراءات القديمة. صار الإلغاء بمراجعة إلزامية وصلاحية حية وقفل الاشتراك وإقرار حفظ متحقق وإعادة قراءة للنتيجة. تبقى تسوية التعارض المالي والمزود الحقيقي وSafari/iPhone؛ لا نشر."
       ],
       "controlDetails": [
         {
-          "id": "716f2a061f01",
+          "id": "dcc8f24d3867",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 166,
+          "line": 172,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -98522,9 +98522,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "0bfa99abdad2",
+          "id": "1ad20b936103",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 180,
+          "line": 186,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -98545,9 +98545,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "bc2363764665",
+          "id": "6b7552ab0ccb",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 217,
+          "line": 223,
           "tag": "button",
           "role": "",
           "kind": "action",
@@ -98572,9 +98572,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "0d0497b459f2",
+          "id": "c977ffc4f23f",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 290,
+          "line": 296,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -98598,9 +98598,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "db727304cc23",
+          "id": "93454b2421cc",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 297,
+          "line": 303,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -98624,9 +98624,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "160021567e1f",
+          "id": "5177a8c72b92",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 303,
+          "line": 309,
           "tag": "Link",
           "role": "",
           "kind": "action",
@@ -98650,9 +98650,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "ef6bb805a5ae",
+          "id": "24200c0fdf72",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 349,
+          "line": 355,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -98675,15 +98675,15 @@
           "review": "source-inventoried"
         },
         {
-          "id": "2ab7669551c9",
+          "id": "308f5ec78bc4",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 351,
+          "line": 357,
           "tag": "button",
           "role": "",
           "kind": "action",
           "label": "",
           "section": "SubscriptionBillingWorkspace",
-          "binding": "() => {\n                      if (s) {\n                        setReview({\n                          id: s.id,\n                          identity: subscriptionReviewIdentity(s)!,\n                        });\n                        setOutcome(\"review\");\n                      }\n                    }",
+          "binding": "() => {\n                      if (s) {\n                        setReview({\n                          expected: cancellationReview(s)!,\n                          id: s.id,\n                          identity: subscriptionReviewIdentity(s)!,\n                        });\n                        setOutcome(\"review\");\n                      }\n                    }",
           "type": "button",
           "options": [],
           "min": "",
@@ -98700,9 +98700,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "bde1e763a4c6",
+          "id": "c790d3ef5e7b",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 380,
+          "line": 387,
           "tag": "AlertDialogContent",
           "role": "",
           "kind": "dialog",
@@ -98721,9 +98721,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "87c008067021",
+          "id": "5969c7c95b69",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 403,
+          "line": 410,
           "tag": "button",
           "role": "",
           "kind": "action",
@@ -98742,9 +98742,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "aaf47a3e862c",
+          "id": "9928c0dd52e1",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 412,
+          "line": 419,
           "tag": "button",
           "role": "",
           "kind": "action",
@@ -98765,9 +98765,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "8868a6d00708",
+          "id": "5966b43f68ea",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 422,
+          "line": 429,
           "tag": "button",
           "role": "",
           "kind": "action",
@@ -98788,9 +98788,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "9b26c3cff8d0",
+          "id": "a5f31a89a097",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 480,
+          "line": 487,
           "tag": "button",
           "role": "",
           "kind": "action",
@@ -98809,9 +98809,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "c3707370f065",
+          "id": "1254c9f1590d",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 492,
+          "line": 499,
           "tag": "select",
           "role": "",
           "kind": "field",
@@ -98839,9 +98839,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "ec6b69f00eb7",
+          "id": "460da1ff9025",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 510,
+          "line": 517,
           "tag": "select",
           "role": "",
           "kind": "field",
@@ -98869,9 +98869,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "91ac5552e4a2",
+          "id": "80c70ada1c36",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 526,
+          "line": 533,
           "tag": "select",
           "role": "",
           "kind": "field",
@@ -98899,9 +98899,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "23d38550de22",
+          "id": "b3c92c6a3c83",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 593,
+          "line": 600,
           "tag": "summary",
           "role": "",
           "kind": "action",
@@ -98922,9 +98922,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "eaf71d8e0ce9",
+          "id": "037ea3810faa",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 611,
+          "line": 618,
           "tag": "button",
           "role": "",
           "kind": "action",
@@ -98947,9 +98947,9 @@
           "review": "source-inventoried"
         },
         {
-          "id": "00bac397c542",
+          "id": "13f66ef074f2",
           "file": "client/src/components/merchant/SubscriptionBillingWorkspace.tsx",
-          "line": 626,
+          "line": 633,
           "tag": "button",
           "role": "",
           "kind": "action",

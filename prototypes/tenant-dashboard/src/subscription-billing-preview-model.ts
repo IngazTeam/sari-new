@@ -1,4 +1,9 @@
 import {
+  subscriptionCancellationInput,
+  cancellationReview,
+  sameCancellationSnapshot,
+} from "../../../shared/subscription-cancellation";
+import {
   subscriptionBillingSchema,
   billingHistoryInput,
   billingHistorySchema,
@@ -106,14 +111,19 @@ export class SubscriptionBillingPreviewStore {
         filtered.length > input.pageSize ? rows[rows.length - 1].id : null,
     });
   }
-  cancel(input: any) {
+  cancel(input: unknown) {
+    const parsed = subscriptionCancellationInput.safeParse(input),
+      snapshot = this.summary(),
+      current = cancellationReview(snapshot.subscription);
     if (
-      this.summary().state !== "active" ||
-      input?.expectedSubscriptionId !== 41 ||
-      Object.keys(input).length !== 1
+      !parsed.success ||
+      !snapshot.canManage ||
+      snapshot.state !== "active" ||
+      !current ||
+      !sameCancellationSnapshot(current, parsed.data.expected)
     )
       throw { data: { code: "CONFLICT" } };
     this.cancelled = true;
-    return { success: true };
+    return { success: true as const, subscriptionId: current.id };
   }
 }

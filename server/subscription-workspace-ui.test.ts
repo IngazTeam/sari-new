@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { cancellationReview } from "../shared/subscription-cancellation";
 import React, { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { beforeEach, afterEach, expect, it, vi } from 'vitest';
@@ -38,7 +39,7 @@ it('does not load owner payment history for a known read-only member', async () 
 it('keeps unavailable history distinct from empty history', async () => { mode('stale-error'); await navigate('payments'); await render(); expect(host.querySelectorAll('.sbw-record')).toHaveLength(0); expect(host.textContent).not.toContain(c().noPayments); });
 it('requires a separate cancellation review and confirms the fresh local record', async () => {
  const mutate = vi.spyOn(model,'mutate'); await render(); await click(c().cancel); expect(document.querySelector('[role="alertdialog"]')?.textContent).toContain(c().cancelImpact); expect(mutate).not.toHaveBeenCalled();
- await click(c().cancelConfirm); expect(mutate).toHaveBeenCalledWith('merchantSubscription.cancelSubscription', { expectedSubscriptionId: 41 }); expect(document.body.textContent).toContain(c().cancel_done); expect(model.operations).toBe(1);
+ await click(c().cancelConfirm); expect(mutate).toHaveBeenCalledWith('merchantSubscription.cancelSubscription', { expected: expect.objectContaining({id: 41, planId: 10, status: "active"}) }); expect(document.body.textContent).toContain(c().cancel_done); expect(model.operations).toBe(1);
 });
 it('dismisses review and restores focus without changing the subscription', async () => { await render(); await click(c().cancel); await click(c().keep); expect(model.operations).toBe(0); expect(document.querySelector('[role="alertdialog"]')).toBeNull(); await vi.waitFor(() => expect(document.activeElement?.textContent).toBe(c().cancel)); });
 it('prevents cancellation after the reviewed subscription or plan changed', async () => {
@@ -52,4 +53,9 @@ it('rejects cross-account, cross-tenant, extra and mismatched query snapshots', 
  const data = model.read('merchantSubscription.workspace').data;
  expect(scopedBilling(data,1269,269)).toBeTruthy(); expect(scopedBilling(data,1270,269)).toBeNull(); expect(scopedBilling({...data,merchantId:270},1269,269)).toBeNull(); expect(scopedBilling({...data,secret:'x'},1269,269)).toBeNull();
  const history = model.read('merchantSubscription.paymentHistory',{}).data; expect(scopedBillingHistory(history,1269,269,history.input)).toBeTruthy(); expect(scopedBillingHistory(history,1269,269,{...history.input,status:'failed'})).toBeNull();
+});
+
+it('keeps an incorrect cancellation receipt unknown even when it reports success', async () => {
+ const mutate=model.mutate.bind(model);vi.spyOn(model,'mutate').mockImplementation(async (name,input) => {const result=await mutate(name,input);return name==='merchantSubscription.cancelSubscription'?{...result,subscriptionId:999}:result;});
+ await render();await click(c().cancel);await click(c().cancelConfirm);expect(document.body.textContent).toContain(c().cancel_unknown);expect(document.body.textContent).not.toContain(c().cancel_done);expect(model.operations).toBe(1);
 });

@@ -1,3 +1,4 @@
+import { subscriptionCancellationInput } from "../../shared/subscription-cancellation";
 /**
  * Subscription Management APIs
  * 
@@ -599,29 +600,17 @@ export const merchantSubscriptionRouter = router({
       }
     }),
 
-  // Cancel subscription
-  cancelSubscription: protectedProcedure
-    .input(z.object({
-      reason: z.string().trim().max(500).optional(),
-      expectedSubscriptionId: z.number().int().positive().optional(),
-    }).strict())
-    .mutation(async ({ ctx, input }) => {
-      const merchant = await getMerchantByUserId(ctx.user.id);
-      if (!merchant) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-      }
-
-      try {
-        await cancelCurrentSubscription(merchant.id, input.expectedSubscriptionId, input.reason);
-      } catch (error) {
-        if (error instanceof SubscriptionCancellationConflictError) {
-          throw new TRPCError({ code: 'CONFLICT', message: 'Subscription changed; refresh before cancelling' });
-        }
-        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Could not cancel subscription' });
-      }
-
-      return { success: true };
-    }),
+  // Only a reviewed, selected-tenant cancellation may change entitlement.
+  cancelSubscription: merchantProcedure.input(subscriptionCancellationInput).mutation(async ({ ctx, input }) => {
+    try { return await cancelCurrentSubscription(ctx.user.id, ctx.merchantId, input); }
+    catch (error) {
+      if (error instanceof MerchantSettingsAuthorityError && error.reason === 'forbidden')
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Cancellation requires owner access' });
+      if (error instanceof SubscriptionCancellationConflictError)
+        throw new TRPCError({ code: 'CONFLICT', message: 'Subscription changed; refresh before cancelling' });
+      throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Could not cancel subscription' });
+    }
+  }),
 
   getDaysRemaining: protectedProcedure.input(z.void()).query(retiredBillingRead),
   checkStatus: protectedProcedure.input(z.void()).query(retiredBillingRead),
