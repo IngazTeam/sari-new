@@ -46,6 +46,135 @@ describe.skipIf(!process.env.DATABASE_URL)(
     });
     afterEach(() => cleanupDisposableMerchants([owner.userId, other.userId]));
     afterAll(closeDb);
+    it("disables a reviewed link without erasing its history and resolves a fresh repeated review", async () => {
+      const id = await add({ usage: 1, max: 3 }),
+        before = await api().detail({ id });
+      const original = (
+        await q("SELECT * FROM payment_links WHERE id=?", [id])
+      )[0];
+      const input = {
+        id,
+        expectedRevision: before.link!.revision,
+        reviewed: true as const,
+      };
+      const result = await api().disableReviewed(input);
+      expect(result).toMatchObject({
+        outcome: "disabled",
+        workspace: {
+          link: {
+            id,
+            enabled: false,
+            storedStatus: "disabled",
+            usageCount: 1,
+            maxUsageCount: 3,
+          },
+        },
+      });
+      const saved = (
+        await q("SELECT * FROM payment_links WHERE id=?", [id])
+      )[0];
+      for (const key of [
+        "amount",
+        "currency",
+        "usage_count",
+        "max_usage_count",
+        "metadata",
+        "tap_payment_url",
+        "order_id",
+        "booking_id",
+        "total_collected",
+      ])
+        expect(saved[key]).toEqual(original[key]);
+      await expect(api().disableReviewed(input)).rejects.toMatchObject({
+        code: "CONFLICT",
+        message: "payment_links:stale",
+      });
+      expect(
+        await api().disableReviewed({
+          ...input,
+          expectedRevision: result.workspace.link!.revision,
+        })
+      ).toMatchObject({ outcome: "already_disabled" });
+    });
+    it("rejects a concurrent metadata change without disabling the changed link", async () => {
+      const id = await add(),
+        before = await api().detail({ id });
+      await q("UPDATE payment_links SET metadata='changed' WHERE id=?", [id]);
+      await expect(
+        api().disableReviewed({
+          id,
+          expectedRevision: before.link!.revision,
+          reviewed: true,
+        })
+      ).rejects.toMatchObject({ code: "CONFLICT" });
+      expect(
+        (
+          await q("SELECT is_active,status FROM payment_links WHERE id=?", [id])
+        )[0]
+      ).toEqual({ is_active: 1, status: "active" });
+    });
+    it("admits exactly one of two concurrent actions based on the same revision", async () => {
+      const id = await add(),
+        before = await api().detail({ id }),
+        input = {
+          id,
+          expectedRevision: before.link!.revision,
+          reviewed: true as const,
+        };
+      const results = await Promise.allSettled([
+        api().disableReviewed(input),
+        api().disableReviewed(input),
+      ]);
+      expect(results.filter(x => x.status === "fulfilled")).toHaveLength(1);
+      expect(
+        results.filter(x => x.status === "rejected").map(x => x.reason.code)
+      ).toEqual(["CONFLICT"]);
+    });
+    it("refuses foreign records and member/pending-owner writes", async () => {
+      const id = await add(),
+        foreign = await add({ merchant: other.merchantId }),
+        before = await api().detail({ id }),
+        input = {
+          id,
+          expectedRevision: before.link!.revision,
+          reviewed: true as const,
+        };
+      await expect(
+        api().disableReviewed({ ...input, id: foreign })
+      ).rejects.toMatchObject({ code: "NOT_FOUND" });
+      await q(
+        "INSERT INTO merchant_members(merchant_id,user_id,role,is_active) VALUES (?,?,'viewer',1)",
+        [owner.merchantId, other.userId]
+      );
+      await expect(
+        api(other.userId).disableReviewed(input)
+      ).rejects.toMatchObject({ code: "FORBIDDEN" });
+      await q("UPDATE merchants SET status='pending' WHERE id=?", [
+        owner.merchantId,
+      ]);
+      await expect(api().disableReviewed(input)).rejects.toMatchObject({
+        code: "FORBIDDEN",
+      });
+      expect(
+        (await q("SELECT is_active FROM payment_links WHERE id=?", [id]))[0]
+          .is_active
+      ).toBe(1);
+    });
+    it("allows explicit disabling of a malformed active flag without pretending it was valid", async () => {
+      const id = await add({ active: 2 }),
+        before = await api().detail({ id });
+      expect(before.link?.availability).toBe("invalid");
+      expect(
+        await api().disableReviewed({
+          id,
+          expectedRevision: before.link!.revision,
+          reviewed: true,
+        })
+      ).toMatchObject({
+        outcome: "disabled",
+        workspace: { link: { enabled: false, availability: "disabled" } },
+      });
+    });
     it("matches shared availability for all SQL filters and totals", async () => {
       const cases = [
         { status: "active", state: "available" },

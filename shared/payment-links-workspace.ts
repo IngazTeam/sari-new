@@ -241,3 +241,27 @@ export const paymentLinkDetail = z
       c.addIssue({ code: "custom", message: "inconsistent_link_detail" });
   });
 export type PaymentLinkRecord = z.infer<typeof paymentLinkRecord>;
+
+export const paymentLinkDisableInput = z
+  .object({
+    id,
+    expectedRevision: z.string().regex(/^[a-f0-9]{64}$/),
+    reviewed: z.literal(true),
+  })
+  .strict();
+export const paymentLinkDisableResult = z
+  .object({
+    outcome: z.enum(["disabled", "already_disabled"]),
+    workspace: paymentLinkDetail,
+  })
+  .strict()
+  .refine(
+    v =>
+      v.workspace.state === "found" &&
+      v.workspace.canView &&
+      v.workspace.canManage &&
+      v.workspace.link?.enabled === false &&
+      v.workspace.link.storedStatus === "disabled" &&
+      v.workspace.link.availability === "disabled",
+    "unverified_disable_result"
+  );

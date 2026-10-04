@@ -1,3 +1,8 @@
+import { disableReviewedPaymentLink } from "./payment/payment-links-workspace";
+import {
+  paymentLinkDisableInput,
+  paymentLinkDisableResult,
+} from "../shared/payment-links-workspace";
 import { beforeEach, expect, it, vi } from "vitest";
 const authority = vi.hoisted(() => ({ run: vi.fn() }));
 vi.mock("./accounts/merchant-settings-authority", () => ({
@@ -291,3 +296,105 @@ it("requires a positive known service identity for a booking target", () =>
       owned_service_id: null,
     }).related
   ).toEqual({ kind: "unavailable" }));
+
+const disableInput = () => ({
+  id: 1,
+  expectedRevision: project().revision,
+  reviewed: true as const,
+});
+it("disables only the reviewed tenant row, verifies one changed row and returns stored evidence", async () => {
+  tx.execute
+    .mockResolvedValueOnce([[row()]])
+    .mockResolvedValueOnce([{ affectedRows: 1 }])
+    .mockResolvedValueOnce([[{ ...row(), is_active: 0, status: "disabled" }]]);
+  const result = await disableReviewedPaymentLink(21, 7, disableInput());
+  expect(authority.run).toHaveBeenCalledWith(21, 7, true, expect.any(Function));
+  expect(tx.execute.mock.calls[0][0]).toContain("FOR UPDATE");
+  expect(tx.execute.mock.calls[1]).toEqual([
+    "UPDATE payment_links SET is_active=0,status='disabled' WHERE id=? AND merchant_id=?",
+    [1, 7],
+  ]);
+  expect(result).toMatchObject({
+    outcome: "disabled",
+    workspace: {
+      link: {
+        enabled: false,
+        storedStatus: "disabled",
+        availability: "disabled",
+      },
+    },
+  });
+});
+it("returns already disabled only after re-reading a matching reviewed snapshot", async () => {
+  const saved = { ...row(), is_active: 0, status: "disabled" };
+  tx.execute.mockResolvedValue([[saved]]);
+  const result = await disableReviewedPaymentLink(21, 7, {
+    ...disableInput(),
+    expectedRevision: project({ is_active: 0, status: "disabled" }).revision,
+  });
+  expect(result.outcome).toBe("already_disabled");
+  expect(
+    tx.execute.mock.calls.every((args: any) => args[0].startsWith("SELECT"))
+  ).toBe(true);
+});
+it.each([0, 2, undefined])(
+  "does not acknowledge an invalid affected-row result %s",
+  async affectedRows => {
+    tx.execute
+      .mockResolvedValueOnce([[row()]])
+      .mockResolvedValueOnce([{ affectedRows }]);
+    await expect(
+      disableReviewedPaymentLink(21, 7, disableInput())
+    ).rejects.toThrow("unavailable");
+    expect(tx.execute).toHaveBeenCalledTimes(2);
+  }
+);
+it("rejects a stale revision before updating even if hidden metadata changed", async () => {
+  tx.execute.mockResolvedValueOnce([[{ ...row(), metadata: "changed" }]]);
+  await expect(
+    disableReviewedPaymentLink(21, 7, disableInput())
+  ).rejects.toThrow("stale");
+  expect(tx.execute).toHaveBeenCalledTimes(1);
+});
+it("does not mistake a missing or unverified post-write row for success", async () => {
+  tx.execute.mockResolvedValueOnce([[]]);
+  await expect(
+    disableReviewedPaymentLink(21, 7, disableInput())
+  ).rejects.toThrow("missing");
+  tx.execute
+    .mockResolvedValueOnce([[row()]])
+    .mockResolvedValueOnce([{ affectedRows: 1 }])
+    .mockResolvedValueOnce([[row()]]);
+  await expect(
+    disableReviewedPaymentLink(21, 7, disableInput())
+  ).rejects.toThrow();
+});
+it.each([
+  { reviewed: false },
+  { expectedRevision: "bad" },
+  { merchantId: 8 },
+  { id: -1 },
+])("rejects invalid disable review %j", patch =>
+  expect(
+    paymentLinkDisableInput.safeParse({ ...disableInput(), ...patch }).success
+  ).toBe(false)
+);
+it("rejects a disable result that is only optimistic or belongs to a restricted state", async () => {
+  tx.execute
+    .mockResolvedValueOnce([[row()]])
+    .mockResolvedValueOnce([{ affectedRows: 1 }])
+    .mockResolvedValueOnce([[{ ...row(), is_active: 0, status: "disabled" }]]);
+  const result = await disableReviewedPaymentLink(21, 7, disableInput());
+  expect(
+    paymentLinkDisableResult.safeParse({
+      ...result,
+      workspace: { ...result.workspace, canManage: false },
+    }).success
+  ).toBe(false);
+  expect(
+    paymentLinkDisableResult.safeParse({
+      ...result,
+      workspace: { ...result.workspace, link: project() },
+    }).success
+  ).toBe(false);
+});

@@ -1,3 +1,7 @@
+import {
+  paymentLinkDisableInput,
+  paymentLinkDisableResult,
+} from "../../shared/payment-links-workspace";
 import type { PoolConnection } from "mysql2/promise";
 import { withMerchantOwnerSettings } from "../accounts/merchant-settings-authority";
 import { privacyHashExact } from "../accounts/privacy-hash";
@@ -340,4 +344,67 @@ export function readPaymentLinkDetail(
       });
     }
   );
+}
+
+export class PaymentLinksActionError extends Error {
+  constructor(readonly reason: "missing" | "stale" | "unavailable") {
+    super("payment_links:" + reason);
+  }
+}
+export function disableReviewedPaymentLink(
+  actorId: number,
+  merchantId: number,
+  raw: unknown
+) {
+  const input = paymentLinkDisableInput.parse(raw);
+  return withMerchantOwnerSettings(actorId, merchantId, true, async (tx, a) => {
+    const read = () =>
+      rows(
+        tx,
+        `SELECT ${selected} FROM payment_links p ${joins} WHERE p.id=? AND p.merchant_id=? FOR UPDATE`,
+        [input.id, merchantId]
+      );
+    const saved = await read();
+    if (!saved.length) throw new PaymentLinksActionError("missing");
+    if (saved.length !== 1) throw new PaymentLinksActionError("unavailable");
+    const before = projectPaymentLinkRecord(
+      actorId,
+      merchantId,
+      saved[0],
+      new Date()
+    );
+    if (before.revision !== input.expectedRevision)
+      throw new PaymentLinksActionError("stale");
+    const already =
+      before.enabled === false && before.storedStatus === "disabled";
+    if (!already) {
+      const [ack] = await tx.execute<any>(
+        "UPDATE payment_links SET is_active=0,status='disabled' WHERE id=? AND merchant_id=?",
+        [input.id, merchantId]
+      );
+      if (!ack || ack.affectedRows !== 1)
+        throw new PaymentLinksActionError("unavailable");
+    }
+    const after = await read(),
+      checkedAt = new Date();
+    if (after.length !== 1) throw new PaymentLinksActionError("unavailable");
+    return paymentLinkDisableResult.parse({
+      outcome: already ? "already_disabled" : "disabled",
+      workspace: {
+        actorId,
+        merchantId,
+        canView: a.isOwner,
+        canManage: a.canManage,
+        checkedAt: checkedAt.toISOString(),
+        source: "local_payment_links",
+        state: "found",
+        link: projectPaymentLinkRecord(
+          actorId,
+          merchantId,
+          after[0],
+          checkedAt
+        ),
+      },
+    });
+  });
 }
