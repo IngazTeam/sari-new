@@ -30,7 +30,7 @@ export function refreshTenantLedger(previous, coverage) {
     return `| ${priorities.get(row.route)} | ${cell(row.title)}<br><code>${row.route}</code> | ${cell(row.design)} | ${cell(notes)} |`;
   });
   let updated = previous.slice(0,start) + [tableStart,lines[1],...rows,...lines.slice(end)].join('\n');
-  const counts = routes.reduce((all,row) => ({...all,[row.design]:(all[row.design] || 0)+1}),{});
+  const counts = routes.reduce((all,row) => ({...all,[row.design]:(all[row.design] || 0)+1}),{'موك أب عام':0,'إعادة توجيه':0,'تفصيلي':0,'تفصيلي جزئي':0});
   for (const [label,count] of Object.entries(counts)) {
     const pattern = new RegExp(`^- ${label}: \\*\\*\\d+\\*\\* مسار(?:ات|ًا)\\.$`, 'gm');
     if (![...updated.matchAll(pattern)].length) throw Error('Missing coverage counter '+label);

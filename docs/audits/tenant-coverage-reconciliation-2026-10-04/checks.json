@@ -1,0 +1,21 @@
+{
+  "phase": 526,
+  "date": "2026-10-04",
+  "regression": {
+    "passed": 2071,
+    "failed": 0,
+    "files": 61
+  },
+  "routes": 126,
+  "catalogEntries": 133,
+  "sourceFiles": 606,
+  "controls": 2800,
+  "designStates": {
+    "generic": 0,
+    "redirect": 8,
+    "detailed": 51,
+    "partial": 67
+  },
+  "productionDeployed": false,
+  "physicalSafariTested": false
+}

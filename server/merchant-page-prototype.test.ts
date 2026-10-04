@@ -1,3 +1,4 @@
+import {validServicePath} from '../prototypes/tenant-dashboard/src/service-preview-router';
 import { readFileSync } from 'node:fs';
 import { runInContext } from 'node:vm';
 import { JSDOM, VirtualConsole } from 'jsdom';
@@ -55,12 +56,13 @@ describe('complete tenant page prototype', () => {
     expect(w.location.hash).toBe('#/page/merchant/dashboard');expect(w.document.querySelector('#main iframe')?.getAttribute('src')).toBe('./dashboard.html?embed=brain');expect(text()).not.toContain('صباح الخير، أحمد');expect(w.document.querySelector('[data-action="quick"]')).toBeNull();
   });
   it('renders every route and recovery state with one heading or one dedicated application frame and valid links', async () => {
-    const inventory = JSON.parse(readFileSync('docs/audits/tenant-pages-2026-09-27/inventory.json', 'utf8'));
+    const inventory = JSON.parse(readFileSync('docs/audits/tenant-features-2026-09-30/inventory.json', 'utf8'));
     const routes = inventory.routes;
     for (const page of routes) expect(w.TenantPages.find(page.route), page.route).toBeTruthy();
     expect(w.TENANT_PAGES.length).toBe(133);
     for (const page of w.TENANT_PAGES) {
-      route(page.route);
+      const concrete=page.route.replace(/:[^/]+/g,'1');
+      route(concrete);
       const embeddedPages = new Map([
         ["/merchant/dashboard", "dashboard.html?embed=brain"],
         ["/merchant/conversations", "inbox.html?embed=brain"],
@@ -78,9 +80,9 @@ describe('complete tenant page prototype', () => {
         ],
         ["/merchant/virtual-team", "personas.html?embed=brain"],
       ]);
-      const destination = page.redirect || page.route;
+      const destination = (page.redirect || page.route).replace(/:[^/]+/g,'1');
       if (/^\/merchant\/campaigns(?:\/|$)/.test(destination)) embeddedPages.set(destination, 'campaign-workspace.html?embed=brain&path=' + encodeURIComponent(destination));
-      if (/^\/merchant\/(?:services(?:\/|$)|order-notifications$|reviews$|booking-reviews$|scheduled-messages$|media-library$|promotions$|discounts$|referrals$|abandoned-carts$|occasion-campaigns$|service-categories$|service-packages$|staff$|bookings$|integrations\/(?:byaan|zid|calendly)$|zid\/(?:settings|products|sync-logs|callback)$|woocommerce\/(?:settings|products|orders|analytics)$|byaan-dashboard$|salla$|platform-integrations$|calendar(?:\/settings)?$)/.test(destination)) embeddedPages.set(destination, 'service-workspace.html?embed=brain&path=' + encodeURIComponent(destination));
+      if (validServicePath(destination)) embeddedPages.set(destination, 'service-workspace.html?embed=brain&path=' + encodeURIComponent(destination));
       if (embeddedPages.has(destination)) {
         await vi.waitFor(() =>
           expect(
@@ -155,14 +157,11 @@ describe('complete tenant page prototype', () => {
     expect(errors).toEqual([]);
   });
 
-  it('preserves unchecked form settings after save and reopening', () => {
-    const page = w.TENANT_PAGES.find((p: any) => p.kind === 'form' && p.labels.some((l: string) => /تفعيل|تنبيه|إشعارات/.test(l)));
-    route(page.route);
-    const checkbox = w.document.querySelector('input[type=checkbox]');
-    expect(checkbox).toBeTruthy(); checkbox.checked = false;
-    submit('settings'); route('/merchant/tools'); route(page.route);
-    expect(w.document.querySelector('input[type=checkbox]').checked).toBe(false);
-    expect(text()).toContain('تم حفظ التغييرات');
+  it.each(['settings','currency-settings','notification-settings','team','privacy-center','push-notifications','loyalty/customers','loyalty/settings','loyalty/tiers','loyalty/rewards'])('opens the actual %s page and preserves preview scope instead of the retired generic editor',name=>{
+    route('/merchant/'+name+'?lang=en&tenant=270&scenario=empty');
+    const frame=w.document.querySelector('#main iframe[data-brain-preview]'),url=new URL(frame.getAttribute('src'),w.location.href);
+    expect(url.pathname).toBe('/service-workspace.html');expect(Object.fromEntries(url.searchParams)).toEqual({lang:'en',tenant:'270',scenario:'empty',embed:'brain',path:'/merchant/'+name});
+    expect(w.document.querySelector('[data-page-form="settings"],[data-page-form="create"]')).toBeNull();expect(errors).toEqual([]);
   });
 
   it('uses the real import workspace and blocks approval when a row is invalid', async () => {
@@ -175,13 +174,11 @@ describe('complete tenant page prototype', () => {
     expect(w.document.querySelector('[data-page-action="confirm-import"]')).toBeNull();
   });
 
-  it('carries the selected plan into checkout instead of always showing the middle plan', () => {
-    route('/merchant/subscription/plans');
-    w.document.querySelector('[data-page-action="choose-plan"][data-plan="0"]').click();
-    route('/merchant/checkout');
-    expect(text()).toContain('البداية');
-    expect(text()).toContain('99 ر.س');
-    expect(text()).not.toContain('249 ر.س');
+  it('opens reviewed checkout with the selected plan and billing cycle instead of old fixed pricing',()=>{
+    route('/merchant/checkout?planId=3&cycle=yearly&tenant=270&lang=en');
+    const frame=w.document.querySelector('#main iframe[data-brain-preview]'),url=new URL(frame.getAttribute('src'),w.location.href);
+    expect(url.pathname).toBe('/service-workspace.html');expect(Object.fromEntries(url.searchParams)).toEqual({planId:'3',cycle:'yearly',tenant:'270',lang:'en',embed:'brain',path:'/merchant/checkout'});
+    expect(w.document.querySelector('[data-page-action="choose-plan"]')).toBeNull();expect(text()).not.toContain('249 ر.س');expect(errors).toEqual([]);
   });
 
   it('opens actual Salla recovery controls and preserves context instead of fake connection state', () => {

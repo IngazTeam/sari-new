@@ -18,7 +18,7 @@ describe('tenant continuation ledger remains aligned without losing work history
     expect(new Set(routes).size).toBe(routes.length);
   });
   it('refreshes a stale row and count without altering the dated history or follow-up notes',()=>{
-    const changed=structuredClone(coverage);const row=changed.routes.find((r:any)=>r.design==='موك أب عام');row.design='تفصيلي جزئي';row.gaps=['fixture | note'];
+    const changed=structuredClone(coverage);const row=changed.routes.find((r:any)=>r.design==='تفصيلي جزئي');row.design='موك أب عام';row.gaps=['fixture | note'];
     const result=refreshTenantLedger(ledger,changed);
     const heading='| الأولوية | الصفحة والمسار | حالة الموك أب | العمل الباقي أو شرط التحقق |';
     expect(result.slice(0,result.indexOf('- موك أب عام:'))).toBe(ledger.slice(0,ledger.indexOf('- موك أب عام:')));
@@ -31,6 +31,14 @@ describe('tenant continuation ledger remains aligned without losing work history
     for(const rows of [coverage.routes.slice(1),[...coverage.routes,coverage.routes[0]],[...coverage.routes.slice(1),{...coverage.routes[0],route:'/merchant/unreviewed'}]]){
       expect(()=>refreshTenantLedger(ledger,{routes:rows})).toThrow();
     }
+  });
+  it('clears a stale generic-page count when its last remaining page is reconciled',()=>{
+    const complete=structuredClone(coverage);for(const row of complete.routes)if(row.design==='موك أب عام')row.design='تفصيلي جزئي';
+    const stale=ledger.replace(/- موك أب عام: \*\*\d+\*\*/,'- موك أب عام: **2**');
+    const result=refreshTenantLedger(stale,complete);expect(result).toContain('- موك أب عام: **0** مسارًا.');expect(refreshTenantLedger(result,complete)).toBe(result);
+  });
+  it.each(['/merchant/team','/merchant/privacy-center'])('keeps the actual shared screen and documented limits in the register for %s',route=>{
+    const row=coverage.routes.find((r:any)=>r.route===route);expect(row.productionChanged).toBe(true);expect(row.design).toBe('تفصيلي جزئي');expect(row.designSections.join(' ')).toContain('مكوّن فعلي مشترك');expect(row.gaps.join(' ')).toContain('Safari/iPhone');
   });
   it('refuses an ambiguous ledger instead of discarding its history',()=>{
     expect(()=>refreshTenantLedger(ledger+'\n| الأولوية | الصفحة والمسار | حالة الموك أب | العمل الباقي أو شرط التحقق |',coverage)).toThrow();
