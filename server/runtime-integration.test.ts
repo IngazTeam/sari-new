@@ -13,7 +13,7 @@
  * Run: npx vitest run server/runtime-integration.test.ts
  */
 
-import { describe, it, expect } from 'vitest';
+import { beforeAll, describe, it, expect } from 'vitest';
 
 // ═══════════════════════════════════════════════════════════════
 // RT-01: Objection Detection Engine — Real execution
@@ -80,48 +80,46 @@ describe('RT-01: detectObjectionStrength — real execution', () => {
 // RT-02: URL Normalization — Real execution
 // ═══════════════════════════════════════════════════════════════
 describe('RT-02: normalizeUrl + urlsMatch — real execution', () => {
-  const getHelpers = async () => import('./routers-sari-brain');
+  let normalizeUrl: typeof import('./routers-sari-brain').normalizeUrl;
+  let urlsMatch: typeof import('./routers-sari-brain').urlsMatch;
+  // Cold router imports load transitive server modules. Keep that setup outside
+  // the 5-second behavior checks while still failing if initialization hangs.
+  beforeAll(async () => {
+    ({ normalizeUrl, urlsMatch } = await import('./routers-sari-brain'));
+  }, 15_000);
 
-  it('must strip https://', async () => {
-    const { normalizeUrl } = await getHelpers();
+  it('must strip https://', () => {
     expect(normalizeUrl('https://example.com')).toBe('example.com');
   });
 
-  it('must strip http://', async () => {
-    const { normalizeUrl } = await getHelpers();
+  it('must strip http://', () => {
     expect(normalizeUrl('http://example.com')).toBe('example.com');
   });
 
-  it('must strip www.', async () => {
-    const { normalizeUrl } = await getHelpers();
+  it('must strip www.', () => {
     expect(normalizeUrl('https://www.example.com')).toBe('example.com');
   });
 
-  it('must strip trailing slash', async () => {
-    const { normalizeUrl } = await getHelpers();
+  it('must strip trailing slash', () => {
     expect(normalizeUrl('https://example.com/')).toBe('example.com');
     expect(normalizeUrl('https://example.com/about/')).toBe('example.com/about');
   });
 
-  it('must lowercase', async () => {
-    const { normalizeUrl } = await getHelpers();
+  it('must lowercase', () => {
     expect(normalizeUrl('HTTPS://WWW.EXAMPLE.COM/About')).toBe('example.com/about');
   });
 
-  it('urlsMatch must match identical normalized URLs', async () => {
-    const { urlsMatch } = await getHelpers();
+  it('urlsMatch must match identical normalized URLs', () => {
     expect(urlsMatch('https://www.example.com/', 'http://example.com')).toBe(true);
     expect(urlsMatch('https://example.com/about/', 'http://www.example.com/about')).toBe(true);
   });
 
-  it('urlsMatch must NOT match different pages', async () => {
-    const { urlsMatch } = await getHelpers();
+  it('urlsMatch must NOT match different pages', () => {
     expect(urlsMatch('example.com', 'example.com/about')).toBe(false);
     expect(urlsMatch('example.com/shop', 'example.com/contact')).toBe(false);
   });
 
-  it('urlsMatch must NOT do parent/sub-page matching', async () => {
-    const { urlsMatch } = await getHelpers();
+  it('urlsMatch must NOT do parent/sub-page matching', () => {
     // This is INTENTIONAL — see JSDoc in routers-sari-brain.ts
     expect(urlsMatch('example.com', 'example.com/about')).toBe(false);
   });
