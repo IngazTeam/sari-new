@@ -10,6 +10,7 @@ import {
   incrementSubscriptionUsage,
   updateSubscription,
 } from './db';
+import { usageQuota } from '../shared/usage-workspace';
 import { TRIAL_USAGE_LIMITS } from '../shared/subscription-usage';
 export { TRIAL_USAGE_LIMITS } from '../shared/subscription-usage';
 
@@ -17,6 +18,7 @@ export { TRIAL_USAGE_LIMITS } from '../shared/subscription-usage';
  * Get active subscription for merchant
  */
 async function getActiveSubscription(merchantId: number) {
+  if (!Number.isSafeInteger(merchantId) || merchantId < 1 || merchantId > 2147483647) throw Error("Invalid usage tenant");
   const subscription = await getActiveSubscriptionByMerchantId(merchantId);
   
   if (!subscription || (subscription.status !== 'active' && subscription.status !== 'trial')) {
@@ -40,7 +42,6 @@ async function getPlanLimits(planId: number | null | undefined, status: string) 
   
   return {
     maxConversations: plan.conversationLimit,
-    maxMessages: (plan as typeof plan & { messageLimit?: number }).messageLimit ?? -1,
     maxVoiceMessages: plan.voiceMessageLimit,
   };
 }
@@ -59,8 +60,10 @@ export async function hasReachedConversationLimit(merchantId: number): Promise<b
     
     const limits = await getPlanLimits(subscription.planId, subscription.status);
     
-    // Unlimited plan
-    if (limits.maxConversations === -1) {
+    const quota = usageQuota(subscription.conversationsUsed, limits.maxConversations);
+    if (quota.used === null || quota.unlimited === null) return true;
+    // Unlimited allowance still requires a valid counter.
+    if (quota.unlimited) {
       return false;
     }
     
@@ -82,7 +85,7 @@ export async function hasReachedConversationLimit(merchantId: number): Promise<b
  */
 export async function hasReachedMessageLimit(merchantId: number): Promise<boolean> {
   try {
-    if (!Number.isSafeInteger(merchantId) || merchantId < 1) return true;
+    if (!Number.isSafeInteger(merchantId) || merchantId < 1 || merchantId > 2147483647) return true;
     const { assertReplyUsageSchema, lockReplyUsageCapacity } = await import('./ai/reply-usage-quota');
     const { checkoutTransaction } = await import('./ai/checkout-agreements');
     await assertReplyUsageSchema();
@@ -111,8 +114,10 @@ export async function hasReachedVoiceMessageLimit(merchantId: number): Promise<b
     
     const limits = await getPlanLimits(subscription.planId, subscription.status);
     
-    // Unlimited plan
-    if (limits.maxVoiceMessages === -1) {
+    const quota = usageQuota(subscription.voiceMessagesUsed, limits.maxVoiceMessages);
+    if (quota.used === null || quota.unlimited === null) return true;
+    // Unlimited allowance still requires a valid counter.
+    if (quota.unlimited) {
       return false;
     }
     
@@ -187,46 +192,6 @@ export async function incrementVoiceMessageUsage(merchantId: number): Promise<vo
 }
 
 /**
- * Get usage statistics for merchant
- */
-export async function getUsageStats(merchantId: number) {
-  try {
-    const subscription = await getActiveSubscription(merchantId);
-    
-    if (!subscription) {
-      return null;
-    }
-    
-    const limits = await getPlanLimits(subscription.planId, subscription.status);
-    
-    return {
-      conversations: {
-        used: subscription.conversationsUsed,
-        limit: limits.maxConversations,
-        percentage: limits.maxConversations === -1 ? 0 : (subscription.conversationsUsed / limits.maxConversations) * 100,
-        unlimited: limits.maxConversations === -1,
-      },
-      messages: {
-        used: subscription.messagesUsed,
-        limit: limits.maxMessages,
-        percentage: limits.maxMessages === -1 ? 0 : (subscription.messagesUsed / limits.maxMessages) * 100,
-        unlimited: limits.maxMessages === -1,
-      },
-      voiceMessages: {
-        used: subscription.voiceMessagesUsed,
-        limit: limits.maxVoiceMessages,
-        percentage: limits.maxVoiceMessages === -1 ? 0 : (subscription.voiceMessagesUsed / limits.maxVoiceMessages) * 100,
-        unlimited: limits.maxVoiceMessages === -1,
-      },
-      lastResetAt: subscription.lastResetAt,
-      nextResetAt: getNextResetDate(subscription.lastResetAt),
-    };
-  } catch (error: any) {
-    throw new Error('Usage statistics unavailable');
-  }
-}
-
-/**
  * Calculate next reset date (monthly)
  */
 function getNextResetDate(lastResetAt: string | Date): Date {
@@ -277,43 +242,5 @@ export async function resetMonthlyUsage(): Promise<void> {
     console.log(`[Usage] Monthly reset completed: ${resetCount} subscriptions reset`);
   } catch (error: any) {
     console.error('[Usage] Error resetting monthly usage:', error);
-  }
-}
-
-/**
- * Check if merchant is approaching any limit (>80%)
- */
-export async function isApproachingLimit(merchantId: number): Promise<{
-  approaching: boolean;
-  warnings: string[];
-}> {
-  try {
-    const stats = await getUsageStats(merchantId);
-    
-    if (!stats) {
-      return { approaching: false, warnings: [] };
-    }
-    
-    const warnings: string[] = [];
-    
-    if (!stats.conversations.unlimited && stats.conversations.percentage > 80) {
-      warnings.push(`المحادثات: ${stats.conversations.used}/${stats.conversations.limit} (${Math.round(stats.conversations.percentage)}%)`);
-    }
-    
-    if (!stats.messages.unlimited && stats.messages.percentage > 80) {
-      warnings.push(`الرسائل: ${stats.messages.used}/${stats.messages.limit} (${Math.round(stats.messages.percentage)}%)`);
-    }
-    
-    if (!stats.voiceMessages.unlimited && stats.voiceMessages.percentage > 80) {
-      warnings.push(`الرسائل الصوتية: ${stats.voiceMessages.used}/${stats.voiceMessages.limit} (${Math.round(stats.voiceMessages.percentage)}%)`);
-    }
-    
-    return {
-      approaching: warnings.length > 0,
-      warnings,
-    };
-  } catch (error: any) {
-    console.error('[Usage] Error checking if approaching limit:', error);
-    return { approaching: false, warnings: [] };
   }
 }

@@ -1,35 +1,44 @@
-import { beforeEach, expect, it, vi } from "vitest";
+import { beforeEach, afterEach, expect, it, vi } from "vitest";
 const m = vi.hoisted(() => ({ subscription: vi.fn(), plan: vi.fn() }));
 vi.mock("./db", () => ({
   getActiveSubscriptionByMerchantId: m.subscription,
   getPlanById: m.plan,
+  incrementSubscriptionUsage: vi.fn(),
+  getAllMerchants: vi.fn(),
+  updateSubscription: vi.fn(),
 }));
-import { getUsageStats } from "./usage-tracking";
+import {
+  hasReachedConversationLimit,
+  hasReachedVoiceMessageLimit,
+} from "./usage-tracking";
 beforeEach(() => {
   vi.resetAllMocks();
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  vi.spyOn(console, "warn").mockImplementation(() => {});
+  m.subscription.mockResolvedValue({
+    status: "active",
+    planId: 1,
+    conversationsUsed: 0,
+    voiceMessagesUsed: 0,
+  });
+  m.plan.mockResolvedValue({ conversationLimit: 10, voiceMessageLimit: 5 });
 });
-it("preserves a confirmed absent subscription", async () => {
-  m.subscription.mockResolvedValue(undefined);
-  expect(await getUsageStats(20)).toBeNull();
-  expect(m.plan).not.toHaveBeenCalled();
-});
-it("does not disguise a subscription query failure as an absent subscription", async () => {
-  m.subscription.mockRejectedValue(new Error("PRIVATE_SUBSCRIPTION_SQL"));
-  await expect(getUsageStats(20)).rejects.toThrow(
-    "Usage statistics unavailable"
-  );
-});
-it("does not disguise a plan query failure as an absent subscription", async () => {
-  m.subscription.mockResolvedValue({ status: "active", planId: 1 });
-  m.plan.mockRejectedValue(new Error("PRIVATE_PLAN_SQL"));
-  await expect(getUsageStats(20)).rejects.toThrow(
-    "Usage statistics unavailable"
-  );
-});
-it("does not invent an unlimited plan when the selected plan is missing", async () => {
-  m.subscription.mockResolvedValue({ status: "active", planId: 1 });
-  m.plan.mockResolvedValue(undefined);
-  await expect(getUsageStats(20)).rejects.toThrow(
-    "Usage statistics unavailable"
-  );
-});
+afterEach(() => vi.restoreAllMocks());
+it.each([hasReachedConversationLimit, hasReachedVoiceMessageLimit])(
+  "does not grant capacity on subscription read failure",
+  async check => {
+    m.subscription.mockRejectedValue(Error("PRIVATE_SUBSCRIPTION_SQL"));
+    expect(await check(20)).toBe(true);
+    m.subscription.mockResolvedValue(undefined);
+    expect(await check(20)).toBe(true);
+  }
+);
+it.each([hasReachedConversationLimit, hasReachedVoiceMessageLimit])(
+  "does not grant capacity on plan read failure or missing plan",
+  async check => {
+    m.plan.mockRejectedValue(Error("PRIVATE_PLAN_SQL"));
+    expect(await check(20)).toBe(true);
+    m.plan.mockResolvedValue(undefined);
+    expect(await check(20)).toBe(true);
+  }
+);

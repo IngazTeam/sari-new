@@ -1,263 +1,200 @@
-/**
- * Tests for Usage Tracking System
- */
-
-import { describe, it, expect, beforeAll } from 'vitest';
-import * as db from './db';
-import {
-  hasReachedConversationLimit,
-  hasReachedMessageLimit,
-  hasReachedVoiceMessageLimit,
-  incrementConversationUsage,
-  incrementMessageUsage,
-  incrementVoiceMessageUsage,
-  getUsageStats,
-  isApproachingLimit,
-} from './usage-tracking';
-
-describe('Usage Tracking System Tests', () => {
-  let testMerchantId: number;
-  let testPlanId: number;
-  let testSubscriptionId: number;
-
-  beforeAll(async () => {
-    // Get or create test merchant
-    const merchants = await db.getAllMerchants();
-    if (merchants.length > 0) {
-      testMerchantId = merchants[0].id;
-    } else {
-      const users = await db.getAllUsers();
-      if (users.length > 0) {
-        const merchant = await db.createMerchant({
-          userId: users[0].id,
-          businessName: 'Test Store',
-          phone: '966501234567',
-          status: 'active',
-        });
-        if (merchant) {
-          testMerchantId = merchant.id;
-        }
-      }
-    }
-
-    // Get or create test plan
-    const plans = await db.getAllPlans();
-    if (plans.length > 0) {
-      testPlanId = plans[0].id;
-    } else {
-      const plan = await db.createPlan({
-        name: 'Test Plan',
-        nameAr: 'باقة تجريبية',
-        priceMonthly: 100,
-        conversationLimit: 10,
-        voiceMessageLimit: 5,
-        features: JSON.stringify(['test']),
-        isActive: true,
+import { beforeEach, afterEach, expect, it, vi } from "vitest";
+const m = vi.hoisted(() => ({
+  subscription: vi.fn(),
+  plan: vi.fn(),
+  increment: vi.fn(),
+  all: vi.fn(),
+  update: vi.fn(),
+  schema: vi.fn(),
+  lock: vi.fn(),
+  tx: vi.fn(),
+  execute: vi.fn(),
+}));
+vi.mock("./db", () => ({
+  getActiveSubscriptionByMerchantId: m.subscription,
+  getPlanById: m.plan,
+  incrementSubscriptionUsage: m.increment,
+  getAllMerchants: m.all,
+  updateSubscription: m.update,
+}));
+vi.mock("./ai/reply-usage-quota", () => ({
+  assertReplyUsageSchema: m.schema,
+  lockReplyUsageCapacity: m.lock,
+}));
+vi.mock("./ai/checkout-agreements", () => ({ checkoutTransaction: m.tx }));
+import * as usage from "./usage-tracking";
+const checks = [
+  [
+    "conversations",
+    usage.hasReachedConversationLimit,
+    "conversationsUsed",
+    "conversationLimit",
+  ],
+  [
+    "voice",
+    usage.hasReachedVoiceMessageLimit,
+    "voiceMessagesUsed",
+    "voiceMessageLimit",
+  ],
+] as const;
+beforeEach(() => {
+  vi.resetAllMocks();
+  vi.spyOn(console, "warn").mockImplementation(() => {});
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  vi.spyOn(console, "log").mockImplementation(() => {});
+  m.subscription.mockResolvedValue({
+    id: 3,
+    merchantId: 20,
+    planId: 2,
+    status: "active",
+    conversationsUsed: 1,
+    voiceMessagesUsed: 1,
+  });
+  m.plan.mockResolvedValue({ conversationLimit: 10, voiceMessageLimit: 5 });
+  m.tx.mockImplementation(fn => fn({ execute: m.execute }));
+  m.schema.mockResolvedValue(undefined);
+  m.lock.mockResolvedValue({ subscriptionId: 3 });
+});
+afterEach(() => vi.restoreAllMocks());
+it.each(checks)(
+  "keeps finite, zero and unlimited %s limits distinct",
+  async (_name, check, counter, limit) => {
+    for (const [used, max, reached] of [
+      [1, 10, false],
+      [10, 10, true],
+      [12, 10, true],
+      [0, 0, true],
+      [12, -1, false],
+    ] as const) {
+      m.subscription.mockResolvedValue({
+        id: 3,
+        merchantId: 20,
+        planId: 2,
+        status: "active",
+        [counter]: used,
       });
-      if (plan) {
-        testPlanId = plan.id;
-      }
+      m.plan.mockResolvedValue({ [limit]: max });
+      expect(await check(20)).toBe(reached);
     }
-
-    // Create test subscription
-    const startDate = new Date();
-    const endDate = new Date();
-    endDate.setMonth(endDate.getMonth() + 1);
-
-    const subscription = await db.createSubscription({
-      merchantId: testMerchantId,
-      planId: testPlanId,
-      status: 'active',
-      conversationsUsed: 0,
-      messagesUsed: 0,
-      voiceMessagesUsed: 0,
-      startDate,
-      endDate,
-      autoRenew: true,
-    });
-
-    if (subscription) {
-      testSubscriptionId = subscription.id;
+  }
+);
+it.each(checks)(
+  "fails closed on malformed %s counters",
+  async (_name, check, counter) => {
+    for (const value of [
+      undefined,
+      null,
+      -1,
+      NaN,
+      Infinity,
+      1.5,
+      Number.MAX_SAFE_INTEGER + 1,
+      "1",
+    ]) {
+      m.subscription.mockResolvedValue({
+        id: 3,
+        merchantId: 20,
+        planId: 2,
+        status: "active",
+        [counter]: value,
+      });
+      expect(await check(20)).toBe(true);
     }
-  });
-
-  describe('Limit Checking', () => {
-    it('should return false when under conversation limit', async () => {
-      const reached = await hasReachedConversationLimit(testMerchantId);
-      expect(reached).toBe(false);
+  }
+);
+it.each(checks)(
+  "fails closed on malformed %s limits",
+  async (_name, check, _counter, limit) => {
+    for (const value of [
+      undefined,
+      null,
+      -2,
+      NaN,
+      Infinity,
+      1.5,
+      Number.MAX_SAFE_INTEGER + 1,
+      "10",
+    ]) {
+      m.plan.mockResolvedValue({ [limit]: value });
+      expect(await check(20)).toBe(true);
+    }
+  }
+);
+it.each(checks)(
+  "uses explicit planless trial %s limits",
+  async (_name, check, counter) => {
+    m.subscription.mockResolvedValue({
+      id: 3,
+      merchantId: 20,
+      planId: null,
+      status: "trial",
+      [counter]: 0,
     });
-
-    it('should return false when under message limit', async () => {
-      const reached = await hasReachedMessageLimit(testMerchantId);
-      expect(reached).toBe(false);
+    expect(await check(20)).toBe(false);
+    expect(m.plan).not.toHaveBeenCalled();
+  }
+);
+it.each(checks)(
+  "does not grant %s capacity without active subscription or a valid plan",
+  async (_name, check) => {
+    for (const status of ["pending", "expired", "cancelled"]) {
+      m.subscription.mockResolvedValue({ status, planId: 2 });
+      expect(await check(20)).toBe(true);
+    }
+    m.subscription.mockResolvedValue(null);
+    expect(await check(20)).toBe(true);
+    m.subscription.mockResolvedValue({
+      id: 3,
+      merchantId: 20,
+      planId: null,
+      status: "active",
     });
-
-    it('should return false when under voice message limit', async () => {
-      const reached = await hasReachedVoiceMessageLimit(testMerchantId);
-      expect(reached).toBe(false);
-    });
-  });
-
-  describe('Usage Increment', () => {
-    it('should increment conversation usage', async () => {
-      const before = await getUsageStats(testMerchantId);
-      const beforeCount = before?.conversations.used || 0;
-
-      await incrementConversationUsage(testMerchantId);
-
-      const after = await getUsageStats(testMerchantId);
-      const afterCount = after?.conversations.used || 0;
-
-      expect(afterCount).toBe(beforeCount + 1);
-    });
-
-    it('should increment message usage', async () => {
-      const before = await getUsageStats(testMerchantId);
-      const beforeCount = before?.messages.used || 0;
-
-      await incrementMessageUsage(testMerchantId);
-
-      const after = await getUsageStats(testMerchantId);
-      const afterCount = after?.messages.used || 0;
-
-      expect(afterCount).toBe(beforeCount + 1);
-    });
-
-    it('should increment voice message usage', async () => {
-      const before = await getUsageStats(testMerchantId);
-      const beforeCount = before?.voiceMessages.used || 0;
-
-      await incrementVoiceMessageUsage(testMerchantId);
-
-      const after = await getUsageStats(testMerchantId);
-      const afterCount = after?.voiceMessages.used || 0;
-
-      expect(afterCount).toBe(beforeCount + 1);
-    });
-  });
-
-  describe('Usage Statistics', () => {
-    it('should return usage stats', async () => {
-      const stats = await getUsageStats(testMerchantId);
-
-      expect(stats).toBeDefined();
-      expect(stats).toHaveProperty('conversations');
-      expect(stats).toHaveProperty('messages');
-      expect(stats).toHaveProperty('voiceMessages');
-      expect(stats).toHaveProperty('lastResetAt');
-      expect(stats).toHaveProperty('nextResetAt');
-    });
-
-    it('should calculate percentage correctly', async () => {
-      const stats = await getUsageStats(testMerchantId);
-
-      if (stats && !stats.conversations.unlimited) {
-        const expectedPercentage = (stats.conversations.used / stats.conversations.limit) * 100;
-        expect(stats.conversations.percentage).toBeCloseTo(expectedPercentage, 1);
-      }
-    });
-
-    it('should identify unlimited plans', async () => {
-      const stats = await getUsageStats(testMerchantId);
-
-      if (stats) {
-        // Messages are unlimited in current schema
-        expect(stats.messages.unlimited).toBe(true);
-      }
-    });
-  });
-
-  describe('Approaching Limit Detection', () => {
-    it('should detect when not approaching limit', async () => {
-      // Reset usage to low level
-      await db.updateSubscription(testSubscriptionId, {
-        conversationsUsed: 1,
-        messagesUsed: 1,
-        voiceMessagesUsed: 1,
-      });
-
-      const result = await isApproachingLimit(testMerchantId);
-
-      expect(result.approaching).toBe(false);
-      expect(result.warnings).toHaveLength(0);
-    });
-
-    it('should detect when approaching conversation limit', async () => {
-      // Set usage to 85% (above 80% threshold)
-      const plan = await db.getPlanById(testPlanId);
-      if (plan) {
-        const highUsage = Math.ceil(plan.conversationLimit * 0.85);
-
-        await db.updateSubscription(testSubscriptionId, {
-          conversationsUsed: highUsage,
-        });
-
-        const result = await isApproachingLimit(testMerchantId);
-
-        expect(result.approaching).toBe(true);
-        expect(result.warnings.length).toBeGreaterThan(0);
-        expect(result.warnings[0]).toContain('المحادثات');
-      }
-    });
-  });
-
-  describe('Limit Enforcement', () => {
-    it('should block when conversation limit reached', async () => {
-      // Set usage to limit
-      const plan = await db.getPlanById(testPlanId);
-      if (plan) {
-        await db.updateSubscription(testSubscriptionId, {
-          conversationsUsed: plan.conversationLimit,
-        });
-
-        const reached = await hasReachedConversationLimit(testMerchantId);
-
-        expect(reached).toBe(true);
-      }
-    });
-
-    it('should block when voice message limit reached', async () => {
-      // Set usage to limit
-      const plan = await db.getPlanById(testPlanId);
-      if (plan) {
-        await db.updateSubscription(testSubscriptionId, {
-          voiceMessagesUsed: plan.voiceMessageLimit,
-        });
-
-        const reached = await hasReachedVoiceMessageLimit(testMerchantId);
-
-        expect(reached).toBe(true);
-      }
-    });
-
-    it('should not block unlimited messages', async () => {
-      // Messages are unlimited (-1)
-      await db.updateSubscription(testSubscriptionId, {
-        messagesUsed: 999999,
-      });
-
-      const reached = await hasReachedMessageLimit(testMerchantId);
-
-      expect(reached).toBe(false);
-    });
-  });
-
-  describe('Error Handling', () => {
-    it('should handle merchant without subscription', async () => {
-      const nonExistentMerchantId = 999999;
-
-      const reached = await hasReachedConversationLimit(nonExistentMerchantId);
-
-      // Should block if no subscription
-      expect(reached).toBe(true);
-    });
-
-    it('should return null stats for merchant without subscription', async () => {
-      const nonExistentMerchantId = 999999;
-
-      const stats = await getUsageStats(nonExistentMerchantId);
-
-      expect(stats).toBeNull();
-    });
-  });
+    expect(await check(20)).toBe(true);
+  }
+);
+it.each([
+  ["conversations", usage.incrementConversationUsage, [3, 1, 0, 0]],
+  ["messages", usage.incrementMessageUsage, [3, 0, 0, 1]],
+  ["voice", usage.incrementVoiceMessageUsage, [3, 0, 1, 0]],
+] as const)(
+  "increments only the selected subscription's %s counter",
+  async (_name, increment, args) => {
+    await increment(20);
+    expect(m.subscription).toHaveBeenCalledWith(20);
+    expect(m.increment).toHaveBeenCalledWith(...args);
+    expect(m.all).not.toHaveBeenCalled();
+    expect(m.update).not.toHaveBeenCalled();
+  }
+);
+it("uses the atomic reply capacity gate for message admission", async () => {
+  expect(await usage.hasReachedMessageLimit(20)).toBe(false);
+  expect(m.schema).toHaveBeenCalledOnce();
+  expect(m.execute).toHaveBeenCalledWith(
+    "SELECT id FROM merchants WHERE id=? FOR UPDATE",
+    [20]
+  );
+  expect(m.lock).toHaveBeenCalledWith(
+    expect.objectContaining({ execute: m.execute }),
+    20
+  );
+  expect(m.plan).not.toHaveBeenCalled();
+  m.lock.mockRejectedValue(Error("Capacity unavailable"));
+  expect(await usage.hasReachedMessageLimit(20)).toBe(true);
+});
+it.each([0, -1, 1.5, NaN, Infinity, 2147483648])(
+  "blocks invalid tenant %s without effects",
+  async id => {
+    for (const check of [
+      usage.hasReachedMessageLimit,
+      usage.hasReachedConversationLimit,
+      usage.hasReachedVoiceMessageLimit,
+    ])
+      expect(await check(id)).toBe(true);
+    expect(m.tx).not.toHaveBeenCalled();
+    expect(m.subscription).not.toHaveBeenCalled();
+  }
+);
+it("does not export superseded usage snapshots or silent warning readers", () => {
+  expect(usage).not.toHaveProperty("getUsageStats");
+  expect(usage).not.toHaveProperty("isApproachingLimit");
 });
