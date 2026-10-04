@@ -72,10 +72,11 @@ async function getAuthenticatedClient(merchantId: number, redactErrors=false) {
 export async function addSheet(
   merchantId: number,
   spreadsheetId: string,
-  sheetTitle: string
+  sheetTitle: string,
+  options?: {redactErrors:true}
 ): Promise<{ success: boolean; sheetId?: number; message: string }> {
   try {
-    const auth = await getAuthenticatedClient(merchantId);
+    const auth = await getAuthenticatedClient(merchantId,Boolean(options?.redactErrors));
     if (!auth) {
       return { success: false, message: 'Google Sheets غير مربوط' };
     }
@@ -105,10 +106,10 @@ export async function addSheet(
       message: 'تم إضافة Sheet بنجاح',
     };
   } catch (error: any) {
-    console.error('[Google Sheets] Error adding sheet:', error);
+    console.error('[Google Sheets] Error adding sheet:', options?.redactErrors ? 'unconfirmed' : error);
     return {
       success: false,
-      message: error.message || 'فشل إضافة Sheet',
+      message: options?.redactErrors ? 'تعذر تأكيد إضافة Sheet' : error.message || 'فشل إضافة Sheet',
     };
   }
 }
@@ -120,10 +121,11 @@ export async function writeToSheet(
   merchantId: number,
   spreadsheetId: string,
   range: string,
-  values: any[][]
+  values: any[][],
+  options?: {raw:true}
 ): Promise<{ success: boolean; message: string }> {
   try {
-    const auth = await getAuthenticatedClient(merchantId);
+    const auth = await getAuthenticatedClient(merchantId,Boolean(options?.raw));
     if (!auth) {
       return { success: false, message: 'Google Sheets غير مربوط' };
     }
@@ -133,7 +135,7 @@ export async function writeToSheet(
     await sheets.spreadsheets.values.update({
       spreadsheetId,
       range,
-      valueInputOption: 'USER_ENTERED',
+      valueInputOption: options?.raw ? 'RAW' : 'USER_ENTERED',
       requestBody: {
         values,
       },
@@ -144,10 +146,10 @@ export async function writeToSheet(
       message: 'تم كتابة البيانات بنجاح',
     };
   } catch (error: any) {
-    console.error('[Google Sheets] Error writing to sheet:', error);
+    console.error('[Google Sheets] Error writing to sheet:', options?.raw ? 'unconfirmed' : error);
     return {
       success: false,
-      message: error.message || 'فشل كتابة البيانات',
+      message: options?.raw ? 'تعذر تأكيد كتابة البيانات' : error.message || 'فشل كتابة البيانات',
     };
   }
 }
@@ -164,7 +166,7 @@ export async function appendToSheet(
     evidence?: SheetEvidenceHooks & { integrationId:number } }
 ): Promise<{ success: boolean; message: string }> {
   try {
-    const auth = await getAuthenticatedClient(merchantId,Boolean(options?.evidence));
+    const auth = await getAuthenticatedClient(merchantId,Boolean(options?.raw));
     if (!auth) {
       return { success: false, message: 'Google Sheets غير مربوط' };
     }
@@ -209,10 +211,10 @@ export async function appendToSheet(
       message: 'تم إضافة البيانات بنجاح',
     };
   } catch (error: any) {
-    console.error('[Google Sheets] Error appending to sheet:', options?.evidence ? 'append unconfirmed' : error);
+    console.error('[Google Sheets] Error appending to sheet:', options?.raw ? 'append unconfirmed' : error);
     return {
       success: false,
-      message: options?.evidence ? 'تعذر تأكيد إضافة البيانات' : error.message || 'فشل إضافة البيانات',
+      message: options?.raw ? 'تعذر تأكيد إضافة البيانات' : error.message || 'فشل إضافة البيانات',
     };
   }
 }

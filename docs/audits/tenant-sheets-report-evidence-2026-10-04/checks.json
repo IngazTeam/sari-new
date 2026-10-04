@@ -1,0 +1,67 @@
+{
+  "unit": {
+    "passed": 115,
+    "failed": 0,
+    "files": [
+      {
+        "file": "sheets-conversation-export.test.ts",
+        "tests": 14
+      },
+      {
+        "file": "sheets-cron-review-boundary.test.ts",
+        "tests": 13
+      },
+      {
+        "file": "sheets-inventory-access.test.ts",
+        "tests": 4
+      },
+      {
+        "file": "sheets-literal-write.test.ts",
+        "tests": 3
+      },
+      {
+        "file": "sheets-report-delivery.test.ts",
+        "tests": 13
+      },
+      {
+        "file": "sheets-report-source.test.ts",
+        "tests": 24
+      },
+      {
+        "file": "sheets-selected-operations.test.ts",
+        "tests": 30
+      },
+      {
+        "file": "sheets-setup-retirement.test.ts",
+        "tests": 5
+      },
+      {
+        "file": "sheets-user-operation.test.ts",
+        "tests": 9
+      }
+    ]
+  },
+  "mysql": {
+    "passed": 19,
+    "failed": 0,
+    "files": [
+      {
+        "file": "sheets-conversation-export.mysql.test.ts",
+        "tests": 12
+      },
+      {
+        "file": "sheets-report-source.mysql.test.ts",
+        "tests": 7
+      }
+    ]
+  },
+  "release": {
+    "passed": 66,
+    "failed": 0
+  },
+  "typescript": "passed",
+  "production_build": "passed",
+  "browser": "backend phase; no new visual proof",
+  "external_io": "provider mocked; none",
+  "deployment": false
+}
