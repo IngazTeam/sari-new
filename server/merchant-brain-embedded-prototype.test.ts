@@ -345,3 +345,11 @@ it('keeps the mock payment handoff inside the central route',()=>{
  send({type:'sary-brain-preview',action:'serviceState',search:'path=/merchant/payments&tenant=269&lang=ar'});
  expect(w.location.hash).toBe('#/page/merchant/payments?tenant=269&lang=ar');
 });
+
+it.each(['/merchant/payment/success','/merchant/payment/cancel'])('preserves the return page %s and rejects forged or duplicated reference parameters', path => {
+ frame.setAttribute('src','./service-workspace.html?embed=brain&path='+path);w.history.replaceState(null,'','#/page'+path);w.syncServicePreviewContext=vi.fn();
+ const message={type:'sary-brain-preview',action:'serviceState',search:`path=${path}&tap_id=chg_sample_12345&lang=en&scenario=empty`};
+ for(const search of [message.search+'&tap_id=chg_other_12345',message.search+'&merchantId=999',`path=${path}&tap_id=https://evil.test`,`path=${path}&subscriptionId=2147483648`,`path=${path}&token=`+'x'.repeat(256)])send({...message,search});
+ send(message,'https://evil.test');send(message,undefined,w);expect(w.location.hash).toBe('#/page'+path);
+ send(message);expect(w.location.hash).toBe('#/page'+path+'?tap_id=chg_sample_12345&lang=en&scenario=empty');expect(frame.isConnected).toBe(true);
+});

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-04T10:38:08.781Z",
+  "generatedAt": "2026-10-04T10:46:47.420Z",
   "scope": "Static JSX, local TS/TSX dependencies, query/mutation hooks, traced imperative utility reads, browser fetches and unresolved read candidates, semantic role controls, static choices, conditional controls and literal merchant links. Generic UI primitives are excluded. Dynamic imports outside App, computed routes, lexical shadowing, dynamic controls, permissions, provider states and runtime behavior require separate review; no runtime completeness claim.",
   "routeCount": 126,
   "sharedSurfaces": [
@@ -20439,8 +20439,26 @@
     },
     {
       "file": "client/src/pages/merchant/PaymentSuccess.tsx",
-      "hash": "868d6ba83d37",
+      "hash": "c60db5be6b67",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [
+        "client/src/components/merchant/PaymentReturnWorkspace.tsx"
+      ],
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/components/merchant/PaymentReturnWorkspace.tsx",
+      "hash": "3c21f37c3c7c",
       "queries": [
+        "payment.getPaymentCallbackStatus",
         "subscriptionPayments.verifyPayment"
       ],
       "mutations": [],
@@ -20448,35 +20466,41 @@
       "browserRequests": [],
       "sections": [
         {
-          "label": "جاري التحقق من الدفع...",
-          "line": 45,
-          "tag": "h2"
-        },
-        {
-          "label": "تم الدفع بنجاح! تعذر تأكيد الدفع الدفع قيد التأكيد",
-          "line": 73,
-          "tag": "h2"
+          "label": "",
+          "line": 124,
+          "tag": "h1"
         }
       ],
       "choices": [],
       "handlers": [],
       "queryStates": [
         {
-          "query": "subscriptionPayments.verifyPayment",
-          "binding": "paymentStatus",
-          "line": 23,
-          "errorSignal": true,
+          "query": "payment.getPaymentCallbackStatus",
+          "binding": "tap",
+          "line": 50,
+          "errorSignal": false,
           "loadingSignal": false,
-          "enabled": "validReference"
+          "enabled": "selection.kind === \"tap\" "
+        },
+        {
+          "query": "subscriptionPayments.verifyPayment",
+          "binding": "legacy",
+          "line": 54,
+          "errorSignal": false,
+          "loadingSignal": false,
+          "enabled": "selection.kind === \"legacy\" "
         }
       ],
       "conditions": [],
-      "imports": [],
-      "controlCount": 3
+      "imports": [
+        "client/src/lib/usage-workspace-view.ts",
+        "client/src/lib/payment-return-view.ts"
+      ],
+      "controlCount": 5
     },
     {
-      "file": "client/src/pages/merchant/PaymentCancel.tsx",
-      "hash": "0b99ac9cdaca",
+      "file": "client/src/lib/payment-return-view.ts",
+      "hash": "a76664ac3034",
       "queries": [],
       "mutations": [],
       "imperativeReads": [],
@@ -20487,7 +20511,24 @@
       "queryStates": [],
       "conditions": [],
       "imports": [],
-      "controlCount": 2
+      "controlCount": 0
+    },
+    {
+      "file": "client/src/pages/merchant/PaymentCancel.tsx",
+      "hash": "29d14bb8055a",
+      "queries": [],
+      "mutations": [],
+      "imperativeReads": [],
+      "browserRequests": [],
+      "sections": [],
+      "choices": [],
+      "handlers": [],
+      "queryStates": [],
+      "conditions": [],
+      "imports": [
+        "client/src/components/merchant/PaymentReturnWorkspace.tsx"
+      ],
+      "controlCount": 0
     },
     {
       "file": "client/src/pages/merchant/Tools.tsx",
@@ -29370,7 +29411,10 @@
       "files": [
         "client/src/components/merchant/WorkspaceState.tsx",
         "client/src/lib/merchant-viewport.ts",
-        "client/src/pages/merchant/PaymentSuccess.tsx"
+        "client/src/pages/merchant/PaymentSuccess.tsx",
+        "client/src/components/merchant/PaymentReturnWorkspace.tsx",
+        "client/src/lib/usage-workspace-view.ts",
+        "client/src/lib/payment-return-view.ts"
       ],
       "controls": [
         "efa0ae8d2a9b",
@@ -29383,11 +29427,14 @@
         "0da8aaca8584",
         "9b15991becb0",
         "8179a71d3d3b",
-        "c716a20775fe",
-        "34e38b4cf8ec",
-        "2f96604b78c4"
+        "55a0a1682530",
+        "c9618960d461",
+        "cd52e3abec76",
+        "3e57feb41e02",
+        "52ad1d309c82"
       ],
       "queries": [
+        "payment.getPaymentCallbackStatus",
         "subscriptionPayments.verifyPayment"
       ],
       "mutations": [],
@@ -29405,7 +29452,10 @@
       "files": [
         "client/src/components/merchant/WorkspaceState.tsx",
         "client/src/lib/merchant-viewport.ts",
-        "client/src/pages/merchant/PaymentCancel.tsx"
+        "client/src/pages/merchant/PaymentCancel.tsx",
+        "client/src/components/merchant/PaymentReturnWorkspace.tsx",
+        "client/src/lib/usage-workspace-view.ts",
+        "client/src/lib/payment-return-view.ts"
       ],
       "controls": [
         "efa0ae8d2a9b",
@@ -29418,10 +29468,16 @@
         "0da8aaca8584",
         "9b15991becb0",
         "8179a71d3d3b",
-        "a1038f380a0d",
-        "5e3f2024c83d"
+        "55a0a1682530",
+        "c9618960d461",
+        "cd52e3abec76",
+        "3e57feb41e02",
+        "52ad1d309c82"
       ],
-      "queries": [],
+      "queries": [
+        "payment.getPaymentCallbackStatus",
+        "subscriptionPayments.verifyPayment"
+      ],
       "mutations": [],
       "imperativeReads": [],
       "browserRequests": []
@@ -90314,99 +90370,59 @@
       "review": "source-inventoried"
     },
     {
-      "id": "c716a20775fe",
-      "file": "client/src/pages/merchant/PaymentSuccess.tsx",
-      "line": 58,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "مراجعة الاشتراك",
-      "section": "جاري التحقق من الدفع...",
-      "binding": "() => setLocation('/merchant/subscriptions')",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "34e38b4cf8ec",
-      "file": "client/src/pages/merchant/PaymentSuccess.tsx",
-      "line": 93,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "عرض الاشتراكات",
-      "section": "تم الدفع بنجاح! تعذر تأكيد الدفع الدفع قيد التأكيد",
-      "binding": "() => setLocation('/merchant/subscriptions')",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "2f96604b78c4",
-      "file": "client/src/pages/merchant/PaymentSuccess.tsx",
-      "line": 99,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "العودة إلى لوحة التحكم",
-      "section": "تم الدفع بنجاح! تعذر تأكيد الدفع الدفع قيد التأكيد",
-      "binding": "() => setLocation('/merchant/dashboard')",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "a1038f380a0d",
-      "file": "client/src/pages/merchant/PaymentCancel.tsx",
-      "line": 10,
-      "tag": "Button",
-      "role": "",
-      "kind": "action",
-      "label": "مراجعة الاشتراك",
-      "section": "PaymentCancel",
-      "binding": "",
-      "type": "text",
-      "options": [],
-      "min": "",
-      "max": "",
-      "maxLength": "",
-      "required": false,
-      "conditional": false,
-      "conditions": [],
-      "disabled": "",
-      "review": "source-inventoried"
-    },
-    {
-      "id": "5e3f2024c83d",
-      "file": "client/src/pages/merchant/PaymentCancel.tsx",
-      "line": 10,
+      "id": "55a0a1682530",
+      "file": "client/src/components/merchant/PaymentReturnWorkspace.tsx",
+      "line": 137,
       "tag": "Link",
       "role": "",
       "kind": "action",
-      "label": "مراجعة الاشتراك",
-      "section": "PaymentCancel",
-      "binding": "/merchant/subscriptions",
+      "label": "",
+      "section": "PaymentReturnWorkspace",
+      "binding": "/merchant/usage?tab=subscription",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "c9618960d461",
+      "file": "client/src/components/merchant/PaymentReturnWorkspace.tsx",
+      "line": 142,
+      "tag": "button",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "PaymentReturnWorkspace",
+      "binding": "refresh",
+      "type": "button",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": false,
+      "conditions": [
+        "valid"
+      ],
+      "disabled": "source.isFetching",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "cd52e3abec76",
+      "file": "client/src/components/merchant/PaymentReturnWorkspace.tsx",
+      "line": 148,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "PaymentReturnWorkspace",
+      "binding": "/login",
       "type": "text",
       "options": [],
       "min": "",
@@ -90414,6 +90430,50 @@
       "maxLength": "",
       "required": false,
       "conditional": false,
+      "conditions": [
+        "source.error?.data?.code === \"UNAUTHORIZED\" && valid"
+      ],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "3e57feb41e02",
+      "file": "client/src/components/merchant/PaymentReturnWorkspace.tsx",
+      "line": 150,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "PaymentReturnWorkspace",
+      "binding": "/merchant/subscription",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
+      "conditions": [],
+      "disabled": "",
+      "review": "source-inventoried"
+    },
+    {
+      "id": "52ad1d309c82",
+      "file": "client/src/components/merchant/PaymentReturnWorkspace.tsx",
+      "line": 151,
+      "tag": "Link",
+      "role": "",
+      "kind": "action",
+      "label": "",
+      "section": "PaymentReturnWorkspace",
+      "binding": "/merchant/dashboard",
+      "type": "text",
+      "options": [],
+      "min": "",
+      "max": "",
+      "maxLength": "",
+      "required": false,
+      "conditional": true,
       "conditions": [],
       "disabled": "",
       "review": "source-inventoried"

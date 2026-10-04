@@ -13486,5 +13486,30 @@
     "completed": "Plan changed",
     "changePlan": "Choose another plan",
     "limits": "Plan allowances"
+  },
+  "paymentReturnUx": {
+    "eyebrow": "Subscription and billing",
+    "checking": "Checking the payment record",
+    "checkingBody": "Reading the latest recorded status of this payment.",
+    "completed": "Payment is recorded as completed",
+    "completedBody": "A confirmation is recorded for this payment. Open your subscription to see your current plan and status.",
+    "failed": "Payment is unsuccessful or refunded",
+    "failedBody": "This payment is not currently recorded as completed. Review your subscription payment history before creating another attempt.",
+    "pending": "Waiting for payment confirmation",
+    "pendingBody": "There is no final confirmation in the record yet. Keep your current attempt and do not pay again.",
+    "unavailable": "Payment status is unavailable",
+    "unavailableBody": "We could not read the result now. This does not mean the payment succeeded or failed. Refresh the status or review your subscription.",
+    "invalid": "The return link is incomplete",
+    "invalidBody": "We could not identify a clear payment reference in this link. Review your subscription and saved attempt before starting another payment.",
+    "interrupted": "You returned from checkout",
+    "interruptedBody": "Returning or closing the page does not prove the payment was cancelled. Check your subscription payment history before trying again.",
+    "refresh": "Refresh payment status",
+    "subscription": "Review my subscription",
+    "history": "Subscription payment history",
+    "dashboard": "Dashboard",
+    "source": "This is the Sari payment record only. This page does not create a charge or change your subscription.",
+    "noRepeat": "Automatic updates have stopped. You can refresh the status manually without paying again.",
+    "autoCheck": "We refresh the record for up to one minute. There is no need to pay again.",
+    "signIn": "Sign in to review the result"
   }
 }

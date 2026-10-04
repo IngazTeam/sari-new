@@ -1,6 +1,6 @@
 {
   "baseline": "docs/audits/tenant-features-2026-09-28",
-  "generatedAt": "2026-10-04T10:38:08.781Z",
+  "generatedAt": "2026-10-04T10:46:47.420Z",
   "scope": "Counts reflect both code changes and improved static extraction, not numbers of newly implemented features.",
   "counts": {
     "before": {
@@ -10,7 +10,7 @@
     },
     "after": {
       "routes": 126,
-      "files": 512,
+      "files": 514,
       "controls": 2763
     }
   },
@@ -332,6 +332,8 @@
     "client/src/lib/subscription-checkout-navigation.ts",
     "client/src/lib/plan-catalog-view.ts",
     "client/src/lib/subscription-checkout-recovery.ts",
+    "client/src/components/merchant/PaymentReturnWorkspace.tsx",
+    "client/src/lib/payment-return-view.ts",
     "client/src/components/merchant/MerchantToolsDirectory.tsx",
     "client/src/components/merchant/navigation.ts",
     "client/src/components/merchant/tools.ts",
@@ -459,6 +461,8 @@
     "client/src/pages/merchant/SubscriptionPlans.tsx",
     "client/src/pages/ComparePlans.tsx",
     "client/src/pages/merchant/Checkout.tsx",
+    "client/src/pages/merchant/PaymentSuccess.tsx",
+    "client/src/pages/merchant/PaymentCancel.tsx",
     "client/src/pages/merchant/Tools.tsx",
     "client/src/pages/Customers.tsx",
     "client/src/pages/SmartAnalysis.tsx",
@@ -2620,18 +2624,23 @@
     {
       "route": "/merchant/payment/success",
       "controlsBefore": 3,
-      "controlsNow": 13,
+      "controlsNow": 15,
       "removedQueries": [],
-      "addedQueries": [],
+      "addedQueries": [
+        "payment.getPaymentCallbackStatus"
+      ],
       "removedMutations": [],
       "addedMutations": []
     },
     {
       "route": "/merchant/payment/cancel",
       "controlsBefore": 2,
-      "controlsNow": 12,
+      "controlsNow": 15,
       "removedQueries": [],
-      "addedQueries": [],
+      "addedQueries": [
+        "payment.getPaymentCallbackStatus",
+        "subscriptionPayments.verifyPayment"
+      ],
       "removedMutations": [],
       "addedMutations": []
     },
