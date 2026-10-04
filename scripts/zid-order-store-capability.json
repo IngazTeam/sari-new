@@ -78,6 +78,7 @@
     "sheets-scoped-user-operations-v1",
     "sheets-report-evidence-v1",
     "sheets-export-reviewed-destination-v1",
-    "sheets-reports-reviewed-destinations-v1"
+    "sheets-reports-reviewed-destinations-v1",
+    "sheets-unreviewed-sync-retired-v1"
   ]
 }

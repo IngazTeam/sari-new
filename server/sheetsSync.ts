@@ -1,6 +1,6 @@
 /**
  * نظام مزامنة البيانات مع Google Sheets
- * يحفظ الطلبات، العملاء المحتملين، والمحادثات تلقائياً
+ * أثر مزامنة الطلبات الداخلي، محكوم بنطاق التاجر ومراجعة الإرسال
  */
 
 import {
@@ -15,10 +15,12 @@ import type { SheetEvidenceHooks } from './integrations/salla-sheet-evidence';
 /**
  * مزامنة طلب جديد إلى Google Sheets
  */
-export async function syncOrderToSheets(orderId: number, guard?: { merchantId:number; beforeSend:()=>Promise<void>; evidence?:SheetEvidenceHooks }): Promise<{
+export async function syncOrderToSheets(orderId: number, guard: { merchantId:number; beforeSend:()=>Promise<void>; evidence?:SheetEvidenceHooks }): Promise<{
   success: boolean;
   message: string;
 }> {
+  // A direct import must not revive the retired unreviewed user route.
+  if(!Number.isSafeInteger(orderId)||orderId<1||!guard||!Number.isSafeInteger(guard.merchantId)||guard.merchantId<1||typeof guard.beforeSend!=='function')return {success:false,message:'تعذر تأكيد مزامنة الطلب'};
   try {
     const order = await getOrderById(orderId);
     if (!order) {
@@ -96,71 +98,10 @@ export async function syncOrderToSheets(orderId: number, guard?: { merchantId:nu
 
     return result;
   } catch (error: any) {
-    console.error('[Sheets Sync] Error syncing order:', guard?.evidence ? 'sync unconfirmed' : error);
+    console.error('[Sheets Sync] Error syncing order:', 'sync unconfirmed');
     return {
       success: false,
-      message: guard?.evidence ? 'تعذر تأكيد مزامنة الطلب' : error.message || 'فشل مزامنة الطلب',
-    };
-  }
-}
-
-/**
- * مزامنة عميل محتمل إلى Google Sheets
- */
-export async function syncLeadToSheets(
-  merchantId: number,
-  lead: {
-    customerName: string;
-    customerPhone: string;
-    source: string;
-    status: string;
-    lastInteraction: Date;
-    messageCount: number;
-    notes?: string;
-  }
-): Promise<{ success: boolean; message: string }> {
-  try {
-    const integration = await getGoogleIntegration(merchantId, 'sheets');
-
-    if (!integration || !integration.isActive || !integration.sheetId) {
-      return { success: false, message: 'Google Sheets غير مربوط' };
-    }
-
-    const spreadsheetId = integration.sheetId;
-
-    const dateStr = new Date().toLocaleDateString('ar-SA');
-    const lastInteractionStr = lead.lastInteraction.toLocaleDateString('ar-SA');
-
-    const rowData = [[
-      dateStr,
-      lead.customerName,
-      lead.customerPhone,
-      lead.source,
-      lead.status,
-      lastInteractionStr,
-      lead.messageCount.toString(),
-      lead.notes || '-'
-    ]];
-
-    const result = await sheets.appendToSheet(
-      merchantId,
-      spreadsheetId,
-      'العملاء المحتملين!A:H',
-      rowData
-    );
-
-    if (result.success) {
-      await updateGoogleIntegration(integration.id, {
-        lastSync: new Date().toISOString(),
-      });
-    }
-
-    return result;
-  } catch (error: any) {
-    console.error('[Sheets Sync] Error syncing lead:', error);
-    return {
-      success: false,
-      message: error.message || 'فشل مزامنة العميل المحتمل',
+      message: 'تعذر تأكيد مزامنة الطلب',
     };
   }
 }

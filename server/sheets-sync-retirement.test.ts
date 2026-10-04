@@ -1,0 +1,13 @@
+import {beforeEach,expect,it,vi} from 'vitest';
+const m=vi.hoisted(()=>({legacy:vi.fn(),order:vi.fn(),integration:vi.fn(),update:vi.fn(),append:vi.fn()}));
+vi.mock('./db',()=>({getMerchantByUserId:m.legacy,getOrderById:m.order,getGoogleIntegration:m.integration,updateGoogleIntegration:m.update}));
+vi.mock('./_core/googleSheets',()=>({appendToSheet:m.append}));
+import {sheetsRouter} from './routers-sheets';
+import * as sync from './sheetsSync';
+const caller=(role='user')=>sheetsRouter.createCaller({user:{id:9,role},session:{sessionId:'a'.repeat(64)},req:{headers:{'x-merchant-id':'7'}},res:{}}as any);
+beforeEach(()=>vi.resetAllMocks());
+it.each(['user','admin'])('retires legacy order and arbitrary lead writes for %s before database or provider work',async role=>{for(const [name,input]of [['syncOrder',{orderId:4}],['syncLead',{customerName:'=IMPORTXML("https://example.test")',customerPhone:'99900000001',source:'x',status:'x',lastInteraction:new Date(),messageCount:1}]]as const)await expect(caller(role)[name](input)).rejects.toMatchObject({code:'PRECONDITION_FAILED',message:'sheets_sync:reviewed_flow_required'});for(const mock of Object.values(m))expect(mock).not.toHaveBeenCalled();});
+it.each([undefined,null,{}, {merchantId:0,beforeSend:()=>Promise.resolve()}, {merchantId:7}])('does not allow an unguarded internal import to send %j',async guard=>{expect(await sync.syncOrderToSheets(4,guard as any)).toMatchObject({success:false});for(const mock of Object.values(m))expect(mock).not.toHaveBeenCalled();});
+it('removes the unused arbitrary lead sender implementation',()=>{expect('syncLeadToSheets' in sync).toBe(false);});
+it('keeps the internal reviewed Salla order flow and literal cells',async()=>{m.order.mockResolvedValue({id:4,merchantId:7,createdAt:'2026-10-04T10:00:00Z',items:'[]',totalAmount:1200,status:'pending'});m.integration.mockResolvedValue({id:8,isActive:1,sheetId:'local',credentials:'{"refresh_token":"synthetic"}'});const beforeSend=vi.fn();m.append.mockImplementation(async(_merchant,_sheet,_range,_rows,options)=>{await options.beforeSend();return {success:true};});expect(await sync.syncOrderToSheets(4,{merchantId:7,beforeSend})).toMatchObject({success:true});expect(beforeSend).toHaveBeenCalledOnce();expect(m.append.mock.calls[0][4].raw).toBe(true);});
+it('redacts failures from guarded flows that have no receipt hook',async()=>{m.order.mockRejectedValue(Error('PRIVATE SQL OR TOKEN'));const spy=vi.spyOn(console,'error').mockImplementation(()=>{});expect(await sync.syncOrderToSheets(4,{merchantId:7,beforeSend:vi.fn()})).toEqual({success:false,message:'تعذر تأكيد مزامنة الطلب'});expect(JSON.stringify(spy.mock.calls)).not.toContain('PRIVATE');spy.mockRestore();});

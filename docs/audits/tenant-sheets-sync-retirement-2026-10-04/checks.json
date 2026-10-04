@@ -1,0 +1,19 @@
+{
+  "unit": {
+    "numTotalTests": 149,
+    "numPassedTests": 149,
+    "numFailedTests": 0
+  },
+  "mysql": {
+    "numTotalTests": 136,
+    "numPassedTests": 136,
+    "numFailedTests": 0
+  },
+  "types": "passed",
+  "build": "passed",
+  "release": {
+    "passed": 69
+  },
+  "scope": "Server only; no changes to translations, UI or schema",
+  "externalEffects": "No live providers; disposable MySQL and mocked network"
+}

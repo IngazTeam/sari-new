@@ -14,12 +14,7 @@ import { inventorySheetExportInput } from '../shared/inventory-sheet-export';
 import { exportInventoryToSheet, readInventoryExportStatus } from './inventory-sheet-export';
 import { guardInventoryExport } from './inventory-sheet-export-api';
 import { reserveApiRateLimit } from './api/distributed-rate-limit';
-import * as sheetsSync from './sheetsSync';
 import * as sheetsReports from './sheetsReports';
-import {
-  getMerchantByUserId,
-  getOrderById,
-} from './db';
 
 import { TRPCError } from '@trpc/server';
 import { beginSheetsOAuth } from './sheets-oauth';
@@ -60,40 +55,13 @@ export const sheetsRouter = router({
     return guardSheetsOAuth(() => readSheetsSettings({merchantId:ctx.merchantId,userId:ctx.user.id,sessionId:ctx.session!.sessionId}));
   }),
 
-  // مزامنة طلب محدد
-  syncOrder: protectedProcedure
-    .input(z.object({
-      orderId: z.number(),
-    }))
-    .mutation(async ({ ctx, input }) => {
-      const merchant = await getMerchantByUserId(ctx.user.id);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-
-      // SECURITY: Verify order belongs to this merchant
-      const order = await getOrderById(input.orderId);
-      if (!order || order.merchantId !== merchant.id) {
-        throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
-      }
-
-      return await sheetsSync.syncOrderToSheets(input.orderId);
-    }),
-
-  // مزامنة عميل محتمل
-  syncLead: protectedProcedure
-    .input(z.object({
-      customerName: z.string(),
-      customerPhone: z.string(),
-      source: z.string(),
-      status: z.string(),
-      lastInteraction: z.date(),
-      messageCount: z.number(),
-      notes: z.string().optional(),
-    }))
-    .mutation(async ({ ctx, input }) => {
-      const merchant = await getMerchantByUserId(ctx.user.id);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-      return await sheetsSync.syncLeadToSheets(merchant.id, input);
-    }),
+  // Retired unreviewed user entry points. Internal Salla effects retain their scoped guard.
+  syncOrder: protectedProcedure.input(z.unknown().optional()).mutation(()=>{
+    throw new TRPCError({code:'PRECONDITION_FAILED',message:'sheets_sync:reviewed_flow_required'});
+  }),
+  syncLead: protectedProcedure.input(z.unknown().optional()).mutation(()=>{
+    throw new TRPCError({code:'PRECONDITION_FAILED',message:'sheets_sync:reviewed_flow_required'});
+  }),
 
   // تصدير المحادثات
   exportConversations: permissionProcedure('integrations.manage').input(sheetsConversationExportInput).mutation(({ctx,input})=>{
