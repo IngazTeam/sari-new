@@ -78,6 +78,7 @@ describe("review-required Sheet product imports", () => {
     startAllSheetsCronJobs();
     await m.schedule.mock.calls[0][1]();
     expect(m.send).toHaveBeenCalledExactlyOnceWith(7, "يومي", {});
+    expect(m.daily).toHaveBeenCalledExactlyOnceWith(7, { expectedSpreadsheetId: "local" });
     expect(m.create).not.toHaveBeenCalled();
     expect(m.update).not.toHaveBeenCalled();
   });
@@ -127,4 +128,36 @@ describe("review-required Sheet product imports", () => {
       expect(m.send).not.toHaveBeenCalled();
     }
   );
+});
+
+it("isolates a failing merchant and redacts provider errors", async () => {
+  m.merchants.mockResolvedValue([{ id: 7 }, { id: 9 }]);
+  m.integration.mockResolvedValue({ id: 8, isActive: 1, sheetId: "local", credentials: "private", settings: '{"sendDailyReports":true}' });
+  m.daily.mockRejectedValueOnce(Error("SECRET_PROVIDER_TOKEN"));
+  const log = vi.spyOn(console, "error").mockImplementation(() => {});
+  try {
+    startAllSheetsCronJobs();
+    await m.schedule.mock.calls[0][1]();
+    expect(m.daily.mock.calls.map(c => c[0])).toEqual([7, 9]);
+    expect(m.send).toHaveBeenCalledExactlyOnceWith(9, "يومي", {});
+    expect(JSON.stringify(log.mock.calls)).not.toContain("SECRET_PROVIDER_TOKEN");
+  } finally { log.mockRestore(); }
+});
+it("skips overlapping ticks and releases the guard after failure", async () => {
+  let reject!: (error: Error) => void;
+  m.merchants.mockImplementationOnce(() => new Promise((_resolve, fail) => { reject = fail; }));
+  const log = vi.spyOn(console, "error").mockImplementation(() => {});
+  try {
+    startAllSheetsCronJobs();
+    const tick = m.schedule.mock.calls[0][1];
+    const first = tick();
+    await tick();
+    expect(m.merchants).toHaveBeenCalledTimes(1);
+    reject(Error("SECRET"));
+    await first;
+    m.merchants.mockResolvedValue([]);
+    await tick();
+    expect(m.merchants).toHaveBeenCalledTimes(2);
+    expect(JSON.stringify(log.mock.calls)).not.toContain("SECRET");
+  } finally { log.mockRestore(); }
 });
