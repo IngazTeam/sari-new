@@ -250,8 +250,61 @@ export function bootstrapCentral() {
         ),
       ],
     },
+    clinics: {
+      name: localizedText("عيادة النور الطبية", "Al-Noor Clinic"),
+      greeting: localizedText(
+        "أهلًا بك في عيادة النور! هل ترغب في حجز موعد أو الاستفسار عن عيادة محددة؟",
+        "Welcome to Al-Noor Clinic! Would you like to book an appointment or ask about a department?"
+      ),
+      questions: [
+        localizedText("أبغى أحجز موعد أسنان", "Book a dental appointment"),
+        localizedText("وش التحضيرات قبل الموعد؟", "What preparation is needed?"),
+        localizedText("أحتاج أكلم الاستقبال", "Speak with reception"),
+      ],
+      replies: [
+        localizedText(
+          "يسعدنا خدمتك. هل تفضّل الفترة الصباحية أو المسائية؟ بعد اختيار اليوم نراجع المواعيد المتاحة ونؤكد الحجز مع إرسال تذكير قبل الموعد.",
+          "Happy to help. Do you prefer a morning or evening slot? Once you pick a day, we check available times and confirm your booking with a reminder."
+        ),
+        localizedText(
+          "يرجى الحضور قبل الموعد بـ 15 دقيقة وإحضار الهوية وبطاقة التأمين إن وجدت. إذا كانت لديك أشعة سابقة يمكنك إرفاقها للاستقبال.",
+          "Please arrive 15 minutes early with your ID and insurance card if applicable. You can also share any prior scans with reception."
+        ),
+        localizedText(
+          "في هذا المثال، يمكن طلب مراجعة الاستقبال مع ملخص السؤال. هذه جولة توضيحية ولا ترسل طلبًا فعليًا إلى موظف.",
+          "In this example, reception can review a summary of the question. This is an illustrative tour and does not send a real request to a staff member."
+        ),
+      ],
+    },
+    "real-estate": {
+      name: localizedText("دار الأفق العقارية", "Al-Ofoq Real Estate"),
+      greeting: localizedText(
+        "يا هلا بك! تبحث عن عقار للسكن أو الاستثمار؟ وأي حي تفضّل؟",
+        "Welcome! Are you looking for a residential or investment property, and which district do you prefer?"
+      ),
+      questions: [
+        localizedText("أبحث عن شقة تمليك بالرياض", "Looking for an apartment in Riyadh"),
+        localizedText("كيف أحجز موعد معاينة؟", "How do I book a viewing?"),
+        localizedText("أبغى عرض سعر ومستشار عقاري", "Request a quote & advisor"),
+      ],
+      replies: [
+        localizedText(
+          "ممتاز! لتضييق الخيارات المناسبة لك: كم عدد الغرف المطلوبة وما النطاق السعري التقريبي؟ سأعرض لك الوحدات المطابقة من قائمة العقارات المعتمدة.",
+          "Great! To narrow down matching units: how many bedrooms do you need and what is your approximate budget? I will share matching properties from our current listings."
+        ),
+        localizedText(
+          "حدد الوحدة واليوم المناسب لك، وسننسق موعد المعاينة الميدانية مع المستشار العقاري ونرسل لك موقع العقار والتأكيد.",
+          "Select the unit and your preferred day, and we will coordinate an on-site viewing with our property advisor and send the location details."
+        ),
+        localizedText(
+          "في هذا المثال، تُجمع تفضيلات العميل ليراجعها المستشار العقاري. هذه جولة توضيحية ولا تسجل طلبًا فعليًا أو موعد تواصل.",
+          "In this example, customer preferences are gathered for a property advisor to review. This illustrative tour does not record a real request or arrange a follow-up."
+        ),
+      ],
+    },
   };
-  const demoData = () => demoContent[sector as keyof typeof demoContent];
+  const demoData = () =>
+    demoContent[sector as keyof typeof demoContent] || demoContent.commerce;
   const resetDemo = () => {
     if (!$("#demo-messages")) return;
     $("#demo-business")!.textContent = demoData().name;
@@ -267,16 +320,27 @@ export function bootstrapCentral() {
       b.setAttribute("aria-pressed", String(b.dataset.demoSector === sector));
     });
   };
+  const matchFreeTextIndex = (text: string): number | undefined => {
+    // This is a guided tour, not a free-text sales agent. Match the current
+    // sector's actual question; shared keyword indices gave unrelated answers.
+    const normalize = (value: string) => value.normalize("NFKC").toLowerCase()
+      .replace(/[\u064b-\u065f\u0670\u0640]/g, "")
+      .replace(/[أإآ]/g, "ا").replace(new RegExp("[^\\p{L}\\p{N}\\s]", "gu"), "")
+      .replace(/\s+/g, " ").trim();
+    const index = demoData().questions.findIndex(question => normalize(question) === normalize(text));
+    return index < 0 ? undefined : index;
+  };
   const reply = (text: string, index?: number) => {
     const box = $("#demo-messages");
     if (!box || !text.trim()) return;
+    const resolvedIndex = index !== undefined ? index : matchFreeTextIndex(text);
     const answer =
-      index === undefined
+      resolvedIndex === undefined
         ? localizedText(
             "اختر أحد الأسئلة المقترحة لمتابعة جولة المحادثة. ولأسئلة نشاطك، يمكنك التواصل مع فريق ساري من صفحة تواصل معنا.",
             "Choose a suggested question to continue the conversation tour. For questions about your business, reach the Sary team through the contact page."
           )
-        : demoData().replies[index];
+        : demoData().replies[resolvedIndex];
     box.insertAdjacentHTML(
       "beforeend",
       `<div class="message user">${e(text.trim())}</div><div class="message bot">${e(answer)}</div>`

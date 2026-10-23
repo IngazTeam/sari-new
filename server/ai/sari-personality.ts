@@ -3,7 +3,7 @@ import { salesPromotionsPrompt } from './promotion-evidence';
 import { updateDealStage } from './deal-stage';
 export { STAGE_ORDER } from './deal-stage';
 import { understandConversation, understandPreview, UNDERSTANDING_UNAVAILABLE } from './conversation-understanding';
-import { withConversationUnderstanding, currentConversationUnderstanding, hasConversationUnderstanding, contextualHandoffRequested } from './conversation-understanding-context';
+import { withConversationUnderstanding, currentConversationUnderstanding, hasConversationUnderstanding, contextualHandoffRequested, conversationUnderstandingIdentity } from './conversation-understanding-context';
 import { conversationHandoffSummary, handoffPrompt } from './conversation-handoff';
 import { reviewSalesResponse } from './review-sales-response';
 import { buildSalesReplyMessages, CONTEXTUAL_REPLY_UNAVAILABLE } from './sales-reply-prompt';
@@ -920,6 +920,16 @@ const FEW_SHOT_EXAMPLES: ChatMessage[] = [
 /**
  * Smart product search based on customer message
  */
+export async function readReplyCatalog(merchantId: number) {
+  const context = conversationUnderstandingIdentity();
+  if (context && context.merchantId !== merchantId) throw new Error('Catalogue context tenant mismatch');
+  const interpretation = currentConversationUnderstanding();
+  // Fresh tenant rows, not an unrelated latest-500 window. Final availability
+  // and interpreted selection still pass through searchRelevantProducts.
+  return getProductsByMerchantId(merchantId, interpretation && interpretation.requestKind !== 'catalog'
+    ? { ids: interpretation.productIds } : undefined);
+}
+
 export async function searchRelevantProducts(
   message: string,
   allProducts: any[],
@@ -1569,6 +1579,19 @@ async function chatWithSariScoped(params: ChatWithSariParams): Promise<string> {
       return 'تعذر التحقق من ذاكرة المحادثة الآن. حاول مجدداً أو اطلب المساعدة من فريق المتجر.';
     }
   }
+  // A pending staff review survives process restarts and comes before every checkout
+  // path. A model-inferred topic change cannot cancel that durable request or transfer
+  // ownership; staff resolution/return and expiry remain authoritative.
+  if (!params.isGroupMessage && params.conversationId && params.incomingMessageId) {
+    try {
+      const { hasOpenEscalation } = await import('./escalation-relay');
+      if (await hasOpenEscalation(params.merchantId, params.conversationId, params.customerPhone, memoryHistoryCutoff)) {
+        return 'استفسارك مسجل للمتابعة مع فريق المتجر. ننتظر رد الفريق قبل متابعة الطلب.';
+      }
+    } catch {
+      return 'تعذر التحقق من حالة متابعة فريق المتجر الآن. يرجى المحاولة لاحقاً.';
+    }
+  }
   // The durable shared budget fails closed; exhaustion never starts a cheaper or full paid retry.
   try {
     const { getAiBudgetStatus } = await import('./budget-ledger');
@@ -2018,7 +2041,7 @@ async function _chatWithSariCore(params: ChatWithSariParams, memoryHistoryCutoff
       // v7 → v8: dealStage update MOVED to updateDealStage() helper, called before path split.
 
       const freshQuery = extractConversationTopicContext(params.message, previousMessages as Array<{ role: string; content: string }>);
-      const freshCatalog = await (getProductsByMerchantId as any)(params.merchantId);
+      const freshCatalog = await readReplyCatalog(params.merchantId);
       const freshInjectedProducts = await searchRelevantProducts(freshQuery, freshCatalog, 20);
       const freshContextPrompt = await buildEnhancedContextPrompt({ merchantName: merchant.businessName,
         merchantId: params.merchantId, customerName: params.customerName, availableProducts: freshInjectedProducts,
@@ -2228,7 +2251,7 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
     const sentiment = await analyzeSentiment(params.message);
 
     // Get all products
-    const allProducts = await (getProductsByMerchantId as any)(params.merchantId);
+    const allProducts = await readReplyCatalog(params.merchantId);
     console.log(`[chatWithSari] 📦 PRODUCTS LOADED: ${allProducts.length} products for merchant ${params.merchantId}`);
     if (allProducts.length > 0 && allProducts.length <= 10) {
       console.log(`[chatWithSari] 📦 Product names: ${allProducts.map((p: any) => `"${p.name}" (${p.price})`).join(', ')}`);

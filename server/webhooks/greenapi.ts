@@ -24,6 +24,7 @@ import {
 import type { CustomerProfile } from '../db/customer-intelligence';
 import { sendTextMessage, sendMessageWithCredentials } from '../whatsapp';
 import { currentInboundExecution } from '../messaging/inbound-context';
+import { InboundBusinessLimitError, type InboundProcessingResult } from '../messaging/inbound-outcome';
 import { whatsAppEffectKey, whatsAppEventEffectKey } from '../channels/whatsapp/effect-key';
 import { chatWithSari } from '../ai/sari-personality';
 import { processVoiceMessage, hasReachedVoiceLimit, incrementVoiceMessageUsage } from '../ai/voice-handler';
@@ -35,8 +36,7 @@ import {
   incrementConversationUsage,
 } from '../usage-tracking';
 
-interface WebhookResult {
-  success: boolean;
+interface WebhookResult extends InboundProcessingResult {
   message: string;
 }
 
@@ -273,7 +273,7 @@ async function getOrCreateConversation(params: {
   // Check conversation limit before creating new conversation
   const reachedLimit = await hasReachedConversationLimit(params.merchantId);
   if (reachedLimit) {
-    throw new Error('CONVERSATION_LIMIT_REACHED');
+    throw new InboundBusinessLimitError('conversation_limit');
   }
   
   // Create new conversation
@@ -317,7 +317,7 @@ async function processTextMessage(params: {
     // Check message limit
     const reachedLimit = await hasReachedMessageLimit(params.merchantId);
     if (reachedLimit) {
-      throw new Error('MESSAGE_LIMIT_REACHED');
+      throw new InboundBusinessLimitError('message_limit');
     }
     
     // Save incoming message (isProcessed=0 — will be set to 1 after WhatsApp send succeeds)
@@ -927,7 +927,8 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
       logDelivery({ merchantId: instance.merchantId, instanceId, customerPhone, status: 'failed', failureReason: 'subscription_expired', source: 'webhook' });
       return {
         success: false,
-        message: 'Merchant subscription expired or inactive'
+        message: 'Merchant subscription expired or inactive',
+        businessRejection: 'subscription_inactive',
       };
     }
     
@@ -1531,16 +1532,16 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
       }
     };
     
-    if (error.message === 'CONVERSATION_LIMIT_REACHED' && customerPhone) {
+    if (error instanceof InboundBusinessLimitError && error.reason === 'conversation_limit' && customerPhone) {
       await sendLimitNotification('عذراً، لقد وصلنا للحد الأقصى من المحادثات الشهرية. سنعود للتواصل معك قريباً! 🙏');
       if (instance) logDelivery({ merchantId: instance.merchantId, instanceId: instanceId || '', customerPhone, status: 'failed', failureReason: 'conversation_limit', source: 'webhook' });
-      return { success: false, message: 'Conversation limit reached' };
+      return { success: false, message: 'Conversation limit reached', businessRejection: error.reason };
     }
     
-    if (error.message === 'MESSAGE_LIMIT_REACHED' && customerPhone) {
+    if (error instanceof InboundBusinessLimitError && error.reason === 'message_limit' && customerPhone) {
       await sendLimitNotification('عذراً، لقد وصلنا للحد الأقصى من الرسائل الشهرية. شكراً لتواصلك! 🙏');
       if (instance) logDelivery({ merchantId: instance.merchantId, instanceId: instanceId || '', customerPhone, status: 'failed', failureReason: 'message_limit', source: 'webhook' });
-      return { success: false, message: 'Message limit reached' };
+      return { success: false, message: 'Message limit reached', businessRejection: error.reason };
     }
     
     if (error.message === 'VOICE_LIMIT_REACHED' && customerPhone) {

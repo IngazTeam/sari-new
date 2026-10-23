@@ -144,6 +144,8 @@ export function renderCentralMarkup(
       ["commerce", "store", t("متجر إلكتروني", "Online store")],
       ["training", "graduation-cap", t("مركز تدريب", "Training centre")],
       ["services", "calendar", t("خدمات وحجوزات", "Services and bookings")],
+      ["clinics", "heart-pulse", t("عيادات ومراكز", "Clinics & health")],
+      ["real-estate", "building", t("عقارات واستشارات", "Real estate & consulting")],
     ]
       .map(
         ([s, i, l], n) =>

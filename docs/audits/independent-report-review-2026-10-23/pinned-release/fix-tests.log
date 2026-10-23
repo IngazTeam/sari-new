@@ -1,0 +1,247 @@
+Node v22.23.2; pinned pnpm 10.4.1; task fix-tests
+
+ RUN  v4.1.10 C:/Users/user/Herd/sari-new/.tmp/launch-release-candidate
+
+ ✓ server/ai/salla-checkout-conversation.mysql.test.ts (163 tests) 109242ms
+     ✓ supersedes a recovered agreement locally and requires a separately delivered offer and new consent  4687ms
+     ✓ allows a new reviewed selection after terminal expired  868ms
+     ✓ allows a new reviewed selection after terminal refused  878ms
+     ✓ allows a new reviewed selection after terminal projection-lost  858ms
+     ✓ allows a new reviewed selection after terminal catalog-changed  794ms
+     ✓ allows a new reviewed selection after terminal rejected-before-dispatch  572ms
+     ✓ does not supersede review despite a new purchase request  703ms
+     ✓ does not supersede missing despite a new purchase request  660ms
+     ✓ does not supersede preparing despite a new purchase request  603ms
+     ✓ does not supersede dispatching despite a new purchase request  635ms
+     ✓ does not supersede processing despite a new purchase request  627ms
+     ✓ rejects supersession with changed source proof  636ms
+     ✓ rejects supersession with changed consent proof  707ms
+     ✓ rejects supersession with changed receipt proof  730ms
+     ✓ rejects supersession with changed offer-text proof  729ms
+     ✓ rejects supersession with changed attempt proof  690ms
+     ✓ rejects supersession with changed financial proof  727ms
+     ✓ rejects supersession with changed result proof  698ms
+     ✓ rejects supersession with changed reconciliation proof  726ms
+     ✓ rejects supersession with changed handoff proof  693ms
+     ✓ rejects supersession with changed actor proof  699ms
+     ✓ rejects supersession with changed request-hash proof  718ms
+     ✓ rejects supersession with changed attempt-token proof  696ms
+     ✓ rejects supersession with changed snapshot proof  761ms
+     ✓ rejects supersession with changed checkpoint proof  787ms
+     ✓ rejects supersession with changed result-digest proof  763ms
+     ✓ rejects supersession with changed result-url proof  741ms
+     ✓ rejects supersession with changed result-items proof  705ms
+     ✓ rejects supersession with changed recipient proof  646ms
+     ✓ rejects supersession with changed tenant proof  633ms
+     ✓ rejects a pre-dispatch rejection containing a contradictory snapshot  470ms
+     ✓ enforces the database boundary against a rejected operation with a completed result  467ms
+     ✓ does not retire the old agreement from نعم  737ms
+     ✓ does not retire the old agreement from جهز السلة  738ms
+     ✓ does not retire the old agreement from أرسل رابط السلة  743ms
+     ✓ does not retire the old agreement from هل أقدر أطلب؟  694ms
+     ✓ does not retire the old agreement from كم السعر؟  757ms
+     ✓ does not retire the old agreement from غير موافق  653ms
+     ✓ does not retire the old agreement from لا ترسل  606ms
+     ✓ keeps supersession and replacement atomic through rollback  838ms
+     ✓ keeps supersession and replacement atomic through lost-commit  1025ms
+     ✓ converges three replacements on one offer and rejects an undelivered replacement consent  1062ms
+     ✓ does not retire an old agreement after new-message changes before replacement commit  783ms
+     ✓ does not retire an old agreement after human changes before replacement commit  794ms
+     ✓ does not retire an old agreement after source changes before replacement commit  799ms
+     ✓ does not retire an old agreement after new-stock changes before replacement commit  754ms
+     ✓ resumes a recovered cart only after a new explicit customer request and uses a new ordinary reply identity  1503ms
+     ✓ reuses an already succeeded cart for an explicit resend while preserving the original consent and cart  2554ms
+     ✓ does not resume the original unknown attempt for نعم  684ms
+     ✓ does not resume the original unknown attempt for جهز السلة  743ms
+     ✓ does not resume the original unknown attempt for نعم لكن الكمية 3  695ms
+     ✓ never adopts or creates a review operation while resuming  722ms
+     ✓ never adopts or creates a missing operation while resuming  727ms
+     ✓ never adopts or creates a dispatching operation while resuming  840ms
+     ✓ never adopts or creates a processing operation while resuming  728ms
+     ✓ requires a new agreement after an intervening لا ترسل  712ms
+     ✓ requires a new agreement after an intervening غير الكمية إلى 3  616ms
+     ✓ requires a new agreement after an intervening كم السعر؟  613ms
+     ✓ requires a new agreement after an intervening نعم  678ms
+     ✓ blocks changed original source before resumption GET  629ms
+     ✓ blocks changed original consent before resumption GET  616ms
+     ✓ blocks changed original receipt before resumption GET  594ms
+     ✓ blocks changed original offer-text before resumption GET  523ms
+     ✓ blocks changed original expired before resumption GET  534ms
+     ✓ blocks changed original stock before resumption GET  664ms
+     ✓ blocks changed original owner before resumption GET  588ms
+     ✓ blocks changed original handoff before resumption GET  621ms
+     ✓ blocks changed original connection before resumption GET  571ms
+     ✓ blocks changed original attempt before resumption GET  634ms
+     ✓ blocks changed original financial before resumption GET  647ms
+     ✓ blocks changed original result before resumption GET  730ms
+     ✓ blocks source changing during a resume read  897ms
+     ✓ blocks request changing during a resume read  899ms
+     ✓ blocks new-message changing during a resume read  814ms
+     ✓ blocks human changing during a resume read  834ms
+     ✓ blocks receipt changing during a resume read  897ms
+     ✓ blocks quote changing during a resume read  849ms
+     ✓ blocks cart changing during a resume read  798ms
+     ✓ blocks deleted-ledger changing during a resume read  896ms
+     ✓ blocks ledger-proof changing during a resume read  941ms
+     ✓ blocks ledger-result changing during a resume read  1017ms
+     ✓ rechecks refusal immediately before sending a resumed link  1045ms
+     ✓ rechecks human immediately before sending a resumed link  962ms
+     ✓ rechecks expired immediately before sending a resumed link  995ms
+     ✓ rechecks corrupt immediately before sending a resumed link  1030ms
+     ✓ rechecks request immediately before sending a resumed link  1016ms
+     ✓ rechecks total immediately before sending a resumed link  1146ms
+     ✓ cannot use a link marker as authorization before the customer request is reconciled  657ms
+     ✓ recovers a lost resume commit acknowledgement with the same message and no provider writes  1591ms
+     ✓ rolls back resume storage without losing the original claim or creating another cart  1221ms
+     ✓ converges concurrent resume attempts on one source and fences the original reply  1981ms
+     ✓ resumes a completed cart when only quote projection was lost  1301ms
+     ✓ does not resume across another tenant identity  706ms
+     ✓ does not resume across another recipient identity  646ms
+     ✓ does not resume across another conversation identity  603ms
+     ✓ rejects rehashed resume quote evidence inconsistent with its source  748ms
+     ✓ rejects rehashed resume recipient evidence inconsistent with its source  673ms
+     ✓ rejects rehashed resume snapshot evidence inconsistent with its source  764ms
+     ✓ rejects rehashed resume consent evidence inconsistent with its source  782ms
+     ✓ rejects rehashed resume request-id evidence inconsistent with its source  725ms
+     ✓ rejects rehashed resume consent-message evidence inconsistent with its source  832ms
+     ✓ bounds repeated link requests and does not reuse a superseded resume authorization  1102ms
+     ✓ does not cross a forgotten context boundary when resuming  599ms
+     ✓ takes selection through delivered review, customer consent and verified checkout link without recording a sale  946ms
+     ✓ replays the same offer and accepted cart without generating another cart  807ms
+     ✓ stops the remaining writes after source changes during generate  406ms
+     ✓ stops the remaining writes after new-message changes during generate  418ms
+     ✓ stops the remaining writes after human changes during generate  429ms
+     ✓ stops the remaining writes after product changes during generate  462ms
+     ✓ stops the remaining writes after connection changes during generate  470ms
+     ✓ suppresses price before the WhatsApp link leaves the outbox  768ms
+     ✓ suppresses quantity before the WhatsApp link leaves the outbox  772ms
+     ✓ suppresses product before the WhatsApp link leaves the outbox  863ms
+     ✓ suppresses deleted-cart before the WhatsApp link leaves the outbox  769ms
+     ✓ suppresses proof before the WhatsApp link leaves the outbox  626ms
+     ✓ suppresses expired before the WhatsApp link leaves the outbox  677ms
+     ✓ suppresses refusal before the WhatsApp link leaves the outbox  554ms
+     ✓ suppresses human before the WhatsApp link leaves the outbox  475ms
+     ✓ suppresses connection before the WhatsApp link leaves the outbox  489ms
+     ✓ a deleted ready operation cannot be recreated by conversational replay or a read-only check  592ms
+     ✓ keeps provider ambiguity under the same durable claim with no POST retry  346ms
+     ✓ serializes concurrent consent attempts and never starts a second provider cart  520ms
+     ✓ does not allow a marker or altered link text to become transport authority  512ms
+     ✓ does not return a link after consent changes during the final cart read  540ms
+     ✓ does not return a link after selection changes during the final cart read  553ms
+     ✓ does not return a link after human changes during the final cart read  525ms
+     ✓ does not return a link after expired changes during the final cart read  484ms
+     ✓ does not repeat provider writes after a lost claim commit acknowledgement  348ms
+     ✓ does not repeat provider writes after a lost result commit acknowledgement  741ms
+     ✓ keeps a rolled-back quote result under review without sending or generating another cart  616ms
+stdout | server/bot-audit-pentest.test.ts
+[Rate Limiter] Rate limiting middleware initialized
+
+ ✓ server/bot-audit-pentest.test.ts (93 tests) 420ms
+ ✓ server/ai/byaan-checkout-conversation.mysql.test.ts (61 tests) 14229ms
+     ✓ takes semantic paraphrases through session selection, consent and final WhatsApp delivery with durable interpretation  2098ms
+     ✓ uses live tax-inclusive price, asks consent, sends checkout once and creates no financial/enrollment records  640ms
+     ✓ selects only an available displayed session using Arabic digits and binds a second delivered offer  773ms
+     ✓ never picks a missing session or treats نعم as session consent  533ms
+     ✓ never picks a missing session or treats ٢ as session consent  540ms
+     ✓ never picks a missing session or treats الموعد 99 as session consent  488ms
+     ✓ blocks a selected-session offer when its parent snapshot changes  361ms
+     ✓ blocks a selected-session offer when its parent receipt changes  388ms
+     ✓ blocks a selected-session offer when its forgotten menu changes  374ms
+ ✓ server/contract-guards.test.ts (42 tests) 73ms
+ ✓ server/ai/escalation-relay.mysql.test.ts (51 tests) 6001ms
+     ✓ binds the reply to the quoted older alert instead of the newest customer, then records acceptance and teaching  758ms
+ ✓ server/messaging/inbound.mysql.test.ts (23 tests) 3450ms
+     ✓ stores the entire reply and media plan before the first provider effect  1223ms
+ ✓ server/ai/checkout-margin.mysql.test.ts (43 tests) 7586ms
+     ✓ approves one reviewed exception with its exact loss, actor and facts, without lowering the policy or changing the amount  423ms
+     ✓ previews without approving or issuing payment, then stores exact reviewed facts atomically  327ms
+ ✓ server/ai/checkout-discount.mysql.test.ts (46 tests) 5629ms
+     ✓ revises the offered amount before a new consent, without consuming usage or creating an order  350ms
+stderr | server/ai/conversation-understanding.mysql.test.ts > durable semantic interpretation and hostile context changes > respects central disablement even when this message already has a ready interpretation
+[ConversationUnderstanding] Analysis unavailable { stage: 'settings', kind: 'Error' }
+
+stderr | server/ai/conversation-understanding.mysql.test.ts > durable semantic interpretation and hostile context changes > fails closed on provider outage and never retries through keyword action
+[ConversationUnderstanding] Analysis unavailable { stage: 'provider', kind: 'Error' }
+
+stderr | server/ai/conversation-understanding.mysql.test.ts > durable semantic interpretation and hostile context changes > fails closed on malformed and never retries through keyword action
+[ConversationUnderstanding] Analysis unavailable { stage: 'validation', kind: 'SyntaxError' }
+
+stderr | server/ai/conversation-understanding.mysql.test.ts > durable semantic interpretation and hostile context changes > fails closed on fabricated evidence and never retries through keyword action
+[ConversationUnderstanding] Analysis unavailable { stage: 'validation', kind: 'Error' }
+
+stderr | server/ai/conversation-understanding.mysql.test.ts > durable semantic interpretation and hostile context changes > fails closed on foreign product and never retries through keyword action
+[ConversationUnderstanding] Analysis unavailable { stage: 'validation', kind: 'Error' }
+
+stderr | server/ai/conversation-understanding.mysql.test.ts > durable semantic interpretation and hostile context changes > discards output after handoff during provider I/O
+[ConversationUnderstanding] Analysis unavailable { stage: 'persistence', kind: 'Error' }
+
+stderr | server/ai/conversation-understanding.mysql.test.ts > durable semantic interpretation and hostile context changes > discards output after new message during provider I/O
+[ConversationUnderstanding] Analysis unavailable { stage: 'persistence', kind: 'Error' }
+
+stderr | server/ai/conversation-understanding.mysql.test.ts > durable semantic interpretation and hostile context changes > discards output after memory deletion during provider I/O
+[ConversationUnderstanding] Analysis unavailable { stage: 'persistence', kind: 'Error' }
+
+stderr | server/ai/conversation-understanding.mysql.test.ts > durable semantic interpretation and hostile context changes > discards output after source changed during provider I/O
+[ConversationUnderstanding] Analysis unavailable { stage: 'persistence', kind: 'Error' }
+
+stderr | server/ai/conversation-understanding.mysql.test.ts > durable semantic interpretation and hostile context changes > discards output after history changed during provider I/O
+[ConversationUnderstanding] Analysis unavailable { stage: 'persistence', kind: 'Error' }
+
+stderr | server/ai/conversation-understanding.mysql.test.ts > durable semantic interpretation and hostile context changes > rejects a foreign agent supplied by the model without changing the conversation
+[ConversationUnderstanding] Analysis unavailable { stage: 'validation', kind: 'Error' }
+
+stderr | server/ai/conversation-understanding.mysql.test.ts > durable semantic interpretation and hostile context changes > rejects a stale routing interpretation after specialization changes during provider I/O
+[ConversationUnderstanding] Analysis unavailable { stage: 'persistence', kind: 'Error' }
+
+stderr | server/ai/conversation-understanding.mysql.test.ts > durable semantic interpretation and hostile context changes > rejects a stale routing interpretation after availability changes during provider I/O
+[ConversationUnderstanding] Analysis unavailable { stage: 'persistence', kind: 'Error' }
+
+stderr | server/ai/conversation-understanding.mysql.test.ts > durable semantic interpretation and hostile context changes > rejects a stale routing interpretation after current agent changes during provider I/O
+[ConversationUnderstanding] Analysis unavailable { stage: 'persistence', kind: 'Error' }
+
+ ✓ server/ai/conversation-understanding.mysql.test.ts (38 tests) 3524ms
+     ✓ persists grounded both-speaker analysis once and uses the superadmin model and shared provider entry point  519ms
+ ✓ server/ai/conversation-handoff.mysql.test.ts (24 tests) 2137ms
+     ✓ suppresses a pre-takeover reply plan after takeover and resume, then delivers a fresh plan  581ms
+ ✓ server/ai/budget-settlement.mysql.test.ts (39 tests) 7931ms
+     ✓ settles captured usage after a process stops in reserved  379ms
+     ✓ bounds transient receipt retries and does not settle without a committed receipt  475ms
+     ✓ settles from SQL in three independent processes without in-memory authority  4995ms
+ ✓ server/ai/checkout-agreements.mysql.test.ts (48 tests) 3626ms
+ ✓ server/ai/budget-alerts.mysql.test.ts (18 tests) 2356ms
+     ✓ records exactly at 70%, without rounding one micro-dollar up  382ms
+     ✓ admits concurrent reservations up to $100 with one event per threshold and blocks the next provider call  481ms
+ ✓ server/whatsapp-delivery-safety.test.ts (28 tests) 490ms
+ ✓ server/ai/conversation-understanding.test.ts (20 tests) 89ms
+ ✓ server/central-interactions.test.ts (8 tests) 1840ms
+     ✓ keeps typed and clicked tour questions consistent in every sector (ar)  717ms
+ ✓ server/learning-recovery-bootstrap-pentest.test.ts (13 tests) 70ms
+ ✓ server/ai/contextual-reply-routing.test.ts (15 tests) 31ms
+stderr | server/ai/checkout-conversation.test.ts > local checkout routing > requires clarification for invalid extraction: not json
+[Checkout] Offer requires review { merchantId: 1, conversationId: 3 }
+
+ ✓ server/ai/checkout-conversation.test.ts (13 tests) 49ms
+ ✓ server/ai/conversation-catalog.mysql.test.ts (3 tests) 651ms
+     ✓ finds description matches beyond item 200 and exposes verified price and currency  334ms
+stderr | server/ai/budget-boundaries.test.ts > paid request boundaries > blocks embedding spend while allowing callers to use their non-AI fallback
+[RAG] generateEmbedding failed
+
+stderr | server/ai/budget-boundaries.test.ts > paid request boundaries > honors the super-admin disable switch for voice and embedding
+[RAG] generateEmbedding failed
+
+ ✓ server/ai/budget-boundaries.test.ts (6 tests) 30ms
+ ✓ server/ai/checkout-margin.test.ts (51 tests) 43ms
+ ✓ server/ai/checkout-discount.test.ts (45 tests) 58ms
+ ✓ server/messaging/inbound-pump.test.ts (10 tests) 24ms
+ ✓ server/ai/escalation-hold-routing.test.ts (6 tests) 16ms
+ ✓ server/ai/conversation-catalog.test.ts (3 tests) 15ms
+ ✓ server/messaging/inbound-outcome.test.ts (5 tests) 8ms
+
+ Test Files  27 passed (27)
+      Tests  915 passed (915)
+   Start at  06:19:09
+   Duration  274.72s (transform 29.80s, setup 0ms, import 89.33s, tests 169.62s, environment 10ms)
+
+
+TASK_EXIT_CODE=0
+ELAPSED_MS=280067

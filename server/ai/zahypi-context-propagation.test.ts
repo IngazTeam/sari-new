@@ -77,8 +77,16 @@ describe("ZahyPi tenant propagation", () => {
 
   it("scopes every AI suggestion and brain analysis call to the authenticated merchant", () => {
     const suggestions = readFileSync(new URL("../routers-ai-suggestions.ts", import.meta.url), "utf8");
-    expect(suggestions.match(/invokeLLM\(\{/g)).toHaveLength(3);
-    expect(suggestions.match(/merchantId: merchant\.id/g)).toHaveLength(3);
+    // These routes delegate to the evidence-bound drafting service. Check the
+    // authenticated identity through that boundary instead of counting old inline calls.
+    expect(suggestions).toMatch(/generateReplySuggestions\(ctx\.merchantId,ctx\.user\.id,input\.conversationId/);
+    expect(suggestions).toMatch(/generateCustomConversationReply\(ctx\.merchantId,ctx\.user\.id,input\.conversationId/);
+    expect(suggestions).toMatch(/improveConversationReply\(ctx\.merchantId,input\)/);
+    const drafting = readFileSync(new URL('../reply-suggestions.ts', import.meta.url), 'utf8');
+    expect(drafting).toMatch(/invokeLLM\(\{merchantId,taskType,/);
+    for (const task of ['suggestions', 'custom', 'improve']) {
+      expect(drafting).toContain(`complete(merchantId,'sari.reply.${task}'`);
+    }
 
     const brain = readFileSync(new URL("../routers-sari-brain.ts", import.meta.url), "utf8");
     const calls = brain.match(/invokeLLM\(\{/g) || [];

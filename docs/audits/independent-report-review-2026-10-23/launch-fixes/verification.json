@@ -1,0 +1,202 @@
+{
+  "date": "2026-10-23",
+  "runtime": "v26.5.1",
+  "database": "isolated MySQL 8.0.46 loopback disposable databases; all migrations applied",
+  "externalProviders": "mocked; external networking blocked by isolated runner",
+  "typecheck": {
+    "command": "node --max-old-space-size=8192 node_modules/typescript/bin/tsc --noEmit",
+    "exitCode": 0,
+    "log": "typecheck-final.log"
+  },
+  "releaseRuntimeGate": {
+    "command": "node scripts/check-runtime.mjs --require-pnpm",
+    "exitCode": 1,
+    "expectedNode": "22.23.2",
+    "expectedPnpm": "10.4.1",
+    "actualNode": "26.5.1",
+    "actualPnpm": "11.25.0",
+    "log": "runtime-check-direct.log",
+    "packageManagerGate": {
+      "command": "pnpm run check:runtime",
+      "bundledNode": "24.19.0",
+      "exitCode": 1,
+      "log": "runtime-check.log"
+    },
+    "productionBuild": "not run; required runtime differs",
+    "deployed": false
+  },
+  "notes": [
+    "Latest result per file; totals exclude repeated execution of the same tests.",
+    "Earlier failures are retained in the logs. Catalog column, TypeScript compatibility, demo test route, and governed prompt length were corrected.",
+    "Budget suites reset shared global records. Final budget verification used a fresh test database and --no-file-parallelism; internal concurrency and multi-process tests remained enabled."
+  ],
+  "latestPerFile": {
+    "files": 27,
+    "tests": 915,
+    "failures": 0
+  },
+  "files": [
+    {
+      "file": "server/ai/budget-alerts.mysql.test.ts",
+      "tests": 18,
+      "failed": 0,
+      "log": "budget-fresh-tests.log"
+    },
+    {
+      "file": "server/ai/budget-boundaries.test.ts",
+      "tests": 6,
+      "failed": 0,
+      "log": "regression-tests.log"
+    },
+    {
+      "file": "server/ai/budget-settlement.mysql.test.ts",
+      "tests": 39,
+      "failed": 0,
+      "log": "budget-fresh-tests.log"
+    },
+    {
+      "file": "server/ai/byaan-checkout-conversation.mysql.test.ts",
+      "tests": 61,
+      "failed": 0,
+      "log": "regression-tests.log"
+    },
+    {
+      "file": "server/ai/checkout-agreements.mysql.test.ts",
+      "tests": 48,
+      "failed": 0,
+      "log": "regression-tests.log"
+    },
+    {
+      "file": "server/ai/checkout-conversation.test.ts",
+      "tests": 13,
+      "failed": 0,
+      "log": "regression-tests.log"
+    },
+    {
+      "file": "server/ai/checkout-discount.mysql.test.ts",
+      "tests": 46,
+      "failed": 0,
+      "log": "regression-tests.log"
+    },
+    {
+      "file": "server/ai/checkout-discount.test.ts",
+      "tests": 45,
+      "failed": 0,
+      "log": "regression-tests.log"
+    },
+    {
+      "file": "server/ai/checkout-margin.mysql.test.ts",
+      "tests": 43,
+      "failed": 0,
+      "log": "regression-tests.log"
+    },
+    {
+      "file": "server/ai/checkout-margin.test.ts",
+      "tests": 51,
+      "failed": 0,
+      "log": "regression-tests.log"
+    },
+    {
+      "file": "server/ai/contextual-reply-routing.test.ts",
+      "tests": 15,
+      "failed": 0,
+      "log": "core-tests.log"
+    },
+    {
+      "file": "server/ai/conversation-catalog.mysql.test.ts",
+      "tests": 3,
+      "failed": 0,
+      "log": "final-changes-tests.log"
+    },
+    {
+      "file": "server/ai/conversation-catalog.test.ts",
+      "tests": 3,
+      "failed": 0,
+      "log": "final-changes-tests.log"
+    },
+    {
+      "file": "server/ai/conversation-handoff.mysql.test.ts",
+      "tests": 24,
+      "failed": 0,
+      "log": "regression-tests.log"
+    },
+    {
+      "file": "server/ai/conversation-understanding.mysql.test.ts",
+      "tests": 38,
+      "failed": 0,
+      "log": "final-context-tests.log"
+    },
+    {
+      "file": "server/ai/conversation-understanding.test.ts",
+      "tests": 20,
+      "failed": 0,
+      "log": "final-context-tests.log"
+    },
+    {
+      "file": "server/ai/escalation-hold-routing.test.ts",
+      "tests": 6,
+      "failed": 0,
+      "log": "final-context-tests.log"
+    },
+    {
+      "file": "server/ai/escalation-relay.mysql.test.ts",
+      "tests": 51,
+      "failed": 0,
+      "log": "core-tests.log"
+    },
+    {
+      "file": "server/ai/salla-checkout-conversation.mysql.test.ts",
+      "tests": 163,
+      "failed": 0,
+      "log": "regression-tests.log"
+    },
+    {
+      "file": "server/bot-audit-pentest.test.ts",
+      "tests": 93,
+      "failed": 0,
+      "log": "worker-safety.log"
+    },
+    {
+      "file": "server/central-interactions.test.ts",
+      "tests": 8,
+      "failed": 0,
+      "log": "final-changes-tests.log"
+    },
+    {
+      "file": "server/contract-guards.test.ts",
+      "tests": 42,
+      "failed": 0,
+      "log": "worker-safety.log"
+    },
+    {
+      "file": "server/learning-recovery-bootstrap-pentest.test.ts",
+      "tests": 13,
+      "failed": 0,
+      "log": "worker-safety.log"
+    },
+    {
+      "file": "server/messaging/inbound-outcome.test.ts",
+      "tests": 5,
+      "failed": 0,
+      "log": "core-tests.log"
+    },
+    {
+      "file": "server/messaging/inbound-pump.test.ts",
+      "tests": 10,
+      "failed": 0,
+      "log": "final-changes-tests.log"
+    },
+    {
+      "file": "server/messaging/inbound.mysql.test.ts",
+      "tests": 23,
+      "failed": 0,
+      "log": "core-tests.log"
+    },
+    {
+      "file": "server/whatsapp-delivery-safety.test.ts",
+      "tests": 28,
+      "failed": 0,
+      "log": "worker-safety.log"
+    }
+  ]
+}

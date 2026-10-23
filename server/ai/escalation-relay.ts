@@ -32,8 +32,8 @@ export function merchantReplyText(payload: any): string | null {
   return typeof value === 'string' && value.trim() ? value : null;
 }
 
-/** Process-local hold caches cannot survive a durable answer or ownership change. */
-export async function hasOpenEscalation(merchantId: number, conversationId: number, customerPhone: string): Promise<boolean> {
+/** Durable waiting state, scoped to the current owner and retained customer history. */
+export async function hasOpenEscalation(merchantId: number, conversationId: number, customerPhone: string, memoryHistoryCutoff = 0): Promise<boolean> {
   if (![merchantId, conversationId].every(positive) || !normalizeCampaignPhone(customerPhone)) return false;
   const pool = await getPool(); if (!pool) throw new Error('Escalation storage unavailable');
   const [rows] = await pool.execute<any[]>(`SELECT e.id FROM sari_escalation_queue e
@@ -41,8 +41,9 @@ export async function hasOpenEscalation(merchantId: number, conversationId: numb
     JOIN messages m ON m.id=e.source_message_id AND m.conversationId=c.id AND m.direction='incoming'
     WHERE e.merchant_id=? AND e.conversation_id=? AND e.customer_phone=? AND c.customerPhone=?
       AND e.status IN ('pending','notified') AND e.expires_at>UTC_TIMESTAMP()
-      AND c.human_takeover=0 AND e.handoff_version=c.handoff_version LIMIT 1`,
-  [merchantId, conversationId, customerPhone, customerPhone]);
+      AND c.human_takeover=0 AND e.handoff_version=c.handoff_version
+      AND m.id>c.automation_after_message_id AND m.id>? LIMIT 1`,
+  [merchantId, conversationId, customerPhone, customerPhone, memoryHistoryCutoff]);
   return rows.length === 1;
 }
 

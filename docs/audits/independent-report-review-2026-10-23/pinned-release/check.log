@@ -1,0 +1,8 @@
+Node v22.23.2; pinned pnpm 10.4.1; task check
+
+> sari@1.0.0 check C:\Users\user\Herd\sari-new\.tmp\launch-release-candidate
+> tsc --noEmit
+
+
+TASK_EXIT_CODE=0
+ELAPSED_MS=315258

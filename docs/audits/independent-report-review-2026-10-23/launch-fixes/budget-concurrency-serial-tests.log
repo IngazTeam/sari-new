@@ -1,0 +1,73 @@
+
+ RUN  v4.1.10 C:/Users/user/Herd/sari-new
+
+ ❯ server/ai/budget-settlement.mysql.test.ts (39 tests | 1 failed) 11937ms
+     × settles captured usage after a process stops in reserved 1846ms
+     ✓ settles captured usage after a process stops in unknown 147ms
+     ✓ does not guess usage for old reserved or unknown attempts 63ms
+     ✓ preserves the original quote after an administrator changes or disables its price card 92ms
+     ✓ records actual usage above the quote without truncating the billed amount 87ms
+     ✓ acknowledges the same receipt without moving its schedule or stealing its lease 79ms
+     ✓ rejects forged receipt reservationKey before recording usage 62ms
+     ✓ rejects forged receipt scopeKey before recording usage 56ms
+     ✓ rejects forged receipt requestId before recording usage 55ms
+     ✓ rejects forged receipt provider before recording usage 56ms
+     ✓ rejects forged receipt model before recording usage 51ms
+     ✓ rejects forged receipt taskType before recording usage 53ms
+     ✓ rejects a different receipt even when flat pricing would produce the same total 70ms
+     ✓ retains receipt durability across a transient before commit fault 190ms
+     ✓ retains receipt durability across a transient after commit fault 185ms
+     ✓ bounds transient receipt retries and does not settle without a committed receipt  489ms
+     ✓ keeps a saved receipt after lost acknowledgement even when the caller cannot confirm it 92ms
+     ✓ recovers a settlement commit failure before acknowledgement exactly once 112ms
+     ✓ recovers a settlement commit failure after acknowledgement exactly once 89ms
+     ✓ retains funds, redacts failure and backs off a failed worker without blocking the next attempt 129ms
+     ✓ settles only once across five concurrent workers 105ms
+     ✓ settles from SQL in three independent processes without in-memory authority  6252ms
+     ✓ fences scope on an automatic settlement 74ms
+     ✓ fences request on an automatic settlement 77ms
+     ✓ fences token on an automatic settlement 77ms
+     ✓ fences usage on an automatic settlement 77ms
+     ✓ fences expired on an automatic settlement 74ms
+     ✓ rechecks expiry after waiting for the global accounting lock 87ms
+     ✓ does not let an expired worker clear or postpone a replacement lease 122ms
+     ✓ preserves superadmin evidence settled before receipt 244ms
+     ✓ preserves superadmin evidence settled after receipt 142ms
+     ✓ preserves superadmin evidence settled after claim 138ms
+     ✓ settles the original UTC period after the day changes 99ms
+     ✓ captures usage even when application handoff fails without replaying generation 117ms
+     ✓ rejects partial receipts at the database boundary 51ms
+     ✓ rejects invalid settlement batch size 0 46ms
+     ✓ rejects invalid settlement batch size 21 45ms
+     ✓ rejects invalid settlement batch size 1.5 48ms
+     ✓ rejects invalid settlement batch size NaN 47ms
+ ✓ server/ai/budget-alerts.mysql.test.ts (18 tests) 3572ms
+     ✓ records exactly at 70%, without rounding one micro-dollar up  661ms
+     ✓ admits concurrent reservations up to $100 with one event per threshold and blocks the next provider call  702ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  server/ai/budget-settlement.mysql.test.ts > durable provider usage settlement on MySQL > settles captured usage after a process stops in reserved
+AssertionError: expected [ { …(5) }, { …(5) } ] to have a length of +0 but got 2
+
+- Expected
++ Received
+
+- 0
++ 2
+
+ ❯ server/ai/budget-settlement.mysql.test.ts:48:40
+     46|   it.each(['reserved','unknown'])('settles captured usage after a proc…
+     47|     await persistAiProviderUsage(attempt,usage);await query('UPDATE ai…
+     48|     expect(await claimAiSettlements()).toHaveLength(0);await due();exp…
+       |                                        ^
+     49|     expect(await row()).toMatchObject({state:'settled',settled_micro_u…
+     50|     expect((await amounts())[0]).toMatchObject({spent_micro_usd:8,rese…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 1 passed (2)
+      Tests  1 failed | 56 passed (57)
+   Start at  05:29:47
+   Duration  23.32s (transform 2.83s, setup 0ms, import 6.17s, tests 15.51s, environment 1ms)

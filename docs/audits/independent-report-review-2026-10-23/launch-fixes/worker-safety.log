@@ -1,0 +1,18 @@
+
+ RUN  v4.1.10 C:/Users/user/Herd/sari-new
+
+ ✓ server/contract-guards.test.ts (42 tests) 161ms
+stdout | server/bot-audit-pentest.test.ts
+[Rate Limiter] Rate limiting middleware initialized
+
+ ✓ server/whatsapp-delivery-safety.test.ts (28 tests) 6854ms
+     ✓ preserves campaign authority even if the retry key is a legacy generic key  2779ms
+     ✓ refuses reviewed reply keys without the separate server-owned authorization  3222ms
+     ✓ refuses booking notice keys without the server-owned claim guard  784ms
+ ✓ server/learning-recovery-bootstrap-pentest.test.ts (13 tests) 138ms
+ ✓ server/bot-audit-pentest.test.ts (93 tests) 361ms
+
+ Test Files  4 passed (4)
+      Tests  176 passed (176)
+   Start at  05:22:55
+   Duration  62.20s (transform 49.78s, setup 0ms, import 72.50s, tests 7.51s, environment 1ms)

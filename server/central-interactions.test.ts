@@ -38,6 +38,24 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 describe("central production interactions", () => {
+  it.each(["ar", "en"])("keeps typed and clicked tour questions consistent in every sector (%s)", async lang => {
+    const d = mount(`/try-sari?lang=${lang}`);
+    bootstrapCentral();
+    const submit = (text: string) => {
+      (d.querySelector("#demo-input") as HTMLInputElement).value = text;
+      d.querySelector("#demo-form")!.dispatchEvent(new dom.window.Event("submit", { bubbles: true, cancelable: true }));
+    };
+    const lastReply = () => d.querySelector("#demo-messages .bot:last-child")!.textContent;
+    for (const sector of ["commerce", "training", "services", "clinics", "real-estate"]) {
+      (d.querySelector(`[data-demo-sector="${sector}"]`) as HTMLElement).click();
+      for (const suggestion of Array.from(d.querySelectorAll<HTMLButtonElement>("[data-demo-question]"))) {
+        suggestion.click(); const expected = lastReply();
+        submit(suggestion.textContent!); expect(lastReply()).toBe(expected);
+      }
+    }
+    submit(lang === "ar" ? "لا أحتاج موظف، كم السعر؟" : "I do not need an agent, what is the price?");
+    expect(lastReply()).toContain(lang === "ar" ? "اختر أحد الأسئلة المقترحة" : "Choose a suggested question");
+  });
   it("validates signup steps and sends independent legal consent to the real contract", async () => {
     const d = mount("/signup?lang=en");
     const fetchMock = vi.fn(

@@ -1,0 +1,450 @@
+Node v22.23.2; pinned pnpm 10.4.1; task release-tests
+
+ RUN  v4.1.10 C:/Users/user/Herd/sari-new/.tmp/launch-release-candidate
+
+ ✓ server/ai/zahypi-client.test.ts (103 tests) 5458ms
+     ✓ retries HTML HTTP 408 without changing the create identity  402ms
+     ✓ retries only GET after a polling failure, preserving the original job and trace  388ms
+     ✓ submits governed contract 'sari.reply' with the declared tenant policy  1894ms
+stdout | server/core-team-access.test.ts
+[Rate Limiter] Rate limiting middleware initialized
+
+ ✓ server/campaign-router-canonical-pentest.test.ts (108 tests) 463ms
+ ✓ server/campaign-delivery-outbox-pentest.test.ts (18 tests) 120ms
+ ✓ server/occasion-campaign-outbox-pentest.test.ts (11 tests) 136ms
+ ✓ server/whatsapp-delivery-safety.test.ts (28 tests) 2419ms
+     ✓ refuses reviewed reply keys without the separate server-owned authorization  1957ms
+stderr | server/salla-order-money.test.ts > Salla order transport and monetary authority > refuses an unreserved creation and does not call the provider
+[OrderFromChat] Error creating order: { providerAttempted: false }
+
+stdout | server/salla-order-money.test.ts > Salla order transport and monetary authority > persists the dispatch reservation before POST and passes it to the atomic local save
+[Salla] Creating order for merchant 7
+
+stdout | server/salla-order-money.test.ts > Salla order transport and monetary authority > uses the documented product identifiers, national address and pending payment contract
+[Salla] Creating order for merchant 7
+
+stdout | server/salla-order-money.test.ts > Salla order transport and monetary authority > saves one local order with the provider total including tax/shipping, without a second Tap collection
+[Salla] Creating order for merchant 7
+
+stderr | server/salla-order-money.test.ts > Salla order transport and monetary authority > stops when the verified catalogue rejects a selection (scope and money checked by MySQL contracts)
+[OrderFromChat] Error creating order: { providerAttempted: false }
+
+stderr | server/salla-order-money.test.ts > Salla order transport and monetary authority > does not register a partial order
+[OrderFromChat] Error creating order: { providerAttempted: false }
+
+stderr | server/salla-order-money.test.ts > Salla order transport and monetary authority > rejects unverified/inactive connection before POST: null
+[OrderFromChat] Error creating order: { providerAttempted: false }
+
+stderr | server/salla-order-money.test.ts > Salla order transport and monetary authority > rejects unverified/inactive connection before POST: {"id":12,"sallaStoreId":null,"syncStatus":"active","accessToken":"test-only"}
+[OrderFromChat] Error creating order: { providerAttempted: false }
+
+stderr | server/salla-order-money.test.ts > Salla order transport and monetary authority > rejects unverified/inactive connection before POST: {"id":12,"sallaStoreId":"987","syncStatus":"paused","accessToken":"test-only"}
+[OrderFromChat] Error creating order: { providerAttempted: false }
+
+stderr | server/salla-order-money.test.ts > Salla order transport and monetary authority > rechecks connection and required schema before POST
+[OrderFromChat] Error creating order: { providerAttempted: false }
+
+stdout | server/salla-order-money.test.ts > Salla order transport and monetary authority > parks an ambiguous provider acceptance rather than pretending it failed safely: undefined
+[Salla] Creating order for merchant 7
+
+stderr | server/salla-order-money.test.ts > Salla order transport and monetary authority > parks an ambiguous provider acceptance rather than pretending it failed safely: undefined
+[Salla] Order creation failed: { status: undefined }
+
+stderr | server/salla-order-money.test.ts > Salla order transport and monetary authority > parks an ambiguous provider acceptance rather than pretending it failed safely: undefined
+[OrderFromChat] Error creating order: { providerAttempted: true }
+
+stdout | server/salla-order-money.test.ts > Salla order transport and monetary authority > parks an ambiguous provider acceptance rather than pretending it failed safely: {"amount":"1.001","currency":"SAR"}
+[Salla] Creating order for merchant 7
+
+stderr | server/salla-order-money.test.ts > Salla order transport and monetary authority > parks an ambiguous provider acceptance rather than pretending it failed safely: {"amount":"1.001","currency":"SAR"}
+[Salla] Order creation failed: { status: undefined }
+
+stderr | server/salla-order-money.test.ts > Salla order transport and monetary authority > parks an ambiguous provider acceptance rather than pretending it failed safely: {"amount":"1.001","currency":"SAR"}
+[OrderFromChat] Error creating order: { providerAttempted: true }
+
+stdout | server/salla-order-money.test.ts > Salla order transport and monetary authority > parks an ambiguous provider acceptance rather than pretending it failed safely: {"amount":100,"currency":"USD"}
+[Salla] Creating order for merchant 7
+
+stderr | server/salla-order-money.test.ts > Salla order transport and monetary authority > parks an ambiguous provider acceptance rather than pretending it failed safely: {"amount":100,"currency":"USD"}
+[Salla] Order creation failed: { status: undefined }
+
+stderr | server/salla-order-money.test.ts > Salla order transport and monetary authority > parks an ambiguous provider acceptance rather than pretending it failed safely: {"amount":100,"currency":"USD"}
+[OrderFromChat] Error creating order: { providerAttempted: true }
+
+stdout | server/salla-order-money.test.ts > Salla order transport and monetary authority > parks a lost local INSERT acknowledgement without reissuing the provider request
+[Salla] Creating order for merchant 7
+
+stderr | server/salla-order-money.test.ts > Salla order transport and monetary authority > parks a lost local INSERT acknowledgement without reissuing the provider request
+[OrderFromChat] Error creating order: { providerAttempted: true }
+
+stdout | server/salla-order-money.test.ts > Salla order transport and monetary authority > rejects malformed identities, unsafe checkout URLs and conflicting currencies: {"id":{}}
+[Salla] Creating order for merchant 7
+
+stderr | server/salla-order-money.test.ts > Salla order transport and monetary authority > rejects malformed identities, unsafe checkout URLs and conflicting currencies: {"id":{}}
+[Salla] Order creation failed: { status: undefined }
+
+stderr | server/salla-order-money.test.ts > Salla order transport and monetary authority > rejects malformed identities, unsafe checkout URLs and conflicting currencies: {"id":{}}
+[OrderFromChat] Error creating order: { providerAttempted: true }
+
+stdout | server/salla-order-money.test.ts > Salla order transport and monetary authority > rejects malformed identities, unsafe checkout URLs and conflicting currencies: {"urls":{"checkout":"javascript:alert(1)"}}
+[Salla] Creating order for merchant 7
+
+stderr | server/salla-order-money.test.ts > Salla order transport and monetary authority > rejects malformed identities, unsafe checkout URLs and conflicting currencies: {"urls":{"checkout":"javascript:alert(1)"}}
+[Salla] Order creation failed: { status: undefined }
+
+stderr | server/salla-order-money.test.ts > Salla order transport and monetary authority > rejects malformed identities, unsafe checkout URLs and conflicting currencies: {"urls":{"checkout":"javascript:alert(1)"}}
+[OrderFromChat] Error creating order: { providerAttempted: true }
+
+stdout | server/salla-order-money.test.ts > Salla order transport and monetary authority > rejects malformed identities, unsafe checkout URLs and conflicting currencies: {"urls":{"checkout":"https://user:pass@example.test/pay"}}
+[Salla] Creating order for merchant 7
+
+stderr | server/salla-order-money.test.ts > Salla order transport and monetary authority > rejects malformed identities, unsafe checkout URLs and conflicting currencies: {"urls":{"checkout":"https://user:pass@example.test/pay"}}
+[Salla] Order creation failed: { status: undefined }
+
+stderr | server/salla-order-money.test.ts > Salla order transport and monetary authority > rejects malformed identities, unsafe checkout URLs and conflicting currencies: {"urls":{"checkout":"https://user:pass@example.test/pay"}}
+[OrderFromChat] Error creating order: { providerAttempted: true }
+
+stdout | server/salla-order-money.test.ts > Salla order transport and monetary authority > rejects malformed identities, unsafe checkout URLs and conflicting currencies: {"currency":"USD"}
+[Salla] Creating order for merchant 7
+
+stderr | server/salla-order-money.test.ts > Salla order transport and monetary authority > rejects malformed identities, unsafe checkout URLs and conflicting currencies: {"currency":"USD"}
+[Salla] Order creation failed: { status: undefined }
+
+stderr | server/salla-order-money.test.ts > Salla order transport and monetary authority > rejects malformed identities, unsafe checkout URLs and conflicting currencies: {"currency":"USD"}
+[OrderFromChat] Error creating order: { providerAttempted: true }
+
+stderr | server/salla-order-money.test.ts > Salla order transport and monetary authority > requires a unique parsed product match and never substitutes the first candidate
+[OrderFromChat] Order extraction unavailable
+
+ ✓ server/salla-order-money.test.ts (26 tests) 278ms
+ ✓ server/core-team-access.test.ts (186 tests) 1348ms
+     ✓ scopes booking payment evidence and review to the owner membership  305ms
+ ✓ server/campaign-consent-pentest.test.ts (12 tests) 124ms
+ ✓ server/whatsapp-disconnect-alert-window-pentest.test.ts (10 tests) 65ms
+ ❯ server/deployment-release-pentest.test.ts (11 tests | 1 failed) 672ms
+     ✓ retires in-place and force-reset deployment paths 6ms
+     ✓ pins activation to the exact remote commit and an isolated worktree 2ms
+     ✓ requires a recent verified backup and a protected environment file 1ms
+     ✓ never exposes the production database or runtime secret file to tests and builds 2ms
+     ✓ builds and verifies before touching the schema 1ms
+     ✓ runs campaign checks on both sides of migration and integration checks after it 1ms
+     ✓ activates only through exact readiness and restores the previous app on failure 2ms
+     ✓ bounds PM2 workers and waits for application-declared readiness 1ms
+     ✓ does not start background writers until DB and schema are ready 2ms
+     ✓ loads one explicitly configured environment file without logging its path 1ms
+     × keeps every shipped deploy entry point valid Bash 646ms
+ ❯ server/ai/zahypi-context-propagation.test.ts (14 tests | 1 failed) 119ms
+     ✓ passes the report merchant to the real weekly sentiment analyzer 23ms
+     ✓ routes employee replies without unapproved AI rewriting and scopes the relay to the instance 5ms
+     × scopes every AI suggestion and brain analysis call to the authenticated merchant 17ms
+     ✓ propagates merchant identity through every website-analysis AI stage 18ms
+     ✓ scopes the keyword-extraction.ts background AI path 2ms
+     ✓ scopes the insights.ts background AI path 1ms
+     ✓ scopes the learning-engine.ts background AI path 2ms
+     ✓ scopes the action-selector.ts background AI path 2ms
+     ✓ scopes the supervisor-recovery.ts background AI path 3ms
+     ✓ scopes every merchant-mode AI operation 7ms
+     ✓ scopes product search, product suggestions, and welcome generation 7ms
+     ✓ scopes the standalone suggestion generator and keeps keyword reads non-generative 9ms
+     ✓ keeps OpenAI health probes non-generative 6ms
+     ✓ keeps the admin AI settings truthful about the active text provider 7ms
+ ✓ server/ai-settings-secrets-pentest.test.ts (14 tests) 112ms
+ ✓ server/ai-settings-provider-routing.test.ts (10 tests) 155ms
+stdout | server/conversations.test.ts
+[Rate Limiter] Rate limiting middleware initialized
+
+ ✓ server/ai-settings-budget-access.test.ts (22 tests) 220ms
+stdout | server/merchant-domains-access.test.ts
+[Rate Limiter] Rate limiting middleware initialized
+
+ ✓ server/conversations.test.ts (50 tests) 186ms
+ ✓ server/order-notification-operations-pentest.test.ts (8 tests) 66ms
+stderr | server/ai/openai-zahypi.test.ts > callGPT4 ZahyPi routing > uses ZahyPi for text generation without reading an OpenAI key
+[OpenAI] Usage logging failed
+
+ ✓ server/ai/openai-zahypi.test.ts (6 tests) 103ms
+ ✓ server/order-status-notification-outbox-pentest.test.ts (14 tests) 102ms
+ ✓ server/merchant-order-boundary-pentest.test.ts (7 tests) 36ms
+ ✓ server/merchant-domains-access.test.ts (15 tests) 103ms
+stdout | server/ai/action-execution.test.ts > supplementary actions cannot bypass checkout agreements > sourced 'escalate_to_merchant' action > passes the real message source and customer question to escalation
+[ActionSelector] ✅ Escalated to merchant: طلب موظف (urgency: high)
+
+stderr | server/ai/action-execution.test.ts > supplementary actions cannot bypass checkout agreements > sourced 'escalate_to_merchant' action > does not guess the source for a legacy action
+[ActionSelector] Action execution requires review { action: 'escalate_to_merchant', merchantId: 7, conversationId: 8 }
+
+stderr | server/ai/action-execution.test.ts > supplementary actions cannot bypass checkout agreements > sourced 'escalate_to_merchant' action > requires review when escalation creation returns no persisted record
+[ActionSelector] Action execution requires review { action: 'escalate_to_merchant', merchantId: 7, conversationId: 8 }
+
+stdout | server/ai/action-execution.test.ts > supplementary actions cannot bypass checkout agreements > sourced 'request_merchant_info' action > passes the real message source and customer question to escalation
+[ActionSelector] ✅ Merchant info requested: موعد آخر
+
+stderr | server/ai/action-execution.test.ts > supplementary actions cannot bypass checkout agreements > sourced 'request_merchant_info' action > does not guess the source for a legacy action
+[ActionSelector] Action execution requires review { action: 'request_merchant_info', merchantId: 7, conversationId: 8 }
+
+stderr | server/ai/action-execution.test.ts > supplementary actions cannot bypass checkout agreements > sourced 'request_merchant_info' action > requires review when escalation creation returns no persisted record
+[ActionSelector] Action execution requires review { action: 'request_merchant_info', merchantId: 7, conversationId: 8 }
+
+stdout | server/ai/action-execution.test.ts > supplementary actions cannot bypass checkout agreements > does not execute a legacy model-supplied order action
+[ActionSelector] Action confirm_order — no handler
+
+stderr | server/ai/action-execution.test.ts > supplementary actions cannot bypass checkout agreements > propagates failed scheduling instead of marking inbound processing successful
+[ActionSelector] Action execution requires review { action: 'schedule_followup', merchantId: 7, conversationId: 8 }
+
+stderr | server/ai/action-execution.test.ts > supplementary actions cannot bypass checkout agreements > does not begin an action after worker ownership has expired
+[ActionSelector] Action execution requires review { action: 'send_catalog', merchantId: 7, conversationId: 8 }
+
+stdout | server/ai/action-execution.test.ts > supplementary actions cannot bypass checkout agreements > does not call catalog ordering popularity evidence
+[ActionSelector] ✅ Sent catalog (1 products)
+
+stderr | server/ai/action-execution.test.ts > supplementary actions cannot bypass checkout agreements > does not report an order status when reading canonical orders fails
+[ActionSelector] Action execution requires review { action: 'check_order_status', merchantId: 7, conversationId: 8 }
+
+ ✓ server/ai/action-execution.test.ts (12 tests) 110ms
+ ❯ server/ai-settings-singleton-pentest.test.ts (8 tests | 1 failed) 87ms
+     × uses one stable identifier for every settings read 49ms
+     ✓ performs one atomic insert-or-update without a select-then-insert race 4ms
+     ✓ keeps secret encryption inside the atomic singleton write 3ms
+     ✓ declares the singleton invariant in the Drizzle schema 4ms
+     ✓ normalizes a lone legacy row before adding the database check 5ms
+     ✓ fails preflight on duplicate rows without selecting credentials 4ms
+     ✓ registers migration 0047 after the order-notification migration 6ms
+     ✓ wires both preflight modes and the pentest into release scripts 3ms
+stdout | server/knowledge-access.test.ts
+[Rate Limiter] Rate limiting middleware initialized
+
+ ✓ server/merchant-access.test.ts (17 tests) 104ms
+ ✓ server/products-access.test.ts (11 tests) 110ms
+ ✓ server/subscription-guard.test.ts (15 tests) 96ms
+ ✓ server/knowledge-access.test.ts (113 tests) 178ms
+ ✓ server/_core/llm-zahypi.test.ts (4 tests) 92ms
+stdout | server/voice-transcription.test.ts > production voice transcription (isolated transport) > uses guarded download and platform budget before the provider call
+[Voice] Starting transcription: { language: 'ar' }
+
+stdout | server/voice-transcription.test.ts > production voice transcription (isolated transport) > uses guarded download and platform budget before the provider call
+[Voice] Downloaded file, size: 23 bytes
+
+stdout | server/voice-transcription.test.ts > production voice transcription (isolated transport) > uses guarded download and platform budget before the provider call
+[Voice] Transcription successful: { duration: '17ms', language: 'ar' }
+
+stderr | server/voice-transcription.test.ts > production voice transcription (isolated transport) > does not download or transcribe when AI is disabled
+[Voice] Transcription failed: { status: undefined, duration: '4ms' }
+
+stdout | server/voice-transcription.test.ts > production voice transcription (isolated transport) > does not bypass a refused platform reservation
+[Voice] Starting transcription: { language: 'ar' }
+
+stdout | server/voice-transcription.test.ts > production voice transcription (isolated transport) > does not bypass a refused platform reservation
+[Voice] Downloaded file, size: 23 bytes
+
+stderr | server/voice-transcription.test.ts > production voice transcription (isolated transport) > does not bypass a refused platform reservation
+[Voice] Transcription failed: { status: undefined, duration: '7ms' }
+
+stdout | server/voice-transcription.test.ts > production voice transcription (isolated transport) > rejects audio of 0 bytes before spending
+[Voice] Starting transcription: { language: 'ar' }
+
+stderr | server/voice-transcription.test.ts > production voice transcription (isolated transport) > rejects audio of 0 bytes before spending
+[Voice] Transcription failed: { status: undefined, duration: '10ms' }
+
+stdout | server/voice-transcription.test.ts > production voice transcription (isolated transport) > rejects audio of 0 bytes before spending
+[Voice] Downloaded file, size: 0 bytes
+
+stdout | server/voice-transcription.test.ts > production voice transcription (isolated transport) > rejects audio of 16777217 bytes before spending
+[Voice] Starting transcription: { language: 'ar' }
+
+stdout | server/voice-transcription.test.ts > production voice transcription (isolated transport) > rejects audio of 16777217 bytes before spending
+[Voice] Downloaded file, size: 16777217 bytes
+
+stderr | server/voice-transcription.test.ts > production voice transcription (isolated transport) > rejects audio of 16777217 bytes before spending
+[Voice] Transcription failed: { status: undefined, duration: '2ms' }
+
+stdout | server/voice-transcription.test.ts > production voice transcription (isolated transport) > rejects invalid transcript: undefined
+[Voice] Starting transcription: { language: 'ar' }
+
+stdout | server/voice-transcription.test.ts > production voice transcription (isolated transport) > rejects invalid transcript: undefined
+[Voice] Downloaded file, size: 23 bytes
+
+stderr | server/voice-transcription.test.ts > production voice transcription (isolated transport) > rejects invalid transcript: undefined
+[Voice] Transcription failed: { status: undefined, duration: '6ms' }
+
+stdout | server/voice-transcription.test.ts > production voice transcription (isolated transport) > rejects invalid transcript: ""
+[Voice] Starting transcription: { language: 'ar' }
+
+stdout | server/voice-transcription.test.ts > production voice transcription (isolated transport) > rejects invalid transcript: ""
+[Voice] Downloaded file, size: 23 bytes
+
+stderr | server/voice-transcription.test.ts > production voice transcription (isolated transport) > rejects invalid transcript: ""
+[Voice] Transcription failed: { status: undefined, duration: '4ms' }
+
+stdout | server/voice-transcription.test.ts > production voice transcription (isolated transport) > rejects invalid transcript: "   "
+[Voice] Starting transcription: { language: 'ar' }
+
+stdout | server/voice-transcription.test.ts > production voice transcription (isolated transport) > rejects invalid transcript: "   "
+[Voice] Downloaded file, size: 23 bytes
+
+stderr | server/voice-transcription.test.ts > production voice transcription (isolated transport) > rejects invalid transcript: "   "
+[Voice] Transcription failed: { status: undefined, duration: '4ms' }
+
+stdout | server/voice-transcription.test.ts > production voice transcription (isolated transport) > rejects invalid transcript: 42
+[Voice] Starting transcription: { language: 'ar' }
+
+stdout | server/voice-transcription.test.ts > production voice transcription (isolated transport) > rejects invalid transcript: 42
+[Voice] Downloaded file, size: 23 bytes
+
+stderr | server/voice-transcription.test.ts > production voice transcription (isolated transport) > rejects invalid transcript: 42
+[Voice] Transcription failed: { status: undefined, duration: '5ms' }
+
+stdout | server/voice-transcription.test.ts > production voice transcription (isolated transport) > rejects invalid transcript: {}
+[Voice] Starting transcription: { language: 'ar' }
+
+stdout | server/voice-transcription.test.ts > production voice transcription (isolated transport) > rejects invalid transcript: {}
+[Voice] Downloaded file, size: 23 bytes
+
+stderr | server/voice-transcription.test.ts > production voice transcription (isolated transport) > rejects invalid transcript: {}
+[Voice] Transcription failed: { status: undefined, duration: '6ms' }
+
+stdout | server/voice-transcription.test.ts > production voice transcription (isolated transport) > sanitizes transport errors in logs and caller responses
+[Voice] Starting transcription: { language: 'ar' }
+
+stdout | server/voice-transcription.test.ts > production voice transcription (isolated transport) > sanitizes transport errors in logs and caller responses
+[Voice] Downloaded file, size: 23 bytes
+
+ ✓ server/voice-transcription.test.ts (11 tests) 185ms
+stdout | server/campaigns.test.ts
+[Rate Limiter] Rate limiting middleware initialized
+
+stderr | server/ai/budget-boundaries.test.ts > paid request boundaries > blocks embedding spend while allowing callers to use their non-AI fallback
+[RAG] generateEmbedding failed
+
+stderr | server/ai/budget-boundaries.test.ts > paid request boundaries > honors the super-admin disable switch for voice and embedding
+[RAG] generateEmbedding failed
+
+ ✓ server/ai/budget-boundaries.test.ts (6 tests) 85ms
+ ✓ server/dependency-contracts.test.ts (4 tests) 549ms
+ ✓ server/campaigns.test.ts (10 tests) 61ms
+stdout | server/polling-transport.test.ts > polling transport and durable acknowledgement > does not start or clear a webhook when delivery mode is unknown
+[Polling] Stopping all polling...
+
+stdout | server/polling-transport.test.ts > polling transport and durable acknowledgement > does not start or clear a webhook when delivery mode is unknown
+[Polling] Stopping all polling...
+
+stdout | server/polling-transport.test.ts > polling transport and durable acknowledgement > preserves configured webhook delivery and never logs its secret URL
+[Polling] Stopping all polling...
+
+stdout | server/polling-transport.test.ts > polling transport and durable acknowledgement > acknowledges only after durable acceptance and pins the polled account identity
+[Polling] Starting polling for merchant 7 (no webhook configured)
+
+stdout | server/polling-transport.test.ts > polling transport and durable acknowledgement > acknowledges only after durable acceptance and pins the polled account identity
+[Polling] Received notification for merchant 7 { typeWebhook: 'incomingMessageReceived', hasMessageData: false }
+
+stdout | server/polling-transport.test.ts > polling transport and durable acknowledgement > acknowledges only after durable acceptance and pins the polled account identity
+[Polling] Stopping all polling...
+[Polling] Stopped polling for merchant 7
+
+stdout | server/polling-transport.test.ts > polling transport and durable acknowledgement > retains the provider notification when queue persistence fails
+[Polling] Starting polling for merchant 7 (no webhook configured)
+
+stdout | server/polling-transport.test.ts > polling transport and durable acknowledgement > retains the provider notification when queue persistence fails
+[Polling] Received notification for merchant 7 { typeWebhook: 'incomingMessageReceived', hasMessageData: false }
+
+stderr | server/polling-transport.test.ts > polling transport and durable acknowledgement > retains the provider notification when queue persistence fails
+[Polling] Error polling messages for merchant 7: Error: Queue unavailable
+    at C:/Users/user/Herd/sari-new/.tmp/launch-release-candidate/server/polling-transport.test.ts:43:34
+    at file:///C:/Users/user/Herd/sari-new/.tmp/launch-release-candidate/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11
+    at file:///C:/Users/user/Herd/sari-new/.tmp/launch-release-candidate/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26
+    at file:///C:/Users/user/Herd/sari-new/.tmp/launch-release-candidate/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20
+    at new Promise (<anonymous>)
+    at runWithCancel (file:///C:/Users/user/Herd/sari-new/.tmp/launch-release-candidate/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:2323:10)
+    at file:///C:/Users/user/Herd/sari-new/.tmp/launch-release-candidate/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:2305:20
+    at new Promise (<anonymous>)
+    at runWithTimeout (file:///C:/Users/user/Herd/sari-new/.tmp/launch-release-candidate/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:2272:10)
+    at file:///C:/Users/user/Herd/sari-new/.tmp/launch-release-candidate/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:2955:64
+
+stdout | server/polling-transport.test.ts > polling transport and durable acknowledgement > retains the provider notification when queue persistence fails
+[Polling] Stopping all polling...
+[Polling] Stopped polling for merchant 7
+
+stdout | server/polling-transport.test.ts > polling transport and durable acknowledgement > does not overlap long polling requests within a process
+[Polling] Starting polling for merchant 7 (no webhook configured)
+
+stdout | server/polling-transport.test.ts > polling transport and durable acknowledgement > does not overlap long polling requests within a process
+[Polling] Stopping all polling...
+[Polling] Stopped polling for merchant 7
+
+ ✓ server/polling-transport.test.ts (6 tests) 156ms
+ ✓ server/knowledge/upload-access.test.ts (14 tests) 48ms
+ ✓ server/security/download-media.test.ts (9 tests) 90ms
+ ✓ server/messaging/ingress.test.ts (7 tests) 42ms
+ ✓ server/ai/deployment-preflight.test.ts (8 tests) 25ms
+ ✓ server/knowledge/reprocess.test.ts (9 tests) 127ms
+ ✓ server/product-money.test.ts (19 tests) 135ms
+ ✓ server/db/connection.test.ts (4 tests) 3126ms
+     ✓ shares one pool across simultaneous callers and the compatibility facade  2891ms
+ ✓ server/_core/validateEnv-zahypi.test.ts (3 tests) 34ms
+ ✓ server/knowledge/transaction.test.ts (6 tests) 101ms
+ ✓ server/greenapi-credentials.test.ts (12 tests) 55ms
+ ✓ server/google-api-clients.test.ts (2 tests) 137ms
+ ✓ server/db/time.test.ts (2 tests) 33ms
+ ✓ server/sheets-inventory-access.test.ts (4 tests) 676ms
+     ✓ has no client consumer or direct product update in the old Sheets sync module  632ms
+ ✓ server/_core/trpc-zahypi.test.ts (1 test) 28ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  server/ai-settings-singleton-pentest.test.ts > AI settings singleton persistence boundary > uses one stable identifier for every settings read
+AssertionError: expected [ …(5) ] to have a length of 4 but got 5
+
+- Expected
++ Received
+
+- 4
++ 5
+
+ ❯ server/ai-settings-singleton-pentest.test.ts:11:8
+      9|     expect(database).toContain("AI_SETTINGS_SINGLETON_ID = 1");
+     10|     expect(database.match(/where\(eq\(aiSettings\.id, AI_SETTINGS_SING…
+     11|       .toHaveLength(4);
+       |        ^
+     12|     expect(database).not.toContain(".from(aiSettings).limit(1)");
+     13|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  server/deployment-release-pentest.test.ts > production release gate > keeps every shipped deploy entry point valid Bash
+AssertionError: ./scripts/deploy-production.sh: : expected 3221225794 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 3221225794
+
+ ❯ server/deployment-release-pentest.test.ts:166:60
+    164|     ]) {
+    165|       const result = spawnSync(bashPath, ['-n', script], { encoding: '…
+    166|       expect(result.status, `${script}: ${result.stderr}`).toBe(0);
+       |                                                            ^
+    167|     }
+    168|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  server/ai/zahypi-context-propagation.test.ts > ZahyPi tenant propagation > scopes every AI suggestion and brain analysis call to the authenticated merchant
+AssertionError: Target cannot be null or undefined.
+ ❯ server/ai/zahypi-context-propagation.test.ts:80:49
+     78|   it("scopes every AI suggestion and brain analysis call to the authen…
+     79|     const suggestions = readFileSync(new URL("../routers-ai-suggestion…
+     80|     expect(suggestions.match(/invokeLLM\(\{/g)).toHaveLength(3);
+       |                                                 ^
+     81|     expect(suggestions.match(/merchantId: merchant\.id/g)).toHaveLengt…
+     82|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+
+
+ Test Files  3 failed | 43 passed (46)
+      Tests  3 failed | 987 passed (990)
+   Start at  06:18:13
+   Duration  147.88s (transform 39.62s, setup 0ms, import 222.66s, tests 18.76s, environment 33ms)
+
+
+TASK_EXIT_CODE=1
+ELAPSED_MS=153553

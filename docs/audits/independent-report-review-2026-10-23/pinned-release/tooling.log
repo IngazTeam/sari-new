@@ -1,0 +1,1758 @@
+Node v22.23.2; pinned pnpm 10.4.1; task tooling
+
+> sari@1.0.0 test:tooling C:\Users\user\Herd\sari-new\.tmp\launch-release-candidate
+> node --test scripts/check-production-audit.test.mjs scripts/check-runtime.test.mjs scripts/check-translation-keys.test.mjs scripts/check-inbound-rollback.test.mjs scripts/sary-update-ops.test.mjs scripts/zid-order-release.test.mjs scripts/salla-release-transition.test.mjs
+
+TAP version 13
+# Subtest: allows rollback before any durable ingress has been used
+ok 1 - allows rollback before any durable ingress has been used
+  ---
+  duration_ms: 10.9579
+  type: 'test'
+  ...
+# Subtest: allows a pre-migration database without an inbound table
+ok 2 - allows a pre-migration database without an inbound table
+  ---
+  duration_ms: 1.2734
+  type: 'test'
+  ...
+# Subtest: retains the queue and refuses legacy rollback even for completed history
+ok 3 - retains the queue and refuses legacy rollback even for completed history
+  ---
+  duration_ms: 2.7977
+  type: 'test'
+  ...
+# Subtest: fails closed on an unavailable database or malformed result
+ok 4 - fails closed on an unavailable database or malformed result
+  ---
+  duration_ms: 8.098
+  type: 'test'
+  ...
+# Subtest: accepts a complete clean report and supported lower severity debt
+ok 5 - accepts a complete clean report and supported lower severity debt
+  ---
+  duration_ms: 63.4179
+  type: 'test'
+  ...
+# Subtest: blocks high findings
+ok 6 - blocks high findings
+  ---
+  duration_ms: 2.2574
+  type: 'test'
+  ...
+# Subtest: blocks critical findings
+ok 7 - blocks critical findings
+  ---
+  duration_ms: 0.7454
+  type: 'test'
+  ...
+# Subtest: fails closed for a JSON registry error even with exit 0
+ok 8 - fails closed for a JSON registry error even with exit 0
+  ---
+  duration_ms: 0.9633
+  type: 'test'
+  ...
+# Subtest: fails closed for a JSON registry error even with exit 1
+ok 9 - fails closed for a JSON registry error even with exit 1
+  ---
+  duration_ms: 0.8962
+  type: 'test'
+  ...
+# Subtest: rejects incomplete/unparseable output ""
+ok 10 - rejects incomplete/unparseable output ""
+  ---
+  duration_ms: 0.5977
+  type: 'test'
+  ...
+# Subtest: rejects incomplete/unparseable output "{"
+ok 11 - rejects incomplete/unparseable output "{"
+  ---
+  duration_ms: 0.8404
+  type: 'test'
+  ...
+# Subtest: rejects incomplete/unparseable output "{}"
+ok 12 - rejects incomplete/unparseable output "{}"
+  ---
+  duration_ms: 0.4495
+  type: 'test'
+  ...
+# Subtest: rejects incomplete/unparseable output "null"
+ok 13 - rejects incomplete/unparseable output "null"
+  ---
+  duration_ms: 1.2169
+  type: 'test'
+  ...
+# Subtest: rejects incomplete/unparseable output "[]"
+ok 14 - rejects incomplete/unparseable output "[]"
+  ---
+  duration_ms: 3.7659
+  type: 'test'
+  ...
+# Subtest: rejects incomplete/unparseable output "{\\"advisories\\":{}}"
+ok 15 - rejects incomplete/unparseable output "{\\"advisories\\":{}}"
+  ---
+  duration_ms: 1.8902
+  type: 'test'
+  ...
+# Subtest: rejects unsuccessful process {"status":null,"error":{}}
+ok 16 - rejects unsuccessful process {"status":null,"error":{}}
+  ---
+  duration_ms: 8.5758
+  type: 'test'
+  ...
+# Subtest: rejects unsuccessful process {"signal":"SIGTERM"}
+ok 17 - rejects unsuccessful process {"signal":"SIGTERM"}
+  ---
+  duration_ms: 0.5376
+  type: 'test'
+  ...
+# Subtest: rejects unsuccessful process {"error":{"code":"ETIMEDOUT"}}
+ok 18 - rejects unsuccessful process {"error":{"code":"ETIMEDOUT"}}
+  ---
+  duration_ms: 0.2924
+  type: 'test'
+  ...
+# Subtest: rejects unsuccessful process {"status":2}
+ok 19 - rejects unsuccessful process {"status":2}
+  ---
+  duration_ms: 0.316
+  type: 'test'
+  ...
+# Subtest: rejects unsuccessful process {"status":1}
+ok 20 - rejects unsuccessful process {"status":1}
+  ---
+  duration_ms: 0.352
+  type: 'test'
+  ...
+# Subtest: rejects mismatched totals and invalid severity/counts instead of trusting either half
+ok 21 - rejects mismatched totals and invalid severity/counts instead of trusting either half
+  ---
+  duration_ms: 2.1692
+  type: 'test'
+  ...
+# Subtest: does not expose registry secrets in diagnostics
+ok 22 - does not expose registry secrets in diagnostics
+  ---
+  duration_ms: 3.4201
+  type: 'test'
+  ...
+# Subtest: accepts matching explicit runtime and package-manager pins
+ok 23 - accepts matching explicit runtime and package-manager pins
+  ---
+  duration_ms: 16.2857
+  type: 'test'
+  ...
+# Subtest: rejects wrong runtimes, package managers, missing identity and inconsistent pins
+ok 24 - rejects wrong runtimes, package managers, missing identity and inconsistent pins
+  ---
+  duration_ms: 3.163
+  type: 'test'
+  ...
+# Subtest: translation gate accepts real keys and literal template documentation
+ok 25 - translation gate accepts real keys and literal template documentation
+  ---
+  duration_ms: 6143.5215
+  type: 'test'
+  ...
+# Subtest: translation gate refuses missing keys even with a fallback
+ok 26 - translation gate refuses missing keys even with a fallback
+  ---
+  duration_ms: 5027.6838
+  type: 'test'
+  ...
+# Subtest: translation gate refuses unknown dynamic keys and missing interpolation values
+ok 27 - translation gate refuses unknown dynamic keys and missing interpolation values
+  ---
+  duration_ms: 4997.1233
+  type: 'test'
+  ...
+# Subtest: a release missing website-analysis-durable-jobs-0200 cannot activate or roll back
+ok 28 - a release missing website-analysis-durable-jobs-0200 cannot activate or roll back
+  ---
+  duration_ms: 198.7595
+  type: 'test'
+  ...
+# Subtest: a release missing website-analysis-request-links-0201 cannot activate or roll back
+ok 29 - a release missing website-analysis-request-links-0201 cannot activate or roll back
+  ---
+  duration_ms: 126.2147
+  type: 'test'
+  ...
+# Subtest: a release missing competitor-reviewed-workspace-v1 cannot activate or roll back
+ok 30 - a release missing competitor-reviewed-workspace-v1 cannot activate or roll back
+  ---
+  duration_ms: 126.0504
+  type: 'test'
+  ...
+# Subtest: a release missing competitor-analysis-durable-0202 cannot activate or roll back
+ok 31 - a release missing competitor-analysis-durable-0202 cannot activate or roll back
+  ---
+  duration_ms: 103.1022
+  type: 'test'
+  ...
+# Subtest: a release missing competitor-request-closure-0203 cannot activate or roll back
+ok 32 - a release missing competitor-request-closure-0203 cannot activate or roll back
+  ---
+  duration_ms: 116.4857
+  type: 'test'
+  ...
+# Subtest: a release missing notification-preferences-unique-0204 cannot activate or roll back
+ok 33 - a release missing notification-preferences-unique-0204 cannot activate or roll back
+  ---
+  duration_ms: 82.6586
+  type: 'test'
+  ...
+# Subtest: a release missing notification-preferences-reviewed-tenant-only-v1 cannot activate or roll back
+ok 34 - a release missing notification-preferences-reviewed-tenant-only-v1 cannot activate or roll back
+  ---
+  duration_ms: 77.304
+  type: 'test'
+  ...
+# Subtest: a release missing currency-reviewed-owner-only-v1 cannot activate or roll back
+ok 35 - a release missing currency-reviewed-owner-only-v1 cannot activate or roll back
+  ---
+  duration_ms: 80.4194
+  type: 'test'
+  ...
+# Subtest: a release missing profile-reviewed-writes-only-v1 cannot activate or roll back
+ok 36 - a release missing profile-reviewed-writes-only-v1 cannot activate or roll back
+  ---
+  duration_ms: 75.6346
+  type: 'test'
+  ...
+# Subtest: a release missing payment-settings-reviewed-only-v1 cannot activate or roll back
+ok 37 - a release missing payment-settings-reviewed-only-v1 cannot activate or roll back
+  ---
+  duration_ms: 91.0808
+  type: 'test'
+  ...
+# Subtest: a release missing payment-history-scoped-read-only-v1 cannot activate or roll back
+ok 38 - a release missing payment-history-scoped-read-only-v1 cannot activate or roll back
+  ---
+  duration_ms: 82.104
+  type: 'test'
+  ...
+# Subtest: a release missing payment-link-availability-validated-v1 cannot activate or roll back
+ok 39 - a release missing payment-link-availability-validated-v1 cannot activate or roll back
+  ---
+  duration_ms: 75.7534
+  type: 'test'
+  ...
+# Subtest: a release missing payment-links-reviewed-workspace-v1 cannot activate or roll back
+ok 40 - a release missing payment-links-reviewed-workspace-v1 cannot activate or roll back
+  ---
+  duration_ms: 66.7877
+  type: 'test'
+  ...
+# Subtest: a release missing account-notifications-reviewed-workspace-v1 cannot activate or roll back
+ok 41 - a release missing account-notifications-reviewed-workspace-v1 cannot activate or roll back
+  ---
+  duration_ms: 82.6508
+  type: 'test'
+  ...
+# Subtest: a release missing usage-scoped-workspace-only-v1 cannot activate or roll back
+ok 42 - a release missing usage-scoped-workspace-only-v1 cannot activate or roll back
+  ---
+  duration_ms: 81.3594
+  type: 'test'
+  ...
+# Subtest: a release missing usage-notifications-evidence-v1 cannot activate or roll back
+ok 43 - a release missing usage-notifications-evidence-v1 cannot activate or roll back
+  ---
+  duration_ms: 78.2303
+  type: 'test'
+  ...
+# Subtest: a release missing subscription-plan-change-snapshot-v1 cannot activate or roll back
+ok 44 - a release missing subscription-plan-change-snapshot-v1 cannot activate or roll back
+  ---
+  duration_ms: 84.3501
+  type: 'test'
+  ...
+# Subtest: a release missing subscription-scoped-billing-only-v1 cannot activate or roll back
+ok 45 - a release missing subscription-scoped-billing-only-v1 cannot activate or roll back
+  ---
+  duration_ms: 83.0191
+  type: 'test'
+  ...
+# Subtest: a release missing subscription-reviewed-cancellation-v1 cannot activate or roll back
+ok 46 - a release missing subscription-reviewed-cancellation-v1 cannot activate or roll back
+  ---
+  duration_ms: 74.1013
+  type: 'test'
+  ...
+# Subtest: a release missing subscription-canonical-merchant-lock-v1 cannot activate or roll back
+ok 47 - a release missing subscription-canonical-merchant-lock-v1 cannot activate or roll back
+  ---
+  duration_ms: 78.5263
+  type: 'test'
+  ...
+# Subtest: a release missing subscription-capture-review-0205 cannot activate or roll back
+ok 48 - a release missing subscription-capture-review-0205 cannot activate or roll back
+  ---
+  duration_ms: 79.4711
+  type: 'test'
+  ...
+# Subtest: a release missing whatsapp-reviewed-removal-only-v1 cannot activate or roll back
+ok 49 - a release missing whatsapp-reviewed-removal-only-v1 cannot activate or roll back
+  ---
+  duration_ms: 63.6645
+  type: 'test'
+  ...
+# Subtest: a release missing whatsapp-reviewed-save-only-v1 cannot activate or roll back
+ok 50 - a release missing whatsapp-reviewed-save-only-v1 cannot activate or roll back
+  ---
+  duration_ms: 87.583
+  type: 'test'
+  ...
+# Subtest: a release missing sheets-scoped-user-operations-v1 cannot activate or roll back
+ok 51 - a release missing sheets-scoped-user-operations-v1 cannot activate or roll back
+  ---
+  duration_ms: 87.6583
+  type: 'test'
+  ...
+# Subtest: a release missing sheets-report-evidence-v1 cannot activate or roll back
+ok 52 - a release missing sheets-report-evidence-v1 cannot activate or roll back
+  ---
+  duration_ms: 78.9719
+  type: 'test'
+  ...
+# Subtest: a release missing sheets-export-reviewed-destination-v1 cannot activate or roll back
+ok 53 - a release missing sheets-export-reviewed-destination-v1 cannot activate or roll back
+  ---
+  duration_ms: 100.3031
+  type: 'test'
+  ...
+# Subtest: a release missing sheets-reports-reviewed-destinations-v1 cannot activate or roll back
+ok 54 - a release missing sheets-reports-reviewed-destinations-v1 cannot activate or roll back
+  ---
+  duration_ms: 72.6914
+  type: 'test'
+  ...
+# Subtest: a release missing sheets-unreviewed-sync-retired-v1 cannot activate or roll back
+ok 55 - a release missing sheets-unreviewed-sync-retired-v1 cannot activate or roll back
+  ---
+  duration_ms: 77.8477
+  type: 'test'
+  ...
+# Subtest: a release missing push-bounded-provider-transport-v1 cannot activate or roll back
+ok 56 - a release missing push-bounded-provider-transport-v1 cannot activate or roll back
+  ---
+  duration_ms: 77.9629
+  type: 'test'
+  ...
+# Subtest: a release missing push-device-session-authority-0206 cannot activate or roll back
+ok 57 - a release missing push-device-session-authority-0206 cannot activate or roll back
+  ---
+  duration_ms: 69.2604
+  type: 'test'
+  ...
+# Subtest: a release missing privacy-account-session-workspace-v1 cannot activate or roll back
+ok 58 - a release missing privacy-account-session-workspace-v1 cannot activate or roll back
+  ---
+  duration_ms: 62.9071
+  type: 'test'
+  ...
+# Subtest: a release missing team-session-scoped-workspace-v1 cannot activate or roll back
+ok 59 - a release missing team-session-scoped-workspace-v1 cannot activate or roll back
+  ---
+  duration_ms: 66.7524
+  type: 'test'
+  ...
+# Subtest: a release missing team-reviewed-workspace-v1 cannot activate or roll back
+ok 60 - a release missing team-reviewed-workspace-v1 cannot activate or roll back
+  ---
+  duration_ms: 77.537
+  type: 'test'
+  ...
+# Subtest: a release missing loyalty-atomic-tenant-ledger-v1 cannot activate or roll back
+ok 61 - a release missing loyalty-atomic-tenant-ledger-v1 cannot activate or roll back
+  ---
+  duration_ms: 77.7411
+  type: 'test'
+  ...
+# Subtest: a release missing loyalty-reviewed-receipts-0207 cannot activate or roll back
+ok 62 - a release missing loyalty-reviewed-receipts-0207 cannot activate or roll back
+  ---
+  duration_ms: 72.519
+  type: 'test'
+  ...
+# Subtest: a release missing loyalty-shared-reviewed-workspace-v1 cannot activate or roll back
+ok 63 - a release missing loyalty-shared-reviewed-workspace-v1 cannot activate or roll back
+  ---
+  duration_ms: 75.5057
+  type: 'test'
+  ...
+# Subtest: a release missing loyalty-legacy-writes-retired-v1 cannot activate or roll back
+ok 64 - a release missing loyalty-legacy-writes-retired-v1 cannot activate or roll back
+  ---
+  duration_ms: 73.5366
+  type: 'test'
+  ...
+# Subtest: a release missing zid-order-store-identity-0127 cannot activate or roll back
+ok 65 - a release missing zid-order-store-identity-0127 cannot activate or roll back
+  ---
+  duration_ms: 66.645
+  type: 'test'
+  ...
+# Subtest: a release missing zid-catalog-store-identity-0129 cannot activate or roll back
+ok 66 - a release missing zid-catalog-store-identity-0129 cannot activate or roll back
+  ---
+  duration_ms: 66.4021
+  type: 'test'
+  ...
+# Subtest: a release missing staff-voice-acceptance-0132 cannot activate or roll back
+ok 67 - a release missing staff-voice-acceptance-0132 cannot activate or roll back
+  ---
+  duration_ms: 71.8137
+  type: 'test'
+  ...
+# Subtest: a release missing salla-order-store-identity-0137 cannot activate or roll back
+ok 68 - a release missing salla-order-store-identity-0137 cannot activate or roll back
+  ---
+  duration_ms: 78.5742
+  type: 'test'
+  ...
+# Subtest: a release missing salla-order-creation-0138 cannot activate or roll back
+ok 69 - a release missing salla-order-creation-0138 cannot activate or roll back
+  ---
+  duration_ms: 79.4779
+  type: 'test'
+  ...
+# Subtest: a release missing salla-catalog-store-identity-0139 cannot activate or roll back
+ok 70 - a release missing salla-catalog-store-identity-0139 cannot activate or roll back
+  ---
+  duration_ms: 64.225
+  type: 'test'
+  ...
+# Subtest: a release missing salla-creation-effects-0140 cannot activate or roll back
+ok 71 - a release missing salla-creation-effects-0140 cannot activate or roll back
+  ---
+  duration_ms: 77.7854
+  type: 'test'
+  ...
+# Subtest: a release missing salla-sheet-receipts-0142 cannot activate or roll back
+ok 72 - a release missing salla-sheet-receipts-0142 cannot activate or roll back
+  ---
+  duration_ms: 67.9555
+  type: 'test'
+  ...
+# Subtest: a release missing salla-notice-receipts-0143 cannot activate or roll back
+ok 73 - a release missing salla-notice-receipts-0143 cannot activate or roll back
+  ---
+  duration_ms: 67.8472
+  type: 'test'
+  ...
+# Subtest: a release missing zid-oauth-reviewed-admission-0189 cannot activate or roll back
+ok 74 - a release missing zid-oauth-reviewed-admission-0189 cannot activate or roll back
+  ---
+  duration_ms: 70.4151
+  type: 'test'
+  ...
+# Subtest: a release missing zid-dashboard-reviewed-writes-0190 cannot activate or roll back
+ok 75 - a release missing zid-dashboard-reviewed-writes-0190 cannot activate or roll back
+  ---
+  duration_ms: 81.6234
+  type: 'test'
+  ...
+# Subtest: a release missing woocommerce-dashboard-authority-v1 cannot activate or roll back
+ok 76 - a release missing woocommerce-dashboard-authority-v1 cannot activate or roll back
+  ---
+  duration_ms: 59.6038
+  type: 'test'
+  ...
+# Subtest: a release missing woocommerce-atomic-admission-v1 cannot activate or roll back
+ok 77 - a release missing woocommerce-atomic-admission-v1 cannot activate or roll back
+  ---
+  duration_ms: 71.4031
+  type: 'test'
+  ...
+# Subtest: a release missing woocommerce-reviewed-sync-0191 cannot activate or roll back
+ok 78 - a release missing woocommerce-reviewed-sync-0191 cannot activate or roll back
+  ---
+  duration_ms: 86.3892
+  type: 'test'
+  ...
+# Subtest: a release missing woocommerce-reviewed-notices-0191 cannot activate or roll back
+ok 79 - a release missing woocommerce-reviewed-notices-0191 cannot activate or roll back
+  ---
+  duration_ms: 67.5541
+  type: 'test'
+  ...
+# Subtest: a release missing woocommerce-dashboard-reviewed-writes-0191 cannot activate or roll back
+ok 80 - a release missing woocommerce-dashboard-reviewed-writes-0191 cannot activate or roll back
+  ---
+  duration_ms: 88.5055
+  type: 'test'
+  ...
+# Subtest: a release missing calendly-dashboard-authority-v1 cannot activate or roll back
+ok 81 - a release missing calendly-dashboard-authority-v1 cannot activate or roll back
+  ---
+  duration_ms: 71.5153
+  type: 'test'
+  ...
+# Subtest: a release missing calendly-worker-authority-v1 cannot activate or roll back
+ok 82 - a release missing calendly-worker-authority-v1 cannot activate or roll back
+  ---
+  duration_ms: 65.9877
+  type: 'test'
+  ...
+# Subtest: a release missing calendly-notification-authority-v1 cannot activate or roll back
+ok 83 - a release missing calendly-notification-authority-v1 cannot activate or roll back
+  ---
+  duration_ms: 72.4223
+  type: 'test'
+  ...
+# Subtest: a release missing calendly-dashboard-reviewed-writes-0192 cannot activate or roll back
+ok 84 - a release missing calendly-dashboard-reviewed-writes-0192 cannot activate or roll back
+  ---
+  duration_ms: 65.4592
+  type: 'test'
+  ...
+# Subtest: a release missing merchant-referral-program-0193 cannot activate or roll back
+ok 85 - a release missing merchant-referral-program-0193 cannot activate or roll back
+  ---
+  duration_ms: 69.5237
+  type: 'test'
+  ...
+# Subtest: a release missing abandoned-cart-reminder-admission-0194 cannot activate or roll back
+ok 86 - a release missing abandoned-cart-reminder-admission-0194 cannot activate or roll back
+  ---
+  duration_ms: 67.3246
+  type: 'test'
+  ...
+# Subtest: a release missing abandoned-cart-reminder-transport-0194 cannot activate or roll back
+ok 87 - a release missing abandoned-cart-reminder-transport-0194 cannot activate or roll back
+  ---
+  duration_ms: 62.6749
+  type: 'test'
+  ...
+# Subtest: a release missing abandoned-cart-reviewed-writes-only-0194 cannot activate or roll back
+ok 88 - a release missing abandoned-cart-reviewed-writes-only-0194 cannot activate or roll back
+  ---
+  duration_ms: 67.942
+  type: 'test'
+  ...
+# Subtest: a release missing occasion-reviewed-writes-only-v1 cannot activate or roll back
+ok 89 - a release missing occasion-reviewed-writes-only-v1 cannot activate or roll back
+  ---
+  duration_ms: 65.6989
+  type: 'test'
+  ...
+# Subtest: a release missing occasion-activation-grants-0195 cannot activate or roll back
+ok 90 - a release missing occasion-activation-grants-0195 cannot activate or roll back
+  ---
+  duration_ms: 64.3521
+  type: 'test'
+  ...
+# Subtest: a release missing occasion-preparation-authority-0195 cannot activate or roll back
+ok 91 - a release missing occasion-preparation-authority-0195 cannot activate or roll back
+  ---
+  duration_ms: 67.1742
+  type: 'test'
+  ...
+# Subtest: a release missing occasion-dispatch-authority-0195 cannot activate or roll back
+ok 92 - a release missing occasion-dispatch-authority-0195 cannot activate or roll back
+  ---
+  duration_ms: 71.7478
+  type: 'test'
+  ...
+# Subtest: a release missing promotion-atomic-writes-v1 cannot activate or roll back
+ok 93 - a release missing promotion-atomic-writes-v1 cannot activate or roll back
+  ---
+  duration_ms: 72.924
+  type: 'test'
+  ...
+# Subtest: a release missing promotion-code-boundaries-v1 cannot activate or roll back
+ok 94 - a release missing promotion-code-boundaries-v1 cannot activate or roll back
+  ---
+  duration_ms: 58.8634
+  type: 'test'
+  ...
+# Subtest: a release missing promotion-reviewed-receipts-0196 cannot activate or roll back
+ok 95 - a release missing promotion-reviewed-receipts-0196 cannot activate or roll back
+  ---
+  duration_ms: 57.3351
+  type: 'test'
+  ...
+# Subtest: a release missing promotion-request-resolution-v1 cannot activate or roll back
+ok 96 - a release missing promotion-request-resolution-v1 cannot activate or roll back
+  ---
+  duration_ms: 55.771
+  type: 'test'
+  ...
+# Subtest: a release missing promotion-reviewed-writes-only-v1 cannot activate or roll back
+ok 97 - a release missing promotion-reviewed-writes-only-v1 cannot activate or roll back
+  ---
+  duration_ms: 58.2698
+  type: 'test'
+  ...
+# Subtest: a release missing promotion-evidence-boundaries-v1 cannot activate or roll back
+ok 98 - a release missing promotion-evidence-boundaries-v1 cannot activate or roll back
+  ---
+  duration_ms: 75.4602
+  type: 'test'
+  ...
+# Subtest: a release missing promotion-arsenal-evidence-v1 cannot activate or roll back
+ok 99 - a release missing promotion-arsenal-evidence-v1 cannot activate or roll back
+  ---
+  duration_ms: 74.5855
+  type: 'test'
+  ...
+# Subtest: a release missing promotion-target-names-v1 cannot activate or roll back
+ok 100 - a release missing promotion-target-names-v1 cannot activate or roll back
+  ---
+  duration_ms: 86.1853
+  type: 'test'
+  ...
+# Subtest: a release missing promotion-named-scope-evidence-v1 cannot activate or roll back
+ok 101 - a release missing promotion-named-scope-evidence-v1 cannot activate or roll back
+  ---
+  duration_ms: 85.4106
+  type: 'test'
+  ...
+# Subtest: a release missing promotion-banner-transport-v1 cannot activate or roll back
+ok 102 - a release missing promotion-banner-transport-v1 cannot activate or roll back
+  ---
+  duration_ms: 79.8493
+  type: 'test'
+  ...
+# Subtest: a release missing ordinary-reply-media-producer-v2 cannot activate or roll back
+ok 103 - a release missing ordinary-reply-media-producer-v2 cannot activate or roll back
+  ---
+  duration_ms: 81.1351
+  type: 'test'
+  ...
+# Subtest: a release missing media-action-receipts-0197 cannot activate or roll back
+ok 104 - a release missing media-action-receipts-0197 cannot activate or roll back
+  ---
+  duration_ms: 68.7579
+  type: 'test'
+  ...
+# Subtest: a release missing media-reviewed-writes-only-0197 cannot activate or roll back
+ok 105 - a release missing media-reviewed-writes-only-0197 cannot activate or roll back
+  ---
+  duration_ms: 85.9609
+  type: 'test'
+  ...
+# Subtest: a release missing weekly-schedule-transport-0198 cannot activate or roll back
+ok 106 - a release missing weekly-schedule-transport-0198 cannot activate or roll back
+  ---
+  duration_ms: 70.0544
+  type: 'test'
+  ...
+# Subtest: a release missing weekly-reviewed-actions-0198 cannot activate or roll back
+ok 107 - a release missing weekly-reviewed-actions-0198 cannot activate or roll back
+  ---
+  duration_ms: 70.5476
+  type: 'test'
+  ...
+# Subtest: a release missing weekly-reviewed-writes-only-0198 cannot activate or roll back
+ok 108 - a release missing weekly-reviewed-writes-only-0198 cannot activate or roll back
+  ---
+  duration_ms: 82.7684
+  type: 'test'
+  ...
+# Subtest: a release missing review-scoped-replies-only-v1 cannot activate or roll back
+ok 109 - a release missing review-scoped-replies-only-v1 cannot activate or roll back
+  ---
+  duration_ms: 68.2502
+  type: 'test'
+  ...
+# Subtest: a release missing review-unscoped-automation-retired-v1 cannot activate or roll back
+ok 110 - a release missing review-unscoped-automation-retired-v1 cannot activate or roll back
+  ---
+  duration_ms: 71.2401
+  type: 'test'
+  ...
+# Subtest: a release missing review-aggregate-reference-policy-v1 cannot activate or roll back
+ok 111 - a release missing review-aggregate-reference-policy-v1 cannot activate or roll back
+  ---
+  duration_ms: 71.235
+  type: 'test'
+  ...
+# Subtest: a release missing order-notice-reviewed-writes-only-v1 cannot activate or roll back
+ok 112 - a release missing order-notice-reviewed-writes-only-v1 cannot activate or roll back
+  ---
+  duration_ms: 71.2317
+  type: 'test'
+  ...
+# Subtest: a release missing order-notice-authorizations-0199 cannot activate or roll back
+ok 113 - a release missing order-notice-authorizations-0199 cannot activate or roll back
+  ---
+  duration_ms: 81.397
+  type: 'test'
+  ...
+# Subtest: a release missing order-notice-reviewed-transport-0199 cannot activate or roll back
+ok 114 - a release missing order-notice-reviewed-transport-0199 cannot activate or roll back
+  ---
+  duration_ms: 72.22
+  type: 'test'
+  ...
+# Subtest: a release missing order-notice-legacy-paths-retired-v1 cannot activate or roll back
+ok 115 - a release missing order-notice-legacy-paths-retired-v1 cannot activate or roll back
+  ---
+  duration_ms: 71.3711
+  type: 'test'
+  ...
+# Subtest: malformed or deceptive capability document is rejected: {
+ok 116 - malformed or deceptive capability document is rejected: {
+  ---
+  duration_ms: 70.8363
+  type: 'test'
+  ...
+# Subtest: malformed or deceptive capability document is rejected: null
+ok 117 - malformed or deceptive capability document is rejected: null
+  ---
+  duration_ms: 65.7482
+  type: 'test'
+  ...
+# Subtest: malformed or deceptive capability document is rejected: []
+ok 118 - malformed or deceptive capability document is rejected: []
+  ---
+  duration_ms: 70.2695
+  type: 'test'
+  ...
+# Subtest: malformed or deceptive capability document is rejected: {"version":1}
+ok 119 - malformed or deceptive capability document is rejected: {"version":1}
+  ---
+  duration_ms: 66.6889
+  type: 'test'
+  ...
+# Subtest: malformed or deceptive capability document is rejected: {"version":1,"capabilities":{}}
+ok 120 - malformed or deceptive capability document is rejected: {"version":1,"capabilities":{}}
+  ---
+  duration_ms: 82.5444
+  type: 'test'
+  ...
+# Subtest: malformed or deceptive capability document is rejected: {"version":2,"capabilities":["website-analysis-durable-jobs-0200"
+ok 121 - malformed or deceptive capability document is rejected: {"version":2,"capabilities":["website-analysis-durable-jobs-0200"
+  ---
+  duration_ms: 73.0709
+  type: 'test'
+  ...
+# Subtest: malformed or deceptive capability document is rejected: {"version":1,"capabilities":["website-analysis-durable-jobs-0200"
+ok 122 - malformed or deceptive capability document is rejected: {"version":1,"capabilities":["website-analysis-durable-jobs-0200"
+  ---
+  duration_ms: 77.8377
+  type: 'test'
+  ...
+# Subtest: malformed or deceptive capability document is rejected: {"version":1,"capabilities":["SALLA-CATALOG-STORE-IDENTITY-0139"]
+ok 123 - malformed or deceptive capability document is rejected: {"version":1,"capabilities":["SALLA-CATALOG-STORE-IDENTITY-0139"]
+  ---
+  duration_ms: 76.6503
+  type: 'test'
+  ...
+# Subtest: update-sary: previous WooCommerce writers stop before retiring unreviewed dashboard writes
+ok 124 - update-sary: previous WooCommerce writers stop before retiring unreviewed dashboard writes
+  ---
+  duration_ms: 1835.0435
+  type: 'test'
+  ...
+# Subtest: update-sary: previous WooCommerce writers stop before reviewed notification transport
+ok 125 - update-sary: previous WooCommerce writers stop before reviewed notification transport
+  ---
+  duration_ms: 1527.0121
+  type: 'test'
+  ...
+# Subtest: update-sary: previous WooCommerce writers stop before durable sync admission
+ok 126 - update-sary: previous WooCommerce writers stop before durable sync admission
+  ---
+  duration_ms: 1694.6083
+  type: 'test'
+  ...
+# Subtest: update-sary: previous WooCommerce writers stop before atomic platform admission
+ok 127 - update-sary: previous WooCommerce writers stop before atomic platform admission
+  ---
+  duration_ms: 1921.7482
+  type: 'test'
+  ...
+# Subtest: update-sary: previous WooCommerce dashboard writers stop before authority enforcement
+ok 128 - update-sary: previous WooCommerce dashboard writers stop before authority enforcement
+  ---
+  duration_ms: 1555.206
+  type: 'test'
+  ...
+# Subtest: update-sary: previous Calendly dashboard writers stop before authority enforcement
+ok 129 - update-sary: previous Calendly dashboard writers stop before authority enforcement
+  ---
+  duration_ms: 1087.2565
+  type: 'test'
+  ...
+# Subtest: update-sary: previous Calendly webhook writers stop before authority enforcement
+ok 130 - update-sary: previous Calendly webhook writers stop before authority enforcement
+  ---
+  duration_ms: 1035.9928
+  type: 'test'
+  ...
+# Subtest: update-sary: previous Calendly notification writers stop before authority enforcement
+ok 131 - update-sary: previous Calendly notification writers stop before authority enforcement
+  ---
+  duration_ms: 1122.5921
+  type: 'test'
+  ...
+# Subtest: update-sary: previous Calendly unreviewed dashboard writers stop before authority enforcement
+ok 132 - update-sary: previous Calendly unreviewed dashboard writers stop before authority enforcement
+  ---
+  duration_ms: 1096.0801
+  type: 'test'
+  ...
+# Subtest: update-sary: previous Zid dashboard writers stop before the reviewed dashboard activation
+ok 133 - update-sary: previous Zid dashboard writers stop before the reviewed dashboard activation
+  ---
+  duration_ms: 1177.5482
+  type: 'test'
+  ...
+# Subtest: update-sary: previous OAuth writers stop before the reviewed-attempt migration
+ok 134 - update-sary: previous OAuth writers stop before the reviewed-attempt migration
+  ---
+  duration_ms: 1355.0065
+  type: 'test'
+  ...
+# Subtest: update-sary: old writers stop and are saved before migration
+ok 135 - update-sary: old writers stop and are saved before migration
+  ---
+  duration_ms: 1128.1661
+  type: 'test'
+  ...
+# Subtest: update-sary: compatible writers continue without an unnecessary stop
+ok 136 - update-sary: compatible writers continue without an unnecessary stop
+  ---
+  duration_ms: 710.2876
+  type: 'test'
+  ...
+# Subtest: update-sary: an old inbound worker cannot hide behind a compatible web release
+ok 137 - update-sary: an old inbound worker cannot hide behind a compatible web release
+  ---
+  duration_ms: 1317.6416
+  type: 'test'
+  ...
+# Subtest: update-sary: invalid candidate stops before any PM2 or migration operation
+ok 138 - update-sary: invalid candidate stops before any PM2 or migration operation
+  ---
+  duration_ms: 576.4407
+  type: 'test'
+  ...
+# Subtest: update-sary: failed stop sari prevents DDL, even in a conditional caller
+ok 139 - update-sary: failed stop sari prevents DDL, even in a conditional caller
+  ---
+  duration_ms: 936.8007
+  type: 'test'
+  ...
+# Subtest: update-sary: failed stop sari-inbound prevents DDL, even in a conditional caller
+ok 140 - update-sary: failed stop sari-inbound prevents DDL, even in a conditional caller
+  ---
+  duration_ms: 821.6307
+  type: 'test'
+  ...
+# Subtest: update-sary: failed save prevents DDL, even in a conditional caller
+ok 141 - update-sary: failed save prevents DDL, even in a conditional caller
+  ---
+  duration_ms: 1018.5597
+  type: 'test'
+  ...
+# Subtest: update-sary: online with pid 42 after stop prevents migration and save
+ok 142 - update-sary: online with pid 42 after stop prevents migration and save
+  ---
+  duration_ms: 1000.2183
+  type: 'test'
+  ...
+# Subtest: update-sary: stopping with pid 42 after stop prevents migration and save
+ok 143 - update-sary: stopping with pid 42 after stop prevents migration and save
+  ---
+  duration_ms: 1113.9722
+  type: 'test'
+  ...
+# Subtest: update-sary: errored with pid 0 after stop prevents migration and save
+ok 144 - update-sary: errored with pid 0 after stop prevents migration and save
+  ---
+  duration_ms: 1309.6164
+  type: 'test'
+  ...
+# Subtest: update-sary: stopped with pid 42 after stop prevents migration and save
+ok 145 - update-sary: stopped with pid 42 after stop prevents migration and save
+  ---
+  duration_ms: 1251.8265
+  type: 'test'
+  ...
+# Subtest: update-sary: unreadable PM2 state never authorizes DDL
+ok 146 - update-sary: unreadable PM2 state never authorizes DDL
+  ---
+  duration_ms: 1478.924
+  type: 'test'
+  ...
+# Subtest: update-sary: unrelated services are neither stopped nor treated as managed writers
+ok 147 - update-sary: unrelated services are neither stopped nor treated as managed writers
+  ---
+  duration_ms: 947.7128
+  type: 'test'
+  ...
+# Subtest: update-sary: forged executable location requires draining even with a valid marker
+ok 148 - update-sary: forged executable location requires draining even with a valid marker
+  ---
+  duration_ms: 1070.9189
+  type: 'test'
+  ...
+# Subtest: update-sary: rollback uses the prepared guard, not the previous target's permissive checker
+ok 149 - update-sary: rollback uses the prepared guard, not the previous target's permissive checker
+  ---
+  duration_ms: 388.2738
+  type: 'test'
+  ...
+# Subtest: update-sary: compatible activation handles release paths containing spaces
+ok 150 - update-sary: compatible activation handles release paths containing spaces
+  ---
+  duration_ms: 421.0646
+  type: 'test'
+  ...
+# Subtest: update-sary: shell metacharacters in a release path remain literal data
+ok 151 - update-sary: shell metacharacters in a release path remain literal data
+  ---
+  duration_ms: 450.5838
+  type: 'test'
+  ...
+# Subtest: update-sary: failed startOrReload cannot be masked by a successful identity probe
+ok 152 - update-sary: failed startOrReload cannot be masked by a successful identity probe
+  ---
+  duration_ms: 381.0648
+  type: 'test'
+  ...
+# Subtest: update-sary: stale PM2 metadata is recreated and verified
+ok 153 - update-sary: stale PM2 metadata is recreated and verified
+  ---
+  duration_ms: 442.7334
+  type: 'test'
+  ...
+# Subtest: update-sary: failed recreation never reports activation success
+ok 154 - update-sary: failed recreation never reports activation success
+  ---
+  duration_ms: 426.8045
+  type: 'test'
+  ...
+# Subtest: update-sary: a failed web deletion cannot continue into a second start
+ok 155 - update-sary: a failed web deletion cannot continue into a second start
+  ---
+  duration_ms: 441.3419
+  type: 'test'
+  ...
+# Subtest: update-sary: a final identity mismatch stays failed
+ok 156 - update-sary: a final identity mismatch stays failed
+  ---
+  duration_ms: 489.9935
+  type: 'test'
+  ...
+# Subtest: update-sary: real failure handler refuses incompatible rollback and preserves data
+ok 157 - update-sary: real failure handler refuses incompatible rollback and preserves data
+  ---
+  duration_ms: 622.178
+  type: 'test'
+  ...
+# Subtest: update-sary: migration failure after draining cannot restart old writers
+ok 158 - update-sary: migration failure after draining cannot restart old writers
+  ---
+  duration_ms: 1352.9874
+  type: 'test'
+  ...
+# Subtest: update-sary: a retry can migrate and activate from already stopped old writers
+ok 159 - update-sary: a retry can migrate and activate from already stopped old writers
+  ---
+  duration_ms: 1328.8767
+  type: 'test'
+  ...
+# Subtest: update-sary: compatible rollback still works and retains the original failure code
+ok 160 - update-sary: compatible rollback still works and retains the original failure code
+  ---
+  duration_ms: 1084.8216
+  type: 'test'
+  ...
+# Subtest: deploy-production: previous WooCommerce writers stop before retiring unreviewed dashboard writes
+ok 161 - deploy-production: previous WooCommerce writers stop before retiring unreviewed dashboard writes
+  ---
+  duration_ms: 1400.0252
+  type: 'test'
+  ...
+# Subtest: deploy-production: previous WooCommerce writers stop before reviewed notification transport
+ok 162 - deploy-production: previous WooCommerce writers stop before reviewed notification transport
+  ---
+  duration_ms: 1145.4109
+  type: 'test'
+  ...
+# Subtest: deploy-production: previous WooCommerce writers stop before durable sync admission
+ok 163 - deploy-production: previous WooCommerce writers stop before durable sync admission
+  ---
+  duration_ms: 1113.2105
+  type: 'test'
+  ...
+# Subtest: deploy-production: previous WooCommerce writers stop before atomic platform admission
+ok 164 - deploy-production: previous WooCommerce writers stop before atomic platform admission
+  ---
+  duration_ms: 1295.8095
+  type: 'test'
+  ...
+# Subtest: deploy-production: previous WooCommerce dashboard writers stop before authority enforcement
+ok 165 - deploy-production: previous WooCommerce dashboard writers stop before authority enforcement
+  ---
+  duration_ms: 1520.0512
+  type: 'test'
+  ...
+# Subtest: deploy-production: previous Calendly dashboard writers stop before authority enforcement
+ok 166 - deploy-production: previous Calendly dashboard writers stop before authority enforcement
+  ---
+  duration_ms: 1356.4133
+  type: 'test'
+  ...
+# Subtest: deploy-production: previous Calendly webhook writers stop before authority enforcement
+ok 167 - deploy-production: previous Calendly webhook writers stop before authority enforcement
+  ---
+  duration_ms: 1138.9261
+  type: 'test'
+  ...
+# Subtest: deploy-production: previous Calendly notification writers stop before authority enforcement
+ok 168 - deploy-production: previous Calendly notification writers stop before authority enforcement
+  ---
+  duration_ms: 1140.1887
+  type: 'test'
+  ...
+# Subtest: deploy-production: previous Calendly unreviewed dashboard writers stop before authority enforcement
+ok 169 - deploy-production: previous Calendly unreviewed dashboard writers stop before authority enforcement
+  ---
+  duration_ms: 1159.9525
+  type: 'test'
+  ...
+# Subtest: deploy-production: previous Zid dashboard writers stop before the reviewed dashboard activation
+ok 170 - deploy-production: previous Zid dashboard writers stop before the reviewed dashboard activation
+  ---
+  duration_ms: 1173.649
+  type: 'test'
+  ...
+# Subtest: deploy-production: previous OAuth writers stop before the reviewed-attempt migration
+ok 171 - deploy-production: previous OAuth writers stop before the reviewed-attempt migration
+  ---
+  duration_ms: 1328.0982
+  type: 'test'
+  ...
+# Subtest: deploy-production: old writers stop and are saved before migration
+ok 172 - deploy-production: old writers stop and are saved before migration
+  ---
+  duration_ms: 1454.3948
+  type: 'test'
+  ...
+# Subtest: deploy-production: compatible writers continue without an unnecessary stop
+ok 173 - deploy-production: compatible writers continue without an unnecessary stop
+  ---
+  duration_ms: 896.8823
+  type: 'test'
+  ...
+# Subtest: deploy-production: an old inbound worker cannot hide behind a compatible web release
+ok 174 - deploy-production: an old inbound worker cannot hide behind a compatible web release
+  ---
+  duration_ms: 1224.7507
+  type: 'test'
+  ...
+# Subtest: deploy-production: invalid candidate stops before any PM2 or migration operation
+ok 175 - deploy-production: invalid candidate stops before any PM2 or migration operation
+  ---
+  duration_ms: 520.3669
+  type: 'test'
+  ...
+# Subtest: deploy-production: failed stop sari prevents DDL, even in a conditional caller
+ok 176 - deploy-production: failed stop sari prevents DDL, even in a conditional caller
+  ---
+  duration_ms: 986.6329
+  type: 'test'
+  ...
+# Subtest: deploy-production: failed stop sari-inbound prevents DDL, even in a conditional caller
+ok 177 - deploy-production: failed stop sari-inbound prevents DDL, even in a conditional caller
+  ---
+  duration_ms: 915.0664
+  type: 'test'
+  ...
+# Subtest: deploy-production: failed save prevents DDL, even in a conditional caller
+ok 178 - deploy-production: failed save prevents DDL, even in a conditional caller
+  ---
+  duration_ms: 1550.9019
+  type: 'test'
+  ...
+# Subtest: deploy-production: online with pid 42 after stop prevents migration and save
+ok 179 - deploy-production: online with pid 42 after stop prevents migration and save
+  ---
+  duration_ms: 1697.111
+  type: 'test'
+  ...
+# Subtest: deploy-production: stopping with pid 42 after stop prevents migration and save
+ok 180 - deploy-production: stopping with pid 42 after stop prevents migration and save
+  ---
+  duration_ms: 1377.8911
+  type: 'test'
+  ...
+# Subtest: deploy-production: errored with pid 0 after stop prevents migration and save
+ok 181 - deploy-production: errored with pid 0 after stop prevents migration and save
+  ---
+  duration_ms: 1201.1106
+  type: 'test'
+  ...
+# Subtest: deploy-production: stopped with pid 42 after stop prevents migration and save
+ok 182 - deploy-production: stopped with pid 42 after stop prevents migration and save
+  ---
+  duration_ms: 1320.42
+  type: 'test'
+  ...
+# Subtest: deploy-production: unreadable PM2 state never authorizes DDL
+ok 183 - deploy-production: unreadable PM2 state never authorizes DDL
+  ---
+  duration_ms: 1307.2273
+  type: 'test'
+  ...
+# Subtest: deploy-production: unrelated services are neither stopped nor treated as managed writers
+ok 184 - deploy-production: unrelated services are neither stopped nor treated as managed writers
+  ---
+  duration_ms: 984.8217
+  type: 'test'
+  ...
+# Subtest: deploy-production: forged executable location requires draining even with a valid marker
+ok 185 - deploy-production: forged executable location requires draining even with a valid marker
+  ---
+  duration_ms: 1335.5347
+  type: 'test'
+  ...
+# Subtest: deploy-production: rollback uses the prepared guard, not the previous target's permissive checker
+ok 186 - deploy-production: rollback uses the prepared guard, not the previous target's permissive checker
+  ---
+  duration_ms: 502.5403
+  type: 'test'
+  ...
+# Subtest: deploy-production: compatible activation handles release paths containing spaces
+ok 187 - deploy-production: compatible activation handles release paths containing spaces
+  ---
+  duration_ms: 885.7201
+  type: 'test'
+  ...
+# Subtest: deploy-production: shell metacharacters in a release path remain literal data
+ok 188 - deploy-production: shell metacharacters in a release path remain literal data
+  ---
+  duration_ms: 638.0176
+  type: 'test'
+  ...
+# Subtest: deploy-production: failed startOrReload cannot be masked by a successful identity probe
+ok 189 - deploy-production: failed startOrReload cannot be masked by a successful identity probe
+  ---
+  duration_ms: 580.1163
+  type: 'test'
+  ...
+# Subtest: deploy-production: stale PM2 metadata is recreated and verified
+ok 190 - deploy-production: stale PM2 metadata is recreated and verified
+  ---
+  duration_ms: 528.5991
+  type: 'test'
+  ...
+# Subtest: deploy-production: failed recreation never reports activation success
+ok 191 - deploy-production: failed recreation never reports activation success
+  ---
+  duration_ms: 513.7233
+  type: 'test'
+  ...
+# Subtest: deploy-production: a failed web deletion cannot continue into a second start
+ok 192 - deploy-production: a failed web deletion cannot continue into a second start
+  ---
+  duration_ms: 531.3424
+  type: 'test'
+  ...
+# Subtest: deploy-production: a final identity mismatch stays failed
+ok 193 - deploy-production: a final identity mismatch stays failed
+  ---
+  duration_ms: 487.8294
+  type: 'test'
+  ...
+# Subtest: deploy-production: real failure handler refuses incompatible rollback and preserves data
+ok 194 - deploy-production: real failure handler refuses incompatible rollback and preserves data
+  ---
+  duration_ms: 567.422
+  type: 'test'
+  ...
+# Subtest: deploy-production: migration failure after draining cannot restart old writers
+ok 195 - deploy-production: migration failure after draining cannot restart old writers
+  ---
+  duration_ms: 1187.5518
+  type: 'test'
+  ...
+# Subtest: deploy-production: a retry can migrate and activate from already stopped old writers
+ok 196 - deploy-production: a retry can migrate and activate from already stopped old writers
+  ---
+  duration_ms: 1658.0892
+  type: 'test'
+  ...
+# Subtest: deploy-production: compatible rollback still works and retains the original failure code
+ok 197 - deploy-production: compatible rollback still works and retains the original failure code
+  ---
+  duration_ms: 475.154
+  type: 'test'
+  ...
+# Subtest: general deployment: mkdir failure blocks activation in rollback context
+ok 198 - general deployment: mkdir failure blocks activation in rollback context
+  ---
+  duration_ms: 411.3125
+  type: 'test'
+  ...
+# Subtest: general deployment: chmod failure blocks activation in rollback context
+ok 199 - general deployment: chmod failure blocks activation in rollback context
+  ---
+  duration_ms: 373.6013
+  type: 'test'
+  ...
+# Subtest: both callers invoke quiescence before DDL and run the transition tests at deployment
+ok 200 - both callers invoke quiescence before DDL and run the transition tests at deployment
+  ---
+  duration_ms: 1.4128
+  type: 'test'
+  ...
+# Subtest: budgets a 6 GiB build heap only after the server memory upgrade
+ok 201 - budgets a 6 GiB build heap only after the server memory upgrade
+  ---
+  duration_ms: 14.8511
+  type: 'test'
+  ...
+# Subtest: selects only the Sary pair and permits multiple web workers
+ok 202 - selects only the Sary pair and permits multiple web workers
+  ---
+  duration_ms: 5.6103
+  type: 'test'
+  ...
+# Subtest: rejects missing workers, mixed releases, stale executables and stopped processes
+ok 203 - rejects missing workers, mixed releases, stale executables and stopped processes
+  ---
+  duration_ms: 4.0173
+  type: 'test'
+  ...
+# Subtest: runs the existing migration checks, including admin-managed AI deployment checks
+ok 204 - runs the existing migration checks, including admin-managed AI deployment checks
+  ---
+  duration_ms: 17.0591
+  type: 'test'
+  ...
+# Subtest: fails closed on unsupported check-list changes or shell commands in package scripts
+ok 205 - fails closed on unsupported check-list changes or shell commands in package scripts
+  ---
+  duration_ms: 5.7141
+  type: 'test'
+  ...
+# Subtest: a failing preflight never reaches migration; a failed migration never runs postflights
+ok 206 - a failing preflight never reaches migration; a failed migration never runs postflights
+  ---
+  duration_ms: 7.3491
+  type: 'test'
+  ...
+# Subtest: readiness requires both live database connectivity and the current schema
+ok 207 - readiness requires both live database connectivity and the current schema
+  ---
+  duration_ms: 28.6984
+  type: 'test'
+  ...
+# Subtest: probe retries stale bodies and HTTP errors, then succeeds on validated readiness
+ok 208 - probe retries stale bodies and HTTP errors, then succeeds on validated readiness
+  ---
+  duration_ms: 9.7204
+  type: 'test'
+  ...
+# Subtest: persistent probe failure never becomes success
+ok 209 - persistent probe failure never becomes success
+  ---
+  duration_ms: 3.5594
+  type: 'test'
+  ...
+# Subtest: public validation requires the unique deployment marker and both language pages
+ok 210 - public validation requires the unique deployment marker and both language pages
+  ---
+  duration_ms: 5.6605
+  type: 'test'
+  ...
+# Subtest: a stale proxy marker or wrong-language page fails public verification
+ok 211 - a stale proxy marker or wrong-language page fails public verification
+  ---
+  duration_ms: 4.2743
+  type: 'test'
+  ...
+# Subtest: shipped shell entry points parse and refuse destructive in-place deployment
+ok 212 - shipped shell entry points parse and refuse destructive in-place deployment
+  ---
+  duration_ms: 796.2036
+  type: 'test'
+  ...
+# Subtest: refuses a website analysis worker without website-analysis-durable-jobs-0200
+ok 213 - refuses a website analysis worker without website-analysis-durable-jobs-0200
+  ---
+  duration_ms: 31.3803
+  type: 'test'
+  ...
+# Subtest: refuses a website analysis worker without website-analysis-request-links-0201
+ok 214 - refuses a website analysis worker without website-analysis-request-links-0201
+  ---
+  duration_ms: 7.8868
+  type: 'test'
+  ...
+# Subtest: refuses a website analysis worker without competitor-reviewed-workspace-v1
+ok 215 - refuses a website analysis worker without competitor-reviewed-workspace-v1
+  ---
+  duration_ms: 13.6316
+  type: 'test'
+  ...
+# Subtest: refuses a website analysis worker without competitor-analysis-durable-0202
+ok 216 - refuses a website analysis worker without competitor-analysis-durable-0202
+  ---
+  duration_ms: 10.8198
+  type: 'test'
+  ...
+# Subtest: refuses a website analysis worker without competitor-request-closure-0203
+ok 217 - refuses a website analysis worker without competitor-request-closure-0203
+  ---
+  duration_ms: 23.7309
+  type: 'test'
+  ...
+# Subtest: refuses a website analysis worker without notification-preferences-unique-0204
+ok 218 - refuses a website analysis worker without notification-preferences-unique-0204
+  ---
+  duration_ms: 15.8433
+  type: 'test'
+  ...
+# Subtest: refuses a website analysis worker without notification-preferences-reviewed-tenant-only-v1
+ok 219 - refuses a website analysis worker without notification-preferences-reviewed-tenant-only-v1
+  ---
+  duration_ms: 23.5345
+  type: 'test'
+  ...
+# Subtest: refuses a website analysis worker without currency-reviewed-owner-only-v1
+ok 220 - refuses a website analysis worker without currency-reviewed-owner-only-v1
+  ---
+  duration_ms: 11.2067
+  type: 'test'
+  ...
+# Subtest: refuses a website analysis worker without profile-reviewed-writes-only-v1
+ok 221 - refuses a website analysis worker without profile-reviewed-writes-only-v1
+  ---
+  duration_ms: 12.5712
+  type: 'test'
+  ...
+# Subtest: refuses a website analysis worker without payment-settings-reviewed-only-v1
+ok 222 - refuses a website analysis worker without payment-settings-reviewed-only-v1
+  ---
+  duration_ms: 13.8698
+  type: 'test'
+  ...
+# Subtest: refuses a website analysis worker without payment-history-scoped-read-only-v1
+ok 223 - refuses a website analysis worker without payment-history-scoped-read-only-v1
+  ---
+  duration_ms: 9.9837
+  type: 'test'
+  ...
+# Subtest: refuses a website analysis worker without payment-link-availability-validated-v1
+ok 224 - refuses a website analysis worker without payment-link-availability-validated-v1
+  ---
+  duration_ms: 11.0546
+  type: 'test'
+  ...
+# Subtest: refuses a website analysis worker without payment-links-reviewed-workspace-v1
+ok 225 - refuses a website analysis worker without payment-links-reviewed-workspace-v1
+  ---
+  duration_ms: 16.2266
+  type: 'test'
+  ...
+# Subtest: refuses a website analysis worker without account-notifications-reviewed-workspace-v1
+ok 226 - refuses a website analysis worker without account-notifications-reviewed-workspace-v1
+  ---
+  duration_ms: 15.5404
+  type: 'test'
+  ...
+# Subtest: refuses a website analysis worker without usage-scoped-workspace-only-v1
+ok 227 - refuses a website analysis worker without usage-scoped-workspace-only-v1
+  ---
+  duration_ms: 12.3956
+  type: 'test'
+  ...
+# Subtest: refuses a website analysis worker without usage-notifications-evidence-v1
+ok 228 - refuses a website analysis worker without usage-notifications-evidence-v1
+  ---
+  duration_ms: 20.8059
+  type: 'test'
+  ...
+# Subtest: refuses a website analysis worker without subscription-plan-change-snapshot-v1
+ok 229 - refuses a website analysis worker without subscription-plan-change-snapshot-v1
+  ---
+  duration_ms: 9.2856
+  type: 'test'
+  ...
+# Subtest: refuses a website analysis worker without subscription-scoped-billing-only-v1
+ok 230 - refuses a website analysis worker without subscription-scoped-billing-only-v1
+  ---
+  duration_ms: 13.3854
+  type: 'test'
+  ...
+# Subtest: refuses a website analysis worker without subscription-reviewed-cancellation-v1
+ok 231 - refuses a website analysis worker without subscription-reviewed-cancellation-v1
+  ---
+  duration_ms: 10.4759
+  type: 'test'
+  ...
+# Subtest: refuses a website analysis worker without subscription-canonical-merchant-lock-v1
+ok 232 - refuses a website analysis worker without subscription-canonical-merchant-lock-v1
+  ---
+  duration_ms: 9.2229
+  type: 'test'
+  ...
+# Subtest: refuses a website analysis worker without subscription-capture-review-0205
+ok 233 - refuses a website analysis worker without subscription-capture-review-0205
+  ---
+  duration_ms: 8.2804
+  type: 'test'
+  ...
+# Subtest: refuses a website analysis worker without whatsapp-reviewed-removal-only-v1
+ok 234 - refuses a website analysis worker without whatsapp-reviewed-removal-only-v1
+  ---
+  duration_ms: 8.6088
+  type: 'test'
+  ...
+# Subtest: refuses a website analysis worker without whatsapp-reviewed-save-only-v1
+ok 235 - refuses a website analysis worker without whatsapp-reviewed-save-only-v1
+  ---
+  duration_ms: 10.6023
+  type: 'test'
+  ...
+# Subtest: refuses a website analysis worker without sheets-scoped-user-operations-v1
+ok 236 - refuses a website analysis worker without sheets-scoped-user-operations-v1
+  ---
+  duration_ms: 8.2935
+  type: 'test'
+  ...
+# Subtest: refuses a website analysis worker without sheets-report-evidence-v1
+ok 237 - refuses a website analysis worker without sheets-report-evidence-v1
+  ---
+  duration_ms: 13.4861
+  type: 'test'
+  ...
+# Subtest: refuses a website analysis worker without sheets-export-reviewed-destination-v1
+ok 238 - refuses a website analysis worker without sheets-export-reviewed-destination-v1
+  ---
+  duration_ms: 15.0005
+  type: 'test'
+  ...
+# Subtest: refuses a website analysis worker without sheets-reports-reviewed-destinations-v1
+ok 239 - refuses a website analysis worker without sheets-reports-reviewed-destinations-v1
+  ---
+  duration_ms: 11.8385
+  type: 'test'
+  ...
+# Subtest: refuses a website analysis worker without sheets-unreviewed-sync-retired-v1
+ok 240 - refuses a website analysis worker without sheets-unreviewed-sync-retired-v1
+  ---
+  duration_ms: 11.0296
+  type: 'test'
+  ...
+# Subtest: refuses a website analysis worker without push-bounded-provider-transport-v1
+ok 241 - refuses a website analysis worker without push-bounded-provider-transport-v1
+  ---
+  duration_ms: 10.188
+  type: 'test'
+  ...
+# Subtest: refuses a website analysis worker without push-device-session-authority-0206
+ok 242 - refuses a website analysis worker without push-device-session-authority-0206
+  ---
+  duration_ms: 15.307
+  type: 'test'
+  ...
+# Subtest: refuses a website analysis worker without privacy-account-session-workspace-v1
+ok 243 - refuses a website analysis worker without privacy-account-session-workspace-v1
+  ---
+  duration_ms: 11.9357
+  type: 'test'
+  ...
+# Subtest: refuses a website analysis worker without team-session-scoped-workspace-v1
+ok 244 - refuses a website analysis worker without team-session-scoped-workspace-v1
+  ---
+  duration_ms: 10.9712
+  type: 'test'
+  ...
+# Subtest: refuses a website analysis worker without team-reviewed-workspace-v1
+ok 245 - refuses a website analysis worker without team-reviewed-workspace-v1
+  ---
+  duration_ms: 10.46
+  type: 'test'
+  ...
+# Subtest: refuses a website analysis worker without loyalty-atomic-tenant-ledger-v1
+ok 246 - refuses a website analysis worker without loyalty-atomic-tenant-ledger-v1
+  ---
+  duration_ms: 11.6476
+  type: 'test'
+  ...
+# Subtest: refuses a website analysis worker without loyalty-reviewed-receipts-0207
+ok 247 - refuses a website analysis worker without loyalty-reviewed-receipts-0207
+  ---
+  duration_ms: 11.2745
+  type: 'test'
+  ...
+# Subtest: refuses a website analysis worker without loyalty-shared-reviewed-workspace-v1
+ok 248 - refuses a website analysis worker without loyalty-shared-reviewed-workspace-v1
+  ---
+  duration_ms: 13.9519
+  type: 'test'
+  ...
+# Subtest: refuses a website analysis worker without loyalty-legacy-writes-retired-v1
+ok 249 - refuses a website analysis worker without loyalty-legacy-writes-retired-v1
+  ---
+  duration_ms: 7.9482
+  type: 'test'
+  ...
+# Subtest: refuses releases without merchant-referral-program-0193
+ok 250 - refuses releases without merchant-referral-program-0193
+  ---
+  duration_ms: 11.1849
+  type: 'test'
+  ...
+# Subtest: refuses releases without abandoned-cart-reminder-admission-0194
+ok 251 - refuses releases without abandoned-cart-reminder-admission-0194
+  ---
+  duration_ms: 10.6907
+  type: 'test'
+  ...
+# Subtest: refuses releases without abandoned-cart-reminder-transport-0194
+ok 252 - refuses releases without abandoned-cart-reminder-transport-0194
+  ---
+  duration_ms: 8.1698
+  type: 'test'
+  ...
+# Subtest: refuses releases without abandoned-cart-reviewed-writes-only-0194
+ok 253 - refuses releases without abandoned-cart-reviewed-writes-only-0194
+  ---
+  duration_ms: 7.0961
+  type: 'test'
+  ...
+# Subtest: refuses releases without occasion-reviewed-writes-only-v1
+ok 254 - refuses releases without occasion-reviewed-writes-only-v1
+  ---
+  duration_ms: 8.1609
+  type: 'test'
+  ...
+# Subtest: refuses releases without occasion-activation-grants-0195
+ok 255 - refuses releases without occasion-activation-grants-0195
+  ---
+  duration_ms: 12.4029
+  type: 'test'
+  ...
+# Subtest: refuses releases without occasion-preparation-authority-0195
+ok 256 - refuses releases without occasion-preparation-authority-0195
+  ---
+  duration_ms: 7.924
+  type: 'test'
+  ...
+# Subtest: refuses releases without occasion-dispatch-authority-0195
+ok 257 - refuses releases without occasion-dispatch-authority-0195
+  ---
+  duration_ms: 7.9499
+  type: 'test'
+  ...
+# Subtest: refuses releases without promotion-atomic-writes-v1
+ok 258 - refuses releases without promotion-atomic-writes-v1
+  ---
+  duration_ms: 9.3713
+  type: 'test'
+  ...
+# Subtest: refuses releases without promotion-code-boundaries-v1
+ok 259 - refuses releases without promotion-code-boundaries-v1
+  ---
+  duration_ms: 9.8766
+  type: 'test'
+  ...
+# Subtest: refuses releases without promotion-reviewed-receipts-0196
+ok 260 - refuses releases without promotion-reviewed-receipts-0196
+  ---
+  duration_ms: 8.8694
+  type: 'test'
+  ...
+# Subtest: refuses releases without promotion-request-resolution-v1
+ok 261 - refuses releases without promotion-request-resolution-v1
+  ---
+  duration_ms: 9.1269
+  type: 'test'
+  ...
+# Subtest: refuses releases without promotion-reviewed-writes-only-v1
+ok 262 - refuses releases without promotion-reviewed-writes-only-v1
+  ---
+  duration_ms: 8.6043
+  type: 'test'
+  ...
+# Subtest: refuses releases without promotion-evidence-boundaries-v1
+ok 263 - refuses releases without promotion-evidence-boundaries-v1
+  ---
+  duration_ms: 10.9179
+  type: 'test'
+  ...
+# Subtest: refuses releases without promotion-arsenal-evidence-v1
+ok 264 - refuses releases without promotion-arsenal-evidence-v1
+  ---
+  duration_ms: 7.6604
+  type: 'test'
+  ...
+# Subtest: refuses releases without promotion-target-names-v1
+ok 265 - refuses releases without promotion-target-names-v1
+  ---
+  duration_ms: 8.668
+  type: 'test'
+  ...
+# Subtest: refuses releases without promotion-named-scope-evidence-v1
+ok 266 - refuses releases without promotion-named-scope-evidence-v1
+  ---
+  duration_ms: 8.8302
+  type: 'test'
+  ...
+# Subtest: refuses releases without promotion-banner-transport-v1
+ok 267 - refuses releases without promotion-banner-transport-v1
+  ---
+  duration_ms: 8.7361
+  type: 'test'
+  ...
+# Subtest: refuses releases without ordinary-reply-media-producer-v2
+ok 268 - refuses releases without ordinary-reply-media-producer-v2
+  ---
+  duration_ms: 7.3426
+  type: 'test'
+  ...
+# Subtest: refuses releases without media-action-receipts-0197
+ok 269 - refuses releases without media-action-receipts-0197
+  ---
+  duration_ms: 7.5354
+  type: 'test'
+  ...
+# Subtest: refuses releases without media-reviewed-writes-only-0197
+ok 270 - refuses releases without media-reviewed-writes-only-0197
+  ---
+  duration_ms: 6.7016
+  type: 'test'
+  ...
+# Subtest: refuses releases without weekly-schedule-transport-0198
+ok 271 - refuses releases without weekly-schedule-transport-0198
+  ---
+  duration_ms: 7.8505
+  type: 'test'
+  ...
+# Subtest: refuses releases without weekly-reviewed-actions-0198
+ok 272 - refuses releases without weekly-reviewed-actions-0198
+  ---
+  duration_ms: 8.7985
+  type: 'test'
+  ...
+# Subtest: refuses releases without weekly-reviewed-writes-only-0198
+ok 273 - refuses releases without weekly-reviewed-writes-only-0198
+  ---
+  duration_ms: 8.313
+  type: 'test'
+  ...
+# Subtest: refuses releases without review-scoped-replies-only-v1
+ok 274 - refuses releases without review-scoped-replies-only-v1
+  ---
+  duration_ms: 6.8978
+  type: 'test'
+  ...
+# Subtest: refuses releases without review-unscoped-automation-retired-v1
+ok 275 - refuses releases without review-unscoped-automation-retired-v1
+  ---
+  duration_ms: 8.0822
+  type: 'test'
+  ...
+# Subtest: refuses releases without review-aggregate-reference-policy-v1
+ok 276 - refuses releases without review-aggregate-reference-policy-v1
+  ---
+  duration_ms: 7.0695
+  type: 'test'
+  ...
+# Subtest: refuses releases without order-notice-reviewed-writes-only-v1
+ok 277 - refuses releases without order-notice-reviewed-writes-only-v1
+  ---
+  duration_ms: 9.3648
+  type: 'test'
+  ...
+# Subtest: refuses releases without order-notice-authorizations-0199
+ok 278 - refuses releases without order-notice-authorizations-0199
+  ---
+  duration_ms: 9.4343
+  type: 'test'
+  ...
+# Subtest: refuses releases without order-notice-reviewed-transport-0199
+ok 279 - refuses releases without order-notice-reviewed-transport-0199
+  ---
+  duration_ms: 6.6684
+  type: 'test'
+  ...
+# Subtest: refuses releases without order-notice-legacy-paths-retired-v1
+ok 280 - refuses releases without order-notice-legacy-paths-retired-v1
+  ---
+  duration_ms: 11.0224
+  type: 'test'
+  ...
+# Subtest: accepts this built source capability and refuses older or relative targets
+ok 281 - accepts this built source capability and refuses older or relative targets
+  ---
+  duration_ms: 2.8927
+  type: 'test'
+  ...
+# Subtest: a malformed or unrelated marker cannot authorize rollback
+ok 282 - a malformed or unrelated marker cannot authorize rollback
+  ---
+  duration_ms: 29.9895
+  type: 'test'
+  ...
+# Subtest: draining requires stopped web and inbound processes with no live PID
+ok 283 - draining requires stopped web and inbound processes with no live PID
+  ---
+  duration_ms: 4.2286
+  type: 'test'
+  ...
+# Subtest: a 0141 worker cannot accept Sheets without the durable 0142 receipt contract
+ok 284 - a 0141 worker cannot accept Sheets without the durable 0142 receipt contract
+  ---
+  duration_ms: 10.1248
+  type: 'test'
+  ...
+# Subtest: a stopped release remains discoverable for a safe updater retry, never ready
+ok 285 - a stopped release remains discoverable for a safe updater retry, never ready
+  ---
+  duration_ms: 2.1884
+  type: 'test'
+  ...
+# Subtest: writer compatibility uses actual process directories instead of a current symlink
+ok 286 - writer compatibility uses actual process directories instead of a current symlink
+  ---
+  duration_ms: 4.6873
+  type: 'test'
+  ...
+# Subtest: CLI refuses unknown state and incompatible rollback without provider or database access
+ok 287 - CLI refuses unknown state and incompatible rollback without provider or database access
+  ---
+  duration_ms: 1476.1322
+  type: 'test'
+  ...
+# Subtest: both deployment paths drain old writers before DDL and guard every activation
+ok 288 - both deployment paths drain old writers before DDL and guard every activation
+  ---
+  duration_ms: 2.9959
+  type: 'test'
+  ...
+# Subtest: the actual updater activation function never invokes PM2 for an incompatible release
+ok 289 - the actual updater activation function never invokes PM2 for an incompatible release
+  ---
+  duration_ms: 1501.7679
+  type: 'test'
+  ...
+# Subtest: shipped guard scripts remain valid Bash and keep the established invocation
+ok 290 - shipped guard scripts remain valid Bash and keep the established invocation
+  ---
+  duration_ms: 552.6113
+  type: 'test'
+  ...
+1..290
+# tests 290
+# suites 0
+# pass 290
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 86222.2879
+
+TASK_EXIT_CODE=0
+ELAPSED_MS=88440

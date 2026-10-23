@@ -1,0 +1,502 @@
+{
+  "date": "2026-10-23",
+  "baseCommit": "f8af31f1646d9dae7852a3609673cf5eb9b76f9d",
+  "scope": "Selected fixes and direct five-sector tour dependencies; unrelated working changes excluded",
+  "runtime": {
+    "node": "v22.23.2",
+    "pnpm": "10.4.1",
+    "frozenLockfileInstall": true,
+    "downloadsVerified": [
+      "Node official SHA256",
+      "pnpm npm SHA512 integrity"
+    ]
+  },
+  "gates": {
+    "runtime": "passed",
+    "typecheck": "passed",
+    "productionBuild": "passed",
+    "clientBundleBudget": "passed",
+    "migrations": "passed on disposable MySQL 8.0.46",
+    "buildAndTestsReceivedProductionSecrets": false,
+    "externalPaidProviders": "mocked in isolated tests",
+    "productionDeployed": false
+  },
+  "tests": {
+    "vitestFiles": 73,
+    "distinctVitestTests": 1923,
+    "failures": 0,
+    "coreFixes": 915,
+    "deploymentTooling": 290,
+    "toolingSkipped": 0,
+    "files": [
+      {
+        "file": "server/_core/llm-zahypi.test.ts",
+        "tests": 4,
+        "failed": 0,
+        "log": "release-tests.log"
+      },
+      {
+        "file": "server/_core/trpc-zahypi.test.ts",
+        "tests": 1,
+        "failed": 0,
+        "log": "release-tests.log"
+      },
+      {
+        "file": "server/_core/validateEnv-zahypi.test.ts",
+        "tests": 3,
+        "failed": 0,
+        "log": "release-tests.log"
+      },
+      {
+        "file": "server/ai-settings-budget-access.test.ts",
+        "tests": 22,
+        "failed": 0,
+        "log": "release-tests.log"
+      },
+      {
+        "file": "server/ai-settings-provider-routing.test.ts",
+        "tests": 10,
+        "failed": 0,
+        "log": "release-tests.log"
+      },
+      {
+        "file": "server/ai-settings-secrets-pentest.test.ts",
+        "tests": 14,
+        "failed": 0,
+        "log": "release-tests.log"
+      },
+      {
+        "file": "server/ai-settings-singleton-pentest.test.ts",
+        "tests": 8,
+        "failed": 0,
+        "log": "release-recheck.log"
+      },
+      {
+        "file": "server/ai/action-execution.test.ts",
+        "tests": 12,
+        "failed": 0,
+        "log": "release-tests.log"
+      },
+      {
+        "file": "server/ai/budget-alerts.mysql.test.ts",
+        "tests": 18,
+        "failed": 0,
+        "log": "fix-tests.log"
+      },
+      {
+        "file": "server/ai/budget-boundaries.test.ts",
+        "tests": 6,
+        "failed": 0,
+        "log": "release-tests.log"
+      },
+      {
+        "file": "server/ai/budget-settlement.mysql.test.ts",
+        "tests": 39,
+        "failed": 0,
+        "log": "fix-tests.log"
+      },
+      {
+        "file": "server/ai/byaan-checkout-conversation.mysql.test.ts",
+        "tests": 61,
+        "failed": 0,
+        "log": "fix-tests.log"
+      },
+      {
+        "file": "server/ai/checkout-agreements.mysql.test.ts",
+        "tests": 48,
+        "failed": 0,
+        "log": "fix-tests.log"
+      },
+      {
+        "file": "server/ai/checkout-conversation.test.ts",
+        "tests": 13,
+        "failed": 0,
+        "log": "fix-tests.log"
+      },
+      {
+        "file": "server/ai/checkout-discount.mysql.test.ts",
+        "tests": 46,
+        "failed": 0,
+        "log": "fix-tests.log"
+      },
+      {
+        "file": "server/ai/checkout-discount.test.ts",
+        "tests": 45,
+        "failed": 0,
+        "log": "fix-tests.log"
+      },
+      {
+        "file": "server/ai/checkout-margin.mysql.test.ts",
+        "tests": 43,
+        "failed": 0,
+        "log": "fix-tests.log"
+      },
+      {
+        "file": "server/ai/checkout-margin.test.ts",
+        "tests": 51,
+        "failed": 0,
+        "log": "fix-tests.log"
+      },
+      {
+        "file": "server/ai/contextual-reply-routing.test.ts",
+        "tests": 15,
+        "failed": 0,
+        "log": "fix-tests.log"
+      },
+      {
+        "file": "server/ai/conversation-catalog.mysql.test.ts",
+        "tests": 3,
+        "failed": 0,
+        "log": "fix-tests.log"
+      },
+      {
+        "file": "server/ai/conversation-catalog.test.ts",
+        "tests": 3,
+        "failed": 0,
+        "log": "fix-tests.log"
+      },
+      {
+        "file": "server/ai/conversation-handoff.mysql.test.ts",
+        "tests": 24,
+        "failed": 0,
+        "log": "fix-tests.log"
+      },
+      {
+        "file": "server/ai/conversation-understanding.mysql.test.ts",
+        "tests": 38,
+        "failed": 0,
+        "log": "fix-tests.log"
+      },
+      {
+        "file": "server/ai/conversation-understanding.test.ts",
+        "tests": 20,
+        "failed": 0,
+        "log": "fix-tests.log"
+      },
+      {
+        "file": "server/ai/deployment-preflight.test.ts",
+        "tests": 8,
+        "failed": 0,
+        "log": "release-tests.log"
+      },
+      {
+        "file": "server/ai/escalation-hold-routing.test.ts",
+        "tests": 6,
+        "failed": 0,
+        "log": "fix-tests.log"
+      },
+      {
+        "file": "server/ai/escalation-relay.mysql.test.ts",
+        "tests": 51,
+        "failed": 0,
+        "log": "fix-tests.log"
+      },
+      {
+        "file": "server/ai/openai-zahypi.test.ts",
+        "tests": 6,
+        "failed": 0,
+        "log": "release-tests.log"
+      },
+      {
+        "file": "server/ai/salla-checkout-conversation.mysql.test.ts",
+        "tests": 163,
+        "failed": 0,
+        "log": "fix-tests.log"
+      },
+      {
+        "file": "server/ai/zahypi-client.test.ts",
+        "tests": 103,
+        "failed": 0,
+        "log": "release-tests.log"
+      },
+      {
+        "file": "server/ai/zahypi-context-propagation.test.ts",
+        "tests": 14,
+        "failed": 0,
+        "log": "release-recheck.log"
+      },
+      {
+        "file": "server/bot-audit-pentest.test.ts",
+        "tests": 93,
+        "failed": 0,
+        "log": "fix-tests.log"
+      },
+      {
+        "file": "server/campaign-consent-pentest.test.ts",
+        "tests": 12,
+        "failed": 0,
+        "log": "release-tests.log"
+      },
+      {
+        "file": "server/campaign-delivery-outbox-pentest.test.ts",
+        "tests": 18,
+        "failed": 0,
+        "log": "release-tests.log"
+      },
+      {
+        "file": "server/campaign-router-canonical-pentest.test.ts",
+        "tests": 108,
+        "failed": 0,
+        "log": "release-tests.log"
+      },
+      {
+        "file": "server/campaigns.test.ts",
+        "tests": 10,
+        "failed": 0,
+        "log": "release-tests.log"
+      },
+      {
+        "file": "server/central-interactions.test.ts",
+        "tests": 8,
+        "failed": 0,
+        "log": "fix-tests.log"
+      },
+      {
+        "file": "server/contract-guards.test.ts",
+        "tests": 42,
+        "failed": 0,
+        "log": "fix-tests.log"
+      },
+      {
+        "file": "server/conversations.test.ts",
+        "tests": 50,
+        "failed": 0,
+        "log": "release-tests.log"
+      },
+      {
+        "file": "server/core-team-access.test.ts",
+        "tests": 186,
+        "failed": 0,
+        "log": "release-tests.log"
+      },
+      {
+        "file": "server/db/connection.test.ts",
+        "tests": 4,
+        "failed": 0,
+        "log": "release-tests.log"
+      },
+      {
+        "file": "server/db/time.test.ts",
+        "tests": 2,
+        "failed": 0,
+        "log": "release-tests.log"
+      },
+      {
+        "file": "server/dependency-contracts.test.ts",
+        "tests": 4,
+        "failed": 0,
+        "log": "release-tests.log"
+      },
+      {
+        "file": "server/deployment-release-pentest.test.ts",
+        "tests": 11,
+        "failed": 0,
+        "log": "release-recheck.log"
+      },
+      {
+        "file": "server/google-api-clients.test.ts",
+        "tests": 2,
+        "failed": 0,
+        "log": "release-tests.log"
+      },
+      {
+        "file": "server/greenapi-credentials.test.ts",
+        "tests": 12,
+        "failed": 0,
+        "log": "release-tests.log"
+      },
+      {
+        "file": "server/knowledge-access.test.ts",
+        "tests": 113,
+        "failed": 0,
+        "log": "release-tests.log"
+      },
+      {
+        "file": "server/knowledge/reprocess.test.ts",
+        "tests": 9,
+        "failed": 0,
+        "log": "release-tests.log"
+      },
+      {
+        "file": "server/knowledge/transaction.test.ts",
+        "tests": 6,
+        "failed": 0,
+        "log": "release-tests.log"
+      },
+      {
+        "file": "server/knowledge/upload-access.test.ts",
+        "tests": 14,
+        "failed": 0,
+        "log": "release-tests.log"
+      },
+      {
+        "file": "server/learning-recovery-bootstrap-pentest.test.ts",
+        "tests": 13,
+        "failed": 0,
+        "log": "fix-tests.log"
+      },
+      {
+        "file": "server/merchant-access.test.ts",
+        "tests": 17,
+        "failed": 0,
+        "log": "release-tests.log"
+      },
+      {
+        "file": "server/merchant-domains-access.test.ts",
+        "tests": 15,
+        "failed": 0,
+        "log": "release-tests.log"
+      },
+      {
+        "file": "server/merchant-order-boundary-pentest.test.ts",
+        "tests": 7,
+        "failed": 0,
+        "log": "release-tests.log"
+      },
+      {
+        "file": "server/messaging/inbound-outcome.test.ts",
+        "tests": 5,
+        "failed": 0,
+        "log": "fix-tests.log"
+      },
+      {
+        "file": "server/messaging/inbound-pump.test.ts",
+        "tests": 10,
+        "failed": 0,
+        "log": "fix-tests.log"
+      },
+      {
+        "file": "server/messaging/inbound.mysql.test.ts",
+        "tests": 23,
+        "failed": 0,
+        "log": "fix-tests.log"
+      },
+      {
+        "file": "server/messaging/ingress.test.ts",
+        "tests": 7,
+        "failed": 0,
+        "log": "release-tests.log"
+      },
+      {
+        "file": "server/occasion-campaign-outbox-pentest.test.ts",
+        "tests": 11,
+        "failed": 0,
+        "log": "release-tests.log"
+      },
+      {
+        "file": "server/order-notification-operations-pentest.test.ts",
+        "tests": 8,
+        "failed": 0,
+        "log": "release-tests.log"
+      },
+      {
+        "file": "server/order-status-notification-outbox-pentest.test.ts",
+        "tests": 14,
+        "failed": 0,
+        "log": "release-tests.log"
+      },
+      {
+        "file": "server/polling-transport.test.ts",
+        "tests": 6,
+        "failed": 0,
+        "log": "release-tests.log"
+      },
+      {
+        "file": "server/product-money.test.ts",
+        "tests": 19,
+        "failed": 0,
+        "log": "release-tests.log"
+      },
+      {
+        "file": "server/products-access.test.ts",
+        "tests": 11,
+        "failed": 0,
+        "log": "release-tests.log"
+      },
+      {
+        "file": "server/reply-suggestions-access.test.ts",
+        "tests": 44,
+        "failed": 0,
+        "log": "release-recheck.log"
+      },
+      {
+        "file": "server/reply-suggestions.mysql.test.ts",
+        "tests": 8,
+        "failed": 0,
+        "log": "release-recheck.log"
+      },
+      {
+        "file": "server/salla-order-money.test.ts",
+        "tests": 26,
+        "failed": 0,
+        "log": "release-tests.log"
+      },
+      {
+        "file": "server/security/download-media.test.ts",
+        "tests": 9,
+        "failed": 0,
+        "log": "release-tests.log"
+      },
+      {
+        "file": "server/sheets-inventory-access.test.ts",
+        "tests": 4,
+        "failed": 0,
+        "log": "release-tests.log"
+      },
+      {
+        "file": "server/subscription-guard.test.ts",
+        "tests": 15,
+        "failed": 0,
+        "log": "release-tests.log"
+      },
+      {
+        "file": "server/voice-transcription.test.ts",
+        "tests": 11,
+        "failed": 0,
+        "log": "release-tests.log"
+      },
+      {
+        "file": "server/whatsapp-delivery-safety.test.ts",
+        "tests": 28,
+        "failed": 0,
+        "log": "release-tests.log"
+      },
+      {
+        "file": "server/whatsapp-disconnect-alert-window-pentest.test.ts",
+        "tests": 10,
+        "failed": 0,
+        "log": "release-tests.log"
+      }
+    ]
+  },
+  "corrections": [
+    "Two pre-existing source-contract tests were updated to follow current singleton readers and delegated merchant-scoped reply drafting. Related access and MySQL behavior tests also passed.",
+    "Bash syntax and deployment tooling passed with the required Windows process permissions; initial environment failure did not modify production tooling."
+  ],
+  "sourceHashes": {
+    "client/src/central/bootstrap.ts": "6d1af10e82c2f93fbf3fb20f088609319d0264f116a2b28ff5c31105066c4d9d",
+    "server/central-interactions.test.ts": "e08d514c9e659b2c840f975a48d44fdd309c7e4da58950b1b4cfffeb6abc2207",
+    "server/ai/conversation-understanding.ts": "ccd889f98f60148fa4618024f87fd7b2da647e97c279743ea131cd0f0ced94c9",
+    "server/ai/conversation-catalog.ts": "de2eb61e7acfb3437c2617a48c6e72377f21a5ff59bc652d35e1cb3657266d56",
+    "server/ai/conversation-catalog.test.ts": "1ba659b342025a9e595e3a0de0be827fca348df6daa09ef7d3f7327ad425f670",
+    "server/ai/conversation-catalog.mysql.test.ts": "38521b99ab94e9bc162eac5c87406029bbcfdb12242ba526904b412677532b69",
+    "server/ai/escalation-relay.ts": "eec9dad0bf4f4939a9ef30e69caffd091b56648b8727de50dfd6e3558c7f736d",
+    "server/ai/escalation-relay.mysql.test.ts": "8aee8d8538e6b220a0e1a6cc48a59057e3a7e8596646591c7b70c9829b2f2ef7",
+    "server/ai/escalation-hold-routing.test.ts": "e359be6acd9fa61c06253908538d09a6f823be5564bad66ccaaa45cb7da79185",
+    "server/ai/sari-personality.ts": "87139d863c1508edf629e9337f4a0ae8e19a4ee18630e999c2dd330d1070ce59",
+    "server/db.ts": "ccffd36cead54afdc1d9fc397568680d59db67d1012678e23f17439e90f2a519",
+    "server/messaging/inbound-jobs.ts": "a4a648f4b4f70c7e464dfc45ed2834a82b177b791916748a272dbe54d2d208e8",
+    "server/messaging/inbound-worker.ts": "2a21bed5cf80eb9eb7f656d36cf47015c3d2c71604de0209d686a90f8cb9683d",
+    "server/messaging/inbound.mysql.test.ts": "86bbd03baad7b07c6e8ff81e207ecfe3a03558da85b5576fbd28fdfbbc1052c6",
+    "server/messaging/inbound-outcome.ts": "69d625e6a6170a0ee577e1dd562b6ffb909231e8f1f2b706c2dcd546f3f7276c",
+    "server/messaging/inbound-outcome.test.ts": "c7c3ec6ffc1b7c0a7eb4b86ad7abbf0baa7e2cb6b42ea5bfab3f53ca3a31a6e6",
+    "server/messaging/inbound-pump.ts": "ae33d60a6c39ca4ba6f8e1cee96eb7b1b4d2d2345badae41789004419da210ed",
+    "server/messaging/inbound-pump.test.ts": "2df51bc985b6b094999c268d082fae85fdb821386a227fe500d52e8cc415effa",
+    "server/webhooks/greenapi.ts": "650c9ab39d544f45d00c57cdda254b77e4dea0569cf825d9906228b54a3ed543",
+    "shared/central/render.ts": "f2d1e9f38f4ea0886f46415de36b73b1b38887f4cac4716827ef9d1a7ad63518",
+    "shared/central/icons.ts": "84855c23e9f95f4cf4cebecb14c56d6aeb22d497127b3345b8e71fcac96101cf",
+    "server/ai-settings-singleton-pentest.test.ts": "e2b5daff73b3cbd982d0333503bdd64404d60f04e38f7075a5c526db34d732d0",
+    "server/ai/zahypi-context-propagation.test.ts": "725ae73192903bfa428de5459870b3a029a7c26486ad3afc5920302f3856f5bb"
+  },
+  "lockfileSha256": "47e68d701fdb8bd245c19b734b698feaba4e527e29a990d6c16b0b70d9d9dde1"
+}

@@ -102,6 +102,26 @@ describe.skipIf(!process.env.DATABASE_URL)('durable inbound queue with real MySQ
     expect((await row(job.id)).status).toBe('review');
     expect(await claimInbound()).toBeNull();
   });
+  it.each(['subscription_inactive', 'message_limit', 'conversation_limit'] as const)('admits a new customer message after a terminal %s rejection', async businessRejection => {
+    const rejected = await enqueueInbound({ payload: payload(), source: 'webhook' });
+    const next = await enqueueInbound({ payload: payload(), source: 'webhook' });
+    await executeInbound((await claimInbound())!, async () => ({ success: false, businessRejection }));
+    expect(await row(rejected.id)).toMatchObject({ status: 'dismissed', error_code: businessRejection });
+    const nextJob = (await claimInbound())!;
+    expect(nextJob.id).toBe(next.id);
+    await executeInbound(nextJob, async () => ({ success: true }));
+    expect((await row(next.id)).status).toBe('completed');
+  });
+  it('does not release a quota rejection after an uncertain notification or business effect', async () => {
+    const first = await enqueueInbound({ payload: payload(), source: 'webhook' });
+    await enqueueInbound({ payload: payload(), source: 'webhook' });
+    await executeInbound((await claimInbound())!, async () => {
+      currentInboundExecution()!.uncertainEffect = true;
+      return { success: false, businessRejection: 'message_limit' };
+    });
+    expect(await row(first.id)).toMatchObject({ status: 'review', error_code: 'effect_unconfirmed' });
+    expect(await claimInbound()).toBeNull();
+  });
   it('parks a delayed older event without using it to overwrite newer conversation context', async () => {
     const newest = payload(); await enqueueInbound({ payload: newest, source: 'webhook' });
     await executeInbound((await claimInbound())!, async () => ({ success: true }));

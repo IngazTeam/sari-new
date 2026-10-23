@@ -1125,12 +1125,17 @@ export async function getProductById(id: number): Promise<Product | undefined> {
 
 export async function getProductsByMerchantId(
   merchantId: number,
-  opts?: { limit?: number; offset?: number; search?: string }
+  opts?: { limit?: number; offset?: number; search?: string; ids?: number[] }
 ): Promise<Product[]> {
   const db = await getDb();
   if (!db) return [];
 
   const conditions = [eq(products.merchantId, merchantId), sql.raw(catalogVisibleSql())];
+  if (opts?.ids) {
+    if (opts.ids.length > 200 || opts.ids.some(id => !Number.isSafeInteger(id) || id <= 0)) throw new Error('Invalid product selection');
+    if (!opts.ids.length) return [];
+    conditions.push(inArray(products.id, Array.from(new Set(opts.ids))));
+  }
 
   if (opts?.search) {
     conditions.push(

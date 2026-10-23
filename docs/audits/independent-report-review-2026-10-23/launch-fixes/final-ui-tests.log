@@ -1,0 +1,53 @@
+
+ RUN  v4.1.10 C:/Users/user/Herd/sari-new
+
+ ✓ server/central-interactions.test.ts (8 tests) 3268ms
+     ✓ keeps typed and clicked tour questions consistent in every sector (ar)  1140ms
+     ✓ keeps typed and clicked tour questions consistent in every sector (en)  516ms
+     ✓ validates signup steps and sends independent legal consent to the real contract  561ms
+     ✓ does not report a support message as sent without server acceptance  337ms
+ ❯ server/ai/conversation-understanding.test.ts (20 tests | 2 failed) 139ms
+     × includes both speakers, tenant catalog and exact current message identity 46ms
+     × preserves long context, quotes and emoji within ZahyPi governed message limits 25ms
+     ✓ accepts only an available server-supplied agent and leaves routing optional for old interpretations 24ms
+     ✓ rejects fabricated or contradictory output {"evidence":[{"messageId":99,"excerpt":"نعم"}]} 3ms
+     ✓ rejects fabricated or contradictory output {"evidence":[{"messageId":12,"excerpt":"اشتريت"}]} 2ms
+     ✓ rejects fabricated or contradictory output {"evidence":[{"messageId":11,"excerpt":"تحب"}]} 2ms
+     ✓ rejects fabricated or contradictory output {"productIds":[99]} 2ms
+     ✓ rejects fabricated or contradictory output {"action":"confirm_offer","targetProvider":"local","targetQuoteId":19} 2ms
+     ✓ rejects fabricated or contradictory output {"action":"confirm_offer"} 3ms
+     ✓ rejects fabricated or contradictory output {"action":"select_session","targetProvider":"byaan_checkout","targetQuoteId":19} 2ms
+     ✓ rejects fabricated or contradictory output {"intent":"declined","action":"confirm_offer","targetProvider":"byaan_checkout","targetQuoteId":19} 1ms
+     ✓ rejects fabricated or contradictory output {"arbitraryInstruction":"execute"} 3ms
+     ✓ the same yes follows the interpreted context instead of a word match 4ms
+     ✓ routes a contextual paraphrase without any purchase keyword 2ms
+     ✓ never lets legacy yes bypass uncertainty {"conditional":true} 1ms
+     ✓ never lets legacy yes bypass uncertainty {"ambiguous":true} 0ms
+     ✓ never lets legacy yes bypass uncertainty {"confidence":0.7} 0ms
+     ✓ never lets legacy yes bypass uncertainty {"action":"clarify"} 0ms
+     ✓ negation of an objection does not become refusal or a price complaint 5ms
+     ✓ selects a contextual session and isolates simultaneous tenant turns 3ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  server/ai/conversation-understanding.test.ts > semantic interpretation plumbing (synthetic model results, not model-quality evaluation) > includes both speakers, tenant catalog and exact current message identity
+Error: Conversation instructions exceed governed message bounds
+ ❯ Module.understandingMessages server/ai/conversation-understanding.ts:126:44
+
+ ❯ server/ai/conversation-understanding.test.ts:25:22
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  server/ai/conversation-understanding.test.ts > semantic interpretation plumbing (synthetic model results, not model-quality evaluation) > preserves long context, quotes and emoji within ZahyPi governed message limits
+Error: Conversation instructions exceed governed message bounds
+ ❯ Module.understandingMessages server/ai/conversation-understanding.ts:126:44
+
+ ❯ server/ai/conversation-understanding.test.ts:34:22
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed | 1 passed (2)
+      Tests  2 failed | 26 passed (28)
+   Start at  05:23:55
+   Duration  21.05s (transform 10.83s, setup 0ms, import 30.48s, tests 3.41s, environment 2ms)

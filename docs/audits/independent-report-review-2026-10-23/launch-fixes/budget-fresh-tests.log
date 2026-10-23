@@ -1,0 +1,16 @@
+
+ RUN  v4.1.10 C:/Users/user/Herd/sari-new
+
+ ✓ server/ai/budget-settlement.mysql.test.ts (39 tests) 11995ms
+     ✓ settles captured usage after a process stops in reserved  2206ms
+     ✓ bounds transient receipt retries and does not settle without a committed receipt  495ms
+     ✓ settles from SQL in three independent processes without in-memory authority  5383ms
+     ✓ preserves superadmin evidence settled before receipt  804ms
+ ✓ server/ai/budget-alerts.mysql.test.ts (18 tests) 2723ms
+     ✓ records exactly at 70%, without rounding one micro-dollar up  584ms
+     ✓ admits concurrent reservations up to $100 with one event per threshold and blocks the next provider call  462ms
+
+ Test Files  2 passed (2)
+      Tests  57 passed (57)
+   Start at  05:33:17
+   Duration  23.14s (transform 3.16s, setup 0ms, import 7.12s, tests 14.72s, environment 1ms)

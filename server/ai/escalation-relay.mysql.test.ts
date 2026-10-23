@@ -122,13 +122,21 @@ describe.skipIf(!process.env.DATABASE_URL)('sourced escalation alert and relay l
     expect(await createSourcedEscalation({ ...base, incomingMessageId: sourceId, customerPhone: '966500000099' })).toBeNull();
     expect(await createSourcedEscalation({ ...base, incomingMessageId: sourceId })).toBe(escalationId);
   });
-  it.each(['answered', 'expired', 'resumed', 'legacy', 'other-owner'])('invalidates a cached hold against durable state: %s', async change => {
+  it('restores waiting from storage after reconnect without changing ownership', async () => {
+    await closeDb();
+    expect(await hasOpenEscalation(fixture.merchantId, conversationId, customer)).toBe(true);
+    expect(await hasOpenEscalation(fixture.merchantId, conversationId, customer, sourceId)).toBe(false);
+    expect((await query('SELECT human_takeover,handoff_version FROM conversations WHERE id=?', [conversationId]))[0]).toMatchObject({ human_takeover: 0, handoff_version: 0 });
+    expect(mock.send).not.toHaveBeenCalled();
+  });
+  it.each(['answered', 'expired', 'resumed', 'legacy', 'other-owner', 'automation-boundary'])('invalidates a cached hold against durable state: %s', async change => {
     expect(await hasOpenEscalation(fixture.merchantId, conversationId, customer)).toBe(true);
     if (change === 'answered') await relayEscalationReply(input());
     if (change === 'expired') await query('UPDATE sari_escalation_queue SET expires_at=TIMESTAMPADD(SECOND,-1,UTC_TIMESTAMP()) WHERE id=?', [escalationId]);
     if (change === 'resumed') { await transitionConversationOwnership(conversationId, { humanTakeover: 1 }); await transitionConversationOwnership(conversationId, { humanTakeover: 0 }); }
     if (change === 'legacy') await query('UPDATE sari_escalation_queue SET source_message_id=NULL,handoff_version=NULL WHERE id=?', [escalationId]);
     if (change === 'other-owner') await query("UPDATE conversations SET customerPhone='966500000099' WHERE id=?", [conversationId]);
+    if (change === 'automation-boundary') await query('UPDATE conversations SET automation_after_message_id=? WHERE id=?', [sourceId, conversationId]);
     await closeDb();
     expect(await hasOpenEscalation(fixture.merchantId, conversationId, customer)).toBe(false);
     expect(await hasOpenEscalation(fixture.merchantId + 1, conversationId, customer)).toBe(false);

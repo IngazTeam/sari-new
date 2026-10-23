@@ -1,0 +1,32 @@
+
+ RUN  v4.1.10 C:/Users/user/Herd/sari-new
+
+ ✓ server/messaging/inbound.mysql.test.ts (23 tests) 8787ms
+     ✓ deduplicates 16 concurrent webhook/polling receipts before acknowledgement  448ms
+     ✓ admits a new customer message after a terminal conversation_limit rejection  546ms
+     ✓ stores the entire reply and media plan before the first provider effect  4116ms
+     ✓ retains unknown delivery and never sends the remaining effects after ambiguity  315ms
+     ✓ redacts terminal payloads after 30 days without forgetting deduplication or unresolved effects  333ms
+     ✓ isolates identical provider receipt IDs by connected account and direction  341ms
+ ✓ server/ai/escalation-relay.mysql.test.ts (51 tests) 14931ms
+     ✓ binds the reply to the quoted older alert instead of the newest customer, then records acceptance and teaching  3751ms
+     ✓ staff acceptance: freezes the basis before provider execution and records acceptance only after the receipt  428ms
+     ✓ serializes concurrent workers and survives a new database connection without another provider call  626ms
+     ✓ invalidates a cached hold against durable state: answered  480ms
+     ✓ invalidates a cached hold against durable state: expired  333ms
+     ✓ invalidates a cached hold against durable state: resumed  400ms
+     ✓ does not reopen or expire an answered escalation when a delayed cascade finishes  505ms
+     ✓ repairs a failed local projection from the durable receipt without another external send  316ms
+ ✓ server/ai/conversation-catalog.mysql.test.ts (3 tests) 1744ms
+     ✓ finds description matches beyond item 200 and exposes verified price and currency  822ms
+     ✓ keeps a referenced old item available to both interpretation and the final reply beyond the latest 500  319ms
+     ✓ never admits another tenant, inactive, sold-out or unverified-price match, even when pinned  589ms
+ ✓ server/ai/contextual-reply-routing.test.ts (15 tests) 46ms
+ ✓ server/ai/conversation-catalog.test.ts (2 tests) 54ms
+ ✓ server/messaging/inbound-outcome.test.ts (5 tests) 51ms
+ ✓ server/ai/escalation-hold-routing.test.ts (6 tests) 44ms
+
+ Test Files  7 passed (7)
+      Tests  105 passed (105)
+   Start at  05:15:13
+   Duration  44.19s (transform 18.50s, setup 0ms, import 46.50s, tests 25.66s, environment 16ms)

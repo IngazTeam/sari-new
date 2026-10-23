@@ -1,0 +1,56 @@
+
+ RUN  v4.1.10 C:/Users/user/Herd/sari-new
+
+stderr | server/ai/conversation-understanding.mysql.test.ts > durable semantic interpretation and hostile context changes > respects central disablement even when this message already has a ready interpretation
+[ConversationUnderstanding] Analysis unavailable { stage: 'settings', kind: 'Error' }
+
+stderr | server/ai/conversation-understanding.mysql.test.ts > durable semantic interpretation and hostile context changes > fails closed on provider outage and never retries through keyword action
+[ConversationUnderstanding] Analysis unavailable { stage: 'provider', kind: 'Error' }
+
+stderr | server/ai/conversation-understanding.mysql.test.ts > durable semantic interpretation and hostile context changes > fails closed on malformed and never retries through keyword action
+[ConversationUnderstanding] Analysis unavailable { stage: 'validation', kind: 'SyntaxError' }
+
+stderr | server/ai/conversation-understanding.mysql.test.ts > durable semantic interpretation and hostile context changes > fails closed on fabricated evidence and never retries through keyword action
+[ConversationUnderstanding] Analysis unavailable { stage: 'validation', kind: 'Error' }
+
+stderr | server/ai/conversation-understanding.mysql.test.ts > durable semantic interpretation and hostile context changes > fails closed on foreign product and never retries through keyword action
+[ConversationUnderstanding] Analysis unavailable { stage: 'validation', kind: 'Error' }
+
+stderr | server/ai/conversation-understanding.mysql.test.ts > durable semantic interpretation and hostile context changes > discards output after handoff during provider I/O
+[ConversationUnderstanding] Analysis unavailable { stage: 'persistence', kind: 'Error' }
+
+stderr | server/ai/conversation-understanding.mysql.test.ts > durable semantic interpretation and hostile context changes > discards output after new message during provider I/O
+[ConversationUnderstanding] Analysis unavailable { stage: 'persistence', kind: 'Error' }
+
+stderr | server/ai/conversation-understanding.mysql.test.ts > durable semantic interpretation and hostile context changes > discards output after memory deletion during provider I/O
+[ConversationUnderstanding] Analysis unavailable { stage: 'persistence', kind: 'Error' }
+
+stderr | server/ai/conversation-understanding.mysql.test.ts > durable semantic interpretation and hostile context changes > discards output after source changed during provider I/O
+[ConversationUnderstanding] Analysis unavailable { stage: 'persistence', kind: 'Error' }
+
+stderr | server/ai/conversation-understanding.mysql.test.ts > durable semantic interpretation and hostile context changes > discards output after history changed during provider I/O
+[ConversationUnderstanding] Analysis unavailable { stage: 'persistence', kind: 'Error' }
+
+ ✓ server/ai/conversation-understanding.test.ts (20 tests) 226ms
+stderr | server/ai/conversation-understanding.mysql.test.ts > durable semantic interpretation and hostile context changes > rejects a foreign agent supplied by the model without changing the conversation
+[ConversationUnderstanding] Analysis unavailable { stage: 'validation', kind: 'Error' }
+
+stderr | server/ai/conversation-understanding.mysql.test.ts > durable semantic interpretation and hostile context changes > rejects a stale routing interpretation after specialization changes during provider I/O
+[ConversationUnderstanding] Analysis unavailable { stage: 'persistence', kind: 'Error' }
+
+stderr | server/ai/conversation-understanding.mysql.test.ts > durable semantic interpretation and hostile context changes > rejects a stale routing interpretation after availability changes during provider I/O
+[ConversationUnderstanding] Analysis unavailable { stage: 'persistence', kind: 'Error' }
+
+stderr | server/ai/conversation-understanding.mysql.test.ts > durable semantic interpretation and hostile context changes > rejects a stale routing interpretation after current agent changes during provider I/O
+[ConversationUnderstanding] Analysis unavailable { stage: 'persistence', kind: 'Error' }
+
+ ✓ server/ai/conversation-understanding.mysql.test.ts (38 tests) 9704ms
+     ✓ persists grounded both-speaker analysis once and uses the superadmin model and shared provider entry point  2067ms
+     ✓ respects central disablement even when this message already has a ready interpretation  333ms
+     ✓ carries verified customer memory and a rolling interpretation into the next conversation turn  469ms
+ ✓ server/ai/escalation-hold-routing.test.ts (6 tests) 38ms
+
+ Test Files  3 passed (3)
+      Tests  64 passed (64)
+   Start at  05:26:34
+   Duration  24.57s (transform 14.02s, setup 0ms, import 29.75s, tests 9.97s, environment 1ms)

@@ -39,6 +39,8 @@ const paths: Record<string, string> = {
   chart: '<path d="M3 3v18h18M7 16v-5m5 5V7m5 9V4"/>',
   leaf: '<path d="M20 3c-9 0-16 1-16 9a8 8 0 0 0 8 8c8 0 8-8 8-17ZM3 21 15 9"/>',
   zap: '<path d="m13 2-9 12h7l-1 8L21 9h-8l1-7"/>',
+  building: '<rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4M8 6h.01M16 6h.01M12 6h.01M12 10h.01M12 14h.01M16 10h.01M16 14h.01M8 10h.01M8 14h.01"/>',
+  "heart-pulse": '<path d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7 7-7Z"/><path d="M3.2 12H9l1.5-3 2 6 1.5-3h4.8"/>',
 };
 export function icon(name: string, extraClass = "") {
   return `<svg class="${extraClass}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name] || paths.sparkles}</svg>`;

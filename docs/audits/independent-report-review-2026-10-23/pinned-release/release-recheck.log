@@ -1,0 +1,19 @@
+Node v22.23.2; pinned pnpm 10.4.1; task release-recheck
+
+ RUN  v4.1.10 C:/Users/user/Herd/sari-new/.tmp/launch-release-candidate
+
+ ✓ server/reply-suggestions-access.test.ts (44 tests) 187ms
+ ✓ server/deployment-release-pentest.test.ts (11 tests) 477ms
+     ✓ keeps every shipped deploy entry point valid Bash  446ms
+ ✓ server/ai/zahypi-context-propagation.test.ts (14 tests) 52ms
+ ✓ server/ai-settings-singleton-pentest.test.ts (8 tests) 27ms
+ ✓ server/reply-suggestions.mysql.test.ts (8 tests) 532ms
+
+ Test Files  5 passed (5)
+      Tests  85 passed (85)
+   Start at  06:23:22
+   Duration  11.19s (transform 1.88s, setup 0ms, import 6.98s, tests 1.28s, environment 2ms)
+
+
+TASK_EXIT_CODE=0
+ELAPSED_MS=13125

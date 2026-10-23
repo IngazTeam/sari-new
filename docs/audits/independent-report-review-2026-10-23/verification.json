@@ -1,0 +1,59 @@
+{
+  "reviewDateRiyadh": "2026-10-23",
+  "repository": "C:/Users/user/Herd/sari-new",
+  "branch": "main",
+  "baseCommit": "f8af31f1646d9dae7852a3609673cf5eb9b76f9d",
+  "scope": "Existing local working-tree changes; static review and selected isolated tests. No product source edits or production actions.",
+  "runtime": {
+    "observedNode": "26.5.1",
+    "observedPnpm": "11.25.0",
+    "observedVitest": "4.1.10",
+    "projectNode": "22.23.2",
+    "projectPnpm": "10.4.1"
+  },
+  "selectedTests": {
+    "command": "node scripts/testing/run-isolated.mjs server/ai/conversation-understanding.test.ts server/ai/conversation-understanding-evaluation.test.ts server/ai/contextual-agent-routing.test.ts server/ai/booking-conversation.test.ts server/ai/checkout-conversation.test.ts server/ai/escalation-routing.test.ts server/central-landing.test.ts server/central-interactions.test.ts server/public-claims-truth-pentest.test.ts server/training-byaan-marketing-pentest.test.ts server/ai/automatic-followup-context.test.ts server/ai/followup-policy.test.ts server/merchant-semantic-i18n-pentest.test.ts server/merchant-ux-route-recovery-pentest.test.ts server/conversation-order-payment-link-pentest.test.ts",
+    "initialAttempt": "EPERM during temporary module rename, before tests ran",
+    "retryEnvironment": "TEMP and TMP pointed to repository .tmp/audit-review-temp",
+    "retryExitCode": 1,
+    "passedTests": 320,
+    "failedTests": 8,
+    "passedFiles": 12,
+    "failedFiles": 3,
+    "failureAnalysis": {
+      "renderTimeout": 1,
+      "sandboxLoopbackEacces": 2,
+      "textAssertionsAgainstReplacedPageWrappers": 5
+    },
+    "log": "tests-selected.log"
+  },
+  "renderRetest": {
+    "command": "node scripts/testing/run-isolated.mjs server/central-landing.test.ts --testNamePattern 'bilingual server HTML' --testTimeout 20000",
+    "exitCode": 0,
+    "passedTests": 6,
+    "skippedHttpTests": 2,
+    "log": "tests-render.log"
+  },
+  "typecheck": {
+    "command": "node node_modules/typescript/bin/tsc --noEmit",
+    "exitCode": 0,
+    "diagnostics": 0,
+    "log": "typecheck.log"
+  },
+  "demoReproduction": {
+    "method": "Read the matchFreeTextIndex function body from client/src/central/bootstrap.ts and execute that body locally without loading the application",
+    "input": "أبغى أحجز موعد أسنان",
+    "actualFreeTextIndex": 1,
+    "suggestedQuestionIndex": 0,
+    "actualReplyMeaning": "Preparation instructions instead of booking response",
+    "sourceLine": 323
+  },
+  "limits": [
+    "No production database or logs inspected",
+    "No MySQL integration tests run",
+    "No live AI, WhatsApp, payment, or external commerce transactions",
+    "No load benchmark or full browser/mobile visual audit",
+    "No complete release suite or production build",
+    "No deployment or push"
+  ]
+}

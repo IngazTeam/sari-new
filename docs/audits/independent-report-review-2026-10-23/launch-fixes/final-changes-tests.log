@@ -1,0 +1,18 @@
+
+ RUN  v4.1.10 C:/Users/user/Herd/sari-new
+
+ ✓ server/central-interactions.test.ts (8 tests) 2947ms
+     ✓ keeps typed and clicked tour questions consistent in every sector (ar)  847ms
+     ✓ keeps typed and clicked tour questions consistent in every sector (en)  462ms
+     ✓ validates signup steps and sends independent legal consent to the real contract  618ms
+     ✓ does not report a support message as sent without server acceptance  317ms
+ ✓ server/messaging/inbound-pump.test.ts (10 tests) 57ms
+ ✓ server/ai/conversation-catalog.test.ts (3 tests) 49ms
+ ✓ server/ai/conversation-catalog.mysql.test.ts (3 tests) 1078ms
+     ✓ finds description matches beyond item 200 and exposes verified price and currency  477ms
+     ✓ keeps a referenced old item available to both interpretation and the final reply beyond the latest 500  319ms
+
+ Test Files  4 passed (4)
+      Tests  24 passed (24)
+   Start at  05:25:04
+   Duration  17.01s (transform 10.47s, setup 0ms, import 20.04s, tests 4.13s, environment 3ms)

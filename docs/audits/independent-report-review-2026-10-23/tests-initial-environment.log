@@ -1,0 +1,86 @@
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.10 [39m[90mC:/Users/user/Herd/sari-new[39m
+
+ [31m❯[39m server/ai/conversation-understanding-evaluation.test.ts [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m server/ai/conversation-understanding.test.ts [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m server/central-landing.test.ts [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m server/ai/escalation-routing.test.ts [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m server/central-interactions.test.ts [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m server/ai/booking-conversation.test.ts [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m server/public-claims-truth-pentest.test.ts [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m server/ai/contextual-agent-routing.test.ts [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m server/ai/checkout-conversation.test.ts [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m server/ai/automatic-followup-context.test.ts [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m server/merchant-ux-route-recovery-pentest.test.ts [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m server/merchant-semantic-i18n-pentest.test.ts [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m server/training-byaan-marketing-pentest.test.ts [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m server/conversation-order-payment-link-pentest.test.ts [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m server/ai/followup-policy.test.ts [2m([22m[2m0 test[22m[2m)[22m
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 15 ⎯⎯⎯⎯⎯⎯
+
+ FAIL  server/central-interactions.test.ts [ server/central-interactions.test.ts ]
+Error: EPERM: operation not permitted, rename 'C:\Users\user\AppData\Local\Packages\sandbox.{7d57aa2d-80d6-4afb-8528-c8bfc19a9c13}\AC\Temp\neGmnsp4fL0yZ1LUj3zVb\ssr\.tmp-1792717038926-8kpsfduyb5l' -> 'C:\Users\user\AppData\Local\Packages\sandbox.{7d57aa2d-80d6-4afb-8528-c8bfc19a9c13}\AC\Temp\neGmnsp4fL0yZ1LUj3zVb\ssr\7e40a1d6f6dda7878fad330d7482661afff19916'
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/15]⎯
+
+ FAIL  server/central-landing.test.ts [ server/central-landing.test.ts ]
+Error: EPERM: operation not permitted, rename 'C:\Users\user\AppData\Local\Packages\sandbox.{7d57aa2d-80d6-4afb-8528-c8bfc19a9c13}\AC\Temp\neGmnsp4fL0yZ1LUj3zVb\ssr\.tmp-1792717038153-331ho8zcvai' -> 'C:\Users\user\AppData\Local\Packages\sandbox.{7d57aa2d-80d6-4afb-8528-c8bfc19a9c13}\AC\Temp\neGmnsp4fL0yZ1LUj3zVb\ssr\963df44443346e19b71626bb31726687bfb71ea2'
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/15]⎯
+
+ FAIL  server/conversation-order-payment-link-pentest.test.ts [ server/conversation-order-payment-link-pentest.test.ts ]
+Error: EPERM: operation not permitted, rename 'C:\Users\user\AppData\Local\Packages\sandbox.{7d57aa2d-80d6-4afb-8528-c8bfc19a9c13}\AC\Temp\neGmnsp4fL0yZ1LUj3zVb\ssr\.tmp-1792717042652-phyq50bmge' -> 'C:\Users\user\AppData\Local\Packages\sandbox.{7d57aa2d-80d6-4afb-8528-c8bfc19a9c13}\AC\Temp\neGmnsp4fL0yZ1LUj3zVb\ssr\16fe1e5bb4313fef43d67f888656a4e5d38ec2dc'
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/15]⎯
+
+ FAIL  server/merchant-semantic-i18n-pentest.test.ts [ server/merchant-semantic-i18n-pentest.test.ts ]
+Error: EPERM: operation not permitted, rename 'C:\Users\user\AppData\Local\Packages\sandbox.{7d57aa2d-80d6-4afb-8528-c8bfc19a9c13}\AC\Temp\neGmnsp4fL0yZ1LUj3zVb\ssr\.tmp-1792717041629-6n1xz26gjxu' -> 'C:\Users\user\AppData\Local\Packages\sandbox.{7d57aa2d-80d6-4afb-8528-c8bfc19a9c13}\AC\Temp\neGmnsp4fL0yZ1LUj3zVb\ssr\03de21fed70ecbbdd4d4e9534f0be80136addc26'
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/15]⎯
+
+ FAIL  server/merchant-ux-route-recovery-pentest.test.ts [ server/merchant-ux-route-recovery-pentest.test.ts ]
+Error: EPERM: operation not permitted, rename 'C:\Users\user\AppData\Local\Packages\sandbox.{7d57aa2d-80d6-4afb-8528-c8bfc19a9c13}\AC\Temp\neGmnsp4fL0yZ1LUj3zVb\ssr\.tmp-1792717041540-hlpocwpxk5' -> 'C:\Users\user\AppData\Local\Packages\sandbox.{7d57aa2d-80d6-4afb-8528-c8bfc19a9c13}\AC\Temp\neGmnsp4fL0yZ1LUj3zVb\ssr\900c6441a330e4b9daa514d3f9f01a692f6ddb01'
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/15]⎯
+
+ FAIL  server/public-claims-truth-pentest.test.ts [ server/public-claims-truth-pentest.test.ts ]
+Error: EPERM: operation not permitted, rename 'C:\Users\user\AppData\Local\Packages\sandbox.{7d57aa2d-80d6-4afb-8528-c8bfc19a9c13}\AC\Temp\neGmnsp4fL0yZ1LUj3zVb\ssr\.tmp-1792717039881-i7lcobcwhtc' -> 'C:\Users\user\AppData\Local\Packages\sandbox.{7d57aa2d-80d6-4afb-8528-c8bfc19a9c13}\AC\Temp\neGmnsp4fL0yZ1LUj3zVb\ssr\15b295fb89983bb47e5b6a07c6e9007ffe1c32dd'
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/15]⎯
+
+ FAIL  server/training-byaan-marketing-pentest.test.ts [ server/training-byaan-marketing-pentest.test.ts ]
+Error: EPERM: operation not permitted, rename 'C:\Users\user\AppData\Local\Packages\sandbox.{7d57aa2d-80d6-4afb-8528-c8bfc19a9c13}\AC\Temp\neGmnsp4fL0yZ1LUj3zVb\ssr\.tmp-1792717042497-hdq60c9gk8m' -> 'C:\Users\user\AppData\Local\Packages\sandbox.{7d57aa2d-80d6-4afb-8528-c8bfc19a9c13}\AC\Temp\neGmnsp4fL0yZ1LUj3zVb\ssr\56d41b86951ab6a6810081dd719f9a40857e87ec'
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/15]⎯
+
+ FAIL  server/ai/automatic-followup-context.test.ts [ server/ai/automatic-followup-context.test.ts ]
+Error: EPERM: operation not permitted, rename 'C:\Users\user\AppData\Local\Packages\sandbox.{7d57aa2d-80d6-4afb-8528-c8bfc19a9c13}\AC\Temp\neGmnsp4fL0yZ1LUj3zVb\ssr\.tmp-1792717040779-ly5yjhzqtel' -> 'C:\Users\user\AppData\Local\Packages\sandbox.{7d57aa2d-80d6-4afb-8528-c8bfc19a9c13}\AC\Temp\neGmnsp4fL0yZ1LUj3zVb\ssr\c8ba05814d213b3e4abeca5548ca63995d75b7b1'
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/15]⎯
+
+ FAIL  server/ai/booking-conversation.test.ts [ server/ai/booking-conversation.test.ts ]
+Error: EPERM: operation not permitted, rename 'C:\Users\user\AppData\Local\Packages\sandbox.{7d57aa2d-80d6-4afb-8528-c8bfc19a9c13}\AC\Temp\neGmnsp4fL0yZ1LUj3zVb\ssr\.tmp-1792717039020-dgtwsqpbcwp' -> 'C:\Users\user\AppData\Local\Packages\sandbox.{7d57aa2d-80d6-4afb-8528-c8bfc19a9c13}\AC\Temp\neGmnsp4fL0yZ1LUj3zVb\ssr\bd635c5f9660c2386d583b7c85dac4b0caefd59e'
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/15]⎯
+
+ FAIL  server/ai/checkout-conversation.test.ts [ server/ai/checkout-conversation.test.ts ]
+Error: EPERM: operation not permitted, rename 'C:\Users\user\AppData\Local\Packages\sandbox.{7d57aa2d-80d6-4afb-8528-c8bfc19a9c13}\AC\Temp\neGmnsp4fL0yZ1LUj3zVb\ssr\.tmp-1792717040676-oxsd9z5jfa7' -> 'C:\Users\user\AppData\Local\Packages\sandbox.{7d57aa2d-80d6-4afb-8528-c8bfc19a9c13}\AC\Temp\neGmnsp4fL0yZ1LUj3zVb\ssr\81b535e863d5ca19ac92f03cedacbd327ab2b4fb'
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/15]⎯
+
+ FAIL  server/ai/contextual-agent-routing.test.ts [ server/ai/contextual-agent-routing.test.ts ]
+Error: EPERM: operation not permitted, rename 'C:\Users\user\AppData\Local\Packages\sandbox.{7d57aa2d-80d6-4afb-8528-c8bfc19a9c13}\AC\Temp\neGmnsp4fL0yZ1LUj3zVb\ssr\.tmp-1792717039991-1a33dr3v2rk' -> 'C:\Users\user\AppData\Local\Packages\sandbox.{7d57aa2d-80d6-4afb-8528-c8bfc19a9c13}\AC\Temp\neGmnsp4fL0yZ1LUj3zVb\ssr\bd7239f610a41d62f9d37c6432619ee2db0bda0e'
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/15]⎯
+
+ FAIL  server/ai/conversation-understanding-evaluation.test.ts [ server/ai/conversation-understanding-evaluation.test.ts ]
+Error: EPERM: operation not permitted, rename 'C:\Users\user\AppData\Local\Packages\sandbox.{7d57aa2d-80d6-4afb-8528-c8bfc19a9c13}\AC\Temp\neGmnsp4fL0yZ1LUj3zVb\ssr\.tmp-1792717037043-4ca8s7by8w8' -> 'C:\Users\user\AppData\Local\Packages\sandbox.{7d57aa2d-80d6-4afb-8528-c8bfc19a9c13}\AC\Temp\neGmnsp4fL0yZ1LUj3zVb\ssr\cc915cb2cef533ff2ca6821d33fe51e5a4f6fb53'
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/15]⎯
+
+ FAIL  server/ai/conversation-understanding.test.ts [ server/ai/conversation-understanding.test.ts ]
+Error: EPERM: operation not permitted, rename 'C:\Users\user\AppData\Local\Packages\sandbox.{7d57aa2d-80d6-4afb-8528-c8bfc19a9c13}\AC\Temp\neGmnsp4fL0yZ1LUj3zVb\ssr\.tmp-1792717037012-ca6qu0obk5' -> 'C:\Users\user\AppData\Local\Packages\sandbox.{7d57aa2d-80d6-4afb-8528-c8bfc19a9c13}\AC\Temp\neGmnsp4fL0yZ1LUj3zVb\ssr\01665f976b2380685d58c26e41f6bc01647434ad'
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/15]⎯
+
+ FAIL  server/ai/escalation-routing.test.ts [ server/ai/escalation-routing.test.ts ]
+Error: EPERM: operation not permitted, rename 'C:\Users\user\AppData\Local\Packages\sandbox.{7d57aa2d-80d6-4afb-8528-c8bfc19a9c13}\AC\Temp\neGmnsp4fL0yZ1LUj3zVb\ssr\.tmp-1792717038188-cmtz60z3bqf' -> 'C:\Users\user\AppData\Local\Packages\sandbox.{7d57aa2d-80d6-4afb-8528-c8bfc19a9c13}\AC\Temp\neGmnsp4fL0yZ1LUj3zVb\ssr\12b566e54a61f78a9265a4597a2fe2ed1808784e'
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/15]⎯
+
+ FAIL  server/ai/followup-policy.test.ts [ server/ai/followup-policy.test.ts ]
+Error: EPERM: operation not permitted, rename 'C:\Users\user\AppData\Local\Packages\sandbox.{7d57aa2d-80d6-4afb-8528-c8bfc19a9c13}\AC\Temp\neGmnsp4fL0yZ1LUj3zVb\ssr\.tmp-1792717043360-roxm4zd86lc' -> 'C:\Users\user\AppData\Local\Packages\sandbox.{7d57aa2d-80d6-4afb-8528-c8bfc19a9c13}\AC\Temp\neGmnsp4fL0yZ1LUj3zVb\ssr\3ab2fae25c4b784bf09a7138a5b1a2eef1237e38'
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/15]⎯
+
+
+[2m Test Files [22m [1m[31m15 failed[39m[22m[90m (15)[39m
+[2m      Tests [22m [2mno tests[22m
+[2m   Start at [22m 03:57:15
+[2m   Duration [22m 7.59s[2m (transform 0ms, setup 0ms, import 0ms, tests 0ms, environment 4ms)[22m

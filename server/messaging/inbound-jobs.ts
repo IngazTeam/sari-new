@@ -4,6 +4,7 @@ import { getPool } from '../db/connection';
 import { assertRuntimeSchema } from '../db/schema-readiness';
 import { inboundEventKey, inboundMessageId } from './message-identity';
 import { currentInboundExecution, withInboundExecution, type InboundExecution } from './inbound-context';
+import { inboundCompletion, type InboundCompletion, type InboundProcessingResult } from './inbound-outcome';
 
 export const INBOUND_LEASE_SECONDS = 90;
 export class InboundLeaseLostError extends Error {
@@ -137,11 +138,14 @@ export async function heartbeatInbound(job: InboundJob): Promise<void> {
   if (result.affectedRows !== 1) throw new InboundLeaseLostError();
 }
 export async function finishInbound(job: InboundJob, success: boolean, errorCode?: string) {
+  return persistInboundCompletion(job, { status: success ? 'completed' : 'review', errorCode: success ? null : errorCode || 'processing_failed' });
+}
+async function persistInboundCompletion(job: InboundJob, completion: InboundCompletion) {
   const pool = await requirePool();
   const [result] = await pool.execute<any>(
     `UPDATE whatsapp_inbound_jobs SET status = ?, error_code = ?, lease_token = NULL, lease_until = NULL
      WHERE id = ? AND lease_token = ? AND status = 'running' AND lease_until > UTC_TIMESTAMP(3)`,
-    [success ? 'completed' : 'review', success ? null : errorCode || 'processing_failed', job.id, job.lease_token],
+    [completion.status, completion.errorCode, job.id, job.lease_token],
   );
   if (result.affectedRows !== 1) throw new InboundLeaseLostError();
 }
@@ -158,7 +162,7 @@ export async function persistInboundReplyPlan(plan: unknown): Promise<void> {
 }
 
 /** Injectable processor lets crash/lease tests run with no paid APIs. */
-export async function executeInbound(job: InboundJob, process: (payload: any) => Promise<{ success: boolean }>) {
+export async function executeInbound(job: InboundJob, process: (payload: any) => Promise<InboundProcessingResult>) {
   const pool = await requirePool();
   let lost = false;
   const timer = setInterval(() => { heartbeatInbound(job).catch(() => { lost = true; }); }, 20_000);
@@ -200,7 +204,7 @@ export async function executeInbound(job: InboundJob, process: (payload: any) =>
     // The immutable raw provider envelope remains available in the queue row.
     const canonicalPayload = { ...job.payload_json, providerMessageId: job.payload_json.idMessage, idMessage: inboundMessageId(job.event_key) };
     const result = await withInboundExecution(context, () => process(canonicalPayload));
-    await finishInbound(job, result.success && !context.uncertainEffect, context.uncertainEffect ? 'effect_unconfirmed' : undefined);
+    await persistInboundCompletion(job, inboundCompletion(result, context.uncertainEffect));
   } catch (error) {
     if (!(error instanceof InboundLeaseLostError)) await finishInbound(job, false, 'processing_failed');
     else throw error;
